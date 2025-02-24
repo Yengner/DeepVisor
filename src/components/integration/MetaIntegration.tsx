@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { createClient } from '@/lib/utils/supabase/clients/browser';
 
-const FacebookBusinessIntegration = () => {
+const FacebookBusinessIntegration = () => { // Change to Meta Business Integration
   const [error, setError] = useState('');
 
   const handleLogin = () => {
@@ -44,7 +44,7 @@ const MetaIntegration: React.FC<MetaIntegrationProps> = ({ platformName, userId,
   const supabase = createClient();
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-  const handleUnintegrate = async () => {
+  const handleUnintegrate = async () => { // Put function into a separate file
     setStatus('loading');
 
     try {

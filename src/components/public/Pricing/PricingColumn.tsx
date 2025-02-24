@@ -29,7 +29,7 @@ const PricingColumn: React.FC<Props> = ({ tier, highlight }: Props) => {
                     {typeof price === 'number' && <span className="text-lg font-normal text-gray-600">/mo</span>}
                 </p>
                 <button
-                    className={clsx("w-full py-3 px-4 rounded-full transition-colors", { "bg-primary hover:bg-primary-accent": highlight, "bg-hero-background hover:bg-gray-200": !highlight })}
+                    className={clsx("w-full py-3 px-4 rounded-full transition-colors", { "bg-primary-accent hover:bg-hero-background": highlight, "bg-primary-accent hover:bg-gray-200": !highlight })}
                     onClick={handleButtonClick}
                     disabled={price !== "Contact Us"} // Disable button for "Coming Soon"
                 >

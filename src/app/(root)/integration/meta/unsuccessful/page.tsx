@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 
-const IntegrationUnsuccessful = () => {
+const IntegrationUnsuccessful = () => { // Make this into a component
     const router = useRouter();
 
     const handleRetry = () => {

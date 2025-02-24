@@ -14,8 +14,12 @@ export const menuItems: IMenuItem[] = [
         url: "/services"
     },
     {
-        text: "Invest!",
+        text: "Investment",
         url: "/investor-relations"
+    },
+    {
+        text: "Free Estimate",
+        url: "/estimate"
     },
     {
         text: "Contact Us",

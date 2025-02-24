@@ -22,7 +22,7 @@ const IntegrationPage = async () => {
   const { data: platformIntegrations, error: integrationError } = await supabase
     .from('platform_integrations')
     .select('platform_name, is_integrated')
-    .eq('user_id', userId); // Replace with actual user ID logic
+    .eq('user_id', userId);
 
   if (integrationError) {
     console.error('Error fetching platform integrations:', integrationError.message);

@@ -7,8 +7,8 @@ Deno.serve(async () => {
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
-//SUPABASE_URL
-//SUPABASE_SERVICE_ROLE_KEY
+  //SUPABASE_URL
+  //SUPABASE_SERVICE_ROLE_KEY
   try {
     console.log("Starting sync_ad_data edge function");
 
@@ -20,7 +20,7 @@ Deno.serve(async () => {
         name,
         industry_id,
         platform_integration_id,
-        platform_integrations (
+        platform_integrations 
           access_token,
           platform_name
         )
@@ -48,25 +48,25 @@ Deno.serve(async () => {
         if (maximumMetrics && maximumMetrics.length > 0) {
           const campaignsToUpsert = maximumMetrics.map((campaign) => (
             {
-            ...campaign,
-            today_metrics: additionalMetrics['today_metrics']?.find((c) => c.campaign_id === campaign.campaign_id) || null,
-            yesterday_metrics: additionalMetrics['yesterday_metrics']?.find((c) => c.campaign_id === campaign.campaign_id) || null,
-            last_7d_metrics: additionalMetrics['last_7d_metrics']?.find((c) => c.campaign_id === campaign.campaign_id) || null,
-            last_30d_metrics: additionalMetrics['last_30d_metrics']?.find((c) => c.campaign_id === campaign.campaign_id) || null,
-            this_month_metrics: additionalMetrics['this_month_metrics']?.find((c) => c.campaign_id === campaign.campaign_id) || null,
-            last_month_metrics: additionalMetrics['last_month_metrics']?.find((c) => c.campaign_id === campaign.campaign_id) || null,
-          }));
-        
+              ...campaign,
+              today_metrics: additionalMetrics['today_metrics']?.find((c) => c.campaign_id === campaign.campaign_id) || null,
+              yesterday_metrics: additionalMetrics['yesterday_metrics']?.find((c) => c.campaign_id === campaign.campaign_id) || null,
+              last_7d_metrics: additionalMetrics['last_7d_metrics']?.find((c) => c.campaign_id === campaign.campaign_id) || null,
+              last_30d_metrics: additionalMetrics['last_30d_metrics']?.find((c) => c.campaign_id === campaign.campaign_id) || null,
+              this_month_metrics: additionalMetrics['this_month_metrics']?.find((c) => c.campaign_id === campaign.campaign_id) || null,
+              last_month_metrics: additionalMetrics['last_month_metrics']?.find((c) => c.campaign_id === campaign.campaign_id) || null,
+            }));
+
           console.log(campaignsToUpsert)
           const { error: campaignsError } = await supabase
             .from("campaign_metrics")
             .upsert(campaignsToUpsert, { onConflict: ["campaign_id"] }); // Ensure campaign_id is unique
-        
+
           if (campaignsError) throw campaignsError;
-        
+
           console.log(`Upserted ${campaignsToUpsert.length} campaigns for ad account: ${adAccount.name}`);
         }
-        
+
         for (const campaign of maximumMetrics) {
           // Fetch and upsert ad sets
           console.log(`Fetching ad sets for campaign: ${campaign.name}, platform: ${adAccount.platform_integrations.platform_name}, campaign_id: ${campaign.campaign_id}, access_token: ${adAccount.platform_integrations.access_token}`);

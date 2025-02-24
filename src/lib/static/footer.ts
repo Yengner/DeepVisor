@@ -7,23 +7,23 @@ export const footerDetails: {
     telephone: string;
     socials: ISocials;
 } = {
-    subheading: "Empowering businesses with cutting-edge financial technology solutions.",
+    subheading: "Empowering businesses with cutting-edge marketing technology solutions.",
     quickLinks: [
         {
-            text: "Features",
-            url: "#features"
+            text: "Home",
+            url: "/home"
         },
         {
-            text: "Pricing",
-            url: "#pricing"
+            text: "Free Estimate",
+            url: "/estimate"
         },
         {
-            text: "Testimonials",
-            url: "#testimonials"
+            text: "Contact Us",
+            url: "/contact-us"
         }
     ],
-    email: 'address@yoursite.com',
-    telephone: '+1 (123) 456-7890',
+    email: 'deepvisormarketing@gmail.com',
+    telephone: '+1 (813) 992-0108',
     socials: {
         // github: 'https://github.com',
         // x: 'https://twitter.com/x',
