@@ -6,7 +6,7 @@ import {
   HomeIcon,
   ChartBarIcon,
   PuzzlePieceIcon,
-  RocketLaunchIcon,
+  CreditCardIcon,
   PresentationChartLineIcon,
   Cog6ToothIcon,
   ArrowUpTrayIcon
@@ -23,7 +23,7 @@ const Sidebar = () => {
     { name: 'Reports', icon: <ChartBarIcon className="w-6 h-6" />, route: '/reports' },
     { name: 'Upload', icon: <ArrowUpTrayIcon className="w-6 h-6" />, route: '/upload' },
     { name: 'Integration', icon: <PuzzlePieceIcon className="w-6 h-6" />, route: '/integration' },
-    { name: 'Explore', icon: <RocketLaunchIcon className="w-6 h-6" />, route: '/explore' },
+    { name: 'DeepPass', icon: <CreditCardIcon className="w-6 h-6" />, route: '/deeppass' },
     { name: 'Campaigns', icon: <PresentationChartLineIcon className="w-6 h-6" />, route: '/campaigns' },
   ];
 

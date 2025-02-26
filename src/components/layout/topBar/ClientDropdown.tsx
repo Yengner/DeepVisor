@@ -15,8 +15,8 @@ interface LoggedInUser {
     id: string;
     first_name: string;
     last_name: string;
-    business_name: string;
     phone_number: string;
+    business_name: string;
     email: string;
     created_at: string;
     updated_at: string;

@@ -415,7 +415,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                             </div>
 
                             <div className="mb-5">
-                                <SubmitButton loading={loading} className="w-full cursor-pointer rounded-lg border justify-center gap-3.5 border-primary bg-primary p-10 text-white transition hover:bg-opacity-90">
+                                <SubmitButton loading={loading} className="w-full cursor-pointer rounded-lg border justify-center gap-3.5 border-primary p-10 text-white transition hover:bg-opacity-90">
                                     {type === "signup" ? "Sign Up" : "Sign In"}
                                 </SubmitButton>
                             </div>
