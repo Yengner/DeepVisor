@@ -1,9 +1,13 @@
 # **DeepVisor** 🚀  
 ### **Multi-Platform Ad Management & Insights SaaS**  
 
-DeepVisor is an enterprise-level SaaS platform designed to **streamline marketing campaign management** across multiple social media platforms, including **Meta (Facebook & Instagram), TikTok, Google Ads, Reddit, YouTube, and more**.  
+DeepVisor is an SaaS platform designed to **streamline marketing campaign management** across multiple social media platforms, including **Meta (Facebook & Instagram), TikTok, Google Ads, Reddit, YouTube, and more**. 
 
 This project allows **business owners and marketers** to **integrate, track, analyze, and manage ad campaigns** in one centralized dashboard, offering insights, automation, and AI-driven suggestions for campaign optimization.
+
+As the base of this will be the managment across multuple social media platforms for businesses, the agency i have created will also work in conjunction to this service, allowing for full transparency of the ads performance and the performance of each platform. I will also like to add the addition of other forms of marketing with some inovation such as scanable barcodes that takes the user to either a business link hub and have the feature of adding a "Business Card" to a users phone (Mainly Iphone for now), using Apples wallet feature.
+
+In this ReadMe I will show the current workflow I have created from the users end to the database modeling and implementations, future ideas and things I want to implement and eventually change. 
 
 ---
 
