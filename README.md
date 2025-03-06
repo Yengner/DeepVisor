@@ -29,10 +29,7 @@ In this ReadMe I will show the current workflow I have created from the users en
 - 📌 **Multi-ad account support**, allowing businesses to manage multiple brands in one place.  
 
 ### **4. Secure Authentication & User Management**  
-<<<<<<< HEAD
-=======
-- 🔐 Uses **AWS Cognito / Supabase Auth** for **secure user authentication**.  
->>>>>>> 4301e8e (Additional items to ad account apge)
+- 🔐 Uses **Supabase Auth** for **secure user authentication**.  
 - 🛠 **Role-based access control** for managing teams and permissions.  
 - ✅ Allows users to **add, remove, and manage ad accounts dynamically**.
 
@@ -64,7 +61,3 @@ DeepVisor uses **PostgreSQL** to store essential data for **ad campaigns, user i
 - **`campaigns`** → Stores campaign details with budget, targeting, and performance stats.  
 - **`ads`** → Tracks individual ads within campaigns.  
 
-Example **ERD (Entity Relationship Diagram)**:
-
-```plaintext
-users (id) ---< integrations (id) ---< ad_accounts (id) ---< campaigns (id) ---< ads (id)
