@@ -27,13 +27,13 @@ export async function handleSignUp(
     password: string,
     first_name: string,
     last_name: string,
-    phone_number: string,
-    business_name: string
+    business_name: string,
+    phone_number: string
 ) {
     try {
         const supabase = await createSupabaseClient();
 
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -46,8 +46,23 @@ export async function handleSignUp(
             },
         });
 
+
         if (error) {
+            console.error("Supabase signUp Error:", error.message, error);
             throw error;
+        }
+
+        if (data.user) {
+            await supabase.from("user_onboarding").insert({
+                user_id: data.user.id,
+                businessType: null,
+                hasEcommerce: false,
+                adGoal: null,
+                monthlyBudget: null,
+                socialPlatforms: [],
+                runsAds: false,
+                completed: false
+            });
         }
 
         return { errorMessage: null }

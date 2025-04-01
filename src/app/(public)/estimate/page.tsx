@@ -14,7 +14,7 @@ import { createClient } from "@/lib/utils/supabase/clients/browser";
 // Supabase Config
 const supabase = createClient();
 
-// ✅ Form Validation Schema using Zod
+// Form Validation Schema using Zod
 const formSchema = z.object({
     name: z.string().min(2, "Name is required"),
     email: z.string().email("Invalid email"),
@@ -127,12 +127,10 @@ export default function EstimateForm() {
 
         // Industry Classification
         const highTicketIndustries = ["Finance", "Real Estate", "Medical Devices", "Legal Services", "Luxury Goods"];
-        const midTicketIndustries = ["Technology", "Construction", "Marketing", "Consulting", "Architecture"];
-        const lowTicketIndustries = ["Retail", "E-commerce", "Beauty & Personal Care", "Fitness & Wellness", "Nail Salon"];
+        const lowToLowMidTicketIndustries = ["Technology", "Construction", "Marketing", "Consulting", "Architecture", "Retail", "E-commerce", "Beauty & Personal Care", "Fitness & Wellness", "Nail Salon"];
 
         const isHighTicket = highTicketIndustries.includes(industry);
-        const isMidTicket = midTicketIndustries.includes(industry);
-        const isLowTicket = lowTicketIndustries.includes(industry);
+        const isLowToMidTicket = lowToLowMidTicketIndustries.includes(industry);
 
         // Define minimums
         let minAdSpend = isHighTicket ? 1000 : 500;
@@ -149,7 +147,7 @@ export default function EstimateForm() {
             if (isHighTicket) {
                 adSpend = budget * 0.5; // 50% of the budget
                 serviceCharge = budget * 0.4; // 40% of the budget
-            } else if (isMidTicket) {
+            } else if (isLowToMidTicket) {
                 adSpend = budget * 0.55; // 55% of the budget
                 serviceCharge = budget * 0.35; // 35% of the budget
             } else {
@@ -241,17 +239,16 @@ export default function EstimateForm() {
                         <div className="space-y-4">
                             {/* Budget Section */}
                             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Monthly Ad Budget (Approximate or Exact)
+                                Monthly Ad Budget 
                             </label>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                                If you know your exact monthly budget, enter it below. Otherwise, select a range.
+                                Enter below your approximate budget per month.
                             </p>
 
                             {/* Exact Budget Input */}
                             <Input
                                 type="number"
                                 min="0"
-                                step="100"
                                 placeholder="Enter approximate budget"
                                 {...register("budget")}
                                 className="w-full bg-white dark:bg-gray-700"
@@ -461,7 +458,7 @@ export default function EstimateForm() {
                                 type="button"
                                 onClick={() => setStep(6)}
                             >
-                                Confirm & Get Estimate
+                                Confirm & Send Estimate
                             </Button>
                         )}
                         {step == 6 ? (

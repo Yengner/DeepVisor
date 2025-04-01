@@ -6,7 +6,7 @@ const IntegrationUnsuccessful = () => { // Make this into a component
     const router = useRouter();
 
     const handleRetry = () => {
-        router.push('/integration/meta'); // Redirect to retry the integration
+        router.push('/integration'); // Redirect to retry the integration
     };
 
     return (

@@ -1,0 +1,4 @@
+*.pkpass
+*.p12
+*.pem
+*.sqlite3

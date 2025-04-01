@@ -41,7 +41,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                     toast.error(errorMessage);
                 } else {
                     toast.success("Signed Up!");
-                    router.push('/integration');
+                    router.push('/onboarding');
                 }
             }
         } catch (error) {
@@ -54,7 +54,7 @@ export default function AuthForm({ type }: AuthFormProps) {
 
 
     return (
-        <div className="rounded-sm bg-white shadow-default dark:border-strokedark dark:bg-boxdark w-full">
+        <div className="rounded-sm bg-white shadow-default dark:border-strokedark dark:bg-boxdark w-full pt-28">
             <div className="flex flex-wrap items-center">
                 <div className="hidden w-full xl:block xl:w-1/2">
                     <div className="px-26 py-17.5 text-center">

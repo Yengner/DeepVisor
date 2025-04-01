@@ -1,4 +1,5 @@
 "use client";
+// This component gets the current connected Integrations from the user and match the ad accounts associated with that platform.
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";

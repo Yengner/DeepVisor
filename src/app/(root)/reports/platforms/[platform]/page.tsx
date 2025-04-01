@@ -1,7 +1,7 @@
 import PlatformPages from "@/components/platforms/PlatformPage";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
-import { getAdAccountsData } from "@/lib/api/getAdAccountsData";
-import { getTopCampaignsForAdAccounts } from "@/lib/api/getCampaignsForAdAccount";
+import { getAdAccountsData } from "@/lib/api/adAccount/getAdAccountsData";
+import { getTopCampaignsForAdAccounts } from "@/lib/api/adAccount/getCampaignsForAdAccount";
 import { getPlatformData } from "@/lib/api/getPlatformData";
 
 export default async function PlatformPage({ params }: { params: Promise<{ platform: string }> }) {

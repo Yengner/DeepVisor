@@ -20,13 +20,17 @@ export const footerDetails: {
         {
             text: "Contact Us",
             url: "/contact-us"
-        }
+        },
+        {
+            text: "Investment",
+            url: "/investor-relations"
+        },
     ],
     email: 'deepvisormarketing@gmail.com',
     telephone: '+1 (813) 992-0108',
     socials: {
-        // github: 'https://github.com',
-        // x: 'https://twitter.com/x',
+        github: 'https://github.com',
+        x: 'https://twitter.com/x',
         twitter: 'https://twitter.com/Twitter',
         facebook: 'https://facebook.com',
         // youtube: 'https://youtube.com',

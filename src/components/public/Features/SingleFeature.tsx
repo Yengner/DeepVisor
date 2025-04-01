@@ -34,7 +34,7 @@ const SingleFeature = ({ feature }: { feature: Feature }) => {
         viewport={{ once: true }}
         className="animate_top z-40 rounded-lg border border-gray-100 bg-gray-100 p-6 shadow-solid-3 transition-all hover:shadow-solid-4 xl:p-10"
       >
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-[4px] bg-primary">
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-[4px] bg-primary-accent">
           <Image src={icon} width={36} height={36} alt="title" />
         </div>
         <h3 className="mb-5 mt-7 text-xl font-semibold text-black xl:text-itemtitle">

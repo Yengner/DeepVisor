@@ -3,7 +3,7 @@ import { IPricing } from "@/types/public/types";
 export const tiers: IPricing[] = [
     {
         name: 'Solo Starter',
-        price: 10,
+        price: 55,
         features: [
             'Basic platform integration',
             'Access to insights for one platform',

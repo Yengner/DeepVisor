@@ -1,0 +1,33 @@
+{
+  "formatVersion" : 1,
+  "passTypeIdentifier" : "pass.com.deeppass.deepvisor",
+  "teamIdentifier" : "B97WPWSV26",
+  "authenticationToken": "dWW1s6IE1ZbwjK1h2xtYeW31i5LKwhaP0MtKrZH7KCmPoJMmP3gkklPjIrz7cgsr",
+  "webServiceURL" : "https://example.com/passes/",
+  "barcode" : {
+    "message" : "123456789",
+    "format" : "PKBarcodeFormatQR",
+    "messageEncoding" : "iso-8859-1"
+  },
+  "locations" : [
+    {
+      "longitude" : -122.3748889,
+      "latitude" : 37.6189722
+    },
+    {
+      "longitude" : -122.03118,
+      "latitude" : 37.33182
+    }
+  ],
+  "organizationName" : "Paw Planet",
+  "description" : "Paw Planet Coupon",
+  "logoText" : "Paw Planet",
+  "foregroundColor" : "rgb(255, 255, 255)",
+  "backgroundColor" : "rgb(0, 0, 0)",
+  "coupon" : {
+    "primaryFields" : [
+    ],
+    "auxiliaryFields" : [
+    ]
+  }
+}

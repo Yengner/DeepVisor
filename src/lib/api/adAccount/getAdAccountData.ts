@@ -1,5 +1,6 @@
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 
+// Fetching user Ad Accounts and relative information
 export async function getAdAccountData(platform: string, adAccountId: string, userId: string) {
     const supabase = await createSupabaseClient();
 

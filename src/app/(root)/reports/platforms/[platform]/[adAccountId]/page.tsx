@@ -1,7 +1,7 @@
 import { getLoggedInUser } from '@/lib/actions/user.actions';
 import { getAdAccountData } from '@/lib/api/adAccount/getAdAccountData';
 import { getCampaignData } from '@/lib/api/adAccount/getCampaignData';
-import AdAccountDashboard from '@/components/AdAccountDashboard';
+import AdAccountDashboard from '@/components/dashboard/ad_account/AdAccountDashboard';
 
 interface AdAccountPageProps {
   params: Promise<{

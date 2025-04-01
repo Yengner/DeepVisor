@@ -70,8 +70,7 @@ const Header: React.FC = () => {
                                 Demo
                             </button>
                         </div>
-                        <div className="group disabled-button">
-                            <div className="coming-soon-overlay">Coming Soon</div>
+                        <div className="group">
                             <Link
                                 href="/signup"
                                 className="text-black hover:text-primary-accent transition-colors flex items-center gap-2"
@@ -80,8 +79,7 @@ const Header: React.FC = () => {
                                 Sign Up
                             </Link>
                         </div>
-                        <div className="group disabled-button">
-                            <div className="coming-soon-overlay truncate">Coming Soon</div>
+                        <div className="group">
                             <Link
                                 href="/login"
                                 className="text-black hover:text-primary-accent transition-colors flex items-center gap-2"

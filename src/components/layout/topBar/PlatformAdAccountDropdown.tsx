@@ -21,6 +21,7 @@ export default async function PlatformAdAccountDropdown({ loggedInUser }: Platfo
 
   const userId = loggedInUser?.id;
 
+  // Fetching platform integrations main id and the platform name
   const { data: platforms, error: platformError } = await supabase
     .from("platform_integrations")
     .select("id, platform_name")
@@ -30,6 +31,7 @@ export default async function PlatformAdAccountDropdown({ loggedInUser }: Platfo
     console.error("Error fetching platforms:", platformError.message);
   }
 
+  // getting the ad account data from user
   const { data: adAccounts, error: adAccountError } = await supabase
     .from("ad_accounts")
     .select("id, name, platform_integration_id, ad_account_id")

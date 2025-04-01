@@ -196,7 +196,7 @@ export default function InvestorPage() {
                 </div>
                 <a
                     href="https://calendar.app.google/6ukZKMWvsypeBJiWA" // Update with your link
-                    className="mt-8 inline-block px-8 py-3 bg-secondary text-white font-semibold rounded-md shadow hover:bg-secondary-dark transition"
+                    className="mt-8 inline-block px-8 py-3 bg-primary-accent text-white font-semibold rounded-md shadow hover:bg-secondary-dark transition"
                 >
                     Schedule a Meeting
                 </a>

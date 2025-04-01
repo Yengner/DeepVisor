@@ -11,7 +11,7 @@ import {
   Cog6ToothIcon,
   ArrowUpTrayIcon
 } from '@heroicons/react/24/outline';
-import LogoutButton from '../LogoutButton';
+import LogoutButton from './LogoutButton';
 
 const Sidebar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -20,11 +20,11 @@ const Sidebar = () => {
 
   const menuItems = [
     { name: 'Home', icon: <HomeIcon className="w-6 h-6" />, route: '/dashboard/platforms' },
+    { name: 'Campaigns', icon: <PresentationChartLineIcon className="w-6 h-6" />, route: '/campaigns' },
     { name: 'Reports', icon: <ChartBarIcon className="w-6 h-6" />, route: '/reports' },
     { name: 'Upload', icon: <ArrowUpTrayIcon className="w-6 h-6" />, route: '/upload' },
     { name: 'Integration', icon: <PuzzlePieceIcon className="w-6 h-6" />, route: '/integration' },
     { name: 'DeepPass', icon: <CreditCardIcon className="w-6 h-6" />, route: '/deeppass' },
-    { name: 'Campaigns', icon: <PresentationChartLineIcon className="w-6 h-6" />, route: '/campaigns' },
   ];
 
   const handleNavigation = (route: string) => {

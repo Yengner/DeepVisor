@@ -9,6 +9,15 @@ interface AdAccount {
   amount_spent?: string;
 }
 
+interface PageAccount {
+  id: string;
+  name: string;
+  access_token: string;
+  instagram_business_account: {
+    id: string;
+  };
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
@@ -46,13 +55,11 @@ export async function GET(request: Request) {
       issued_at: date,
     };
 
-    // Get the Supabase client
     const supabase = await createSupabaseClient();
 
-    // Simulate getting user_id from session or authenticated context
     const loggedIn = await getLoggedInUser();
     const userId = loggedIn.id;
-    
+
     // Upsert into the platform_integration table
     const upsertData = {
       user_id: userId,
@@ -75,6 +82,9 @@ export async function GET(request: Request) {
     const platformIntegrationId = data.id; // Dynamically use this
 
     const adAccountsUrl = `https://graph.facebook.com/v21.0/me/adaccounts?fields=id,name,account_status,amount_spent,users`;
+    const pageAccountUrl = `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,account,access_token,instagram_business_account`;
+
+    // Fetch ad accounts
     const adAccountsResponse = await fetch(adAccountsUrl, {
       headers: {
         Authorization: `Bearer ${tokenData.access_token}`,
@@ -86,7 +96,19 @@ export async function GET(request: Request) {
       throw new Error(errorDetails.error?.message || 'Failed to fetch ad accounts');
     }
 
+    const pageAccountResponse = await fetch(pageAccountUrl, {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+      },
+    });
+
+    if (!pageAccountResponse.ok) {
+      const errorDetails = await pageAccountResponse.json();
+      throw new Error(errorDetails.error?.message || 'Failed to fetch page accounts');
+    }
+
     const adAccountsData: { data: AdAccount[] } = await adAccountsResponse.json();
+    const pageAccountsData: { data: PageAccount[] } = await pageAccountResponse.json();
 
     // Save ad accounts in the database
     const adAccounts = adAccountsData.data.map((account) => ({
@@ -101,6 +123,28 @@ export async function GET(request: Request) {
       updated_at: date,
     }));
 
+    // Save page accounts in the database
+    const pageAccounts = pageAccountsData.data.map((account) => ({
+      user_id: userId,
+      platform_integration_id: platformIntegrationId,
+      page_id: account.id,
+      name: account.name,
+      access_token: account.access_token,
+      instagram_account_id: account.instagram_business_account?.id || null,
+      created_at: date,
+    }));
+
+
+    // Upsert ad accounts and page accounts into the database
+    const { error: pageAccountsError } = await supabase
+      .from('meta_page_accounts')
+      .upsert(pageAccounts);
+
+    if (pageAccountsError) {
+      console.error('Supabase page account upsert error:', pageAccountsError);
+      throw new Error('Failed to save page accounts to Supabase');
+    }
+
     const { error: adAccountsError } = await supabase
       .from('ad_accounts')
       .upsert(adAccounts);
@@ -110,6 +154,21 @@ export async function GET(request: Request) {
       throw new Error('Failed to save ad accounts to Supabase');
     }
 
+    const syncResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/sync_user_meta_posts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, 
+      },
+      body: JSON.stringify({ userId }),
+    });
+    
+    if (!syncResponse.ok) {
+      console.error('❌ Failed to invoke sync_user_meta_posts function:', await syncResponse.text());
+    } else {
+      console.log('✅ Successfully triggered sync_user_meta_posts for user:', userId);
+    }
+    
     // Redirect to the success page with a query parameter for the ad accounts
     const adAccountsEncoded = encodeURIComponent(JSON.stringify(adAccountsData.data));
     return NextResponse.redirect(

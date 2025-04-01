@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useReportsSidebar } from "./ReportSidebarContext";
 import DynamicReportPDF from "./pdf_generator/DynamicReportPDF";
-import dynamic from "next/dynamic";
+// import dynamic from "next/dynamic";
 import TopAdAccountsTable from "./TopAdAccounts";
 import TopCampaignsTable from "./TopCampaignsTable";
 import TopAdSetsTable from "./TopAdSetTable";
@@ -17,14 +17,14 @@ import TopAdsTable from "./TopAdsTable";
 
 //   }
 // );
-const PDFViewer = dynamic(
-  () => import('@react-pdf/renderer').then((mod) => mod.PDFViewer),
-  {
-    ssr: false,
-    loading: () => <p>Loading...</p>,
+// const PDFViewer = dynamic(
+//   () => import('@react-pdf/renderer').then((mod) => mod.PDFViewer),
+//   {
+//     ssr: false,
+//     loading: () => <p>Loading...</p>,
 
-  }
-);
+//   }
+// );
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MainReport = ({ metrics }: { metrics: any }) => {
@@ -69,21 +69,19 @@ const MainReport = ({ metrics }: { metrics: any }) => {
         } `}
     >
       {/* Header Section */}
-      <div className="mb-8">
+      <div className="mb-2">
         <h1 className="text-2xl font-bold text-gray-900">Reports Overview</h1>
         <p className="text-gray-600 mt-2">
           View and analyze data across all platforms and ad accounts.
         </p>
       </div>
-
-      {/* Filters Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"> */}
         {/* Filters Panel */}
-        <div className="bg-white shadow-md rounded-lg p-4 border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Filters</h2>
+        {/* <div className="bg-white shadow-md rounded-lg p-4 border border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Filters</h2> */}
 
           {/* Platform Selection */}
-          <div className="mb-6">
+          {/* <div className="mb-6">
             <h3 className="text-sm font-medium text-gray-700 mb-2">Select Platform</h3>
             <div className="grid grid-cols-3 gap-2">
               {dummyData.platforms.map((platform) => (
@@ -99,10 +97,10 @@ const MainReport = ({ metrics }: { metrics: any }) => {
                 </button>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Ad Account Selection */}
-          {selectedPlatform && (
+          {/* {selectedPlatform && (
             <div className="mb-6">
               <h3 className="text-sm font-medium text-gray-700 mb-2">
                 Select Ad Account ({selectedPlatform})
@@ -124,10 +122,10 @@ const MainReport = ({ metrics }: { metrics: any }) => {
                   ))}
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Time Range Selection */}
-          <div>
+          {/* <div>
             <h3 className="text-sm font-medium text-gray-700 mb-2">Select Time Range</h3>
             <div className="grid grid-cols-3 gap-2">
               {["7", "30", "90"].map((range) => (
@@ -144,16 +142,16 @@ const MainReport = ({ metrics }: { metrics: any }) => {
               ))}
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* PDF Report Section */}
-        <div className="bg-white shadow-md rounded-lg p-4 border border-gray-200">
+        {/* <div className="bg-white shadow-md rounded-lg p-4 border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">PDF Report</h2>
           <PDFViewer style={{ width: "100%", height: "300px" }}>
             <DynamicReportPDF data={dummyData} />
           </PDFViewer>
-        </div>
-      </div>
+        </div> */}
+      {/* </div> */}
 
       {/* Top Ad Accounts, Campaigns, Adsets, Ads */}
       <div className="pt-10 grid grid-cols-2 lg:grid-cols-3 gap-6">
