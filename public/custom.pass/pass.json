@@ -2,7 +2,6 @@
   "formatVersion" : 1,
   "passTypeIdentifier" : "pass.com.deeppass.deepvisor",
   "teamIdentifier" : "B97WPWSV26",
-  "authenticationToken": "dWW1s6IE1ZbwjK1h2xtYeW31i5LKwhaP0MtKrZH7KCmPoJMmP3gkklPjIrz7cgsr",
   "webServiceURL" : "https://example.com/passes/",
   "barcode" : {
     "message" : "123456789",

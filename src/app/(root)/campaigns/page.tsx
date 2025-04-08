@@ -1,66 +1,70 @@
-import CampaignTable from "@/components/campaigns/CampaignTable";
+import CampaignTabs from "@/components/campaigns/CampaignTabs";
+import { getLoggedInUser } from "@/lib/actions/user.actions";
+import { getAllCampaigns } from "@/lib/api/adAccount/getAllCampaigns";
+import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 
-const dummyCampaigns = [
-  {
-    id: '1',
-    name: 'Test – AlexaStyles | Tailored Leads | Whatsapp',
-    delivery: false,
-    type: 'Manual' as const,
-    status: 'PAUSED',
-    objective: 'MESSAGES',
-    startDate: '2025-01-10T13:00:00-0500',
-    endDate: '2025-02-10T13:00:00-0500',
-    attribution: '7-day click or view',
-    results: '23 Conversations',
-    reach: 1200,
-    views: 300,
-    impressions: 2000,
-    deal: 8,
-    nodeal: 15,
-    frequency: 1.67,
-    costPerResult: '$4.32',
-  },
-  {
-    id: '2',
-    name: 'AI Campaign – DeepVisor Monthly Leads',
-    delivery: true,
-    type: 'AI Auto' as const,
-    status: 'ACTIVE',
-    objective: 'LEAD_GENERATION',
-    startDate: '2025-03-01T00:00:00-0500',
-    endDate: null,
-    attribution: '7-day click or view',
-    results: '58 Leads',
-    reach: 3400,
-    views: 920,
-    impressions: 6400,
-    deal: 22,
-    nodeal: 36,
-    frequency: 1.88,
-    costPerResult: '$2.19',
-  },
-  {
-    id: '3',
-    name: 'Semi-Auto – Promo Campaign for Spring',
-    delivery: true,
-    type: 'Semi-Auto' as const,
-    status: 'ACTIVE',
-    objective: 'CONVERSIONS',
-    startDate: '2025-03-12T08:00:00-0500',
-    endDate: '2025-04-12T08:00:00-0500',
-    attribution: '1-day click',
-    results: '12 Purchases',
-    reach: 800,
-    views: 210,
-    impressions: 1400,
-    deal: 5,
-    nodeal: 7,
-    frequency: 1.75,
-    costPerResult: '$7.89',
+export default async function CampaignPage() {
+  // Fetch ad account data
+  const loggedIn = await getLoggedInUser();
+  const userId = loggedIn?.id;
+  const supabase = await createSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("ad_accounts")
+    .select("ad_account_id")
+    .eq("user_id", userId)
+    .single();
+
+  if (error || !data) {
+    return <div>Error loading ad account data.</div>;
   }
-];
+
+  // Get all campaigns for platform "meta" for the given ad account
+  const campaignsData = await getAllCampaigns("meta", data.ad_account_id);
+  if (!campaignsData || campaignsData.length === 0) {
+    return <div>Error loading campaign data.</div>;
+  }
+
+  // Map each campaign from Supabase to the shape expected by CampaignTable
+  const formattedCampaigns = campaignsData.map((campaign: any) => {
+    const raw = campaign.raw_data;
+    let insights = null;
+    if (raw && raw.insights && raw.insights.data && raw.insights.data.length > 0) {
+      insights = raw.insights.data[0];
+    }
+    const reach = insights ? Number(insights.reach) : 0;
+    const impressions = insights ? Number(insights.impressions) : 0;
+    const clicks = insights ? Number(insights.clicks) : 0;
+    const spend = insights ? Number(insights.spend) : 0;
 
 
-export default function CampaignPage() {
-  return <CampaignTable campaigns={dummyCampaigns} />;
+    const conversionActions = campaign.leads + campaign.messages
+    const costPerResult = conversionActions > 0 ? `$${(spend / conversionActions).toFixed(2)}` : "$0.00";
+
+    return {
+      id: campaign.campaign_id,
+      name: campaign.name,
+      delivery: campaign.status === "ACTIVE",
+      type: "Manual" as "Manual",
+      status: campaign.status,
+      objective: campaign.objective,
+      startDate: campaign.start_date,
+      endDate: campaign.end_date || "No End Date",
+      attribution: "7-day click or view", // Modify if you have a different attribution model
+      spend: campaign.spend,
+      results: conversionActions ? `${conversionActions} Leads` : "0 Leads",
+      reach: campaign.reach,
+      clicks: campaign.clicks, 
+      impressions: campaign.impressions,
+      frequency: reach ? (impressions / reach).toFixed(2) : "0",
+      costPerResult: costPerResult,
+      cpm: campaign.cpm,
+      ctr: campaign.ctr,
+      cpc: campaign.cpc,
+      platform: campaign.platform_name || "meta",
+
+    };
+  });
+  return <CampaignTabs campaigns={formattedCampaigns} />;
+
 }

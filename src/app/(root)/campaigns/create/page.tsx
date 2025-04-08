@@ -6,6 +6,7 @@ import { CampaignFormProvider } from "@/hooks/context/CampaignFormProvider";
 
 
 export default function CampaignCreatePage() {
+  
   return (
     <CampaignFormProvider>
       <CreateCampaign />

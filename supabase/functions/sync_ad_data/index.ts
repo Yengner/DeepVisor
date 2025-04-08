@@ -20,7 +20,7 @@ Deno.serve(async () => {
         name,
         industry_id,
         platform_integration_id,
-        platform_integrations 
+        platform_integrations (
           access_token,
           platform_name
         )
@@ -58,6 +58,7 @@ Deno.serve(async () => {
             }));
 
           console.log(campaignsToUpsert)
+
           const { error: campaignsError } = await supabase
             .from("campaign_metrics")
             .upsert(campaignsToUpsert, { onConflict: ["campaign_id"] }); // Ensure campaign_id is unique
@@ -65,6 +66,40 @@ Deno.serve(async () => {
           if (campaignsError) throw campaignsError;
 
           console.log(`Upserted ${campaignsToUpsert.length} campaigns for ad account: ${adAccount.name}`);
+
+          ////////////////////////////
+          const incomingCampaignIds = maximumMetrics
+            .map(c => c.campaign_id)
+            .filter(id => !!id);  // filter out undefined/null ids, if any
+
+          // Fetch current campaign IDs in our DB for this ad_account and platform 'meta'
+          const { data: currentCampaigns, error: fetchError } = await supabase
+            .from('campaign_metrics')
+            .select('campaign_id')
+            .eq('ad_account_id', adAccount.ad_account_id)
+
+          if (fetchError) {
+            console.error(`Error fetching existing campaigns for ${adAccount.ad_account_id}:`, fetchError);
+          } else if (currentCampaigns) {
+            // Determine which campaign IDs in DB are not present in Meta's latest list
+            const currentIds = currentCampaigns.map(rec => rec.campaign_id);
+            const toDeleteIds = currentIds.filter(id => !incomingCampaignIds.includes(id));
+
+            if (toDeleteIds.length > 0) {
+              // Delete only the campaigns that are no longer in Meta's list
+              const { error: deleteError } = await supabase
+                .from('campaign_metrics')
+                .delete()
+                .in('campaign_id', toDeleteIds)              // delete these specific campaign IDs
+                .eq('ad_account_id', adAccount.ad_account_id)          // for the current ad account
+
+              if (deleteError) {
+                console.error(`Failed to delete old campaigns for ${adAccount.ad_account_id}:`, deleteError);
+              }
+            }
+          }
+          ///////////////////////////////
+
         }
 
         for (const campaign of maximumMetrics) {

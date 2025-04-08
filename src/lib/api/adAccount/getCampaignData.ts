@@ -5,13 +5,13 @@ export async function getCampaignData(platform: string, adAccountId: string) {
 
     const { data, error } = await supabase
         .from('campaign_metrics')
-        .select('campaign_id, name, status, objective, raw_data, start_date, end_date, today_metrics, yesterday_metrics, last_7d_metrics, last_30d_metrics, this_month_metrics, last_month_metrics')
+        .select('campaign_id, name, status, objective, raw_data, start_date, platform_name, end_date, today_metrics, yesterday_metrics, last_7d_metrics, last_30d_metrics, this_month_metrics, last_month_metrics')
         .eq('platform_name', platform)
         .eq('ad_account_id', adAccountId)
 
     if (error) {
         console.error('Error fetching platform data:', error);
-        return null;
+        throw new Error(`Failed to fetch campaign data: ${error.message}`);
     }
 
     return {

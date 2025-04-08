@@ -59,6 +59,7 @@ export async function POST(req: Request) {
             },
         }, {
             organizationName: businessName,
+            authenticationToken: process.env.TEMP_ACCESSTOKEN,
             logoText: businessName,
             serialNumber: (Math.random()).toLocaleString(),
             description: `${businessName} Discount`,
