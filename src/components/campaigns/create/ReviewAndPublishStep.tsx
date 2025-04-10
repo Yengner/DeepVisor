@@ -1,5 +1,6 @@
 import { useCreateCampaignForm } from "@/hooks/context/CampaignFormContext";
 import { createMetaCampaign } from "@/lib/actions/createMetaCampaign";
+import { getLoggedInUser } from "@/lib/actions/user.actions";
 import { useState } from "react";
 
 export default function ReviewAndPublishStep() {
@@ -8,14 +9,27 @@ export default function ReviewAndPublishStep() {
     const [error, setError] = useState<string | null>(null);
 
     const handlePublish = async () => {
+        const loggedIn = await getLoggedInUser();
+        const userId = loggedIn?.id;
         setLoading(true);
         setError(null);
 
         const res = await createMetaCampaign();
 
+        const response = await fetch('/api/campaign/refreshCampaignData', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userId }),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to refresh campaigns data');
+        }
+
+
         if (res.success) {
-            // Optional: save campaign ID in DB or state if needed
-            window.location.href = '/campaigns?status=created&id=';
+            window.location.href = '/campaigns';
         } else {
             setError('Failed to publish campaign.');
             setLoading(false);

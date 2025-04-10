@@ -65,6 +65,6 @@ export default async function CampaignPage() {
 
     };
   });
-  return <CampaignTabs campaigns={formattedCampaigns} />;
+  return <CampaignTabs campaigns={formattedCampaigns} userId={userId}/>;
 
 }

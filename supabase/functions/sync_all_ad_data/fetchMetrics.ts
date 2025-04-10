@@ -1,4 +1,4 @@
-import { fetchMetaCampaignMetrics, fetchMetaAdSetMetrics, fetchMetaAdMetrics } from "/Users/yb/Desktop/deepvisor/supabase/functions/sync_ad_data/platforms/meta.ts";
+import { fetchMetaCampaignMetrics, fetchMetaAdSetMetrics, fetchMetaAdMetrics } from "/Users/yb/Desktop/deepvisor/supabase/functions/sync_all_ad_data/platforms/meta.ts";
 // import { fetchGoogleCampaignMetrics, fetchGoogleAdSetMetrics, fetchGoogleAdMetrics } from "./platforms/google.ts";
 
 export async function fetchCampaignMetricsByPlatform(platform_name, ad_account_id, accessToken, industry) {

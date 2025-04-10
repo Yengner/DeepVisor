@@ -1,6 +1,6 @@
 import "https://deno.land/std@0.191.0/dotenv/load.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js";
-import { fetchCampaignMetricsByPlatform, fetchAdSetMetricsByPlatform, fetchAdMetricsByPlatform } from "/Users/yb/Desktop/deepvisor/supabase/functions/sync_ad_data/fetchMetrics.ts";
+import { fetchCampaignMetricsByPlatform, fetchAdSetMetricsByPlatform, fetchAdMetricsByPlatform } from "/Users/yb/Desktop/deepvisor/supabase/functions/sync_all_ad_data/fetchMetrics.ts";
 
 Deno.serve(async () => {
   const supabase = createClient(

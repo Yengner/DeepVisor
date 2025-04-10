@@ -3,6 +3,7 @@
 import { Switch } from "@headlessui/react";
 import { cn } from "@/lib/utils/utils";
 import { useRouter } from "next/navigation";
+import React from "react";
 
 interface CampaignObjects {
     id: string;
@@ -32,6 +33,7 @@ interface CampaignTableProps {
     selectedCampaignId?: string;
     onSelectCampaign: (campaignId: string) => void;
     onToggleCampaign: (campaignId: string, newStatus: boolean) => void;
+    onDeleteCampaign: (campaignId: string) => void;
 }
 
 const getPlatformImage = (platform?: string) => {
@@ -46,15 +48,16 @@ const getPlatformImage = (platform?: string) => {
     }
 };
 
+
 export default function CampaignTable({
     campaigns,
     selectedCampaignId,
     onSelectCampaign,
     onToggleCampaign,
+    onDeleteCampaign,
 }: CampaignTableProps) {
     const router = useRouter();
 
-    // Blue check icon (SVG)
     const CheckIcon = () => (
         <svg
             className="w-4 h-4 text-white"
@@ -109,76 +112,119 @@ export default function CampaignTable({
                     </thead>
                     <tbody>
                         {campaigns.map((campaign) => (
-                            <tr
-                                key={campaign.id}
-                                className={cn(
-                                    "border-b cursor-pointer hover:bg-gray-50",
-                                    selectedCampaignId === campaign.id ? "bg-blue-50" : ""
-                                )}
-                                onClick={() => onSelectCampaign(campaign.id)}
-                            >
-                                {/* Select indicator */}
-                                <td className="px-4 py-2 text-center">
-                                    {selectedCampaignId === campaign.id ? (
-                                        <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                                            <CheckIcon />
-                                        </div>
-                                    ) : (
-                                        <div className="w-5 h-5 rounded-full border border-gray-300" />
+                            <React.Fragment key={campaign.id}>
+
+                                <tr
+                                    key={campaign.id}
+                                    className={cn(
+                                        "border-b cursor-pointer hover:bg-gray-50",
+                                        selectedCampaignId === campaign.id ? "bg-blue-50" : ""
                                     )}
-                                </td>
-
-                                {/* Platform Icon */}
-                                <td className="px-4 py-2">
-                                    <img
-                                        src={getPlatformImage(campaign.platform)}
-                                        alt={campaign.platform || "Meta"}
-                                        className="w-8 h-8 rounded-full"
-                                    />
-                                </td>
-
-                                {/* Off / On toggle */}
-                                <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
-                                    <Switch
-                                        checked={campaign.delivery}
-                                        onChange={(checked) => onToggleCampaign(campaign.id, checked)}
-                                        className={cn(
-                                            campaign.delivery ? "bg-emerald-600" : "bg-gray-300",
-                                            "relative inline-flex h-5 w-9 items-center rounded-full transition"
+                                    onClick={() => onSelectCampaign(campaign.id)}
+                                >
+                                    {/* Select indicator */}
+                                    <td className="px-4 py-2 text-center">
+                                        {selectedCampaignId === campaign.id ? (
+                                            <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                                                <CheckIcon />
+                                            </div>
+                                        ) : (
+                                            <div className="w-5 h-5 rounded-full border border-gray-300" />
                                         )}
-                                    >
-                                        <span className="sr-only">Enable Campaign</span>
-                                        <span
-                                            className={cn(
-                                                campaign.delivery ? "translate-x-5" : "translate-x-1",
-                                                "inline-block h-3 w-3 transform rounded-full bg-white transition"
-                                            )}
-                                        />
-                                    </Switch>
-                                </td>
+                                    </td>
 
-                                {/* Campaign details */}
-                                <td className="px-4 py-2 font-medium truncate max-w-[350px] text-emerald-700 hover:underline">
-                                    {campaign.name}
-                                </td>
-                                <td className="px-4 py-2">{campaign.type}</td>
-                                <td className="px-4 py-2">{campaign.status}</td>
-                                <td className="px-4 py-2">{campaign.objective}</td>
-                                <td className="px-4 py-2 truncate">{campaign.startDate}</td>
-                                <td className="px-4 py-2 truncate">{campaign.endDate ?? "—"}</td>
-                                <td className="px-4 py-2">{campaign.delivery ? "On" : "Off"}</td>
-                                <td className="px-4 py-2">{campaign.attribution}</td>
-                                <td className="px-4 py-2">{campaign.spend}</td>
-                                <td className="px-4 py-2">{campaign.results}</td>
-                                <td className="px-4 py-2">{(campaign.reach)?.toLocaleString()}</td>
-                                <td className="px-4 py-2">{(campaign.clicks)?.toLocaleString()}</td>
-                                <td className="px-4 py-2">{(campaign.impressions)?.toLocaleString()}</td>
-                                <td className="px-4 py-2">{campaign.frequency}</td>
-                                <td className="px-4 py-2">{campaign.costPerResult}</td>
-                                <td className="px-4 py-2">{campaign.cpm}</td>
-                                <td className="px-4 py-2">{campaign.ctr}</td>
-                                <td className="px-4 py-2">{campaign.cpc}</td>
-                            </tr>
+                                    {/* Platform Icon */}
+                                    <td className="px-4 py-2">
+                                        <img
+                                            src={getPlatformImage(campaign.platform)}
+                                            alt={campaign.platform || "Meta"}
+                                            className="w-8 h-8 rounded-full"
+                                        />
+                                    </td>
+
+                                    {/* Off / On toggle */}
+                                    <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                                        <Switch
+                                            checked={campaign.delivery}
+                                            onChange={(checked) => onToggleCampaign(campaign.id, checked)}
+                                            className={cn(
+                                                campaign.delivery ? "bg-emerald-600" : "bg-gray-300",
+                                                "relative inline-flex h-5 w-9 items-center rounded-full transition"
+                                            )}
+                                        >
+                                            <span className="sr-only">Enable Campaign</span>
+                                            <span
+                                                className={cn(
+                                                    campaign.delivery ? "translate-x-5" : "translate-x-1",
+                                                    "inline-block h-3 w-3 transform rounded-full bg-white transition"
+                                                )}
+                                            />
+                                        </Switch>
+                                    </td>
+
+                                    {/* Campaign details */}
+                                    <td className="px-4 py-2 font-medium truncate max-w-[350px] text-emerald-700 hover:underline">
+                                        {campaign.name}
+                                    </td>
+                                    <td className="px-4 py-2">{campaign.type}</td>
+                                    <td className="px-4 py-2">{campaign.status}</td>
+                                    <td className="px-4 py-2">{campaign.objective}</td>
+                                    <td className="px-4 py-2 truncate">{campaign.startDate}</td>
+                                    <td className="px-4 py-2 truncate">{campaign.endDate ?? "—"}</td>
+                                    <td className="px-4 py-2">{campaign.delivery ? "On" : "Off"}</td>
+                                    <td className="px-4 py-2">{campaign.attribution}</td>
+                                    <td className="px-4 py-2">{campaign.spend}</td>
+                                    <td className="px-4 py-2">{campaign.results}</td>
+                                    <td className="px-4 py-2">{(campaign.reach)?.toLocaleString()}</td>
+                                    <td className="px-4 py-2">{(campaign.clicks)?.toLocaleString()}</td>
+                                    <td className="px-4 py-2">{(campaign.impressions)?.toLocaleString()}</td>
+                                    <td className="px-4 py-2">{campaign.frequency}</td>
+                                    <td className="px-4 py-2">{campaign.costPerResult}</td>
+                                    <td className="px-4 py-2">{campaign.cpm}</td>
+                                    <td className="px-4 py-2">{campaign.ctr}</td>
+                                    <td className="px-4 py-2">{campaign.cpc}</td>
+                                </tr>
+
+                                {/* Bottom row for selected campaign */}
+                                {selectedCampaignId === campaign.id && (
+                                    <tr
+                                        className="bg-gray-50">
+                                        <td colSpan={21} className="px-4 py-3">
+                                            <div className="flex items-center space-x-4">
+                                                <div className="text-sm text-gray-600">
+                                                    Selected campaign: <span className="font-semibold">{campaign.name}</span>
+                                                </div>
+                                                <div className="space-x-2">
+                                                    <button
+                                                        className="px-1 rounded-md text-sm  text-primary-accent hover:text-[#788ebb]"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            // Go to edit page
+                                                            router.push(`/campaigns/${campaign.id}/edit`);
+                                                        }}
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        className="px-1 rounded-md text-sm text-red-500 hover:text-red-200"
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            const confirm = window.confirm(`Are you sure you want to delete ${campaign.name}?`);
+                                                            if (!confirm) return;
+                                                            else {
+                                                                onDeleteCampaign?.(campaign.id);
+                                                            }
+                                                        }}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </React.Fragment>
+
                         ))}
                     </tbody>
                 </table>
