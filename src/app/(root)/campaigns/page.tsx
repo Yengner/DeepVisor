@@ -50,7 +50,7 @@ export default async function CampaignPage() {
       objective: campaign.objective,
       startDate: campaign.start_date,
       endDate: campaign.end_date || "No End Date",
-      attribution: "7-day click or view", // Modify if you have a different attribution model
+      attribution: "7-day click or view", 
       spend: campaign.spend,
       results: conversionActions ? `${conversionActions} Leads` : "0 Leads",
       reach: campaign.reach,

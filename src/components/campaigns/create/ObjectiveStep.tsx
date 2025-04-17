@@ -6,17 +6,17 @@ import { useCreateCampaignForm } from "@/hooks/context/CampaignFormContext";
 const objectiveOptions = [
   {
     label: 'Leads',
-    value: 'Leads',
+    value: 'OUTCOME_LEADS',
     description: 'Generate leads through Messenger, Forms, WhatsApp, or Calls.',
   },
   {
     label: 'Reach',
-    value: 'Reach',
+    value: 'OUTCOME_REACH',
     description: 'Show your ads to the maximum number of people in your audience.',
   },
   {
     label: 'Engagement',
-    value: 'Engagement',
+    value: 'OUTCOME_ENGAGEMENT',
     description: 'Get more likes, comments, shares, or post saves.',
   },
   {
@@ -31,25 +31,25 @@ const leadMethods = ['Messenger', 'Forms', 'WhatsApp', 'Calls'];
 export default function ObjectiveStep() {
   const { formData, updateFormData, goToNextStep, goToPreviousStep } = useCreateCampaignForm();
   const [selected, setSelected] = useState(formData.objective || '');
-  const [leadOption, setLeadOption] = useState(formData.leadType || '');
+  const [leadOption, setLeadOption] = useState(formData.optimization_goal || '');
 
   const handleSelect = (objective: string) => {
     setSelected(objective);
     updateFormData({ objective });
 
     // Reset lead option if switching objectives
-    if (objective !== 'Leads') {
-      updateFormData({ leadType: undefined });
+    if (objective !== 'OUTCOME_LEADS') {
+      updateFormData({ optimization_goal: undefined });
       setLeadOption('');
     }
   };
 
   const handleLeadOption = (option: string) => {
     setLeadOption(option);
-    updateFormData({ leadType: option as any });
+    updateFormData({ optimization_goal: option as any });
   };
 
-  const canContinue = selected === 'Leads' ? !!leadOption : !!selected;
+  const canContinue = selected === 'OUTCOME_LEADS' ? !!leadOption : !!selected;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -88,18 +88,17 @@ export default function ObjectiveStep() {
           }
         </p>
 
-        {selected === 'Leads' && (
+        {selected === 'OUTCOME_LEADS' && (
           <>
             <h4 className="font-medium text-sm mb-2">How do you want to collect leads?</h4>
             <div className="flex flex-wrap gap-2">
               {leadMethods.map((method) => (
                 <button
                   key={method}
-                  className={`px-3 py-1 rounded border text-sm ${
-                    leadOption === method
+                  className={`px-3 py-1 rounded border text-sm ${leadOption === method
                       ? 'bg-emerald-600 text-white border-emerald-600'
                       : 'bg-white border-gray-300 hover:bg-gray-100'
-                  }`}
+                    }`}
                   onClick={() => handleLeadOption(method)}
                 >
                   {method}

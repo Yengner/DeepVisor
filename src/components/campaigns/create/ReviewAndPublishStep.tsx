@@ -14,7 +14,7 @@ export default function ReviewAndPublishStep() {
         setLoading(true);
         setError(null);
 
-        const res = await createMetaCampaign();
+        const res = await createMetaCampaign(formData);
 
         const response = await fetch('/api/campaign/refreshCampaignData', {
             method: 'POST',

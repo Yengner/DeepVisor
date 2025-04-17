@@ -148,18 +148,25 @@ export default function CampaignTable({
                                             checked={campaign.delivery}
                                             onChange={(checked) => onToggleCampaign(campaign.id, checked)}
                                             className={cn(
-                                                campaign.delivery ? "bg-emerald-600" : "bg-gray-300",
-                                                "relative inline-flex h-5 w-9 items-center rounded-full transition"
+                                                "relative inline-flex h-5 w-9 items-center rounded-full",
+                                                // animate only background‐color, 200ms, ease‑in‑out
+                                                campaign.delivery
+                                                    ? "bg-emerald-600"
+                                                    : "bg-gray-300",
+                                                "transition-colors duration-200 ease-in-out"
                                             )}
                                         >
                                             <span className="sr-only">Enable Campaign</span>
                                             <span
                                                 className={cn(
+                                                    // move from x=1 to x=5
                                                     campaign.delivery ? "translate-x-5" : "translate-x-1",
-                                                    "inline-block h-3 w-3 transform rounded-full bg-white transition"
+                                                    // animate only transform, 200ms, ease‑in‑out
+                                                    "inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200 ease-in-out"
                                                 )}
                                             />
                                         </Switch>
+
                                     </td>
 
                                     {/* Campaign details */}

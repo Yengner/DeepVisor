@@ -6,13 +6,18 @@ import { CampaignFormContext, CreateCampaignForm } from './CampaignFormContext';
 export function CampaignFormProvider({ children }: { children: React.ReactNode }) {
   const [formData, setFormData] = useState<CreateCampaignForm>({
     type: null,
+
+    // Campaign Fields
+    campaignName: '',
     objective: '',
-    leadType: '',
-    name: '',
+    optimization_goal: '',
+    budget: 0,
+
+    // Ad Set Fields
     startDate: '',
     endDate: '',
-    budget: 0,
-    location: '',
+    city: '',
+    location: 0,
     targeting: '',
     creativeType: 'AI',
     caption: '',

@@ -4,13 +4,15 @@ import { createContext, useContext } from 'react';
 
 export interface CreateCampaignForm {
   type: 'AI Auto' | 'Semi-Auto' | 'Manual' | null;
+  campaignName: string;
   objective: string;
-  leadType: string;
-  name: string;
+  optimization_goal?: string;
+  adsetName?: string; // Optional for AI Auto, or Semi-Auto
   startDate: string;
   endDate: string;
   budget: number;
-  location: string;
+  city?: string; // City for location targeting unless custom location is used
+  location: number;
   targeting: string;
   creativeType: 'AI' | 'Manual';
   selectedCreativeId?: string;

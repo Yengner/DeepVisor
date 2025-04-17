@@ -6,13 +6,12 @@ import { useCreateCampaignForm } from "@/hooks/context/CampaignFormContext";
 export default function CampaignDetailsStep() {
     const { formData, updateFormData, goToNextStep, goToPreviousStep } = useCreateCampaignForm();
 
-    const [errors, setErrors] = useState<{ name?: boolean; start?: boolean; end?: boolean }>({});
+    const [errors, setErrors] = useState<{ name?: boolean; budget?: boolean;}>({});
 
     const handleNext = () => {
         const newErrors = {
-            name: !formData.name.trim(),
-            start: !formData.startDate,
-            end: !formData.endDate,
+            name: !formData.campaignName.trim(),
+            budget: !formData.budget,
         };
 
         setErrors(newErrors);
@@ -32,36 +31,27 @@ export default function CampaignDetailsStep() {
                             type="text"
                             placeholder="e.g., Spring Sale Campaign"
                             className={`w-full p-2 border rounded ${errors.name ? 'border-red-500' : ''}`}
-                            value={formData.name}
-                            onChange={(e) => updateFormData({ name: e.target.value })}
+                            value={formData.campaignName}
+                            onChange={(e) => updateFormData({ campaignName: e.target.value })}
                         />
                         {errors.name && <p className="text-sm text-red-500 mt-1">Campaign name is required.</p>}
                     </div>
 
                     <div>
-                        <label className="block font-medium text-sm mb-1">Start Date</label>
+                        <label className="block font-medium text-sm mb-1">Budget</label>
                         <input
-                            type="date"
-                            className={`w-full p-2 border rounded ${errors.start ? 'border-red-500' : ''}`}
-                            value={formData.startDate}
-                            onChange={(e) => updateFormData({ startDate: e.target.value })}
+                            type="number"
+                            placeholder="Daily Budget ($)"
+                            className={`w-full p-2 border rounded ${errors.budget ? 'border-red-500' : ''}`}
+                            value={formData.budget || ''}
+                            onChange={(e) => updateFormData({ budget: Number(e.target.value) })}
                         />
-                        {errors.start && <p className="text-sm text-red-500 mt-1">Start date is required.</p>}
-                    </div>
-
-                    <div>
-                        <label className="block font-medium text-sm mb-1">End Date</label>
-                        <input
-                            type="date"
-                            className={`w-full p-2 border rounded ${errors.end ? 'border-red-500' : ''}`}
-                            value={formData.endDate}
-                            onChange={(e) => updateFormData({ endDate: e.target.value })}
-                        />
-                        {errors.end && <p className="text-sm text-red-500 mt-1">End date is required.</p>}
+                        {errors.budget && <p className="text-sm text-red-500 mt-1">Budget is required.</p>}
                     </div>
 
                 </div>
 
+                {/* Change all of this now to the new campaign details */}
                 <div className="bg-gray-50 border p-4 rounded">
                     <h3 className="font-semibold text-lg mb-2">What are campaign details?</h3>
                     <p className="text-sm text-gray-700 mb-2">
