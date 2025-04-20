@@ -75,7 +75,8 @@ export default function CampaignTable({
             <div className="flex items-center justify-between px-4 py-3 border-b">
                 <h2 className="text-lg font-semibold">Campaigns</h2>
                 <button
-                    className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700"
+                    disabled
+                    className="bg-emerald-600 disabled-button text-white px-4 py-2 rounded-md hover:bg-emerald-700"
                     onClick={() => router.push("/campaigns/create")}
                 >
                     + Create

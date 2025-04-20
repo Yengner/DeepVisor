@@ -10,15 +10,27 @@ export function CampaignFormProvider({ children }: { children: React.ReactNode }
     // Campaign Fields
     campaignName: '',
     objective: '',
-    optimization_goal: '',
     budget: 0,
-
+    
     // Ad Set Fields
+    adsetName: '',
+    optimization_goal: '',
+    billing_event: '', // Billing event for the ad set, e.g., 'IMPRESSIONS', 'CLICKS'
+    destination_type: '', // Destination type for the ad set, e.g., 'WEBSITE', 'APP', 'MESSENGER'
     startDate: '',
     endDate: '',
     city: '',
-    location: 0,
-    targeting: '',
+    location: {
+      markerPosition: {
+        lat: 0,
+        lng: 0,
+      },
+      radius: 0, // Default radius in miles
+    },
+
+    
+    // Audience targeting and creative details
+    customTargeting: '',
     creativeType: 'AI',
     caption: '',
     mediaUrl: '',

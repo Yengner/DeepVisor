@@ -3,17 +3,35 @@
 import { createContext, useContext } from 'react';
 
 export interface CreateCampaignForm {
+
+  // ALgorithm Type 
   type: 'AI Auto' | 'Semi-Auto' | 'Manual' | null;
+
+  // Campaign Fields
   campaignName: string;
   objective: string;
-  optimization_goal?: string;
+  budget: number;
+  
+  // Ad Set Fields
   adsetName?: string; // Optional for AI Auto, or Semi-Auto
+  optimization_goal?: string;
+  billing_event?: string; // Billing event for the ad set, e.g., 'IMPRESSIONS', 'CLICKS'
+  destination_type?: string; // Destination type for the ad set, e.g., 'WEBSITE', 'APP', 'MESSENGER'  
   startDate: string;
   endDate: string;
-  budget: number;
   city?: string; // City for location targeting unless custom location is used
-  location: number;
-  targeting: string;
+  location: {
+    markerPosition: {
+      lat: number;
+      lng: number;
+    } | null;
+    radius?: number;
+  },
+  
+  adsetPayload?: Record<string, any>;
+
+  // Audience targeting and creative details
+  customTargeting?: string; // Optional custom targeting for the ad set, e.g., interests, behaviors
   creativeType: 'AI' | 'Manual';
   selectedCreativeId?: string;
   caption?: string;
