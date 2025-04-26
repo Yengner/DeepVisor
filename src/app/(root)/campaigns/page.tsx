@@ -62,7 +62,7 @@ export default async function CampaignPage() {
       ctr: campaign.ctr,
       cpc: campaign.cpc,
       platform: campaign.platform_name || "meta",
-
+      auto_optimize: campaign.auto_optimize,
     };
   });
   return <CampaignTabs campaigns={formattedCampaigns} userId={userId}/>;

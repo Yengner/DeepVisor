@@ -26,6 +26,7 @@ interface CampaignObjects {
     ctr?: number;
     cpc?: number;
     platform?: string;
+    auto_optimize: boolean;
 }
 
 interface CampaignTableProps {
@@ -34,6 +35,7 @@ interface CampaignTableProps {
     onSelectCampaign: (campaignId: string) => void;
     onToggleCampaign: (campaignId: string, newStatus: boolean) => void;
     onDeleteCampaign: (campaignId: string) => void;
+    onAutoOptimize: (campaignId: string, autoOptimize: boolean) => void;
 }
 
 const getPlatformImage = (platform?: string) => {
@@ -41,10 +43,10 @@ const getPlatformImage = (platform?: string) => {
         case "meta":
             return "/images/platforms/logo/meta.png";
         case "tiktok":
-            return "/images/tiktok.png";
+            return "/images/platforms/logo/tiktok.png";
         // add more cases as needed for other platforms
         default:
-            return "/images/default.png";
+            return "/images/platforms/logo/default.png";
     }
 };
 
@@ -55,6 +57,7 @@ export default function CampaignTable({
     onSelectCampaign,
     onToggleCampaign,
     onDeleteCampaign,
+    onAutoOptimize,
 }: CampaignTableProps) {
     const router = useRouter();
 
@@ -109,6 +112,7 @@ export default function CampaignTable({
                             <th className="px-4 py-2 font-medium">cpm</th>
                             <th className="px-4 py-2 font-medium">ctr</th>
                             <th className="px-4 py-2 font-medium">cpc</th>
+                            <th className="px-4 py-2 font-medium">Auto-Opt</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -191,6 +195,26 @@ export default function CampaignTable({
                                     <td className="px-4 py-2">{campaign.cpm}</td>
                                     <td className="px-4 py-2">{campaign.ctr}</td>
                                     <td className="px-4 py-2">{campaign.cpc}</td>
+
+                                    {/* Auto-Optimize toggle */}
+                                    <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                                        <Switch
+                                            checked={campaign.auto_optimize}
+                                            onChange={(checked) => onAutoOptimize(campaign.id, checked)}
+                                            className={cn(
+                                                campaign.auto_optimize ? "bg-emerald-600" : "bg-gray-300",
+                                                "relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200"
+                                            )}
+                                        >
+                                            <span className="sr-only">Auto Optimize</span>
+                                            <span
+                                                className={cn(
+                                                    campaign.auto_optimize ? "translate-x-5" : "translate-x-1",
+                                                    "inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200"
+                                                )}
+                                            />
+                                        </Switch>
+                                    </td>
                                 </tr>
 
                                 {/* Bottom row for selected campaign */}

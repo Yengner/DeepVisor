@@ -26,7 +26,7 @@ Deno.serve(async () => {
       console.log(`Fetching campaign metrics for user: ${user.id}`);
 
       const { data: campaigns, error: campaignsError } = await supabase
-        .from("campaign_metrics")
+        .from("campaigns")
         .select(`
           campaign_id,
           name,

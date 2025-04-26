@@ -60,7 +60,7 @@ Deno.serve(async () => {
           console.log(campaignsToUpsert)
 
           const { error: campaignsError } = await supabase
-            .from("campaign_metrics")
+            .from("campaigns")
             .upsert(campaignsToUpsert, { onConflict: ["campaign_id"] }); // Ensure campaign_id is unique
 
           if (campaignsError) throw campaignsError;
@@ -74,7 +74,7 @@ Deno.serve(async () => {
 
           // Fetch current campaign IDs in our DB for this ad_account and platform 'meta'
           const { data: currentCampaigns, error: fetchError } = await supabase
-            .from('campaign_metrics')
+            .from('campaigns')
             .select('campaign_id')
             .eq('ad_account_id', adAccount.ad_account_id)
 
@@ -88,7 +88,7 @@ Deno.serve(async () => {
             if (toDeleteIds.length > 0) {
               // Delete only the campaigns that are no longer in Meta's list
               const { error: deleteError } = await supabase
-                .from('campaign_metrics')
+                .from('campaigns')
                 .delete()
                 .in('campaign_id', toDeleteIds)              // delete these specific campaign IDs
                 .eq('ad_account_id', adAccount.ad_account_id)          // for the current ad account

@@ -26,6 +26,7 @@ interface Campaign {
   ctr?: number;
   cpc?: number;
   platform?: string;
+  auto_optimize: boolean;
 }
 
 interface CampaignTabsProps {
@@ -41,6 +42,24 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
   const [deletedCampaigns, setDeletedCampaigns] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Handler for auto-optimization toggle
+  const handleToggleAuto = async (campaignId: string, autoOptimize: boolean) => {
+    const response = await fetch('/api/campaign/autoOptimize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaignId: campaignId, autoOptimize}),
+    })
+
+    if (!response.ok) {
+      console.warn(await response.text());
+      alert('Failed to update campaign.');
+      return;
+    }
+
+    setCampaignData(prev =>
+      prev.map(c => (c.id === campaignId ? { ...c, auto_optimize: autoOptimize } : c))
+    );
+  }
 
   // Allow for selecting a campaign when the component mounts
   const handleSelectCampaign = (campaignId: string) => {
@@ -81,7 +100,7 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
     });
 
     if (!response.ok) {
-      console.error(await response.text());
+      console.warn(await response.text());
       alert('Failed to update campaign on Meta.');
       return;
     }
@@ -165,6 +184,7 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
             onSelectCampaign={handleSelectCampaign}
             onToggleCampaign={handleToggleCampaign}
             onDeleteCampaign={handleDeleteCampaign}
+            onAutoOptimize={handleToggleAuto}
           />
         </div>
       )}

@@ -14,7 +14,7 @@ export async function getTopAdAccounts(userId: string) {
 
 
         const { data: campaigns, error: campaignError } = await supabase
-            .from("campaign_metrics")
+            .from("campaigns")
             .select("id, name, objective, status, ad_account_id(name), raw_data")
             .order("raw_data->spend", { ascending: false });
 

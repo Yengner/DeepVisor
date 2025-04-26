@@ -15,9 +15,9 @@ export async function getAllCampaigns(platform: string, adAccountId: string) {
     const supabase = await createSupabaseClient();
 
     const { data, error } = await supabase
-        .from('campaign_metrics')
+        .from('campaigns')
         .select(
-            'campaign_id, name, status, objective, raw_data, start_date, platform_name, clicks, impressions, spend, leads, reach, link_clicks, messages, cpm, ctr, cpc, end_date, today_metrics, yesterday_metrics'
+            'campaign_id, name, status, objective, raw_data, start_date, platform_name, clicks, impressions, spend, leads, reach, link_clicks, messages, cpm, ctr, cpc, end_date, today_metrics, yesterday_metrics, auto_optimize'
         )
         .eq('platform_name', platform)
         .eq('ad_account_id', adAccountId);
@@ -53,5 +53,6 @@ export async function getAllCampaigns(platform: string, adAccountId: string) {
         today_metrics: campaign.today_metrics,
         yesterday_metrics: campaign.yesterday_metrics,
         platform_name: campaign.platform_name,
+        auto_optimize: campaign.auto_optimize,
     }));
 }
