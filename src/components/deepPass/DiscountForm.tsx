@@ -4,11 +4,12 @@ import { useState } from "react";
 import QrCodeReader from "./QrCodeReader";
 
 export default function DiscountForm({ userId } : { userId: string} ) {
-    const [type, setType] = useState("coupon");
+    const [type] = useState("coupon");
     const [businessName, setBusinessName] = useState("");
     const [discountDetails, setDiscountDetails] = useState("");
     const [discountUrl, setDiscountUrl] = useState("");
     const [expirationDate, setExpirationDate] = useState("");
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [logo, setLogo] = useState<File | null>(null);
     const [foregroundColorHex, setForegroundColorHex] = useState("#FFFFFF");
     const [backgroundColorHex, setBackgroundColorHex] = useState("#CE8C35");
@@ -192,7 +193,7 @@ export default function DiscountForm({ userId } : { userId: string} ) {
                     <p className="font-semibold">Scan to Add to Apple Wallet:</p>
                     <img src={`https://api.qrserver.com/v1/create-qr-code/?data=${qrCodeUrl}&size=200x200`} alt="QR Code" className="mx-auto mt-2" />
                     <a href={qrCodeUrl} className="text-blue-500 underline block mt-2" target="_blank">
-                        Click here if QR doesn't work
+                        Click here if QR doesn&apos;t work
                     </a>
                 </div>
             )}

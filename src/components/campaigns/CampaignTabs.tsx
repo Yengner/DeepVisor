@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import CampaignTable from '@/components/campaigns/CampaignTable';
 import AdSetTable from '@/components/campaigns/AdSetTable';
 import AdsTable from '@/components/campaigns/AdsTable';
@@ -39,7 +39,6 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
   const [campaignData, setCampaignData] = useState(campaigns);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId);
   const [activeTab, setActiveTab] = useState<'campaigns' | 'adsets' | 'ads'>('campaigns');
-  const [deletedCampaigns, setDeletedCampaigns] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Handler for auto-optimization toggle

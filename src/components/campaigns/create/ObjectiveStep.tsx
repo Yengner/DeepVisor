@@ -46,6 +46,7 @@ export default function ObjectiveStep() {
 
   const handleLeadOption = (option: string) => {
     setLeadOption(option);
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
     updateFormData({ optimization_goal: option as any });
   };
 

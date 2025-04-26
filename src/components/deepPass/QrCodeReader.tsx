@@ -4,6 +4,7 @@ import { useState } from "react";
 import QrScanner from "qr-scanner";
 
 export default function QrCodeReader({ setDiscountUrl }: { setDiscountUrl: (url: string) => void }) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [scanning, setScanning] = useState(false);
     const [error, setError] = useState("");
@@ -22,6 +23,8 @@ export default function QrCodeReader({ setDiscountUrl }: { setDiscountUrl: (url:
             } else {
                 setError("No QR code found in image.");
             }
+
+        //eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
             setError("Failed to read QR code.");
         } finally {

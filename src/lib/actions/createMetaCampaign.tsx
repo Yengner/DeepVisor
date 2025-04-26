@@ -2,6 +2,7 @@
 import { createSupabaseClient } from "../utils/supabase/clients/server";
 import { getLoggedInUser } from "./user.actions";
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function createMetaCampaign(formData: any) {
   const supabase = await createSupabaseClient();
   const loggedIn = await getLoggedInUser();
@@ -55,7 +56,7 @@ export async function createMetaCampaign(formData: any) {
       bid_strategy: "LOWEST_COST_WITHOUT_CAP" // Always lowest cost without cap
     };
 
-    let campaignRes = await fetch(url, {
+    const campaignRes = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...params, access_token: accessToken })

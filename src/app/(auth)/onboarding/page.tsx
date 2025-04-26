@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/utils/supabase/clients/browser";
 
+const supabase = createClient();
+
 export default function OnboardingPage() {
-    const supabase = createClient();
     const router = useRouter();
 
     const [userId, setUserId] = useState<string | null>(null);
@@ -65,7 +66,7 @@ export default function OnboardingPage() {
             }
         }
         fetchUser();
-    }, [router, supabase]);
+    }, [router]);
 
     // Auto-save to Supabase when `formData` updates
     useEffect(() => {
@@ -130,7 +131,7 @@ export default function OnboardingPage() {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4">
             <div className="bg-white p-10 rounded-lg shadow-lg w-full max-w-2xl">
-                <h2 className="text-2xl font-semibold mb-6 text-center">Let's Get Started</h2>
+                <h2 className="text-2xl font-semibold mb-6 text-center">Let&apos;s Get Started</h2>
                 <div className="flex justify-between mb-4">
                     <div className={`w-1/3 h-2 rounded ${step >= 1 ? "bg-emerald-500" : "bg-gray-300"}`} />
                     <div className={`w-1/3 h-2 rounded ${step >= 2 ? "bg-emerald-500" : "bg-gray-300"}`} />

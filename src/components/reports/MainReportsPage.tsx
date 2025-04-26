@@ -1,67 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useReportsSidebar } from "./ReportSidebarContext";
-import DynamicReportPDF from "./pdf_generator/DynamicReportPDF";
-// import dynamic from "next/dynamic";
 import TopAdAccountsTable from "./TopAdAccounts";
 import TopCampaignsTable from "./TopCampaignsTable";
 import TopAdSetsTable from "./TopAdSetTable";
 import TopAdsTable from "./TopAdsTable";
 
-// const PDFDownloadLink = dynamic(
-//   () => import('@react-pdf/renderer').then((mod) => mod.PDFDownloadLink),
-//   {
-//     ssr: false,
-//     loading: () => <p>Loading...</p>,
-
-//   }
-// );
-// const PDFViewer = dynamic(
-//   () => import('@react-pdf/renderer').then((mod) => mod.PDFViewer),
-//   {
-//     ssr: false,
-//     loading: () => <p>Loading...</p>,
-
-//   }
-// );
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const MainReport = ({ metrics }: { metrics: any }) => {
   const { isReportsSidebarOpen } = useReportsSidebar();
-  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
-  const [selectedAdAccount, setSelectedAdAccount] = useState<string | null>(null);
-  const [timeRange, setTimeRange] = useState<"7" | "30" | "90">("30");
 
   const { topAdAccounts, topCampaigns_metrics, topAdset_metrics, topAd_metrics } = metrics;
-  // Enhanced Dummy Data
-  const dummyData = {
-    businessInfo: {
-      name: "Awesome Business Co.",
-      contact: "contact@business.com",
-    },
-    platform: selectedPlatform || "All Platforms",
-    timeRange,
-    platforms: [
-      { name: "Meta", spend: 1200, clicks: 5000, adAccounts: ["Account 1", "Account 2"] },
-      { name: "Google", spend: 800, clicks: 3000, adAccounts: ["Account A", "Account B"] },
-    ],
-    adAccounts: [
-      { name: "Account 1", platform: "Meta", spend: 700, clicks: 3000 },
-      { name: "Account 2", platform: "Meta", spend: 500, clicks: 2000 },
-      { name: "Account A", platform: "Google", spend: 400, clicks: 1500 },
-      { name: "Account B", platform: "Google", spend: 400, clicks: 1500 },
-    ],
-  };
-
-  const handlePlatformClick = (platform: string) => {
-    setSelectedPlatform(platform === selectedPlatform ? null : platform);
-    setSelectedAdAccount(null);
-  };
-
-  const handleAdAccountClick = (adAccount: string) => {
-    setSelectedAdAccount(adAccount === selectedAdAccount ? null : adAccount);
-  };
 
   return (
     <div

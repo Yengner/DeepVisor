@@ -27,7 +27,7 @@ export interface CreateCampaignForm {
     } | null;
     radius?: number;
   },
-  
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   adsetPayload?: Record<string, any>;
 
   // Audience targeting and creative details

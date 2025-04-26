@@ -42,7 +42,7 @@ export default function EstimateForm() {
         handleSubmit,
         setValue,
         watch,
-        formState: { errors, isValid },
+        formState: { errors },
     } = useForm({
         resolver: zodResolver(formSchema),
         mode: "onChange", // ✅ Enables real-time validation
@@ -62,6 +62,7 @@ export default function EstimateForm() {
         },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onSubmit = async (data: any) => {
         setLoading(true);
 
@@ -133,8 +134,8 @@ export default function EstimateForm() {
         const isLowToMidTicket = lowToLowMidTicketIndustries.includes(industry);
 
         // Define minimums
-        let minAdSpend = isHighTicket ? 1000 : 500;
-        let minServiceCharge = isHighTicket ? 400 : 250; // Higher base for high-ticket
+        const minAdSpend = isHighTicket ? 1000 : 500;
+        const minServiceCharge = isHighTicket ? 400 : 250; // Higher base for high-ticket
 
         let adSpend, serviceCharge;
 

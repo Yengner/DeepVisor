@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { PKPass } from "passkit-generator";
 import fs from "fs";
-import path from "path";
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 
 function hexToRgbUtil(hexColor: string): string {
@@ -32,7 +31,7 @@ export async function POST(req: Request) {
     try {
         // Parse request body
         const {
-            type,
+            // type,
             businessName,
             discountDetails,
             // discountUrl,
@@ -117,6 +116,7 @@ export async function POST(req: Request) {
         console.log(`✅ Pass uploaded successfully: ${passUrl}`);
 
         return NextResponse.json({ success: true, passUrl }, { status: 200 });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
         console.error("❌ Error generating pass:", error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });

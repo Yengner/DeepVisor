@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import GoogleMapSelector from '@/components/GoogleMapSelector';
+import GoogleMapSelector from '@/components/campaigns/create/GoogleMapSelector';
 
 export default function CampaignLocationStep() {
   const [selectedLocation, setSelectedLocation] = useState<{ markerPosition: google.maps.LatLngLiteral | null, radius: number } | null>(null);

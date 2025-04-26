@@ -55,11 +55,11 @@ export default function CampaignDetailsStep() {
                 <div className="bg-gray-50 border p-4 rounded">
                     <h3 className="font-semibold text-lg mb-2">What are campaign details?</h3>
                     <p className="text-sm text-gray-700 mb-2">
-                        These details define when your campaign starts, ends, and what it's called. This is especially helpful when managing multiple ad campaigns or testing different strategies.
+                        These details define when your campaign starts, ends, and what it&apos;s called. This is especially helpful when managing multiple ad campaigns or testing different strategies.
                     </p>
                     <ul className="list-disc pl-5 text-sm text-gray-600">
                         <li><strong>Start/End Date:</strong> Controls when the campaign runs.</li>
-                        <li><strong>Timezone:</strong> Helps align delivery with your audience’s active times.</li>
+                        <li><strong>Timezone:</strong> Helps align delivery with your audience&apos;s active times.</li>
                         <li><strong>Campaign Name:</strong> Used to identify this campaign across platforms and reporting.</li>
                     </ul>
                 </div>

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { ArrowRightStartOnRectangleIcon } from '@heroicons/react/24/outline';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const LogoutButton = ({ isExpanded }: any) => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();

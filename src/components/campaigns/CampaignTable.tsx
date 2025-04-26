@@ -4,6 +4,7 @@ import { Switch } from "@headlessui/react";
 import { cn } from "@/lib/utils/utils";
 import { useRouter } from "next/navigation";
 import React from "react";
+import Image from "next/image";
 
 interface CampaignObjects {
     id: string;
@@ -140,10 +141,13 @@ export default function CampaignTable({
 
                                     {/* Platform Icon */}
                                     <td className="px-4 py-2">
-                                        <img
+                                        <Image
                                             src={getPlatformImage(campaign.platform)}
                                             alt={campaign.platform || "Meta"}
-                                            className="w-8 h-8 rounded-full"
+                                            width={32}
+                                            height={32}
+                                            className="rounded-full"
+                                            priority={false}  // optional: remove if you don't need LCP priority
                                         />
                                     </td>
 

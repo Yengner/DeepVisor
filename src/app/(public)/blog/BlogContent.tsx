@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import React from 'react';
 
 interface BlogContentProps {
@@ -22,7 +23,14 @@ export default function BlogContent({ title, author, date, content, image }: Blo
       {/* Featured Image */}
       {image && (
         <div className="rounded-lg overflow-hidden">
-          <img src={image} alt={title} className="w-full h-auto object-cover" />
+          <Image
+            src={image}
+            alt={title}
+            width={1200}
+            height={675}
+            className="w-full h-auto object-cover"
+            priority // for LCP
+          />
         </div>
       )}
 

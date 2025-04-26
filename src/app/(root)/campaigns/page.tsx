@@ -26,6 +26,8 @@ export default async function CampaignPage() {
   }
 
   // Map each campaign from Supabase to the shape expected by CampaignTable
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formattedCampaigns = campaignsData.map((campaign: any) => {
     const raw = campaign.raw_data;
     let insights = null;
@@ -34,7 +36,6 @@ export default async function CampaignPage() {
     }
     const reach = insights ? Number(insights.reach) : 0;
     const impressions = insights ? Number(insights.impressions) : 0;
-    const clicks = insights ? Number(insights.clicks) : 0;
     const spend = insights ? Number(insights.spend) : 0;
 
 
@@ -44,17 +45,17 @@ export default async function CampaignPage() {
     return {
       id: campaign.campaign_id,
       name: campaign.name,
-      delivery: campaign.status === "ACTIVE",
-      type: "Manual" as "Manual",
+      delivery: (campaign.status ?? "").toUpperCase() === "ACTIVE",
+      type: "Manual" as const,
       status: campaign.status,
       objective: campaign.objective,
       startDate: campaign.start_date,
       endDate: campaign.end_date || "No End Date",
-      attribution: "7-day click or view", 
+      attribution: "7-day click or view",
       spend: campaign.spend,
       results: conversionActions ? `${conversionActions} Leads` : "0 Leads",
       reach: campaign.reach,
-      clicks: campaign.clicks, 
+      clicks: campaign.clicks,
       impressions: campaign.impressions,
       frequency: reach ? (impressions / reach).toFixed(2) : "0",
       costPerResult: costPerResult,
@@ -65,6 +66,6 @@ export default async function CampaignPage() {
       auto_optimize: campaign.auto_optimize,
     };
   });
-  return <CampaignTabs campaigns={formattedCampaigns} userId={userId}/>;
+  return <CampaignTabs campaigns={formattedCampaigns} userId={userId} />;
 
 }

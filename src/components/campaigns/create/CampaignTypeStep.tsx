@@ -14,7 +14,7 @@ interface CampaignOption {
 }
 
 export default function CampaignTypeStep() {
-    const { formData, updateFormData, goToNextStep } = useCreateCampaignForm();
+    const { updateFormData, goToNextStep } = useCreateCampaignForm();
     const [selected, setSelected] = useState<typeof campaignOptions[0] | null>(null);
 
 

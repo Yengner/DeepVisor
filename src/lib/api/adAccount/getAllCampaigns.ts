@@ -32,6 +32,7 @@ export async function getAllCampaigns(platform: string, adAccountId: string) {
         return [];
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return data.map((campaign: any) => ({
         campaign_id: campaign.campaign_id,
         name: campaign.name,
