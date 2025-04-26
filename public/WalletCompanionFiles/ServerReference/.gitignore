@@ -1,5 +1,0 @@
-*.pkpass
-*.p12
-*.pem
-*.sqlite3
-/public/custom.pass/pass.json

@@ -1,6 +1,0 @@
-# .vercelignore
-.next/cache/
-.next/trace/
-node_modules/.cache/
-public/WalletCompanionFiles/
-.git/
