@@ -2,8 +2,8 @@ import { IPricing } from "@/types/public/types";
 
 export const tiers: IPricing[] = [
     {
-        name: 'Solo Starter',
-        price: 55,
+        name: 'Coming Soon - Free',
+        price: 0,
         features: [
             'Basic platform integration',
             'Access to insights for one platform',
@@ -12,8 +12,8 @@ export const tiers: IPricing[] = [
         ],
     },
     {
-        name: 'Growth Pro',
-        price: 99,
+        name: 'Coming Soon - Pro',
+        price: 0,
         features: [
             'Multi-platform integration',
             'Advanced analytics & insights',
@@ -23,8 +23,8 @@ export const tiers: IPricing[] = [
         ],
     },
     {
-        name: 'Enterprise',
-        price: 'Custom',
+        name: 'Coming Soon - Enterprise',
+        price: 'Contact Us',
         features: [
             'Multi-platform integration',
             'Advanced analytics & reporting tools',

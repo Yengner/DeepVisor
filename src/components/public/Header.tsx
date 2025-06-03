@@ -4,13 +4,14 @@ import Link from 'next/link';
 import React, { useState } from 'react';
 import { Transition } from '@headlessui/react';
 import { HiOutlineXMark, HiBars3 } from 'react-icons/hi2';
-import { FaChartPie, FaUserPlus, FaSignInAlt } from 'react-icons/fa';
-import { FiPlayCircle } from 'react-icons/fi';
+import { FaChartPie } from 'react-icons/fa';
+//FaUserPlus FaSignInAlt
+// import { FiPlayCircle } from 'react-icons/fi';
 
 import Container from './Container';
 import { menuItems } from '@/lib/static/menuItems';
 import { siteDetails } from '@/lib/static/siteDetails';
-import { demoLogin } from '@/lib/static/demo';
+// import { demoLogin } from '@/lib/static/demo';
 
 
 const Header: React.FC = () => {
@@ -20,17 +21,17 @@ const Header: React.FC = () => {
         setIsOpen(!isOpen);
     };
 
-    async function handleDemoLogin() {
-        try {
-            const session = await demoLogin();
-            if (session) {
-                window.location.href = '/dashboard/platforms'; // Redirect to the dashboard
-            }
-        } catch (error) {
-            console.error(error);
-            alert('Failed to log in to the demo account.');
-        }
-    };
+    // async function handleDemoLogin() {
+    //     try {
+    //         const session = await demoLogin();
+    //         if (session) {
+    //             window.location.href = '/dashboard/platforms'; // Redirect to the dashboard
+    //         }
+    //     } catch (error) {
+    //         console.error(error);
+    //         alert('Failed to log in to the demo account.');
+    //     }
+    // };
 
     return (
         <header className="bg-transparent fixed top-0 left-0 right-0 md:absolute z-50 mx-auto w-full">
@@ -60,8 +61,22 @@ const Header: React.FC = () => {
                     </div>
 
                     {/* Right Section */}
+                    
                     <div className="hidden md:flex items-center space-x-4">
                         <div>
+                            <Link
+                                href="https://forms.gle/opEmPnAhSiN1Nint5"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-white bg-primary-accent hover:bg-gray-200 px-16 py-3 rounded-full transition-colors flex items-center gap-2 cursor-pointer"
+                            >
+                                <p className='text-lg font-extrabold'>
+                                    Free Quote !!
+                                </p>
+                            </Link>
+                        </div>
+                    
+                        {/* <div>
                             <button
                                 onClick={handleDemoLogin}
                                 className="text-black hover:text-primary-accent px-2 py-2 rounded-full transition-colors flex items-center gap-2 cursor-pointer"
@@ -87,7 +102,7 @@ const Header: React.FC = () => {
                                 <FaSignInAlt className="w-5 h-5" />
                                 Login
                             </Link>
-                        </div>
+                        </div> */}
                     </div>
 
 

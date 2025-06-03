@@ -89,7 +89,7 @@ const FreeEstimate = () => {
                             <h2 className="text-2xl font-bold text-white flex items-center mb-2">
                                 <FaEnvelope className="mr-2 text-foreground-accent" /> Email Address
                             </h2>
-                            <p className="text-white text-xl">Deepvisormarketing@gmail.com</p>
+                            <p className="text-white text-xl">info@deepvisor.com</p>
                         </div>
 
                         <div className="mb-6">
@@ -156,7 +156,7 @@ const FreeEstimate = () => {
                 {/* Right Column: Free Estimate Form */}
                 <div className="w-full md:w-2/3 p-8">
                     <h2 className="text-center text-sm font-bold text-blue-600 uppercase mb-2">Contact</h2>
-                    <h1 className="text-center text-3xl font-bold text-gray-900 mb-4">Free Estimate</h1>
+                    <h1 className="text-center text-3xl font-bold text-gray-900 mb-4">Want To Hear From Us Personally?</h1>
                     <p className="text-center text-gray-600 mb-8">
                         Submit your details to receive a customized estimate for your project.
                     </p>

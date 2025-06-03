@@ -26,7 +26,7 @@ export const footerDetails: {
             url: "/investor-relations"
         },
     ],
-    email: 'deepvisormarketing@gmail.com',
+    email: 'info@deepvisor.com',
     telephone: '+1 (813) 992-0108',
     socials: {
         github: 'https://github.com',

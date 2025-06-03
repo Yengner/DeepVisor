@@ -184,7 +184,7 @@ export default function InvestorPage() {
                         className="flex items-center space-x-2 text-lg text-primary hover:underline"
                     >
                         <FaEnvelope />
-                        <span>Deepvisormarketing@gmail.com</span>
+                        <span>yengnerb@deepvisor.com</span>
                     </a>
                     <a
                         href="tel:+18139920108"
