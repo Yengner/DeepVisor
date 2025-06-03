@@ -4,11 +4,10 @@ import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
 
 
 interface PageProps {
-    params: { token: string };
-    searchParams: { status?: string };
+    params: Promise<{ token: string }>;
 }
 
-export default async function ProposalPage({ params, searchParams }: PageProps) {
+export default async function ProposalPage({ params }: PageProps) {
     const { token } = await params;
     const supabase = await createSupabaseClient();
 
@@ -31,9 +30,9 @@ export default async function ProposalPage({ params, searchParams }: PageProps) 
     }
 
     let status = session.status;
-    if (searchParams.status === 'accepted') {
+    if (status === 'accepted') {
         status = 'accepted';
-    } else if (searchParams.status === 'revision_requested') {
+    } else if (status === 'revision_requested') {
         status = 'revision_requested';
     }
 
