@@ -25,6 +25,7 @@ export async function POST(request: Request) {
     }
 
     // 3) Update status & responded_at (and revision_notes if applicable)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updates: any = {
         status: action === 'accept' ? 'accepted' : 'revision_requested',
         responded_at: new Date().toISOString(),

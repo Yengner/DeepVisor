@@ -51,7 +51,6 @@ export default async function ProposalPage({ params, searchParams }: PageProps) 
                     serviceType={session.service_type}
                     addOnServices={session.add_on_services}
                     startDate={session.start_date}
-                    dealId={session.deal_Id}
                     docId={session.doc_Id}
                     totalPrice={session.total_pricing}
                     adSpend={session.ad_spend}
