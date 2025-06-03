@@ -64,5 +64,35 @@ DeepVisor uses **PostgreSQL** to store essential data for **ad campaigns, user i
 - **`integrations`** → Tracks user integrations (Meta, TikTok, etc.).  
 - **`ad_accounts`** → Contains linked ad accounts per user.  
 - **`campaigns`** → Stores campaign details with budget, targeting, and performance stats.  
-- **`ads`** → Tracks individual ads within campaigns.  
+- **`ads`** → Tracks individual ads within campaigns.
+
+Example **ERD (Entity Relationship Diagram)**:
+
+```plaintext
+users (id) ---< integrations (id) ---< ad_accounts (id) ---< campaigns (id) ---< ads (id)
+```
+
+---
+
+## **🚀 Getting Started**
+
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+2. **Add environment variables** required for Next.js and Supabase (see `.env.example`).
+3. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+Visit `http://localhost:3000` to view the app.
+
+## **📝 Latest Update**
+
+The proposal page now properly handles route parameters. See commit `78d1b49` titled *"Trying to fix PageProps Issue in proposal page"* for details.
+
+## **🤝 Contributing**
+
+Contributions and feature requests are welcome! Open an issue or submit a pull request.
 
