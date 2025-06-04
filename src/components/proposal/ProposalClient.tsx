@@ -96,7 +96,7 @@ export default function ProposalClient({
         return (
             <div className="text-center p-8">
                 <h1 className="text-3xl font-bold text-green-700 mb-4">🎉 Proposal Accepted</h1>
-                <p>Thank you, {firstName}. We received your acceptance. We'll be in touch very soon.</p>
+                <p>Thank you, {firstName}. We received your acceptance. We&apos;ll be in touch very soon.</p>
             </div>
         );
     }
@@ -106,7 +106,7 @@ export default function ProposalClient({
             <div className="text-center p-8">
                 <h1 className="text-3xl font-bold text-yellow-700 mb-4">✏️ Revision Requested</h1>
                 <p>
-                    Hi {firstName}, we got your feedback. We'll revise the proposal and send you an updated link as soon as it's ready.
+                    Hi {firstName}, we got your feedback. We&apos;ll revise the proposal and send you an updated link as soon as it&apos;s ready.
                 </p>
             </div>
         );
