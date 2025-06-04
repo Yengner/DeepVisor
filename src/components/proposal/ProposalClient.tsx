@@ -75,7 +75,7 @@ export default function ProposalClient({
 
     const handleRevision = async () => {
         if (!revisionText.trim()) {
-            alert('Please describe what you’d like changed in the proposal.');
+            alert("Please describe what you'd like changed in the proposal.");
             return;
         }
         setSubmitting(true);
@@ -96,7 +96,7 @@ export default function ProposalClient({
         return (
             <div className="text-center p-8">
                 <h1 className="text-3xl font-bold text-green-700 mb-4">🎉 Proposal Accepted</h1>
-                <p>Thank you, {firstName}. We received your acceptance. We’ll be in touch very soon.</p>
+                <p>Thank you, {firstName}. We received your acceptance. We'll be in touch very soon.</p>
             </div>
         );
     }
@@ -106,7 +106,7 @@ export default function ProposalClient({
             <div className="text-center p-8">
                 <h1 className="text-3xl font-bold text-yellow-700 mb-4">✏️ Revision Requested</h1>
                 <p>
-                    Hi {firstName}, we got your feedback. We’ll revise the proposal and send you an updated link as soon as it’s ready.
+                    Hi {firstName}, we got your feedback. We'll revise the proposal and send you an updated link as soon as it's ready.
                 </p>
             </div>
         );
@@ -130,10 +130,10 @@ export default function ProposalClient({
                         <li><strong>Service Type:</strong> {serviceType}</li>
                         <li><strong>Add-On Services:</strong> {addOnServices || 'None'}</li>
                         <li><strong>Start Date:</strong> {startDate}</li>
-                        <li><strong>Total Price:</strong> ${totalPrice}</li>
                         <li><strong>Ad Spend:</strong> ${adSpend}</li>
                         <li><strong>Service Fee:</strong> ${serviceFee}</li>
-                        {note && <li><strong>Notes:</strong> {note}</li>}
+                        <li><strong>Total Price:</strong> ${totalPrice}/Month</li>
+                        {note && <li><strong>Notes:</strong>{note}</li>}
                     </ul>
                 </div>
 

@@ -25,8 +25,7 @@ export async function POST(request: Request) {
     }
 
     // 3) Update status & responded_at (and revision_notes if applicable)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updates: any = {
+    const updates: Record<string, unknown> = {
         status: action === 'accept' ? 'accepted' : 'revision_requested',
         responded_at: new Date().toISOString(),
     };
@@ -44,7 +43,22 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'Failed to record response.' }, { status: 500 });
     }
 
-    // 4) (Optional) Trigger any HubSpot or Slack notifications here if desired.
+    // 4) Trigger the webhook
+    try {
+        await fetch('https://n8n.deepvisor.com/webhook/proposal-stage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                token,
+                status: updates.status,
+                notes: action === 'revision' ? notes : undefined,
+            }),
+        });
+    } catch (webhookError) {
+        console.error('Webhook error:', webhookError);
+    }
 
     return NextResponse.json({ message: 'Response recorded.' });
 }
