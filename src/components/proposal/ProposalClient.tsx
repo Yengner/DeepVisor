@@ -12,8 +12,9 @@ interface ProposalClientProps {
     phoneNumber: string;
     address: string;
     serviceType: string;
-    addOnServices?: string[];
+    addOnServices?: string;
     startDate: string;
+    dealId: string;
     docId: string;
     totalPrice: number;
     adSpend: number;
@@ -31,8 +32,9 @@ export default function ProposalClient({
     phoneNumber,
     address,
     serviceType,
-    addOnServices = [],
+    addOnServices,
     startDate,
+    dealId,
     docId,
     totalPrice,
     adSpend,
@@ -64,7 +66,7 @@ export default function ProposalClient({
             await fetch('/api/proposal/respond', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, action: 'accept' }),
+                body: JSON.stringify({ token, action: 'accept', email, phoneNumber, address, serviceType, addOnServices, businessName, dealId }),
             });
             router.replace(`/proposal/${token}?status=accepted`);
         } catch (error) {

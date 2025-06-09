@@ -3,10 +3,17 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
     const supabase = await createSupabaseClient();
-    const { token, action, notes } = (await request.json()) as {
+    const { token, action, notes, businessName, email, phoneNumber, address, serviceType, addOnServices, dealId } = (await request.json()) as {
         token: string;
         action: 'accept' | 'revision';
         notes?: string;
+        businessName: string;
+        email: string;
+        phoneNumber: string;
+        address: string;
+        serviceType: string;
+        addOnServices?: string;
+        dealId: string;
     };
 
     const { data: session, error: fetchError } = await supabase
@@ -45,7 +52,7 @@ export async function POST(request: Request) {
 
     // 4) Trigger the webhook
     try {
-        await fetch('https://n8n.deepvisor.com/webhook/proposal-stage', {
+        await fetch('https://n8n.deepvisor.com/webhook-test/proposal-stage', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -54,6 +61,14 @@ export async function POST(request: Request) {
                 token,
                 status: updates.status,
                 notes: action === 'revision' ? notes : undefined,
+                businessName: businessName,
+                email: email,
+                phoneNumber: phoneNumber,
+                address: address,
+                serviceType: serviceType,
+                addOnServices: addOnServices,
+                dealId: dealId,
+                
             }),
         });
     } catch (webhookError) {
