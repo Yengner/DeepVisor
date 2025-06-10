@@ -29,13 +29,11 @@ export const footerDetails: {
     email: 'info@deepvisor.com',
     telephone: '+1 (813) 992-0108',
     socials: {
-        github: 'https://github.com',
-        x: 'https://twitter.com/x',
-        twitter: 'https://twitter.com/Twitter',
-        facebook: 'https://facebook.com',
+        github: 'https://github.com/Yengner/DeepVisor',
+        facebook: 'https://www.facebook.com/profile.php?id=61555633384605#',
         // youtube: 'https://youtube.com',
-        linkedin: 'https://www.linkedin.com',
+        linkedin: 'https://www.linkedin.com/company/deepvisor-llc',
         // threads: 'https://www.threads.net',
-        instagram: 'https://www.instagram.com',
+        instagram: 'https://www.instagram.com/deepvisormarketing',
     }
 }
