@@ -22,7 +22,7 @@ export const footerDetails: {
             url: "/contact-us"
         },
         {
-            text: "Investment",
+            text: "Investor Relations",
             url: "/investor-relations"
         },
     ],

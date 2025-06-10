@@ -1,72 +1,71 @@
 import { IBenefit } from "@/types/public/types";
-import { FiBarChart2, FiCpu, FiEye, FiLayers, FiPieChart, FiTarget, FiTrendingUp } from "react-icons/fi";
-
+import { FiZap, FiGlobe, FiClipboard, FiMessageSquare, FiCpu, FiTrendingUp, FiTool } from "react-icons/fi";
 
 export const benefits: IBenefit[] = [
     {
-        title: "Smart Campaigns",
-        description: "Optimize your marketing efforts with data-driven strategies designed to maximize engagement and ROI.",
+        title: "Rapid Ad Campaign Launch",
+        description: "Get your paid ads up and running fast — with strategy, creatives, targeting, and optimization handled by DeepVisor.",
         bullets: [
             {
-                title: "Data-Driven Insights",
-                description: "Access detailed analytics to track performance and fine-tune campaigns in real-time.",
-                icon: <FiBarChart2 size={26} />
+                title: "Full Funnel Setup",
+                description: "From audience research to creative testing and pixel tracking — we handle it all.",
+                icon: <FiZap size={26} />
             },
             {
-                title: "Targeted Advertising",
-                description: "Reach the right audience with precision-targeting tools tailored to your business goals.",
-                icon: <FiTarget size={26} />
+                title: "Meta Advertising Experts",
+                description: "We specialize in high-converting ads on Facebook and Instagram, built for results.",
+                icon: <FiMessageSquare size={26} />
             },
             {
-                title: "Predictive Trends",
-                description: "Leverage AI to identify upcoming trends and adapt your strategies proactively.",
+                title: "Real-Time Optimization",
+                description: "We monitor and tweak your campaigns to get the best possible performance.",
                 icon: <FiTrendingUp size={26} />
             }
         ],
         imageSrc: "/images/paper.png"
     },
     {
-        title: "Unified Marketing Data",
-        description: "Streamline your marketing efforts with a centralized dashboard for all your platforms.",
+        title: "Quick Website Builds",
+        description: "Need a site fast? We create clean, conversion-focused websites and landing pages in just days.",
         bullets: [
             {
-                title: "Cross-Platform Insights",
-                description: "Integrate and analyze data from platforms like Meta, Google, TikTok, and LinkedIn.",
-                icon: <FiBarChart2 size={26} />
+                title: "Modern & Responsive",
+                description: "Every site is mobile-ready, SEO-optimized, and easy to maintain.",
+                icon: <FiGlobe size={26} />
             },
             {
-                title: "Actionable Metrics",
-                description: "Track KPIs like engagement, reach, and conversions in one place.",
-                icon: <FiTrendingUp size={26} />
+                title: "Done-for-You Setup",
+                description: "We’ll design, build, and publish your site.",
+                icon: <FiTool size={26} />
             },
             {
-                title: "Data Transparency",
-                description: "See exactly where your marketing budget is going and how it performs.",
-                icon: <FiEye size={26} />
+                title: "Perfect for Ads",
+                description: "Landing pages that are designed specifically to convert your paid traffic.",
+                icon: <FiClipboard size={26} />
             }
         ],
         imageSrc: "/images/marketing-dashboard.png"
     },
     {
-        title: "Growth-Driven Tools",
-        description: "Empowering businesses of all sizes to achieve smarter marketing outcomes.",
+        title: "Smart Automations & Data",
+        description: "Save time and scale smarter with automations for lead capture, follow-ups, and insights.",
         bullets: [
             {
-                title: "AI-Powered Recommendations",
-                description: "Get insights and suggestions to optimize your campaigns in real time.",
+                title: "Lead Form Automation",
+                description: "Connect your website, ads, and forms to CRMs or emails.",
                 icon: <FiCpu size={26} />
             },
             {
-                title: "Scalable for All Businesses",
-                description: "From startups to enterprises, our tools adapt to your marketing needs.",
-                icon: <FiLayers size={26} />
+                title: "Integrated Payment Tracking",
+                description: "Track client information, invoices, and lead cycles from one place.",
+                icon: <FiClipboard size={26} />
             },
             {
-                title: "Data-Driven Decisions",
-                description: "Leverage detailed analytics to make informed marketing choices.",
-                icon: <FiPieChart size={26} />
+                title: "Transparent Reports",
+                description: "See your results clearly — no fluff. Just the data that drives decisions.",
+                icon: <FiTrendingUp size={26} />
             }
         ],
-        imageSrc: "/images/growth-image.png"
+        imageSrc: "/images/automation.svg"
     }
-]
+];

@@ -2,7 +2,7 @@ import { IPricing } from "@/types/public/types";
 
 export const tiers: IPricing[] = [
     {
-        name: 'Coming Soon - Free',
+        name: 'Free',
         price: 0,
         features: [
             'Basic platform integration',
@@ -12,7 +12,7 @@ export const tiers: IPricing[] = [
         ],
     },
     {
-        name: 'Coming Soon - Pro',
+        name: 'Pro',
         price: 0,
         features: [
             'Multi-platform integration',
@@ -23,7 +23,7 @@ export const tiers: IPricing[] = [
         ],
     },
     {
-        name: 'Coming Soon - Enterprise',
+        name: 'Enterprise',
         price: 'Contact Us',
         features: [
             'Multi-platform integration',

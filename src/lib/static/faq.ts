@@ -2,24 +2,36 @@ import { IFAQ } from "@/types/public/types";
 import { siteDetails } from "./siteDetails";
 
 export const faqs: IFAQ[] = [
-    {
-        question: `Is ${siteDetails.siteName} secure?`,
-        answer: `Absolutely. ${siteDetails.siteName} employs state-of-the-art encryption to protect your data and adheres to strict data privacy standards. We never sell your data to third parties, ensuring your information remains confidential and secure.`,
-    },
-    {
-        question: `Can I integrate multiple platforms with ${siteDetails.siteName}?`,
-        answer: 'Yes! You can seamlessly integrate multiple social media platforms like Meta, Google, TikTok, and more to get a centralized view of your marketing data.',
-    },
-    {
-        question: 'How can DeepVisor help me with my campaigns?',
-        answer: `${siteDetails.siteName} provides actionable insights, advanced analytics, and AI-driven recommendations to optimize your campaigns. Plus, you'll have full transparency into your data and results.`,
-    },
-    {
-        question: 'What if I want DeepVisor to manage my campaigns?',
-        answer: 'You can request a free estimate to have our team of experts handle your campaigns. We’ll ensure your strategy is optimized for results while keeping you informed with detailed reports.',
-    },
-    {
-        question: 'What support does DeepVisor provide?',
-        answer: 'Our team is here to help! You’ll have access to our support via email and chat, along with a knowledge base filled with tutorials and FAQs to guide you through the platform.',
-    },
+  {
+    question: `What services does ${siteDetails.siteName} offer?`,
+    answer: `${siteDetails.siteName} specializes in two core services: high-converting paid advertising (primarily on Meta/Facebook) and quick-launch websites for small businesses. We also offer optional add-ons like social media setup, branding assets, and automation tools.`,
+  },
+  {
+    question: `How fast can I get my website live with ${siteDetails.siteName}?`,
+    answer: `Our Website Quick-Build service is designed to deliver modern, responsive landing pages or 5-page sites in as little as 3–5 days after kickoff. It’s a fast-track way to look professional without delays.`,
+  },
+  {
+    question: `Can ${siteDetails.siteName} handle everything for me?`,
+    answer: `Yes — from ad setup, targeting, and creative testing to landing page design and basic automation like lead follow-up, ${siteDetails.siteName} can manage your entire digital funnel for you.`,
+  },
+  {
+    question: `What if I need automation or forms to capture leads?`,
+    answer: `${siteDetails.siteName} can integrate smart automations using tools like n8n to connect forms, CRMs, email follow-ups, and more — saving you time while improving conversions. We use it for ourselves so we know it works.`,
+  },
+  {
+    question: `Do I get to keep my website and assets if I stop working with you?`,
+    answer: `Absolutely. Everything we build — from your website to your ad creative — is yours to keep. We believe in ownership and transparency.`,
+  },
+  {
+    question: `What’s included in the paid ads service?`,
+    answer: `We handle full Meta ad campaign setup, targeting, audience testing, budget allocation, and performance tracking. You’ll get detailed reports and we’ll make ongoing adjustments to improve ROI.`,
+  },
+  {
+    question: `How do payments work for services?`,
+    answer: `Once your proposal is approved, you’ll receive a secure Stripe payment link with a 7-day grace period. Monthly services like ads or website maintenance are billed accordingly.`,
+  },
+  {
+    question: `What support can I expect as a client?`,
+    answer: `You’ll have direct email support from our team (and from Yengner, our founder), plus access to updates, strategy recommendations, and an optional Slack workspace if you prefer real-time communication.`,
+  },
 ];

@@ -3,21 +3,21 @@ import { siteDetails } from "./siteDetails";
 
 export const testimonials: ITestimonial[] = [
     {
-        name: 'John Smith',
+        name: 'J&J Sunshine Rental LLC',
         role: 'CEO at Company',
-        message: `${siteDetails.siteName}'s AI-driven insights have transformed how we approach financial planning for our clients. It's an invaluable resource in the modern financial landscape.`,
-        avatar: '/images/testimonial-1.webp',
+        message: `DeepVisor managed our paid ad campaigns across Meta and Google—delivering over $120K in bookings in just two months with a 5:1 ROAS. Their data-driven strategy turned ad spend into real revenue.`,
+        avatar: '/images/testimonial-1.png',
     },
     {
-        name: 'Jane Doe',
-        role: 'CTO at Startup',
-        message: `As a CTO, I'm impressed by ${siteDetails.siteName}'s robust security measures and seamless integrations. It's rare to find an app that balances user-friendliness with such advanced technology.`,
-        avatar: '/images/testimonial-2.webp',
+        name: "Ada's Secret Salon Inc.",
+        role: 'Salon Owner',
+        message: `Thanks to ${siteDetails.siteName}, we saw +85 leads and added +$60K in revenue per month—all without additional calls.`,
+        avatar: '/images/testimonial-3.png',
     },
     {
-        name: 'Emily Johnson',
-        role: 'Product Manager',
-        message: `${siteDetails.siteName} is revolutionizing personal finance management. Its intuitive design and powerful features make it an indispensable tool for anyone serious about financial growth.`,
-        avatar: '/images/testimonial-3.webp',
+        name: 'Alexandra Gonzalez',
+        role: 'Individual Hair Stylist',
+        message: `The custom automation DeepVisor built for my client intake and follow-up saved me 10+ hours a week and boosted bookings by 30%.`,
+        avatar: '/images/testimonial-2.jpg',
     },
 ];

@@ -33,7 +33,7 @@ const PricingColumn: React.FC<Props> = ({ tier, highlight }: Props) => {
                     onClick={handleButtonClick}
                     disabled={price !== "Contact Us"} // Disable button for "Coming Soon"
                 >
-                    {price === "Contact Us" ? "Get a Free Estimate" : "Coming Soon"}
+                    {price === "Contact Us" ? "Coming Soon" : "Coming Soon"}
                 </button>
             </div>
             <div className="p-6 mt-1">

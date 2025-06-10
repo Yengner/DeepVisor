@@ -96,9 +96,35 @@ export default function ProposalClient({
 
     if (status === 'accepted') {
         return (
-            <div className="text-center p-8">
-                <h1 className="text-3xl font-bold text-green-700 mb-4">🎉 Proposal Accepted</h1>
-                <p>Thank you, {firstName}. We received your acceptance. We&apos;ll be in touch very soon.</p>
+            <div className="flex flex-col items-center justify-center min-h-screen p-8">
+                <div className="bg-white rounded-lg shadow-lg p-8 max-w-lg text-center">
+                    <div className="text-green-600 mb-4">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-16 w-16 mx-auto"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+                    </div>
+                    <h1 className="text-3xl font-bold text-green-700 mb-4">🎉 Proposal Accepted</h1>
+                    <p className="text-gray-700 mb-6">
+                        Thank you, <span className="font-semibold">{firstName}</span>. We have received your acceptance. Our team will be in touch with you very soon to proceed further.
+                    </p>
+                    <button
+                        onClick={() => window.open('https://deepvisor.com/contact-us', '_blank')}
+                        className="bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg text-lg font-medium shadow-md transition duration-200"
+                    >
+                        📧 Contact Us for Questions
+                    </button>
+                </div>
             </div>
         );
     }

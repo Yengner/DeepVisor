@@ -1,5 +1,5 @@
 export const heroDetails = {
     heading: 'Clear, Clever, Connected Marketing Solutions',
-    subheading: 'Take charge with transparent insights and smarter marketing strategies, or let our experts handle it for you. The choice is yours.',
+    subheading: 'Launch targeted ad campaigns, get a high-converting website built in days, and automate your lead flow — all with one powerful partner: DeepVisor.',
     centerImageSrc: '/images/hero-mockup.png',
 }

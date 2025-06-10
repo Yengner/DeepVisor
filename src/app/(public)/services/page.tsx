@@ -1,93 +1,90 @@
 import React from "react";
 import Image from "next/image";
 
-const servicesData = [
+const mainServices = [
   {
-    title: "Website Development",
+    title: "Paid Lead Generation",
     description:
-      "Transform your ideas into fully responsive and high-performance websites tailored to your business needs.",
-    image: "/images/services/web-development.jpg", // Replace with your actual image path
-    link: "/services/website-development",
+      "Launch high-converting Meta ad campaigns tailored to your objectives—whether it’s generating leads, messages, or website traffic.",
+    image: "/images/services/paid-ads.png",
   },
   {
-    title: "Graphic Design",
+    title: "Quick Website Builds",
     description:
-      "Create stunning visuals that captivate audiences and establish a strong brand identity.",
-    image: "/images/services/graphic-design.jpg", // Replace with your actual image path
-    link: "/services/graphic-design",
-  },
-  {
-    title: "App Development",
-    description:
-      "Design and develop scalable and engaging mobile applications to reach your audience anywhere.",
-    image: "/images/services/app-development.jpg", // Replace with your actual image path
-    link: "/services/app-development",
+      "Get a conversion-focused landing page or mini-site (up to 5 pages) built in days—perfect for your ad campaigns or new launches.",
+    image: "/images/services/website-build.png",
   },
 ];
 
-const Services = () => {
-  return (
-    <div className="min-h-screen bg-white pt-28 px-10 lg:px-20 text-white">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-sm uppercase font-semibold tracking-wider text-blue-400">
-          What We Do
-        </h2>
-        <a
-          href="/services"
-          className="text-sm uppercase font-medium text-blue-400 hover:underline"
-        >
-          Explore Services
-        </a>
-      </div>
-      <h1 className="text-3xl lg:text-4xl font-bold mt-2">
-        We help to build clients their dream projects
-      </h1>
+const addOnServices = [
+  {
+    title: "Social Media Page Setup",
+    description:
+      "We’ll set up or optimize your Facebook, Instagram, or TikTok business profiles for consistent branding and maximum reach.",
+    image: "/images/services/social-setup.png",
+  },
+  {
+    title: "Automated Lead Follow-Up",
+    description:
+      "Streamline your lead nurture with custom workflows: form captures, email/SMS follow-ups, and CRM sync using n8n.",
+    image: "/images/services/automation.png",
+  },
+  {
+    title: "Mini Content Package",
+    description:
+      "Receive 3–5 on-brand posts or reels each month to fuel your social channels and ad creative library.",
+    image: "/images/services/content-package.png",
+  },
+];
 
-      {/* Services Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-        {servicesData.map((service, index) => (
-          <div
-            key={index}
-            className="bg-white text-black rounded-lg shadow-md overflow-hidden transform hover:-translate-y-1 transition duration-300"
-          >
-            <div className="relative h-52">
-              <Image
-                src={service.image}
-                alt={service.title}
-                fill
-                className="object-cover"
-              />
-            </div>
-            <div className="p-6">
-              <h3 className="text-lg font-semibold">{service.title}</h3>
-              <p className="text-sm text-gray-600 mt-2">{service.description}</p>
-              <a
-                href={service.link}
-                className="inline-flex items-center mt-4 text-blue-500 hover:text-blue-600"
-              >
-                View Details{" "}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="w-4 h-4 ml-1"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </a>
-            </div>
-          </div>
-        ))}
+export default function Services() {
+  const Card: React.FC<{ title: string; description: string; image: string }> = ({ title, description, image }) => (
+    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+      <div className="relative w-full h-96">
+        <Image
+          src={image}
+          alt={title}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          style={{ objectFit: "cover" }}
+        />
+      </div>
+      <div className="p-6">
+        <h3 className="text-xl font-semibold">{title}</h3>
+        <p className="text-gray-700 mt-2">{description}</p>
       </div>
     </div>
   );
-};
 
-export default Services;
+  return (
+    <div className="min-h-screen bg-white pt-28 px-8 lg:px-24 text-black space-y-16 pb-14">
+      {/* Core Services */}
+      <section>
+        <h2 className="text-sm uppercase font-semibold tracking-wider text-gray-600">
+          Our Core Services
+        </h2>
+        <h1 className="text-3xl lg:text-4xl font-bold mt-2">Main Services</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+          {mainServices.map((svc, i) => (
+            <Card key={i} {...svc} />
+          ))}
+        </div>
+      </section>
+
+      {/* Add-On Services */}
+      <section>
+        <h2 className="text-sm uppercase font-semibold tracking-wider text-gray-600">
+          Additional Add-Ons
+        </h2>
+        <h1 className="text-3xl lg:text-4xl font-bold mt-2">
+          Enhance Your Package
+        </h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
+          {addOnServices.map((svc, i) => (
+            <Card key={i} {...svc} />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}

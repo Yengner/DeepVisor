@@ -22,7 +22,7 @@ const HomePage: React.FC = () => {
         <Section
           id="pricing"
           title="Pricing"
-          description="Simple, transparent pricing. No surprises."
+          description="We are in development of our software to revolutionize the way you manage your ad campaigns. Our pricing is designed to be flexible and affordable, ensuring you get the best value for your investment. **** As of now, we are only offering our main service, DeepVisor, which includes comprehensive ad management and optimization services. Our team will handle all aspects of your campaigns, ensuring maximum ROI and performance. Please submit your free estimate form to get started or contact us. ****"
         >
           <Pricing />
         </Section>
