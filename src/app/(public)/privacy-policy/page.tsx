@@ -1,129 +1,153 @@
 export default function PrivacyPolicyPage() {
-    return (
-      <div className="p-20" style={{lineHeight: "1.6", fontFamily: "Arial, sans-serif" }}>
-        <h1>Privacy Policy</h1>
-        <p><strong>Effective Date:</strong> [Insert Effective Date]</p>
-  
-        <h2>1. Introduction</h2>
-        <p>
-          DeepVisor (“we”, “us”, or “our”) is an all-in-one AI-powered marketing dashboard and ad management platform designed for business owners and digital marketers. Our platform enables you to integrate multiple marketing channels—including Meta (Facebook & Instagram), TikTok, and more—view live ad performance and analytics, create and manage ad campaigns, run AI-powered experiments, and track leads from WhatsApp, Messenger, and other sources. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use DeepVisor.
+  return (
+    <div className="p-8 pt-28 mx-auto max-w-4xl">
+      <div className="bg-white shadow-lg rounded-lg p-8">
+        <h1 className="text-4xl font-bold text-gray-800 mb-6">Privacy Policy</h1>
+        <p className="text-gray-600 mb-8">
+          <strong>Effective Date:</strong> 06/11/2025
         </p>
-  
-        <h2>2. Information We Collect</h2>
-        <h3>Personal Information</h3>
-        <p>
-          When you sign up for and use DeepVisor, we may collect:
-        </p>
-        <ul>
-          <li>Full name</li>
-          <li>Email address</li>
-          <li>Business name</li>
-          <li>Phone number</li>
-        </ul>
-  
-        <h3>Authentication and Integration Data</h3>
-        <p>
-          To integrate with various marketing platforms, we collect:
-        </p>
-        <ul>
-          <li>OAuth tokens from Meta (Facebook & Instagram)</li>
-          <li>Ad account IDs</li>
-          <li>Facebook Page IDs</li>
-          <li>WhatsApp phone numbers (used for message-based lead generation)</li>
-        </ul>
-  
-        <h3>Marketing and Ad Data</h3>
-        <p>
-          We also collect data related to your marketing activities, such as:
-        </p>
-        <ul>
-          <li>Campaign, ad set, and ad details (names, budgets, spend, results, etc.)</li>
-          <li>Engagement metrics (likes, clicks, impressions, leads)</li>
-          <li>Organic post content (captions, media, engagement data)</li>
-          <li>AI-generated creative recommendations</li>
-        </ul>
-  
-        <h3>Other Information</h3>
-        <p>
-          Additionally, we collect:
-        </p>
-        <ul>
-          <li>Login metadata (IP address, device information for security purposes)</li>
-          <li>Billing information (if you subscribe, collected through third-party processors like Stripe)</li>
-        </ul>
-  
-        <h2>3. How We Use Your Information</h2>
-        <p>
-          We use your information to:
-        </p>
-        <ul>
-          <li>Provide, maintain, and improve our services</li>
-          <li>Personalize your experience on our platform</li>
-          <li>Manage and optimize your ad campaigns and marketing analytics</li>
-          <li>Integrate and sync data with connected marketing platforms (e.g., Meta, TikTok)</li>
-          <li>Generate reports and insights regarding campaign performance</li>
-          <li>Communicate with you regarding updates, offers, and customer support</li>
-          <li>Ensure security and prevent fraud</li>
-        </ul>
-  
-        <h2>4. How We Share Your Information</h2>
-        <p>
-          DeepVisor does not sell or share your personal data with third-party advertisers. However, we may share your information with trusted partners and service providers for the following purposes:
-        </p>
-        <ul>
-          <li>Cloud storage and database management (e.g., Supabase, AWS)</li>
-          <li>Billing and payment processing (e.g., Stripe)</li>
-          <li>AI services for content analysis and creative recommendations</li>
-          <li>Integration with Meta Marketing API and other advertising platforms</li>
-        </ul>
-        <p>
-          All third-party services are carefully vetted and are required to comply with relevant data protection laws.
-        </p>
-  
-        <h2>5. Data Retention</h2>
-        <p>
-          We retain your personal data for as long as necessary to provide our services, comply with legal obligations, resolve disputes, and enforce our agreements. When your data is no longer required, we will securely delete or anonymize it.
-        </p>
-  
-        <h2>6. International Data Transfers</h2>
-        <p>
-          DeepVisor is used globally. Your information may be transferred to, stored, and processed in countries outside your country of residence. We take appropriate measures to ensure your data is protected in accordance with applicable laws such as the GDPR and CCPA.
-        </p>
-  
-        <h2>7. Your Rights and Choices</h2>
-        <p>
-          Depending on your jurisdiction, you may have the following rights regarding your personal data:
-        </p>
-        <ul>
-          <li>The right to access a copy of your personal data</li>
-          <li>The right to correct or update inaccurate or incomplete information</li>
-          <li>The right to request deletion of your data (subject to legal limitations)</li>
-          <li>The right to restrict or object to certain processing activities</li>
-          <li>The right to data portability</li>
-        </ul>
-        <p>
-          To exercise any of these rights, please contact us using the information provided in Section 10.
-        </p>
-  
-        <h2>8. Security</h2>
-        <p>
-          We implement industry-standard security measures to protect your personal information from unauthorized access, alteration, disclosure, or destruction. While we strive to safeguard your data, no method of transmission or storage is 100% secure.
-        </p>
-  
-        <h2>9. Changes to This Privacy Policy</h2>
-        <p>
-          We may update this Privacy Policy from time to time. Any changes will be posted on this page along with the effective date. We encourage you to review this Privacy Policy periodically.
-        </p>
-  
-        <h2>10. Contact Us</h2>
-        <p>
-          If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at:
-        </p>
-        <p>
-          <strong>Email:</strong> support@deepvisor.com<br />
-          <strong>Address:</strong> [Insert Physical Address if available]
-        </p>
+
+        {/* Section 1: Introduction */}
+        <section className="mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">1. Introduction</h2>
+          <p className="text-gray-700">
+            DeepVisor (“we”, “us”, or “our”) is an AI-powered marketing dashboard and ad management platform for business owners and digital marketers. This Privacy Policy explains how we collect, use, disclose, and protect your information when you visit or use our services, including our website <a href="https://deepvisor.com" className="text-blue-600 underline">deepvisor.com</a>.
+          </p>
+        </section>
+
+        {/* Section 2: Information We Collect */}
+        <section className="mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">2. Information We Collect</h2>
+
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">2.1 Personal Information</h3>
+            <p className="text-gray-700">When you sign up for DeepVisor or opt in for communications, we may collect:</p>
+            <ul className="list-disc list-inside text-gray-700 mt-2">
+              <li>Full name</li>
+              <li>Email address</li>
+              <li>Business name</li>
+              <li>Phone number</li>
+            </ul>
+          </div>
+
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">2.2 Authentication & Integration Data</h3>
+            <p className="text-gray-700">To integrate with marketing platforms, we collect:</p>
+            <ul className="list-disc list-inside text-gray-700 mt-2">
+              <li>OAuth tokens (e.g., Meta for Facebook & Instagram)</li>
+              <li>Ad account IDs, Page IDs</li>
+              <li>WhatsApp phone numbers (for lead messaging)</li>
+            </ul>
+          </div>
+
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">2.3 Marketing & Ad Performance Data</h3>
+            <p className="text-gray-700">We also gather:</p>
+            <ul className="list-disc list-inside text-gray-700 mt-2">
+              <li>Campaign/ad set/ad details (e.g., spend, impressions, leads)</li>
+              <li>Engagement metrics (likes, clicks)</li>
+              <li>Organic post content and analytics</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">2.4 Other Information</h3>
+            <p className="text-gray-700">Additionally, we may collect:</p>
+            <ul className="list-disc list-inside text-gray-700 mt-2">
+              <li>Login metadata (IP address, device info)</li>
+              <li>Billing details (processed via Stripe or similar)</li>
+            </ul>
+          </div>
+        </section>
+
+        {/* Section 3: How We Use Your Information */}
+        <section className="mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">3. How We Use Your Information</h2>
+          <ul className="list-disc list-inside text-gray-700 mt-2">
+            <li>Provide, maintain, and improve our services</li>
+            <li>Personalize your experience on DeepVisor</li>
+            <li>Manage and optimize your ad campaigns</li>
+            <li>Sync data with third-party platforms</li>
+            <li>Generate performance reports and insights</li>
+            <li>Communicate updates, offers, and support</li>
+            <li>Ensure security and detect fraud</li>
+          </ul>
+        </section>
+
+        {/* Section 4: SMS & WhatsApp Opt-In Policy */}
+        <section className="mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">4. SMS & WhatsApp Opt-In Policy</h2>
+          <p className="text-gray-700">
+            We will only send SMS or WhatsApp messages to you if you have <strong>explicitly opted in</strong> to receive such communications. By providing your phone number and replying <em>YES</em>, you consent to receive messages from DeepVisor. You can withdraw consent at any time by replying <em>STOP</em>. After opting out, you will no longer receive marketing messages, though transactional messages may still be sent to complete active requests.
+          </p>
+        </section>
+
+        {/* Section 5: How We Share Your Information */}
+        <section className="mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">5. How We Share Your Information</h2>
+          <p className="text-gray-700">We do not sell your personal data. We may share information with:</p>
+          <ul className="list-disc list-inside text-gray-700 mt-2">
+            <li>Cloud storage providers (e.g., Supabase, AWS)</li>
+            <li>Payment processors (e.g., Stripe)</li>
+            <li>Third-party API services (e.g., Meta Marketing API)</li>
+          </ul>
+        </section>
+
+        {/* Section 6: Data Retention */}
+        <section className="mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">6. Data Retention</h2>
+          <p className="text-gray-700">
+            We retain your data as long as necessary to fulfill service obligations, comply with legal requirements, and support our operations. When no longer needed, data is securely deleted or anonymized.
+          </p>
+        </section>
+
+        {/* Section 7: International Transfers */}
+        <section className="mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">7. International Transfers</h2>
+          <p className="text-gray-700">
+            DeepVisor operates globally. Your data may be transferred to and processed in countries outside your residence. We ensure data protection through applicable safeguards such as GDPR and CCPA compliance.
+          </p>
+        </section>
+
+        {/* Section 8: Your Rights */}
+        <section className="mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">8. Your Rights</h2>
+          <p className="text-gray-700">Depending on your jurisdiction, you may have rights to:</p>
+          <ul className="list-disc list-inside text-gray-700 mt-2">
+            <li>Access and receive a copy of your data</li>
+            <li>Correct or update inaccurate information</li>
+            <li>Request deletion of personal data</li>
+            <li>Restrict or object to processing</li>
+            <li>Data portability</li>
+          </ul>
+          <p className="text-gray-700">To exercise these rights, contact us at support@deepvisor.com.</p>
+        </section>
+
+        {/* Section 9: Security */}
+        <section className="mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">9. Security</h2>
+          <p className="text-gray-700">
+            We employ industry-standard measures to protect your data. However, no method is 100% secure. We continually review and improve our security practices.
+          </p>
+        </section>
+
+        {/* Section 10: Changes to This Policy */}
+        <section className="mb-10">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">10. Changes to This Policy</h2>
+          <p className="text-gray-700">
+            We may update this policy. Changes will be posted here with a revised effective date. Please review periodically.
+          </p>
+        </section>
+
+        {/* Section 11: Contact Us */}
+        <section>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">11. Contact Us</h2>
+          <p className="text-gray-700">
+            If you have questions or concerns, reach out to us at:<br />
+            <strong>Email:</strong> info@deepvisor.com<br />
+          </p>
+        </section>
       </div>
-    );
-  }
-  
+    </div>
+  );
+}

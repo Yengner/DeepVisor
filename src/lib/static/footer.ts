@@ -14,16 +14,16 @@ export const footerDetails: {
             url: "/home"
         },
         {
-            text: "Free Estimate",
-            url: "/estimate"
-        },
-        {
             text: "Contact Us",
             url: "/contact-us"
         },
         {
             text: "Investor Relations",
             url: "/investor-relations"
+        },
+        {
+            text: "Privacy Policy",
+            url: "/privacy-policy"
         },
     ],
     email: 'info@deepvisor.com',
