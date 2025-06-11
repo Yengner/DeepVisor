@@ -157,7 +157,7 @@ export default function InvestorPage() {
           </a>
         </div>
         <a
-          href="https://calendar.app.google/6ukZKMWvsypeBJiWA"
+          href="https://calendly.com/deepvisor/deepvisor-free-business-consultation-website-ads"
           className="mt-10 inline-block bg-primary-accent px-8 py-3 text-white font-semibold rounded-md shadow hover:bg-primary-dark transition"
         >
           Schedule a Meeting

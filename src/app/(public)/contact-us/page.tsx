@@ -125,7 +125,7 @@ const FreeEstimate = () => {
                         </div> */}
                         <div className="mt-6 text-center">
                             <a
-                                href="https://calendar.app.google/6ukZKMWvsypeBJiWA"
+                                href="https://calendly.com/deepvisor/deepvisor-free-business-consultation-website-ads"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-block px-6 py-3 bg-foreground-accent text-white font-bold text-lg rounded-lg shadow-md hover:bg-yellow-400 transition"
