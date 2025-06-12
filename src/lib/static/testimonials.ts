@@ -11,7 +11,7 @@ export const testimonials: ITestimonial[] = [
     {
         name: "Ada's Secret Salon Inc.",
         role: 'Salon Owner',
-        message: `Thanks to ${siteDetails.siteName}, we saw +85 leads and added +$60K in revenue per month—all without additional calls.`,
+        message: `Thanks to ${siteDetails.siteName}, we saw +85 leads and added +$15K in revenue per month—all without additional calls.`,
         avatar: '/images/testimonial-3.png',
     },
     {
