@@ -2,7 +2,7 @@
 
 import { handleFreeEstimate } from '@/lib/actions/user.actions';
 import React, { useState } from 'react';
-import { FaFacebookF, FaTwitter, FaLinkedin, FaInstagram, FaEnvelope, FaPhoneAlt, FaMapMarkerAlt, FaUser } from 'react-icons/fa';
+import { FaFacebookF, FaLinkedin, FaInstagram, FaEnvelope, FaPhoneAlt, FaMapMarkerAlt, FaUser } from 'react-icons/fa';
 
 const FreeEstimate = () => {
     const [formData, setFormData] = useState({
