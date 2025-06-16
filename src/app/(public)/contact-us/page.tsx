@@ -1,6 +1,5 @@
 'use client';
 
-import { handleFreeEstimate } from '@/lib/actions/user.actions';
 import React, { useState } from 'react';
 import { FaFacebookF, FaLinkedin, FaInstagram, FaEnvelope, FaPhoneAlt, FaMapMarkerAlt, FaUser } from 'react-icons/fa';
 
@@ -14,9 +13,6 @@ const FreeEstimate = () => {
         projectDetails: '',
         timeline: '',
         preferredContact: 'email',
-        isFreeOption: false,
-        estimatedIncome: '',
-        termsAgreed: false,
     });
 
     const [isLoading, setIsLoading] = useState(false);
@@ -25,34 +21,31 @@ const FreeEstimate = () => {
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
-        const { name, value, type } = e.target;
-
-        if (type === 'checkbox') {
-            // Handle checkboxes
-            const checked = (e.target as HTMLInputElement).checked;
-            setFormData({ ...formData, [name]: checked });
-        } else {
-            setFormData({ ...formData, [name]: value });
-        }
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (formData.isFreeOption && (!formData.estimatedIncome || !formData.termsAgreed)) {
-            alert('Please complete all fields required for the free option.');
-            return;
-        }
-
         setIsLoading(true);
 
         try {
-            const result = await handleFreeEstimate(formData);
+            // Send form data to the server
+            const response = await fetch('https://n8n.deepvisor.com/webhook/contact-us', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
 
-            if (result.success) {
+            const result = await response.json();
+
+            if (response.ok) {
                 setIsSubmitted(true);
             } else {
-                alert(`Error: ${result.error}`);
+                alert(`Error: ${result.message || 'Failed to submit the form.'}`);
             }
         } catch (error) {
             console.error('Submission error:', error);
