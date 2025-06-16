@@ -2,7 +2,7 @@
 
 import Hero from "@/components/public/Hero";
 import Testimonials from "@/components/public/Testimonials";
-import Pricing from "@/components/public/Pricing/Pricing";
+// import Pricing from "@/components/public/Pricing/Pricing";
 import CTA from "@/components/public/CTA";
 import Container from "@/components/public/Container";
 import Benefits from "@/components/public/Benefits/Benefits";
