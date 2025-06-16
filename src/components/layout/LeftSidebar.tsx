@@ -24,7 +24,6 @@ const Sidebar = () => {
     { name: 'Reports', icon: <ChartBarIcon className="w-6 h-6" />, route: '/reports' },
     { name: 'Upload', icon: <ArrowUpTrayIcon className="w-6 h-6" />, route: '/upload' },
     { name: 'Integration', icon: <PuzzlePieceIcon className="w-6 h-6" />, route: '/integration' },
-    { name: 'DeepPass', icon: <CreditCardIcon className="w-6 h-6" />, route: '/deeppass' },
   ];
 
   const handleNavigation = (route: string) => {
