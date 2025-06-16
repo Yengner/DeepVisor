@@ -6,7 +6,6 @@ import {
   HomeIcon,
   ChartBarIcon,
   PuzzlePieceIcon,
-  CreditCardIcon,
   PresentationChartLineIcon,
   Cog6ToothIcon,
   ArrowUpTrayIcon
