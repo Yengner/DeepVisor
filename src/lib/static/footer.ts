@@ -11,7 +11,7 @@ export const footerDetails: {
     quickLinks: [
         {
             text: "Home",
-            url: "/home"
+            url: "/"
         },
         {
             text: "Contact Us",

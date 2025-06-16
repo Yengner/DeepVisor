@@ -11,7 +11,7 @@ export const menuItems: IMenuItem[] = [
     },
     {
         text: "Free Estimate",
-        url: "/estimate"
+        url: "/https://docs.google.com/forms/d/e/1FAIpQLSfQ7oQxeThqzYtAB5htr27ydTnaexZ_utdzvXF7e8UBVslAyQ/viewform?usp=dialog"
     },
     {
         text: "Contact Us",

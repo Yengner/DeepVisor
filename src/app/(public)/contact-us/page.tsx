@@ -137,16 +137,13 @@ const FreeEstimate = () => {
                     <div>
                         <h2 className="text-2xl font-bold text-white mb-5 ">Social Media</h2>
                         <div className="flex space-x-4 mb-28 ">
-                            <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-300 transition">
+                            <a href="https://www.facebook.com/profile.php?id=61555633384605" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-300 transition">
                                 <FaFacebookF className="w-6 h-6" />
                             </a>
-                            <a href="https://www.twitter.com" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-300 transition">
-                                <FaTwitter className="w-6 h-6" />
-                            </a>
-                            <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-300 transition">
+                            <a href="https://www.linkedin.com/company/deepvisor-llc" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-300 transition">
                                 <FaLinkedin className="w-6 h-6" />
                             </a>
-                            <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-300 transition">
+                            <a href="https://www.instagram.com/deepvisormarketing" target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-300 transition">
                                 <FaInstagram className="w-6 h-6" />
                             </a>
                         </div>
@@ -326,17 +323,6 @@ const FreeEstimate = () => {
                                         className="form-radio"
                                     />
                                     <span className="ml-2 text-gray-700">Zoom</span>
-                                </label>
-                                <label className="flex items-center">
-                                    <input
-                                        type="radio"
-                                        name="preferredContact"
-                                        value="microsoftTeams"
-                                        checked={formData.preferredContact === 'microsoftTeams'}
-                                        onChange={handleChange}
-                                        className="form-radio"
-                                    />
-                                    <span className="ml-2 text-gray-700">Microsoft Teams</span>
                                 </label>
                             </div>
                         </div>
