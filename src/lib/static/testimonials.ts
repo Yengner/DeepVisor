@@ -4,7 +4,7 @@ import { siteDetails } from "./siteDetails";
 export const testimonials: ITestimonial[] = [
     {
         name: 'J&J Sunshine Rental LLC',
-        role: 'CEO at Company',
+        role: 'CEO',
         message: `DeepVisor managed our paid ad campaigns across Meta and Google—delivering over $120K in bookings in just two months with a 5:1 ROAS. Their data-driven strategy turned ad spend into real revenue.`,
         avatar: '/images/testimonial-1.png',
     },

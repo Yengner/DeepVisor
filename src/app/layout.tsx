@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Source_Sans_3, Manrope } from "next/font/google";
+import '@mantine/core/styles.css';
+import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from '@mantine/core';
 import "../styles/globals.css";
 
 export const metadata: Metadata = {
@@ -17,9 +19,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${manrope.className} ${sourceSans.className} antialiasedbg-gray-200`}>
-        {children}
+    <html lang="en" {...mantineHtmlProps}>
+      <head>
+        <ColorSchemeScript />
+      </head>
+      <body>
+        <MantineProvider>{children}</MantineProvider>
       </body>
     </html>
   );

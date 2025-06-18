@@ -22,6 +22,7 @@ export async function handleLogin(email: string, password: string) {
     }
 }
 
+// Handle Sign Up
 export async function handleSignUp(
     email: string,
     password: string,
@@ -35,6 +36,7 @@ export async function handleSignUp(
 
         const { data, error } = await supabase.auth.signUp({
             email,
+            phone: phone_number,
             password,
             options: {
                 data: {
@@ -241,6 +243,27 @@ export async function handleUploadFile(file: File, userId: string) {
         return { success: true, url: publicUrl };
 
     } catch (error) {
+        return { success: false, error: getErrorMessage(error) };
+    }
+}
+
+export async function resendVerificationEmail(email: string) {
+    try {
+        const supabase = await createSupabaseClient();
+
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email,
+        });
+
+        if (error) {
+            console.error('Error resending verification email:', error.message);
+            throw error;
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('Unexpected error while resending verification email:', error);
         return { success: false, error: getErrorMessage(error) };
     }
 }

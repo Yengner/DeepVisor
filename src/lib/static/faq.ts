@@ -26,12 +26,4 @@ export const faqs: IFAQ[] = [
     question: `What’s included in the paid ads service?`,
     answer: `We handle full Meta ad campaign setup, targeting, audience testing, budget allocation, and performance tracking. You’ll get detailed reports and we’ll make ongoing adjustments to improve ROI.`,
   },
-  {
-    question: `How do payments work for services?`,
-    answer: `Once your proposal is approved, you’ll receive a secure Stripe payment link with a 7-day grace period. Monthly services like ads or website maintenance are billed accordingly.`,
-  },
-  {
-    question: `What support can I expect as a client?`,
-    answer: `You’ll have direct email support from our team (and from Yengner, our founder), plus access to updates, strategy recommendations, and an optional Slack workspace if you prefer real-time communication.`,
-  },
 ];

@@ -21,8 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${manrope.className} ${sourceSans.className} antialiasedbg-gray-200`}>
+    <>
         {/* Google Tag Manager (noscript) */}
         <noscript>
           <iframe
@@ -73,9 +72,8 @@ export default function RootLayout({
         {/* End Google Analytics gtag.js */}
 
         <Header />
-        <main>{children}</main>
+        <main className="pt-20 md:pt-24">{children}</main>
         <Footer />
-      </body>
-    </html>
+      </>
   );
 }

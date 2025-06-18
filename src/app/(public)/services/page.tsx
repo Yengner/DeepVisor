@@ -57,7 +57,7 @@ export default function Services() {
   );
 
   return (
-    <div className="min-h-screen bg-white pt-28 px-8 lg:px-24 text-black space-y-16 pb-14">
+    <div className="min-h-screen bg-white px-8 lg:px-24 text-black space-y-16 pb-14">
       {/* Core Services */}
       <section>
         <h2 className="text-sm uppercase font-semibold tracking-wider text-gray-600">

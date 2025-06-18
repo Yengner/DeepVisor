@@ -21,5 +21,12 @@
     "http",
     "net"
   ],
-  "deno.enable": true
+  "deno.enable": true,
+  "cssVariables.lookupFiles": [
+    "**/*.css",
+    "**/*.scss",
+    "**/*.sass",
+    "**/*.less",
+    "node_modules/@mantine/core/styles.css"
+  ]
 }

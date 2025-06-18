@@ -70,7 +70,7 @@ const FreeEstimate = () => {
     }
 
     return (
-        <div className="min-h-screen bg-white flex items-center justify-center relative pb-10 pt-28 md:pt-36 px-5">
+        <div className="min-h-screen bg-white flex items-center justify-center relative pb-10 md:pt-36 px-5">
             <div className="flex flex-col md:flex-row max-w-6xl w-full bg-gray-100 rounded-lg shadow-lg">
 
                 {/* Left Column: Contact Information */}

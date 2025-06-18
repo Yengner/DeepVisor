@@ -26,72 +26,77 @@ const Header: React.FC = () => {
     }, []);
 
     return (
-        <header className="bg-transparent fixed top-0 left-0 right-0 md:absolute z-50 mx-auto w-full">
-            <Container className="!px-0">
-                <nav className="shadow-md md:shadow-none bg-white md:bg-transparent mx-auto flex items-center justify-between px-5 md:py-10">
-                    {/* Logo */}
-                    <div className="flex items-center">
-                        <Link href="/" className="flex items-center gap-2">
-                            <FaChartPie className="text-foreground min-w-fit w-12 h-7" />
-                            <span className="manrope text-2xl font-semibold text-foreground cursor-pointer w-48">
-                                {siteDetails.siteName}
-                            </span>
-                        </Link>
-                    </div>
-
-                    {/* Center Menu */}
-                    <div className="hidden md:flex items-center space-x-6">
-                        <ul className="flex space-x-5">
-                            {menuItems.map(item => (
-                                <li key={item.text}>
-                                    <Link href={item.url} className="text-foreground hover:text-primary-accent transition-colors">
-                                        {item.text}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    {/* Right Section */}
-                    <div className="hidden md:flex items-center space-x-4">
-                        {proposalToken ? (
-                            <Link
-                                href={`/proposal/${proposalToken}`}
-                                className="bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white px-6 py-3 rounded-full text-lg font-bold shadow-lg hover:opacity-90 transition-opacity"
-                            >
-                                Check Proposal
+        <header className="bg-transparent top-0 left-0 right-0 w-full z-50">
+            <div className="w-full bg-white shadow-md">
+                <Container className="!px-0">
+                    <nav className="mx-auto flex items-center justify-between px-5 py-4 md:py-6">
+                        {/* Logo */}
+                        <div className="flex items-center">
+                            <Link href="/" className="flex items-center gap-2">
+                                <FaChartPie className="text-foreground min-w-fit w-12 h-7" />
+                                <span className="manrope text-2xl font-semibold text-foreground cursor-pointer w-48">
+                                    {siteDetails.siteName}
+                                </span>
                             </Link>
-                        ) : (
-                            <Link
-                                href="https://forms.gle/opEmPnAhSiN1Nint5"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-white bg-primary-accent hover:bg-gray-200 px-16 py-3 rounded-full transition-colors flex items-center gap-2 cursor-pointer"
-                            >
-                                <p className="text-lg font-extrabold">Free Quote !!</p>
-                            </Link>
-                        )}
-                    </div>
+                        </div>
 
-                    {/* Mobile Menu Button */}
-                    <div className="md:hidden flex items-center">
-                        <button
-                            onClick={toggleMenu}
-                            type="button"
-                            className="bg-primary text-black focus:outline-none rounded-full w-10 h-10 flex items-center justify-center"
-                            aria-controls="mobile-menu"
-                            aria-expanded={isOpen}
-                        >
-                            {isOpen ? (
-                                <HiOutlineXMark className="h-6 w-6" aria-hidden="true" />
+                        {/* Center Menu */}
+                        <div className="hidden md:flex items-center space-x-6">
+                            <ul className="flex space-x-5">
+                                {menuItems.map((item) => (
+                                    <li key={item.text}>
+                                        <Link
+                                            href={item.url}
+                                            className="text-foreground hover:text-primary-accent transition-colors"
+                                        >
+                                            {item.text}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Right Section */}
+                        <div className="hidden md:flex items-center space-x-4">
+                            {proposalToken ? (
+                                <Link
+                                    href={`/proposal/${proposalToken}`}
+                                    className="bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white px-6 py-3 rounded-full text-lg font-bold shadow-lg hover:opacity-90 transition-opacity"
+                                >
+                                    Check Proposal
+                                </Link>
                             ) : (
-                                <HiBars3 className="h-6 w-6" aria-hidden="true" />
+                                <Link
+                                    href="https://forms.gle/opEmPnAhSiN1Nint5"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-white bg-primary-accent hover:bg-gray-200 px-16 py-3 rounded-full transition-colors flex items-center gap-2 cursor-pointer"
+                                >
+                                    <p className="text-lg font-extrabold">Free Quote !!</p>
+                                </Link>
                             )}
-                            <span className="sr-only">Toggle navigation</span>
-                        </button>
-                    </div>
-                </nav>
-            </Container>
+                        </div>
+
+                        {/* Mobile Menu Button */}
+                        <div className="md:hidden flex items-center">
+                            <button
+                                onClick={toggleMenu}
+                                type="button"
+                                className="bg-primary text-black focus:outline-none rounded-full w-10 h-10 flex items-center justify-center"
+                                aria-controls="mobile-menu"
+                                aria-expanded={isOpen}
+                            >
+                                {isOpen ? (
+                                    <HiOutlineXMark className="h-6 w-6" aria-hidden="true" />
+                                ) : (
+                                    <HiBars3 className="h-6 w-6" aria-hidden="true" />
+                                )}
+                                <span className="sr-only">Toggle navigation</span>
+                            </button>
+                        </div>
+                    </nav>
+                </Container>
+            </div>
 
             {/* Mobile Menu with Transition */}
             <Transition
@@ -105,9 +110,13 @@ const Header: React.FC = () => {
             >
                 <div id="mobile-menu" className="md:hidden bg-white shadow-lg">
                     <ul className="flex flex-col space-y-4 pt-1 pb-6 px-6">
-                        {menuItems.map(item => (
+                        {menuItems.map((item) => (
                             <li key={item.text}>
-                                <Link href={item.url} className="text-foreground hover:text-primary block" onClick={toggleMenu}>
+                                <Link
+                                    href={item.url}
+                                    className="text-foreground hover:text-primary block"
+                                    onClick={toggleMenu}
+                                >
                                     {item.text}
                                 </Link>
                             </li>
