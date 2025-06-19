@@ -3,7 +3,7 @@ import React from 'react';
 
 export default function BlogLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50 p-6 pt-28">
+    <div className="min-h-screen bg-gray-50 p-6">
       {/* Blog Header */}
       <header className="bg-white shadow-sm rounded-lg p-6 mb-6">
         <h1 className="text-4xl font-bold text-gray-800">Blog</h1>

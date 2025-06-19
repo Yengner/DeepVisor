@@ -4,9 +4,12 @@ import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
 import { getErrorMessage, parseStringify } from '../utils/utils';
 import { redirect } from 'next/navigation';
 
+// ===== AUTHENTICATION ACTIONS =====
 
+/**
+ * Handles user login with email and password
+ */
 export async function handleLogin(email: string, password: string) {
-
     try {
         const supabase = await createSupabaseClient();
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -15,14 +18,15 @@ export async function handleLogin(email: string, password: string) {
             throw error;
         }
 
-        return { errorMessage: null }
-
+        return { success: true, errorMessage: null };
     } catch (error) {
-        return { errorMessage: getErrorMessage(error) }
+        return { success: false, errorMessage: getErrorMessage(error) };
     }
 }
 
-// Handle Sign Up
+/**
+ * Handles user signup - creates auth record but NOT profile
+ */
 export async function handleSignUp(
     email: string,
     password: string,
@@ -48,34 +52,75 @@ export async function handleSignUp(
             },
         });
 
-
         if (error) {
             console.error("Supabase signUp Error:", error.message, error);
             throw error;
         }
 
-        if (data.user) {
-            await supabase.from("user_onboarding").insert({
-                user_id: data.user.id,
-                businessType: null,
-                hasEcommerce: false,
-                adGoal: null,
-                monthlyBudget: null,
-                socialPlatforms: [],
-                runsAds: false,
-                completed: false
-            });
-        }
+        // No longer creating profile here - will create after verification
 
-        return { errorMessage: null }
-
+        return { success: true, userId: data.user?.id, errorMessage: null };
     } catch (error) {
-        return { errorMessage: getErrorMessage(error) }
+        return { success: false, errorMessage: getErrorMessage(error) };
     }
 }
 
-export async function handleSignOut() {
+/**
+ * Creates user profile after email verification
+ */
+export async function createUserProfile(userId: string) {
+    try {
+        const supabase = await createSupabaseClient();
 
+        // Get user data
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+
+        if (userError || !userData.user) {
+            console.error("Error fetching user data:", userError);
+            return { success: false, errorMessage: "Failed to retrieve user data" };
+        }
+
+        const metadata = userData.user.user_metadata;
+        const first_name = metadata?.first_name || '';
+        const last_name = metadata?.last_name || '';
+        const business_name = metadata?.business_name || '';
+        const phone_number = metadata?.phone_number || '';
+
+        // Insert profile record
+        const { error } = await supabase.from("profiles").insert({
+            id: userId,
+            full_name: `${first_name} ${last_name}`.trim(),
+            business_name: business_name,
+            phone_number: phone_number,
+            avatar_url: null,
+            plan_tier: null,
+            subscription_status: null,
+            stripe_customer_id: null,
+            stripe_subscription_id: null,
+            subscription_start_date: null,
+            subscription_end_date: null,
+            subscription_created: null,
+            completed: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        });
+
+        if (error) {
+            console.error("Error creating profile:", error);
+            return { success: false, errorMessage: "Failed to create user profile" };
+        }
+
+        return { success: true, errorMessage: null };
+    } catch (error) {
+        console.error("Unexpected error creating profile:", error);
+        return { success: false, errorMessage: getErrorMessage(error) };
+    }
+}
+
+/**
+ * Handles user sign out
+ */
+export async function handleSignOut() {
     try {
         const supabase = await createSupabaseClient();
         const { error } = await supabase.auth.signOut();
@@ -84,26 +129,17 @@ export async function handleSignOut() {
             throw error;
         }
 
-        return { errorMessage: null }
-
+        return { success: true, errorMessage: null };
     } catch (error) {
-
-        return { errorMessage: getErrorMessage(error) }
-
+        return { success: false, errorMessage: getErrorMessage(error) };
     }
 }
 
-// Helper function for updating user
-// export async function updateUser(email: string) {
-//   const { error } = await supabase.supabase.auth.updateUser({ email });
+// ===== USER DATA ACTIONS =====
 
-//   if (error) {
-//     return { success: false, message: error.message };
-//   }
-
-//   return { success: true };
-// }
-
+/**
+ * Gets the currently logged-in user or redirects to login
+ */
 export async function getLoggedInUser() {
     const supabase = await createSupabaseClient();
     const { data, error } = await supabase.auth.getUser();
@@ -117,136 +153,30 @@ export async function getLoggedInUser() {
     return user;
 }
 
-export async function getUserInfo({ userId }: getUserInfoProps) {
-
+/**
+ * Gets user information by user ID
+ */
+export async function getUserInfo({ userId }: { userId: string }) {
     try {
         const supabase = await createSupabaseClient();
 
         const { data } = await supabase
-            .from('users')
+            .from('profiles')  // Changed from 'users' to 'profiles'
             .select('*')
             .eq('id', userId)
             .single();
 
         return parseStringify(data);
     } catch (error) {
-        return { errorMessage: getErrorMessage(error) }
-    }
-};
-
-// export async function getAdAccounts({ userId }: getAdAccountsProps) {
-
-//     try {
-//         const supabase = createSupabaseClient();
-
-//         const { data } = await supabase
-//             .from('ad_accounts') // The table where social media data is stored
-//             .select('ad_account_id')
-//             .eq('platform', 'facebook')
-//             .eq('user_id', userId);
-
-//         return parseStringify(data);
-//     } catch (error) {
-
-//     }
-
-// }
-
-export async function handleFreeEstimate(data: {
-    name: string;
-    company?: string;
-    email: string;
-    phone: string;
-    budget: string;
-    projectDetails: string;
-    timeline: string;
-    preferredContact: string;
-    isFreeOption: boolean;
-    estimatedIncome?: string;
-    termsAgreed: boolean;
-}) {
-    try {
-        const supabase = await createSupabaseClient();
-        const { data: insertedData, error } = await supabase
-            .from('free_estimates')
-            .insert([
-                {
-                    name: data.name,
-                    company: data.company || null,
-                    email: data.email,
-                    phone: data.phone,
-                    budget: data.budget,
-                    project_details: data.projectDetails,
-                    timeline: data.timeline,
-                    preferred_contact: data.preferredContact,
-                    is_free_option: data.isFreeOption,
-                    estimated_income: data.isFreeOption ? data.estimatedIncome || null : null,
-                    terms_agreed: data.termsAgreed,
-                },
-            ]);
-
-        if (error) throw error;
-
-        return { success: true, data: insertedData };
-    } catch (error) {
-        if (error instanceof Error) {
-            console.error('Supabase Insert Error:', error.message);
-            return { success: false, error: error.message };
-        } else {
-            console.error('Unknown error:', error);
-            return { success: false, error: 'An unknown error occurred.' };
-        }
-    }
-};
-
-export async function handleUploadFile(file: File, userId: string) {
-    try {
-        const supabase = await createSupabaseClient();
-
-        if (!userId || typeof userId !== "string") {
-            return { success: false, message: "Invalid user ID." };
-        }
-
-        const sanitizedFileName = file.name.replace(/\s+/g, "-");
-        const filePath = `${userId}/${Date.now()}-${sanitizedFileName}`;
-
-        const storage = supabase.storage;
-
-        if (!file) {
-            return { success: false, message: "No file uploaded." };
-        }
-
-        const { error: bucketError } = await storage
-            .from("business-media")
-            .upload(filePath, file, {
-                cacheControl: "3600",
-                upsert: false,
-            });
-
-        if (bucketError) {
-            console.error("Error uploading file:", bucketError);
-            return { success: false, message: "Error Uploading File." };
-        }
-
-        const { data } = supabase.storage
-            .from("business-media")
-            .getPublicUrl(filePath)
-
-
-        const publicUrl = data?.publicUrl ?? null;
-
-        if (!publicUrl) {
-            console.error("Error getting public URL.");
-            return { success: false, message: "Error getting public URL." };
-        }
-
-        return { success: true, url: publicUrl };
-
-    } catch (error) {
-        return { success: false, error: getErrorMessage(error) };
+        return { errorMessage: getErrorMessage(error) };
     }
 }
 
+// ===== EMAIL VERIFICATION ACTIONS =====
+
+/**
+ * Resends verification email
+ */
 export async function resendVerificationEmail(email: string) {
     try {
         const supabase = await createSupabaseClient();
@@ -265,5 +195,53 @@ export async function resendVerificationEmail(email: string) {
     } catch (error) {
         console.error('Unexpected error while resending verification email:', error);
         return { success: false, error: getErrorMessage(error) };
+    }
+}
+
+// ===== OTHER USER ACTIONS =====
+
+/**
+ * Updates user onboarding progress
+ */
+export async function updateOnboardingProgress(onboarding_completed: boolean, step?: number) {
+
+    try {
+        const supabase = await createSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            throw new Error('User not authenticated');
+        }
+
+        const updateData: {
+            onboarding_completed?: boolean;
+            onboarding_step?: number;
+            onboarding_updated_at: string;
+            [key: string]: any;
+        } = {
+            onboarding_updated_at: new Date().toISOString(),
+        };
+
+        if (onboarding_completed) {
+            updateData.onboarding_completed = true;
+        }
+
+        if (typeof step === 'number') {
+            updateData.onboarding_step = step;
+        }
+
+        const { error } = await supabase
+            .from('profiles')
+            .update(updateData)
+            .eq('id', user.id);
+
+        if (error) {
+            throw error;
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating onboarding progress:', error);
+        return { success: false, error: (error as Error).message };
     }
 }

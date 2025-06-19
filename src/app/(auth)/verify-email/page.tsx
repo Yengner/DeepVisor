@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/utils/supabase/clients/browser';
+import { createUserProfile } from '@/lib/actions/user.actions';
 import { Loader, Title, Text, Stack, Button, TextInput, Center } from '@mantine/core';
-import { IconCheck } from '@tabler/icons-react';
+import { IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 
 export default function VerifyEmailPage() {
@@ -12,11 +13,12 @@ export default function VerifyEmailPage() {
     const searchParams = useSearchParams();
     const supabase = createClient();
 
+    // State variables
     const [status, setStatus] = useState<'loading' | 'loadingVerification' | 'success' | 'error' | 'manual'>('loading');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [manualCode, setManualCode] = useState<string>('');
     const [isVerifying, setIsVerifying] = useState(false);
-    const [resendTimer, setResendTimer] = useState<number>(0); // Timer for resend button
+    const [resendTimer, setResendTimer] = useState<number>(0);
 
     useEffect(() => {
         const tokenHash = searchParams.get('token_hash');
@@ -27,13 +29,15 @@ export default function VerifyEmailPage() {
             verifyWithTokenHash(tokenHash);
         } else {
             checkVerificationStatus();
-            localStorage.setItem('emailForVerification', email || '');
-            setStatus('manual'); // Allow manual entry if no token_hash is present
+            if (email) {
+                localStorage.setItem('emailForVerification', email);
+            }
+            setStatus('manual');
         }
 
         // Start polling to check verification status
-        const interval = setInterval(checkVerificationStatus, 5000); // Poll every 5 seconds
-        return () => clearInterval(interval); // Cleanup interval on component unmount
+        const interval = setInterval(checkVerificationStatus, 5000);
+        return () => clearInterval(interval);
     }, [searchParams]);
 
     useEffect(() => {
@@ -43,7 +47,9 @@ export default function VerifyEmailPage() {
         }
     }, [resendTimer]);
 
+    // Handle verification with token from URL
     const verifyWithTokenHash = async (tokenHash: string) => {
+        setStatus('loadingVerification');
         try {
             const { data, error } = await supabase.auth.verifyOtp({
                 token_hash: tokenHash,
@@ -53,12 +59,14 @@ export default function VerifyEmailPage() {
             if (error || !data) {
                 console.error('Verification failed:', error);
                 setStatus('error');
-                setErrorMessage('Verification failed. Please try again.');
+                setErrorMessage('Verification failed. Please try again or enter the code manually.');
             } else {
-                setStatus('success');
-                setTimeout(() => {
-                    router.push('/onboarding'); // Redirect to onboarding after success
-                }, 4000);
+                if (data.user) {
+                    await handleVerificationSuccess(data.user.id);
+                } else {
+                    setStatus('error');
+                    setErrorMessage('Verification failed. User data is missing.');
+                }
             }
         } catch (err) {
             console.error('Unexpected error:', err);
@@ -67,6 +75,7 @@ export default function VerifyEmailPage() {
         }
     };
 
+    // Handle verification with manual code
     const verifyWithManualCode = async () => {
         if (!manualCode || manualCode.length !== 6) {
             setErrorMessage('Please enter a valid 6-digit code.');
@@ -85,12 +94,14 @@ export default function VerifyEmailPage() {
             if (error || !data) {
                 console.error('Verification failed:', error);
                 setStatus('error');
-                setErrorMessage('Verification failed. Please try again.');
+                setErrorMessage('Verification failed. Please check your code and try again.');
             } else {
-                setStatus('success');
-                setTimeout(() => {
-                    router.push('/onboarding'); // Redirect to onboarding after success
-                }, 4000);
+                if (data.user) {
+                    await handleVerificationSuccess(data.user.id);
+                } else {
+                    setStatus('error');
+                    setErrorMessage('Verification failed. User data is missing.');
+                }
             }
         } catch (err) {
             console.error('Unexpected error:', err);
@@ -101,25 +112,51 @@ export default function VerifyEmailPage() {
         }
     };
 
+    // Poll to check if user has been verified
     const checkVerificationStatus = async () => {
         try {
-            const { data: user, error } = await supabase.auth.getUser();
+            const { data, error } = await supabase.auth.getUser();
 
             if (error) {
                 console.warn('Error checking verification status:', error);
                 return;
             }
-            if (user?.user?.email_confirmed_at) {
-                setStatus('success');
-                setTimeout(() => {
-                    router.push('/onboarding'); // Redirect to onboarding after success
-                }, 4000);
+
+            if (data?.user?.email_confirmed_at) {
+                await handleVerificationSuccess(data.user.id);
             }
         } catch (err) {
             console.warn('No Auth Session during polling:', err);
         }
     };
 
+    // Handle verification success - create profile and redirect
+    const handleVerificationSuccess = async (userId: string) => {
+        try {
+            // Create the user profile now that email is verified
+            const { success, errorMessage } = await createUserProfile(userId);
+
+            if (!success) {
+                console.error('Error creating profile:', errorMessage);
+                toast.error('Account created but profile setup failed. Please contact support.');
+            }
+
+            // Update UI and prepare for redirect
+            setStatus('success');
+
+            // Redirect after a short delay
+            setTimeout(() => {
+                router.push('/select-plan');
+            }, 3000);
+
+        } catch (err) {
+            console.error('Error in verification success flow:', err);
+            setStatus('error');
+            setErrorMessage('Account verified but profile setup failed. Please contact support.');
+        }
+    };
+
+    // Handle resend verification email
     const resendVerificationEmail = async () => {
         setResendTimer(30); // Set timer to 30 seconds
         try {
@@ -142,8 +179,9 @@ export default function VerifyEmailPage() {
         }
     };
 
+    // Render different UI based on status
     return (
-        <div className="flex justify-center items-center h-auto bg-gray-50">
+        <div className="flex justify-center items-center min-h-screen bg-gray-50 p-4">
             {status === 'loading' && (
                 <Center>
                     <Loader size="xl" color="blue" />
@@ -161,12 +199,12 @@ export default function VerifyEmailPage() {
             )}
 
             {status === 'manual' && (
-                <Stack align="center" className="w-full max-w-md">
+                <Stack align="center" className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
                     <Title order={2} className="text-gray-800">
-                        Enter Your Verification Code
+                        Verify Your Email
                     </Title>
-                    <Text>
-                        If you received a 6-digit code in your email, please enter it below to verify your account.
+                    <Text className="text-center mb-4">
+                        We sent a verification code to your email. Please enter it below to complete your account setup.
                     </Text>
                     <TextInput
                         placeholder="Enter 6-digit code"
@@ -174,8 +212,8 @@ export default function VerifyEmailPage() {
                         onChange={(e) => setManualCode(e.target.value)}
                         maxLength={6}
                         className="w-full"
+                        error={errorMessage || undefined}
                     />
-                    {errorMessage && <Text className="text-red-600">{errorMessage}</Text>}
                     <Button
                         onClick={verifyWithManualCode}
                         loading={isVerifying}
@@ -197,25 +235,33 @@ export default function VerifyEmailPage() {
             )}
 
             {status === 'success' && (
-                <Stack align="center">
-                    <div className="flex items-center justify-center w-32 h-32 rounded-full bg-green-100">
-                        <IconCheck size={64} color="green" />
+                <Stack align="center" className="bg-white p-8 rounded-lg shadow-md">
+                    <div className="flex items-center justify-center w-24 h-24 rounded-full bg-green-100 mb-4">
+                        <IconCheck size={48} className="text-green-600" />
                     </div>
                     <Title order={2} className="text-green-600">
                         Email Verified!
                     </Title>
-                    <Text>Your email has been successfully verified. Redirecting to your dashboard...</Text>
+                    <Text className="text-center">
+                        Your account has been successfully created. Redirecting to plan selection...
+                    </Text>
                 </Stack>
             )}
 
             {status === 'error' && (
-                <Stack align="center">
+                <Stack align="center" className="bg-white p-8 rounded-lg shadow-md">
+                    <div className="flex items-center justify-center w-24 h-24 rounded-full bg-red-100 mb-4">
+                        <IconAlertCircle size={48} className="text-red-600" />
+                    </div>
                     <Title order={2} className="text-red-600">
                         Verification Failed
                     </Title>
-                    <Text>{errorMessage}</Text>
-                    <Button variant="outline" onClick={() => router.push('/login')}>
-                        Go to Login
+                    <Text className="text-center">{errorMessage}</Text>
+                    <Button variant="outline" onClick={() => setStatus('manual')} className="mt-4">
+                        Try Again
+                    </Button>
+                    <Button variant="subtle" onClick={() => router.push('/login')} className="mt-2">
+                        Back to Login
                     </Button>
                 </Stack>
             )}

@@ -1,6 +1,6 @@
 {
   "name": "deepvisor",
-  "version": "0.1.0",
+  "version": "0.6.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -72,6 +72,7 @@
     "react-spinners": "^0.15.0",
     "react-tooltip": "^5.28.0",
     "recharts": "^2.15.3",
+    "stripe": "^18.2.1",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "webpack": "^5.97.1",
@@ -85,6 +86,7 @@
     "@types/node": "^22.10.1",
     "@types/react": "^19.0.4",
     "@types/react-dom": "^19.0.1",
+    "@types/stripe": "^8.0.416",
     "@typescript-eslint/eslint-plugin": "^8.19.1",
     "@typescript-eslint/parser": "^8.19.1",
     "autoprefixer": "^10.4.20",

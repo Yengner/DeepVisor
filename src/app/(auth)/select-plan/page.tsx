@@ -1,11 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Card, Group, Stack, Text, Title, Badge, Table, Container, List, Divider, Tabs } from '@mantine/core';
+import { Button, Card, Group, Stack, Text, Title, Badge, Table, Container, List, Tabs, LoadingOverlay } from '@mantine/core';
 import { IconCheck, IconX, IconCircleCheck, IconAward, IconRocket, IconBuildingSkyscraper } from '@tabler/icons-react';
+import { createCheckoutSession } from '@/lib/actions/stripe.actions';
+import { useRouter } from 'next/navigation';
+import { ErrorState } from '@/components/ui/states/ErrorState';
+import toast from 'react-hot-toast';
 
 export default function PlansPage() {
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
 
     const plans = [
         {
@@ -51,13 +58,62 @@ export default function PlansPage() {
         setSelectedPlan(planCode);
     };
 
+    const handleCheckout = async () => {
+        if (!selectedPlan || selectedPlan === 'AGENCY') return;
+
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            toast.promise(
+                createCheckoutSession(selectedPlan).then(({ url }) => {
+                    if (url) {
+                        router.push(url);
+                    } else {
+                        throw new Error("No checkout URL returned");
+                    }
+                }),
+                {
+                    loading: 'Preparing your checkout...',
+                    success: 'Redirecting to secure checkout...',
+                    error: 'Something went wrong. Please try again.'
+                }
+            );
+        } catch (error) {
+            setIsLoading(false);
+            setError("We couldn't process your request at this time");
+
+            // Show a toast notification
+            toast.error("Checkout failed. Please try again later.", {
+                duration: 5000,
+                icon: '❌',
+            });
+        }
+    };
+
+    // If there's an error, display the error state
+    if (error) {
+        return (
+            <ErrorState
+                message={error}
+                primaryAction={{
+                    label: "Try Again",
+                    href: "/select-plan"
+                }}
+            />
+        );
+    }
+
     return (
-        <div className="flex flex-col items-center min-h-screen bg-gray-50 py-12">
+        <div className="flex flex-col items-center min-h-screen bg-gray-50 py-10 relative">
+            {/* LoadingOverlay that covers everything when loading */}
+            <LoadingOverlay visible={isLoading} overlayProps={{ blur: 2 }} />
+
             <Container size="xl">
                 <Stack>
-                    <div className="text-center">
+                    <div className="text-center -mt-12 mb-16">
                         <Title order={1} className="mb-2">Choose Your DeepVisor Plan</Title>
-                        <Text color="dimmed" size="lg" className="max-w-2xl mx-auto">
+                        <Text c="dimmed" size="lg" className="max-w-2xl mx-auto">
                             Select the subscription that best fits your business needs. You can upgrade or manage your subscription anytime.
                         </Text>
                     </div>
@@ -82,7 +138,7 @@ export default function PlansPage() {
                                 {plan.popular && (
                                     <Badge
                                         color="green"
-                                        className="absolute -top-1 right-0"
+                                        className="absolute -top-0.5 -right-1"
                                         size="lg"
                                     >
                                         Popular Choice
@@ -104,7 +160,7 @@ export default function PlansPage() {
                                         {plan.description}
                                     </Text>
 
-                                    <Text size="sm" className="mt-2">
+                                    <Text c="dimmed" size="sm" className="mt-2">
                                         <strong>Recommended for:</strong><br />
                                         {plan.recommendation}
                                     </Text>
@@ -255,6 +311,10 @@ export default function PlansPage() {
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            {/* Account & Platform Section */}
+                                            <tr className="bg-gray-400">
+                                                <td colSpan={5} className="font-bold py-3">Account & Platform Features</td>
+                                            </tr>
                                             <tr>
                                                 <td className="font-medium">Ad Account Connections</td>
                                                 <td>1 Meta Ad Account</td>
@@ -269,6 +329,11 @@ export default function PlansPage() {
                                                 <td>All supported platforms</td>
                                                 <td>All platforms + custom integrations</td>
                                             </tr>
+
+                                            {/* Analytics & Creative Section */}
+                                            <tr className="bg-gray-300">
+                                                <td colSpan={5} className="font-bold py-3">Analytics & Creative</td>
+                                            </tr>
                                             <tr>
                                                 <td className="font-medium">Dashboard & Analytics</td>
                                                 <td>Basic performance metrics (spend, clicks, impressions)</td>
@@ -282,6 +347,11 @@ export default function PlansPage() {
                                                 <td>Team-designed ad creatives (up to 5/month)</td>
                                                 <td>Unlimited custom ad creatives by our in-house design team</td>
                                                 <td>White-glove creative: video, carousel, dynamic ads, landing pages</td>
+                                            </tr>
+
+                                            {/* AI & Automation Section */}
+                                            <tr className="bg-gray-200">
+                                                <td colSpan={5} className="font-bold py-3">AI & Automation</td>
                                             </tr>
                                             <tr>
                                                 <td className="font-medium">AI-Driven Automation</td>
@@ -316,6 +386,11 @@ export default function PlansPage() {
                                                 <td>Fully auto: one-click create & launch based on AI insights</td>
                                                 <td>End-to-end managed campaigns by DeepVisor team</td>
                                             </tr>
+
+                                            {/* Support Section */}
+                                            <tr className="bg-gray-100">
+                                                <td colSpan={5} className="font-bold py-3">Support & Onboarding</td>
+                                            </tr>
                                             <tr>
                                                 <td className="font-medium">Support</td>
                                                 <td>Email support</td>
@@ -335,9 +410,11 @@ export default function PlansPage() {
                             fullWidth
                             size="xl"
                             mt="xl"
-                            onClick={() => console.log(`Proceeding to billing for ${selectedPlan}`)}
+                            onClick={handleCheckout}
+                            loading={isLoading}
+                            disabled={isLoading}
                         >
-                            Proceed to Billing for {plans.find(p => p.code === selectedPlan)?.name}
+                            {isLoading ? 'Preparing Checkout...' : `Subscribe to ${plans.find(p => p.code === selectedPlan)?.name}`}
                         </Button>
                     )}
                 </Stack>
