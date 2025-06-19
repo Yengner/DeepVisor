@@ -79,7 +79,7 @@ export default function PlansPage() {
                     error: 'Something went wrong. Please try again.'
                 }
             );
-        } catch (error) {
+        } catch (err) {
             setIsLoading(false);
             setError("We couldn't process your request at this time");
 
@@ -223,7 +223,7 @@ export default function PlansPage() {
                                     </div>
 
                                     {/* Plans */}
-                                    {['TIER1', 'TIER2', 'TIER3', 'AGENCY'].map((planCode, index) => {
+                                    {['TIER1', 'TIER2', 'TIER3', 'AGENCY'].map((planCode) => {
                                         const plan = plans.find(p => p.code === planCode)!;
                                         return (
                                             <div key={planCode}

@@ -114,7 +114,7 @@ export default function OnboardingProvider() {
       <div className="text-center mb-12">
         <Title order={1} className="text-3xl mb-2">Welcome to DeepVisor</Title>
         <Text c="dimmed" size="lg">
-          Let's set up your account to get you the best experience
+          Let&apos;s set up your account to get you the best experience
         </Text>
       </div>
 

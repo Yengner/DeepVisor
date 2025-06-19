@@ -1,13 +1,15 @@
 'use client';
 
-import { Button, Text, Title, Stack, Group, Select, TextInput, Textarea, NumberInput } from '@mantine/core';
+import { Button, Text, Title, Stack, Group, Select, TextInput, Textarea } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconBuilding } from '@tabler/icons-react';
 
 type BusinessProfileStepProps = {
   onNext: () => void;
   onPrev: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   userData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateUserData: (data: any) => void;
 };
 

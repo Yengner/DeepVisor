@@ -217,6 +217,7 @@ export async function updateOnboardingProgress(onboarding_completed: boolean, st
             onboarding_completed?: boolean;
             onboarding_step?: number;
             onboarding_updated_at: string;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             [key: string]: any;
         } = {
             onboarding_updated_at: new Date().toISOString(),

@@ -8,7 +8,9 @@ import { useState } from 'react';
 type ConnectAccountsStepProps = {
     onNext: () => void;
     onPrev: () => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     userData: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updateUserData: (data: any) => void;
 };
 
@@ -34,6 +36,7 @@ export default function ConnectAccountsStep({
     };
 
     const isConnected = (platform: string) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return connectedAccounts.some((acc: any) => acc.platform === platform);
     };
 

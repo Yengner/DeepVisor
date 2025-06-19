@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react'; // Add useCallback
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/utils/supabase/clients/browser';
 import { createUserProfile } from '@/lib/actions/user.actions';
@@ -20,35 +20,46 @@ export default function VerifyEmailPage() {
     const [isVerifying, setIsVerifying] = useState(false);
     const [resendTimer, setResendTimer] = useState<number>(0);
 
-    useEffect(() => {
-        const tokenHash = searchParams.get('token_hash');
-        const type = searchParams.get('type');
-        const email = searchParams.get('email');
+    // Memoize functions with useCallback
+    const handleVerificationSuccess = useCallback(async (userId: string) => {
+        try {
+            const { success, errorMessage } = await createUserProfile(userId);
 
-        if (tokenHash && type === 'email') {
-            verifyWithTokenHash(tokenHash);
-        } else {
-            checkVerificationStatus();
-            if (email) {
-                localStorage.setItem('emailForVerification', email);
+            if (!success) {
+                console.error('Error creating profile:', errorMessage);
+                toast.error('Account created but profile setup failed. Please contact support.');
             }
-            setStatus('manual');
+
+            setStatus('success');
+
+            setTimeout(() => {
+                router.push('/select-plan');
+            }, 3000);
+        } catch (err) {
+            console.error('Error in verification success flow:', err);
+            setStatus('error');
+            setErrorMessage('Account verified but profile setup failed. Please contact support.');
         }
+    }, [router]);
 
-        // Start polling to check verification status
-        const interval = setInterval(checkVerificationStatus, 5000);
-        return () => clearInterval(interval);
-    }, [searchParams]);
+    const checkVerificationStatus = useCallback(async () => {
+        try {
+            const { data, error } = await supabase.auth.getUser();
 
-    useEffect(() => {
-        if (resendTimer > 0) {
-            const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-            return () => clearTimeout(timer);
+            if (error) {
+                console.warn('Error checking verification status:', error);
+                return;
+            }
+
+            if (data?.user?.email_confirmed_at) {
+                await handleVerificationSuccess(data.user.id);
+            }
+        } catch (err) {
+            console.warn('No Auth Session during polling:', err);
         }
-    }, [resendTimer]);
+    }, [supabase, handleVerificationSuccess]);
 
-    // Handle verification with token from URL
-    const verifyWithTokenHash = async (tokenHash: string) => {
+    const verifyWithTokenHash = useCallback(async (tokenHash: string) => {
         setStatus('loadingVerification');
         try {
             const { data, error } = await supabase.auth.verifyOtp({
@@ -73,7 +84,34 @@ export default function VerifyEmailPage() {
             setStatus('error');
             setErrorMessage('An unexpected error occurred. Please try again.');
         }
-    };
+    }, [supabase, handleVerificationSuccess]);
+
+    useEffect(() => {
+        const tokenHash = searchParams.get('token_hash');
+        const type = searchParams.get('type');
+        const email = searchParams.get('email');
+
+        if (tokenHash && type === 'email') {
+            verifyWithTokenHash(tokenHash);
+        } else {
+            checkVerificationStatus();
+            if (email) {
+                localStorage.setItem('emailForVerification', email);
+            }
+            setStatus('manual');
+        }
+
+        // Start polling to check verification status
+        const interval = setInterval(checkVerificationStatus, 5000);
+        return () => clearInterval(interval);
+    }, [searchParams, checkVerificationStatus, verifyWithTokenHash]); // Add dependencies here
+
+    useEffect(() => {
+        if (resendTimer > 0) {
+            const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [resendTimer]);
 
     // Handle verification with manual code
     const verifyWithManualCode = async () => {
@@ -112,49 +150,6 @@ export default function VerifyEmailPage() {
         }
     };
 
-    // Poll to check if user has been verified
-    const checkVerificationStatus = async () => {
-        try {
-            const { data, error } = await supabase.auth.getUser();
-
-            if (error) {
-                console.warn('Error checking verification status:', error);
-                return;
-            }
-
-            if (data?.user?.email_confirmed_at) {
-                await handleVerificationSuccess(data.user.id);
-            }
-        } catch (err) {
-            console.warn('No Auth Session during polling:', err);
-        }
-    };
-
-    // Handle verification success - create profile and redirect
-    const handleVerificationSuccess = async (userId: string) => {
-        try {
-            // Create the user profile now that email is verified
-            const { success, errorMessage } = await createUserProfile(userId);
-
-            if (!success) {
-                console.error('Error creating profile:', errorMessage);
-                toast.error('Account created but profile setup failed. Please contact support.');
-            }
-
-            // Update UI and prepare for redirect
-            setStatus('success');
-
-            // Redirect after a short delay
-            setTimeout(() => {
-                router.push('/select-plan');
-            }, 3000);
-
-        } catch (err) {
-            console.error('Error in verification success flow:', err);
-            setStatus('error');
-            setErrorMessage('Account verified but profile setup failed. Please contact support.');
-        }
-    };
 
     // Handle resend verification email
     const resendVerificationEmail = async () => {

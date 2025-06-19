@@ -1,22 +1,24 @@
 'use client';
 
 import { Button, Text, Title, Stack, Group, ThemeIcon } from '@mantine/core';
-import { IconCheck, IconBrandFacebook, IconBuildingStore, IconChartBar } from '@tabler/icons-react';
+import { IconBrandFacebook, IconBuildingStore, IconChartBar } from '@tabler/icons-react';
 
 type WelcomeStepProps = {
   onNext: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   userData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateUserData: (data: any) => void;
 };
 
 export default function WelcomeStep({ onNext }: WelcomeStepProps) {
   return (
     <Stack gap="xl" py={20}>
-      <Title order={2} ta="center">Let's get your account set up</Title>
+      <Title order={2} ta="center">Let&apos;s get your account set up</Title>
 
       <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto">
         Complete this short onboarding process to get the most out of DeepVisor.
-        We'll help you connect your ad accounts and set up your preferences.
+        We&apos;ll help you connect your ad accounts and set up your preferences.
       </Text>
 
       <Stack gap="md" className="my-8">
@@ -56,7 +58,7 @@ export default function WelcomeStep({ onNext }: WelcomeStepProps) {
         fullWidth
         onClick={onNext}
       >
-        Let's Get Started
+        Let&apos;s Get Started
       </Button>
     </Stack>
   );

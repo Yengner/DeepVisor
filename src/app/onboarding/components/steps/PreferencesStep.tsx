@@ -7,15 +7,17 @@ import { IconSettings, IconChartBar } from '@tabler/icons-react';
 type PreferencesStepProps = {
   onNext: () => void;
   onPrev: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   userData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateUserData: (data: any) => void;
 };
 
-export default function PreferencesStep({ 
-  onNext, 
-  onPrev, 
+export default function PreferencesStep({
+  onNext,
+  onPrev,
   userData,
-  updateUserData 
+  updateUserData
 }: PreferencesStepProps) {
   const form = useForm({
     initialValues: {
@@ -36,11 +38,11 @@ export default function PreferencesStep({
   return (
     <Stack gap="xl" py={20}>
       <Title order={2} ta="center">Customize Your Experience</Title>
-      
+
       <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto mb-6">
         Set your preferences to make DeepVisor work best for you
       </Text>
-      
+
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="xl">
           <Card withBorder p="md">
@@ -50,7 +52,7 @@ export default function PreferencesStep({
                 <span>Advertising Goals</span>
               </Group>
             </Title>
-            
+
             <MultiSelect
               label="What are your main advertising goals?"
               placeholder="Select all that apply"
@@ -65,7 +67,7 @@ export default function PreferencesStep({
               {...form.getInputProps('adGoals')}
             />
           </Card>
-          
+
           <Card withBorder p="md">
             <Title order={4} className="mb-4">
               <Group>
@@ -73,7 +75,7 @@ export default function PreferencesStep({
                 <span>Platform Preferences</span>
               </Group>
             </Title>
-            
+
             <Stack gap="md">
               <MultiSelect
                 label="Which platforms do you prefer to advertise on?"
@@ -89,7 +91,7 @@ export default function PreferencesStep({
                 ]}
                 {...form.getInputProps('preferredPlatforms')}
               />
-              
+
               <RadioGroup
                 label="Default dashboard view"
                 {...form.getInputProps('dashboardView')}
@@ -100,10 +102,10 @@ export default function PreferencesStep({
               </RadioGroup>
             </Stack>
           </Card>
-          
+
           <Card withBorder p="md">
             <Title order={4} className="mb-4">Notifications</Title>
-            
+
             <SimpleGrid cols={1}>
               <Checkbox
                 label="Email notifications for important updates"
@@ -120,7 +122,7 @@ export default function PreferencesStep({
             </SimpleGrid>
           </Card>
         </Stack>
-        
+
         <Group justify="apart" mt="xl">
           <Button variant="light" onClick={onPrev} type="button">
             Back
