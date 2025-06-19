@@ -79,6 +79,7 @@ export default function PlansPage() {
                     error: 'Something went wrong. Please try again.'
                 }
             );
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
             setIsLoading(false);
             setError("We couldn't process your request at this time");
