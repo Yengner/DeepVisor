@@ -161,7 +161,7 @@ export async function getUserInfo({ userId }: { userId: string }) {
         const supabase = await createSupabaseClient();
 
         const { data } = await supabase
-            .from('profiles')  // Changed from 'users' to 'profiles'
+            .from('profiles')
             .select('*')
             .eq('id', userId)
             .single();
@@ -204,7 +204,6 @@ export async function resendVerificationEmail(email: string) {
  * Updates user onboarding progress
  */
 export async function updateOnboardingProgress(onboarding_completed: boolean, step?: number) {
-
     try {
         const supabase = await createSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
@@ -244,5 +243,45 @@ export async function updateOnboardingProgress(onboarding_completed: boolean, st
     } catch (error) {
         console.error('Error updating onboarding progress:', error);
         return { success: false, error: (error as Error).message };
+    }
+}
+
+/**
+ * Gets user onboarding progress from the database
+ */
+export async function getOnboardingProgress() {
+    try {
+        const supabase = await createSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            throw new Error('User not authenticated');
+        }
+
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('onboarding_step, onboarding_completed, connected_accounts')
+            .eq('id', user.id)
+            .single();
+
+        if (error) {
+            console.error('Error fetching onboarding progress:', error);
+            throw error;
+        }
+
+        return {
+            success: true,
+            step: data?.onboarding_step || 0,
+            completed: data?.onboarding_completed || false,
+            connectedAccounts: data?.connected_accounts || []
+        };
+    } catch (error) {
+        console.error('Error getting onboarding progress:', error);
+        return {
+            success: false,
+            step: 0,
+            completed: false,
+            connectedAccounts: []
+        };
     }
 }

@@ -1,9 +1,10 @@
 'use client';
 
-import { initiateOAuthConnection } from '@/lib/actions/integration.actions';
-import { Button, Text, Title, Stack, Group, Card, Avatar, Badge } from '@mantine/core';
-import { IconBrandFacebook, IconBrandGoogle, IconBrandTiktok, IconPlus, IconCheck } from '@tabler/icons-react';
+import { Button, Text, Title, Stack, Group, Card, Avatar, Badge, Paper } from '@mantine/core';
+import { IconBrandFacebook, IconPlus, IconCheck, IconInfoCircle } from '@tabler/icons-react';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
+
 
 type ConnectAccountsStepProps = {
     onNext: () => void;
@@ -20,128 +21,104 @@ export default function ConnectAccountsStep({
     userData
 }: ConnectAccountsStepProps) {
     const [connecting, setConnecting] = useState<string | null>(null);
-    const { connectedAccounts = [] } = userData;
 
     const handleConnect = async (platform: string) => {
         setConnecting(platform);
         try {
-            // This would be your OAuth flow initiation
-            const url = await initiateOAuthConnection(platform);
-            window.location.href = url;
+            // Redirect to the OAuth connection URL for Meta
+            window.location.href = `/api/integrations/connect/${platform}`;
         } catch (error) {
             console.error(`Error connecting to ${platform}:`, error);
-        } finally {
+            toast.error(`Failed to connect to Meta. Please try again.`);
             setConnecting(null);
         }
     };
 
     const isConnected = (platform: string) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return connectedAccounts.some((acc: any) => acc.platform === platform);
+        return userData.connectedAccounts.some((acc: any) => acc.platform === platform);
     };
+
+    const getConnectionDetails = (platform: string) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const account = userData.connectedAccounts.find((acc: any) => acc.platform === platform);
+        if (!account) return null;
+
+        const connectedDate = new Date(account.connectedAt);
+        const formattedDate = connectedDate.toLocaleDateString();
+
+        return {
+            id: account.accountId,
+            name: account.accountName,
+            date: formattedDate
+        };
+    };
+
+    const metaDetails = getConnectionDetails('meta');
 
     return (
         <Stack gap="xl" py={20}>
-            <Title order={2} ta="center">Connect Your Ad Accounts</Title>
+            <Title order={2} ta="center">Connect Your Meta Ad Account</Title>
 
-            <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto mb-6">
-                Link your advertising accounts to import your campaigns, ad sets, and ads automatically.
+            <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto">
+                Link your Meta Business Manager to import your Facebook and Instagram campaigns, ad sets, and ads automatically.
             </Text>
 
-            <div className="grid gap-4 md:grid-cols-2 my-4">
-                <Card withBorder p="md">
-                    <Group justify="apart">
+            <Paper withBorder p="md" radius="md" className="max-w-xl mx-auto w-full">
+                <Card withBorder p="lg" radius="md">
+                    <Stack>
                         <Group>
-                            <Avatar color="blue" radius="xl">
-                                <IconBrandFacebook />
+                            <Avatar color="blue" radius="xl" size="lg">
+                                <IconBrandFacebook size={24} />
                             </Avatar>
                             <div>
-                                <Text fw={600}>Meta Business Manager</Text>
-                                <Text size="xs" color="dimmed">Facebook & Instagram Ads</Text>
+                                <Text fw={700} size="lg">Meta Business Manager</Text>
+                                <Text size="sm" c="dimmed">Facebook & Instagram Ads</Text>
                             </div>
                         </Group>
 
                         {isConnected('meta') ? (
-                            <Badge color="green" leftSection={<IconCheck size={14} />}>
-                                Connected
-                            </Badge>
+                            <div className="mt-4">
+                                <Badge color="green" size="lg" fullWidth leftSection={<IconCheck size={14} />}>
+                                    Connected
+                                </Badge>
+
+                                {metaDetails && (
+                                    <Stack gap="xs" mt="md">
+                                        <Text fw={500} size="sm">Account: {metaDetails.name}</Text>
+                                        <Text size="xs" c="dimmed">ID: {metaDetails.id}</Text>
+                                        <Text size="xs" c="dimmed">Connected on {metaDetails.date}</Text>
+                                    </Stack>
+                                )}
+                            </div>
                         ) : (
                             <Button
-                                variant="light"
+                                fullWidth
+                                size="md"
+                                variant="filled"
                                 color="blue"
                                 leftSection={<IconPlus size={16} />}
                                 onClick={() => handleConnect('meta')}
                                 loading={connecting === 'meta'}
+                                mt="md"
                             >
-                                Connect
+                                Connect Meta Account
                             </Button>
                         )}
-                    </Group>
+                    </Stack>
                 </Card>
 
-                <Card withBorder p="md">
-                    <Group justify="apart">
-                        <Group>
-                            <Avatar color="red" radius="xl">
-                                <IconBrandGoogle />
-                            </Avatar>
-                            <div>
-                                <Text fw={600}>Google Ads</Text>
-                                <Text size="xs" color="dimmed">Search & Display Campaigns</Text>
-                            </div>
-                        </Group>
+                <Group align="center" mt="md" gap="xs">
+                    <IconInfoCircle size={16} style={{ color: 'var(--mantine-color-blue-6)' }} />
+                    <Text size="sm" c="dimmed">
+                        Additional platforms can be connected later from your account settings.
+                    </Text>
+                </Group>
+            </Paper>
 
-                        {isConnected('google') ? (
-                            <Badge color="green" leftSection={<IconCheck size={14} />}>
-                                Connected
-                            </Badge>
-                        ) : (
-                            <Button
-                                variant="light"
-                                color="red"
-                                leftSection={<IconPlus size={16} />}
-                                onClick={() => handleConnect('google')}
-                                loading={connecting === 'google'}
-                            >
-                                Connect
-                            </Button>
-                        )}
-                    </Group>
-                </Card>
-
-                <Card withBorder p="md">
-                    <Group justify="apart">
-                        <Group>
-                            <Avatar color="dark" radius="xl">
-                                <IconBrandTiktok />
-                            </Avatar>
-                            <div>
-                                <Text fw={600}>TikTok Ads</Text>
-                                <Text size="xs" color="dimmed">Video Campaigns</Text>
-                            </div>
-                        </Group>
-
-                        {isConnected('tiktok') ? (
-                            <Badge color="green" leftSection={<IconCheck size={14} />}>
-                                Connected
-                            </Badge>
-                        ) : (
-                            <Button
-                                variant="light"
-                                color="dark"
-                                leftSection={<IconPlus size={16} />}
-                                onClick={() => handleConnect('tiktok')}
-                                loading={connecting === 'tiktok'}
-                            >
-                                Connect
-                            </Button>
-                        )}
-                    </Group>
-                </Card>
-            </div>
-
-            <Text c="dimmed" size="sm" ta="center" className="mt-4">
-                You can connect additional accounts later in your account settings.
+            <Text c="dimmed" size="sm" ta="center" mt="md">
+                By connecting your Meta account, you allow DeepVisor to access your ad data for analysis and optimization.
+                You can revoke access at any time from your Meta Business settings.
             </Text>
 
             <Group justify="apart" mt="xl">

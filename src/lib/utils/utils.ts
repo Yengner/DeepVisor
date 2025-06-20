@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-
+import crypto from 'crypto';
 
 export const getErrorMessage = (
     error: unknown,
@@ -20,5 +20,8 @@ export const parseStringify = (value: any) => JSON.parse(JSON.stringify(value));
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
-  }
-  
+}
+
+export function generateState(): string {
+    return crypto.randomBytes(32).toString('hex');
+}
