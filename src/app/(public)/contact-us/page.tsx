@@ -165,17 +165,6 @@ const FreeEstimate = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Company/Business Name</label>
-                                <input
-                                    type="text"
-                                    name="company"
-                                    value={formData.company}
-                                    onChange={handleChange}
-                                    placeholder="Company or Business Name (Optional)"
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-blue-200"
-                                />
-                            </div>
-                            <div>
                                 <label className="block text-sm font-medium text-gray-700">Email</label>
                                 <input
                                     type="email"

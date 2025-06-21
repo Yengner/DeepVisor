@@ -1,8 +1,11 @@
 'use client';
 
-import { Button, Text, Title, Stack, Group, MultiSelect, Checkbox, Card, SimpleGrid, Radio, RadioGroup } from '@mantine/core';
+import { updateBusinessProfileData } from '@/lib/actions/user.actions';
+import { Button, Text, Title, Stack, Group, MultiSelect, Checkbox, Card, SimpleGrid } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconSettings, IconChartBar } from '@tabler/icons-react';
+import { IconSettings, IconChartBar, IconBell } from '@tabler/icons-react';
+import { useEffect, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 
 type PreferencesStepProps = {
   onNext: () => void;
@@ -19,20 +22,78 @@ export default function PreferencesStep({
   userData,
   updateUserData
 }: PreferencesStepProps) {
+  const [submitting, setSubmitting] = useState(false);
+  const formInitialized = useRef(false);
+
+  // Log what we're initializing with
+  useEffect(() => {
+    console.log("PreferencesStep initial userData:", {
+      adGoals: userData.adGoals,
+      preferredPlatforms: userData.preferredPlatforms,
+      emailNotifications: userData.emailNotifications,
+      weeklyReports: userData.weeklyReports,
+      performanceAlerts: userData.performanceAlerts
+    });
+    formInitialized.current = true;
+  }, []);
+
   const form = useForm({
     initialValues: {
       adGoals: userData.adGoals || [],
       preferredPlatforms: userData.preferredPlatforms || [],
-      dashboardView: userData.dashboardView || 'campaign',
       emailNotifications: userData.emailNotifications !== false,
       weeklyReports: userData.weeklyReports !== false,
       performanceAlerts: userData.performanceAlerts !== false,
+    },
+    onValuesChange: (values) => {
+      // Only update after form is initialized to prevent wipes
+      if (formInitialized.current) {
+        console.log("Updating user data in PreferencesStep:", values);
+        updateUserData({
+          ...userData,
+          adGoals: values.adGoals,
+          preferredPlatforms: values.preferredPlatforms,
+          emailNotifications: values.emailNotifications,
+          weeklyReports: values.weeklyReports,
+          performanceAlerts: values.performanceAlerts
+        });
+      }
     }
   });
 
-  const handleSubmit = (values: typeof form.values) => {
-    updateUserData(values);
-    onNext();
+  const handleSubmit = async (values: typeof form.values) => {
+    setSubmitting(true);
+    try {
+      // Log what we're about to send
+      console.log("Submitting preferences:", values);
+
+      // Update parent state
+      updateUserData({
+        ...userData,
+        adGoals: values.adGoals,
+        preferredPlatforms: values.preferredPlatforms,
+        emailNotifications: values.emailNotifications,
+        weeklyReports: values.weeklyReports,
+        performanceAlerts: values.performanceAlerts
+      });
+
+      // Save directly to database for additional safety
+      await updateBusinessProfileData({
+        adGoals: values.adGoals,
+        preferredPlatforms: values.preferredPlatforms,
+        emailNotifications: values.emailNotifications,
+        weeklyReports: values.weeklyReports,
+        performanceAlerts: values.performanceAlerts
+      });
+
+      // Proceed to next step
+      onNext();
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+      toast.error('Failed to save your preferences');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -76,35 +137,29 @@ export default function PreferencesStep({
               </Group>
             </Title>
 
-            <Stack gap="md">
-              <MultiSelect
-                label="Which platforms do you prefer to advertise on?"
-                placeholder="Select all that apply"
-                data={[
-                  { value: 'facebook', label: 'Facebook' },
-                  { value: 'instagram', label: 'Instagram' },
-                  { value: 'google', label: 'Google Ads' },
-                  { value: 'tiktok', label: 'TikTok' },
-                  { value: 'linkedin', label: 'LinkedIn' },
-                  { value: 'twitter', label: 'Twitter' },
-                  { value: 'youtube', label: 'YouTube' },
-                ]}
-                {...form.getInputProps('preferredPlatforms')}
-              />
-
-              <RadioGroup
-                label="Default dashboard view"
-                {...form.getInputProps('dashboardView')}
-              >
-                <Radio value="campaign" label="Campaign-focused" />
-                <Radio value="platform" label="Platform-focused" />
-                <Radio value="conversion" label="Conversion-focused" />
-              </RadioGroup>
-            </Stack>
+            <MultiSelect
+              label="Which platforms do you prefer to advertise on?"
+              placeholder="Select all that apply"
+              data={[
+                { value: 'facebook', label: 'Facebook' },
+                { value: 'instagram', label: 'Instagram' },
+                { value: 'google', label: 'Google Ads' },
+                { value: 'tiktok', label: 'TikTok' },
+                { value: 'linkedin', label: 'LinkedIn' },
+                { value: 'twitter', label: 'Twitter' },
+                { value: 'youtube', label: 'YouTube' },
+              ]}
+              {...form.getInputProps('preferredPlatforms')}
+            />
           </Card>
 
           <Card withBorder p="md">
-            <Title order={4} className="mb-4">Notifications</Title>
+            <Title order={4} className="mb-4">
+              <Group>
+                <IconBell />
+                <span>Notifications</span>
+              </Group>
+            </Title>
 
             <SimpleGrid cols={1}>
               <Checkbox
@@ -127,7 +182,7 @@ export default function PreferencesStep({
           <Button variant="light" onClick={onPrev} type="button">
             Back
           </Button>
-          <Button type="submit">
+          <Button type="submit" loading={submitting}>
             Continue
           </Button>
         </Group>

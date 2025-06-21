@@ -10,7 +10,7 @@ import {
   Card,
   LoadingOverlay
 } from '@mantine/core';
-import { updateOnboardingProgress, getOnboardingProgress, getLoggedInUser } from '@/lib/actions/user.actions';
+import { updateOnboardingProgress, getOnboardingProgress, getLoggedInUser, updateBusinessProfileData } from '@/lib/actions/user.actions';
 import WelcomeStep from './steps/WelcomeStep';
 import toast from 'react-hot-toast';
 import ConnectAccountsStep from './steps/ConnectAccountsStep';
@@ -34,9 +34,14 @@ export default function OnboardingProvider() {
     businessName: string;
     businessType: string;
     industry: string;
-    adGoals: string[];
     monthlyBudget: string;
+    website: string;
+    description: string;
+    adGoals: string[];
     preferredPlatforms: string[];
+    emailNotifications: boolean;
+    weeklyReports: boolean;
+    performanceAlerts: boolean;
     connectedAccounts: ConnectedAccount[];
   }
 
@@ -44,9 +49,14 @@ export default function OnboardingProvider() {
     businessName: '',
     businessType: '',
     industry: '',
-    adGoals: [],
     monthlyBudget: '',
+    website: '',
+    description: '',
+    adGoals: [],
     preferredPlatforms: [],
+    emailNotifications: true,
+    weeklyReports: true,
+    performanceAlerts: true,
     connectedAccounts: [],
   });
 
@@ -57,7 +67,7 @@ export default function OnboardingProvider() {
   useEffect(() => {
     async function loadOnboardingProgress() {
       try {
-        const { success, step, connectedAccounts } = await getOnboardingProgress();
+        const { success, step, connectedAccounts, businessData } = await getOnboardingProgress();
 
         if (success) {
           // Set the active step
@@ -68,6 +78,24 @@ export default function OnboardingProvider() {
             setUserData(prev => ({
               ...prev,
               connectedAccounts: connectedAccounts
+            }));
+          }
+
+          // Set business data from database
+          if (businessData) {
+            setUserData(prev => ({
+              ...prev,
+              businessName: businessData.businessName || prev.businessName,
+              businessType: businessData.businessType || prev.businessType,
+              industry: businessData.industry || prev.industry,
+              monthlyBudget: businessData.monthlyBudget || prev.monthlyBudget,
+              adGoals: businessData.adGoals?.length ? businessData.adGoals : prev.adGoals,
+              website: businessData.website || prev.website,
+              description: businessData.description || prev.description,
+              preferredPlatforms: businessData.preferredPlatforms?.length ? businessData.preferredPlatforms : prev.preferredPlatforms,
+              emailNotifications: businessData.emailNotifications !== undefined ? businessData.emailNotifications : prev.emailNotifications,
+              weeklyReports: businessData.weeklyReports !== undefined ? businessData.weeklyReports : prev.weeklyReports,
+              performanceAlerts: businessData.performanceAlerts !== undefined ? businessData.performanceAlerts : prev.performanceAlerts,
             }));
           }
         }
@@ -156,6 +184,42 @@ export default function OnboardingProvider() {
   const nextStep = async () => {
     setLoading(true);
     try {
+      if (active === 2) {
+        console.log("Saving business profile data:", {
+          businessName: userData.businessName,
+          businessType: userData.businessType,
+          industry: userData.industry,
+          website: userData.website,
+          description: userData.description,
+          monthlyBudget: userData.monthlyBudget
+        });
+        await updateBusinessProfileData({
+          businessName: userData.businessName,
+          businessType: userData.businessType,
+          industry: userData.industry,
+          website: userData.website,
+          description: userData.description,
+          monthlyBudget: userData.monthlyBudget
+        });
+      } 
+      else if (active === 3) {
+        console.log("Saving preferences data:", {
+          adGoals: userData.adGoals,
+          preferredPlatforms: userData.preferredPlatforms,
+          emailNotifications: userData.emailNotifications,
+          weeklyReports: userData.weeklyReports,
+          performanceAlerts: userData.performanceAlerts
+        });
+        await updateBusinessProfileData({
+          adGoals: userData.adGoals,
+          preferredPlatforms: userData.preferredPlatforms,
+          emailNotifications: userData.emailNotifications,
+          weeklyReports: userData.weeklyReports,
+          performanceAlerts: userData.performanceAlerts
+        });
+      }
+
+      // After saving, proceed to next step
       const nextStepIndex = active + 1;
 
       // Save current progress
@@ -183,7 +247,12 @@ export default function OnboardingProvider() {
   };
 
   const handleUpdateUserData = (data: Partial<typeof userData>) => {
-    setUserData(prev => ({ ...prev, ...data }));
+    console.log("Updating userData in parent:", data);
+    setUserData(prev => {
+      const newState = { ...prev, ...data };
+      console.log("New userData state:", newState);
+      return newState;
+    });
   };
 
   return (
@@ -198,7 +267,7 @@ export default function OnboardingProvider() {
       </div>
 
       <Card shadow="md" radius="lg" p="xl" withBorder>
-        <Stepper active={active} onStepClick={setActive}>
+        <Stepper active={active} onStepClick={() => { }}>
           <Stepper.Step
             label="Welcome"
             description="Get started">

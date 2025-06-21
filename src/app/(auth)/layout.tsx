@@ -10,7 +10,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <>
       <Header />
         <Toaster />
-          <main className="pt-20 pb-20 md:pt-24 md:pb-24 bg-gray-50">{children}</main>
+          <main className="pt-14 pb-14 md:pt-14 md:pb-14 bg-gray-50">{children}</main>
       <Footer />
     </>
   );

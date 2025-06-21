@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation';
 
 /**
  * Handles user login with email and password
- */
+*/
 export async function handleLogin(email: string, password: string) {
     try {
         const supabase = await createSupabaseClient();
@@ -26,13 +26,12 @@ export async function handleLogin(email: string, password: string) {
 
 /**
  * Handles user signup - creates auth record but NOT profile
- */
+*/
 export async function handleSignUp(
     email: string,
     password: string,
     first_name: string,
     last_name: string,
-    business_name: string,
     phone_number: string
 ) {
     try {
@@ -40,13 +39,12 @@ export async function handleSignUp(
 
         const { data, error } = await supabase.auth.signUp({
             email,
-            phone: phone_number,
+            phone: phone_number, // Have to fix this later but focusing on email for now
             password,
             options: {
                 data: {
                     first_name,
                     last_name,
-                    business_name,
                     phone_number,
                 },
             },
@@ -67,7 +65,7 @@ export async function handleSignUp(
 
 /**
  * Creates user profile after email verification
- */
+*/
 export async function createUserProfile(userId: string) {
     try {
         const supabase = await createSupabaseClient();
@@ -83,14 +81,12 @@ export async function createUserProfile(userId: string) {
         const metadata = userData.user.user_metadata;
         const first_name = metadata?.first_name || '';
         const last_name = metadata?.last_name || '';
-        const business_name = metadata?.business_name || '';
         const phone_number = metadata?.phone_number || '';
 
         // Insert profile record
         const { error } = await supabase.from("profiles").insert({
             id: userId,
             full_name: `${first_name} ${last_name}`.trim(),
-            business_name: business_name,
             phone_number: phone_number,
             avatar_url: null,
             plan_tier: null,
@@ -100,7 +96,6 @@ export async function createUserProfile(userId: string) {
             subscription_start_date: null,
             subscription_end_date: null,
             subscription_created: null,
-            completed: false,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         });
@@ -119,7 +114,7 @@ export async function createUserProfile(userId: string) {
 
 /**
  * Handles user sign out
- */
+*/
 export async function handleSignOut() {
     try {
         const supabase = await createSupabaseClient();
@@ -139,7 +134,7 @@ export async function handleSignOut() {
 
 /**
  * Gets the currently logged-in user or redirects to login
- */
+*/
 export async function getLoggedInUser() {
     const supabase = await createSupabaseClient();
     const { data, error } = await supabase.auth.getUser();
@@ -155,7 +150,7 @@ export async function getLoggedInUser() {
 
 /**
  * Gets user information by user ID
- */
+*/
 export async function getUserInfo({ userId }: { userId: string }) {
     try {
         const supabase = await createSupabaseClient();
@@ -176,7 +171,7 @@ export async function getUserInfo({ userId }: { userId: string }) {
 
 /**
  * Resends verification email
- */
+*/
 export async function resendVerificationEmail(email: string) {
     try {
         const supabase = await createSupabaseClient();
@@ -202,7 +197,7 @@ export async function resendVerificationEmail(email: string) {
 
 /**
  * Updates user onboarding progress
- */
+*/
 export async function updateOnboardingProgress(onboarding_completed: boolean, step?: number) {
     try {
         const supabase = await createSupabaseClient();
@@ -248,7 +243,7 @@ export async function updateOnboardingProgress(onboarding_completed: boolean, st
 
 /**
  * Gets user onboarding progress from the database
- */
+*/
 export async function getOnboardingProgress() {
     try {
         const supabase = await createSupabaseClient();
@@ -260,7 +255,22 @@ export async function getOnboardingProgress() {
 
         const { data, error } = await supabase
             .from('profiles')
-            .select('onboarding_step, onboarding_completed, connected_accounts')
+            .select(`
+        onboarding_step, 
+        onboarding_completed, 
+        connected_accounts, 
+        business_name,
+        business_type,
+        industry,
+        monthly_budget,
+        website,
+        description,
+        ad_goals, 
+        preferred_platforms,
+        email_notifications,
+        weekly_reports,
+        performance_alerts
+      `)
             .eq('id', user.id)
             .single();
 
@@ -273,7 +283,20 @@ export async function getOnboardingProgress() {
             success: true,
             step: data?.onboarding_step || 0,
             completed: data?.onboarding_completed || false,
-            connectedAccounts: data?.connected_accounts || []
+            connectedAccounts: data?.connected_accounts || [],
+            businessData: {
+                businessName: data?.business_name || '',
+                businessType: data?.business_type || '',
+                industry: data?.industry || '',
+                monthlyBudget: data?.monthly_budget || '',
+                website: data?.website || '',
+                description: data?.description || '',
+                adGoals: data?.ad_goals || [],
+                preferredPlatforms: data?.preferred_platforms || [],
+                emailNotifications: data?.email_notifications || false,
+                weeklyReports: data?.weekly_reports || false,
+                performanceAlerts: data?.performance_alerts || false
+            }
         };
     } catch (error) {
         console.error('Error getting onboarding progress:', error);
@@ -281,7 +304,90 @@ export async function getOnboardingProgress() {
             success: false,
             step: 0,
             completed: false,
-            connectedAccounts: []
+            connectedAccounts: [],
+            businessData: {
+                businessName: '',
+                businessType: '',
+                industry: '',
+                adGoals: [],
+                monthlyBudget: '',
+                preferredPlatforms: [],
+                emailNotifications: false,
+                weeklyReports: false,
+                performanceAlerts: false
+            }
         };
+    }
+}
+
+/**
+ * Updates user business profile data
+*/
+export async function updateBusinessProfileData(businessData: {
+    businessName?: string;
+    businessType?: string;
+    industry?: string;
+    monthlyBudget?: string;
+    website?: string;
+    description?: string;
+    adGoals?: string[];
+    preferredPlatforms?: string[];
+    weeklyReports?: boolean;
+    emailNotifications?: boolean;
+    performanceAlerts?: boolean;
+}) {
+    try {
+        const supabase = await createSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            throw new Error('User not authenticated');
+        }
+
+        // Prepare the update data
+        console.log('Updating business profile data:', businessData);
+        const updateData = {
+            business_name: businessData.businessName,
+            business_type: businessData.businessType,
+            industry: businessData.industry,
+            monthly_budget: businessData.monthlyBudget,
+            website: businessData.website,
+            description: businessData.description,
+            ad_goals: businessData.adGoals,
+            preferred_platforms: businessData.preferredPlatforms,
+            weekly_reports: businessData.weeklyReports,
+            email_notifications: businessData.emailNotifications,
+            performance_alerts: businessData.performanceAlerts,
+            updated_at: new Date().toISOString()
+        };
+
+        // Remove undefined values
+        Object.keys(updateData).forEach((key) => {
+            const typedKey = key as keyof typeof updateData;
+            if (updateData[typedKey] === undefined) {
+                delete updateData[typedKey];
+            }
+        });
+
+        // Log what we're actually sending to the database because this is annoying me
+        console.log('Sending to database:', updateData);
+
+        // Update the profile
+        const { error, data } = await supabase
+            .from('profiles')
+            .update(updateData)
+            .eq('id', user.id)
+            .select();
+
+        if (error) {
+            console.error('Database update error:', error);
+            throw error;
+        }
+
+        console.log('Update successful, returned data:', data);
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating business profile data:', error);
+        return { success: false, error: getErrorMessage(error) };
     }
 }

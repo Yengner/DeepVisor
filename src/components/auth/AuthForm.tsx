@@ -17,7 +17,6 @@ export default function AuthForm({ type }: AuthFormProps) {
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [businessName, setBusinessName] = useState('');
   const [phoneNo, setPhoneNo] = useState('');
   const [loading, setLoading] = useState(false);
   const [showVerifyEmailButton, setShowVerifyEmailButton] = useState(false);
@@ -40,7 +39,7 @@ export default function AuthForm({ type }: AuthFormProps) {
           router.push('/dashboard');
         }
       } else if (type === 'signup') {
-        const { errorMessage } = await handleSignUp(email, password, firstName, lastName, businessName, phoneNo);
+        const { errorMessage } = await handleSignUp(email, password, firstName, lastName, phoneNo);
         if (errorMessage) {
           toast.error(errorMessage);
         } else {
@@ -97,13 +96,6 @@ export default function AuthForm({ type }: AuthFormProps) {
                   placeholder="Enter your last name"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  required
-                />
-                <TextInput
-                  label="Business Name"
-                  placeholder="Enter your business name"
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
                   required
                 />
                 <TextInput

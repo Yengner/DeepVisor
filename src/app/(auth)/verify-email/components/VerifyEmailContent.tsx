@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/utils/supabase/clients/browser';
 import { createUserProfile } from '@/lib/actions/user.actions';
@@ -13,6 +13,10 @@ export default function VerifyEmailContent() {
     const searchParams = useSearchParams();
     const supabase = createClient();
 
+    // Add new ref to store interval ID and verification status
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const verificationHandledRef = useRef<boolean>(false);
+
     // State variables
     const [status, setStatus] = useState<'loading' | 'loadingVerification' | 'success' | 'error' | 'manual'>('loading');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -22,6 +26,17 @@ export default function VerifyEmailContent() {
 
     // Memoize functions with useCallback
     const handleVerificationSuccess = useCallback(async (userId: string) => {
+        if (verificationHandledRef.current) {
+            return;
+        }
+        verificationHandledRef.current = true;
+
+        // Clear polling interval
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+
         try {
             const { success, errorMessage } = await createUserProfile(userId);
 
@@ -42,8 +57,12 @@ export default function VerifyEmailContent() {
         }
     }, [router]);
 
-    // All your existing code here...
     const checkVerificationStatus = useCallback(async () => {
+        // Don't check if we've already handled verification
+        if (verificationHandledRef.current) {
+            return;
+        }
+
         try {
             const { data, error } = await supabase.auth.getUser();
 
@@ -102,9 +121,16 @@ export default function VerifyEmailContent() {
             setStatus('manual');
         }
 
-        // Start polling to check verification status
-        const interval = setInterval(checkVerificationStatus, 5000);
-        return () => clearInterval(interval);
+        // Store interval reference so we can clear it
+        intervalRef.current = setInterval(checkVerificationStatus, 5000);
+
+        // Clean up interval on unmount
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
+        };
     }, [searchParams, checkVerificationStatus, verifyWithTokenHash]);
 
     useEffect(() => {
