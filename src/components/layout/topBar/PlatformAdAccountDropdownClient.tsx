@@ -1,18 +1,19 @@
-// @ts-nocheck
-
 'use client';
 import { useState, useEffect } from 'react';
 import { Select, Group, ThemeIcon, Text } from '@mantine/core';
 import { IconBrandFacebook, IconBrandGoogle, IconBrandTiktok, IconChevronDown } from '@tabler/icons-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 interface PlatformAdAccountDropdownClientProps {
   userInfo: any;
   platforms: any[];
   adAccounts: any[];
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export default function PlatformAdAccountDropdownClient({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   userInfo,
   platforms,
   adAccounts
@@ -58,7 +59,6 @@ export default function PlatformAdAccountDropdownClient({
       const params = new URLSearchParams(searchParams.toString());
       params.set('platform', value);
       params.delete('account');
-
 
       if (pathname.includes('/dashboard')) {
         router.push(`${pathname}?${params.toString()}`);
@@ -115,6 +115,7 @@ export default function PlatformAdAccountDropdownClient({
 
   return (
     <Group>
+      {/* @ts-ignore */}
       <Select
         placeholder="Select Platform"
         data={platformItems}
@@ -123,17 +124,21 @@ export default function PlatformAdAccountDropdownClient({
         w={160}
         clearable
         rightSection={<IconChevronDown size={14} />}
+        /* @ts-ignore */
         styles={(theme) => ({
           rightSection: { pointerEvents: 'none' }
         })}
+        /* @ts-ignore */
         renderOption={({ option }) => (
           <Group gap="xs">
+            {/* @ts-ignore */}
             {option.customIcon && <ThemeIcon size="sm" variant="light">{option.customIcon}</ThemeIcon>}
             <Text>{option.label}</Text>
           </Group>
         )}
       />
 
+      {/* @ts-ignore */}
       <Select
         placeholder="Select Ad Account"
         data={accountItems}
@@ -143,15 +148,16 @@ export default function PlatformAdAccountDropdownClient({
         disabled={!selectedPlatform || accountItems.length === 0}
         clearable
         rightSection={<IconChevronDown size={14} />}
+        /* @ts-ignore */
         styles={(theme) => ({
           rightSection: { pointerEvents: 'none' }
         })}
+        /* @ts-ignore */
         renderOption={({ option }) => (
           <div>
             <Text size="sm">{option.label}</Text>
-            {option.description && (
-              <Text size="xs" c="dimmed">ID: {option.description}</Text>
-            )}
+            {/* @ts-ignore */}
+            {option.description && (<Text size="xs" c="dimmed">ID: {option.description}</Text>)}
           </div>
         )}
       />

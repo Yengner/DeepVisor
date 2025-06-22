@@ -31,15 +31,17 @@ import {
     IconChartBar
 } from '@tabler/icons-react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { handleSignOut } from '@/lib/actions/user.actions';
 import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 interface TopBarClientProps {
     userInfo: any;
     platforms?: any[];
     adAccounts?: any[];
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export default function TopBarClient({ userInfo, platforms = [], adAccounts = [] }: TopBarClientProps) {
     const router = useRouter();
@@ -66,7 +68,7 @@ export default function TopBarClient({ userInfo, platforms = [], adAccounts = []
     // Toggle theme mode
     const toggleTheme = () => {
         setIsDarkMode(!isDarkMode);
-        // Implement actual theme change logic here
+        // Gotta actually put theme change logic here
     };
 
     // Mark notifications as read
@@ -151,7 +153,7 @@ export default function TopBarClient({ userInfo, platforms = [], adAccounts = []
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     leftSection={<IconSearch size={16} color="gray" />}
-                    styles={(theme) => ({
+                    styles={() => ({
                         root: {
                             width: rem(300),
                         },

@@ -3,12 +3,12 @@ import { getTopCampaignsForPlatforms } from '@/lib/api/platforms/fetchFeaturedCa
 import { getRecommendations } from '@/lib/api/openai.ts/getRecommendations';
 import { getLoggedInUser } from '@/lib/actions/user.actions';
 import DashboardComponent from '@/components/dashboard/DashboardComponent';
-import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
-import { redirect } from 'next/navigation';
+// import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
+// import { redirect } from 'next/navigation';
 
 
 export default async function PlatformDashboardPage() {
-  const supabase = await createSupabaseClient()
+  // const supabase = await createSupabaseClient()
 
   const loggedIn = await getLoggedInUser();
   const userId = loggedIn?.id;

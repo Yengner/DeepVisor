@@ -4,6 +4,7 @@ import { Card, Group, Text, Table, ThemeIcon, Badge } from '@mantine/core';
 import { IconBrandFacebook, IconBrandGoogle, IconBrandTiktok, IconChartBar } from '@tabler/icons-react';
 
 interface PlatformMetricsProps {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     platforms: any[];
 }
 

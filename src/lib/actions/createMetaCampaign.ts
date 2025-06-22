@@ -81,7 +81,7 @@ export async function createMetaCampaign(formData: any) {
     const adsetUrl = `https://graph.facebook.com/v21.0/${adAccountId}/adsets`;
 
     const adsetParams = {
-      name: formData.adsetName || `${formData.campaignName} - ${formData.city || 'Area'} - ${new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - WA`,  
+      name: formData.adsetName || `${formData.campaignName} - ${formData.city || 'Area'} - ${new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - WA`,
       campaign_id: campaignId,
       billing_event: "IMPRESSIONS", // Always impressions
       optimization_goal: "CONVERSATIONS", // Always conversations

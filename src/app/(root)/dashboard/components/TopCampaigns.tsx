@@ -5,6 +5,7 @@ import { IconBrandFacebook, IconBrandGoogle, IconBrandTiktok, IconChartBar } fro
 import { useRouter } from 'next/navigation';
 
 interface TopCampaignsProps {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     campaigns: any[];
     onViewAll: () => void;
     showAll?: boolean;

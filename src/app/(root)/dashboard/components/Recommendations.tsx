@@ -4,6 +4,7 @@ import { Stack, Alert, Text, Button, Group } from '@mantine/core';
 import { IconBulb, IconAlertCircle } from '@tabler/icons-react';
 
 interface RecommendationsProps {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recommendations: any[];
 }
 
@@ -15,7 +16,7 @@ export default function Recommendations({ recommendations }: RecommendationsProp
                 title="No recommendations available"
                 color="gray"
             >
-                We'll generate personalized recommendations as we gather more data about your campaigns.
+                We&apos;ll generate personalized recommendations as we gather more data about your campaigns.
             </Alert>
         );
     }

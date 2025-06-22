@@ -8,29 +8,29 @@ import {
     SimpleGrid,
     Card,
     Button,
-    Badge,
+    // Badge,
     Stack,
     Tabs,
-    rem,
+    // rem,
     useMantineTheme,
     ThemeIcon,
-    ActionIcon
+    // ActionIcon
 } from '@mantine/core';
 import {
     IconRefresh,
-    IconChartBar,
+    // IconChartBar,
     IconBrandFacebook,
-    IconBrandGoogle,
-    IconBrandTiktok,
-    IconAlertCircle,
-    IconArrowUp,
-    IconArrowDown,
+    // IconBrandGoogle,
+    // IconBrandTiktok,
+    // IconAlertCircle,
+    // IconArrowUp,
+    // IconArrowDown,
     IconPresentationAnalytics,
     IconChartPie,
     IconBulb,
-    IconCoin,
-    IconClick,
-    IconEye
+    // IconCoin,
+    // IconClick,
+    // IconEye
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import StatsCards from './StatsCards';
@@ -39,7 +39,7 @@ import TopCampaigns from './TopCampaigns';
 import Recommendations from './Recommendations';
 import PlatformMetrics from './PlatformMetrics';
 
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 interface DashboardClientProps {
     userData: any;
     businessName: string;
@@ -49,18 +49,19 @@ interface DashboardClientProps {
     campaigns: any[];
     recommendations: any[];
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export default function DashboardClient({
-    userData,
+    // userData,
     businessName,
-    platforms,
+    // platforms,
     featuredPlatform,
     platformMetrics,
     campaigns,
     recommendations
 }: DashboardClientProps) {
     const router = useRouter();
-    const theme = useMantineTheme();
+    // const theme = useMantineTheme();
     const [refreshing, setRefreshing] = useState(false);
 
     // Calculate aggregated stats

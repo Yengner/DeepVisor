@@ -83,7 +83,7 @@ const Sidebar = () => {
                 onClick={() => handleNavigation(item.route)}
                 variant={pathname === item.route ? "filled" : "light"}
                 color={activeColor}
-                styles={(theme) => ({
+                styles={() => ({
                   root: {
                     '&[data-active]': {
                       backgroundColor: activeColor

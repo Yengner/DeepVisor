@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card, Group, Text, Button, SegmentedControl, Stack, RingProgress, ThemeIcon, SimpleGrid } from '@mantine/core';
 import { IconBrandFacebook, IconBrandGoogle, IconBrandTiktok, IconChartBar } from '@tabler/icons-react';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 interface PlatformPerformanceProps {
     featuredPlatform: {
         leads: any;
@@ -14,6 +15,8 @@ interface PlatformPerformanceProps {
     };
     onViewAll: () => void;
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 
 export default function PlatformPerformance({ featuredPlatform, onViewAll }: PlatformPerformanceProps) {
     const [selectedMetric, setSelectedMetric] = useState<'leads' | 'ctr' | 'link_clicks' | 'impressions' | 'messages'>('leads');

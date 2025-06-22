@@ -452,11 +452,16 @@ const Grid = ({ children }: { children: React.ReactNode }) => (
     </div>
 );
 
-Grid.Col = ({ span, children }: { span: number; children: React.ReactNode }) => (
+// Create the Col component with proper display name
+const GridCol: React.FC<{ span: number; children: React.ReactNode }> = ({ span, children }) => (
     <div style={{ flex: `0 0 ${(span / 12) * 100}%`, padding: '8px' }}>
         {children}
     </div>
 );
+
+// Assign it as a property and set the display name
+Grid.Col = GridCol;
+GridCol.displayName = 'Grid.Col'; // This fixes the ESLint error
 
 // Define types for Select component
 interface SelectOption {
@@ -470,7 +475,6 @@ interface SelectProps {
     style?: React.CSSProperties;
 }
 
-// Required for Select component
 const Select = ({ data, defaultValue, style }: SelectProps) => (
     <select
         defaultValue={defaultValue}
