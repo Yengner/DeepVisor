@@ -91,6 +91,7 @@ export default function PlatformPerformance({ featuredPlatform, onViewAll }: Pla
             <Stack gap="md" pt="md">
                 <SegmentedControl
                     value={selectedMetric}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     onChange={(value) => setSelectedMetric(value as any)}
                     data={[
                         { label: 'Leads', value: 'leads' },

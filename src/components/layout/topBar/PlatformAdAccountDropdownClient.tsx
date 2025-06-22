@@ -123,13 +123,13 @@ export default function PlatformAdAccountDropdownClient({
         w={160}
         clearable
         rightSection={<IconChevronDown size={14} />}
-        /* @ts-expect-error */
+        /* @ts-expect-error - Mantine types don't match how we're using the styles prop */
         styles={() => ({
           rightSection: { pointerEvents: 'none' }
         })}
         renderOption={({ option }) => (
           <Group gap="xs">
-            {/* @ts-expect-error */}
+            {/* @ts-expect-error - customIcon is a custom property we added to the option */}
             {option.customIcon && <ThemeIcon size="sm" variant="light">{option.customIcon}</ThemeIcon>}
             <Text>{option.label}</Text>
           </Group>
@@ -145,14 +145,14 @@ export default function PlatformAdAccountDropdownClient({
         disabled={!selectedPlatform || accountItems.length === 0}
         clearable
         rightSection={<IconChevronDown size={14} />}
-        /* @ts-expect-error */
+        /* @ts-expect-error - Mantine types don't match how we're using the styles prop */
         styles={() => ({
           rightSection: { pointerEvents: 'none' }
         })}
         renderOption={({ option }) => (
           <div>
             <Text size="sm">{option.label}</Text>
-            {/* @ts-expect-error */}
+            {/* @ts-expect-error - description is a custom property we added to the option */}
             {option.description && (<Text size="xs" c="dimmed">ID: {option.description}</Text>)}
           </div>
         )}
