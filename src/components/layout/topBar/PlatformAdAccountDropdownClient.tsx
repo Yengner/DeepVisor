@@ -115,7 +115,6 @@ export default function PlatformAdAccountDropdownClient({
 
   return (
     <Group>
-      {/* @ts-ignore */}
       <Select
         placeholder="Select Platform"
         data={platformItems}
@@ -124,21 +123,19 @@ export default function PlatformAdAccountDropdownClient({
         w={160}
         clearable
         rightSection={<IconChevronDown size={14} />}
-        /* @ts-ignore */
-        styles={(theme) => ({
+        /* @ts-expect-error */
+        styles={() => ({
           rightSection: { pointerEvents: 'none' }
         })}
-        /* @ts-ignore */
         renderOption={({ option }) => (
           <Group gap="xs">
-            {/* @ts-ignore */}
+            {/* @ts-expect-error */}
             {option.customIcon && <ThemeIcon size="sm" variant="light">{option.customIcon}</ThemeIcon>}
             <Text>{option.label}</Text>
           </Group>
         )}
       />
 
-      {/* @ts-ignore */}
       <Select
         placeholder="Select Ad Account"
         data={accountItems}
@@ -148,15 +145,14 @@ export default function PlatformAdAccountDropdownClient({
         disabled={!selectedPlatform || accountItems.length === 0}
         clearable
         rightSection={<IconChevronDown size={14} />}
-        /* @ts-ignore */
-        styles={(theme) => ({
+        /* @ts-expect-error */
+        styles={() => ({
           rightSection: { pointerEvents: 'none' }
         })}
-        /* @ts-ignore */
         renderOption={({ option }) => (
           <div>
             <Text size="sm">{option.label}</Text>
-            {/* @ts-ignore */}
+            {/* @ts-expect-error */}
             {option.description && (<Text size="xs" c="dimmed">ID: {option.description}</Text>)}
           </div>
         )}
