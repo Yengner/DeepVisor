@@ -1,7 +1,7 @@
 import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
-import PlatformList from '@/components/integration/PlatformList';
 import React from 'react';
 import { getLoggedInUser } from '@/lib/actions/user.actions';
+import IntegrationClient from '@/components/integration/IntegrationClient';
 
 const IntegrationPage = async () => {
   const supabase = await createSupabaseClient();
@@ -35,7 +35,7 @@ const IntegrationPage = async () => {
     isIntegrated: platformIntegrations?.find((integration) => integration.platform_name === platform.id)?.is_integrated || false,
   }));
 
-  return <PlatformList platforms={platformsWithIntegration} userId={userId} />;
+  return <IntegrationClient platforms={platformsWithIntegration} userId={userId} />;
 };
 
 export default IntegrationPage;
