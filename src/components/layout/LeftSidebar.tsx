@@ -85,7 +85,7 @@ const Sidebar = () => {
                 color={activeColor}
                 styles={() => ({
                   root: {
-                    '&[data-active]': {
+                    '&[dataActive]': {
                       backgroundColor: activeColor
                     },
                     '&:hover': {
@@ -125,7 +125,7 @@ const Sidebar = () => {
                   styles={(theme) => ({
                     root: {
                       borderRadius: theme.radius.sm,
-                      '&[data-active]': {
+                      '&[dataActive]': {
                         backgroundColor: activeColor
                       },
                       '&:hover': {

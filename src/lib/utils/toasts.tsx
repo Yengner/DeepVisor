@@ -1,6 +1,6 @@
 import toast from 'react-hot-toast';
-import { SuccessToast } from '@/components/ui/notifications/SuccessToast';
-import { ErrorToast } from '@/components/ui/notifications/ErrorToast';
+import { SuccessToast } from '@/components/ui/toasts/SuccessToast';
+import { ErrorToast } from '@/components/ui/toasts/ErrorToast';
 
 // Show success toast with custom message and optional title
 export const showSuccess = (message: string, title?: string) => {

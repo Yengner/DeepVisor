@@ -32,12 +32,25 @@ export default async function Topbar() {
     console.error("Error fetching ad accounts:", adAccountError.message);
   }
 
+  // Fetch user notifications
+  const { data: notifications, error: notificationsError } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (notificationsError) {
+    console.error("Error fetching notifications:", notificationsError.message);
+  }
+
   return (
     <div className="w-full h-full">
       <TopBarClient
         userInfo={loggedInUser}
         platforms={platforms || []}
         adAccounts={adAccounts || []}
+        notifications={notifications || []}
       />
     </div>
   );

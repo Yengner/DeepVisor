@@ -31,34 +31,51 @@ import {
     IconChartBar
 } from '@tabler/icons-react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { handleSignOut } from '@/lib/actions/user.actions';
 import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
+// Import utility functions from the correct locations
+import { formatRelativeTime, markNotificationReadClient, markAllNotificationsAsReadClient } from '@/lib/utils/notifications';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+interface Notification {
+    id: string;
+    title: string;
+    message: string;
+    created_at: string;
+    read: boolean;
+    type: string;
+    link?: string;
+}
+
 interface TopBarClientProps {
     userInfo: any;
     platforms?: any[];
     adAccounts?: any[];
+    notifications?: Notification[];
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-export default function TopBarClient({ userInfo, platforms = [], adAccounts = [] }: TopBarClientProps) {
+export default function TopBarClient({
+    userInfo,
+    platforms = [],
+    adAccounts = [],
+    notifications = []
+}: TopBarClientProps) {
     const router = useRouter();
     const pathname = usePathname();
     const [searchQuery, setSearchQuery] = useState('');
     const [isDarkMode, setIsDarkMode] = useState(false);
-    const [notificationCount, setNotificationCount] = useState(3);
+    const [userNotifications, setUserNotifications] = useState<Notification[]>(notifications);
+    const [notificationCount, setNotificationCount] = useState(0);
 
-    const fullName = `${userInfo?.first_name || ''} ${userInfo?.last_name || ''}`.trim() || 'User';
-    const userInitials = fullName.split(' ').map(name => name[0]).join('').toUpperCase();
+    // Calculate unread notification count
+    useEffect(() => {
+        setNotificationCount(userNotifications.filter(n => !n.read).length);
+    }, [userNotifications]);
 
-    // Simulate notifications
-    const notifications = [
-        { id: 1, title: 'Campaign completed', message: 'Your Meta campaign has ended', time: '10m ago', read: false },
-        { id: 2, title: 'Budget alert', message: 'Google Ads campaign reached 80% of budget', time: '1h ago', read: false },
-        { id: 3, title: 'New integration available', message: 'TikTok Ads integration is now available', time: '3h ago', read: true }
-    ];
+    const fullName = userInfo?.full_name || 'User';
+    const userInitials = fullName.split(' ').map((name: string) => name[0]).join('').toUpperCase();
 
     const handleLogout = async () => {
         await handleSignOut();
@@ -68,12 +85,52 @@ export default function TopBarClient({ userInfo, platforms = [], adAccounts = []
     // Toggle theme mode
     const toggleTheme = () => {
         setIsDarkMode(!isDarkMode);
-        // Gotta actually put theme change logic here
+        // Implement actual theme change logic here
     };
 
-    // Mark notifications as read
-    const markAllRead = () => {
-        setNotificationCount(0);
+    // Mark all notifications as read
+    const markAllRead = async () => {
+        // Get IDs of unread notifications
+        const unreadIds = userNotifications
+            .filter(notification => !notification.read)
+            .map(notification => notification.id);
+
+        if (unreadIds.length === 0) return;
+
+        // Use the utility function from notifications.ts
+        const success = await markAllNotificationsAsReadClient(unreadIds);
+
+        if (success) {
+            // Update local state
+            setUserNotifications(prevNotifications =>
+                prevNotifications.map(notification => ({ ...notification, read: true }))
+            );
+
+            setNotificationCount(0);
+        }
+    };
+
+    // Handle notification click
+    const handleNotificationClick = async (notification: Notification) => {
+        // Mark as read
+        if (!notification.read) {
+            const success = await markNotificationReadClient(notification.id);
+
+            if (success) {
+                // Update the notification in state
+                setUserNotifications(prev =>
+                    prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+                );
+
+                // Update the count
+                setNotificationCount(prev => Math.max(0, prev - 1));
+            }
+        }
+
+        // Navigate if link is provided
+        if (notification.link) {
+            router.push(notification.link);
+        }
     };
 
     return (
@@ -132,12 +189,20 @@ export default function TopBarClient({ userInfo, platforms = [], adAccounts = []
                         </Button>
                     </Menu.Target>
                     <Menu.Dropdown>
+                        <Menu.Label>Campaigns</Menu.Label>
                         <Menu.Item
                             leftSection={<IconPresentationAnalytics size={16} />}
-                            onClick={() => router.push('/campaigns/new')}
+                            onClick={() => router.push('/campaigns/new?mode=smart')}
                         >
-                            Campaign
+                            Smart Campaign
                         </Menu.Item>
+                        <Menu.Item
+                            leftSection={<IconPresentationAnalytics size={16} />}
+                            onClick={() => router.push('/campaigns/new?mode=manual')}
+                        >
+                            Custom Campaign
+                        </Menu.Item>
+                        <Menu.Divider />
                         <Menu.Item
                             leftSection={<IconChartBar size={16} />}
                             onClick={() => router.push('/reports/new')}
@@ -186,17 +251,18 @@ export default function TopBarClient({ userInfo, platforms = [], adAccounts = []
                         </div>
                         <Menu.Divider />
 
-                        {notifications.length > 0 ? (
+                        {userNotifications.length > 0 ? (
                             <>
-                                {notifications.map((notification) => (
+                                {userNotifications.map((notification) => (
                                     <Menu.Item
                                         key={notification.id}
                                         className={notification.read ? 'opacity-70' : ''}
+                                        onClick={() => handleNotificationClick(notification)}
                                     >
                                         <div>
                                             <Group justify="apart" mb={4}>
                                                 <Text size="sm" fw={500}>{notification.title}</Text>
-                                                <Text size="xs" c="dimmed">{notification.time}</Text>
+                                                <Text size="xs" c="dimmed">{formatRelativeTime(notification.created_at)}</Text>
                                             </Group>
                                             <Text size="xs" c="dimmed">{notification.message}</Text>
                                         </div>
