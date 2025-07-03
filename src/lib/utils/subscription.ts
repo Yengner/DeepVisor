@@ -16,7 +16,7 @@ export async function getUserSubscriptionTier(userId: string): Promise<Subscript
         const { data, error } = await supabase
             .from('profiles')
             .select('subscription_status, plan_tier')
-            .eq('user_id', userId)
+            .eq('id', userId)
             .single();
 
         if (error || !data) {

@@ -129,7 +129,7 @@ export async function getTopCampaignsForPlatforms(userId: string) {
       // Step 3: Fetch Campaigns for Ad Accounts
       for (const adAccount of adAccounts as AdAccount[]) {
         const { data: campaigns, error: campaignError } = await supabase
-          .from("campaigns")
+          .from("campaigns_metrics")
           .select(`
             campaign_id,
             name,

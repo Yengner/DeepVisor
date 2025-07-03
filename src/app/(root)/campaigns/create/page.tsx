@@ -1,15 +1,21 @@
 'use client';
 
-import CreateCampaign from "@/components/campaigns/create/CreateCampaign";
-import { CampaignFormProvider } from "@/hooks/context/CampaignFormProvider";
+import { useSearchParams } from 'next/navigation';
+import { Container, Paper, Title, Text } from '@mantine/core';
+import SmartCampaignFlow from '@/components/campaigns/create/smart/SmartCampaignFlow';
+import CustomCampaignFlow from '@/components/campaigns/create/manual/CustomCampaignFlow';
 
+export default function CreateCampaignPage() {
+    const searchParams = useSearchParams();
+    const mode = searchParams.get('mode') || 'smart';
 
-
-export default function CampaignCreatePage() {
-  
-  return (
-    <CampaignFormProvider>
-      <CreateCampaign />
-    </CampaignFormProvider>
-  );
+    return (
+        <>
+                {mode === 'smart' ? (
+                    <SmartCampaignFlow />
+                ) : (
+                    <CustomCampaignFlow />
+                )}
+        </>
+    );
 }

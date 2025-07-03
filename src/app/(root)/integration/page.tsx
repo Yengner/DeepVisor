@@ -3,11 +3,11 @@ import React from 'react';
 import { getLoggedInUser } from '@/lib/actions/user.actions';
 import IntegrationClient from '@/components/integration/IntegrationClient';
 
-const IntegrationPage = async () => {
-  const supabase = await createSupabaseClient();
-  
+export default async function IntegrationPage() {
+  // Fetch user and ad account data
   const loggedIn = await getLoggedInUser();
-  const userId = loggedIn.id;
+  const userId = loggedIn?.id;
+  const supabase = await createSupabaseClient();
 
   const { data: platforms, error: platformError } = await supabase
     .from('platform')
@@ -38,4 +38,3 @@ const IntegrationPage = async () => {
   return <IntegrationClient platforms={platformsWithIntegration} userId={userId} />;
 };
 
-export default IntegrationPage;

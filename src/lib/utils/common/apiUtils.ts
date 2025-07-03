@@ -31,7 +31,6 @@ export const fetchWithValidation = async <T>(
 };
 
 //Retry logic for fetching data.
-
 export const fetchWithRetry = async <T>(
     fetchFn: () => Promise<T>,
     retries: number = 3,

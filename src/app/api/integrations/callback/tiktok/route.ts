@@ -137,7 +137,7 @@ export async function GET(request: Request) {
 
     // Upsert ad accounts and page accounts into the database
     const { error: pageAccountsError } = await supabase
-      .from('meta_page_accounts')
+      .from('meta_pages')
       .upsert(pageAccounts);
 
     if (pageAccountsError) {

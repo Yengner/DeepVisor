@@ -26,10 +26,11 @@ export default function ConnectAccountsStep({
         setConnecting(platform);
         try {
             // Redirect to the OAuth connection URL for Meta
-            window.location.href = `/api/integrations/connect/${platform}`;
+            const returnPath = encodeURIComponent(`/onboarding`)
+            window.location.href = `/api/integrations/connect/${platform}?returnPath=${returnPath}`;
         } catch (error) {
             console.error(`Error connecting to ${platform}:`, error);
-            toast.error(`Failed to connect to Meta. Please try again.`);
+            toast.error(`Failed to connect to ${platform}. Please try again.`);
             setConnecting(null);
         }
     };

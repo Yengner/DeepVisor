@@ -198,7 +198,6 @@ export async function storePageAccounts(
 
     // Format page accounts for database
     const pageAccountsForDb = pageAccounts.map((account) => (
-        console.log('Processing page account:', account),
         {
             user_id: userId,
             platform_integration_id: platformIntegrationId,
@@ -213,7 +212,7 @@ export async function storePageAccounts(
 
     // Save to database
     const { error: pageAccountsError } = await supabase
-        .from('meta_page_accounts')
+        .from('meta_pages')
         .upsert(pageAccountsForDb);
 
     if (pageAccountsError) {
@@ -286,30 +285,6 @@ export async function updateUserConnectedAccounts(
 }
 
 /**
- * Trigger Meta sync function
- */
-export async function triggerMetaSync(userId: string): Promise<void> {
-    try {
-        const syncResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/sync_user_meta_posts`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-            body: JSON.stringify({ userId }),
-        });
-
-        if (!syncResponse.ok) {
-            console.error('❌ Failed to invoke sync_user_meta_posts function:', await syncResponse.text());
-        } else {
-            console.log('✅ Successfully triggered sync_user_meta_posts for user:', userId);
-        }
-    } catch (error) {
-        console.error('Error triggering Meta sync:', error);
-    }
-}
-
-/**
  * Check if user needs account selection based on tier and accounts
  */
 export function needsAccountSelection(
@@ -324,4 +299,34 @@ export function needsAccountSelection(
 
     // If tier1 or free and has multiple accounts
     return (userTier === 'tier1' || userTier === 'free') && adAccounts.length > 1;
+}
+
+// Add this function to your existing utils
+
+/**
+ * Trigger sync of user ad data after successful Meta integration
+ */
+export async function triggerMetaSync(userId: string) {
+    try {
+        // Call the Supabase Edge Function
+        const response = await fetch('https://gkdyyjqepzayjdpvqnja.supabase.co/functions/v1/sync_user_ad_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+            },
+            body: JSON.stringify({ userId })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Error triggering ad data sync:', response.status, errorData);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Failed to trigger ad data sync:', error);
+        return false;
+    }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Title,
     Text,
@@ -20,6 +20,9 @@ import {
     Container,
     Modal,
     Tooltip,
+    ActionIcon,
+    Menu,
+    LoadingOverlay
 } from '@mantine/core';
 import {
     IconBrandFacebook,
@@ -34,10 +37,14 @@ import {
     IconBrandLinkedin,
     IconBrandTwitter,
     IconChartBar,
-    IconRefresh
+    IconRefresh,
+    IconTrash,
+    IconSettings
 } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
-import MetaIntegration from '@/components/integration/MetaIntegration';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@/lib/utils/supabase/clients/browser';
+import toast from 'react-hot-toast';
 
 type Platform = {
     id: string;
@@ -79,7 +86,21 @@ const getPlatformIcon = (platformId: string) => {
 
 const PlatformList: React.FC<PlatformListProps> = ({ platforms, userId }) => {
     const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
+    const [connecting, setConnecting] = useState<string | null>(null);
+    const [disconnecting, setDisconnecting] = useState<string | null>(null);
     const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // Check for success or error messages from redirects
+    useEffect(() => {
+        const success = searchParams.get('success');
+        if (success === 'true') {
+            toast.success('Platform connected successfully!');
+            router.replace('/integration'); // Remove success param to prevent multiple toasts
+        }
+    }, [searchParams, router]);
 
     // Find the Meta platform for featured section
     const metaPlatform = platforms.find(p => p.id === 'meta') || platforms[0];
@@ -92,13 +113,84 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms, userId }) => {
     const activeIntegrations = platforms.filter(p => p.isIntegrated).length;
     const integrationPercentage = (activeIntegrations / totalIntegrations) * 100;
 
+    const handleConnect = async (platform: string) => {
+        setConnecting(platform);
+        try {
+            // Create URL with searchParams to ensure proper return path
+            const returnPath = encodeURIComponent(`/integration`);
+
+            // Redirect to the connection endpoint with return path
+            window.location.href = `/api/integrations/connect/${platform}?return=${returnPath}`;
+        } catch (error) {
+            console.error(`Error connecting to ${platform}:`, error);
+            toast.error(`Failed to connect to ${platform}. Please try again.`);
+            setConnecting(null);
+        }
+    };
+
+    const handleDisconnect = async (platform: string, integrationId?: string) => {
+        if (!confirm('Are you sure you want to disconnect this platform? This will remove all associated data.')) {
+            return;
+        }
+
+        setDisconnecting(platform);
+        try {
+            const supabase = createClient();
+
+            // Delete platform integration from database
+            const { error } = await supabase
+                .from('platform_integrations')
+                .delete()
+                .eq('user_id', userId)
+                .eq('platform_name', platform);
+
+            if (error) {
+                throw error;
+            }
+
+            // Refresh the page to update UI
+            toast.success(`${platform} disconnected successfully`);
+            window.location.reload();
+        } catch (error) {
+            console.error(`Error disconnecting ${platform}:`, error);
+            toast.error(`Failed to disconnect ${platform}. Please try again.`);
+        } finally {
+            setDisconnecting(null);
+        }
+    };
+
+    const handleRefreshConnections = async () => {
+        setRefreshing(true);
+        try {
+            // API call to refresh connections
+            await fetch('/api/integrations/refresh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId })
+            });
+
+            toast.success('Connections refreshed successfully');
+            // Reload the page to get updated data
+            window.location.reload();
+        } catch (error) {
+            console.error('Error refreshing connections:', error);
+            toast.error('Failed to refresh connections');
+        } finally {
+            setRefreshing(false);
+        }
+    };
+
     const handleViewDetails = (platform: Platform) => {
         setSelectedPlatform(platform);
         openDetails();
     };
 
     return (
-        <Container size="xl">
+        <Container size="xl" pos="relative">
+            <LoadingOverlay visible={refreshing} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
+
             {/* Stats Section */}
             <Paper withBorder radius="md" p="md" mb={30}>
                 <Stack>
@@ -125,6 +217,8 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms, userId }) => {
                         <Button
                             leftSection={<IconRefresh size={16} />}
                             variant="subtle"
+                            onClick={handleRefreshConnections}
+                            loading={refreshing}
                         >
                             Refresh Connections
                         </Button>
@@ -195,29 +289,74 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms, userId }) => {
 
                             <Grid.Col span={4}>
                                 <Paper withBorder p="md" radius="md">
-                                    <Title order={5} mb="md">Connect Facebook Ads</Title>
-                                    <MetaIntegration
-                                        platformName={metaPlatform.platform_name.toLowerCase()}
-                                        userId={userId}
-                                        isIntegrated={metaPlatform.isIntegrated}
-                                    />
+                                    <Title order={5} mb="md">Meta Integration</Title>
 
-                                    {metaPlatform.isIntegrated && (
+                                    {metaPlatform.isIntegrated ? (
                                         <>
+                                            <Group>
+                                                <ThemeIcon color="green" size="md" radius="xl">
+                                                    <IconCheck size={16} />
+                                                </ThemeIcon>
+                                                <div>
+                                                    <Text fw={500}>Connected</Text>
+                                                    <Text size="xs" color="dimmed">Your Meta account is linked</Text>
+                                                </div>
+                                            </Group>
+
                                             <Divider my="md" />
+
                                             <Group justify="apart">
                                                 <Text size="sm">Last synced</Text>
                                                 <Text size="sm" c="dimmed">10 minutes ago</Text>
                                             </Group>
-                                            <Button
-                                                fullWidth
-                                                leftSection={<IconRefresh size={16} />}
-                                                variant="light"
-                                                mt="sm"
-                                            >
-                                                Sync Data
-                                            </Button>
+
+                                            <Group mt="md">
+                                                <Button
+                                                    leftSection={<IconRefresh size={16} />}
+                                                    variant="light"
+                                                    flex="1"
+                                                >
+                                                    Sync Data
+                                                </Button>
+
+                                                <Menu shadow="md">
+                                                    <Menu.Target>
+                                                        <ActionIcon variant="default">
+                                                            <IconSettings size={16} />
+                                                        </ActionIcon>
+                                                    </Menu.Target>
+                                                    <Menu.Dropdown>
+                                                        <Menu.Label>Integration</Menu.Label>
+                                                        <Menu.Item>
+                                                            View Details
+                                                        </Menu.Item>
+                                                        <Menu.Divider />
+                                                        <Menu.Label>Danger</Menu.Label>
+                                                        <Menu.Item
+                                                            color="red"
+                                                            leftSection={<IconTrash size={14} />}
+                                                            onClick={() => handleDisconnect('meta')}
+                                                            disabled={disconnecting === 'meta'}
+                                                        >
+                                                            {disconnecting === 'meta' ? 'Disconnecting...' : 'Disconnect'}
+                                                        </Menu.Item>
+                                                    </Menu.Dropdown>
+                                                </Menu>
+                                            </Group>
                                         </>
+                                    ) : (
+                                        <Button
+                                            fullWidth
+                                            size="md"
+                                            variant="filled"
+                                            color="blue"
+                                            leftSection={<IconPlus size={16} />}
+                                            onClick={() => handleConnect('meta')}
+                                            loading={connecting === 'meta'}
+                                            mt="md"
+                                        >
+                                            Connect Meta Account
+                                        </Button>
                                     )}
                                 </Paper>
                             </Grid.Col>
@@ -400,11 +539,26 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms, userId }) => {
 
                         <Group justify="apart">
                             {selectedPlatform.id === 'meta' ? (
-                                <MetaIntegration
-                                    platformName={selectedPlatform.platform_name.toLowerCase()}
-                                    userId={userId}
-                                    isIntegrated={selectedPlatform.isIntegrated}
-                                />
+                                selectedPlatform.isIntegrated ? (
+                                    <Button
+                                        color="red"
+                                        variant="outline"
+                                        leftSection={<IconTrash size={14} />}
+                                        onClick={() => handleDisconnect('meta')}
+                                        loading={disconnecting === 'meta'}
+                                    >
+                                        Disconnect {selectedPlatform.platform_name}
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        color="blue"
+                                        leftSection={<IconLink size={16} />}
+                                        onClick={() => handleConnect('meta')}
+                                        loading={connecting === 'meta'}
+                                    >
+                                        Connect {selectedPlatform.platform_name}
+                                    </Button>
+                                )
                             ) : selectedPlatform.id === 'google' ? (
                                 <Button leftSection={<IconLink size={16} />}>Connect Google Ads</Button>
                             ) : (

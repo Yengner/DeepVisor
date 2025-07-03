@@ -6,8 +6,8 @@ import {
   storeAdAccounts,
   storePageAccounts,
   updateUserConnectedAccounts,
-  // triggerMetaSync,
-  needsAccountSelection
+  needsAccountSelection,
+  triggerMetaSync
 } from '@/lib/utils/meta/callback/utils';
 import { getUserSubscriptionTier } from '@/lib/utils/subscription';
 import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
@@ -16,9 +16,11 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const isOnboarding = searchParams.get('onboarding') === 'true';
+  const returnPath = searchParams.get('return') || '/integration';
+  const isOnboarding = returnPath.includes('/onboarding');
   const state = searchParams.get('state');
   const error = searchParams.get('error');
+  console.log('searchParams: in callback', searchParams.toString());
 
 
   if (error) {
@@ -52,7 +54,7 @@ export async function GET(request: Request) {
     // Exchange code for access token
     const appId = process.env.META_APP_ID;
     const appSecret = process.env.META_APP_SECRET;
-    const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/integrations/callback/meta?onboarding=${isOnboarding ? 'true' : 'false'}`;
+    const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/integrations/callback/meta?return=${encodeURIComponent(returnPath)}`;
 
     const tokenUrl = `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`;
     const response = await fetch(tokenUrl);
@@ -69,7 +71,6 @@ export async function GET(request: Request) {
 
     // Get user's subscription tier
     const userTier = await getUserSubscriptionTier(userId);
-
     // Store platform integration
     const platformIntegrationId = await storeMetaIntegration(
       supabase,
@@ -111,7 +112,7 @@ export async function GET(request: Request) {
     await updateUserConnectedAccounts(supabase, userId, savedAdAccounts, accountIdMap);
 
     // Trigger sync function
-    // await triggerMetaSync(userId); // Skipped for now, can be added later
+    await triggerMetaSync(userId);
 
     // Redirect based on flow
     if (isOnboarding) {
@@ -127,11 +128,10 @@ export async function GET(request: Request) {
 
       return NextResponse.redirect(redirectUrl);
     } else {
-      // Non-onboarding flow
-      const adAccountsEncoded = encodeURIComponent(JSON.stringify(savedAdAccounts));
-      return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/integration/meta/success?adAccounts=${adAccountsEncoded}`
-      );
+      const successUrl = new URL(`${process.env.NEXT_PUBLIC_BASE_URL}${decodeURIComponent(returnPath)}`);
+      successUrl.searchParams.append('success', 'true');
+
+      return NextResponse.redirect(successUrl);
     }
   } catch (error) {
     console.error('Error during Meta OAuth callback:', error);

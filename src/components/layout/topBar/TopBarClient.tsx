@@ -28,7 +28,8 @@ import {
     IconPresentationAnalytics,
     IconSun,
     IconMoon,
-    IconChartBar
+    IconChartBar,
+    IconTable
 } from '@tabler/icons-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -158,22 +159,6 @@ export default function TopBarClient({
                 />
             </div>
 
-            {/* Mid Section - Breadcrumbs */}
-            <div className="hidden md:flex items-center">
-                {pathname !== '/dashboard' && (
-                    <Text size="sm" c="dimmed" className="truncate max-w-md">
-                        Dashboard {pathname.split('/').filter(Boolean).map((segment, i, arr) => (
-                            <span key={i}>
-                                <span className="text-gray-400 mx-1">›</span>
-                                <span className={`capitalize ${i === arr.length - 1 ? 'text-blue-500 font-medium' : ''}`}>
-                                    {segment}
-                                </span>
-                            </span>
-                        ))}
-                    </Text>
-                )}
-            </div>
-
             {/* Right Section */}
             <div className="flex items-center space-x-4">
                 {/* Quick Action Button */}
@@ -192,13 +177,13 @@ export default function TopBarClient({
                         <Menu.Label>Campaigns</Menu.Label>
                         <Menu.Item
                             leftSection={<IconPresentationAnalytics size={16} />}
-                            onClick={() => router.push('/campaigns/new?mode=smart')}
+                            onClick={() => router.push('/campaigns/create?mode=smart')}
                         >
                             Smart Campaign
                         </Menu.Item>
                         <Menu.Item
-                            leftSection={<IconPresentationAnalytics size={16} />}
-                            onClick={() => router.push('/campaigns/new?mode=manual')}
+                            leftSection={<IconTable size={16} />}
+                            onClick={() => router.push('/campaigns/create?mode=manual')}
                         >
                             Custom Campaign
                         </Menu.Item>

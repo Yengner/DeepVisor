@@ -17,7 +17,7 @@
 //   );
 
 //   const { data: camps } = await supabase
-//     .from("campaigns")
+//     .from("campaigns_metrics")
 //     .select("id,user_id,daily_budget,objective,vertical")
 //     .eq("auto_optimize", true);
 

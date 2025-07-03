@@ -37,7 +37,7 @@ Deno.serve(async () => {
 
       // Fetch all page accounts for the platform
       const { data: pageAccounts, error: pageAccountsError } = await supabase
-        .from("meta_page_accounts")
+        .from("meta_pages")
         .select(`id, page_id, access_token, instagram_account_id, platform_integration_id, name, platform_integrations(platform_name)`)
         .eq("platform_integration_id", platform.id);
 
@@ -74,7 +74,7 @@ Deno.serve(async () => {
 
           // Combine Facebook & Instagram Posts into a single array for batch insert
           const allPosts = [...facebookPosts, ...instagramPosts].map((post) => ({
-            meta_page_accounts_id: account.id,
+            meta_pages_id: account.id,
             platform_name: post.platform_name,
             post_id: post.post_id,
             caption: post.caption,
