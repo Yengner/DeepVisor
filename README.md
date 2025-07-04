@@ -1,241 +1,72 @@
-# **DeepVisor** 🚀
-### **All-in-One Advertising Platform & Agency Companion**
+# DeepVisor 🚀
 
-DeepVisor is a SaaS solution that helps **individuals and businesses** manage advertising across multiple networks, including **Meta (Facebook & Instagram), TikTok, Google Ads, Reddit, YouTube, and more**. The platform is built to work alongside our advertising agency, giving clients transparent access to campaign results while also generating leads for the agency itself.
+<div align="center">
+  <h3>Digital Advertising Platform Project</h3>
+  <p><i>A work-in-progress learning project with startup aspirations</i></p>
+</div>
 
-Users can **integrate, track, analyze, and optimize ad campaigns** from one dashboard. DeepVisor offers automation tools, AI-driven suggestions, and unique marketing utilities like scannable barcodes that link to a business hub and the option to add a digital business card to **Apple Wallet**.
+## Project Overview
 
-With the recent addition of the `/public/proposal/[token]` page, clients will receive proposal links via email. Visiting this link opens a public proposal page where they can approve the proposal or request revisions (functionality in progress).
+DeepVisor is an in-development platform that aims to simplify digital advertising management across multiple platforms. As a college project focused on learning modern web development and API integration, it serves both as a practical education in software engineering and a potential startup concept.
 
-This README outlines the current workflow, database structure, and features planned for future development.
+**Current Status**: Early development with Meta API integration in progress.
 
-# DeepVisor: Future Implementation Roadmap
+### Vision
 
-## Overview
+The vision for DeepVisor is to create a unified dashboard where users can:
+- Create and manage ad campaigns across multiple platforms
+- View normalized performance metrics in one place
+- Leverage AI for campaign optimization and budget allocation
+- Generate client-friendly reports and analytics
 
-This document outlines the future development roadmap for DeepVisor, focusing on advanced campaign management features, multi-platform capabilities, and AI-powered optimization.
+### Tech Stack
 
-```
-┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
-│     Current State   │ -> │  Near-Term Goals    │ -> │ Long-Term Vision    │
-├─────────────────────┤    ├─────────────────────┤    ├─────────────────────┤
-│ • Meta Integration  │    │ • Enhanced Smart    │    │ • Full AI-Powered   │
-│ • Basic Campaigns   │    │   Campaigns         │    │   Media Buying      │
-│ • Simple Reporting  │    │ • Multi-Platform    │    │ • Budget Management │
-│ • Strategy Pattern  │    │   Campaigns         │    │   Across Platforms  │
-└─────────────────────┘    │ • Unified Analytics │    │ • Creative Testing  │
-                           └─────────────────────┘    │   At Scale          │
-                                                      └─────────────────────┘
-```
+- **Frontend**: Next.js 15+ with Mantine UI
+- **Backend**: Next.js API routes with Node.js
+- **Database & Auth**: Supabase (PostgreSQL + Authentication)
+- **API Integrations**: Meta Marketing API (in progress)
 
-## Smart Campaign Enhancements
+## Current Implementation
 
-### Current Implementation
-Our current Smart Campaigns offer basic AI-powered targeting and creative optimization for Meta.
+### Meta Integration (In Progress)
 
-### Future Smart Campaign Features
+The current focus is on implementing Meta (Facebook & Instagram) ad campaign creation:
 
-```mermaid
-graph LR
-    A[Enhanced Smart Campaigns] --> B[Audience Discovery]
-    A --> C[Creative Testing]
-    A --> D[Budget Optimization]
-    A --> E[Performance Prediction]
-    
-    B --> B1[Lookalike Audience Generation]
-    B --> B2[Interest Cluster Analysis]
-    
-    C --> C1[Multi-Variate Testing]
-    C --> C2[Creative Elements Analysis]
-    
-    D --> D1[Cross-Campaign Budget Shifting]
-    D --> D2[ROAS-Based Allocation]
-    
-    E --> E1[ML-Based Performance Forecasting]
-    E --> E2[Trend Analysis]
-```
+- ✅ OAuth authentication with Meta Business accounts
+- ✅ Campaign builder UI with form validation
+- 🔄 Campaign creation API integration
+- 🔄 Strategy Pattern for flexible campaign parameters
+- ⬜ Reporting and analytics
 
-#### Planned Improvements:
+### Code Architecture
 
-1. **Advanced Audience Discovery**
-   - Automatic audience segmentation based on performance data
-   - AI-generated lookalike audiences across platforms
-   - Interest and behavior prediction engine
+We're implementing the Strategy Pattern for flexible campaign parameter building:
 
-2. **Sophisticated Creative Testing**
-   - Multi-variate testing beyond simple A/B testing
-   - Creative element isolation (headline vs. image vs. CTA)
-   - Automatic creative generation using generative AI
-
-3. **Dynamic Budget Management**
-   - Real-time budget shifting between campaigns and platforms
-   - Predictive budget allocation based on forecasted performance
-   - ROAS-based spend optimization
-
-4. **Technical Implementation**
-   - Enhanced strategy patterns for complex optimization logic
-   - AI model integration for performance prediction
-   - Real-time feedback loops for continuous improvement
-
-## Multi-Platform Campaign Creation
-
-### Architecture
-
-```mermaid
-graph TD
-    A[Campaign Creation UI] --> B[Platform Adapter Factory]
-    B --> C[Meta Adapter]
-    B --> D[TikTok Adapter]
-    B --> E[Google Ads Adapter]
-    B --> F[LinkedIn Adapter]
-    B --> G[Future Platforms...]
-    
-    C --> H[Meta Campaign Strategy]
-    D --> I[TikTok Campaign Strategy]
-    E --> J[Google Campaign Strategy]
-    F --> K[LinkedIn Campaign Strategy]
-    
-    H --> L[Campaign Creation]
-    I --> L
-    J --> L
-    K --> L
+```typescript
+// Example of Strategy Pattern implementation
+export async function createCreative(params: MetaCreativeParams): Promise<string> {
+  // Get the appropriate strategy based on campaign objective
+  const strategy = getCreativeStrategy(formData.objective);
+  
+  // Apply the strategy to get objective-specific parameters
+  const creativeParams = strategy.buildCreativeParams(
+    baseParams, 
+    formData, 
+    pageId,
+    isSmartCampaign,
+    creativeVariation
+  );
+  
+  // API call with the parameters
+  // ...
+}
 ```
 
-### Implementation Plan
+## Future Development Plans
 
-The multi-platform campaign creation will follow these principles:
+While currently focused on Meta integration, the project has ambitious plans for expansion:
 
-1. **Platform Adapter Pattern**
-   - Create standardized interfaces for each platform
-   - Platform-specific adapters handle API differences
-   - Common campaign models translated to platform-specific parameters
-
-2. **Unified Campaign Flow**
-   ```typescript
-   // Example Multi-Platform Campaign Creation
-   export async function createMultiPlatformCampaign(formData: MultiPlatformCampaignValues): Promise<MultiCampaignResult> {
-     const platforms = formData.selectedPlatforms; // e.g., ['meta', 'tiktok']
-     const results = {};
-     
-     for (const platform of platforms) {
-       const adapter = getPlatformAdapter(platform);
-       const platformFormData = adapter.transformFormData(formData);
-       results[platform] = await adapter.createCampaign(platformFormData);
-     }
-     
-     // Create unified campaign record in database
-     const unifiedCampaign = await createUnifiedCampaignRecord(results, formData);
-     
-     return {
-       unifiedCampaignId: unifiedCampaign.id,
-       platformResults: results
-     };
-   }
-   ```
-
-3. **Similar Campaign Types Across Platforms**
-   - Map objectives between platforms (e.g., Meta's "LEAD_GENERATION" to TikTok's "LEAD_GENERATION")
-   - Translate targeting parameters to each platform's requirements
-   - Adapt creative assets to platform-specific formats and requirements
-
-4. **Synchronized Campaign Management**
-   - Status synchronization (pause/activate across platforms)
-   - Budget adjustments proportionally across platforms
-   - Performance data consolidation
-
-## Unified Analytics and Reporting
-
-```mermaid
-graph TD
-    A[Platform APIs] --> B[Data Ingestion Layer]
-    B --> C[Data Normalization]
-    C --> D[Unified Data Schema]
-    D --> E[Combined Analytics]
-    E --> F[Unified Dashboard]
-    E --> G[Cross-Platform Insights]
-    
-    H[Meta Data] --> A
-    I[TikTok Data] --> A
-    J[Google Data] --> A
-    K[LinkedIn Data] --> A
-```
-
-### Features
-
-1. **Combined Campaign Performance View**
-   - Aggregated metrics across platforms (impressions, clicks, conversions)
-   - Side-by-side platform comparison
-   - Attribution modeling across platforms
-
-2. **Unified Cost Analysis**
-   - Total campaign spend across platforms
-   - Cost per result metrics normalized across platforms
-   - Budget utilization and efficiency insights
-
-3. **Cross-Platform Audience Insights**
-   - Audience overlap analysis
-   - Platform-specific audience performance
-   - Demographic performance comparison
-
-4. **Custom Report Builder**
-   - User-configurable reports spanning multiple platforms
-   - Scheduled report delivery
-   - Export capabilities in multiple formats
-
-## Expansion to Additional Platforms
-
-<!-- ### Integration Roadmap
-
-```mermaid
-gantt
-    title Platform Integration Roadmap
-    dateFormat  YYYY-MM-DD
-    
-    section Current
-    Meta Integration    :done, meta1, 2025-07-01, 90d
-    
-    section Phase 1
-    TikTok Integration  :tiktok, 2023-10-15, 60d
-    Google Ads Basic    :google1, 2023-12-01, 75d
-    
-    section Phase 2
-    LinkedIn Ads        :linkedin, 2024-02-15, 60d
-    Google Ads Advanced :google2, 2024-03-01, 90d
-    
-    section Phase 3
-    Twitter Ads         :twitter, 2024-06-01, 60d
-    Pinterest Ads       :pinterest, 2024-07-15, 60d
-    Snapchat Ads        :snap, 2024-09-01, 60d
-    
-    section Future
-    Reddit Ads          :reddit, 2025-01-01, 60d
-    Programmatic/DSP    :dsp, 2025-03-01, 120d
-``` -->
-
-### Platform-Specific Features
-
-Each platform integration will include:
-
-1. **Authentication and Connection**
-   - OAuth flow implementation
-   - Token management and refresh
-   - Permission scoping
-
-2. **Campaign Creation Flows**
-   - Platform-specific campaign builders
-   - Objective mapping between platforms
-   - Format adaptation for creatives
-
-3. **Platform-Specific Optimizations**
-   - Custom strategies per platform
-   - Platform-specific targeting capabilities
-   - Performance benchmarks relevant to each platform
-
-## Technical Architecture
-
-### System Design
-
-The enhanced DeepVisor platform will be built on a microservices architecture:
+### System Architecture Vision
 
 ```mermaid
 graph TD
@@ -256,55 +87,120 @@ graph TD
     
     K --> L[Analytics Engine]
     L --> D
-    
-    G --> M[ML Pipeline]
-    M --> G
 ```
 
-### Implementation Challenges and Solutions
+### Development Roadmap
 
-1. **API Inconsistency Between Platforms**
-   - **Challenge**: Each advertising platform has different API structures, parameters, and limitations
-   - **Solution**: Adapter pattern with platform-specific implementations behind common interfaces
+```
+┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
+│     Current State   │ -> │  Near-Term Goals    │ -> │ Long-Term Vision    │
+├─────────────────────┤    ├─────────────────────┤    ├─────────────────────┤
+│ • Meta Integration  │    │ • Enhanced Smart    │    │ • Full AI-Powered   │
+│   (in progress)     │    │   Campaigns         │    │   Media Buying      │
+│ • Basic Campaign UI │    │ • Multi-Platform    │    │ • Budget Management │
+│ • Strategy Pattern  │    │   Campaigns         │    │   Across Platforms  │
+└─────────────────────┘    │ • Unified Analytics │    │ • Creative Testing  │
+                           └─────────────────────┘    └─────────────────────┘
+```
 
-2. **Data Normalization**
-   - **Challenge**: Metrics and dimensions vary across platforms
-   - **Solution**: Standardized data schema with platform-specific transformers
+### Multi-Platform Strategy
 
-3. **Authentication and Permission Management**
-   - **Challenge**: Different OAuth flows and permission models
-   - **Solution**: Unified authentication service with platform-specific handlers
+The architectural plan includes a Platform Adapter pattern to support multiple advertising platforms:
 
-4. **Rate Limiting and API Quotas**
-   - **Challenge**: Each platform has different rate limits and quotas
-   - **Solution**: Queue-based architecture with backoff strategies and quota monitoring
+```mermaid
+graph TD
+    A[Campaign Creation UI] --> B[Platform Adapter Factory]
+    B --> C[Meta Adapter]
+    B --> D[TikTok Adapter]
+    B --> E[Google Ads Adapter]
+    B --> F[LinkedIn Adapter]
+    
+    C --> H[Meta Campaign Strategy]
+    D --> I[TikTok Campaign Strategy]
+    E --> J[Google Campaign Strategy]
+    F --> K[LinkedIn Campaign Strategy]
+```
 
-5. **Keeping Up With Platform Changes**
-   - **Challenge**: Ad platforms frequently update their APIs
-   - **Solution**: Versioned adapters and automated tests for platform compatibility
+### Smart Campaigns Feature Plan
 
-## Development Approach
+Future versions aim to implement AI-powered campaign optimization:
 
-1. **Phased Implementation**
-   - Start with core platform extensions (Meta + TikTok)
-   - Add Google Ads integration in second phase
-   - Expand to other platforms based on user demand
+```mermaid
+graph LR
+    A[Smart Campaigns] --> B[Audience Discovery]
+    A --> C[Creative Testing]
+    A --> D[Budget Optimization]
+    
+    B --> B1[Lookalike Generation]
+    B --> B2[Interest Analysis]
+    
+    C --> C1[Multi-Variate Testing]
+    C --> C2[Creative Elements Analysis]
+    
+    D --> D1[Budget Shifting]
+    D --> D2[ROAS Optimization]
+```
 
-2. **Modular Architecture**
-   - Core services independent of specific platforms
-   - Platform-specific modules that can be developed and deployed independently
-   - Clear interfaces between systems
+### Analytics Vision
 
-3. **Testing Strategy**
-   - Comprehensive unit tests for platform adapters
-   - Integration tests with platform sandbox environments
-   - End-to-end testing of multi-platform campaigns
+The planned analytics system will unify data from multiple platforms:
 
-4. **Continuous Deployment**
-   - Feature flags for gradual rollout
-   - A/B testing for new optimization strategies
-   - Monitoring and alerting for platform-specific issues
+```mermaid
+graph TD
+    A[Platform APIs] --> B[Data Ingestion Layer]
+    B --> C[Data Normalization]
+    C --> D[Unified Data Schema]
+    D --> E[Combined Analytics]
+    E --> F[Unified Dashboard]
+    E --> G[Cross-Platform Insights]
+```
 
-## Getting Involved
+## Learning Goals
 
-Interested in contributing to these future implementations? Contact me at yengnerb@deepvisor.com 
+This project serves as a practical application of:
+
+1. **Modern Web Development**
+   - Next.js framework with React
+   - Mantine UI component library
+   - Server-side rendering and API routes
+
+2. **Database Design**
+   - Supabase PostgreSQL schema design
+   - Authentication and authorization
+   - Data relationships for complex ad structures
+
+3. **External API Integration**
+   - OAuth flows and token management
+   - Campaign creation via Meta Marketing API
+   - Error handling and rate limiting
+
+4. **Design Patterns**
+   - Strategy Pattern for flexible parameter building
+   - Adapter Pattern for platform-agnostic interfaces
+   - Factory Pattern for strategy creation
+
+5. **System Architecture**
+   - Planning scalable systems
+   - Designing for future expansion
+   - API design best practices
+
+## Project Scope
+
+As a learning project with startup potential, DeepVisor focuses on:
+
+1. **Technical Implementation**: Building a functional system that integrates with ad platforms
+2. **Architecture Design**: Creating a foundation that can scale with additional features
+3. **Software Engineering Practice**: Following best practices for code organization and patterns
+4. **User Experience**: Designing intuitive interfaces for complex advertising tasks
+
+## About the Developer
+
+I'm a college student developing DeepVisor to enhance my software engineering skills while exploring the digital advertising market. The project represents both a learning journey and a potential business idea.
+
+For questions or collaboration opportunities, feel free to contact me at yengnerb475@gmail.com.
+
+---
+
+<div align="center">
+  <p>© 2023 DeepVisor - A Software Engineering Learning Project</p>
+</div>
