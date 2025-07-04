@@ -184,7 +184,7 @@ graph TD
 
 ## Expansion to Additional Platforms
 
-### Integration Roadmap
+<!-- ### Integration Roadmap
 
 ```mermaid
 gantt
@@ -192,7 +192,7 @@ gantt
     dateFormat  YYYY-MM-DD
     
     section Current
-    Meta Integration    :done, meta1, 2023-07-01, 90d
+    Meta Integration    :done, meta1, 2025-07-01, 90d
     
     section Phase 1
     TikTok Integration  :tiktok, 2023-10-15, 60d
@@ -210,7 +210,7 @@ gantt
     section Future
     Reddit Ads          :reddit, 2025-01-01, 60d
     Programmatic/DSP    :dsp, 2025-03-01, 120d
-```
+``` -->
 
 ### Platform-Specific Features
 
