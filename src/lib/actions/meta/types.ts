@@ -1,10 +1,10 @@
 /**
  * Types for Meta Ads API interactions
+ * Standardized based on Meta's API documentation
  */
 
 /**
- * Base campaign parameters interface
- * Contains common fields used across all Meta API requests
+ * Base parameters interface for all Meta API requests
  */
 export interface MetaBaseParams {
     /** Meta Ads Account ID */
@@ -13,15 +13,15 @@ export interface MetaBaseParams {
     accessToken: string;
     /** Form data submitted from the campaign builder */
     formData: CampaignFormValues;
-    /** Whether this is an AI-powered Smart Campaign */
-    isSmartCampaign?: boolean;
+    /** Whether this is an Optimized Campaign */
+    isSmartCampaign: boolean;
 }
 
 /**
  * Campaign creation parameters
  */
 export interface MetaCampaignParams extends MetaBaseParams {
-    // Any campaign-specific parameters can be added here
+    // Campaign-specific parameters
 }
 
 /**
@@ -57,7 +57,7 @@ export interface MetaAdParams extends MetaBaseParams {
 }
 
 /**
- * Result of creating a smart campaign
+ * Result of creating a campaign
  */
 export interface SmartCampaignResult {
     /** Whether the campaign creation was successful */
@@ -73,27 +73,32 @@ export interface SmartCampaignResult {
 }
 
 /**
- * Comprehensive interface for campaign form values
- * Represents all possible form fields in the campaign creation form
+ * Form values interface standardized to match Meta API parameters
  */
 export interface CampaignFormValues {
-    // Campaign basics
+
+    // For internal use - platform details
+    /** Campaign type ('AI Auto' for smart/optimized campaigns) */
+    type?: string;
     /** Platform for the campaign (e.g., 'meta', 'google') */
-    platform: string;
+    platform?: string;
+    /** ID of the Ad Account to use */
+    adAccountId?: string;
+
+    // Campaign basics
     /** User-defined name for the campaign */
     campaignName: string;
-    /** ID of the Facebook page to use */
-    page_id: string;
-    /** ID of the Ad Account to use */
-    adAccountId: string;
+    /** Campaign objective (using OUTCOME_* format for newer API) */
+    objective: string;
     /** Type of buying (e.g., 'AUCTION', 'RESERVED') */
     buying_type: string;
-    /** Whether to enable A/B testing */
-    ab_testing: boolean;
-    /** Campaign objective (e.g., 'REACH', 'TRAFFIC', 'LEAD_GENERATION') */
-    objective: string;
-    /** Campaign type ('AI Auto' for smart campaigns) */
-    type?: string;
+    /** Special ad categories */
+    special_ad_categories?: string[];
+    /** Bid strategy for the campaign */
+    bid_strategy?: string;
+    /** Destination type (e.g., 'WEBSITE', 'ON_AD' for lead gen forms) */
+    destinationType: string;
+
 
     // Budget and schedule
     /** Budget amount (in currency units) */
@@ -104,97 +109,69 @@ export interface CampaignFormValues {
     startDate: Date | null;
     /** Campaign end date (null for no end date) */
     endDate: Date | null;
-
-    // Location targeting
-    /** Location targeting parameters */
-    location: {
-        /** Geographic position for targeting */
-        markerPosition: { lat: number; lng: number } | null;
-        /** Radius around the position (in km) */
-        radius: number;
-    };
-
-    // Audience targeting
-    /** Minimum age for audience targeting */
-    ageMin: number | string;
-    /** Maximum age for audience targeting */
-    ageMax: number | string;
-    /** Gender targeting options */
-    genders: string[];
-    /** Language targeting options */
-    languages: string[];
-    /** Interest-based targeting */
-    interests: string[];
-    /** Behavior-based targeting */
-    behaviors: string[];
-
-    // Creative assets
-    /** Source of creative content ('upload', 'existing', or 'auto') */
-    contentSource: 'upload' | 'existing' | 'auto';
-    /** IDs of existing posts to use */
-    existingPostIds: string[];
-    /** Uploaded files for creatives */
-    uploadedFiles: File[];
-    /** Ad headline */
-    adHeadline: string;
-    /** Ad primary text */
-    adPrimaryText: string;
-    /** Ad description */
-    adDescription: string;
-    /** Call to action button text */
-    adCallToAction: string;
-    /** Destination type for the ad */
-    adDestinationType: string;
-    /** Website URL for ads with website destination */
-    adDestinationUrl: string;
-    /** Phone number for call ads */
-    adDestinationPhone: string;
-    /** Form ID for lead form ads */
-    adDestinationForm: string;
-
-    // Campaign optimization
-    /** Optimization goal (e.g., 'REACH', 'LINK_CLICKS') */
-    optimization_goal?: string;
-    /** Optimization goal (alternative field name) */
-    optimization?: string;
-    /** Destination type (e.g., 'WEBSITE', 'FORM') */
-    destination_type?: string;
-    /** Destination type (alternative field name) */
-    destinationType?: string;
-    /** Whether to enable campaign budget optimization */
-    campaign_budget_optimization: boolean;
-    /** Bidding strategy (e.g., 'LOWEST_COST_WITHOUT_CAP') */
+    /** Bidding strategy */
     bidStrategy: string;
-    /** Billing event (e.g., 'IMPRESSIONS', 'LINK_CLICKS') */
-    billingEvent: string;
-    /** Platform placement types */
-    placementTypes: string[];
+    /** Campaign budget optimization */
+    campaign_budget_optimization: boolean;
 
-    // Ad content (alternative field names)
-    /** Ad headline (alternative field name) */
-    headline: string;
-    /** Ad primary text (alternative field name) */
-    primaryText: string;
-    /** Ad description (alternative field name) */
-    description: string;
-    /** Call to action (alternative field name) */
-    callToAction: string;
-
-    // Tracking and measurement
-    /** Tracking pixel ID */
-    trackingPixel: string;
-    /** Custom URL parameters */
-    customParameters: string;
-
-    // Ad set configuration
-    /** Name for the ad set */
-    adSetName: string;
-    /** Whether to use Advantage audience */
+    // Ad Set level parameters
+    /** Name of the ad set */
+    adSetName?: string;
+    /** ID of the Facebook Page to use for the ad set */
+    page_id: string;
+    /** Whether to use Advantage+ audience targeting */
     useAdvantageAudience: boolean;
-    /** Whether to use a saved audience */
-    useSavedAudience: boolean;
-    /** ID of the saved audience to use */
-    savedAudienceId: string;
-    /** Whether to use Advantage placements */
+    /** Whether to use saved audience targeting */
     useAdvantagePlacements: boolean;
+    /** Billing event (e.g., 'IMPRESSIONS', 'LINK_CLICKS') */
+    billingEvent?: string;
+    /** Optimization goal */
+    optimization_goal?: string;
+    /** Location targeting parameters */
+    location?: {
+        markerPosition?: { lat: number; lng: number } | null;
+        radius?: number;
+    };
+    /** Minimum age for audience targeting */
+    ageMin?: number | string;
+    /** Maximum age for audience targeting */
+    ageMax?: number | string;
+    /** Gender targeting options */
+    genders?: string[];
+    /** Interest-based targeting */
+    interests?: any[];
+
+    // Creative content
+    /** Source of creative content ('upload', 'existing', 'auto') */
+    contentSource?: 'upload' | 'existing' | 'auto';
+    /** Uploaded files for creatives */
+    uploadedFiles?: any[];
+
+    /** Existing Creatives Object */
+    existingCreatives: string[];
+    /** Selected creative ID for existing creatives */
+    selectedCreativeName?: string;
+    /** Selected creative thumbnail URL */
+    selectedCreativeThumbnail?: string;
+    /** IDs of existing creatives to use */
+    existingCreativeIds: string[];
+
+    /** Image hash from uploaded files */
+    imageHash?: string;
+    /** Ad headline */
+    adHeadline?: string;
+    /** Ad primary text */
+    adPrimaryText?: string;
+    /** Ad description */
+    adDescription?: string;
+    /** Call to action button text */
+    adCallToAction?: string;
+    /** Creative Id */
+    creativeIdTesting: string;
+    // Lead generation specific
+    /** Form ID for lead form ads */
+    adDestinationForm?: string;
+    /** Website URL for ads with website destination */
+    adDestinationUrl?: string;
+
 }

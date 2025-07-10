@@ -4,8 +4,8 @@
 import { useState } from 'react';
 
 // Mantine components and icons
-import { Badge, Button, Container, Group, Paper, Stack, Stepper, Title, Text } from '@mantine/core';
-import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react';
+import { Badge, Button, Container, Group, Paper, Stack, Stepper, Title, Text, ThemeIcon } from '@mantine/core';
+import { IconArrowLeft, IconArrowRight, IconRobot, IconSparkles } from '@tabler/icons-react';
 
 // Utility functions and types
 import { getDestinationConfig } from '../common/utils/destinationHelpers';
@@ -25,15 +25,14 @@ import CreativeAssetsStep from '../common/steps/CreativeAssetsStep';
 import ReviewStep from '../common/steps/ReviewStep';
 import MediaSelectionModal from '../common/MediaSelectionModal';
 
-
-interface MetaCampaignBuilderProps {
+interface SmartCampaignBuilderProps {
     onBack: () => void;
 }
 
-export default function MetaCampaignBuilder({ onBack }: MetaCampaignBuilderProps) {
-    // Custom hooks
-    const form = useCampaignForm();
-    const { active, setActive, nextStep, prevStep } = useCampaignSteps(form, 7);
+export default function SmartCampaignBuilder({ onBack }: SmartCampaignBuilderProps) {
+    // Custom hooks with isSmart=true for smart campaign mode
+    const form = useCampaignForm(true);
+    const { active, setActive, nextStep, prevStep } = useCampaignSteps(form, 5);
     const { handleObjectiveChange, handleDestinationChange } = useObjectiveMapping(form);
     const { facebookPages, loadingPages, pagesError } = useFacebookPages(
         (fieldName: string, value: any) => form.setFieldValue(fieldName, value),
@@ -47,10 +46,17 @@ export default function MetaCampaignBuilder({ onBack }: MetaCampaignBuilderProps
         <Container size="lg" py="xl">
             <Group justify="apart" mb="xl">
                 <Stack gap={0}>
-                    <Title order={2}>Create Manual Campaign</Title>
-                    <Text c="dimmed">Full control over your Meta ad campaign settings</Text>
+                    <Group align="center">
+                        <Title order={2}>Create AI-Powered Campaign</Title>
+                        <ThemeIcon color="blue" variant="light" size="lg" radius="xl">
+                            <IconSparkles size={18} />
+                        </ThemeIcon>
+                    </Group>
+                    <Text c="dimmed">Let AI optimize your Meta campaign for best performance</Text>
                 </Stack>
-                <Badge size="lg" color="blue" variant="filled">Meta Platform</Badge>
+                <Badge size="lg" color="indigo" variant="filled" leftSection={<IconRobot size={14} />}>
+                    Smart Campaign
+                </Badge>
             </Group>
 
             <Paper p="xl" radius="md" withBorder>
@@ -58,7 +64,7 @@ export default function MetaCampaignBuilder({ onBack }: MetaCampaignBuilderProps
                     id='top'
                     active={active}
                     onStepClick={setActive}
-                    color="blue"
+                    color="indigo"
                     size="sm"
                     iconSize={32}
                     allowNextStepsSelect={false}
@@ -73,11 +79,12 @@ export default function MetaCampaignBuilder({ onBack }: MetaCampaignBuilderProps
                         <ObjectiveStep
                             form={form}
                             handleObjectiveChange={handleObjectiveChange}
-                            isSmart={false}
+                            isSmart={true}
                         />
 
                         <Group justify="right" mt="md">
                             <Button
+                                color="indigo"
                                 rightSection={<IconArrowRight size={16} />}
                                 onClick={nextStep}
                             >
@@ -97,70 +104,104 @@ export default function MetaCampaignBuilder({ onBack }: MetaCampaignBuilderProps
                             form={form}
                             handleDestinationChange={handleDestinationChange}
                             getDestinationConfig={getDestinationConfig}
-                            isSmart={false}
+                            isSmart={true}
+                            setPresetModalOpened={() => { }}  // Not needed for smart campaigns
                         />
 
                         <Group justify="apart" mt="md">
-                            <Button variant="light" onClick={prevStep}>
+                            <Button variant="light" color="indigo" onClick={prevStep}>
                                 Back to Objective
                             </Button>
                             <Button
+                                color="indigo"
                                 rightSection={<IconArrowRight size={16} />}
                                 onClick={nextStep}
                             >
-                                Continue to Ad Set
+                                Continue to Audience
                             </Button>
                         </Group>
                     </Stepper.Step>
 
-                    {/* Ad Set Step */}
+                    {/* Ad Set Step - Simplified for Smart Campaigns */}
                     <Stepper.Step
-                        label="Ad Set"
-                        description="Audience targeting"
+                        label="Audience"
+                        description="Basic targeting"
                         icon={getStepIcon(2)}
                         completedIcon={getStepIcon(2)}
                     >
+                        <Paper withBorder p="md" radius="md" bg="indigo.0" mb="lg">
+                            <Group>
+                                <ThemeIcon size="lg" color="indigo" variant="light" radius="xl">
+                                    <IconRobot size={20} />
+                                </ThemeIcon>
+                                <Stack gap={0}>
+                                    <Text fw={600}>AI-Powered Audience Optimization</Text>
+                                    <Text size="sm">
+                                        Our AI will automatically test multiple audience combinations
+                                        and optimize for your {form.values.objective} objective.
+                                    </Text>
+                                </Stack>
+                            </Group>
+                        </Paper>
+
                         <AdSetStep
                             form={form}
                             facebookPages={facebookPages}
                             loadingPages={loadingPages}
                             pagesError={pagesError}
-                            isSmart={false}
+                            isSmart={true}
                         />
 
                         <Group justify="apart" mt="md">
-                            <Button variant="light" onClick={prevStep}>
+                            <Button variant="light" color="indigo" onClick={prevStep}>
                                 Back to Campaign Details
                             </Button>
                             <Button
+                                color="indigo"
                                 rightSection={<IconArrowRight size={16} />}
                                 onClick={nextStep}
                             >
-                                Continue to Ad
+                                Continue to Creative
                             </Button>
                         </Group>
                     </Stepper.Step>
 
-                    {/* Creative Assets Step */}
+                    {/* Creative Assets Step - Simplified for Smart Campaigns */}
                     <Stepper.Step
                         label="Creative Assets"
-                        description="Images & videos"
+                        description="Ad content"
                         icon={getStepIcon(3)}
                         completedIcon={getStepIcon(3)}
                     >
+                        <Paper withBorder p="md" radius="md" bg="indigo.0" mb="lg">
+                            <Group>
+                                <ThemeIcon size="lg" color="indigo" variant="light" radius="xl">
+                                    <IconSparkles size={20} />
+                                </ThemeIcon>
+                                <Stack gap={0}>
+                                    <Text fw={600}>AI-Optimized Creative Testing</Text>
+                                    <Text size="sm">
+                                        We'll automatically create multiple ad variations and test them
+                                        to find the best performers for your objective.
+                                    </Text>
+                                </Stack>
+                            </Group>
+                        </Paper>
+
                         <CreativeAssetsStep
                             form={form}
                             setMediaModalOpened={setMediaModalOpened}
                             mediaModalOpened={mediaModalOpened}
-                            isSmart={false}
+                            isSmart={true}
                         />
 
                         <Group justify="apart" mt="md">
-                            <Button variant="light" onClick={prevStep}>
-                                Back to Ad Set
+                            <Button variant="light" color="indigo" onClick={prevStep}>
+                                Back to Audience
                             </Button>
 
                             <Button
+                                color="indigo"
                                 rightSection={<IconArrowRight size={16} />}
                                 onClick={nextStep}
                             >
@@ -182,10 +223,26 @@ export default function MetaCampaignBuilder({ onBack }: MetaCampaignBuilderProps
                         icon={getStepIcon(4)}
                         completedIcon={getStepIcon(4)}
                     >
+                        <Paper withBorder p="md" radius="md" bg="indigo.0" mb="lg">
+                            <Group>
+                                <ThemeIcon size="lg" color="indigo" variant="light" radius="xl">
+                                    <IconRobot size={20} />
+                                </ThemeIcon>
+                                <Stack gap={0}>
+                                    <Text fw={600}>Smart Campaign Ready for Launch</Text>
+                                    <Text size="sm">
+                                        Our AI will automatically manage and optimize your campaign for
+                                        best performance. We'll create multiple ad variations, test different
+                                        audiences, and continuously refine your campaign.
+                                    </Text>
+                                </Stack>
+                            </Group>
+                        </Paper>
+
                         <ReviewStep
                             form={form}
                             setActive={setActive}
-                            isSmart={false}
+                            isSmart={true}
                         />
                     </Stepper.Step>
 
@@ -193,6 +250,7 @@ export default function MetaCampaignBuilder({ onBack }: MetaCampaignBuilderProps
                 <Group mb="md">
                     <Button
                         variant="subtle"
+                        color="indigo"
                         leftSection={<IconArrowLeft size={16} />}
                         onClick={onBack}
                     >

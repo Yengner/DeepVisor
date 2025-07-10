@@ -84,6 +84,7 @@ export default function TopBarClient({
     };
 
     // Toggle theme mode
+    // Not important 
     const toggleTheme = () => {
         setIsDarkMode(!isDarkMode);
         // Implement actual theme change logic here

@@ -9,11 +9,11 @@ import DashboardClient from "./components/DashboardClient";
 export default async function MainDashboardPage() {
   const supabase = await createSupabaseClient();
   const loggedIn = await getLoggedInUser();
-  
+
   if (!loggedIn) {
     return redirect("/login");
   }
-  
+
   const userId = loggedIn?.id;
 
   // Check if onboarding is completed
@@ -31,7 +31,7 @@ export default async function MainDashboardPage() {
   const { metrics, topPlatform, topPlatforms } = await getTopPlatforms(userId);
   const { topCampaigns } = await getTopCampaignsForPlatforms(userId);
   const recommendations = await getRecommendations(userId);
-  
+
   // Get profile/business info
   const businessName = profileData?.business_name || loggedIn?.first_name + "'s Business";
 

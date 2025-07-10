@@ -7,41 +7,48 @@ import { useState } from 'react';
 import { Badge, Button, Container, Group, Paper, Stack, Stepper, Title, Text } from '@mantine/core';
 import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react';
 
-// Utility functions and types
-import { getDestinationConfig } from '../common/utils/destinationHelpers';
-import { getStepIcon } from '../common/utils/iconHelpers';
+// // Utility functions and types
+// import { getDestinationConfig } from '../../../common/utils/destinationHelpers';
+// import { getStepIcon } from '../../../common/utils/iconHelpers';
 
 // Custom hooks
-import { useCampaignForm } from '../platforms/meta/hooks/useMetaCampaignForm';
-import { useFacebookPages } from '../platforms/meta/hooks/useMetaPages';
-import { useObjectiveMapping } from '../platforms/meta/hooks/useObjectiveMapping';
-import { useCampaignSteps } from '../common/useCampaignSteps';
 
-// Common steps and components
-import ObjectiveStep from '../common/steps/ObjectiveStep';
-import CampaignDetailsStep from '../common/steps/CampaignDetailsStep';
-import AdSetStep from '../common/steps/AdSetStep';
-import CreativeAssetsStep from '../common/steps/CreativeAssetsStep';
-import ReviewStep from '../common/steps/ReviewStep';
-import MediaSelectionModal from '../common/MediaSelectionModal';
+import { useObjectiveMapping } from '../hooks/useObjectiveMapping';
+import { useCampaignSteps } from '../../../common/useCampaignSteps';
+import { useMetaCampaignForm } from '../hooks/useMetaCampaignForm';
+import { getStepIcon } from '../utils/iconHelpers';
+import ObjectiveStep from '../steps/ObjectiveStep';
+import CampaignDetailsStep from '../steps/CampaignDetailsStep';
+import { getDestinationConfig } from '../utils/destinationHelpers';
+import AdSetStep from '../steps/AdSetStep';
+import CreativeAssetsStep from '../steps/CreativeAssetsStep';
+import { useMetaPages } from '../hooks/useMetaPages';
 
 
 interface MetaCampaignBuilderProps {
+    platformData: {
+        id: string;
+        platform_name: string;
+    }
+    adAccountId: string;
     onBack: () => void;
 }
 
-export default function MetaCampaignBuilder({ onBack }: MetaCampaignBuilderProps) {
-    // Custom hooks
-    const form = useCampaignForm();
-    const { active, setActive, nextStep, prevStep } = useCampaignSteps(form, 7);
-    const { handleObjectiveChange, handleDestinationChange } = useObjectiveMapping(form);
-    const { facebookPages, loadingPages, pagesError } = useFacebookPages(
-        (fieldName: string, value: any) => form.setFieldValue(fieldName, value),
-        active === 2
-    );
+/**
+ * 
+ * @param {MetaCampaignBuilderProps} props - Properties for the MetaCampaignBuilder component
+ * @returns 
+ */
 
-    // Local state
-    const [mediaModalOpened, setMediaModalOpened] = useState(false);
+export default function ManualMetaCampaignBuilder({ platformData, adAccountId, onBack }: MetaCampaignBuilderProps) {
+    // Custom hooks
+    const form = useMetaCampaignForm();
+    const { handleObjectiveChange, handleDestinationChange } = useObjectiveMapping(form);
+    const { active, setActive, nextStep, prevStep } = useCampaignSteps(form, 5);
+    const { metaPages, loadingPages, pagesError } = useMetaPages((fieldName: string, value: any) => form.setFieldValue(fieldName, value),
+        platformData.id,
+        active === 2,
+    );
 
     return (
         <Container size="lg" py="xl">
@@ -122,7 +129,7 @@ export default function MetaCampaignBuilder({ onBack }: MetaCampaignBuilderProps
                     >
                         <AdSetStep
                             form={form}
-                            facebookPages={facebookPages}
+                            metaPages={metaPages}
                             loadingPages={loadingPages}
                             pagesError={pagesError}
                             isSmart={false}
@@ -150,8 +157,8 @@ export default function MetaCampaignBuilder({ onBack }: MetaCampaignBuilderProps
                     >
                         <CreativeAssetsStep
                             form={form}
-                            setMediaModalOpened={setMediaModalOpened}
-                            mediaModalOpened={mediaModalOpened}
+                            platformData={platformData}
+                            adAccountId={adAccountId}
                             isSmart={false}
                         />
 
@@ -167,16 +174,10 @@ export default function MetaCampaignBuilder({ onBack }: MetaCampaignBuilderProps
                                 Continue to Review
                             </Button>
                         </Group>
-                        <MediaSelectionModal
-                            opened={mediaModalOpened}
-                            onClose={() => setMediaModalOpened(false)}
-                            selectedIds={form.values.existingCreativeIds || []}
-                            onSelectionChange={(ids) => form.setFieldValue('existingCreativeIds', ids)}
-                        />
                     </Stepper.Step>
 
                     {/* Review Step */}
-                    <Stepper.Step
+                    {/* <Stepper.Step
                         label="Review"
                         description="Final review"
                         icon={getStepIcon(4)}
@@ -187,10 +188,11 @@ export default function MetaCampaignBuilder({ onBack }: MetaCampaignBuilderProps
                             setActive={setActive}
                             isSmart={false}
                         />
-                    </Stepper.Step>
+                    </Stepper.Step> */}
 
                 </Stepper>
-                <Group mb="md">
+            </Paper>
+                <Group mb="md" pt="lg">
                     <Button
                         variant="subtle"
                         leftSection={<IconArrowLeft size={16} />}
@@ -199,7 +201,6 @@ export default function MetaCampaignBuilder({ onBack }: MetaCampaignBuilderProps
                         Back to Platforms
                     </Button>
                 </Group>
-            </Paper>
         </Container>
     );
 }

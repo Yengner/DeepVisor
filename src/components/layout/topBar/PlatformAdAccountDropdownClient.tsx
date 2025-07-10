@@ -1,8 +1,9 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { Select, Group, ThemeIcon, Text } from '@mantine/core';
 import { IconBrandFacebook, IconBrandGoogle, IconBrandTiktok, IconChevronDown } from '@tabler/icons-react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { setCookie } from 'cookies-next';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface PlatformAdAccountDropdownClientProps {
@@ -13,78 +14,107 @@ interface PlatformAdAccountDropdownClientProps {
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 export default function PlatformAdAccountDropdownClient({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   userInfo,
   platforms,
   adAccounts
 }: PlatformAdAccountDropdownClientProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  // Initialize with null, but will update to defaults
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
 
-  // Initialize with null and update after component mounts
-  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(
-    searchParams.get('platform') || null
-  );
-
-  const [selectedAccount, setSelectedAccount] = useState<string | null>(
-    searchParams.get('account') || null
-  );
-
-  useEffect(() => {
-    const savedPlatform = localStorage.getItem('selectedPlatform');
-    const savedAccount = localStorage.getItem('selectedAccount');
-
-    if (savedPlatform && !selectedPlatform) {
-      setSelectedPlatform(savedPlatform);
-    }
-
-    if (savedAccount && !selectedAccount) {
-      setSelectedAccount(savedAccount);
-    }
-  }, []);
-
-  // Filter accounts based on selected platform
+  // Get filtered accounts based on selected platform
   const filteredAccounts = selectedPlatform
     ? adAccounts.filter(account => account.platform_integration_id === selectedPlatform)
     : [];
 
-  const handlePlatformChange = (value: string | null) => {
-    setSelectedPlatform(value);
-    setSelectedAccount(null);
+  // Initialize selections on component mount
+  useEffect(() => {
+    // Function to initialize selections with defaults
+    const initializeSelections = () => {
+      // Try to get from localStorage first
+      let platformId = localStorage.getItem('selectedPlatformId');
+      let accountId = localStorage.getItem('selectedAccountId');
 
-    if (value) {
-      localStorage.setItem('selectedPlatform', value);
-
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('platform', value);
-      params.delete('account');
-
-      if (pathname.includes('/dashboard')) {
-        router.push(`${pathname}?${params.toString()}`);
+      // If no platform in localStorage and we have platforms, use first one
+      if (!platformId && platforms.length > 0) {
+        platformId = platforms[0].id;
+        localStorage.setItem('selectedPlatformId', platformId);
       }
-    } else {
-      localStorage.removeItem('selectedPlatform');
+
+      // Set the platform
+      setSelectedPlatform(platformId);
+
+      // Filter accounts for this platform
+      const accountsForPlatform = platformId
+        ? adAccounts.filter(account => account.platform_integration_id === platformId)
+        : [];
+
+      // If account doesn't exist for the selected platform or not in localStorage
+      if (
+        (!accountId && accountsForPlatform.length > 0) ||
+        (accountId && !accountsForPlatform.find(acc => acc.id === accountId))
+      ) {
+        // Default to first account for this platform
+        const firstAccount = accountsForPlatform.length > 0 ? accountsForPlatform[0] : null;
+
+        if (firstAccount) {
+          accountId = firstAccount.id;
+          localStorage.setItem('selectedAccountId', accountId);
+        }
+      }
+
+      // Set the account
+      setSelectedAccount(accountId);
+
+      // Update cookies after state is set
+      if (platformId) {
+        setCookie('platform_integration_id', platformId, { maxAge: 60 * 60 * 24 * 30 });
+      }
+
+      if (accountId) {
+        setCookie('ad_account_id', accountId, { maxAge: 60 * 60 * 24 * 30 });
+      }
+    };
+
+    initializeSelections();
+  }, [platforms, adAccounts]);
+
+  const handlePlatformChange = (value: string | null) => {
+    // Never allow null selection
+    if (!value) return;
+
+    setSelectedPlatform(value);
+    localStorage.setItem('selectedPlatformId', value);
+    setCookie('platform_integration_id', value, { maxAge: 60 * 60 * 24 * 30 });
+
+    // Find accounts for this platform
+    const accountsForNewPlatform = adAccounts.filter(
+      account => account.platform_integration_id === value
+    );
+
+    // If current account isn't for this platform, update to first available
+    const currentAccountIsValid = selectedAccount &&
+      accountsForNewPlatform.some(acc => acc.id === selectedAccount);
+
+    if (!currentAccountIsValid && accountsForNewPlatform.length > 0) {
+      const newAccountId = accountsForNewPlatform[0].id;
+      setSelectedAccount(newAccountId);
+      localStorage.setItem('selectedAccountId', newAccountId);
+      setCookie('ad_account_id', newAccountId, { maxAge: 60 * 60 * 24 * 30 });
+    } else if (accountsForNewPlatform.length === 0) {
+      // No accounts for this platform
+      setSelectedAccount(null);
+      localStorage.removeItem('selectedAccountId');
+      setCookie('ad_account_id', '', { maxAge: 0 }); // Delete the cookie
     }
   };
 
   const handleAccountChange = (value: string | null) => {
+    if (!value) return;
+
     setSelectedAccount(value);
-
-    if (value) {
-      localStorage.setItem('selectedAccount', value);
-
-      // Update URL
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('account', value);
-
-      // Only navigate if we're already on a dashboard page
-      if (pathname.includes('/dashboard')) {
-        router.push(`${pathname}?${params.toString()}`);
-      }
-    } else {
-      localStorage.removeItem('selectedAccount');
-    }
+    localStorage.setItem('selectedAccountId', value);
+    setCookie('ad_account_id', value, { maxAge: 60 * 60 * 24 * 30 });
   };
 
   const getPlatformIcon = (platformName: string) => {
@@ -104,7 +134,7 @@ export default function PlatformAdAccountDropdownClient({
   const platformItems = platforms.map(platform => ({
     value: platform.id,
     label: platform.platform_name.charAt(0).toUpperCase() + platform.platform_name.slice(1),
-    customIcon: getPlatformIcon(platform.platform_name) // Renamed to avoid conflict with ComboboxItem type
+    customIcon: getPlatformIcon(platform.platform_name)
   }));
 
   const accountItems = filteredAccounts.map(account => ({
@@ -121,7 +151,6 @@ export default function PlatformAdAccountDropdownClient({
         value={selectedPlatform}
         onChange={handlePlatformChange}
         w={160}
-        clearable
         rightSection={<IconChevronDown size={14} />}
         /* @ts-expect-error - Mantine types don't match how we're using the styles prop */
         styles={() => ({
@@ -143,7 +172,6 @@ export default function PlatformAdAccountDropdownClient({
         onChange={handleAccountChange}
         w={200}
         disabled={!selectedPlatform || accountItems.length === 0}
-        clearable
         rightSection={<IconChevronDown size={14} />}
         /* @ts-expect-error - Mantine types don't match how we're using the styles prop */
         styles={() => ({
