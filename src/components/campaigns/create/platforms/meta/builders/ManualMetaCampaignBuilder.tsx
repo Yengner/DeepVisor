@@ -23,6 +23,7 @@ import { getDestinationConfig } from '../utils/destinationHelpers';
 import AdSetStep from '../steps/AdSetStep';
 import CreativeAssetsStep from '../steps/CreativeAssetsStep';
 import { useMetaPages } from '../hooks/useMetaPages';
+import ReviewStep from '../steps/ReviewStep';
 
 
 interface MetaCampaignBuilderProps {
@@ -177,7 +178,7 @@ export default function ManualMetaCampaignBuilder({ platformData, adAccountId, o
                     </Stepper.Step>
 
                     {/* Review Step */}
-                    {/* <Stepper.Step
+                    <Stepper.Step
                         label="Review"
                         description="Final review"
                         icon={getStepIcon(4)}
@@ -188,19 +189,19 @@ export default function ManualMetaCampaignBuilder({ platformData, adAccountId, o
                             setActive={setActive}
                             isSmart={false}
                         />
-                    </Stepper.Step> */}
+                    </Stepper.Step>
 
                 </Stepper>
             </Paper>
-                <Group mb="md" pt="lg">
-                    <Button
-                        variant="subtle"
-                        leftSection={<IconArrowLeft size={16} />}
-                        onClick={onBack}
-                    >
-                        Back to Platforms
-                    </Button>
-                </Group>
+            <Group mb="md" pt="lg">
+                <Button
+                    variant="subtle"
+                    leftSection={<IconArrowLeft size={16} />}
+                    onClick={onBack}
+                >
+                    Back to Platforms
+                </Button>
+            </Group>
         </Container>
     );
 }

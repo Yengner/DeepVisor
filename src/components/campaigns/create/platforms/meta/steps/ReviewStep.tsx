@@ -2,8 +2,8 @@
 
 import {
     Card, Group, Paper, Stack, Text, ThemeIcon, Title, Divider, Box,
-    Badge, Button, Grid, Timeline, Accordion, Alert, Progress,
-    List, Tooltip, SimpleGrid, Avatar, Table
+    Badge, Button, Grid, Timeline, Alert, Progress,
+    List, Tooltip, SimpleGrid, Table
 } from '@mantine/core';
 import {
     IconCheck, IconX, IconInfoCircle, IconBrandFacebook, IconBrandInstagram,
@@ -13,8 +13,8 @@ import {
     IconBuildingStore
 } from '@tabler/icons-react';
 import { UseFormReturnType } from '@mantine/form';
-import { useCampaignSubmit } from '../../platforms/meta/hooks/useCampaignSubmit';
 import { CampaignFormValues } from '@/lib/actions/meta/types';
+import { useCampaignSubmit } from '../hooks/useCampaignSubmit';
 
 interface ReviewStepProps {
     form: UseFormReturnType<CampaignFormValues>;
@@ -28,65 +28,9 @@ interface ReviewStepProps {
  */
 export default function ReviewStep({ form, setActive, isSmart = false }: ReviewStepProps) {
     const { submitCampaign, isSubmitting, submitError, submitSuccess } = useCampaignSubmit();
-    console.log(form.values)
-    // Group errors by category for user-friendly display
-    const findErrors = () => {
-        const errors: Record<string, string[]> = {
-            campaign: [],
-            targeting: [],
-            creative: [],
-            budget: [],
-        };
 
-        // Campaign details validation
-        if (!form.values.campaignName) {
-            errors.campaign.push("Campaign name is required");
-        }
-        if (!form.values.objective) {
-            errors.campaign.push("Campaign objective is required");
-        }
-
-        // Budget validation
-        if (!form.values.budget || form.values.budget < 5) {
-            errors.budget.push("A minimum budget of $5 is required");
-        }
-        if (!form.values.startDate) {
-            errors.budget.push("Start date is required");
-        }
-
-        // Page validation
-        if (!form.values.page_id) {
-            errors.campaign.push("Facebook Page is required");
-        }
-
-        // Ad creative validation
-        if (form.values.contentSource === 'upload' &&
-            (!form.values.uploadedFiles || form.values.uploadedFiles.length === 0)) {
-            errors.creative.push("Upload at least one creative asset");
-        }
-
-        if (form.values.contentSource === 'existing' &&
-            (!form.values.existingCreativeIds || form.values.existingCreativeIds.length === 0)) {
-            errors.creative.push("Select at least one existing post");
-        }
-
-        // if (!form.values.adHeadline) {
-        //     errors.creative.push("Ad headline is required");
-        // }
-
-        // if (!form.values.adPrimaryText) {
-        //     errors.creative.push("Ad primary text is required");
-        // }
-
-        return errors;
-    };
-
-    const errors = findErrors();
-    const hasErrors = Object.values(errors).some(errorList => errorList.length > 0);
-
-    // Calculate estimated reach and impressions based on budget
+    // Calculate estimated reach based on budget
     const getEstimatedReach = (budget: number) => {
-        // Simple formula for demonstration - real calculation would be more complex
         const minReach = Math.floor(budget * 200);
         const maxReach = Math.floor(budget * 650);
         return { min: minReach, max: maxReach };
@@ -114,42 +58,8 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
         return form.values.budget * Number(days);
     };
 
-    // Get audience size description
-    const getAudienceDescription = () => {
-        if (form.values.useAdvantageAudience) {
-            return "Meta Advantage Audience";
-        }
-
-        if (form.values.useSavedAudience) {
-            return "Saved audience";
-        }
-
-        const genders = form.values.genders.length === 0 ? "All" :
-            form.values.genders.includes('1') && form.values.genders.includes('2') ? "Men and Women" :
-                form.values.genders.includes('1') ? "Men" : "Women";
-
-        const ageRange = `${form.values.ageMin}-${form.values.ageMax}`;
-
-        const hasInterests = form.values.interests && form.values.interests.length > 0;
-        const hasBehaviors = form.values.behaviors && form.values.behaviors.length > 0;
-
-        let audience = `${genders}, ${ageRange}`;
-        if (hasInterests || hasBehaviors) {
-            audience += " with specific";
-            if (hasInterests) audience += " interests";
-            if (hasInterests && hasBehaviors) audience += " and";
-            if (hasBehaviors) audience += " behaviors";
-        }
-
-        return audience;
-    };
-
     // Handle campaign submission
     const handleSubmit = async () => {
-        if (hasErrors) {
-            return;
-        }
-
         await submitCampaign(form.values);
     };
 
@@ -172,75 +82,6 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
                         </Group>
 
                         <Divider my="md" />
-
-                        {/* Campaign Status */}
-                        <Paper withBorder p="md" radius="md" shadow="xs">
-                            <Group mb="md">
-                                <ThemeIcon size="md" variant="light" radius="xl" color={hasErrors ? "red" : "green"}>
-                                    {hasErrors ? <IconX size={16} /> : <IconCheck size={16} />}
-                                </ThemeIcon>
-                                <Title order={5}>Campaign Status</Title>
-                            </Group>
-
-                            {hasErrors ? (
-                                <Alert
-                                    color="red"
-                                    title="Your campaign requires attention"
-                                    icon={<IconInfoCircle />}
-                                >
-                                    <Text mb="md">Please address the following issues before launching:</Text>
-                                    <Accordion variant="contained" radius="md">
-                                        {Object.entries(errors).map(([category, categoryErrors]) => (
-                                            categoryErrors.length > 0 && (
-                                                <Accordion.Item key={category} value={category}>
-                                                    <Accordion.Control>
-                                                        <Group>
-                                                            <Text fw={500}>{category.charAt(0).toUpperCase() + category.slice(1)} Issues</Text>
-                                                            <Badge color="red">{categoryErrors.length}</Badge>
-                                                        </Group>
-                                                    </Accordion.Control>
-                                                    <Accordion.Panel>
-                                                        <List withPadding>
-                                                            {categoryErrors.map((error, index) => (
-                                                                <List.Item key={index} icon={
-                                                                    <ThemeIcon color="red" size="sm" variant="light" radius="xl">
-                                                                        <IconX size={12} />
-                                                                    </ThemeIcon>
-                                                                }>
-                                                                    {error}
-                                                                </List.Item>
-                                                            ))}
-                                                        </List>
-                                                        <Button
-                                                            mt="sm"
-                                                            size="xs"
-                                                            variant="light"
-                                                            leftSection={<IconEditCircle size={14} />}
-                                                            onClick={() => {
-                                                                if (category === 'campaign') setActive(1);
-                                                                else if (category === 'budget') setActive(2);
-                                                                else if (category === 'targeting') setActive(2);
-                                                                else if (category === 'creative') setActive(3);
-                                                            }}
-                                                        >
-                                                            Fix Issues
-                                                        </Button>
-                                                    </Accordion.Panel>
-                                                </Accordion.Item>
-                                            )
-                                        ))}
-                                    </Accordion>
-                                </Alert>
-                            ) : (
-                                <Alert
-                                    color="green"
-                                    title="Campaign ready to launch"
-                                    icon={<IconCheck />}
-                                >
-                                    All required settings are configured and your campaign is ready to go live.
-                                </Alert>
-                            )}
-                        </Paper>
 
                         {/* Campaign Summary */}
                         <Paper withBorder p="md" radius="md" shadow="xs">
@@ -290,12 +131,10 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
                                         <Group>
                                             <Text size="xs" c="dimmed">Platform:</Text>
                                             <Group gap={5}>
-                                                {form.values.placementTypes?.includes('facebook') && (
-                                                    <ThemeIcon size="xs" color="blue" radius="xl">
-                                                        <IconBrandFacebook size={10} />
-                                                    </ThemeIcon>
-                                                )}
-                                                {form.values.placementTypes?.includes('instagram') && (
+                                                <ThemeIcon size="xs" color="blue" radius="xl">
+                                                    <IconBrandFacebook size={10} />
+                                                </ThemeIcon>
+                                                {form.values.useAdvantagePlacements && (
                                                     <ThemeIcon size="xs" color="grape" radius="xl">
                                                         <IconBrandInstagram size={10} />
                                                     </ThemeIcon>
@@ -364,8 +203,10 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
                                     <Divider mb="sm" />
                                     <Stack gap="xs">
                                         <Group>
-                                            <Text size="xs" c="dimmed">Audience:</Text>
-                                            <Text size="xs" fw={500}>{getAudienceDescription()}</Text>
+                                            <Text size="xs" c="dimmed">Targeting:</Text>
+                                            <Text size="xs" fw={500}>
+                                                {form.values.useAdvantageAudience ? "Meta Advantage Audience" : "Custom Audience"}
+                                            </Text>
                                         </Group>
                                         {!form.values.useAdvantageAudience && (
                                             <>
@@ -380,8 +221,8 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
                                                             <IconMapPin size={10} />
                                                         </ThemeIcon>
                                                         <Text size="xs">
-                                                            {form.values.location.markerPosition
-                                                                ? `${form.values.location.radius}km radius`
+                                                            {form.values.location?.markerPosition
+                                                                ? `${form.values.location.radius || 10}km radius`
                                                                 : "Not specified"}
                                                         </Text>
                                                     </Group>
@@ -390,7 +231,7 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
                                         )}
                                         <Group>
                                             <Text size="xs" c="dimmed">Optimization:</Text>
-                                            <Text size="xs" fw={500}>{form.values.optimization}</Text>
+                                            <Text size="xs" fw={500}>{form.values.optimization_goal}</Text>
                                         </Group>
                                     </Stack>
                                 </Paper>
@@ -654,7 +495,7 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
                                     fullWidth
                                     size="md"
                                     leftSection={<IconRocket size={20} />}
-                                    disabled={hasErrors || isSubmitting}
+                                    disabled={isSubmitting}
                                     onClick={handleSubmit}
                                     loading={isSubmitting}
                                 >

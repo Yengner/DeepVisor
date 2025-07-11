@@ -4,6 +4,7 @@ import { ApiResponse, ErrorCode } from "@/lib/types/api";
 import { createErrorResponse, createSuccessResponse } from "@/lib/utils/error-handling";
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import { makeMetaApiGetRequest } from '../helpers/apiHelpers';
+import { getMetaAccessToken } from "@/lib/utils/common/accessToken";
 
 // Simple interface - just passing through what the API returns
 export interface MetaCreative {
@@ -11,14 +12,18 @@ export interface MetaCreative {
     name: string;
     thumbnail_url?: string;
     // Any other fields will be passed through as-is
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
 }
 
 export interface GetExistingCreativesParams {
     platformId: string;
     adAccountId: string;
-    page?: number;
     limit?: number;
+    after: string | null;
+    before: string | null;
+    thumbnailWidth?: number;
+    thumbnailHeight?: number;
 }
 
 /**
@@ -27,33 +32,35 @@ export interface GetExistingCreativesParams {
 export async function fetchExistingCreatives({
     platformId,
     adAccountId,
-    page = 1,
-    limit = 9
+    limit = 25,
+    after = null,
+    before = null,
+    thumbnailWidth = 300,
+    thumbnailHeight = 225
 }: GetExistingCreativesParams): Promise<ApiResponse<{
     creatives: MetaCreative[];
     totalCount: number;
-    currentPage: number;
-    totalPages: number;
+    cursors: {
+        before: string | null;
+        after: string | null;
+    };
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
 }>> {
     try {
-        const supabase = await createSupabaseClient();
-        // Get access token
-        const { data: integration, error: integrationError } = await supabase
-            .from("platform_integrations")
-            .select("access_token")
-            .eq("id", platformId)
-            .eq("platform_name", "meta")
-            .single();
 
-        if (integrationError || !integration?.access_token) {
+        const accessTokenResult = await getMetaAccessToken(platformId);
+
+        if (typeof accessTokenResult !== 'string') {
+            console.error("Failed to get Meta access token:", accessTokenResult);
             return createErrorResponse(
-                ErrorCode.DATABASE_ERROR,
-                "Failed to get database integration",
+                ErrorCode.INTEGRATION_ERROR,
+                "Failed to get Meta access token",
                 "We couldn't access your Meta account. Please reconnect your account."
             );
         }
 
-        const accessToken = integration.access_token;
+        const accessToken = accessTokenResult;
 
         // Fields to fetch from Meta API
         const baseFields = [
@@ -62,34 +69,46 @@ export async function fetchExistingCreatives({
             'call_to_action', 'asset_feed_spec',
         ];
 
-        // Calculate pagination parameters
-        const offset = (page - 1) * limit;
+        const params: Record<string, string | string[] | number | undefined> = {
+            fields: baseFields,
+            access_token: accessToken,
+            limit,
+            thumbnail_width: thumbnailWidth,
+            thumbnail_height: thumbnailHeight,
+        };
 
+        if (after) {
+            params.after = after;
+        } else if (before) {
+            params.before = before;
+        }
         try {
-            // Use our helper to make the API request
+
+
             const result = await makeMetaApiGetRequest(
                 `https://graph.facebook.com/v23.0/${adAccountId}/adcreatives`,
-                {
-                    fields: baseFields,
-                    access_token: accessToken,
-                    limit,
-                    offset: offset > 0 ? offset : undefined
-                },
+                params,
                 'creatives'
             );
 
             const { data = [], paging } = result;
 
-            // Just pass through the creatives as-is
-            // No complex processing
+            // Extract cursors for pagination
+            const cursors = {
+                before: paging?.cursors?.before || null,
+                after: paging?.cursors?.after || null
+            };
 
-            console.log(`Total creatives found: ${paging?.total_count || data.length}`);
+            // Determine if we have next/previous pages
+            const hasNextPage = !!paging?.next;
+            const hasPreviousPage = !!paging?.previous;
 
             return createSuccessResponse({
                 creatives: data,
                 totalCount: paging?.total_count || data.length,
-                currentPage: page,
-                totalPages: Math.ceil((paging?.total_count || data.length) / limit) || 1
+                cursors,
+                hasNextPage,
+                hasPreviousPage
             });
 
         } catch (apiError) {
@@ -99,7 +118,7 @@ export async function fetchExistingCreatives({
                 "We couldn't load your Meta creatives. Please try again later."
             );
         }
-    } catch (err: any) {
+    } catch (err) {
         console.error('Meta creatives server action error:', err);
         return createErrorResponse(
             ErrorCode.UNKNOWN_ERROR,

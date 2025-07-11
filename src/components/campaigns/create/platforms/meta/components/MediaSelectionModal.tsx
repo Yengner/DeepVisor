@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Modal, Text, Tabs, SimpleGrid, Paper, Image, Stack, Badge,
-    Group, ThemeIcon, Button, Center, Loader, Pagination, Box, AspectRatio
+    Group, ThemeIcon, Button, Center, Loader, Box, AspectRatio,
+    ScrollArea, Divider
 } from '@mantine/core';
 import {
     IconBrandFacebook, IconBrandInstagram, IconAlertCircle,
-    IconPhoto, IconCheck, IconFileText
+    IconPhoto, IconCheck, IconFileText, IconChevronLeft, IconChevronRight
 } from '@tabler/icons-react';
 import { useExistingCreatives } from '../hooks/useExistingCreatives';
-import { PreviewType } from '@/lib/actions/meta/creatives/previews';
+import { MetaCreative } from '@/lib/actions/meta/creatives/actions';
 
 interface MediaSelectionModalProps {
     opened: boolean;
@@ -40,28 +41,39 @@ export default function MediaSelectionModal({
 }: MediaSelectionModalProps) {
     const [activeTab, setActiveTab] = useState<string>('creatives');
     const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
-    const [currentPage, setCurrentPage] = useState(1);
 
     // Determine which tabs to show based on objective and destination type
     const shouldShowLeadTab = objective === 'OUTCOME_LEADS' && destinationType === 'ON_AD';
 
-    // Fetch creatives using our hook
+    // Fetch creatives using our hook with cursor pagination
     const {
         creatives,
         loading,
         error,
-        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+        goToNextPage,
+        goToPreviousPage,
+        reset
     } = useExistingCreatives({
         platformId,
         adAccountId,
         enabled: opened,
-        page: currentPage,
-        limit: 9
+        thumbnailWidth: 400,
+        thumbnailHeight: 300
     });
 
+    // Reset pagination when modal opens and set initial selection
+    useEffect(() => {
+        if (opened) {
+            reset();
+            setSelectedId(initialSelectedId);
+        }
+    }, [opened, initialSelectedId, reset]);
+
     // Single selection handler
-    const handleSelection = (id: string) => {
-        setSelectedId(id === selectedId ? null : id);
+    const handleSelection = (creative: MetaCreative) => {
+        setSelectedId(creative.id === selectedId ? null : creative.id);
     };
 
     const handleConfirmSelection = () => {
@@ -91,12 +103,22 @@ export default function MediaSelectionModal({
             opened={opened}
             onClose={onClose}
             size="xl"
-            title="Select Creative"
+            title={
+                <Group>
+                    <IconPhoto size={20} />
+                    <Text fw={600}>Select Creative</Text>
+                </Group>
+            }
             centered
-            styles={{ body: { paddingBottom: 60 } }}
+            scrollAreaComponent={ScrollArea.Autosize}
+            styles={{
+                body: { padding: '0' },
+                inner: { paddingBottom: 0 },
+                content: { maxHeight: '80vh', display: 'flex', flexDirection: 'column' }
+            }}
         >
-            <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'creatives')} mb="md">
-                <Tabs.List>
+            <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'creatives')}>
+                <Tabs.List px="md" pt="md">
                     <Tabs.Tab value="creatives" leftSection={<IconPhoto size={16} />}>
                         Ad Creatives
                     </Tabs.Tab>
@@ -107,107 +129,157 @@ export default function MediaSelectionModal({
                     )}
                 </Tabs.List>
 
-                {/* Creatives Panel */}
-                <Tabs.Panel value="creatives">
-                    {loading && (
-                        <Center py="xl">
-                            <Stack align="center">
-                                <Loader />
-                                <Text size="sm" c="dimmed">Loading your creatives...</Text>
-                            </Stack>
-                        </Center>
-                    )}
+                <Divider my="xs" />
 
-                    {error && (
-                        <Paper p="md" withBorder bg="red.0">
-                            <Group>
-                                <ThemeIcon color="red" variant="light"><IconAlertCircle size={16} /></ThemeIcon>
-                                <Text size="sm">{error}</Text>
-                            </Group>
-                        </Paper>
-                    )}
+                {/* Main content area with ScrollArea */}
+                <ScrollArea h={500} px="md" offsetScrollbars>
+                    <Tabs.Panel value="creatives" pt="xs">
+                        {loading && (
+                            <Center py="xl">
+                                <Stack align="center">
+                                    <Loader size="md" />
+                                    <Text size="sm" c="dimmed">Loading your creatives...</Text>
+                                </Stack>
+                            </Center>
+                        )}
 
-                    {!loading && !error && creatives.length === 0 && (
-                        <Paper p="md" withBorder>
-                            <Stack align="center" py="md">
-                                <ThemeIcon color="blue" variant="light" size="lg"><IconPhoto size={24} /></ThemeIcon>
-                                <Text c="dimmed" size="sm" ta="center">No creatives available.</Text>
-                            </Stack>
-                        </Paper>
-                    )}
+                        {error && (
+                            <Paper p="md" withBorder bg="red.0">
+                                <Group>
+                                    <ThemeIcon color="red" variant="light"><IconAlertCircle size={16} /></ThemeIcon>
+                                    <Text size="sm">{error}</Text>
+                                </Group>
+                            </Paper>
+                        )}
 
-                    {!loading && !error && creatives.length > 0 && (
-                        <>
-                            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-                                {creatives.map((creative) => (
-                                    <Paper
-                                        key={creative.id}
-                                        p="xs"
-                                        withBorder
-                                        style={{
-                                            cursor: 'pointer',
-                                            borderColor: selectedId === creative.id ? 'var(--mantine-color-blue-6)' : undefined,
-                                            borderWidth: selectedId === creative.id ? 2 : 1,
-                                            position: 'relative'
-                                        }}
-                                        onClick={() => handleSelection(creative.id)}
+                        {!loading && !error && creatives.length === 0 && (
+                            <Paper p="md" withBorder>
+                                <Stack align="center" py="md">
+                                    <ThemeIcon color="blue" variant="light" size="lg"><IconPhoto size={24} /></ThemeIcon>
+                                    <Text c="dimmed" size="sm" ta="center">No creatives available.</Text>
+                                </Stack>
+                            </Paper>
+                        )}
+
+                        {!loading && !error && creatives.length > 0 && (
+                            <>
+                                <SimpleGrid cols={{ base: 1, xs: 2, sm: 3, md: 4, lg: 5 }} spacing="md">
+                                    {creatives.map((creative) => {
+                                        const isSelected = selectedId === creative.id;
+                                        return (
+                                            <Paper
+                                                key={creative.id}
+                                                withBorder
+                                                style={{
+                                                    cursor: 'pointer',
+                                                    borderColor: isSelected ? 'var(--mantine-color-blue-6)' : undefined,
+                                                    borderWidth: isSelected ? 2 : 1,
+                                                    overflow: 'hidden',
+                                                    display: 'flex',
+                                                    flexDirection: 'column'
+                                                }}
+                                                onClick={() => handleSelection(creative)}
+                                            >
+                                                {/* Image Container */}
+                                                <Box style={{ position: 'relative' }}>
+                                                    <AspectRatio ratio={4 / 3}>
+                                                        <Image
+                                                            src={creative.thumbnail_url || 'https://placehold.co/400x300/e6f7ff/0099cc?text=No+Preview'}
+                                                            alt={creative.name || 'Creative'}
+                                                            fit="cover"
+                                                        />
+                                                    </AspectRatio>
+
+                                                    {/* Selection indicator as an overlay */}
+                                                    {isSelected && (
+                                                        <Box
+                                                            style={{
+                                                                position: 'absolute',
+                                                                top: 0,
+                                                                right: 0,
+                                                                bottom: 0,
+                                                                left: 0,
+                                                                background: 'rgba(0, 0, 0, 0.15)',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center'
+                                                            }}
+                                                        >
+                                                            <ThemeIcon color="blue" size="xl" radius="xl">
+                                                                <IconCheck size={20} />
+                                                            </ThemeIcon>
+                                                        </Box>
+                                                    )}
+                                                </Box>
+
+                                                {/* Content below image */}
+                                                <Box p="xs">
+                                                    <Text fw={500} size="sm" lineClamp={1}>
+                                                        {creative.name || "Untitled Creative"}
+                                                    </Text>
+                                                    <Text size="xs" c="dimmed" mb="xs">
+                                                        {`ID: ${creative.id.slice(-12)}`}
+                                                    </Text>
+                                                    <Badge color="blue" fullWidth>
+                                                        {creative.object_type || 'Ad Creative'}
+                                                    </Badge>
+                                                </Box>
+                                            </Paper>
+                                        );
+                                    })}
+                                </SimpleGrid>
+
+                                {/* Cursor-based navigation */}
+                                {(hasNextPage || hasPreviousPage) && (
+                                    <Group justify="center" mt="xl" mb="md" pt="md"
+                                        style={{ borderTop: '1px solid var(--mantine-color-gray-2)' }}
                                     >
-                                        {selectedId === creative.id && (
-                                            <ThemeIcon color="blue" size="md" radius="xl"
-                                                style={{ position: 'absolute', top: 5, right: 5, zIndex: 2 }}>
-                                                <IconCheck size={16} />
-                                            </ThemeIcon>
-                                        )}
-                                        <Stack gap="xs">
-                                            <AspectRatio ratio={16 / 9}>
-                                                <Image
-                                                    src={creative.thumbnail_url || 'https://placehold.co/400x225/e6f7ff/0099cc?text=Creative'}
-                                                    alt={creative.name || 'Creative'}
-                                                    radius="md"
-                                                    fit="cover"
-                                                />
-                                            </AspectRatio>
-                                            <Text fw={500} size="sm" lineClamp={1}>{creative.name}</Text>
-                                            <Text size="xs" c="dimmed">{`Creative ID: ${creative.id}`}</Text>
-                                            <Group justify="space-between">
-                                                <Badge color="blue">{creative.object_type || 'Ad Creative'}</Badge>
-                                            </Group>
-                                        </Stack>
-                                    </Paper>
-                                ))}
-                            </SimpleGrid>
+                                        <Button
+                                            variant="subtle"
+                                            disabled={!hasPreviousPage}
+                                            onClick={goToPreviousPage}
+                                            leftSection={<IconChevronLeft size={16} />}
+                                        >
+                                            Previous
+                                        </Button>
 
-                            {totalPages > 1 && (
-                                <Center mt="lg">
-                                    <Pagination
-                                        total={totalPages}
-                                        value={currentPage}
-                                        onChange={setCurrentPage}
-                                    />
-                                </Center>
-                            )}
-                        </>
-                    )}
-                </Tabs.Panel>
+                                        <Text size="sm" c="dimmed" px="md">
+                                            {loading ? 'Loading...' : `${creatives.length} items`}
+                                        </Text>
+
+                                        <Button
+                                            variant="subtle"
+                                            disabled={!hasNextPage}
+                                            onClick={goToNextPage}
+                                            rightSection={<IconChevronRight size={16} />}
+                                        >
+                                            Next
+                                        </Button>
+                                    </Group>
+                                )}
+                            </>
+                        )}
+                    </Tabs.Panel>
+                </ScrollArea>
             </Tabs>
 
-            {/* Action Bar */}
+            {/* Action Bar - Fixed at the bottom */}
             <Box
                 style={{
-                    position: 'absolute',
+                    position: 'sticky',
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    padding: '10px 16px',
+                    padding: '15px 20px',
                     background: 'white',
                     borderTop: '1px solid var(--mantine-color-gray-3)',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    zIndex: 100
+                    marginTop: 'auto' // Pushes it to the bottom of the flex container
                 }}
             >
-                <Badge size="lg" color="blue">
+                <Badge size="lg" color="blue" variant="light" radius="md">
                     {selectedId ? '1 creative selected' : 'No selection'}
                 </Badge>
 

@@ -1,11 +1,10 @@
 "use server";
 import { createSupabaseClient } from "../utils/supabase/clients/server";
 import { getLoggedInUser } from "./user.actions";
-import { createAd } from "./meta/createAd";
 import { createAdSet } from "./meta/adsets/create";
 import { createCampaign } from "./meta/campaigns/create";
-import { createCreative } from "./meta/createCreative";
 import { CampaignFormValues, SmartCampaignResult } from "./meta/types";
+import { createAd } from "./meta/ads/create";
 
 /**
  * Server action to create a Meta campaign
@@ -22,7 +21,7 @@ export async function createMetaCampaign(formData: CampaignFormValues): Promise<
   if (!userId) {
     throw new Error("User not authenticated");
   }
-console.log(formData)
+  console.log(formData)
   // Get Meta integration and ad account info
   const { data: integration, error: integrationError } = await supabase
     .from("platform_integrations")

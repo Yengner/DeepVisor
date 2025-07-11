@@ -211,7 +211,9 @@ export default function CreativeAssetsStep({
                                             <Radio value="auto" />
                                             <Stack gap={0}>
                                                 <Text fw={600}>AI Content Selection</Text>
-                                                <Text size="sm" c="dimmed">Let our AI automatically select the best content for your campaign</Text>
+                                                <Text size="sm" c="dimmed">
+                                                    AI selects the best content for your campaign
+                                                    </Text>
                                             </Stack>
                                         </Group>
                                     </Paper>

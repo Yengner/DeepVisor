@@ -1,8 +1,10 @@
 'use server';
 
 import { ApiResponse, ErrorCode } from "@/lib/types/api";
+import { getMetaAccessToken } from "@/lib/utils/common/accessToken";
 import { createErrorResponse, createSuccessResponse } from "@/lib/utils/error-handling";
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
+import { makeMetaApiGetRequest } from "../helpers/apiHelpers";
 
 export type PreviewType =
     | 'RIGHT_COLUMN_STANDARD'
@@ -26,25 +28,16 @@ export async function fetchCreativePreviews({
     previewTypes = ['DESKTOP_FEED_STANDARD', 'MOBILE_FEED_STANDARD']
 }: FetchCreativePreviewsParams): Promise<ApiResponse<Record<string, { body: string }>>> {
     try {
-        const supabase = await createSupabaseClient();
-
-        // Get access token
-        const { data: integration, error: integrationError } = await supabase
-            .from("platform_integrations")
-            .select("access_token")
-            .eq("id", platformId)
-            .eq("platform_name", "meta")
-            .single();
-
-        if (integrationError || !integration?.access_token) {
+        const accessTokenResult = await getMetaAccessToken(platformId);
+        if (typeof accessTokenResult !== 'string') {
+            console.error("Failed to get Meta access token:", accessTokenResult);
             return createErrorResponse(
                 ErrorCode.INTEGRATION_ERROR,
-                "Failed to get Meta integration",
+                "Failed to get Meta access token",
                 "We couldn't access your Meta account. Please reconnect your account."
             );
         }
-
-        const accessToken = integration.access_token;
+        const accessToken = accessTokenResult;
 
         // Build URL for preview endpoint
         const url = new URL(`https://graph.facebook.com/v23.0/${creativeId}/previews`);
@@ -52,19 +45,16 @@ export async function fetchCreativePreviews({
         url.searchParams.set('access_token', accessToken);
 
         // Fetch preview data
-        const resp = await fetch(url.toString());
+        const result = await makeMetaApiGetRequest(
+            `https://graph.facebook.com/v23.0/${creativeId}/previews`,
+            {
+                ad_format: 'DESKTOP_FEED_STANDARD', // Default format for now
+                access_token: accessToken,
+            },
+            'previews'
+        )
 
-        if (!resp.ok) {
-            const text = await resp.text();
-            console.error(`Meta creative preview error:`, text);
-            return createErrorResponse(
-                ErrorCode.EXTERNAL_API_ERROR,
-                `Failed to fetch creative previews: ${text}`,
-                "We couldn't load the preview for this creative."
-            );
-        }
-
-        const data = await resp.json();
+        const data = await result;
         const previews: Record<string, { body: string }> = {};
         // Process preview data for requested types
         if (Array.isArray(data.data)) {

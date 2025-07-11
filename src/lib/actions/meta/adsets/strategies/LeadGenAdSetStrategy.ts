@@ -60,6 +60,13 @@ export class LeadGenAdSetStrategy implements AdSetStrategy {
                     advantage_audience: 1
                 }
             };
+        } else if (formData.useAdvantageAudience) {
+            return {
+                ...targeting,
+                targeting_automation: {
+                    advantage_audience: 1
+                }
+            }
         }
 
         return targeting;

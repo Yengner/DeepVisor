@@ -1,6 +1,6 @@
+import { CAMPAIGN_OBJECTIVES } from "@/components/campaigns/create/platforms/meta/utils/objectiveMappings";
 import { CampaignStrategy } from "./CampaignStrategy";
 import { LeadGenCampaignStrategy } from "./LeadGenCampaignStrategy";
-import { CAMPAIGN_OBJECTIVES } from "@/components/campaigns/create/common/utils/objectiveMappings";
 
 /**
  * Factory function to return the appropriate campaign strategy

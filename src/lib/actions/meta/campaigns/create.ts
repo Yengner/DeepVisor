@@ -1,6 +1,6 @@
 import { MetaCampaignParams } from "../types";
-import { getCampaignStrategy } from "../strategies/campaign/CampaignStrategyFactory";
 import { removeEmptyFields } from "../helpers/apiHelpers";
+import { getCampaignStrategy } from "./strategies/CampaignStrategyFactory";
 
 /**
  * Creates a campaign in the Meta Ads platform

@@ -1,6 +1,7 @@
-import { getAdSetStrategy } from "../strategies/adset/AdSetStrategyFactory";
+
 import { MetaAdSetParams } from "../types";
-import { buildPromotedObject, DESTINATION_TYPES } from '@/components/campaigns/create/common/utils/objectiveMappings';
+import { getAdSetStrategy } from "./strategies/AdSetStrategyFactory";
+
 
 /**
  * Creates an ad set in Meta Ads platform

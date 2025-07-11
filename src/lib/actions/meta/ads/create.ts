@@ -1,4 +1,4 @@
-import { MetaAdParams } from "./types";
+import { MetaAdParams } from "../types";
 
 /**
  * Creates a single ad in the Meta Ads platform
