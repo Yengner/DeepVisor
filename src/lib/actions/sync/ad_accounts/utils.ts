@@ -38,31 +38,12 @@ export function redirectWithError(request: Request, isOnboarding: boolean, error
     }
 }
 
-/**
- * Fetch Meta ad accounts for a user
- */
-export async function fetchMetaAdAccounts(accessToken: string): Promise<{ data: AdAccount[] }> {
-    const adAccountsUrl = `https://graph.facebook.com/v21.0/me/adaccounts?fields=id,name,account_status,amount_spent,users`;
-
-    const adAccountsResponse = await fetch(adAccountsUrl, {
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-        },
-    });
-
-    if (!adAccountsResponse.ok) {
-        const errorDetails = await adAccountsResponse.json();
-        throw new Error(errorDetails.error?.message || 'Failed to fetch ad accounts');
-    }
-
-    return await adAccountsResponse.json();
-}
 
 /**
  * Fetch Meta page accounts for a user
  */
 export async function fetchMetaPageAccounts(accessToken: string): Promise<{ data: PageAccount[] }> {
-    const pageAccountUrl = `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,account,access_token,instagram_business_account`;
+    const pageAccountUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/me/accounts?fields=id,name,account,access_token,instagram_business_account`;
 
     const pageAccountResponse = await fetch(pageAccountUrl, {
         headers: {
@@ -126,7 +107,7 @@ export async function storeAdAccounts(
     userId: string,
     platformIntegrationId: string,
     adAccounts: AdAccount[],
-    userTier: string
+    userTier?: string
 ): Promise<{ accounts: AdAccount[], accountIdMap: { [adAccountId: string]: string } }> {
     const date = new Date().toISOString();
 

@@ -145,6 +145,12 @@ export async function getLoggedInUser() {
     }
 
     const user = await getUserInfo({ userId: data.user.id });
+
+    if (user.onboarding_completed === false) {
+        console.warn('User onboarding not completed. Redirecting to /onboarding.');
+        redirect('/onboarding');
+    }
+    
     return user;
 }
 

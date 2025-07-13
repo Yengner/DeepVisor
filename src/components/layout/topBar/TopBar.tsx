@@ -3,14 +3,10 @@ import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import TopBarClient from './TopBarClient';
 
 export default async function Topbar() {
-  const loggedInUser = await getLoggedInUser();
-
-  if (!loggedInUser) {
-    return null;
-  }
+  const user = await getLoggedInUser();
 
   const supabase = await createSupabaseClient();
-  const userId = loggedInUser.id;
+  const userId = user?.id;
 
   // Fetch platform integrations
   const { data: platforms, error: platformError } = await supabase
@@ -47,7 +43,7 @@ export default async function Topbar() {
   return (
     <div className="w-full h-full">
       <TopBarClient
-        userInfo={loggedInUser}
+        userInfo={user}
         platforms={platforms || []}
         adAccounts={adAccounts || []}
         notifications={notifications || []}

@@ -1,4 +1,4 @@
-import { fetchWithValidation } from "@/lib/utils/common/apiUtils";
+import { fetchWithValidation } from "@/lib/actions/common/apiUtils";
 import { PerformanceMetrics, TrendDataEntry, FacebookMetricsResponse } from "../../types";
 
 export const fetchPerformanceMetrics = async (

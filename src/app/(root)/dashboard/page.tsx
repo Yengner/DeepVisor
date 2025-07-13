@@ -1,50 +1,40 @@
 import { getLoggedInUser } from "@/lib/actions/user.actions";
-import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
-import { redirect } from "next/navigation";
-import { getTopPlatforms } from '@/lib/api/platforms/getTopPlatforms';
-import { getTopCampaignsForPlatforms } from '@/lib/api/platforms/fetchFeaturedCampaigns';
-import { getRecommendations } from '@/lib/api/openai.ts/getRecommendations';
 import DashboardClient from "./components/DashboardClient";
+import { cookies } from "next/headers";
+import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
+import { getAdAccountData, getPlatformData, getPlatformDetails, getTopAdAccountCampaigns, getTopPlatformsCampaigns } from "@/lib/api/platforms/actions";
+
 
 export default async function MainDashboardPage() {
-  const supabase = await createSupabaseClient();
-  const loggedIn = await getLoggedInUser();
+  // Fetch user data
+  const user = await getLoggedInUser();
+  const userId = user?.id;
+  // Get platform ID from cookies
+  const cookieStore = await cookies();
+  const selectedPlatformId = cookieStore.get('platform_integration_id')?.value;
+  const selectedAdAccountId = cookieStore.get('ad_account_id')?.value;
 
-  if (!loggedIn) {
-    return redirect("/login");
+  if (selectedPlatformId === undefined) {
+    return <EmptyCampaignState type="platform" />;
+  } else if (selectedAdAccountId === undefined) {
+    const platformDetails = await getPlatformDetails(selectedPlatformId, userId);
+    return <EmptyCampaignState type="adAccount" platformName={platformDetails.platform_name} />;
   }
 
-  const userId = loggedIn?.id;
 
-  // Check if onboarding is completed
-  const { data: profileData } = await supabase
-    .from("profiles")
-    .select("onboarding_completed, business_name")
-    .eq("id", userId)
-    .single();
+  const platformDetails = await getPlatformDetails(selectedPlatformId, userId);
+  const adAccountData = await getAdAccountData(selectedAdAccountId, selectedPlatformId, userId);
+  const topAdAccountCampaigns = await getTopAdAccountCampaigns(adAccountData.ad_account_id);
 
-  if (!profileData?.onboarding_completed) {
-    return redirect("/onboarding");
-  }
-
-  // Fetch all data needed for the dashboard
-  const { metrics, topPlatform, topPlatforms } = await getTopPlatforms(userId);
-  const { topCampaigns } = await getTopCampaignsForPlatforms(userId);
-  const recommendations = await getRecommendations(userId);
-
-  // Get profile/business info
-  const businessName = profileData?.business_name || loggedIn?.first_name + "'s Business";
-
-  // Return the client component with all data
+  // const platformData = await getPlatformData(selectedPlatformId);
+  // const topCampaigns = await getTopPlatformsCampaigns(selectedPlatformId, selectedAdAccountId);
+  // const recommendations = await getRecommendations(userId);
   return (
     <DashboardClient
-      userData={loggedIn}
-      businessName={businessName}
-      platforms={topPlatforms || []}
-      featuredPlatform={topPlatform}
-      platformMetrics={metrics || []}
-      campaigns={topCampaigns || []}
-      recommendations={recommendations || []}
+      userData={user}
+      platform={platformDetails}
+      adAccountData={adAccountData}
+      topAdAccountCampaigns={topAdAccountCampaigns}
     />
   );
 }

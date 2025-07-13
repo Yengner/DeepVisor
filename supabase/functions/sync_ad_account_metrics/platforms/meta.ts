@@ -26,7 +26,7 @@ export async function fetchMetaAdAccountMetrics(ad_account_id: string, accessTok
     })),
   ];
 
-  const batchUrl = `https://graph.facebook.com/v21.0`;
+  const batchUrl = `https://graph.facebook.com/v23.0`;
 
   try {
     // Send the batched request

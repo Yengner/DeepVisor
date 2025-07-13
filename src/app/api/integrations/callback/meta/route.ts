@@ -8,7 +8,7 @@ import {
   updateUserConnectedAccounts,
   needsAccountSelection,
   triggerMetaSync
-} from '@/lib/utils/meta/callback/utils';
+} from '@/lib/actions/sync/ad_accounts/utils';
 import { getUserSubscriptionTier } from '@/lib/utils/subscription';
 import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
 import { NextResponse } from 'next/server';

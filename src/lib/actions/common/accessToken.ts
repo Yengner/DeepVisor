@@ -1,9 +1,9 @@
 import { getLoggedInUser } from "@/lib/actions/user.actions";
-import { createSupabaseClient } from "../supabase/clients/server";
-import { createErrorResponse, createSuccessResponse } from "../error-handling";
+import { createSupabaseClient } from "../../utils/supabase/clients/server";
+import { createErrorResponse, createSuccessResponse } from "../../utils/error-handling";
 import { ApiResponse, ErrorCode } from "@/lib/types/api";
 
-export async function getMetaAccessToken(platformId: string): Promise< string | ApiResponse<string>> {
+export async function getAccessToken(platformId: string): Promise< string | ApiResponse<string>> {
     try {
         const supabase = await createSupabaseClient();
 

@@ -14,7 +14,7 @@ export async function getAllCampaigns(supabase: any, platform: string, adAccount
     const { data, error } = await supabase
         .from('campaigns_metrics')
         .select(
-            'campaign_id, name, status, objective, raw_data, start_date, platform_name, clicks, impressions, spend, leads, reach, link_clicks, messages, cpm, ctr, cpc, end_date, today_metrics, yesterday_metrics, auto_optimize'
+            'campaign_id, name, status, objective, raw_data, start_date, platform_name, clicks, impressions, spend, leads, reach, link_clicks, messages, cpm, ctr, cpc, end_date, today_metrics, yesterday_metrics'
         )
         .eq('platform_name', platform)
         .eq('ad_account_id', adAccountId);

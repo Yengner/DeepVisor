@@ -2,41 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import {
-    Button,
-    Group,
-    Paper,
-    Title,
-    Text,
-    Tabs,
-    ActionIcon,
-    Tooltip,
-    Select,
-    TextInput,
-    Menu,
-    Box,
-    Badge
+    Button, Group, Paper, Title, Text, Tabs, ActionIcon,
+    Tooltip, Select, TextInput, Menu, Badge, Stack, Avatar
 } from '@mantine/core';
 import {
-    IconRefresh,
-    IconPlus,
-    IconSearch,
-    IconAdjustments,
-    IconFilterOff,
-    IconChartBar,
-    IconPresentationAnalytics,
-    IconTable
+    IconRefresh, IconPlus, IconSearch, IconAdjustments,
+    IconFilterOff, IconChartBar, IconTable, IconBrandFacebook,
+    IconBrandTiktok, IconBrandGoogle, IconInfoCircle
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import CampaignTable from './CampaignTable';
 import AdSetTable from './AdSetTable';
 import AdsTable from './AdsTable';
 import CampaignStats from './CampaignStats';
+import { EmptyCampaignState } from './EmptyStates';
 
 interface Campaign {
     id: string;
     name: string;
     delivery: boolean;
-    type: "AI Auto" | "Manual" | "Semi-Auto";
+    type: string;
     status: string;
     objective: string;
     startDate: string;
@@ -54,40 +39,73 @@ interface Campaign {
     cpc?: number;
     platform?: string;
     accountName?: string;
-    auto_optimize: boolean;
     ad_account_id?: string;
+}
+
+interface PlatformInfo {
+    id: string;
+    name: string;
 }
 
 interface CampaignDashboardProps {
     campaigns: Campaign[];
     userId: string;
+    platform: PlatformInfo;
+    accountMetrics: {
+        spend: number;
+        impressions: number;
+        clicks: number;
+        link_clicks: number;
+        reach: number;
+        leads: number;
+        messages: number;
+        ctr: number;
+        cpc: number;
+        cpm: number;
+    };
 }
 
-export default function CampaignDashboard({ campaigns, userId }: CampaignDashboardProps) {
+export default function CampaignDashboard({ campaigns, userId, platform, accountMetrics }: CampaignDashboardProps) {
     const router = useRouter();
     const initialCampaignId = campaigns.length > 0 ? campaigns[0].id : null;
     const [campaignData, setCampaignData] = useState(campaigns);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId);
-    const [activeTab, setActiveTab] = useState<string>('overview');
+    const [activeTab, setActiveTab] = useState<string>('campaigns');
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [platformFilter, setPlatformFilter] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
     const [typeFilter, setTypeFilter] = useState<string | null>(null);
     const [selectedAdSetId, setSelectedAdSetId] = useState<string | null>(null);
 
-    // Get unique platforms for filter dropdown
-    const platforms = Array.from(new Set(campaignData.map(c => c.platform))).filter(Boolean);
+    // Get unique statuses and types for filter dropdowns
     const types = Array.from(new Set(campaignData.map(c => c.type))).filter(Boolean);
     const statuses = Array.from(new Set(campaignData.map(c => c.status?.toUpperCase()))).filter(Boolean);
+
+    // Get platform color and icon
+    const getPlatformColor = () => {
+        switch (platform.name.toLowerCase()) {
+            case 'facebook':
+            case 'meta': return 'blue';
+            case 'tiktok': return 'dark';
+            case 'google': return 'red';
+            default: return 'gray';
+        }
+    };
+
+    const getPlatformIcon = () => {
+        switch (platform.name.toLowerCase()) {
+            case 'facebook':
+            case 'meta': return <IconBrandFacebook size={24} />;
+            case 'tiktok': return <IconBrandTiktok size={24} />;
+            case 'google': return <IconBrandGoogle size={24} />;
+            default: return <IconInfoCircle size={24} />;
+        }
+    };
 
     // Filtered campaigns
     const filteredCampaigns = campaignData.filter(campaign => {
         const matchesSearch = !searchQuery ||
             campaign.name.toLowerCase().includes(searchQuery.toLowerCase());
-
-        const matchesPlatform = !platformFilter ||
-            campaign.platform?.toLowerCase() === platformFilter.toLowerCase();
 
         const matchesStatus = !statusFilter ||
             campaign.status?.toUpperCase() === statusFilter;
@@ -95,53 +113,8 @@ export default function CampaignDashboard({ campaigns, userId }: CampaignDashboa
         const matchesType = !typeFilter ||
             campaign.type === typeFilter;
 
-        return matchesSearch && matchesPlatform && matchesStatus && matchesType;
+        return matchesSearch && matchesStatus && matchesType;
     });
-
-    // Handler for auto-optimization toggle
-    const handleToggleAuto = async (campaignId: string, autoOptimize: boolean) => {
-        try {
-            const response = await fetch('/api/campaigns/autoOptimize', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ campaignId, autoOptimize }),
-            });
-
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-
-            setCampaignData(prev =>
-                prev.map(c => (c.id === campaignId ? { ...c, auto_optimize: autoOptimize } : c))
-            );
-        } catch (error) {
-            console.error('Failed to update auto-optimization:', error);
-        }
-    }
-
-    // Handler for refreshing campaigns data
-    const handleRefresh = async () => {
-        setIsRefreshing(true);
-        try {
-            const response = await fetch('/api/campaigns/refreshCampaignData', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ userId }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to refresh campaigns data');
-            }
-            // Refresh the campaigns data
-            window.location.reload();
-        } catch (error) {
-            console.error('Error refreshing campaigns data:', error);
-        } finally {
-            setIsRefreshing(false);
-        }
-    };
 
     // Handler for toggling campaign status
     const handleToggleCampaign = async (campaignId: string, newStatus: boolean) => {
@@ -203,23 +176,46 @@ export default function CampaignDashboard({ campaigns, userId }: CampaignDashboa
         }
     };
 
+    // Handler for refreshing campaigns data
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        try {
+            const response = await fetch('/api/campaigns/refreshCampaignData', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId,
+                    platformId: platform.id
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to refresh campaigns data');
+            }
+            // Refresh the campaigns data
+            window.location.reload();
+        } catch (error) {
+            console.error('Error refreshing campaigns data:', error);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
     // Reset all filters
     const resetFilters = () => {
         setSearchQuery('');
-        setPlatformFilter(null);
         setStatusFilter(null);
         setTypeFilter(null);
     };
 
     // Calculate summary statistics
-    const totalSpend = filteredCampaigns.reduce((sum, c) => sum + (typeof c.spend === 'string' ? parseFloat(c.spend) : (c.spend || 0)), 0);
+    const totalSpend = filteredCampaigns.reduce((sum, c) =>
+        sum + (typeof c.spend === 'string' ? parseFloat(c.spend) : (c.spend || 0)), 0);
     const totalImpressions = filteredCampaigns.reduce((sum, c) => sum + (c.impressions || 0), 0);
     const totalClicks = filteredCampaigns.reduce((sum, c) => sum + (c.clicks || 0), 0);
     const avgCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
-
-    const selectedCampaign = selectedCampaignId
-        ? campaignData.find(c => c.id === selectedCampaignId)
-        : null;
 
     // Reset selected adset when campaign changes
     useEffect(() => {
@@ -228,49 +224,62 @@ export default function CampaignDashboard({ campaigns, userId }: CampaignDashboa
 
     // Handle tab transitions
     useEffect(() => {
-        // When an adset is selected, enable the ads tab
-        if (selectedAdSetId && activeTab === 'adsets') {
-            // Optional: Auto-switch to ads tab when adset is selected
-            // setActiveTab('ads');
+        // If we're on adsets tab but no campaign is selected, go back to campaigns
+        if (!selectedCampaignId && activeTab === 'adsets') {
+            setActiveTab('campaigns');
         }
 
-        // If we're on ads tab but no adset is selected, go back to adsets tab
+        // If we're on ads tab but no adset is selected, go back to adsets
         if (!selectedAdSetId && activeTab === 'ads') {
             setActiveTab('adsets');
         }
-
-        // If we're on adsets tab but no campaign is selected, go back to overview
-        if (!selectedCampaignId && activeTab === 'adsets') {
-            setActiveTab('overview');
-        }
     }, [selectedAdSetId, selectedCampaignId, activeTab]);
 
+    // Show empty state if no campaigns
+    if (campaignData.length === 0) {
+        return <EmptyCampaignState type="campaigns" platformName={platform.name} />;
+    }
+
     return (
-        <div className="p-4">
-            <Paper p="md" radius="md" withBorder mb="md">
-                <Group justify="apart" mb="md">
-                    <div>
-                        <Title order={3}>Campaign Manager</Title>
-                        <Text size="sm" c="dimmed">Manage and optimize your marketing campaigns</Text>
-                    </div>
+        <div className="p-2">
+            {/* Header with more compact layout */}
+            <Paper p="md" radius="md" withBorder mb="xs">
+                <Group justify="apart" mb="xs">
+                    <Group>
+                        <Avatar
+                            color={getPlatformColor()}
+                            radius="xl"
+                            size="md"
+                        >
+                            {getPlatformIcon()}
+                        </Avatar>
+                        <div>
+                            <Group gap="xs">
+                                <Text fw={600} size="lg">
+                                    {platform.name.charAt(0).toUpperCase() + platform.name.slice(1)} Campaigns
+                                </Text>
+                                <Badge color={getPlatformColor()}>
+                                    {filteredCampaigns.length}
+                                </Badge>
+                            </Group>
+                        </div>
+                    </Group>
                     <Group>
                         <Menu position="bottom-end" shadow="md">
                             <Menu.Target>
-                                <Button leftSection={<IconPlus size={16} />} color="blue">
-                                    Create New
+                                <Button leftSection={<IconPlus size={16} />} color={getPlatformColor()} size='compact-md'>
+                                    Create Campaign
                                 </Button>
                             </Menu.Target>
                             <Menu.Dropdown>
                                 <Menu.Label>Campaign Type</Menu.Label>
                                 <Menu.Item
-                                    leftSection={<IconPresentationAnalytics size={16} />}
-                                    onClick={() => router.push('/campaigns/create?mode=smart')}
+                                    onClick={() => router.push(`/campaigns/create?mode=smart&platform=${platform.id}`)}
                                 >
-                                    Smart Campaign
+                                    AI-Assisted Campaign
                                 </Menu.Item>
                                 <Menu.Item
-                                    leftSection={<IconTable size={16} />}
-                                    onClick={() => router.push('/campaigns/create?mode=manual')}
+                                    onClick={() => router.push(`/campaigns/create?mode=manual&platform=${platform.id}`)}
                                 >
                                     Custom Campaign
                                 </Menu.Item>
@@ -281,7 +290,7 @@ export default function CampaignDashboard({ campaigns, userId }: CampaignDashboa
                                 onClick={handleRefresh}
                                 loading={isRefreshing}
                                 variant="light"
-                                color="blue"
+                                color={getPlatformColor()}
                                 size="lg"
                             >
                                 <IconRefresh size={18} />
@@ -290,118 +299,84 @@ export default function CampaignDashboard({ campaigns, userId }: CampaignDashboa
                     </Group>
                 </Group>
 
-                {/* Overview Cards */}
+                {/* More compact stats */}
                 <CampaignStats
                     totalCampaigns={filteredCampaigns.length}
-                    totalSpend={totalSpend}
-                    totalImpressions={totalImpressions}
-                    totalClicks={totalClicks}
-                    avgCTR={avgCTR}
+                    accountMetrics={accountMetrics}
+                    platformColor={getPlatformColor()}
                 />
             </Paper>
 
-            {/* Filters */}
-            <Paper p="md" radius="md" withBorder mb="md">
-                <Group justify="apart" mb="xs">
-                    <Text fw={500}>Filters</Text>
-                    <Tooltip label="Reset filters">
-                        <ActionIcon onClick={resetFilters} variant="light" color="gray">
-                            <IconFilterOff size={16} />
-                        </ActionIcon>
-                    </Tooltip>
+            {/* Filters - make more compact */}
+            <Paper p="xs" radius="md" withBorder mb="xs">
+                <Group gap="xs" justify="apart">
+                    <Text size="sm" fw={500}>Filters</Text>
+                    {(searchQuery || statusFilter || typeFilter) && (
+                        <Tooltip label="Clear all filters">
+                            <ActionIcon onClick={resetFilters} variant="subtle" size="sm">
+                                <IconFilterOff size={14} />
+                            </ActionIcon>
+                        </Tooltip>
+                    )}
                 </Group>
-                <Group grow>
+
+                <Group gap="xs" mt="xs">
                     <TextInput
                         placeholder="Search campaigns..."
-                        leftSection={<IconSearch size={16} />}
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    <Select
-                        placeholder="Platform"
-                        clearable
-                        value={platformFilter}
-                        onChange={setPlatformFilter}
-                        data={platforms.filter((p): p is string => !!p).map(p => ({ value: p, label: p }))}
-                        leftSection={<IconAdjustments size={16} />}
+                        onChange={(e) => setSearchQuery(e.currentTarget.value)}
+                        leftSection={<IconSearch size={14} />}
+                        style={{ flexGrow: 1 }}
+                        size="xs"
                     />
                     <Select
                         placeholder="Status"
-                        clearable
                         value={statusFilter}
                         onChange={setStatusFilter}
                         data={statuses.map(s => ({ value: s, label: s }))}
+                        clearable
+                        leftSection={<IconAdjustments size={14} />}
+                        style={{ width: 120 }}
+                        size="xs"
                     />
                     <Select
-                        placeholder="Campaign Type"
-                        clearable
+                        placeholder="Type"
                         value={typeFilter}
                         onChange={setTypeFilter}
                         data={types.map(t => ({ value: t, label: t }))}
+                        clearable
+                        style={{ width: 120 }}
+                        size="xs"
                     />
                 </Group>
             </Paper>
 
-            {/* Selected Campaign Badge */}
-            {selectedCampaign && (
-                <Box mb="md">
-                    <Group gap="xs">
-                        <Text size="sm">Selected campaign:</Text>
-                        <Badge color="blue" variant="light">
-                            {selectedCampaign.name}
-                        </Badge>
-                        {selectedCampaign.auto_optimize && (
-                            <Badge color="green" variant="light">
-                                AI Optimized
-                            </Badge>
-                        )}
-                    </Group>
-                </Box>
-            )}
+            {/* Campaign Hierarchy Tabs - now with more space for table */}
+            <Paper p="xs" radius="md" withBorder style={{ height: 'calc(100vh - 240px)', display: 'flex', flexDirection: 'column' }}>
+                <Tabs value={activeTab} onChange={setActiveTab as any}>
+                    <Tabs.List>
+                        <Tabs.Tab
+                            value="campaigns"
+                            leftSection={<IconChartBar size={14} />}
+                        >
+                            Campaigns
+                        </Tabs.Tab>
+                        <Tabs.Tab
+                            value="adsets"
+                            leftSection={<IconTable size={14} />}
+                            disabled={!selectedCampaignId}
+                        >
+                            Ad Sets
+                        </Tabs.Tab>
+                        <Tabs.Tab
+                            value="ads"
+                            disabled={!selectedAdSetId}
+                        >
+                            Ads
+                        </Tabs.Tab>
+                    </Tabs.List>
 
-            {/* Selection hierarchy badges */}
-            <Group mb="md">
-                {selectedCampaign && (
-                    <Badge color="blue" variant="light">
-                        Campaign: {selectedCampaign.name}
-                    </Badge>
-                )}
-
-                {selectedAdSetId && (
-                    <Badge color="green" variant="light">
-                        Selected Ad Set: ID {selectedAdSetId}
-                    </Badge>
-                )}
-            </Group>
-
-            {/* Tabs for different views */}
-
-            <Tabs value={activeTab} onChange={setActiveTab as any}>
-                <Tabs.List>
-                    <Tabs.Tab
-                        value="overview"
-                        leftSection={<IconChartBar size={16} />}
-                    >
-                        Campaigns
-                    </Tabs.Tab>
-                    <Tabs.Tab
-                        value="adsets"
-                        leftSection={<IconTable size={16} />}
-                        disabled={!selectedCampaignId}
-                    >
-                        Ad Sets
-                    </Tabs.Tab>
-                    <Tabs.Tab
-                        value="ads"
-                        leftSection={<IconPresentationAnalytics size={16} />}
-                        disabled={!selectedAdSetId}
-                    >
-                        Ads
-                    </Tabs.Tab>
-                </Tabs.List>
-
-                <Paper p="md" radius="md" withBorder mt="md">
-                    <Tabs.Panel value="overview">
+                    <Tabs.Panel value="campaigns" pt="xs" style={{ height: 'calc(100% - 36px)' }}>
                         {filteredCampaigns.length > 0 ? (
                             <CampaignTable
                                 campaigns={filteredCampaigns}
@@ -409,13 +384,13 @@ export default function CampaignDashboard({ campaigns, userId }: CampaignDashboa
                                 onSelectCampaign={setSelectedCampaignId}
                                 onToggleCampaign={handleToggleCampaign}
                                 onDeleteCampaign={handleDeleteCampaign}
-                                onAutoOptimize={handleToggleAuto}
+                                platformColor={getPlatformColor()}
                             />
                         ) : (
-                            <div className="p-8 text-center">
-                                <Text size="lg" c="dimmed">No campaigns match your filters</Text>
-                                {(searchQuery || platformFilter || statusFilter || typeFilter) && (
-                                    <Button variant="subtle" onClick={resetFilters} mt="md">
+                            <div className="p-4 text-center">
+                                <Text size="sm" c="dimmed">No campaigns match your filters</Text>
+                                {(searchQuery || statusFilter || typeFilter) && (
+                                    <Button variant="subtle" onClick={resetFilters} mt="md" size="xs">
                                         Clear Filters
                                     </Button>
                                 )}
@@ -423,7 +398,7 @@ export default function CampaignDashboard({ campaigns, userId }: CampaignDashboa
                         )}
                     </Tabs.Panel>
 
-                    <Tabs.Panel value="adsets">
+                    <Tabs.Panel value="adsets" pt="xs">
                         {selectedCampaignId && (
                             <AdSetTable
                                 campaignId={selectedCampaignId}
@@ -433,11 +408,15 @@ export default function CampaignDashboard({ campaigns, userId }: CampaignDashboa
                         )}
                     </Tabs.Panel>
 
-                    <Tabs.Panel value="ads">
-                        {selectedAdSetId && <AdsTable adsetId={selectedAdSetId} />}
+                    <Tabs.Panel value="ads" pt="xs">
+                        {selectedAdSetId && (
+                            <AdsTable
+                                adsetId={selectedAdSetId}
+                            />
+                        )}
                     </Tabs.Panel>
-                </Paper>
-            </Tabs>
+                </Tabs>
+            </Paper>
         </div>
     );
 }

@@ -2,92 +2,196 @@ import CampaignDashboard from "@/components/campaigns/CampaignDashboard";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
 import { getAllCampaigns } from "@/lib/api/adAccount/getAllCampaigns";
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
+import { cookies } from "next/headers";
+import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
+import { getPlatformDetails } from "@/lib/api/platforms/actions";
+import { createErrorResponse } from "@/lib/utils/error-handling";
+import { ErrorCode } from "@/lib/types/api";
+
+// Define interfaces for better type safety
+interface AggregatedMetrics {
+  spend: number;
+  impressions: number;
+  clicks: number;
+  link_clicks: number;
+  reach: number;
+  leads: number;
+  messages: number;
+  ctr: number;
+  cpc: number;
+  cpm: number;
+}
+
+interface AdAccount {
+  id: string;
+  ad_account_id: string;
+  name: string;
+  aggregated_metrics: AggregatedMetrics | null;
+}
+
+interface CampaignData {
+  campaign_id: string;
+  name: string;
+  status: string;
+  type?: string;
+  objective: string;
+  start_date: string;
+  end_date?: string;
+  spend: number;
+  leads: number;
+  messages: number;
+  reach: number;
+  clicks: number;
+  impressions: number;
+  cpm: number;
+  ctr: number;
+  cpc: number;
+}
+
+interface FormattedCampaign {
+  id: string;
+  name: string;
+  delivery: boolean;
+  type: string;
+  status: string;
+  objective: string;
+  startDate: string;
+  endDate: string;
+  attribution: string;
+  spend: number;
+  results: string;
+  reach: number;
+  clicks: number;
+  impressions: number;
+  frequency: string;
+  costPerResult: string;
+  cpm: number;
+  ctr: number;
+  cpc: number;
+  platform: string;
+  accountName: string;
+  ad_account_id: string;
+}
 
 export default async function CampaignPage() {
-  // Fetch user and ad account data
-  const loggedIn = await getLoggedInUser();
-  const userId = loggedIn?.id;
+  // Fetch user data
+  const user = await getLoggedInUser();
+  const userId = user?.id;
   const supabase = await createSupabaseClient();
 
-  const { data, error } = await supabase
+  // Get platform ID from cookies
+  const cookieStore = await cookies();
+  const selectedPlatformId = cookieStore.get('platform_integration_id')?.value;
+  console.log
+  if (!selectedPlatformId) {
+    
+    return <EmptyCampaignState type="platform" />;
+  }
+  const platformDetails = await getPlatformDetails(selectedPlatformId, userId);
+
+
+  // Get ad accounts WITH aggregated metrics for the selected platform
+  const { data: adAccounts, error: adAccountError } = await supabase
     .from("ad_accounts")
-    .select("ad_account_id, platform_integration_id, name, platform_integrations(platform_name)")
+    .select("id, ad_account_id, name, aggregated_metrics")
+    .eq("platform_integration_id", selectedPlatformId)
     .eq("user_id", userId);
 
-  // Check if the user has any ad accounts
-  if (error || !data || data.length === 0) {
-    return (
-      <div className="p-8 text-center">
-        <h2 className="text-xl font-medium mb-4">No Ad Accounts Found</h2>
-        <p className="text-gray-600 mb-6">
-          You need to connect an ad platform to view and manage campaigns.
-        </p>
-        <a href="/integration" className="text-blue-500 hover:underline">
-          Connect a platform
-        </a>
-      </div>
-    );
+  if (adAccountError || !adAccounts || adAccounts.length === 0) {
+    return <EmptyCampaignState type="adAccount" platformName={platformDetails.platform_name} />;
   }
 
-  // Get all campaigns for all ad accounts
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let allCampaigns: any = [];
+  // Type assertion for ad accounts
+  const typedAdAccounts = adAccounts as AdAccount[];
 
-  // Loop through each ad account and fetch campaigns
-  for (const adAccount of data) {
-    const campaignsData = await getAllCampaigns(
+  // Combine metrics from all ad accounts for this platform
+  const accountMetrics: AggregatedMetrics = {
+    spend: 0,
+    impressions: 0,
+    clicks: 0,
+    link_clicks: 0,
+    reach: 0,
+    leads: 0,
+    messages: 0,
+    ctr: 0,
+    cpc: 0,
+    cpm: 0
+  };
+
+  // Update the metrics summation
+  typedAdAccounts.forEach((account: AdAccount) => {
+    if (account.aggregated_metrics) {
+      accountMetrics.spend += account.aggregated_metrics.spend || 0;
+      accountMetrics.impressions += account.aggregated_metrics.impressions || 0;
+      accountMetrics.clicks += account.aggregated_metrics.clicks || 0;
+      accountMetrics.link_clicks += account.aggregated_metrics.link_clicks || 0;
+      accountMetrics.reach += account.aggregated_metrics.reach || 0;
+      accountMetrics.leads += account.aggregated_metrics.leads || 0;
+      accountMetrics.messages += account.aggregated_metrics.messages || 0;
+      accountMetrics.ctr += account.aggregated_metrics.ctr || 0;
+      accountMetrics.cpc += account.aggregated_metrics.cpc || 0;
+      accountMetrics.cpm += account.aggregated_metrics.cpm || 0;
+    }
+  });
+
+  // Get campaigns as before
+  const allCampaigns: FormattedCampaign[] = [];
+
+  for (const adAccount of typedAdAccounts) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const campaignsData: any = await getAllCampaigns(
       supabase,
-      // @ts-expect-error Ignoring platform_integrations type for now since typscript sees it as an array
-      adAccount.platform_integrations?.platform_name,
+      platformDetails.platform_name,
       adAccount.ad_account_id
     );
 
-    if (campaignsData && campaignsData.length > 0) {
+    if (campaignsData?.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const formattedCampaigns = campaignsData.map((campaign: any) => {
-        const raw = campaign.raw_data;
-        let insights = null;
-        if (raw && raw.insights && raw.insights.data && raw.insights.data.length > 0) {
-          insights = raw.insights.data[0];
-        }
+      const formattedCampaigns: FormattedCampaign[] = campaignsData.map((campaign: any) => ({
+        id: campaign.campaign_id,
+        name: campaign.name,
+        delivery: (campaign.status ?? "").toUpperCase() === "ACTIVE",
+        type: campaign.type || "Manual",
+        status: campaign.status,
+        objective: campaign.objective,
+        startDate: campaign.start_date,
+        endDate: campaign.end_date || "No End Date",
+        attribution: "7-day click or view",
+        spend: campaign.spend,
+        results: campaign.leads + campaign.messages > 0
+          ? `${campaign.leads + campaign.messages} Leads`
+          : "0 Leads",
+        reach: campaign.reach,
+        clicks: campaign.clicks,
+        impressions: campaign.impressions,
+        frequency: campaign.reach && campaign.impressions
+          ? (campaign.impressions / campaign.reach).toFixed(2)
+          : "0",
+        costPerResult: campaign.leads + campaign.messages > 0 && campaign.spend
+          ? `$${(campaign.spend / (campaign.leads + campaign.messages)).toFixed(2)}`
+          : "$0.00",
+        cpm: campaign.cpm,
+        ctr: campaign.ctr,
+        cpc: campaign.cpc,
+        platform: platformDetails.platform_name,
+        accountName: adAccount.name,
+        ad_account_id: adAccount.ad_account_id
+      }));
 
-        const reach = insights ? Number(insights.reach) : 0;
-        const impressions = insights ? Number(insights.impressions) : 0;
-        const spend = insights ? Number(insights.spend) : 0;
-
-        const conversionActions = campaign.leads + campaign.messages;
-        const costPerResult = conversionActions > 0 ? `$${(spend / conversionActions).toFixed(2)}` : "$0.00";
-
-        return {
-          id: campaign.campaign_id,
-          name: campaign.name,
-          delivery: (campaign.status ?? "").toUpperCase() === "ACTIVE",
-          type: campaign.type || "Manual",
-          status: campaign.status,
-          objective: campaign.objective,
-          startDate: campaign.start_date,
-          endDate: campaign.end_date || "No End Date",
-          attribution: "7-day click or view",
-          spend: campaign.spend,
-          results: conversionActions ? `${conversionActions} Leads` : "0 Leads",
-          reach: campaign.reach,
-          clicks: campaign.clicks,
-          impressions: campaign.impressions,
-          frequency: reach ? (impressions / reach).toFixed(2) : "0",
-          costPerResult: costPerResult,
-          cpm: campaign.cpm,
-          ctr: campaign.ctr,
-          cpc: campaign.cpc,
-          // @ts-expect-error Ignoring platform_integrations type for now since typscript doesn't recognize it for whatever reason again
-          platform: adAccount.platform_integrations?.platform_name,
-          accountName: adAccount.name,
-          auto_optimize: campaign.auto_optimize,
-          ad_account_id: adAccount.ad_account_id
-        };
-      });
-
-      allCampaigns = [...allCampaigns, ...formattedCampaigns];
+      allCampaigns.push(...formattedCampaigns);
     }
   }
-  return <CampaignDashboard campaigns={allCampaigns} userId={userId} />;
+
+  // Return dashboard with account-level metrics
+  return (
+    <CampaignDashboard
+      campaigns={allCampaigns}
+      userId={userId as string}
+      platform={{
+        id: platformDetails.id,
+        name: platformDetails.platform_name
+      }}
+      accountMetrics={accountMetrics}
+    />
+  );
 }

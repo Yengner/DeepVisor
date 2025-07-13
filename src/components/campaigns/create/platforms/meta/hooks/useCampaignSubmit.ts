@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CampaignFormValues } from '@/lib/actions/meta/types';
-import { createMetaCampaign } from '@/lib/actions/campaign.actions';
+import { createMetaCampaign } from '@/lib/actions/meta/campaign.actions';
 
 /**
  * Static test data for different campaign types

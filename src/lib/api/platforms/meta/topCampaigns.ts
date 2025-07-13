@@ -1,4 +1,4 @@
-import { fetchWithValidation } from "@/lib/utils/common/apiUtils";
+import { fetchWithValidation } from "@/lib/actions/common/apiUtils";
 import { CampaignMetric } from "../../types";
 
 interface Campaign {

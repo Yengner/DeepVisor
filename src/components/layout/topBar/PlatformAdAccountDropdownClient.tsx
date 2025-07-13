@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Select, Group, ThemeIcon, Text } from '@mantine/core';
 import { IconBrandFacebook, IconBrandGoogle, IconBrandTiktok, IconChevronDown } from '@tabler/icons-react';
 import { setCookie } from 'cookies-next';
+import { useRouter } from 'next/navigation';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface PlatformAdAccountDropdownClientProps {
@@ -18,9 +19,11 @@ export default function PlatformAdAccountDropdownClient({
   platforms,
   adAccounts
 }: PlatformAdAccountDropdownClientProps) {
-  // Initialize with null, but will update to defaults
+  // Add router for refresh
+  const router = useRouter();
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Get filtered accounts based on selected platform
   const filteredAccounts = selectedPlatform
@@ -29,59 +32,64 @@ export default function PlatformAdAccountDropdownClient({
 
   // Initialize selections on component mount
   useEffect(() => {
+    if (platforms.length === 0) return;
+
     // Function to initialize selections with defaults
     const initializeSelections = () => {
       // Try to get from localStorage first
       let platformId = localStorage.getItem('selectedPlatformId');
       let accountId = localStorage.getItem('selectedAccountId');
 
-      // If no platform in localStorage and we have platforms, use first one
+      // If no platform is selected yet, default to first platform
       if (!platformId && platforms.length > 0) {
         platformId = platforms[0].id;
-        localStorage.setItem('selectedPlatformId', platformId);
       }
 
-      // Set the platform
-      setSelectedPlatform(platformId);
-
-      // Filter accounts for this platform
-      const accountsForPlatform = platformId
-        ? adAccounts.filter(account => account.platform_integration_id === platformId)
-        : [];
-
-      // If account doesn't exist for the selected platform or not in localStorage
-      if (
-        (!accountId && accountsForPlatform.length > 0) ||
-        (accountId && !accountsForPlatform.find(acc => acc.id === accountId))
-      ) {
-        // Default to first account for this platform
-        const firstAccount = accountsForPlatform.length > 0 ? accountsForPlatform[0] : null;
-
-        if (firstAccount) {
-          accountId = firstAccount.id;
-          localStorage.setItem('selectedAccountId', accountId);
-        }
-      }
-
-      // Set the account
-      setSelectedAccount(accountId);
-
-      // Update cookies after state is set
+      // Ensure we have a valid platform (should always be true in your flow)
       if (platformId) {
+        // Save it to both localStorage and cookie
+        localStorage.setItem('selectedPlatformId', platformId);
         setCookie('platform_integration_id', platformId, { maxAge: 60 * 60 * 24 * 30 });
-      }
+        setSelectedPlatform(platformId);
 
-      if (accountId) {
-        setCookie('ad_account_id', accountId, { maxAge: 60 * 60 * 24 * 30 });
+        // Filter accounts for this platform
+        const accountsForPlatform = adAccounts.filter(
+          account => account.platform_integration_id === platformId
+        );
+
+        // Handle account selection
+        if (accountsForPlatform.length > 0) {
+          // If no account selected or current selection isn't valid, use first one
+          const accountValid = accountId && accountsForPlatform.some(acc => acc.id === accountId);
+
+          if (!accountValid) {
+            accountId = accountsForPlatform[0].id;
+          }
+
+          localStorage.setItem('selectedAccountId', accountId);
+          setCookie('ad_account_id', accountId, { maxAge: 60 * 60 * 24 * 30 });
+        } else {
+          // No accounts for this platform
+          accountId = null;
+          localStorage.removeItem('selectedAccountId');
+          setCookie('ad_account_id', '', { maxAge: 0 });
+        }
+
+        setSelectedAccount(accountId);
       }
     };
 
     initializeSelections();
+    setIsInitialLoad(false);
   }, [platforms, adAccounts]);
 
+  // Handle platform change with refresh
   const handlePlatformChange = (value: string | null) => {
     // Never allow null selection
     if (!value) return;
+
+    // Don't refresh if selection hasn't changed
+    if (value === selectedPlatform) return;
 
     setSelectedPlatform(value);
     localStorage.setItem('selectedPlatformId', value);
@@ -107,14 +115,26 @@ export default function PlatformAdAccountDropdownClient({
       localStorage.removeItem('selectedAccountId');
       setCookie('ad_account_id', '', { maxAge: 0 }); // Delete the cookie
     }
+
+    // Refresh the page to update server components
+    // Short delay to ensure cookies are set
+    setTimeout(() => {
+      router.refresh();
+    }, 100);
   };
 
+  // Handle account change with refresh
   const handleAccountChange = (value: string | null) => {
-    if (!value) return;
+    if (!value || value === selectedAccount) return;
 
     setSelectedAccount(value);
     localStorage.setItem('selectedAccountId', value);
     setCookie('ad_account_id', value, { maxAge: 60 * 60 * 24 * 30 });
+
+    // Refresh the page to update server components
+    setTimeout(() => {
+      router.refresh();
+    }, 100);
   };
 
   const getPlatformIcon = (platformName: string) => {

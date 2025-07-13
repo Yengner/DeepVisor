@@ -1,9 +1,8 @@
 'use server';
 
 import { ApiResponse, ErrorCode } from "@/lib/types/api";
-import { getMetaAccessToken } from "@/lib/utils/common/accessToken";
+import { getAccessToken } from "@/lib/actions/common/accessToken";
 import { createErrorResponse, createSuccessResponse } from "@/lib/utils/error-handling";
-import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import { makeMetaApiGetRequest } from "../helpers/apiHelpers";
 
 export type PreviewType =
@@ -28,7 +27,7 @@ export async function fetchCreativePreviews({
     previewTypes = ['DESKTOP_FEED_STANDARD', 'MOBILE_FEED_STANDARD']
 }: FetchCreativePreviewsParams): Promise<ApiResponse<Record<string, { body: string }>>> {
     try {
-        const accessTokenResult = await getMetaAccessToken(platformId);
+        const accessTokenResult = await getAccessToken(platformId);
         if (typeof accessTokenResult !== 'string') {
             console.error("Failed to get Meta access token:", accessTokenResult);
             return createErrorResponse(
