@@ -32,6 +32,7 @@ interface SelectedCreative {
     name: string;
     thumbnail_url?: string;
     type: string;
+    previewHtml?: string; 
 }
 
 /**
@@ -48,7 +49,6 @@ export default function CreativeAssetsStep({
     const [selectedCreative, setSelectedCreative] = useState<SelectedCreative | null>(null);
     const { filePreview, handleFilesChange } = useFilePreview(form.values.uploadedFiles);
 
-    // Fetch creative preview if we have a selected creative
     const {
         previews,
         loading: loadingPreview,
@@ -61,15 +61,11 @@ export default function CreativeAssetsStep({
         previewTypes: ['DESKTOP_FEED_STANDARD']
     });
 
-    console.log('Creative previews:', previews);
-    // Get the first available preview HTML
     const previewHtml = previews?.DESKTOP_FEED_STANDARD?.body ||
         (previews && Object.values(previews)[0]?.body);
 
-    // Handle creative selection from the modal
     const handleCreativeSelection = (creative: SelectedCreative | null) => {
         if (!creative) {
-            // Clear selection
             form.setFieldValue('existingCreativeIds', []);
             form.setFieldValue('selectedCreativeName', '');
             form.setFieldValue('selectedCreativeThumbnail', '');
@@ -78,7 +74,6 @@ export default function CreativeAssetsStep({
             return;
         }
 
-        // Update form with the selection details
         form.setFieldValue('existingCreativeIds', [creative.id]);
         form.setFieldValue('selectedCreativeName', creative.name);
         form.setFieldValue('selectedCreativeThumbnail', creative.thumbnail_url || '');
@@ -86,13 +81,11 @@ export default function CreativeAssetsStep({
         setSelectedCreative(creative);
     };
 
-    // Determine if custom text is needed based on the selection
     const showCustomTextFields = form.values.contentSource === 'upload' ||
         form.values.contentSource === 'auto' ||
         (form.values.contentSource === 'existing' &&
             (!form.values.existingCreativeIds || form.values.existingCreativeIds.length === 0));
 
-    // Static placeholder ads for preview
     const placeholderAd = {
         headline: "Amazing Product Launch",
         primaryText: "Discover our new collection with exclusive discounts for early buyers!",
@@ -100,7 +93,6 @@ export default function CreativeAssetsStep({
         image: "https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=500&auto=format&fit=crop",
     };
 
-    // Get display image based on content source
     const getPreviewImage = () => {
         if (form.values.contentSource === 'upload' && filePreview.length > 0) {
             return filePreview[0];
@@ -111,13 +103,10 @@ export default function CreativeAssetsStep({
         return placeholderAd.image;
     };
 
-    // Content source options now don't depend on creativeType
-    // They'll be filtered in the modal instead
     const getContentSourceOptions = () => {
         return ['upload', 'existing', 'auto'];
     };
 
-    // Handle opening the media modal when "Browse" is clicked
     const handleOpenMediaModal = () => {
         setMediaModalOpened(true);
     };
@@ -213,7 +202,7 @@ export default function CreativeAssetsStep({
                                                 <Text fw={600}>AI Content Selection</Text>
                                                 <Text size="sm" c="dimmed">
                                                     AI selects the best content for your campaign
-                                                    </Text>
+                                                </Text>
                                             </Stack>
                                         </Group>
                                     </Paper>

@@ -31,7 +31,6 @@ export function useMetaPages(
   const [hasLoaded, setHasLoaded] = useState<boolean>(false);
 
   useEffect(() => {
-    // Only fetch if shouldFetch is true and we haven't already loaded the data
     if (!shouldFetch || hasLoaded || !platformId) {
       return;
     }
@@ -47,10 +46,8 @@ export function useMetaPages(
             onSuccess: (data) => {
               setMetaPages(data);
               setHasLoaded(true);
-              // Set the first page as default if available
               setFieldValue('page_id', data.length > 0 ? data[0].page_id : '');
             },
-            // Custom error handler to capture the error message
             onError: (error: ErrorDetails) => {
               console.log("Error loading Meta pages:", error);
               setPagesError(error.userMessage);

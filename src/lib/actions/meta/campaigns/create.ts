@@ -1,5 +1,5 @@
 import { getCampaignStrategy } from "./strategies/CampaignStrategyFactory";
-import { AdAccount, Campaign, FacebookAdsApi } from "../sdk/client";
+import { AdAccount, Campaign } from "../sdk/client";
 import { logApiCallResult } from "../sdk/utils";
 
 /**

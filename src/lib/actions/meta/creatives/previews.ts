@@ -1,9 +1,6 @@
-'use server';
-
-import { ApiResponse, ErrorCode } from "@/lib/types/api";
 import { getAccessToken } from "@/lib/actions/common/accessToken";
-import { createErrorResponse, createSuccessResponse } from "@/lib/utils/error-handling";
-import { makeMetaApiGetRequest } from "../helpers/apiHelpers";
+import { AdCreative } from 'facebook-nodejs-business-sdk';
+import { FacebookAdsApi } from "../sdk/client";
 
 export type PreviewType =
     | 'RIGHT_COLUMN_STANDARD'
@@ -14,8 +11,8 @@ export type PreviewType =
 
 interface FetchCreativePreviewsParams {
     platformId: string;
-    creativeId: string;
-    previewTypes: PreviewType[];
+    creativeId: string | null;
+    previewTypes: string[];
 }
 
 /**
@@ -25,57 +22,31 @@ export async function fetchCreativePreviews({
     platformId,
     creativeId,
     previewTypes = ['DESKTOP_FEED_STANDARD', 'MOBILE_FEED_STANDARD']
-}: FetchCreativePreviewsParams): Promise<ApiResponse<Record<string, { body: string }>>> {
-    try {
-        const accessTokenResult = await getAccessToken(platformId);
-        if (typeof accessTokenResult !== 'string') {
-            console.error("Failed to get Meta access token:", accessTokenResult);
-            return createErrorResponse(
-                ErrorCode.INTEGRATION_ERROR,
-                "Failed to get Meta access token",
-                "We couldn't access your Meta account. Please reconnect your account."
-            );
-        }
-        const accessToken = accessTokenResult;
+}: FetchCreativePreviewsParams): Promise<Record<string, { body: string }>> {
+    const accessToken = await getAccessToken(platformId);
 
-        // Build URL for preview endpoint
-        const url = new URL(`https://graph.facebook.com/v23.0/${creativeId}/previews`);
-        url.searchParams.set('ad_format', 'DESKTOP_FEED_STANDARD'); // Default format
-        url.searchParams.set('access_token', accessToken);
+    FacebookAdsApi.init(accessToken);
 
-        // Fetch preview data
-        const result = await makeMetaApiGetRequest(
-            `https://graph.facebook.com/v23.0/${creativeId}/previews`,
-            {
-                ad_format: 'DESKTOP_FEED_STANDARD', // Default format for now
-                access_token: accessToken,
-            },
-            'previews'
-        )
+    const previews: Record<string, { body: string }> = {};
 
-        const data = await result;
-        const previews: Record<string, { body: string }> = {};
-        // Process preview data for requested types
-        if (Array.isArray(data.data)) {
-            // Process each preview in the array
-            data.data.forEach((preview: any, index: number) => {
-                if (preview && preview.body) {
-                    // Use the previewType as key if available, or fallback to index
-                    const key = previewTypes[index] || `preview_${index}`;
-                    previews[key] = {
-                        body: preview.body
-                    };
+    await Promise.all(
+        previewTypes.map(async (ad_format) => {
+            try {
+                const creative = new AdCreative(creativeId);
+                const res = await creative.getPreviews([], { ad_format });
+                if (Array.isArray(res) && res[0]?.body) {
+                    previews[ad_format] = { body: res[0].body };
                 }
-            });
-        }
-        console.log('Processed Meta creative previews:', previews);
-        return createSuccessResponse(previews);
-    } catch (err: any) {
-        console.error('Meta creative previews error:', err);
-        return createErrorResponse(
-            ErrorCode.UNKNOWN_ERROR,
-            err instanceof Error ? err.message : 'Server error processing request',
-            "We couldn't load the preview for this creative due to an unexpected error."
-        );
+            } catch (err) {
+                console.error(`Error fetching preview for ${ad_format}:`, err);
+                throw new Error(`Failed to fetch preview for ${ad_format}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            }
+        })
+    );
+
+    if (Object.keys(previews).length === 0) {
+        throw new Error('No previews could be generated for this creative.');
     }
+
+    return previews;
 }

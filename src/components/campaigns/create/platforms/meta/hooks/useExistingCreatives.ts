@@ -1,31 +1,22 @@
-import { fetchExistingCreatives, MetaCreative } from '@/lib/actions/meta/creatives/actions';
-import { useState, useEffect, useCallback } from 'react'; // Add useCallback
+import { MetaCreative } from '@/lib/actions/meta/creatives/actions';
+import { useState, useEffect, useCallback } from 'react';
 import { ErrorDetails } from '@/lib/types/api';
 import { handleApiPromise } from '@/lib/utils/toasts/toast-handlers';
 
-// Preview types supported by Meta
-
-
-// Options for the hook
 export interface UseExistingCreativesOptions {
-  // Required parameters
   platformId: string;
   adAccountId: string;
-
-  // Control parameters
   enabled?: boolean;
   limit?: number;
   thumbnailWidth?: number;
   thumbnailHeight?: number;
 }
 
-/**
- * Return type for useExistingCreatives hook
- */
 export interface UseExistingCreativesReturn {
   creatives: MetaCreative[];
   loading: boolean;
   error: string | null;
+  hasLoaded: boolean;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
   goToNextPage: () => void;
@@ -33,14 +24,11 @@ export interface UseExistingCreativesReturn {
   reset: () => void;
 }
 
-/**
- * Hook for fetching existing Meta ad creatives
- */
 export function useExistingCreatives({
   platformId,
   adAccountId,
   enabled = true,
-  limit = 25, // Set default to 25
+  limit = 10,
   thumbnailWidth = 300,
   thumbnailHeight = 225
 }: UseExistingCreativesOptions): UseExistingCreativesReturn {
@@ -49,82 +37,88 @@ export function useExistingCreatives({
   const [error, setError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState<boolean>(false);
 
-  // Cursor state
+  // Pagination state
   const [afterCursor, setAfterCursor] = useState<string | null>(null);
   const [beforeCursor, setBeforeCursor] = useState<string | null>(null);
   const [hasNextPage, setHasNextPage] = useState<boolean>(false);
   const [hasPreviousPage, setHasPreviousPage] = useState<boolean>(false);
 
-  // Track current request cursors
-  const [currentAfter, setCurrentAfter] = useState<string | null>(null);
-  const [currentBefore, setCurrentBefore] = useState<string | null>(null);
+  // Internal: track last loaded params to avoid unnecessary fetches
+  const [lastParams, setLastParams] = useState<{ after: string | null; before: string | null } | null>(null);
 
   // Function to load creatives using cursor
-  const loadCreatives = useCallback(async (after: string | null = null, before: string | null = null) => {
+  const loadCreatives = useCallback(async (after: string | null = null, before: string | null = null, force = false) => {
+    // Avoid refetching if already loaded and not forced
+    if (hasLoaded && !force && lastParams && lastParams.after === after && lastParams.before === before) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
-    setCurrentAfter(after);
-    setCurrentBefore(before);
+    setLastParams({ after, before });
 
     try {
-      await handleApiPromise(
-        fetchExistingCreatives({
-          platformId,
-          adAccountId,
-          limit, // Add the limit parameter here
-          after,
-          before,
-          thumbnailWidth,
-          thumbnailHeight
-        }),
-        {
-          onSuccess: (data) => {
-            setCreatives(data.creatives);
-            setAfterCursor(data.cursors.after);
-            setBeforeCursor(data.cursors.before);
-            setHasNextPage(data.hasNextPage);
-            setHasPreviousPage(data.hasPreviousPage);
-          },
-          onError: (error: ErrorDetails) => {
-            console.log("Error loading creatives:", error);
-            setError(error.userMessage);
-          },
-          showSuccessToast: false
-        }
-      );
+      const params = new URLSearchParams({
+        platformId,
+        adAccountId,
+        limit: String(limit),
+        ...(after ? { after } : {}),
+        ...(before ? { before } : {}),
+        ...(thumbnailWidth ? { thumbnailWidth: String(thumbnailWidth) } : {}),
+        ...(thumbnailHeight ? { thumbnailHeight: String(thumbnailHeight) } : {}),
+      });
+
+      const res = await fetch(`/api/meta/creatives?${params.toString()}`);
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        setError(data.error?.userMessage || data.error || "Failed to load creatives");
+        return;
+      }
+
+      setCreatives(data.creatives);
+      setAfterCursor(data.cursors?.after || null);
+      setBeforeCursor(data.cursors?.before || null);
+      setHasNextPage(!!data.hasNextPage);
+      setHasPreviousPage(!!data.hasPreviousPage);
+      setHasLoaded(true);
     } catch (err) {
-      console.error("Unexpected error loading creatives:", err);
       setError("An unexpected error occurred while loading creatives.");
     } finally {
       setLoading(false);
     }
-  }, [platformId, adAccountId, limit, thumbnailWidth, thumbnailHeight]); // Include all dependencies
+  }, [platformId, adAccountId, limit, thumbnailWidth, thumbnailHeight]);
 
-  // Wrap reset with useCallback to prevent recreation on every render
+  // Reset function to clear state and force reload
   const reset = useCallback(() => {
-    loadCreatives(null, null);
+    setHasLoaded(false);
+    setLastParams(null);
+    setAfterCursor(null);
+    setBeforeCursor(null);
+    setHasNextPage(false);
+    setHasPreviousPage(false);
+    setCreatives([]);
+    loadCreatives(null, null, true);
   }, [loadCreatives]);
 
+  // Initial load or when dependencies change
   useEffect(() => {
-    // Only fetch if enabled and we have an adAccountId
-    if (!enabled || !adAccountId || !platformId) {
-      return;
-    }
-    // Reset pagination when dependencies change
-    loadCreatives(null, null);
-  }, [platformId, adAccountId, enabled, loadCreatives]);
+    if (!enabled || !adAccountId || !platformId) return;
+    reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [platformId, adAccountId, enabled, limit, thumbnailWidth, thumbnailHeight]);
 
-  // Navigation functions - also wrap these with useCallback
+  // Navigation functions
   const goToNextPage = useCallback(() => {
     if (hasNextPage && afterCursor) {
-      loadCreatives(afterCursor, null);
+      loadCreatives(afterCursor, null, true);
     }
   }, [hasNextPage, afterCursor, loadCreatives]);
 
   const goToPreviousPage = useCallback(() => {
     if (hasPreviousPage && beforeCursor) {
-      loadCreatives(null, beforeCursor);
+      loadCreatives(null, beforeCursor, true);
     }
   }, [hasPreviousPage, beforeCursor, loadCreatives]);
 
@@ -132,6 +126,7 @@ export function useExistingCreatives({
     creatives,
     loading,
     error,
+    hasLoaded,
     hasNextPage,
     hasPreviousPage,
     goToNextPage,

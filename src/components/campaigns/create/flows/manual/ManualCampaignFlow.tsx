@@ -15,7 +15,7 @@ interface CustomCampaignFlowProps {
 
 /**
  * 
- * @param { platformData, adAccountId } - The platform data and ad account ID. 
+ * @param { platformData, adAccountId }
  */
 
 export default function ManualCampaignFlow({ platformData, adAccountId }: CustomCampaignFlowProps) {

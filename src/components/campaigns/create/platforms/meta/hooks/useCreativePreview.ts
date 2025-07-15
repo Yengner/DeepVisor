@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
-import { fetchCreativePreviews, PreviewType } from '@/lib/actions/meta/creatives/previews';
-import { handleApiPromise } from '@/lib/utils/toasts/toast-handlers';
-import { ErrorDetails } from '@/lib/types/api';
 
 interface UseCreativePreviewOptions {
     platformId: string;
-    creativeId: string;
-    previewTypes?: PreviewType[];
+    creativeId: string | null;
+    previewTypes?: string[];
     enabled?: boolean;
 }
 
@@ -32,37 +29,31 @@ export function useCreativePreview({
     const [hasLoaded, setHasLoaded] = useState<boolean>(false);
 
     useEffect(() => {
-        // Only fetch if enabled and we have a creativeId
         if (!enabled || !creativeId || !platformId) {
             return;
         }
 
-        async function loadPreview(): Promise<void> {
+        async function loadPreview() {
             setLoading(true);
             setError(null);
+            setHasLoaded(false);
 
             try {
-                await handleApiPromise(
-                    fetchCreativePreviews({
-                        platformId,
-                        creativeId,
-                        previewTypes
-                    }),
-                    {
-                        onSuccess: (data) => {
-                            setPreviews(data);
-                            setHasLoaded(true);
-                        },
-                        onError: (error: ErrorDetails) => {
-                            console.log("Error loading creative preview:", error);
-                            setError(error.userMessage);
-                        },
-                        showSuccessToast: false
-                    }
-                );
-            } catch (err) {
-                console.error("Unexpected error loading preview:", err);
-                setError("An unexpected error occurred while loading the creative preview.");
+                const params = new URLSearchParams({
+                    platformId,
+                    creativeId: creativeId || '', 
+                    previewTypes: previewTypes.join(',')
+                });
+                const res = await fetch(`/api/meta/previews?${params.toString()}`);
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed to fetch preview');
+                }
+                const data = await res.json();
+                setPreviews(data.previews || {});
+                setHasLoaded(true);
+            } catch (err: any) {
+                setError(err.message || 'An unexpected error occurred while loading the creative preview.');
             } finally {
                 setLoading(false);
             }
