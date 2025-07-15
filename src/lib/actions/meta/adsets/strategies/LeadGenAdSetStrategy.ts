@@ -1,5 +1,6 @@
 import { AdSetStrategy } from "./AdSetStrategy";
 import { CampaignFormValues } from "../../types";
+import { AdSet } from "../../sdk/client"; // Import the SDK AdSet class
 
 /**
  * Strategy for Lead Generation ad sets
@@ -11,27 +12,23 @@ export class LeadGenAdSetStrategy implements AdSetStrategy {
         formData: CampaignFormValues,
         isSmartCampaign: boolean
     ): any {
-        // Start with base parameters
-        const params = { ...baseParams };
+        const params: Record<string, any> = { ...baseParams };
 
-        // Lead gen specific parameters
-        params.billing_event = "IMPRESSIONS";
-        params.optimization_goal = "LEAD_GENERATION";
-        params.destination_type = "ON_AD";  // Required for lead forms
+        params[AdSet.Fields.billing_event] = "IMPRESSIONS";
+        params[AdSet.Fields.optimization_goal] = "LEAD_GENERATION";
+        params[AdSet.Fields.destination_type] = "ON_AD";
 
-        // Promoted object must include page_id for lead gen ads
-        params.promoted_object = {
+
+        params[AdSet.Fields.promoted_object] = {
             page_id: formData.page_id
         };
 
-        // Build targeting
-        params.targeting = this.buildTargeting(formData, isSmartCampaign);
+        params[AdSet.Fields.targeting] = this.buildTargeting(formData, isSmartCampaign);
 
         return params;
     }
 
     private buildTargeting(formData: CampaignFormValues, isSmartCampaign: boolean): any {
-        // Build geo locations targeting
         let geoLocations: any = {
             location_types: ["home", "recent"]
         };
@@ -45,28 +42,19 @@ export class LeadGenAdSetStrategy implements AdSetStrategy {
             }];
         }
 
-        // Build base targeting parameters
         const targeting = {
             age_max: formData.ageMax || 65,
             age_min: formData.ageMin || 18,
             geo_locations: geoLocations
         };
 
-        // Smart campaign optimization
-        if (isSmartCampaign) {
+        if (isSmartCampaign || formData.useAdvantageAudience) {
             return {
                 ...targeting,
                 targeting_automation: {
                     advantage_audience: 1
                 }
             };
-        } else if (formData.useAdvantageAudience) {
-            return {
-                ...targeting,
-                targeting_automation: {
-                    advantage_audience: 1
-                }
-            }
         }
 
         return targeting;

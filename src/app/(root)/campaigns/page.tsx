@@ -5,8 +5,6 @@ import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { getPlatformDetails } from "@/lib/api/platforms/actions";
-import { createErrorResponse } from "@/lib/utils/error-handling";
-import { ErrorCode } from "@/lib/types/api";
 
 // Define interfaces for better type safety
 interface AggregatedMetrics {
@@ -82,9 +80,9 @@ export default async function CampaignPage() {
   // Get platform ID from cookies
   const cookieStore = await cookies();
   const selectedPlatformId = cookieStore.get('platform_integration_id')?.value;
-  console.log
+
   if (!selectedPlatformId) {
-    
+
     return <EmptyCampaignState type="platform" />;
   }
   const platformDetails = await getPlatformDetails(selectedPlatformId, userId);

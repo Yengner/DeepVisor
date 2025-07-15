@@ -1,92 +1,6 @@
 import { useState } from 'react';
 import { CampaignFormValues } from '@/lib/actions/meta/types';
-import { createMetaCampaign } from '@/lib/actions/meta/campaign.actions';
 
-/**
- * Static test data for different campaign types
- */
-export const CAMPAIGN_TEST_DATA = {
-  LEAD_GEN: {
-    // Campaign basics
-    campaignName: "Test Lead Generation Manual 2",
-    page_id: "352168868872363", // Replace with a valid page ID
-    objective: "OUTCOME_LEADS",
-    type: "", // For smart campaign optimizations
-    buying_type: "AUCTION",
-    special_ad_categories: ["NONE"],
-
-    // Budget and schedule
-    budget: 25,
-    budgetType: "daily",
-    startDate: new Date(),
-    endDate: "2025-12-31T23:59:59Z",
-    bidStrategy: "LOWEST_COST_WITHOUT_CAP",
-
-    // Ad Set level parameters
-    billingEvent: "IMPRESSIONS",
-    destinationType: "ON_AD",
-    // Location and audience targeting
-    location: {
-      markerPosition: { lat: 37.7749, lng: -122.4194 }, // San Francisco
-      radius: 10
-    },
-    ageMin: 25,
-    ageMax: 65,
-
-    // Creative content
-    contentSource: "upload" as const,
-    imageHash: "b01f66bb94e8ac207b4c407d4b2197aa", // Example image hash
-    adHeadline: "Sign Up for Our Newsletter",
-    adPrimaryText: "Get weekly updates on industry trends and insights.",
-    adDescription: "Join thousands of professionals staying up to date.",
-    adCallToAction: "SIGN_UP",
-
-    // Creative ID for existing creative (for dev mode)
-    creativeIdTesting: "120210349272830199", // Replace with a valid creative ID
-
-    // Lead generation specific
-    adDestinationForm: "987654321", // Replace with a valid form ID
-
-    // Platform details
-    platform: "meta"
-  },
-
-  TRAFFIC: {
-    // Campaign basics
-    campaignName: "Test Traffic Campaign",
-    page_id: "123456789012345", // Replace with a valid page ID
-    objective: "OUTCOME_TRAFFIC",
-    buying_type: "AUCTION",
-
-    // Budget and schedule
-    budget: 15,
-    budgetType: "daily",
-    startDate: new Date(),
-    endDate: null,
-
-    // Ad Set level parameters
-    billingEvent: "LINK_CLICKS",
-    destinationType: "WEBSITE",
-
-    // Location and audience targeting
-    location: {
-      markerPosition: { lat: 40.7128, lng: -74.0060 }, // NYC
-      radius: 25
-    },
-    ageMin: 18,
-    ageMax: 65,
-
-    // Creative content
-    adHeadline: "Visit Our Website Today",
-    adPrimaryText: "Discover our latest products and special offers.",
-    adDescription: "Limited time promotion for new customers.",
-    adCallToAction: "LEARN_MORE",
-    adDestinationUrl: "https://example.com/landing",
-
-    // Platform details
-    platform: "meta"
-  }
-};
 
 /**
  * Response from campaign submission API
@@ -117,12 +31,7 @@ interface UseCampaignSubmitReturn {
   resetSubmission: () => void;
   /** Campaign ID if submission was successful */
   campaignId: string | null;
-  /** Submit a test campaign using static data */
-  submitTestCampaign: (testCampaignType: keyof typeof CAMPAIGN_TEST_DATA) => Promise<CampaignSubmitResponse>;
-  /** Currently selected test campaign type */
-  testCampaignType: keyof typeof CAMPAIGN_TEST_DATA | null;
-  /** Set the test campaign type */
-  setTestCampaignType: (type: keyof typeof CAMPAIGN_TEST_DATA) => void;
+
 }
 
 /**
@@ -137,7 +46,6 @@ export function useCampaignSubmit(): UseCampaignSubmitReturn {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
   const [campaignId, setCampaignId] = useState<string | null>(null);
-  const [testCampaignType, setTestCampaignType] = useState<keyof typeof CAMPAIGN_TEST_DATA | null>("LEAD_GEN");
 
   /**
    * Submit campaign data to API
@@ -151,7 +59,7 @@ export function useCampaignSubmit(): UseCampaignSubmitReturn {
     setSubmitSuccess(false);
     setCampaignId(null);
 
-    if (!form && !testCampaignType) {
+    if (!form) {
       const errorMessage = "No form data provided and no test campaign type selected";
       setSubmitError(errorMessage);
       setIsSubmitting(false);
@@ -165,17 +73,23 @@ export function useCampaignSubmit(): UseCampaignSubmitReturn {
     const formData = form;
 
     try {
-      // Call server action to create campaign
-      const result = await createMetaCampaign(formData);
+      const res = await fetch('/api/meta/create-campaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await res.json();
 
       if (!result.success) {
-        const errorMessage = 'Failed to create campaign';
+        const errorMessage = result.error || 'Failed to create campaign';
         setSubmitError(errorMessage);
         return {
           success: false,
           error: errorMessage
         };
       }
+
 
       // Success
       setSubmitSuccess(true);
@@ -207,10 +121,6 @@ export function useCampaignSubmit(): UseCampaignSubmitReturn {
    * @param testType - Type of test campaign to submit
    * @returns Response from API with success status and campaign ID
    */
-  const submitTestCampaign = async (testType: keyof typeof CAMPAIGN_TEST_DATA): Promise<CampaignSubmitResponse> => {
-    setTestCampaignType(testType);
-    return submitCampaign(CAMPAIGN_TEST_DATA[testType]);
-  };
 
   /**
    * Reset submission state
@@ -229,8 +139,6 @@ export function useCampaignSubmit(): UseCampaignSubmitReturn {
     submitSuccess,
     resetSubmission,
     campaignId,
-    submitTestCampaign,
-    testCampaignType,
-    setTestCampaignType
+
   };
 }

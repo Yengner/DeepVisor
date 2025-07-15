@@ -42,8 +42,9 @@ interface MetaCampaignBuilderProps {
  */
 
 export default function ManualMetaCampaignBuilder({ platformData, adAccountId, onBack }: MetaCampaignBuilderProps) {
-    // Custom hooks
-    const form = useMetaCampaignForm();
+    
+    const form = useMetaCampaignForm(platformData.id, adAccountId, false);
+    
     const { handleObjectiveChange, handleDestinationChange } = useObjectiveMapping(form);
     const { active, setActive, nextStep, prevStep } = useCampaignSteps(form, 5);
     const { metaPages, loadingPages, pagesError } = useMetaPages((fieldName: string, value: any) => form.setFieldValue(fieldName, value),

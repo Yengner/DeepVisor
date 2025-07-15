@@ -150,7 +150,7 @@ export async function getLoggedInUser() {
         console.warn('User onboarding not completed. Redirecting to /onboarding.');
         redirect('/onboarding');
     }
-    
+
     return user;
 }
 

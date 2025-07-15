@@ -1,18 +1,20 @@
-import { MetaCampaignParams } from "../types";
-import { removeEmptyFields } from "../helpers/apiHelpers";
 import { getCampaignStrategy } from "./strategies/CampaignStrategyFactory";
+import { AdAccount, Campaign, FacebookAdsApi } from "../sdk/client";
+import { logApiCallResult } from "../sdk/utils";
 
 /**
- * Creates a campaign in the Meta Ads platform
+ * Creates a campaign in the Meta Ads platform using the SDK
  * 
  * @param params - Campaign creation parameters
  * @returns Campaign ID from Meta API
  */
-export async function createCampaign(params: MetaCampaignParams): Promise<string> {
-    const { adAccountId, accessToken, formData, isSmartCampaign } = params;
+export async function createCampaign(params: any): Promise<string> {
+    const { adAccountId, formData, isSmartCampaign } = params;
 
     try {
-        // Create base campaign parameters
+
+
+
         const baseParams = {
             name: `${formData.campaignName}${isSmartCampaign ? ' Smart Campaign' : ''}`,
             status: "PAUSED", // Paused For Testing
@@ -21,37 +23,23 @@ export async function createCampaign(params: MetaCampaignParams): Promise<string
         // Get the appropriate strategy based on campaign objective
         const strategy = getCampaignStrategy(formData.objective);
 
-        // Apply the strategy to get objective-specific parameters
         const campaignParams = strategy.buildCampaignParams(
             baseParams,
             formData,
             isSmartCampaign
         );
 
-        // Add access token
-        campaignParams.access_token = accessToken;
+        const account = new AdAccount(adAccountId);
+        const campaign = await account.createCampaign(
+            [Campaign.Fields.id, Campaign.Fields.name],
+            campaignParams
+        );
 
-        // Make the API request
-        const url = `https://graph.facebook.com/v23.0/${adAccountId}/campaigns`;
-        const campaignRes = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(removeEmptyFields(campaignParams))
-        });
+        logApiCallResult("createCampaign", campaign);
 
-        // Handle response
-        if (!campaignRes.ok) {
-            const text = await campaignRes.text();
-            console.error("❌ Facebook API Error (Campaign):", text);
-            throw new Error("Failed to create campaign. Check logs for full response.");
-        }
-
-        const campaignData = await campaignRes.json();
-        console.log("✅ Campaign created:", campaignData);
-
-        return campaignData.id;
+        return campaign.id;
     } catch (err) {
-        console.error("Error in Campaign creation:", err);
+        logApiCallResult("createCampaign ERROR", err, true);
         throw err;
     }
 }

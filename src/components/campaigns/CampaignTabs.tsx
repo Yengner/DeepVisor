@@ -190,7 +190,6 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
             onSelectCampaign={handleSelectCampaign}
             onToggleCampaign={handleToggleCampaign}
             onDeleteCampaign={handleDeleteCampaign}
-            onAutoOptimize={handleToggleAuto}
           />
         </div>
       )}

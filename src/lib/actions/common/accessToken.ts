@@ -1,16 +1,12 @@
-import { getLoggedInUser } from "@/lib/actions/user.actions";
+import { getLoggedInUser } from ".././user.actions";
 import { createSupabaseClient } from "../../utils/supabase/clients/server";
-import { createErrorResponse, createSuccessResponse } from "../../utils/error-handling";
-import { ApiResponse, ErrorCode } from "@/lib/types/api";
 
-export async function getAccessToken(platformId: string): Promise< string | ApiResponse<string>> {
+export async function getAccessToken(platformId: string): Promise<string> {
     try {
         const supabase = await createSupabaseClient();
-
         const loggedInUser = await getLoggedInUser();
         const userId = loggedInUser?.id;
 
-        // Get access token
         const { data: integration, error: integrationError } = await supabase
             .from("platform_integrations")
             .select("access_token")
@@ -20,25 +16,16 @@ export async function getAccessToken(platformId: string): Promise< string | ApiR
             .single();
 
         if (integrationError || !integration?.access_token) {
-            return createErrorResponse(
-                ErrorCode.DATABASE_ERROR,
-                "Failed to get Meta Access Token",
+            throw new Error(
                 "We couldn't access your Meta account. Please reconnect your account."
-            )
+            );
         }
-        
-        const accessToken = integration.access_token;
 
-        return accessToken;
-
-
+        return integration.access_token;
     } catch (err) {
         console.error("Error getting Meta access token:", err);
-        return createErrorResponse(
-            ErrorCode.UNKNOWN_ERROR,
-            "Failed to get Meta Access Token",
+        throw new Error(
             "An unexpected error occurred while retrieving your Meta access token."
         );
     }
-
 }

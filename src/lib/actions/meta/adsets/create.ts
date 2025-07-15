@@ -1,15 +1,16 @@
-
-import { MetaAdSetParams } from "../types";
+import { AdSet, AdAccount } from "../sdk/client";
 import { getAdSetStrategy } from "./strategies/AdSetStrategyFactory";
+import { MetaAdSetParams } from "../types";
+import { logApiCallResult } from "../sdk/utils";
 
 
 /**
- * Creates an ad set in Meta Ads platform
+ * Creates an ad set in Meta Ads platform using the SDK
  * @param params - Parameters for ad set creation
  * @returns Ad Set ID from Meta API
  */
 export async function createAdSet(params: MetaAdSetParams): Promise<string> {
-    const { adAccountId, accessToken, campaignId, formData, isSmartCampaign } = params;
+    const { adAccountId, campaignId, formData, isSmartCampaign } = params;
 
     try {
         // Create base ad set parameters
@@ -32,30 +33,18 @@ export async function createAdSet(params: MetaAdSetParams): Promise<string> {
             isSmartCampaign
         );
 
-        // Add access token
-        adSetParams.access_token = accessToken;
+        // Use the SDK to create the ad set
+        const account = new AdAccount(adAccountId);
+        const adset = await account.createAdSet(
+            [AdSet.Fields.id, AdSet.Fields.name],
+            adSetParams
+        );
 
-        // Send request to Meta API
-        const url = `https://graph.facebook.com/v21.0/${adAccountId}/adsets`;
-        const adSetRes = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(adSetParams)
-        });
+        logApiCallResult("createAdSet", adset);
 
-        // Handle response
-        if (!adSetRes.ok) {
-            const text = await adSetRes.text();
-            console.error("❌ Facebook API Error (Ad Set):", text);
-            throw new Error("Failed to create ad set. Check logs for full response.");
-        }
-
-        const adsetData = await adSetRes.json();
-        console.log(`✅ Ad Set created:`, adsetData);
-
-        return adsetData.id;
+        return adset.id;
     } catch (err) {
-        console.error("Error in Ad Set creation:", err);
+        logApiCallResult("createAdSet ERROR", err, true);
         throw err;
     }
 }

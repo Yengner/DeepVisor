@@ -8,14 +8,15 @@ import { CAMPAIGN_OBJECTIVES, DESTINATION_TYPES, OPTIMIZATION_GOALS } from '../u
  * @param isSmartCampaign - Whether the form is for a Smart Campaign (simplified)
  * @returns Form object with values, validation, and methods
  */
-export function useMetaCampaignForm(isSmartCampaign = false) {
+export function useMetaCampaignForm(platformId: string, adAccountId: string, isSmartCampaign = false) {
   return useForm<CampaignFormValues>({
     initialValues: {
 
       // For internal use - platform details
       type: isSmartCampaign ? 'AI Auto' : 'Manual',
       platform: 'meta',
-      adAccountId: '',
+      adAccountId: adAccountId,
+      platformIntegrationId: platformId,
 
       // Campaign basics --- 
       campaignName: '',

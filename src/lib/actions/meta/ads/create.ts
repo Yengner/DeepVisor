@@ -1,49 +1,35 @@
 import { MetaAdParams } from "../types";
+import { AdAccount, Ad } from "../sdk/client";
+import { logApiCallResult } from "../sdk/utils";
 
 /**
- * Creates a single ad in the Meta Ads platform
+ * Creates a single ad in the Meta Ads platform using the SDK
  * 
  * @param params - Parameters for ad creation
  * @returns Ad ID from Meta API
  */
 export async function createAd(params: MetaAdParams): Promise<string> {
-  const { adAccountId, accessToken, adsetId, creativeId, formData } = params;
+  const { adAccountId, adsetId, creativeId, formData } = params;
 
   try {
-    const url = `https://graph.facebook.com/v23.0/${adAccountId}/ads`;
-
-    // Simplified ad parameters focusing on the basics
-    const adParams = {
-      name: `${formData.campaignName} - Ad`,
-      adset_id: adsetId,
-      creative: {
-        creative_id: creativeId
-      },
-      status: "PAUSED", // Always paused for safety
-      access_token: accessToken
+    const adParams: Record<string, any> = {
+      [Ad.Fields.name]: `${formData.campaignName} - Ad`,
+      [Ad.Fields.adset_id]: adsetId,
+      [Ad.Fields.creative]: { creative_id: creativeId },
+      [Ad.Fields.status]: "PAUSED", // Paused for testing
     };
 
-    // Make the API request
-    const adsRes = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(adParams)
-    });
+    const account = new AdAccount(adAccountId);
+    const ad = await account.createAd(
+      [Ad.Fields.id, Ad.Fields.name],
+      adParams
+    );
 
-    // Handle errors
-    if (!adsRes.ok) {
-      const text = await adsRes.text();
-      console.error("❌ Facebook API Error (Ad):", text);
-      throw new Error("Failed to create ad. Check logs for full response.");
-    }
+    logApiCallResult("createAd", ad);
 
-    // Process successful response
-    const adData = await adsRes.json();
-    console.log(`✅ Ad created:`, adData);
-
-    return adData.id;
+    return ad.id;
   } catch (err) {
-    console.error("Error in Ad creation:", err);
+    logApiCallResult("createAd ERROR", err, true);
     throw err;
   }
 }

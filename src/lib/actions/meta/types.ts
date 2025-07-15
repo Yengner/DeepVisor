@@ -83,7 +83,9 @@ export interface CampaignFormValues {
     /** Platform for the campaign (e.g., 'meta', 'google') */
     platform?: string;
     /** ID of the Ad Account to use */
-    adAccountId?: string;
+    adAccountId: string;
+    /** ID of the platform integration (e.g., Meta integration ID) */
+    platformIntegrationId: string;
 
     // Campaign basics
     /** User-defined name for the campaign */
