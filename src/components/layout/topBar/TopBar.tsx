@@ -1,6 +1,7 @@
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import TopBarClient from './TopBarClient';
 import { getLoggedInUser } from "@/lib/actions/user.actions";
+import { cookies } from "next/headers";
 
 export default async function Topbar() {
   const user = await getLoggedInUser();
@@ -8,7 +9,6 @@ export default async function Topbar() {
   const supabase = await createSupabaseClient();
   const userId = user?.id;
 
-  // Fetch platform integrations
   const { data: platforms, error: platformError } = await supabase
     .from("platform_integrations")
     .select("id, platform_name")
@@ -18,7 +18,6 @@ export default async function Topbar() {
     console.error("Error fetching platforms:", platformError.message);
   }
 
-  // Fetch ad accounts
   const { data: adAccounts, error: adAccountError } = await supabase
     .from("ad_accounts")
     .select("id, name, platform_integration_id, ad_account_id")
@@ -28,7 +27,6 @@ export default async function Topbar() {
     console.error("Error fetching ad accounts:", adAccountError.message);
   }
 
-  // Fetch user notifications
   const { data: notifications, error: notificationsError } = await supabase
     .from("notifications")
     .select("*")
@@ -40,13 +38,37 @@ export default async function Topbar() {
     console.error("Error fetching notifications:", notificationsError.message);
   }
 
+  const cookieStore = await cookies();
+  const platformCookie = cookieStore.get('platform_integration_id')?.value;
+  const accountCookie = cookieStore.get('ad_account_id')?.value;
+
+  const safePlatforms = platforms ?? [];
+  const safeAdAccounts = adAccounts ?? [];
+  const safeNotifications = notifications ?? [];
+
+  const selectedPlatformId =
+    safePlatforms.find(p => p.id === platformCookie)?.id
+    ?? safePlatforms[0]?.id
+    ?? null;
+
+  const accountsForPlatform = safeAdAccounts.filter(
+    acct => acct.platform_integration_id === selectedPlatformId
+  );
+
+  const selectedAccountId =
+    accountsForPlatform.find(a => a.id === accountCookie)?.id
+    ?? accountsForPlatform[0]?.id
+    ?? null;
+
   return (
     <div className="w-full h-full">
       <TopBarClient
         userInfo={user}
-        platforms={platforms || []}
-        adAccounts={adAccounts || []}
-        notifications={notifications || []}
+        platforms={safePlatforms}
+        adAccounts={safeAdAccounts}
+        notifications={safeNotifications}
+        initialPlatformId={selectedPlatformId}
+        initialAccountId={selectedAccountId}
       />
     </div>
   );

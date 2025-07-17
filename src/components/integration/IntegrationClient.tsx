@@ -45,6 +45,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/utils/supabase/clients/browser';
 import toast from 'react-hot-toast';
+import { getPlatformIcon } from '@/utils/utils';
 
 type Platform = {
     id: string;
@@ -62,27 +63,6 @@ type PlatformListProps = {
     userId: string;
 };
 
-// Helper function to get platform icon
-const getPlatformIcon = (platformId: string) => {
-    switch (platformId.toLowerCase()) {
-        case 'meta':
-        case 'facebook':
-            return <IconBrandFacebook size={24} stroke={1.5} />;
-        case 'google':
-            return <IconBrandGoogle size={24} stroke={1.5} />;
-        case 'tiktok':
-            return <IconBrandTiktok size={24} stroke={1.5} />;
-        case 'snapchat':
-            return <IconBrandSnapchat size={24} stroke={1.5} />;
-        case 'linkedin':
-            return <IconBrandLinkedin size={24} stroke={1.5} />;
-        case 'twitter':
-        case 'x':
-            return <IconBrandTwitter size={24} stroke={1.5} />;
-        default:
-            return <IconChartBar size={24} stroke={1.5} />;
-    }
-};
 
 const PlatformList: React.FC<PlatformListProps> = ({ platforms, userId }) => {
     const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
@@ -440,7 +420,7 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms, userId }) => {
                             <Group justify="apart">
                                 <Group>
                                     <ThemeIcon size="lg" radius="md" color="blue" variant="light">
-                                        {getPlatformIcon(platform.id)}
+                                        {getPlatformIcon(platform.id, 24, 1.5)}
                                     </ThemeIcon>
                                     <Text fw={500}>{platform.platform_name}</Text>
                                 </Group>
@@ -506,7 +486,7 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms, userId }) => {
                         {selectedPlatform && (
                             <>
                                 <ThemeIcon size="md" radius="md" color="blue" variant="light">
-                                    {getPlatformIcon(selectedPlatform.id)}
+                                    {getPlatformIcon(selectedPlatform.id, 24, 1.5)}
                                 </ThemeIcon>
                                 <Text fw={700}>{selectedPlatform?.platform_name} Integration</Text>
                             </>

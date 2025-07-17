@@ -16,6 +16,7 @@ import AdSetTable from './AdSetTable';
 import AdsTable from './AdsTable';
 import CampaignStats from './CampaignStats';
 import { EmptyCampaignState } from './EmptyStates';
+import { getPlatformIcon } from '@/utils/utils';
 
 interface Campaign {
     id: string;
@@ -89,16 +90,6 @@ export default function CampaignDashboard({ campaigns, userId, platform, account
             case 'tiktok': return 'dark';
             case 'google': return 'red';
             default: return 'gray';
-        }
-    };
-
-    const getPlatformIcon = () => {
-        switch (platform.name.toLowerCase()) {
-            case 'facebook':
-            case 'meta': return <IconBrandFacebook size={24} />;
-            case 'tiktok': return <IconBrandTiktok size={24} />;
-            case 'google': return <IconBrandGoogle size={24} />;
-            default: return <IconInfoCircle size={24} />;
         }
     };
 
@@ -251,7 +242,7 @@ export default function CampaignDashboard({ campaigns, userId, platform, account
                             radius="xl"
                             size="md"
                         >
-                            {getPlatformIcon()}
+                            {getPlatformIcon(platform.name, 24)}
                         </Avatar>
                         <div>
                             <Group gap="xs">

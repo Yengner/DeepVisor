@@ -33,10 +33,10 @@ import {
 } from '@tabler/icons-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { handleSignOut } from '@/lib/actions/user.actions';
 import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
 // Import utility functions from the correct locations
 import { formatRelativeTime, markNotificationReadClient, markAllNotificationsAsReadClient } from '@/lib/utils/notifications';
+import { handleSignOut } from '@/lib/actions/user.actions';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface Notification {
@@ -54,6 +54,8 @@ interface TopBarClientProps {
     platforms?: any[];
     adAccounts?: any[];
     notifications?: Notification[];
+    initialPlatformId?: string | null;
+    initialAccountId?: string | null;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -61,7 +63,9 @@ export default function TopBarClient({
     userInfo,
     platforms = [],
     adAccounts = [],
-    notifications = []
+    notifications = [],
+    initialPlatformId,
+    initialAccountId
 }: TopBarClientProps) {
     const router = useRouter();
     const pathname = usePathname();
@@ -92,18 +96,15 @@ export default function TopBarClient({
 
     // Mark all notifications as read
     const markAllRead = async () => {
-        // Get IDs of unread notifications
         const unreadIds = userNotifications
             .filter(notification => !notification.read)
             .map(notification => notification.id);
 
         if (unreadIds.length === 0) return;
 
-        // Use the utility function from notifications.ts
         const success = await markAllNotificationsAsReadClient(unreadIds);
 
         if (success) {
-            // Update local state
             setUserNotifications(prevNotifications =>
                 prevNotifications.map(notification => ({ ...notification, read: true }))
             );
@@ -112,24 +113,19 @@ export default function TopBarClient({
         }
     };
 
-    // Handle notification click
     const handleNotificationClick = async (notification: Notification) => {
-        // Mark as read
         if (!notification.read) {
             const success = await markNotificationReadClient(notification.id);
 
             if (success) {
-                // Update the notification in state
                 setUserNotifications(prev =>
                     prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
                 );
 
-                // Update the count
                 setNotificationCount(prev => Math.max(0, prev - 1));
             }
         }
 
-        // Navigate if link is provided
         if (notification.link) {
             router.push(notification.link);
         }
@@ -157,6 +153,8 @@ export default function TopBarClient({
                     userInfo={userInfo}
                     platforms={platforms}
                     adAccounts={adAccounts}
+                    initialPlatformId={initialPlatformId}
+                    initialAccountId={initialAccountId}
                 />
             </div>
 
