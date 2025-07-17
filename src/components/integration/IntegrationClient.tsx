@@ -93,22 +93,18 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms, userId }) => {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    // Check for success or error messages from redirects
     useEffect(() => {
         const success = searchParams.get('success');
         if (success === 'true') {
             toast.success('Platform connected successfully!');
-            router.replace('/integration'); // Remove success param to prevent multiple toasts
+            router.replace('/integration');
         }
     }, [searchParams, router]);
 
-    // Find the Meta platform for featured section
     const metaPlatform = platforms.find(p => p.id === 'meta') || platforms[0];
 
-    // Other platforms
     const otherPlatforms = platforms.filter(p => p.id !== 'meta');
 
-    // Calculate integration stats
     const totalIntegrations = platforms.length;
     const activeIntegrations = platforms.filter(p => p.isIntegrated).length;
     const integrationPercentage = (activeIntegrations / totalIntegrations) * 100;

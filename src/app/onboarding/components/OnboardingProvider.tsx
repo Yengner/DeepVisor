@@ -10,7 +10,6 @@ import {
   Card,
   LoadingOverlay
 } from '@mantine/core';
-import { updateOnboardingProgress, getOnboardingProgress, getLoggedInUser, updateBusinessProfileData } from '@/lib/actions/user.actions';
 import WelcomeStep from './steps/WelcomeStep';
 import toast from 'react-hot-toast';
 import ConnectAccountsStep from './steps/ConnectAccountsStep';
@@ -18,6 +17,7 @@ import PreferencesStep from './steps/PreferencesStep';
 import BusinessProfileStep from './steps/BusinessProfileStep';
 import CompletionStep from './steps/CompletionStep';
 import { createClient } from '@/lib/utils/supabase/clients/browser';
+import { getLoggedInUser, getOnboardingProgress, updateBusinessProfileData, updateOnboardingProgress } from '@/lib/actions/user.actions';
 
 export default function OnboardingProvider() {
   const [active, setActive] = useState(0);
@@ -70,10 +70,8 @@ export default function OnboardingProvider() {
         const { success, step, connectedAccounts, businessData } = await getOnboardingProgress();
 
         if (success) {
-          // Set the active step
           setActive(step);
 
-          // Set connected accounts from database
           if (connectedAccounts && connectedAccounts.length > 0) {
             setUserData(prev => ({
               ...prev,
@@ -81,7 +79,6 @@ export default function OnboardingProvider() {
             }));
           }
 
-          // Set business data from database
           if (businessData) {
             setUserData(prev => ({
               ...prev,
@@ -119,7 +116,6 @@ export default function OnboardingProvider() {
     const accountId = searchParams.get('account_id');
 
     if (platform && status === 'success' && accountId) {
-      // Check if this account is already connected
       const isAlreadyConnected = userData.connectedAccounts.some(
         acc => acc.platform === platform && acc.accountId === accountId
       );
@@ -153,7 +149,6 @@ export default function OnboardingProvider() {
         toast(`Your ${platform} account was already connected.`);
       }
 
-      // Clear URL params to avoid reprocessing on refresh
       router.replace('/onboarding');
     } else if (platform && status === 'error') {
       toast.error(`Failed to connect ${platform} account. Please try again.`);
@@ -201,7 +196,7 @@ export default function OnboardingProvider() {
           description: userData.description,
           monthlyBudget: userData.monthlyBudget
         });
-      } 
+      }
       else if (active === 3) {
         console.log("Saving preferences data:", {
           adGoals: userData.adGoals,

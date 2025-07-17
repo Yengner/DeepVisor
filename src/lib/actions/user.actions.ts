@@ -1,7 +1,7 @@
 'use server';
 
 import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
-import { getErrorMessage, parseStringify } from '../utils/utils';
+import { getErrorMessage, parseStringify } from '@/lib/utils/utils';
 import { redirect } from 'next/navigation';
 
 // ===== AUTHENTICATION ACTIONS =====

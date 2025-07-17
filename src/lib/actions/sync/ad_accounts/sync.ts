@@ -1,8 +1,8 @@
 "use server";
 
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
-import { fetchMetaAdAccountWithMetrics } from "./fetch";
-import { storeAdAccount } from "./store";
+import { fetchMetaAdAccounts } from "../../meta/fetch/ad_accounts/fetch";
+import { storeAdAccounts } from "../../store/ad_accounts/store";
 
 
 /**
@@ -15,7 +15,6 @@ import { storeAdAccount } from "./store";
 export async function syncAdAccounts(userId: string, adAccountId: string, platformIntegrationId: string) {
     const supabase = await createSupabaseClient();
 
-    // Fetch Platform Integration details
     const { data: integrationData, error: integrationError } = await supabase
         .from('platform_integrations')
         .select('access_token, integration_details, platform_name')
@@ -27,20 +26,18 @@ export async function syncAdAccounts(userId: string, adAccountId: string, platfo
         throw new Error('Failed to fetch platform integration details');
     }
 
-    // Switch based on platform name
     switch (integrationData.platform_name) {
         case 'meta': {
             const accessToken = integrationData.access_token;
 
-            // Fetch ad accounts using the access token
-            const adAccountData = await fetchMetaAdAccountWithMetrics(accessToken, adAccountId);
-            // Store the ad accounts in the database
-            await storeAdAccount(
+            console.log(`Syncing ad accounts for user ${userId} and ad account ${adAccountId}`);
+            const adAccountData = await fetchMetaAdAccounts(false, accessToken, adAccountId);
+            await storeAdAccounts(
                 supabase,
                 userId,
-                adAccountId,
-                adAccountData,
                 platformIntegrationId,
+                adAccountData,
+                true,
             );
             console.log(`Stored ad accounts for user ${userId} and ad account ${adAccountId}`);
             break;

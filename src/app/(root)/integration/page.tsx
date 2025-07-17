@@ -1,13 +1,13 @@
 import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
 import React from 'react';
-import { getLoggedInUser } from '@/lib/actions/user.actions';
 import IntegrationClient from '@/components/integration/IntegrationClient';
+import { getLoggedInUser } from '@/lib/actions/user.actions';
 
 export default async function IntegrationPage() {
-  // Fetch user and ad account data
-  const loggedIn = await getLoggedInUser();
-  const userId = loggedIn?.id;
+
+
   const supabase = await createSupabaseClient();
+  const userId = await getLoggedInUser().then((user) => user?.id);
 
   const { data: platforms, error: platformError } = await supabase
     .from('platform')
@@ -18,7 +18,6 @@ export default async function IntegrationPage() {
     return <div>Failed to load platforms</div>;
   }
 
-  // Fetch platform integrations for the user
   const { data: platformIntegrations, error: integrationError } = await supabase
     .from('platform_integrations')
     .select('platform_name, is_integrated')
@@ -29,7 +28,6 @@ export default async function IntegrationPage() {
     return <div>Failed to load integrations</div>;
   }
 
-  // Map platforms and merge integration status
   const platformsWithIntegration = platforms.map((platform) => ({
     ...platform,
     isIntegrated: platformIntegrations?.find((integration) => integration.platform_name === platform.id)?.is_integrated || false,

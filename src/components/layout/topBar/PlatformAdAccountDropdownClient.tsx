@@ -19,47 +19,36 @@ export default function PlatformAdAccountDropdownClient({
   platforms,
   adAccounts
 }: PlatformAdAccountDropdownClientProps) {
-  // Add router for refresh
   const router = useRouter();
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Get filtered accounts based on selected platform
   const filteredAccounts = selectedPlatform
     ? adAccounts.filter(account => account.platform_integration_id === selectedPlatform)
     : [];
 
-  // Initialize selections on component mount
   useEffect(() => {
     if (platforms.length === 0) return;
 
-    // Function to initialize selections with defaults
     const initializeSelections = () => {
-      // Try to get from localStorage first
       let platformId = localStorage.getItem('selectedPlatformId');
       let accountId = localStorage.getItem('selectedAccountId');
 
-      // If no platform is selected yet, default to first platform
       if (!platformId && platforms.length > 0) {
         platformId = platforms[0].id;
       }
 
-      // Ensure we have a valid platform (should always be true in your flow)
       if (platformId) {
-        // Save it to both localStorage and cookie
         localStorage.setItem('selectedPlatformId', platformId);
         setCookie('platform_integration_id', platformId, { maxAge: 60 * 60 * 24 * 30 });
         setSelectedPlatform(platformId);
 
-        // Filter accounts for this platform
         const accountsForPlatform = adAccounts.filter(
           account => account.platform_integration_id === platformId
         );
 
-        // Handle account selection
         if (accountsForPlatform.length > 0) {
-          // If no account selected or current selection isn't valid, use first one
           const accountValid = accountId && accountsForPlatform.some(acc => acc.id === accountId);
 
           if (!accountValid) {
@@ -69,7 +58,6 @@ export default function PlatformAdAccountDropdownClient({
           localStorage.setItem('selectedAccountId', accountId);
           setCookie('ad_account_id', accountId, { maxAge: 60 * 60 * 24 * 30 });
         } else {
-          // No accounts for this platform
           accountId = null;
           localStorage.removeItem('selectedAccountId');
           setCookie('ad_account_id', '', { maxAge: 0 });
@@ -83,24 +71,19 @@ export default function PlatformAdAccountDropdownClient({
     setIsInitialLoad(false);
   }, [platforms, adAccounts]);
 
-  // Handle platform change with refresh
   const handlePlatformChange = (value: string | null) => {
-    // Never allow null selection
     if (!value) return;
 
-    // Don't refresh if selection hasn't changed
     if (value === selectedPlatform) return;
 
     setSelectedPlatform(value);
     localStorage.setItem('selectedPlatformId', value);
     setCookie('platform_integration_id', value, { maxAge: 60 * 60 * 24 * 30 });
 
-    // Find accounts for this platform
     const accountsForNewPlatform = adAccounts.filter(
       account => account.platform_integration_id === value
     );
 
-    // If current account isn't for this platform, update to first available
     const currentAccountIsValid = selectedAccount &&
       accountsForNewPlatform.some(acc => acc.id === selectedAccount);
 
@@ -110,20 +93,17 @@ export default function PlatformAdAccountDropdownClient({
       localStorage.setItem('selectedAccountId', newAccountId);
       setCookie('ad_account_id', newAccountId, { maxAge: 60 * 60 * 24 * 30 });
     } else if (accountsForNewPlatform.length === 0) {
-      // No accounts for this platform
       setSelectedAccount(null);
       localStorage.removeItem('selectedAccountId');
       setCookie('ad_account_id', '', { maxAge: 0 }); // Delete the cookie
     }
 
-    // Refresh the page to update server components
-    // Short delay to ensure cookies are set
+
     setTimeout(() => {
       router.refresh();
     }, 100);
   };
 
-  // Handle account change with refresh
   const handleAccountChange = (value: string | null) => {
     if (!value || value === selectedAccount) return;
 
@@ -131,7 +111,6 @@ export default function PlatformAdAccountDropdownClient({
     localStorage.setItem('selectedAccountId', value);
     setCookie('ad_account_id', value, { maxAge: 60 * 60 * 24 * 30 });
 
-    // Refresh the page to update server components
     setTimeout(() => {
       router.refresh();
     }, 100);

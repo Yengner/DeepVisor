@@ -1,8 +1,8 @@
-import { getLoggedInUser } from "@/lib/actions/user.actions";
 import DashboardClient from "./components/DashboardClient";
 import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { getAdAccountData, getPlatformData, getPlatformDetails, getTopAdAccountCampaigns, getTopPlatformsCampaigns } from "@/lib/api/platforms/actions";
+import { getLoggedInUser } from "@/lib/actions/user.actions";
 
 
 export default async function MainDashboardPage() {

@@ -1,6 +1,6 @@
-import { getLoggedInUser } from '@/lib/actions/user.actions';
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import TopBarClient from './TopBarClient';
+import { getLoggedInUser } from "@/lib/actions/user.actions";
 
 export default async function Topbar() {
   const user = await getLoggedInUser();

@@ -1,17 +1,17 @@
+import { fetchMetaAdAccounts } from '@/lib/actions/meta/fetch/ad_accounts/fetch';
+import { fetchMetaPageAccounts } from '@/lib/actions/meta/fetch/page/fetch';
+import { AdAccountDetails, AdAccountWithMetrics } from '@/lib/actions/meta/fetch/types';
+import { storeAdAccounts } from '@/lib/actions/store/ad_accounts/store';
+import { storeIntegration } from '@/lib/actions/store/integration/store';
+import { storePageAccounts } from '@/lib/actions/store/page/store';
 import {
-  redirectWithError,
-  storeMetaIntegration,
-  fetchMetaAdAccounts,
-  fetchMetaPageAccounts,
-  storeAdAccounts,
-  storePageAccounts,
   updateUserConnectedAccounts,
-  needsAccountSelection,
-  triggerMetaSync
-} from '@/lib/actions/sync/ad_accounts/utils';
-import { getUserSubscriptionTier } from '@/lib/utils/subscription';
+} from '@/lib/actions/utils';
+import { triggerMetaCampaignSync } from '@/lib/actions/sync/platforms/meta';
+import { redirectWithError } from '@/lib/utils/error-handling';
 import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
 import { NextResponse } from 'next/server';
+import { getLoggedInUser } from '@/lib/actions/user.actions';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -20,8 +20,7 @@ export async function GET(request: Request) {
   const isOnboarding = returnPath.includes('/onboarding');
   const state = searchParams.get('state');
   const error = searchParams.get('error');
-  console.log('searchParams: in callback', searchParams.toString());
-
+  const platformName = 'meta';
 
   if (error) {
     return redirectWithError(request, isOnboarding, error);
@@ -32,13 +31,16 @@ export async function GET(request: Request) {
 
   try {
     const supabase = await createSupabaseClient();
+    const user = await getLoggedInUser();
+    const userId = user?.id;
+    const userTier = user?.plan_tier
 
     // Verifying the state parameter to prevent CSRF attacks
     const { data: stateData, error: stateError } = await supabase
       .from('oauth_states')
-      .select('user_id')
+      .select('*')
       .eq('state', state)
-      .eq('platform', 'meta')
+      .eq('user_id', userId)
       .single();
 
     if (stateError || !stateData) {
@@ -46,17 +48,14 @@ export async function GET(request: Request) {
       return redirectWithError(request, isOnboarding, 'invalid_state');
     }
 
-    const userId = stateData.user_id;
-
     // Clean the state from the database
-    await supabase.from('oauth_states').delete().eq('state', state);
+    await supabase.from('oauth_states').delete().eq('state', state).eq('user_id', userId);
 
-    // Exchange code for access token
     const appId = process.env.META_APP_ID;
     const appSecret = process.env.META_APP_SECRET;
     const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/integrations/callback/meta?return=${encodeURIComponent(returnPath)}`;
 
-    const tokenUrl = `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`;
+    const tokenUrl = `https://graph.facebook.com/v23.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`;
     const response = await fetch(tokenUrl);
 
     if (!response.ok) {
@@ -69,60 +68,55 @@ export async function GET(request: Request) {
       throw new Error('Access token is missing in the response');
     }
 
-    // Get user's subscription tier
-    const userTier = await getUserSubscriptionTier(userId);
-    // Store platform integration
-    const platformIntegrationId = await storeMetaIntegration(
+    const platformIntegrationId = await storeIntegration(
       supabase,
       userId,
-      tokenData.access_token
+      tokenData.access_token,
+      platformName
     );
 
-    // Fetch ad accounts and page accounts
-    const adAccountsData = await fetchMetaAdAccounts(tokenData.access_token);
+    const adAccountsData = await fetchMetaAdAccounts(true, tokenData.access_token);
     const pageAccountsData = await fetchMetaPageAccounts(tokenData.access_token);
 
-    // Check if user needs to select an account (tier1/free with multiple accounts)
-    if (needsAccountSelection(userTier, adAccountsData.data, isOnboarding)) {
-      // Redirect to account selection page
-      const accountsEncoded = encodeURIComponent(JSON.stringify(adAccountsData.data));
+    // Check if user needs to select an account (tier1/with multiple accounts)
+    if (needsAccountSelection(userTier, adAccountsData, isOnboarding)) {
+      const accountsEncoded = encodeURIComponent(JSON.stringify(adAccountsData));
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_BASE_URL}/integration/meta/select-account?accounts=${accountsEncoded}&platformIntegrationId=${platformIntegrationId}&tier=${userTier}`
       );
     }
 
-    // Store ad accounts with tier limits applied
-    const { accounts: savedAdAccounts, accountIdMap } = await storeAdAccounts(
+    const adAccountsResult = await storeAdAccounts(
       supabase,
       userId,
       platformIntegrationId,
-      adAccountsData.data,
+      adAccountsData,
+      false,
       userTier
     );
+    if (!adAccountsResult) {
+      throw new Error('Failed to store ad accounts');
+    }
+    const { accounts: savedAdAccounts, accountIdMap } = adAccountsResult;
 
-    // Store page accounts
     await storePageAccounts(
       supabase,
       userId,
       platformIntegrationId,
-      pageAccountsData.data
+      pageAccountsData
     );
 
-    // Update user's connected accounts
     await updateUserConnectedAccounts(supabase, userId, savedAdAccounts, accountIdMap);
 
-    // Trigger sync function
-    await triggerMetaSync(userId);
+    // Just learned Fire-and-Forget 
+    triggerMetaCampaignSync(userId).catch(console.error);
 
-    // Redirect based on flow
     if (isOnboarding) {
-      // If coming from onboarding, redirect back to onboarding with success status
       const redirectUrl = new URL(`${process.env.NEXT_PUBLIC_BASE_URL}/onboarding`);
-      redirectUrl.searchParams.append('platform', 'meta');
+      redirectUrl.searchParams.append('platform', platformName);
       redirectUrl.searchParams.append('status', 'success');
 
-      // Include the first ad account ID for reference
-      if (savedAdAccounts.length > 0) {
+      if (Array.isArray(savedAdAccounts) && savedAdAccounts.length > 0) {
         redirectUrl.searchParams.append('account_id', savedAdAccounts[0].id);
       }
 
@@ -137,4 +131,22 @@ export async function GET(request: Request) {
     console.error('Error during Meta OAuth callback:', error);
     return redirectWithError(request, isOnboarding, 'unexpected_error');
   }
+}
+
+
+/**
+ * Check if user needs account selection based on tier and accounts
+ */
+function needsAccountSelection(
+  userTier: string,
+  adAccounts: any,
+  isOnboarding: boolean
+): boolean {
+  // During onboarding we'll just use the first account for simplicity
+  if (isOnboarding) {
+    return false;
+  }
+
+  // If tier1 or free and has multiple accounts
+  return (userTier === 'tier1' || userTier === 'free') && Array.isArray(adAccounts) && adAccounts.length > 1;
 }

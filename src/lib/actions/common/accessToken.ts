@@ -1,5 +1,5 @@
-import { getLoggedInUser } from ".././user.actions";
 import { createSupabaseClient } from "../../utils/supabase/clients/server";
+import { getLoggedInUser } from "../user.actions";
 
 export async function getAccessToken(platformId: string): Promise<string> {
     try {
