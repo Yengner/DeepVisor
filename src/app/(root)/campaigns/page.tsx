@@ -142,7 +142,7 @@ export default async function CampaignPage() {
       platformDetails.platform_name,
       adAccount.ad_account_id
     );
-
+    // Jesus create this into a function so its not so messy
     if (campaignsData?.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const formattedCampaigns: FormattedCampaign[] = campaignsData.map((campaign: any) => ({

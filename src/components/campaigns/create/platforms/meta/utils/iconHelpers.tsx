@@ -13,7 +13,6 @@ import {
   IconDeviceMobile,
   IconShoppingCart
 } from '@tabler/icons-react';
-import React from 'react';
 import { CAMPAIGN_OBJECTIVES } from './objectiveMappings';
 
 /**

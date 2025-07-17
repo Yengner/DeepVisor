@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import SpendTrendsGraph from './SpendTrendsGraph';
 import FeaturedCampaigns from './FeaturedCampaigns';
 import AdAccountsTable from './AdAccountsTable';

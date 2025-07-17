@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import React from 'react';
 
 interface AdAccount {
     ad_account_id: string;

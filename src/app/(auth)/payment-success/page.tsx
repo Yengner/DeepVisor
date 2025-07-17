@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { LoadingState } from '@/components/ui/states/LoadingState';
-import PaymentSuccessContent from './component/PaymentSuccessContent';
+import PaymentSuccessContent from './components/PaymentSuccessContent';
 
 export default function PaymentSuccessPage() {
   return (

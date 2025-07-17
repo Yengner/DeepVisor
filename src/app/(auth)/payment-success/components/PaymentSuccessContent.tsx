@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { LoadingState } from '@/components/ui/states/LoadingState';
 import { ErrorState } from '@/components/ui/states/ErrorState';
 import { SuccessState } from '@/components/ui/states/SuccessState';
-import { verifyPaymentAndStoreSubscription } from '@/lib/actions/stripe.actions';
 import toast from 'react-hot-toast';
+import { verifyPaymentAndStoreSubscription } from '@/lib/actions/stripe/stripe.actions';
 
 export default function PaymentSuccessContent() {
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');

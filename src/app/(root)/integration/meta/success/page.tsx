@@ -1,5 +1,5 @@
-import MetaIntegrationSuccess from '@/components/integration/MetaIntegrationSuccess';
 import { Suspense } from 'react';
+import MetaIntegrationSuccess from '../../components/MetaIntegrationSuccess';
 
 export default function MetaSuccessPage() {
     return (
