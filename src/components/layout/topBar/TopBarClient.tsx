@@ -34,9 +34,10 @@ import {
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
-// Import utility functions from the correct locations
-import { formatRelativeTime, markNotificationReadClient, markAllNotificationsAsReadClient } from '@/lib/utils/notifications';
-import { handleSignOut } from '@/lib/actions/user.actions';
+// import { handleSignOut } from '@/lib/actions/user';
+import { markAllNotificationsAsReadClient } from '@/lib/actions/notifications/client/markAllNotificationsAsReadClient';
+import { markNotificationReadClient } from '@/lib/actions/notifications/client/markNotificationReadClient';
+
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface Notification {
@@ -83,7 +84,7 @@ export default function TopBarClient({
     const userInitials = fullName.split(' ').map((name: string) => name[0]).join('').toUpperCase();
 
     const handleLogout = async () => {
-        await handleSignOut();
+        // await handleSignOut();
         router.push('/login');
     };
 
@@ -246,7 +247,7 @@ export default function TopBarClient({
                                         <div>
                                             <Group justify="apart" mb={4}>
                                                 <Text size="sm" fw={500}>{notification.title}</Text>
-                                                <Text size="xs" c="dimmed">{formatRelativeTime(notification.created_at)}</Text>
+                                                <Text size="xs" c="dimmed">{notification.created_at}</Text>
                                             </Group>
                                             <Text size="xs" c="dimmed">{notification.message}</Text>
                                         </div>

@@ -1,6 +1,6 @@
 import { getCampaignStrategy } from "./strategies/CampaignStrategyFactory";
-import { AdAccount, Campaign } from "../sdk/client";
-import { logApiCallResult } from "../sdk/utils";
+import { AdAccount, Campaign } from "../../../sdk/client";
+import { logApiCallResult } from "../../../sdk/utils";
 
 /**
  * Creates a campaign in the Meta Ads platform using the SDK

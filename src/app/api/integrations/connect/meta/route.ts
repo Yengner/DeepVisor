@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
 import { generateState } from '@/lib/utils/utils';
 import { redirectWithError } from '@/lib/utils/error-handling';
-import { getLoggedInUser } from '@/lib/actions/user.actions';
+import { getLoggedInUser } from '@/lib/actions/user';
+
 
 export async function GET(request: NextRequest) {
     try {

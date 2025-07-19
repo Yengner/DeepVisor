@@ -1,7 +1,7 @@
 import { motion } from "framer-motion"
 
 import { childVariants } from "./BenefitSection"
-import { IBenefitBullet } from "@/types/public/types"
+import { IBenefitBullet } from "@/lib/static/types"
 
 const BenefitBullet: React.FC<IBenefitBullet> = ({ title, description, icon }: IBenefitBullet) => {
     return (

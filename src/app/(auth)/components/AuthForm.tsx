@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { handleLogin, handleSignUp, resendVerificationEmail } from '@/lib/actions/user.actions';
 import { TextInput, PasswordInput, Button, Paper, Group, Divider, Stack, Title, Text, Anchor } from '@mantine/core';
 import { IconBrandGoogle } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
+import { handleLogin, handleSignUp, resendVerificationEmail } from '@/lib/actions/user/auth';
 
 interface AuthFormProps {
   type: 'login' | 'signup';

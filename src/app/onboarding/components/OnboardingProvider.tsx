@@ -17,7 +17,7 @@ import PreferencesStep from './steps/PreferencesStep';
 import BusinessProfileStep from './steps/BusinessProfileStep';
 import CompletionStep from './steps/CompletionStep';
 import { createClient } from '@/lib/utils/supabase/clients/browser';
-import { getLoggedInUser, getOnboardingProgress, updateBusinessProfileData, updateOnboardingProgress } from '@/lib/actions/user.actions';
+import { getLoggedInUser, getOnboardingProgress, updateBusinessProfileData, updateOnboardingProgress } from '@/lib/actions/user/user.actions';
 
 export default function OnboardingProvider() {
   const [active, setActive] = useState(0);

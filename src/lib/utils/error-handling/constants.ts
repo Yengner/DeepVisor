@@ -1,4 +1,4 @@
-import { ErrorCode } from "@/lib/types/api";
+import { ErrorCode } from "@/lib/utils/error-handling/types/api";
 
 export const DEFAULT_ERROR_MESSAGES: Record<ErrorCode, string> = {
     [ErrorCode.UNAUTHORIZED]: "You don't have permission to perform this action",

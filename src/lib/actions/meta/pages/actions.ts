@@ -1,6 +1,6 @@
 "use server";
 
-import { ApiResponse, ErrorCode } from "@/lib/types/api";
+import { ApiResponse, ErrorCode } from "@/lib/utils/error-handling/types/api";
 import { createErrorResponse, createSuccessResponse } from "@/lib/utils/error-handling";
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 

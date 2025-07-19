@@ -1,7 +1,8 @@
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import TopBarClient from './TopBarClient';
-import { getLoggedInUser } from "@/lib/actions/user.actions";
 import { cookies } from "next/headers";
+import { getLoggedInUser } from "@/lib/actions/user";
+import { getNotifications } from "@/lib/actions/notifications/server/getNotifications";
 
 export default async function Topbar() {
   const user = await getLoggedInUser();
@@ -27,16 +28,7 @@ export default async function Topbar() {
     console.error("Error fetching ad accounts:", adAccountError.message);
   }
 
-  const { data: notifications, error: notificationsError } = await supabase
-    .from("notifications")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(10);
-
-  if (notificationsError) {
-    console.error("Error fetching notifications:", notificationsError.message);
-  }
+  const notifications = await getNotifications(userId);
 
   const cookieStore = await cookies();
   const platformCookie = cookieStore.get('platform_integration_id')?.value;
@@ -44,7 +36,6 @@ export default async function Topbar() {
 
   const safePlatforms = platforms ?? [];
   const safeAdAccounts = adAccounts ?? [];
-  const safeNotifications = notifications ?? [];
 
   const selectedPlatformId =
     safePlatforms.find(p => p.id === platformCookie)?.id
@@ -66,7 +57,7 @@ export default async function Topbar() {
         userInfo={user}
         platforms={safePlatforms}
         adAccounts={safeAdAccounts}
-        notifications={safeNotifications}
+        notifications={notifications}
         initialPlatformId={selectedPlatformId}
         initialAccountId={selectedAccountId}
       />

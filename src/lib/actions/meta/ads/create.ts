@@ -1,6 +1,6 @@
 import { MetaAdParams } from "../types";
-import { AdAccount, Ad } from "../sdk/client";
-import { logApiCallResult } from "../sdk/utils";
+import { AdAccount, Ad } from "../../../sdk/client";
+import { logApiCallResult } from "../../../sdk/utils";
 
 /**
  * Creates a single ad in the Meta Ads platform using the SDK

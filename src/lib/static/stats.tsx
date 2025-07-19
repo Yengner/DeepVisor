@@ -1,4 +1,4 @@
-import { IStats } from "@/types/public/types";
+import { IStats } from "@/lib/static/types";
 import { BsBarChartFill, BsFillStarFill } from "react-icons/bs";
 import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
 

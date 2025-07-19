@@ -1,7 +1,7 @@
-import { AdSet, AdAccount } from "../sdk/client";
+import { AdSet, AdAccount } from "../../../sdk/client";
 import { getAdSetStrategy } from "./strategies/AdSetStrategyFactory";
 import { MetaAdSetParams } from "../types";
-import { logApiCallResult } from "../sdk/utils";
+import { logApiCallResult } from "../../../sdk/utils";
 
 
 /**

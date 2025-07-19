@@ -1,6 +1,6 @@
 import { getAccessToken } from "@/lib/actions/common/accessToken";
 import { AdCreative } from 'facebook-nodejs-business-sdk';
-import { FacebookAdsApi } from "../sdk/client";
+import { FacebookAdsApi } from "../../../sdk/client";
 
 export type PreviewType =
     | 'RIGHT_COLUMN_STANDARD'

@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { motion, Variants } from "framer-motion"
 
 import BenefitBullet from "./BenefitBullet";
-import { IBenefit } from "@/types/public/types";
+import { IBenefit } from "@/lib/static/types";
 import SectionTitle from "../SectionTitle";
 
 interface Props {

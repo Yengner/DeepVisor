@@ -70,7 +70,7 @@ export default function CampaignTable({
   });
 
   return (
-    <ScrollArea h={500} type="always" offsetScrollbars>
+    <ScrollArea h="auto" type="always" offsetScrollbars>
       <Table
         striped
         highlightOnHover

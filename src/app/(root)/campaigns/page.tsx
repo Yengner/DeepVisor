@@ -1,10 +1,10 @@
 import CampaignDashboard from "@/components/campaigns/CampaignDashboard";
-import { getAllCampaigns } from "@/lib/api/adAccount/getAllCampaigns";
+import { getCampaignMetrics } from "@/lib/quieries/campaigns/getCampaignsMetrics";
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
-import { getPlatformDetails } from "@/lib/api/platforms/actions";
-import { getLoggedInUser } from "@/lib/actions/user.actions";
+import { getPlatformDetails } from "@/lib/quieries/platforms/getPlatformDetails";
+import { getLoggedInUser } from "@/lib/actions/user";
 
 // Define interfaces for better type safety
 interface AggregatedMetrics {
@@ -72,12 +72,9 @@ interface FormattedCampaign {
 }
 
 export default async function CampaignPage() {
-  // Fetch user data
-  const user = await getLoggedInUser();
-  const userId = user?.id;
+  const userId = await getLoggedInUser().then((user) => user?.id);
   const supabase = await createSupabaseClient();
 
-  // Get platform ID from cookies
   const cookieStore = await cookies();
   const selectedPlatformId = cookieStore.get('platform_integration_id')?.value;
 
@@ -137,7 +134,7 @@ export default async function CampaignPage() {
 
   for (const adAccount of typedAdAccounts) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const campaignsData: any = await getAllCampaigns(
+    const campaignsData: any = await getCampaignMetrics(
       supabase,
       platformDetails.platform_name,
       adAccount.ad_account_id

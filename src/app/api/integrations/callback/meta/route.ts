@@ -1,17 +1,12 @@
-import { fetchMetaAdAccounts } from '@/lib/actions/meta/fetch/ad_accounts/fetch';
-import { fetchMetaPageAccounts } from '@/lib/actions/meta/fetch/page/fetch';
-import { AdAccountDetails, AdAccountWithMetrics } from '@/lib/actions/meta/fetch/types';
-import { storeAdAccounts } from '@/lib/actions/store/ad_accounts/store';
-import { storeIntegration } from '@/lib/actions/store/integration/store';
-import { storePageAccounts } from '@/lib/actions/store/page/store';
-import {
-  updateUserConnectedAccounts,
-} from '@/lib/actions/utils';
-import { triggerMetaCampaignSync } from '@/lib/actions/sync/platforms/meta';
+import { storeAdAccounts, storeIntegration, storePageAccounts } from '@/lib/actions/store';
+import { triggerMetaCampaignSync } from '@/lib/actions/sync/campaigns/triggerMetaCampaignSync';
+import { getLoggedInUser, updateUserConnectedAccounts } from '@/lib/actions/user';
+import { fetchMetaAdAccounts } from '@/lib/api/platforms/meta/ad_accounts/fetch';
+import { fetchMetaPageAccounts } from '@/lib/api/platforms/meta/page/fetch';
 import { redirectWithError } from '@/lib/utils/error-handling';
 import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
 import { NextResponse } from 'next/server';
-import { getLoggedInUser } from '@/lib/actions/user.actions';
+
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

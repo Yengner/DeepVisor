@@ -1,6 +1,6 @@
 import { CampaignFormValues } from "../../types";
 import { CampaignStrategy } from "./CampaignStrategy";
-import { Campaign } from "../../sdk/client";
+import { Campaign } from "../../../../sdk/client";
 
 /**
  * Strategy for Lead Generation campaigns

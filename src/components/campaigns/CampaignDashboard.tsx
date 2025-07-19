@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import {
     Button, Group, Paper, Title, Text, Tabs, ActionIcon,
-    Tooltip, Select, TextInput, Menu, Badge, Stack, Avatar
+    Tooltip, Select, TextInput, Menu, Badge, Stack, Avatar,
+    Container
 } from '@mantine/core';
 import {
     IconRefresh, IconPlus, IconSearch, IconAdjustments,
@@ -232,7 +233,7 @@ export default function CampaignDashboard({ campaigns, userId, platform, account
     }
 
     return (
-        <div className="p-2">
+        <Container size="xl" py="md">
             {/* Header with more compact layout */}
             <Paper p="md" radius="md" withBorder mb="xs">
                 <Group justify="apart" mb="xs">
@@ -343,7 +344,7 @@ export default function CampaignDashboard({ campaigns, userId, platform, account
             </Paper>
 
             {/* Campaign Hierarchy Tabs - now with more space for table */}
-            <Paper p="xs" radius="md" withBorder style={{ height: 'calc(100vh - 240px)', display: 'flex', flexDirection: 'column' }}>
+            <Paper p="xs" radius="md" withBorder style={{ height: 'auto', display: 'flex', flexDirection: 'column' }}>
                 <Tabs value={activeTab} onChange={setActiveTab as any}>
                     <Tabs.List>
                         <Tabs.Tab
@@ -408,6 +409,6 @@ export default function CampaignDashboard({ campaigns, userId, platform, account
                     </Tabs.Panel>
                 </Tabs>
             </Paper>
-        </div>
+        </Container>
     );
 }

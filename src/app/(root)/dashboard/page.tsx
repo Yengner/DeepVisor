@@ -1,15 +1,15 @@
 import DashboardClient from "./components/DashboardClient";
 import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
-import { getAdAccountData, getPlatformData, getPlatformDetails, getTopAdAccountCampaigns, getTopPlatformsCampaigns } from "@/lib/api/platforms/actions";
-import { getLoggedInUser } from "@/lib/actions/user.actions";
-
+import { getLoggedInUser } from "@/lib/actions/user";
+import { getPlatformDetails } from "@/lib/quieries/platforms";
+import { getAdAccountData, getAdAccountTopCampaigns } from "@/lib/quieries/ad_accounts";
 
 export default async function MainDashboardPage() {
-  // Fetch user data
+
   const user = await getLoggedInUser();
   const userId = user?.id;
-  // Get platform ID from cookies
+
   const cookieStore = await cookies();
   const selectedPlatformId = cookieStore.get('platform_integration_id')?.value;
   const selectedAdAccountId = cookieStore.get('ad_account_id')?.value;
@@ -24,7 +24,7 @@ export default async function MainDashboardPage() {
 
   const platformDetails = await getPlatformDetails(selectedPlatformId, userId);
   const adAccountData = await getAdAccountData(selectedAdAccountId, selectedPlatformId, userId);
-  const topAdAccountCampaigns = await getTopAdAccountCampaigns(adAccountData.ad_account_id);
+  const topAdAccountCampaigns = await getAdAccountTopCampaigns(adAccountData.ad_account_id);
 
   // const platformData = await getPlatformData(selectedPlatformId);
   // const topCampaigns = await getTopPlatformsCampaigns(selectedPlatformId, selectedAdAccountId);

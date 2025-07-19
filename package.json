@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.27.0",
+    "@dagrejs/dagre": "^1.1.5",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^4.1.0",
@@ -43,6 +44,7 @@
     "@tiptap/pm": "^2.14.0",
     "@tiptap/react": "^2.14.0",
     "@tiptap/starter-kit": "^2.14.0",
+    "@xyflow/react": "^12.8.2",
     "apexcharts": "^4.1.0",
     "axios": "^1.8.4",
     "canvg": "^4.0.3",

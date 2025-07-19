@@ -14,7 +14,7 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
         <Sidebar />
 
         {/* Main Content */}
-        <main className="flex-1 bg-gray-50 overflow-y-auto pl-36 pr-16 pt-10 pb-10 space-y-8">
+        <main className="flex-1 bg-gray-50 overflow-y-auto pl-16 pr-2 pt-10 pb-10 space-y-8">
           {children}
         </main>
       </div>

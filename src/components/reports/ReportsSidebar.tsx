@@ -5,7 +5,7 @@ import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "@heroicons/r
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/utils/supabase/clients/browser";
-import { getLoggedInUser } from "@/lib/actions/user.actions";
+import { getLoggedInUser } from "@/lib/actions/user/user.actions";
 
 type ReportsSidebarProps = {
   isOpen: boolean;

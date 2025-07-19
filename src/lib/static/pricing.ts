@@ -1,4 +1,4 @@
-import { IPricing } from "@/types/public/types";
+import { IPricing } from "@/lib/static/types";
 
 export const tiers: IPricing[] = [
     {

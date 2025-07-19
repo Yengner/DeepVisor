@@ -1,6 +1,6 @@
 import { MetaCreative } from '@/lib/actions/meta/creatives/actions';
 import { useState, useEffect, useCallback } from 'react';
-import { ErrorDetails } from '@/lib/types/api';
+import { ErrorDetails } from '@/lib/utils/error-handling/types/api';
 import { handleApiPromise } from '@/lib/utils/toasts/toast-handlers';
 
 export interface UseExistingCreativesOptions {

@@ -1,6 +1,6 @@
 import { AdSetStrategy } from "./AdSetStrategy";
 import { CampaignFormValues } from "../../types";
-import { AdSet } from "../../sdk/client"; // Import the SDK AdSet class
+import { AdSet } from "../../../../sdk/client"; // Import the SDK AdSet class
 
 /**
  * Strategy for Lead Generation ad sets

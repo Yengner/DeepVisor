@@ -5,7 +5,7 @@ import { useForm } from '@mantine/form';
 import { IconBuilding } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { updateBusinessProfileData } from '@/lib/actions/user.actions';
+import { updateBusinessProfileData } from '@/lib/actions/user/user.actions';
 
 type BusinessProfileStepProps = {
   onNext: () => void;

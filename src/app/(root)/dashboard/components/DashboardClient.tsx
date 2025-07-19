@@ -9,7 +9,7 @@ import {
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import DashboardHeader from './DashboardHeader';
-import { syncAdAccounts } from '@/lib/actions/sync/ad_accounts/sync';
+import { syncAdAccounts } from '@/lib/actions/sync/ad_accounts/syncAdAccounts';
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface DashboardClientProps {

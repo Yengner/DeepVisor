@@ -1,8 +1,15 @@
-import { getTierLimits } from "@/lib/utils/subscription";
+import { getTierLimits } from "../../user";
 import { date } from "../../utils";
 
 /**
  * Store ad accounts with tier-based limits
+ * @param supabase - Supabase client instance
+ * @param userId - The ID of the user
+ * @param platformIntegrationId - The ID of the platform integration
+ * @param adAccountsData - The ad accounts data to store
+ * @param sync - Whether to sync the ad accounts or not
+ * @param userTier - The tier of the user for limit checks
+ * @returns An object containing the stored ad accounts and a mapping of ad account IDs to Sup
  */
 export async function storeAdAccounts(
     supabase: any,
@@ -22,10 +29,6 @@ export async function storeAdAccounts(
             last_synced: date,
         }
 
-        console.log('Ad Accoutn Data ', adAccountsData);
-        console.log('platformIntegrationId ', platformIntegrationId);
-        console.log('userId ', adAccountsData.details.id);
-        console.log('Updating ad account in Supabase:', updateAdAccountForDb);
         const { error: updateError } = await supabase
             .from('ad_accounts')
             .update(updateAdAccountForDb)
@@ -63,8 +66,6 @@ export async function storeAdAccounts(
         updated_at: date,
         created_at: date,
     }));
-
-    console.log('Ad accounts to save from integration:', adAccountsForDb);
 
     if (adAccountsForDb.length === 0) {
         return { accounts: [], accountIdMap: {} };

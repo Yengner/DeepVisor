@@ -1,7 +1,7 @@
 'use server';
 
 import { getAccessToken } from "@/lib/actions/common/accessToken";
-import { AdAccount, AdCreative, FacebookAdsApi } from "../sdk/client";
+import { AdAccount, AdCreative, FacebookAdsApi } from "../../../sdk/client";
 
 export interface MetaCreative {
     id: string;

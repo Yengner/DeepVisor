@@ -1,6 +1,6 @@
 'use client';
 
-import { AdAccountData } from '@/lib/api/platforms/types';
+import { AdAccountData } from '@/lib/quieries/types';
 import { Box, Group, Card, Title, Text, Badge, Button, Menu, ActionIcon } from '@mantine/core';
 import { IconRefresh, IconSettings, IconTarget, IconBell } from '@tabler/icons-react';
 

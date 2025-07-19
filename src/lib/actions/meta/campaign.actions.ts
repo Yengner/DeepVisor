@@ -5,8 +5,8 @@ import { createCampaign } from "./campaigns/create";
 import { CampaignFormValues, SmartCampaignResult } from "./types";
 import { createAd } from "./ads/create";
 import { getAccessToken } from "../common/accessToken";
-import { FacebookAdsApi } from "./sdk/client";
-import { getLoggedInUser } from "../user.actions";
+import { FacebookAdsApi } from "../../sdk/client";
+import { getLoggedInUser } from "../user";
 
 /**
  * Server action to create a Meta campaign

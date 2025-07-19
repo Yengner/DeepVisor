@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState, useMemo } from 'react';
 import {
     Modal, Text, Tabs, SimpleGrid, Paper, Image, Stack, Badge,

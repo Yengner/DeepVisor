@@ -1,4 +1,4 @@
-import { PageAccount } from "../../meta/fetch/types";
+import { PageAccount } from "@/lib/api/platforms/meta/types";
 
 /**
  * Store page accounts
