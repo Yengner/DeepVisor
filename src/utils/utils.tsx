@@ -54,3 +54,4 @@ export const getPlatformIcon = (platformName: string, size: number = 24, stroke?
             return null;
     }
 }
+

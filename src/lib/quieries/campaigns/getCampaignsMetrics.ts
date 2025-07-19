@@ -1,3 +1,5 @@
+import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
+
 const formatDate = (dateStr: string): string => {
     if (!dateStr) return '';
     const options: Intl.DateTimeFormatOptions = {
@@ -9,7 +11,8 @@ const formatDate = (dateStr: string): string => {
 };
 
 
-export async function getCampaignMetrics(supabase: any, platform: string, adAccountId: string) {
+export async function getCampaignMetrics(platform: string, adAccountId: string) {
+    const supabase = await createSupabaseClient();
     const { data, error } = await supabase
         .from('campaigns_metrics')
         .select(

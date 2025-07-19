@@ -1,4 +1,8 @@
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
+import { NextResponse } from "next/server";
+
+export const dynamic = 'force-static';
+export const revalidate = 60;
 
 export async function GET(
     request: Request,
@@ -13,8 +17,8 @@ export async function GET(
         .eq('adset_id', adsetId);
 
     if (error) {
-        return Response.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json(data);
+    return NextResponse.json(data);
 }

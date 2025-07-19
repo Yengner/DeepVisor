@@ -16,7 +16,8 @@ import {
   Skeleton,
   Avatar,
   Box,
-  Tooltip
+  Tooltip,
+  ScrollArea
 } from '@mantine/core';
 import {
   IconDots,
@@ -24,8 +25,11 @@ import {
   IconTrash,
   IconChartBar,
   IconPhoto,
-  IconEye
+  IconEye,
+  IconCheck
 } from '@tabler/icons-react';
+import useSWR from 'swr';
+import { fetcher } from '@/utils/fetcher';
 
 // Updated interface to match actual ads_metrics data
 interface Ad {
@@ -67,35 +71,22 @@ interface AdsTableProps {
 }
 
 export default function AdsTable({ adsetId }: AdsTableProps) {
-  const [loading, setLoading] = useState(true);
-  const [ads, setAds] = useState<Ad[]>([]);
+  const { data: ads, error, isLoading } = useSWR(
+    adsetId ? `/api/campaigns/[campaignId]/${adsetId}/ads` : null,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60000 }
+  );
 
-  useEffect(() => {
-    async function fetchAds() {
-      setLoading(true);
-      try {
-        const response = await fetch(`/api/campaigns/[campaignId]/${adsetId}/ads`);
-        if (response.ok) {
-          const data = await response.json();
-          setAds(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch ads:", error);
-        setAds([]);
-      } finally {
-        setLoading(false);
-      }
-    }
+  if (error) {
+    return (
+      <Paper p="md" radius="md">
+        <Text c="red">Failed to load ads: {error.message}</Text>
+      </Paper>
+    );
+  }
 
-    if (adsetId) {
-      fetchAds();
-    } else {
-      setLoading(false);
-      setAds([]);
-    }
-  }, [adsetId]);
-  
-  if (loading) {
+
+  if (isLoading) {
     return (
       <Paper p="md" radius="md">
         <Group justify="apart" mb="md">
@@ -110,70 +101,68 @@ export default function AdsTable({ adsetId }: AdsTableProps) {
   }
 
   return (
-    <Paper p="md" radius="md">
-      <Group justify="apart" mb="md">
-        <Group>
-          <ThemeIcon color="blue" variant="light" size="lg" radius="xl">
-            <IconPhoto size={20} />
-          </ThemeIcon>
-          <Text size="lg" fw={500}>
-            Ads for Ad Set
-          </Text>
-        </Group>
-        <Badge variant="outline" color="blue">
-          {ads.length} Ads
-        </Badge>
-      </Group>
-
-      <Table striped highlightOnHover>
-        <thead>
-          <tr>
-            <th>Ad Name</th>
-            <th>Preview</th>
-            <th>Status</th>
-            <th>Spend</th>
-            <th>Results</th>
-            <th>Cost/Result</th>
-            <th>Impressions</th>
-            <th>Clicks</th>
-            <th>CTR</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
+    <ScrollArea h="auto" type="always" offsetScrollbars>
+      <Table
+        striped
+        highlightOnHover
+        border={1}
+        withColumnBorders
+        style={{ minWidth: 800 }}
+      >
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th style={{ width: 40 }}></Table.Th>
+            <Table.Th>Ad Name</Table.Th>
+            <Table.Th>Preview</Table.Th>
+            <Table.Th>Status</Table.Th>
+            <Table.Th>Spend</Table.Th>
+            <Table.Th>Results</Table.Th>
+            <Table.Th>Cost/Result</Table.Th>
+            <Table.Th>Impressions</Table.Th>
+            <Table.Th>Clicks</Table.Th>
+            <Table.Th>CTR</Table.Th>
+            <Table.Th style={{ width: 50 }}></Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
           {ads.length === 0 ? (
-            <tr>
-              <td colSpan={10} style={{ textAlign: 'center' }}>
-                <Text c="dimmed">No ads found for this ad set</Text>
-              </td>
-            </tr>
+            <Table.Tr>
+              <Table.Td colSpan={11}>
+                <Text ta="center" py="md" c="dimmed">
+                  No ads found for this ad set
+                </Text>
+              </Table.Td>
+            </Table.Tr>
           ) : (
             ads.map((ad) => {
-              // Calculate derived metrics from raw data
               const conversionActions = ad.leads + ad.messages;
               const results = conversionActions > 0 ? `${conversionActions} ${conversionActions === 1 ? 'Lead' : 'Leads'}` : "0 Leads";
               const costPerResult = conversionActions > 0 ? `$${(ad.spend / conversionActions).toFixed(2)}` : "$0.00";
               const ctr = ad.clicks > 0 && ad.impressions > 0 ? `${(ad.clicks / ad.impressions * 100).toFixed(2)}%` : "0.00%";
               const isActive = ad.status === "ACTIVE";
-
-              // Get preview image if available
               const previewImage = ad.raw_data?.creative?.image_url || ad.raw_data?.creative?.video_url || null;
 
               return (
-                <tr key={ad.ad_id}>
-                  <td>
+                <Table.Tr
+                  key={ad.ad_id}
+                  style={{
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Table.Td></Table.Td>
+                  <Table.Td>
                     <Text size="sm" fw={500}>
                       {ad.name}
                     </Text>
-                  </td>
-                  <td>
-                    <Box w={{ width: 40 }}>
+                  </Table.Td>
+                  <Table.Td>
+                    <Box w={40}>
                       <Avatar src={previewImage} radius="sm">
                         <IconPhoto size={16} />
                       </Avatar>
                     </Box>
-                  </td>
-                  <td>
+                  </Table.Td>
+                  <Table.Td>
                     <Group gap="xs">
                       <Switch
                         checked={isActive}
@@ -182,6 +171,7 @@ export default function AdsTable({ adsetId }: AdsTableProps) {
                         offLabel="OFF"
                         color="green"
                         readOnly
+                        onClick={e => e.stopPropagation()}
                       />
                       <Badge
                         color={isActive ? "green" : "gray"}
@@ -190,25 +180,25 @@ export default function AdsTable({ adsetId }: AdsTableProps) {
                         {ad.status}
                       </Badge>
                     </Group>
-                  </td>
-                  <td>${ad.spend.toFixed(2)}</td>
-                  <td>{results}</td>
-                  <td>{costPerResult}</td>
-                  <td>{ad.impressions.toLocaleString()}</td>
-                  <td>{ad.clicks.toLocaleString()}</td>
-                  <td>{ad.ctr > 0 ? `${(ad.ctr * 100).toFixed(2)}%` : "0.00%"}</td>
-                  <td>
+                  </Table.Td>
+                  <Table.Td>${ad.spend.toFixed(2)}</Table.Td>
+                  <Table.Td>{results}</Table.Td>
+                  <Table.Td>{costPerResult}</Table.Td>
+                  <Table.Td>{ad.impressions.toLocaleString()}</Table.Td>
+                  <Table.Td>{ad.clicks.toLocaleString()}</Table.Td>
+                  <Table.Td>{ad.ctr > 0 ? `${(ad.ctr * 100).toFixed(2)}%` : "0.00%"}</Table.Td>
+                  <Table.Td>
                     <Group gap={8}>
                       {previewImage && (
                         <Tooltip label="Preview Ad">
-                          <ActionIcon color="blue" variant="light" component="a" href={previewImage} target="_blank">
+                          <ActionIcon color="blue" variant="light" component="a" href={previewImage} target="_blank" onClick={e => e.stopPropagation()}>
                             <IconEye size={16} />
                           </ActionIcon>
                         </Tooltip>
                       )}
                       <Menu position="bottom-end" withArrow>
                         <Menu.Target>
-                          <ActionIcon>
+                          <ActionIcon onClick={e => e.stopPropagation()}>
                             <IconDots size={16} />
                           </ActionIcon>
                         </Menu.Target>
@@ -226,13 +216,13 @@ export default function AdsTable({ adsetId }: AdsTableProps) {
                         </Menu.Dropdown>
                       </Menu>
                     </Group>
-                  </td>
-                </tr>
+                  </Table.Td>
+                </Table.Tr>
               );
             })
           )}
-        </tbody>
+        </Table.Tbody>
       </Table>
-    </Paper>
+    </ScrollArea>
   );
 }

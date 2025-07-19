@@ -15,7 +15,9 @@ import {
   ThemeIcon,
   Skeleton,
   Tooltip,
-  Checkbox
+  Checkbox,
+  ScrollArea,
+  Stack
 } from '@mantine/core';
 import {
   IconDots,
@@ -26,6 +28,8 @@ import {
   IconInfoCircle,
   IconCheck
 } from '@tabler/icons-react';
+import useSWR from 'swr'
+import { fetcher } from '@/utils/fetcher';
 
 interface AdSet {
   id: number;
@@ -64,38 +68,12 @@ interface AdSetTableProps {
 }
 
 export default function AdSetTable({ campaignId, onSelectAdSet, selectedAdSetId }: AdSetTableProps) {
-  const [loading, setLoading] = useState(true);
-  const [adSets, setAdSets] = useState<AdSet[]>([]);
 
-  useEffect(() => {
-    async function fetchAdSets() {
-      setLoading(true);
-      try {
-        const response = await fetch(`/api/campaigns/${campaignId}/adsets`);
-        if (response.ok) {
-          const data = await response.json();
-          setAdSets(data);
-          
-          // Auto-select first adset if available and none is currently selected
-          if (data.length > 0 && onSelectAdSet && !selectedAdSetId) {
-            onSelectAdSet(data[0].adset_id);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch ad sets:", error);
-        setAdSets([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (campaignId) {
-      fetchAdSets();
-    } else {
-      setLoading(false);
-      setAdSets([]);
-    }
-  }, [campaignId, onSelectAdSet, selectedAdSetId]);
+  const { data: adSets, error, isLoading } = useSWR(
+    campaignId ? `/api/campaigns/${campaignId}/adsets` : null,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60000 }
+  );
 
   const handleRowClick = (adsetId: string) => {
     if (onSelectAdSet) {
@@ -103,7 +81,7 @@ export default function AdSetTable({ campaignId, onSelectAdSet, selectedAdSetId 
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Paper p="md" radius="md">
         <Group justify="apart" mb="md">
@@ -118,138 +96,136 @@ export default function AdSetTable({ campaignId, onSelectAdSet, selectedAdSetId 
   }
 
   return (
-    <Paper p="md" radius="md">
-      <Group justify="apart" mb="md">
-        <Group>
-          <ThemeIcon color="blue" variant="light" size="lg" radius="xl">
-            <IconTargetArrow size={20} />
-          </ThemeIcon>
-          <Text size="lg" fw={500}>
-            Ad Sets for Campaign
-          </Text>
-        </Group>
-        <Badge variant="outline" color="blue">
-          {adSets.length} Ad Sets
-        </Badge>
-      </Group>
-
-      <Table striped highlightOnHover>
-        <thead>
-          <tr>
-            <th style={{ width: 30 }}></th>
-            <th>Ad Set Name</th>
-            <th>Status</th>
-            <th>Optimization Goal</th>
-            <th>Spend</th>
-            <th>Results</th>
-            <th>Cost/Result</th>
-            <th>Impressions</th>
-            <th>Reach</th>
-            <th>Frequency</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
+    <ScrollArea h="auto" type="always" offsetScrollbars>
+      <Table
+        striped
+        highlightOnHover
+        border={1}
+        withColumnBorders
+        style={{ minWidth: 800 }}
+      >
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th style={{ width: 40 }}></Table.Th>
+            <Table.Th>Ad Set</Table.Th>
+            <Table.Th>Status</Table.Th>
+            <Table.Th>Date Range</Table.Th>
+            <Table.Th>Budget</Table.Th>
+            <Table.Th>Results</Table.Th>
+            <Table.Th>KPI</Table.Th>
+            <Table.Th style={{ width: 50 }}></Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
           {adSets.length === 0 ? (
-            <tr>
-              <td colSpan={11} style={{ textAlign: 'center' }}>
-                <Text c="dimmed">No ad sets found for this campaign</Text>
-              </td>
-            </tr>
+            <Table.Tr>
+              <Table.Td colSpan={8}>
+                <Text ta="center" py="md" c="dimmed">
+                  No ad sets found
+                </Text>
+              </Table.Td>
+            </Table.Tr>
           ) : (
-            adSets.map((adSet) => {
-              const conversionActions = adSet.leads + adSet.messages;
-              const results = conversionActions > 0 ? `${conversionActions} ${conversionActions === 1 ? 'Lead' : 'Leads'}` : "0 Leads";
-              const costPerResult = conversionActions > 0 ? `$${(adSet.spend / conversionActions).toFixed(2)}` : "$0.00";
-              const frequency = adSet.reach > 0 ? (adSet.impressions / adSet.reach).toFixed(2) : "0";
-              const isActive = adSet.status === "ACTIVE";
-              const isSelected = selectedAdSetId === adSet.adset_id;
-
-              return (
-                <tr
-                  key={adSet.adset_id}
-                  onClick={() => handleRowClick(adSet.adset_id)}
-                  style={{
-                    cursor: 'pointer',
-                    backgroundColor: isSelected ? 'var(--mantine-color-blue-light)' : undefined
-                  }}
-                >
-                  {/* Selection indicator column */}
-                  <td>
-                    {isSelected && (
-                      <ThemeIcon color="blue" radius="xl" size="sm">
-                        <IconCheck size={14} />
-                      </ThemeIcon>
-                    )}
-                  </td>
-                  <td>
-                    <Text size="sm" fw={isSelected ? 700 : 500}>
-                      {adSet.name}
-                    </Text>
-                  </td>
-                  <td>
-                    <Group gap="xs">
-                      <Switch
-                        checked={isActive}
-                        size="sm"
-                        onLabel="ON"
-                        offLabel="OFF"
-                        color="green"
-                        readOnly
-                      />
-                      <Badge
-                        color={isActive ? "green" : "gray"}
-                        variant="light"
+            adSets.map((adset) => (
+              <Table.Tr
+                key={adset.adset_id}
+                style={{
+                  background: selectedAdSetId === adset.adset_id ? `rgba(var(--mantine-color-blue-light-rgb), 0.2)` : 'transparent',
+                  cursor: 'pointer'
+                }}
+                onClick={() => handleRowClick(adset.adset_id)}
+              >
+                <Table.Td>
+                  {selectedAdSetId === adset.adset_id && (
+                    <ThemeIcon radius="xl" size="sm" color='blue'>
+                      <IconCheck size={14} />
+                    </ThemeIcon>
+                  )}
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm" fw={500}>
+                    {adset.name}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Group gap="xs" wrap="nowrap">
+                    <Switch
+                      checked={adset.delivery}
+                      // onChange={(event) => {
+                      //   event.stopPropagation();
+                      //   onToggleAdSet(adset.id, event.currentTarget.checked);
+                      // }}
+                      size="sm"
+                      onLabel="ON"
+                      offLabel="OFF"
+                      color="green"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <Badge
+                      color={adset.status?.toUpperCase() === "ACTIVE" ? "green" : "gray"}
+                      variant="light"
+                    >
+                      {adset.status}
+                    </Badge>
+                  </Group>
+                </Table.Td>
+                <Table.Td>
+                  <Stack gap={0}>
+                    <Text size="xs">Start: {new Date(adset.startDate).toLocaleDateString()}</Text>
+                    <Text size="xs">End: {adset.endDate ? new Date(adset.endDate).toLocaleDateString() : "Ongoing"}</Text>
+                  </Stack>
+                </Table.Td>
+                <Table.Td>
+                  <Text fw={500} size="sm">
+                    ${Number(adset.budget || 0).toFixed(2)}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm">{adset.results}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <Stack gap={0}>
+                    <Text size="xs">CTR: {adset.ctr ? `${adset.ctr}%` : "0%"}</Text>
+                    <Text size="xs">CPC: ${adset.cpc || "0.00"}</Text>
+                    <Text size="xs">CPM: ${adset.cpm || "0.00"}</Text>
+                  </Stack>
+                </Table.Td>
+                <Table.Td>
+                  <Menu position="bottom-end" withArrow offset={4}>
+                    <Menu.Target>
+                      <ActionIcon onClick={(e) => e.stopPropagation()}>
+                        <IconDots size={16} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item
+                        leftSection={<IconPencil size={16} />}
+                        component="a"
+                        href={`/adsets/${adset.adset_id}/edit`}
                       >
-                        {adSet.status}
-                      </Badge>
-                    </Group>
-                  </td>
-                  <td>
-                    <Tooltip label="The result type this ad set is optimized for">
-                      <Group gap="xs">
-                        <Text size="sm">
-                          {adSet.optimization_goal === "CONVERSATIONS" ? "Leads/Messages" :
-                            adSet.optimization_goal === "LINK_CLICKS" ? "Link Clicks" :
-                              adSet.optimization_goal}
-                        </Text>
-                        <IconInfoCircle size={14} style={{ opacity: 0.5 }} />
-                      </Group>
-                    </Tooltip>
-                  </td>
-                  <td>${adSet.spend.toFixed(2)}</td>
-                  <td>{results}</td>
-                  <td>{costPerResult}</td>
-                  <td>{adSet.impressions.toLocaleString()}</td>
-                  <td>{adSet.reach.toLocaleString()}</td>
-                  <td>{frequency}</td>
-                  <td>
-                    <Menu position="bottom-end" withArrow>
-                      <Menu.Target>
-                        <ActionIcon>
-                          <IconDots size={16} />
-                        </ActionIcon>
-                      </Menu.Target>
-                      <Menu.Dropdown>
-                        <Menu.Item leftSection={<IconPencil size={16} />}>
-                          Edit Ad Set
-                        </Menu.Item>
-                        <Menu.Item leftSection={<IconChartBar size={16} />}>
-                          View Analytics
-                        </Menu.Item>
-                        <Divider />
-                        <Menu.Item color="red" leftSection={<IconTrash size={16} />}>
-                          Delete Ad Set
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  </td>
-                </tr>
-              );
-            })
+                        Edit Ad Set
+                      </Menu.Item>
+                      <Menu.Divider />
+                      <Menu.Item
+                        color="red"
+                        leftSection={<IconTrash size={16} />}
+                      // onClick={(e) => {
+                      //   e.stopPropagation();
+                      //   if (confirm(`Are you sure you want to delete "${adset.name}"?`)) {
+                      //     onDeleteAdSet(adset.id);
+                      //   }
+                      // }}
+                      >
+                        Delete Ad Set
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Table.Td>
+              </Table.Tr>
+            ))
           )}
-        </tbody>
+        </Table.Tbody>
       </Table>
-    </Paper>
+    </ScrollArea>
   );
 }
