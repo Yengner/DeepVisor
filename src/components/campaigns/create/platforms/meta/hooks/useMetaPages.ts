@@ -21,9 +21,7 @@ interface UseMetaPagesReturn {
  * Hook for fetching Meta pages for use in campaign creation
  */
 export function useMetaPages(
-  setFieldValue: (fieldName: string, value: any) => void,
   platformId: string,
-  shouldFetch: boolean = false,
 ): UseMetaPagesReturn {
   const [metaPages, setMetaPages] = useState<MetaPage[]>([]);
   const [loadingPages, setLoadingPages] = useState<boolean>(false);
@@ -31,7 +29,7 @@ export function useMetaPages(
   const [hasLoaded, setHasLoaded] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!shouldFetch || hasLoaded || !platformId) {
+    if (hasLoaded || !platformId) {
       return;
     }
 
@@ -46,7 +44,6 @@ export function useMetaPages(
             onSuccess: (data) => {
               setMetaPages(data);
               setHasLoaded(true);
-              setFieldValue('page_id', data.length > 0 ? data[0].page_id : '');
             },
             onError: (error: ErrorDetails) => {
               console.log("Error loading Meta pages:", error);
@@ -63,7 +60,7 @@ export function useMetaPages(
     }
 
     loadMetaPages();
-  }, [shouldFetch, hasLoaded, platformId]);
+  }, [hasLoaded, platformId]);
 
   return { metaPages, loadingPages, pagesError, hasLoaded };
 }

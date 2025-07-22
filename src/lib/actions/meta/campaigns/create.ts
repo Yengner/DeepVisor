@@ -9,25 +9,26 @@ import { logApiCallResult } from "../../../sdk/utils";
  * @returns Campaign ID from Meta API
  */
 export async function createCampaign(params: any): Promise<string> {
-    const { adAccountId, formData, isSmartCampaign } = params;
+    console.log("Creating campaign with params:", params);
+    const { adAccountId, formData, isSmartCampaign, budgetData } = params;
 
     try {
-
-
-
         const baseParams = {
-            name: `${formData.campaignName}${isSmartCampaign ? ' Smart Campaign' : ''}`,
-            status: "PAUSED", // Paused For Testing
+            [Campaign.Fields.name]: `${formData.campaign.campaignName}${isSmartCampaign ? ' Smart Campaign' : ''}`,
+            [Campaign.Fields.status]: Campaign.Status.paused,
+            [Campaign.Fields.special_ad_categories]: Campaign.SpecialAdCategories.none
         };
 
         // Get the appropriate strategy based on campaign objective
-        const strategy = getCampaignStrategy(formData.objective);
+        const strategy = getCampaignStrategy(formData.campaign.objective);
 
         const campaignParams = strategy.buildCampaignParams(
             baseParams,
             formData,
+            budgetData,
             isSmartCampaign
         );
+        console.log("Campaign parameters:", campaignParams);
 
         const account = new AdAccount(adAccountId);
         const campaign = await account.createCampaign(

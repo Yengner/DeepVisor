@@ -17,7 +17,8 @@ import {
   Tooltip,
   Checkbox,
   ScrollArea,
-  Stack
+  Stack,
+  Button
 } from '@mantine/core';
 import {
   IconDots,
@@ -26,7 +27,8 @@ import {
   IconChartBar,
   IconTargetArrow,
   IconInfoCircle,
-  IconCheck
+  IconCheck,
+  IconPlus
 } from '@tabler/icons-react';
 import useSWR from 'swr'
 import { fetcher } from '@/utils/fetcher';
@@ -75,6 +77,19 @@ export default function AdSetTable({ campaignId, onSelectAdSet, selectedAdSetId 
     { revalidateOnFocus: false, dedupingInterval: 60000 }
   );
 
+  if (error) {
+    return (
+      <Paper p="md" radius="md">
+        <Text c="red">Failed to load ad sets: {error.message}</Text>
+      </Paper>
+    );
+  }
+
+  const handleAddAdSet = () => {
+    // Replace with your modal or form logic
+    alert('Add Ad Set for campaign: ' + campaignId);
+  };
+
   const handleRowClick = (adsetId: string) => {
     if (onSelectAdSet) {
       onSelectAdSet(adsetId);
@@ -97,6 +112,19 @@ export default function AdSetTable({ campaignId, onSelectAdSet, selectedAdSetId 
 
   return (
     <ScrollArea h="auto" type="always" offsetScrollbars>
+      <Group justify="space-between" align="center" px="md" py="sm" mb="sm" style={{ background: "#f8fafc", borderRadius: 8 }}>
+        <Text size="lg" fw={600}>Ad Sets</Text>
+        <Button
+          leftSection={<IconPlus size={18} />}
+          color="blue"
+          variant="light"
+          radius="xl"
+          onClick={handleAddAdSet}
+          style={{ fontWeight: 500 }}
+        >
+          Add New Ad Set
+        </Button>
+      </Group>
       <Table
         striped
         highlightOnHover

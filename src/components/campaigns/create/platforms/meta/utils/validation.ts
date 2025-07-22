@@ -14,10 +14,19 @@ type ShowError = (message: string) => void;
  * @param showError - Function to display error messages
  * @returns boolean - Whether validation passed
  */
-
+/**
+ * 
 export function validateMetaStep(
     activeStep: number,
     form: UseFormReturnType<CampaignFormValues>,
+    validateFormFields: ValidateFormFields,
+    showError: ShowError
+): boolean {
+ */
+
+export function validateMetaStep(
+    activeStep: number,
+    form: UseFormReturnType<any>,
     validateFormFields: ValidateFormFields,
     showError: ShowError
 ): boolean {

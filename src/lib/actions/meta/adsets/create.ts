@@ -9,22 +9,25 @@ import { logApiCallResult } from "../../../sdk/utils";
  * @param params - Parameters for ad set creation
  * @returns Ad Set ID from Meta API
  */
-export async function createAdSet(params: MetaAdSetParams): Promise<string> {
+export async function createAdSet(params: any): Promise<string> {
     const { adAccountId, campaignId, formData, isSmartCampaign } = params;
-
+    console.log("Creating ad set with params:", formData);
     try {
-        // Create base ad set parameters
+        // Use adSetName from ad set object, and schedule from formData if available
         const baseParams = {
-            name: `${formData.campaignName} - Ad Set`,
+            name: `${formData.adSetName || 'Ad Set'}`,
             campaign_id: campaignId,
             status: "PAUSED",
-            start_time: formData.startDate ? new Date(formData.startDate).toISOString() : undefined,
-            end_time: formData.endDate ? new Date(formData.endDate).toISOString() : undefined
+            start_time: formData.schedule?.startDate
+                ? new Date(formData.schedule.startDate).toISOString()
+                : undefined,
+            end_time: formData.schedule?.endDate
+                ? new Date(formData.schedule.endDate).toISOString()
+                : undefined
         };
+        console.log("Base ad set parameters:", baseParams);
 
-
-        // Get the appropriate strategy based on objective
-        const strategy = getAdSetStrategy(formData.destinationType);
+        const strategy = getAdSetStrategy(formData.campaign.destinationType);
 
         // Apply the strategy to get objective-specific parameters
         const adSetParams = strategy.buildAdSetParams(
@@ -32,6 +35,7 @@ export async function createAdSet(params: MetaAdSetParams): Promise<string> {
             formData,
             isSmartCampaign
         );
+        console.log("Final ad set parameters:", adSetParams);
 
         // Use the SDK to create the ad set
         const account = new AdAccount(adAccountId);

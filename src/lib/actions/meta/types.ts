@@ -76,104 +76,74 @@ export interface SmartCampaignResult {
  * Form values interface standardized to match Meta API parameters
  */
 export interface CampaignFormValues {
+    step: 'list' | 'adset' | 'creative';
+    activeAdSetIdx: number | null;
+    type: string; 
+    adSetSubStep: 'adset' | 'creative';
 
-    // For internal use - platform details
-    /** Campaign type ('AI Auto' for smart/optimized campaigns) */
-    type?: string;
-    /** Platform for the campaign (e.g., 'meta', 'google') */
-    platform?: string;
-    /** ID of the Ad Account to use */
-    adAccountId: string;
-    /** ID of the platform integration (e.g., Meta integration ID) */
+    mode: string;
+    platform: string;
     platformIntegrationId: string;
 
-    // Campaign basics
-    /** User-defined name for the campaign */
-    campaignName: string;
-    /** Campaign objective (using OUTCOME_* format for newer API) */
-    objective: string;
-    /** Type of buying (e.g., 'AUCTION', 'RESERVED') */
-    buying_type: string;
-    /** Special ad categories */
-    special_ad_categories?: string[];
-    /** Bid strategy for the campaign */
-    bid_strategy?: string;
-    /** Destination type (e.g., 'WEBSITE', 'ON_AD' for lead gen forms) */
-    destinationType: string;
-
-
-    // Budget and schedule
-    /** Budget amount (in currency units) */
-    budget: number;
-    /** Budget type ('daily' or 'lifetime') */
-    budgetType: string;
-    /** Campaign start date */
-    startDate: Date | null;
-    /** Campaign end date (null for no end date) */
-    endDate: Date | null;
-    /** Bidding strategy */
-    bidStrategy: string;
-    /** Campaign budget optimization */
-    campaign_budget_optimization: boolean;
-
-    // Ad Set level parameters
-    /** Name of the ad set */
-    adSetName?: string;
-    /** ID of the Facebook Page to use for the ad set */
-    page_id: string;
-    /** Whether to use Advantage+ audience targeting */
-    useAdvantageAudience: boolean;
-    /** Whether to use saved audience targeting */
-    useAdvantagePlacements: boolean;
-    /** Billing event (e.g., 'IMPRESSIONS', 'LINK_CLICKS') */
-    billingEvent?: string;
-    /** Optimization goal */
-    optimization_goal?: string;
-    /** Location targeting parameters */
-    location?: {
-        markerPosition?: { lat: number; lng: number } | null;
-        radius?: number;
+    campaign: {
+        adAccountId: string;
+        campaignName: string;
+        objective: string;
+        buying_type: string;
+        special_ad_categories: string[];
+        bid_strategy: string;
+        destinationType: string;
+        // Optionally add destination object if used
+        // destination?: {
+        //     form?: string;
+        //     url?: string;
+        // };
     };
-    /** Minimum age for audience targeting */
-    ageMin?: number | string;
-    /** Maximum age for audience targeting */
-    ageMax?: number | string;
-    /** Gender targeting options */
-    genders?: string[];
-    /** Interest-based targeting */
-    interests?: any[];
 
-    // Creative content
-    /** Source of creative content ('upload', 'existing', 'auto') */
-    contentSource?: 'upload' | 'existing' | 'auto';
-    /** Uploaded files for creatives */
-    uploadedFiles?: any[];
+    budget: {
+        amount: number;
+        type: string;
+        optimization: boolean;
+        bidstrategy: string;
+        buying_type: string;
+    };
 
-    /** Existing Creatives Object */
-    existingCreatives: string[];
-    /** Selected creative ID for existing creatives */
-    selectedCreativeName?: string;
-    /** Selected creative thumbnail URL */
-    selectedCreativeThumbnail?: string;
-    /** IDs of existing creatives to use */
-    existingCreativeIds: string[];
+    schedule: {
+        startDate: Date;
+        endDate: Date | null;
+    };
 
-    /** Image hash from uploaded files */
-    imageHash?: string;
-    /** Ad headline */
-    adHeadline?: string;
-    /** Ad primary text */
-    adPrimaryText?: string;
-    /** Ad description */
-    adDescription?: string;
-    /** Call to action button text */
-    adCallToAction?: string;
-    /** Creative Id */
-    creativeIdTesting: string;
-    // Lead generation specific
-    /** Form ID for lead form ads */
-    adDestinationForm?: string;
-    /** Website URL for ads with website destination */
-    adDestinationUrl?: string;
-
+    adSets: {
+        adSetName: string;
+        page_id: string;
+        useAdvantageAudience: boolean;
+        useAdvantagePlacements: boolean;
+        billingEvent: string;
+        optimization_goal: string;
+        targeting: {
+            location: {
+                markerPosition: { lat: number; lng: number } | null;
+                radius: number;
+            };
+            age: {
+                min: number;
+                max: number;
+            };
+            genders: string[];
+            interests: string[];
+            // Optionally add behaviors, languages, etc.
+            // behaviors?: string[];
+            // languages?: string[];
+        };
+        creatives: {
+            contentSource: string;
+            existingCreativeIds: string[];
+            uploadedFiles: File[];
+            imageHash: string;
+            adHeadline: string;
+            adPrimaryText: string;
+            adDescription: string;
+            adCallToAction: string;
+        }[];
+    }[];
 }

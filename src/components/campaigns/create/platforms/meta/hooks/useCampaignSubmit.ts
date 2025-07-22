@@ -69,10 +69,10 @@ export function useCampaignSubmit(): UseCampaignSubmitReturn {
       };
     }
 
-    // Use provided form data or fall back to test data
     const formData = form;
 
     try {
+      console.log("Submitting campaign with form data:", form);
       const res = await fetch('/api/meta/create-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

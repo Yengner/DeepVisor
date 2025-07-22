@@ -3,14 +3,16 @@
 // Mantine imports and icons
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
-import { Card, Group, Paper, Radio, Stack, Text, TextInput, ThemeIcon, Title, Switch, Alert, SegmentedControl, Grid, Badge, NumberInput, Tooltip, ActionIcon, Box } from '@mantine/core';
+import { Card, Group, Paper, Radio, Stack, Text, TextInput, ThemeIcon, Title, Switch, Alert, SegmentedControl, Grid, Badge, NumberInput, Tooltip, ActionIcon, Box, Button } from '@mantine/core';
 import { IconBuildingStore, IconInfoCircle, IconChartBar, IconCalendar, IconCurrencyDollar, IconArrowAutofitUp, IconBulb } from '@tabler/icons-react';
 import { DateTimePicker } from '@mantine/dates';
 import { UseFormReturnType } from '@mantine/form';
+import { useState } from 'react';
 
 // Objective mappings and types
 import { CampaignFormValues } from '@/lib/actions/meta/types';
 import { getObjectiveLabel, getValidDestinationTypes } from '../utils/objectiveMappings';
+import CboDiagramModal from './CboDiagramModal';
 
 interface CampaignDetailsStepProps {
     form: UseFormReturnType<CampaignFormValues>;
@@ -29,7 +31,7 @@ export default function CampaignDetailsStep({
 }: CampaignDetailsStepProps) {
     // Determine recommended settings based on objective -- CHANGE COMING SOON 
     const getRecommendedSettings = () => {
-        const objective = form.values.objective;
+        const objective = form.values.campaign.objective;
 
         // Default recommendations
         let recommended = {
@@ -85,11 +87,15 @@ export default function CampaignDetailsStep({
     };
     const recommended = getRecommendedSettings();
     // Check if current settings match recommendations
-    const isUsingRecommendedBuying = form.values.buying_type === recommended.buyingType;
-    const isUsingRecommendedBudgetType = form.values.budgetType === recommended.budgetType;
-    const isUsingRecommendedBudgetAmount = form.values.budget >= recommended.minBudget;
-    const isUsingRecommendedCBO = form.values.campaign_budget_optimization === recommended.campaignBudgetOptimization;
-    const isUsingRecommendedBidStrategy = form.values.bidStrategy === recommended.bidStrategy;
+    const isUsingRecommendedBuying = form.values.budget.buying_type === recommended.buyingType;
+    const isUsingRecommendedBudgetType = form.values.budget.type === recommended.budgetType;
+    const isUsingRecommendedBudgetAmount = form.values.budget.amount >= recommended.minBudget;
+    const isUsingRecommendedCBO = form.values.budget.optimization === recommended.campaignBudgetOptimization;
+    const isUsingRecommendedBidStrategy = form.values.budget.bidStrategy === recommended.bidStrategy;
+
+    // Add local state for CBO modal
+    const [cboModalOpened, setCboModalOpened] = useState(false);
+
     return (
         <Grid gutter="md" mt="xl" mb="xl">
             {/* Left column with form inputs */}
@@ -112,7 +118,7 @@ export default function CampaignDetailsStep({
                                 placeholder="Spring Sale 2025"
                                 required
                                 size="md"
-                                {...form.getInputProps('campaignName')}
+                                {...form.getInputProps('campaign.campaignName')}
                             />
 
                             {/* Objective (display only since it was set in previous step) */}
@@ -122,7 +128,7 @@ export default function CampaignDetailsStep({
                                     <Text size="sm" c="dimmed">Set in previous step</Text>
                                 </Stack>
                                 <Badge size="lg" color="blue" variant="filled">
-                                    {getObjectiveLabel(form.values.objective)}
+                                    {getObjectiveLabel(form.values.campaign.objective)}
                                 </Badge>
                             </Group>
 
@@ -142,7 +148,7 @@ export default function CampaignDetailsStep({
                                         { label: 'Auction', value: 'AUCTION' },
                                         { label: 'Reach & Frequency', value: 'REACH_AND_FREQUENCY' }
                                     ]}
-                                    {...form.getInputProps('buying_type')}
+                                    {...form.getInputProps('budget.buying_type')}
                                     onChange={(value) => form.setFieldValue('buying_type', value)}
                                     fullWidth
                                     size="md"
@@ -150,7 +156,7 @@ export default function CampaignDetailsStep({
                                     radius="md"
                                 />
 
-                                {form.values.buying_type === 'REACH_AND_FREQUENCY' && (
+                                {form.values.budget.buying_type === 'REACH_AND_FREQUENCY' && (
                                     <Alert
                                         icon={<IconInfoCircle size={16} />}
                                         color="blue"
@@ -200,23 +206,45 @@ export default function CampaignDetailsStep({
                                         offLabel="OFF"
                                         size="md"
                                         color="green"
-                                        checked={form.values.campaign_budget_optimization === true}
-                                        onChange={(event) => form.setFieldValue('campaign_budget_optimization', event.currentTarget.checked)}
+                                        checked={form.values.budget.optimization === true}
+                                        onChange={(event) => form.setFieldValue('budget.optimization', event.currentTarget.checked)}
                                     />
                                 </Group>
                             </Group>
 
-                            {form.values.campaign_budget_optimization === true && (
-                                <Alert
-                                    icon={<IconInfoCircle size={16} />}
+                            {form.values.budget.optimization === true && (<>
+                                <Alert icon={<IconInfoCircle size={16} />}
                                     color="green"
                                     title="Budget Optimization Enabled"
                                     variant="light"
                                     radius="md"
                                     mt="md"
-                                >
+                                    withCloseButton={false} >
                                     Meta will automatically distribute your campaign budget across ad sets to get the best results.
+                                    <Button variant="subtle" size="xs" color="blue" ml="sm" mt="sm"
+                                        onClick={() => setCboModalOpened(true)} > Learn more
+                                    </Button>
                                 </Alert>
+                                <CboDiagramModal opened={cboModalOpened}
+                                    onClose={() => setCboModalOpened(false)}
+                                />
+                            </>
+                            )}
+                            {form.values.budget.optimization === false && (
+                                <>
+                                    <Alert icon={<IconInfoCircle size={16} />}
+                                        color="gray"
+                                        title="Budget Optimization Disabled"
+                                        variant="light"
+                                        radius="md"
+                                        mt="md"
+                                        withCloseButton={false}>
+                                        You will set a separate budget for each ad set.
+                                        <Button variant="subtle" size="xs" color="blue" ml="sm" mt="sm" onClick={() => setCboModalOpened(true)} > Learn more </Button>
+                                    </Alert>
+                                    <CboDiagramModal opened={cboModalOpened}
+                                        onClose={() => setCboModalOpened(false)} />
+                                </>
                             )}
 
                             {/* Budget Type Selection */}
@@ -234,8 +262,8 @@ export default function CampaignDetailsStep({
                                         { label: 'Daily Budget', value: 'daily' },
                                         { label: 'Lifetime Budget', value: 'lifetime' }
                                     ]}
-                                    {...form.getInputProps('budgetType')}
-                                    onChange={(value) => form.setFieldValue('budgetType', value)}
+                                    {...form.getInputProps('budget.type')}
+                                    onChange={(value) => form.setFieldValue('budget.type', value)}
                                     fullWidth
                                     size="md"
                                     color="green"
@@ -246,7 +274,7 @@ export default function CampaignDetailsStep({
                             {/* Budget Amount */}
                             <NumberInput
                                 label="Budget Amount"
-                                description={`How much do you want to spend ${form.values.budgetType === 'daily' ? 'per day' : 'in total'}`}
+                                description={`How much do you want to spend ${form.values.budget.type === 'daily' ? 'per day' : 'in total'}`}
                                 placeholder="5"
                                 min={5}
                                 step={1}
@@ -255,7 +283,7 @@ export default function CampaignDetailsStep({
                                 mt="lg"
 
                                 leftSection={<IconCurrencyDollar size={18} color="green" />}
-                                {...form.getInputProps('budget')}
+                                {...form.getInputProps('budget.amount')}
                                 rightSection={
                                     !isUsingRecommendedBudgetAmount && (
                                         <Tooltip label={`Recommended minimum budget: $${recommended.minBudget}`}>
@@ -280,23 +308,23 @@ export default function CampaignDetailsStep({
                                             minDate={new Date()}
                                             leftSection={<IconCalendar size={18} color="green" />}
                                             size="md"
-                                            {...form.getInputProps('startDate')}
+                                            {...form.getInputProps('schedule.startDate')}
                                         />
                                     </Grid.Col>
                                     <Grid.Col span={6}>
                                         <DateTimePicker
-                                            label={`End Date ${form.values.budgetType === 'lifetime' ? '(Required for Lifetime)' : ''}`}
+                                            label={`End Date ${form.values.budget.type === 'lifetime' ? '(Required for Lifetime)' : ''}`}
                                             placeholder="Select date and time"
-                                            required={form.values.budgetType === 'lifetime'}
-                                            minDate={form.values.startDate || new Date()}
+                                            required={form.values.budget.type === 'lifetime'}
+                                            minDate={form.values.schedule.startDate || new Date()}
                                             leftSection={<IconCalendar size={18} color="green" />}
                                             size="md"
-                                            {...form.getInputProps('endDate')}
+                                            {...form.getInputProps('schedule.endDate')}
                                         />
                                     </Grid.Col>
                                 </Grid>
 
-                                {form.values.budgetType === 'lifetime' && !form.values.endDate && (
+                                {form.values.budget.type === 'lifetime' && !form.values.schedule.endDate && (
                                     <Alert
                                         color="yellow"
                                         mt="md"
@@ -329,12 +357,12 @@ export default function CampaignDetailsStep({
 
                             <Radio.Group
                                 required
-                                {...form.getInputProps('destinationType')}
+                                {...form.getInputProps('campaign.destinationType')}
                                 onChange={(value) => handleDestinationChange(value)}
                             >
                                 <Stack gap="md">
                                     {/* Dynamically generate destination options based on selected objective */}
-                                    {getValidDestinationTypes(form.values.objective).map(destType => {
+                                    {getValidDestinationTypes(form.values.campaign.objective).map(destType => {
                                         const config = getDestinationConfig(destType);
 
                                         return (
@@ -343,20 +371,20 @@ export default function CampaignDetailsStep({
                                                 withBorder
                                                 p="md"
                                                 radius="md"
-                                                shadow={form.values.destinationType === destType ? "sm" : "xs"}
+                                                shadow={form.values.campaign.destinationType === destType ? "sm" : "xs"}
                                                 onClick={() => handleDestinationChange(destType)}
                                                 style={{
                                                     cursor: 'pointer',
-                                                    borderColor: form.values.destinationType === destType ? 'var(--mantine-color-indigo-6)' : undefined,
-                                                    backgroundColor: form.values.destinationType === destType ? 'var(--mantine-color-indigo-0)' : undefined,
-                                                    transform: form.values.destinationType === destType ? 'translateY(-2px)' : undefined,
+                                                    borderColor: form.values.campaign.destinationType === destType ? 'var(--mantine-color-indigo-6)' : undefined,
+                                                    backgroundColor: form.values.campaign.destinationType === destType ? 'var(--mantine-color-indigo-0)' : undefined,
+                                                    transform: form.values.campaign.destinationType === destType ? 'translateY(-2px)' : undefined,
                                                     transition: 'all 0.2s ease'
                                                 }}
                                             >
                                                 <Group align="flex-start">
                                                     <Radio
                                                         value={destType}
-                                                        checked={form.values.destinationType === destType}
+                                                        checked={form.values.campaign.destinationType === destType}
                                                         color="indigo"
                                                         size="md"
                                                     />
@@ -388,7 +416,7 @@ export default function CampaignDetailsStep({
 
                         <Paper withBorder p="md" radius="md" mb="md" shadow="xs">
                             <Group justify="apart" mb="xs">
-                                <Text fw={600}>For {getObjectiveLabel(form.values.objective)} Campaigns</Text>
+                                <Text fw={600}>For {getObjectiveLabel(form.values.campaign.objective)} Campaigns</Text>
                                 <ThemeIcon size="md" variant="light" radius="xl" color="blue">
                                     <IconBulb size={16} />
                                 </ThemeIcon>

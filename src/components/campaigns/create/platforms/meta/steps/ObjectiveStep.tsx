@@ -4,22 +4,19 @@ import {
     Card, Group, Paper, Radio, Stack, Text, ThemeIcon, Title, Divider, Box
 } from '@mantine/core';
 import {
-    IconBrandAirtable, IconArrowRight, IconMessageCircle,
-    IconForms, IconDeviceMobile, IconShoppingCart, IconCheckbox
+    IconCheckbox
 } from '@tabler/icons-react';
 import { CAMPAIGN_OBJECTIVES } from '../utils/objectiveMappings';
 import { getObjectiveIcon } from '../utils/iconHelpers';
 
 interface ObjectiveStepProps {
     form: any;
-    handleObjectiveChange: (value: string) => void;
-    isSmart?: boolean;
+    isFast?: boolean;
 }
 
 export default function ObjectiveStep({
     form,
-    handleObjectiveChange,
-    isSmart = false
+    isFast = false
 }: ObjectiveStepProps) {
 
     return (
@@ -27,76 +24,52 @@ export default function ObjectiveStep({
             <Stack>
                 <Title order={3}>Choose a campaign objective</Title>
                 <Text c="dimmed" size="sm">
-                    {isSmart
+                    {isFast
                         ? "Our AI will optimize your campaign based on the objective you select"
                         : "What's the main result you want from this campaign?"}
                 </Text>
 
                 <Divider my="md" />
+                <Stack style={{ flex: 1 }} />
 
                 <Group align="flex-start" grow>
                     {/* Left side: objective options */}
                     <Stack style={{ flex: 1 }}>
                         <Radio.Group
-                            value={form.values.objective}
-                            onChange={(value) => handleObjectiveChange(value)}
+                            value={form.values.campaign.objective}
                             name="objective"
                             withAsterisk
                         >
                             <Stack gap="md">
-                                {/* Awareness objective */}
-                                <ObjectiveOption
-                                    objective={CAMPAIGN_OBJECTIVES.AWARENESS}
-                                    label="Awareness"
-                                    currentValue={form.values.objective}
-                                    onChange={handleObjectiveChange}
-                                    icon={getObjectiveIcon(CAMPAIGN_OBJECTIVES.AWARENESS)}
-                                />
-
-                                {/* Traffic objective */}
-                                <ObjectiveOption
-                                    objective={CAMPAIGN_OBJECTIVES.TRAFFIC}
-                                    label="Traffic"
-                                    currentValue={form.values.objective}
-                                    onChange={handleObjectiveChange}
-                                    icon={getObjectiveIcon(CAMPAIGN_OBJECTIVES.TRAFFIC)}
-                                />
-
-                                {/* Engagement objective */}
-                                <ObjectiveOption
-                                    objective={CAMPAIGN_OBJECTIVES.ENGAGEMENT}
-                                    label="Engagement"
-                                    currentValue={form.values.objective}
-                                    onChange={handleObjectiveChange}
-                                    icon={getObjectiveIcon(CAMPAIGN_OBJECTIVES.ENGAGEMENT)}
-                                />
-
-                                {/* Leads objective */}
-                                <ObjectiveOption
-                                    objective={CAMPAIGN_OBJECTIVES.LEADS}
-                                    label="Leads"
-                                    currentValue={form.values.objective}
-                                    onChange={handleObjectiveChange}
-                                    icon={getObjectiveIcon(CAMPAIGN_OBJECTIVES.LEADS)}
-                                />
-
-                                {/* App promotion objective */}
-                                <ObjectiveOption
-                                    objective={CAMPAIGN_OBJECTIVES.APP_PROMOTION}
-                                    label="App promotion"
-                                    currentValue={form.values.objective}
-                                    onChange={handleObjectiveChange}
-                                    icon={getObjectiveIcon(CAMPAIGN_OBJECTIVES.APP_PROMOTION)}
-                                />
-
-                                {/* Sales objective */}
-                                <ObjectiveOption
-                                    objective={CAMPAIGN_OBJECTIVES.SALES}
-                                    label="Sales"
-                                    currentValue={form.values.objective}
-                                    onChange={handleObjectiveChange}
-                                    icon={getObjectiveIcon(CAMPAIGN_OBJECTIVES.SALES)}
-                                />
+                                {Object.entries(CAMPAIGN_OBJECTIVES).map(([key, value]) => (
+                                    <Paper
+                                        key={key}
+                                        withBorder
+                                        p="md"
+                                        radius="md"
+                                        bg={form.values.campaign.objective === value ? 'blue.0' : undefined}
+                                        style={{
+                                            borderColor: form.values.campaign.objective === value ? 'var(--mantine-color-blue-6)' : undefined,
+                                            borderWidth: form.values.campaign.objective === value ? 2 : 1,
+                                            cursor: 'pointer'
+                                        }}
+                                        onClick={() => form.setFieldValue('campaign.objective', value)}
+                                    >
+                                        <Group align="center">
+                                            <Radio
+                                                value={value}
+                                                checked={form.values.campaign.objective === value}
+                                                styles={{ body: { width: '100%' } }}
+                                            />
+                                            <Group gap="md" style={{ flex: 1 }}>
+                                                <ThemeIcon size="lg" radius="md" color="blue" variant={form.values.campaign.objective === value ? "filled" : "light"}>
+                                                    {getObjectiveIcon(value)}
+                                                </ThemeIcon>
+                                                <Text fw={500}>{key.charAt(0) + key.slice(1).toLowerCase()}</Text>
+                                            </Group>
+                                        </Group>
+                                    </Paper>
+                                ))}
                             </Stack>
                         </Radio.Group>
                     </Stack>
@@ -104,7 +77,7 @@ export default function ObjectiveStep({
                     {/* Right side: objective details */}
                     <Card withBorder radius="md" p="md" style={{ flex: 1, height: '100%' }}>
                         {/* Leads objective details */}
-                        {form.values.objective === CAMPAIGN_OBJECTIVES.LEADS && (
+                        {form.values.campaign.objective === CAMPAIGN_OBJECTIVES.LEADS && (
                             <ObjectiveDetails
                                 title="Leads"
                                 description="Collect leads for your business or brand."
@@ -120,7 +93,7 @@ export default function ObjectiveStep({
                         )}
 
                         {/* Traffic objective details */}
-                        {form.values.objective === CAMPAIGN_OBJECTIVES.TRAFFIC && (
+                        {form.values.campaign.objective === CAMPAIGN_OBJECTIVES.TRAFFIC && (
                             <ObjectiveDetails
                                 title="Traffic"
                                 description="Send people to a destination, like your website, app, Instagram profile or Facebook event."
@@ -136,7 +109,7 @@ export default function ObjectiveStep({
                         )}
 
                         {/* Engagement objective details */}
-                        {form.values.objective === CAMPAIGN_OBJECTIVES.ENGAGEMENT && (
+                        {form.values.campaign.objective === CAMPAIGN_OBJECTIVES.ENGAGEMENT && (
                             <ObjectiveDetails
                                 title="Engagement"
                                 description="Get more messages, purchases through messaging, video views, post engagement, Page likes or event responses."
@@ -152,7 +125,7 @@ export default function ObjectiveStep({
                         )}
 
                         {/* Awareness objective details */}
-                        {form.values.objective === CAMPAIGN_OBJECTIVES.AWARENESS && (
+                        {form.values.campaign.objective === CAMPAIGN_OBJECTIVES.AWARENESS && (
                             <ObjectiveDetails
                                 title="Awareness"
                                 description="Show your ads to people who are most likely to remember them."
@@ -167,7 +140,7 @@ export default function ObjectiveStep({
                         )}
 
                         {/* App promotion objective details */}
-                        {form.values.objective === CAMPAIGN_OBJECTIVES.APP_PROMOTION && (
+                        {form.values.campaign.objective === CAMPAIGN_OBJECTIVES.APP_PROMOTION && (
                             <ObjectiveDetails
                                 title="App promotion"
                                 description="Find new people to install your app and continue using it."
@@ -180,7 +153,7 @@ export default function ObjectiveStep({
                         )}
 
                         {/* Sales objective details */}
-                        {form.values.objective === CAMPAIGN_OBJECTIVES.SALES && (
+                        {form.values.campaign.objective === CAMPAIGN_OBJECTIVES.SALES && (
                             <ObjectiveDetails
                                 title="Sales"
                                 description="Find people likely to purchase your product or service."
@@ -197,7 +170,7 @@ export default function ObjectiveStep({
                 </Group>
 
                 {/* Additional info for smart campaigns */}
-                {isSmart && (
+                {isFast && (
                     <Paper withBorder p="md" radius="md" bg="green.0" mt="md">
                         <Group>
                             <ThemeIcon color="green" variant="light" size="lg" radius="xl">
@@ -211,61 +184,10 @@ export default function ObjectiveStep({
                     </Paper>
                 )}
             </Stack>
-        </Card>
+
+        </Card >
     );
 }
-
-/* 
-Helper component for objective details
-*/
-interface ObjectiveOptionProps {
-    objective: string;
-    label: string;
-    currentValue: string;
-    onChange: (value: string) => void;
-    icon: React.ReactNode;
-}
-
-function ObjectiveOption({
-    objective,
-    label,
-    currentValue,
-    onChange,
-    icon
-}: ObjectiveOptionProps) {
-    const isSelected = currentValue === objective;
-
-    return (
-        <Paper
-            withBorder
-            p="md"
-            radius="md"
-            bg={isSelected ? 'blue.0' : undefined}
-            style={{
-                borderColor: isSelected ? 'var(--mantine-color-blue-6)' : undefined,
-                borderWidth: isSelected ? 2 : 1,
-                cursor: 'pointer'
-            }}
-            onClick={() => onChange(objective)}
-        >
-            <Group align="center">
-                <Radio
-                    value={objective}
-                    checked={isSelected}
-                    onChange={() => onChange(objective)}
-                    styles={{ body: { width: '100%' } }}
-                />
-                <Group gap="md" style={{ flex: 1 }}>
-                    <ThemeIcon size="lg" radius="md" color="blue" variant={isSelected ? "filled" : "light"}>
-                        {icon}
-                    </ThemeIcon>
-                    <Text fw={500}>{label}</Text>
-                </Group>
-            </Group>
-        </Paper>
-    );
-}
-
 
 interface ObjectiveDetailsProps {
     title: string;

@@ -1,11 +1,11 @@
 import { createSupabaseClient } from "../../utils/supabase/clients/server";
-import { getLoggedInUser } from "../user/user.actions";
+import { getLoggedInUser } from "../user";
+
 
 export async function getAccessToken(platformId: string): Promise<string> {
     try {
         const supabase = await createSupabaseClient();
-        const loggedInUser = await getLoggedInUser();
-        const userId = loggedInUser?.id;
+        const userId = await getLoggedInUser().then((user) => user?.id);
 
         const { data: integration, error: integrationError } = await supabase
             .from("platform_integrations")

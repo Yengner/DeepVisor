@@ -10,7 +10,7 @@ import {
     IconBuildingStore, IconSettings, IconTarget, IconBrandWhatsapp,
     IconMessageCircle, IconMapPin, IconDeviceImac, IconAlertCircle
 } from '@tabler/icons-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { UseFormReturnType } from '@mantine/form';
 import { CampaignFormValues } from '@/lib/actions/meta/types';
 import { useFilePreview } from '../hooks/useFilePreview';
@@ -32,7 +32,7 @@ interface SelectedCreative {
     name: string;
     thumbnail_url?: string;
     type: string;
-    previewHtml?: string; 
+    previewHtml?: string;
 }
 
 /**
@@ -45,9 +45,20 @@ export default function CreativeAssetsStep({
     adAccountId,
     isSmart = false
 }: CreativeAssetsStepProps) {
+    // Get current ad set index
+    const idx = form.values.activeAdSetIdx ?? 0;
+    console.log('Current ad set index:', idx);
+    const creative = form.values.adSets?.[idx]?.creatives?.[0] || {};
+    console.log('Current creative data:', creative);
+
+    // Memoize uploadedFiles to avoid infinite update loop
+    const uploadedFiles = useMemo(() => creative.uploadedFiles || [], [creative.uploadedFiles]);
+
     const [mediaModalOpened, setMediaModalOpened] = useState(false);
     const [selectedCreative, setSelectedCreative] = useState<SelectedCreative | null>(null);
-    const { filePreview, handleFilesChange } = useFilePreview(form.values.uploadedFiles);
+
+    // Use memoized uploadedFiles
+    const { filePreview, handleFilesChange } = useFilePreview(uploadedFiles);
 
     const {
         previews,
@@ -56,35 +67,34 @@ export default function CreativeAssetsStep({
         hasLoaded: previewLoaded
     } = useCreativePreview({
         platformId: platformData.id,
-        creativeId: form.values.existingCreativeIds?.[0],
-        enabled: form.values.contentSource === 'existing' && !!form.values.existingCreativeIds?.[0],
+        creativeId: creative.existingCreativeIds?.[0],
+        enabled: creative.contentSource === 'existing' && !!creative.existingCreativeIds?.[0],
         previewTypes: ['DESKTOP_FEED_STANDARD']
     });
 
     const previewHtml = previews?.DESKTOP_FEED_STANDARD?.body ||
         (previews && Object.values(previews)[0]?.body);
 
-    const handleCreativeSelection = (creative: SelectedCreative | null) => {
-        if (!creative) {
-            form.setFieldValue('existingCreativeIds', []);
-            form.setFieldValue('selectedCreativeName', '');
-            form.setFieldValue('selectedCreativeThumbnail', '');
-            form.setFieldValue('existingCreatives', []);
+    const handleCreativeSelection = (creativeObj: SelectedCreative | null) => {
+        if (!creativeObj) {
+            form.setFieldValue(`adSets.${idx}.creatives.0.existingCreativeIds`, []);
+            form.setFieldValue(`adSets.${idx}.creatives.0.selectedCreativeName`, '');
+            form.setFieldValue(`adSets.${idx}.creatives.0.selectedCreativeThumbnail`, '');
+            form.setFieldValue(`adSets.${idx}.creatives.0.existingCreatives`, []);
             setSelectedCreative(null);
             return;
         }
-
-        form.setFieldValue('existingCreativeIds', [creative.id]);
-        form.setFieldValue('selectedCreativeName', creative.name);
-        form.setFieldValue('selectedCreativeThumbnail', creative.thumbnail_url || '');
-        form.setFieldValue('existingCreatives', [creative.id]);
-        setSelectedCreative(creative);
+        form.setFieldValue(`adSets.${idx}.creatives.0.existingCreativeIds`, [creativeObj.id]);
+        form.setFieldValue(`adSets.${idx}.creatives.0.selectedCreativeName`, creativeObj.name);
+        form.setFieldValue(`adSets.${idx}.creatives.0.selectedCreativeThumbnail`, creativeObj.thumbnail_url || '');
+        form.setFieldValue(`adSets.${idx}.creatives.0.existingCreatives`, [creativeObj.id]);
+        setSelectedCreative(creativeObj);
     };
 
-    const showCustomTextFields = form.values.contentSource === 'upload' ||
-        form.values.contentSource === 'auto' ||
-        (form.values.contentSource === 'existing' &&
-            (!form.values.existingCreativeIds || form.values.existingCreativeIds.length === 0));
+    const showCustomTextFields = creative.contentSource === 'upload' ||
+        creative.contentSource === 'auto' ||
+        (creative.contentSource === 'existing' &&
+            (!creative.existingCreativeIds || creative.existingCreativeIds.length === 0));
 
     const placeholderAd = {
         headline: "Amazing Product Launch",
@@ -94,11 +104,11 @@ export default function CreativeAssetsStep({
     };
 
     const getPreviewImage = () => {
-        if (form.values.contentSource === 'upload' && filePreview.length > 0) {
+        if (creative.contentSource === 'upload' && filePreview.length > 0) {
             return filePreview[0];
         }
-        else if (form.values.contentSource === 'existing' && form.values.existingCreativeIds?.length > 0) {
-            return form.values.selectedCreativeThumbnail || placeholderAd.image;
+        else if (creative.contentSource === 'existing' && creative.existingCreativeIds?.length > 0) {
+            return creative.selectedCreativeThumbnail || placeholderAd.image;
         }
         return placeholderAd.image;
     };
@@ -135,7 +145,7 @@ export default function CreativeAssetsStep({
                         <Radio.Group
                             label="Content Source"
                             description="Choose where your ad content comes from"
-                            {...form.getInputProps('contentSource')}
+                            {...form.getInputProps(`adSets.${idx}.creatives.0.contentSource`)}
                         >
                             <Stack mt="xs" gap="md">
                                 {getContentSourceOptions().includes('upload') && (
@@ -143,12 +153,12 @@ export default function CreativeAssetsStep({
                                         withBorder
                                         p="md"
                                         radius="md"
-                                        bg={form.values.contentSource === 'upload' ? 'blue.0' : undefined}
+                                        bg={creative.contentSource === 'upload' ? 'blue.0' : undefined}
                                         style={{
                                             cursor: 'pointer',
-                                            borderColor: form.values.contentSource === 'upload' ? 'var(--mantine-color-blue-6)' : undefined
+                                            borderColor: creative.contentSource === 'upload' ? 'var(--mantine-color-blue-6)' : undefined
                                         }}
-                                        onClick={() => form.setFieldValue('contentSource', 'upload')}
+                                        onClick={() => form.setFieldValue(`adSets.${idx}.creatives.0.contentSource`, 'upload')}
                                     >
                                         <Group align="flex-start">
                                             <Radio value="upload" />
@@ -165,12 +175,12 @@ export default function CreativeAssetsStep({
                                         withBorder
                                         p="md"
                                         radius="md"
-                                        bg={form.values.contentSource === 'existing' ? 'blue.0' : undefined}
+                                        bg={creative.contentSource === 'existing' ? 'blue.0' : undefined}
                                         style={{
                                             cursor: 'pointer',
-                                            borderColor: form.values.contentSource === 'existing' ? 'var(--mantine-color-blue-6)' : undefined
+                                            borderColor: creative.contentSource === 'existing' ? 'var(--mantine-color-blue-6)' : undefined
                                         }}
-                                        onClick={() => form.setFieldValue('contentSource', 'existing')}
+                                        onClick={() => form.setFieldValue(`adSets.${idx}.creatives.0.contentSource`, 'existing')}
                                     >
                                         <Group align="flex-start">
                                             <Radio value="existing" />
@@ -189,12 +199,12 @@ export default function CreativeAssetsStep({
                                         withBorder
                                         p="md"
                                         radius="md"
-                                        bg={form.values.contentSource === 'auto' ? 'blue.0' : undefined}
+                                        bg={creative.contentSource === 'auto' ? 'blue.0' : undefined}
                                         style={{
                                             cursor: 'pointer',
-                                            borderColor: form.values.contentSource === 'auto' ? 'var(--mantine-color-blue-6)' : undefined
+                                            borderColor: creative.contentSource === 'auto' ? 'var(--mantine-color-blue-6)' : undefined
                                         }}
-                                        onClick={() => form.setFieldValue('contentSource', 'auto')}
+                                        onClick={() => form.setFieldValue(`adSets.${idx}.creatives.0.contentSource`, 'auto')}
                                     >
                                         <Group align="flex-start">
                                             <Radio value="auto" />
@@ -211,7 +221,7 @@ export default function CreativeAssetsStep({
                         </Radio.Group>
 
                         {/* Upload Content Option */}
-                        {form.values.contentSource === 'upload' && (
+                        {creative.contentSource === 'upload' && (
                             <Stack mt="md">
                                 <FileInput
                                     label="Upload Images/Videos"
@@ -222,7 +232,7 @@ export default function CreativeAssetsStep({
                                     leftSection={<IconUpload size={16} />}
                                     size="md"
                                     onChange={(files) => {
-                                        form.setFieldValue('uploadedFiles', files || []);
+                                        form.setFieldValue(`adSets.${idx}.creatives.0.uploadedFiles`, files || []);
                                         handleFilesChange(files || []);
                                     }}
                                 />
@@ -269,27 +279,27 @@ export default function CreativeAssetsStep({
                         )}
 
                         {/* Select Existing Creatives Option */}
-                        {form.values.contentSource === 'existing' && (
+                        {creative.contentSource === 'existing' && (
                             <Stack mt="md">
                                 <Text fw={500} size="sm">Use existing creative content</Text>
 
                                 {/* Show selected creative if any */}
-                                {form.values.existingCreativeIds?.length > 0 ? (
+                                {creative.existingCreativeIds?.length > 0 ? (
                                     <Paper p="md" withBorder radius="md">
                                         <Stack gap="xs">
                                             <Group>
                                                 <AspectRatio ratio={1} style={{ width: 80 }}>
                                                     <Image
-                                                        src={form.values.selectedCreativeThumbnail || placeholderAd.image}
+                                                        src={creative.selectedCreativeThumbnail || placeholderAd.image}
                                                         radius="md"
                                                         alt="Selected creative"
                                                         fit="cover"
                                                     />
                                                 </AspectRatio>
                                                 <Stack gap={0}>
-                                                    <Text size="sm" fw={500}>{form.values.selectedCreativeName || "Selected Creative"}</Text>
+                                                    <Text size="sm" fw={500}>{creative.selectedCreativeName || "Selected Creative"}</Text>
                                                     <Text size="xs" c="dimmed">
-                                                        ID: {form.values.existingCreativeIds[0]?.slice(-8) || ""}
+                                                        ID: {creative.existingCreativeIds[0]?.slice(-8) || ""}
                                                     </Text>
                                                     <Button
                                                         variant="light"
@@ -317,7 +327,7 @@ export default function CreativeAssetsStep({
                         )}
 
                         {/* AI Content Selection Option */}
-                        {form.values.contentSource === 'auto' && (
+                        {creative.contentSource === 'auto' && (
                             <Box mt="md">
                                 <Center my="md">
                                     <RingProgress
@@ -389,7 +399,7 @@ export default function CreativeAssetsStep({
                                         placeholder="e.g. Summer Sale - 50% Off Everything"
                                         maxLength={40}
                                         size="md"
-                                        {...form.getInputProps('adHeadline')}
+                                        {...form.getInputProps(`adSets.${idx}.creatives.0.adHeadline`)}
                                     />
 
                                     <TextInput
@@ -398,7 +408,7 @@ export default function CreativeAssetsStep({
                                         placeholder="e.g. Don't miss our biggest sale of the year! Limited time offer."
                                         maxLength={125}
                                         size="md"
-                                        {...form.getInputProps('adPrimaryText')}
+                                        {...form.getInputProps(`adSets.${idx}.creatives.0.adPrimaryText`)}
                                     />
 
                                     <TextInput
@@ -407,7 +417,7 @@ export default function CreativeAssetsStep({
                                         placeholder="e.g. Free shipping on all orders"
                                         maxLength={30}
                                         size="md"
-                                        {...form.getInputProps('adDescription')}
+                                        {...form.getInputProps(`adSets.${idx}.creatives.0.adDescription`)}
                                     />
 
                                     {/* Call to Action Button */}
@@ -423,7 +433,7 @@ export default function CreativeAssetsStep({
                                             { value: 'GET_OFFER', label: 'Get Offer' },
                                         ]}
                                         size="md"
-                                        {...form.getInputProps('adCallToAction')}
+                                        {...form.getInputProps(`adSets.${idx}.creatives.0.adCallToAction`)}
                                     />
                                 </Stack>
                             </Paper>
@@ -445,8 +455,8 @@ export default function CreativeAssetsStep({
                             </Group>
 
                             {/* Show HTML preview if we have an existing creative selected */}
-                            {form.values.contentSource === 'existing' &&
-                                form.values.existingCreativeIds?.length > 0 && (
+                            {creative.contentSource === 'existing' &&
+                                creative.existingCreativeIds?.length > 0 && (
                                     <>
                                         {loadingPreview && (
                                             <Center py="xl">
@@ -500,7 +510,7 @@ export default function CreativeAssetsStep({
 
                                                     {/* Ad text */}
                                                     <Text p="xs" size="sm">
-                                                        {form.values.adPrimaryText || placeholderAd.primaryText}
+                                                        {creative.adPrimaryText || placeholderAd.primaryText}
                                                     </Text>
 
                                                     {/* Ad image */}
@@ -514,18 +524,18 @@ export default function CreativeAssetsStep({
                                                     {/* Ad headline & CTA */}
                                                     <Box p="xs">
                                                         <Text fw={500} size="sm">
-                                                            {form.values.adHeadline || placeholderAd.headline}
+                                                            {creative.adHeadline || placeholderAd.headline}
                                                         </Text>
                                                         <Text size="xs" c="dimmed" mb="xs">
-                                                            {form.values.adDescription || placeholderAd.description}
+                                                            {creative.adDescription || placeholderAd.description}
                                                         </Text>
                                                         <Button fullWidth size="sm">
-                                                            {form.values.adCallToAction === 'SHOP_NOW' ? 'Shop Now' :
-                                                                form.values.adCallToAction === 'LEARN_MORE' ? 'Learn More' :
-                                                                    form.values.adCallToAction === 'SIGN_UP' ? 'Sign Up' :
-                                                                        form.values.adCallToAction === 'BOOK_NOW' ? 'Book Now' :
-                                                                            form.values.adCallToAction === 'CONTACT_US' ? 'Contact Us' :
-                                                                                form.values.adCallToAction === 'GET_OFFER' ? 'Get Offer' :
+                                                            {creative.adCallToAction === 'SHOP_NOW' ? 'Shop Now' :
+                                                                creative.adCallToAction === 'LEARN_MORE' ? 'Learn More' :
+                                                                    creative.adCallToAction === 'SIGN_UP' ? 'Sign Up' :
+                                                                        creative.adCallToAction === 'BOOK_NOW' ? 'Book Now' :
+                                                                            creative.adCallToAction === 'CONTACT_US' ? 'Contact Us' :
+                                                                                creative.adCallToAction === 'GET_OFFER' ? 'Get Offer' :
                                                                                     'Learn More'}
                                                         </Button>
                                                     </Box>
@@ -536,9 +546,9 @@ export default function CreativeAssetsStep({
                                 )}
 
                             {/* Always show regular preview for uploaded content or auto */}
-                            {(form.values.contentSource !== 'existing' ||
-                                !form.values.existingCreativeIds?.length ||
-                                (form.values.contentSource === 'existing' && !previewHtml && !loadingPreview)) && (
+                            {(creative.contentSource !== 'existing' ||
+                                !creative.existingCreativeIds?.length ||
+                                (creative.contentSource === 'existing' && !previewHtml && !loadingPreview)) && (
                                     <Paper withBorder radius="md" p={0} style={{ overflow: 'hidden' }}>
                                         {/* Facebook header */}
                                         <Group p="xs" justify="apart">
@@ -559,7 +569,7 @@ export default function CreativeAssetsStep({
 
                                         {/* Ad text */}
                                         <Text p="xs" size="sm">
-                                            {form.values.adPrimaryText || placeholderAd.primaryText}
+                                            {creative.adPrimaryText || placeholderAd.primaryText}
                                         </Text>
 
                                         {/* Ad image */}
@@ -573,18 +583,18 @@ export default function CreativeAssetsStep({
                                         {/* Ad headline & CTA */}
                                         <Box p="xs">
                                             <Text fw={500} size="sm">
-                                                {form.values.adHeadline || placeholderAd.headline}
+                                                {creative.adHeadline || placeholderAd.headline}
                                             </Text>
                                             <Text size="xs" c="dimmed" mb="xs">
-                                                {form.values.adDescription || placeholderAd.description}
+                                                {creative.adDescription || placeholderAd.description}
                                             </Text>
                                             <Button fullWidth size="sm">
-                                                {form.values.adCallToAction === 'SHOP_NOW' ? 'Shop Now' :
-                                                    form.values.adCallToAction === 'LEARN_MORE' ? 'Learn More' :
-                                                        form.values.adCallToAction === 'SIGN_UP' ? 'Sign Up' :
-                                                            form.values.adCallToAction === 'BOOK_NOW' ? 'Book Now' :
-                                                                form.values.adCallToAction === 'CONTACT_US' ? 'Contact Us' :
-                                                                    form.values.adCallToAction === 'GET_OFFER' ? 'Get Offer' :
+                                                {creative.adCallToAction === 'SHOP_NOW' ? 'Shop Now' :
+                                                    creative.adCallToAction === 'LEARN_MORE' ? 'Learn More' :
+                                                        creative.adCallToAction === 'SIGN_UP' ? 'Sign Up' :
+                                                            creative.adCallToAction === 'BOOK_NOW' ? 'Book Now' :
+                                                                creative.adCallToAction === 'CONTACT_US' ? 'Contact Us' :
+                                                                    creative.adCallToAction === 'GET_OFFER' ? 'Get Offer' :
                                                                         'Learn More'}
                                             </Button>
                                         </Box>
@@ -605,11 +615,11 @@ export default function CreativeAssetsStep({
                 opened={mediaModalOpened}
                 onClose={() => setMediaModalOpened(false)}
                 onSelectCreative={handleCreativeSelection}
-                objective={form.values.objective}
-                destinationType={form.values.destinationType}
+                objective={form.values.campaign.objective}
+                destinationType={form.values.campaign.destinationType}
                 platformId={platformData.id}
                 adAccountId={adAccountId}
-                initialSelectedId={form.values.existingCreativeIds?.[0] || null}
+                initialSelectedId={creative.existingCreativeIds?.[0] || null}
             />
         </Grid>
     );

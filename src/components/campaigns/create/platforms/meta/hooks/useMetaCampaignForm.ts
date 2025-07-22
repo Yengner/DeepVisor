@@ -5,99 +5,121 @@ import { CAMPAIGN_OBJECTIVES, DESTINATION_TYPES, OPTIMIZATION_GOALS } from '../u
 /**
  * Hook for managing campaign creation form state
  * 
- * @param isSmartCampaign - Whether the form is for a Smart Campaign (simplified)
+ * @param isFastCampaign - Whether the form is for a Smart Campaign (simplified)
  * @returns Form object with values, validation, and methods
  */
-export function useMetaCampaignForm(platformId: string, adAccountId: string, isSmartCampaign = false) {
-  return useForm<CampaignFormValues>({
+export function useMetaCampaignForm(platformId: string, adAccountId: string, isFastCampaign = false) {
+  return useForm({
     initialValues: {
+      step: 'adset' as 'list' | 'adset' | 'creative',
+      activeAdSetIdx: 0 as number | null,
+      type: isFastCampaign ? 'Quick' : 'Manual',
+      adSetSubStep: 'adset' as 'adset' | 'creative',
 
-      // For internal use - platform details
-      type: isSmartCampaign ? 'AI Auto' : 'Manual',
+      mode: 'uncontrolled',
       platform: 'meta',
-      adAccountId: adAccountId,
       platformIntegrationId: platformId,
 
-      // Campaign basics --- 
-      campaignName: '',
-      objective: CAMPAIGN_OBJECTIVES.LEADS,
-      buying_type: 'AUCTION',
-      special_ad_categories: ['NONE'],
-      bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
-      destinationType: DESTINATION_TYPES.FORM,
-
-      // Budget and schedule
-      budget: 20,
-      budgetType: 'daily',
-      startDate: new Date(),
-      endDate: null,
-      bidStrategy: 'LOWEST_COST_WITHOUT_CAP',
-      campaign_budget_optimization: true,
-
-      // Ad Set Configuration --
-      adSetName: '',
-      page_id: '',
-      useAdvantageAudience: true,
-      useAdvantagePlacements: true,
-      billingEvent: 'IMPRESSIONS',
-      optimization_goal: OPTIMIZATION_GOALS.LEAD_GENERATION,
-
-      // Location and audience targeting
-      location: {
-        markerPosition: null,
-        radius: 10,
+      // —————————————————————————————————————————
+      // 1. Campaign level
+      // —————————————————————————————————————————
+      campaign: {
+        adAccountId,
+        campaignName: '',
+        objective: CAMPAIGN_OBJECTIVES.LEADS,
+        buying_type: 'AUCTION',
+        special_ad_categories: ['NONE'],
+        bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+        destinationType: DESTINATION_TYPES.FORM,
+        // destination: {
+        //   form: '',      // lead‐form id
+        //   url: '',       // website url
+        // },
       },
-      ageMin: 18,
-      ageMax: 65,
-      genders: [],
-      interests: [],
+      
+      // —————————————————————————————————————————
+      // 2. Budget & schedule
+      // —————————————————————————————————————————
+      budget: {
+        amount: 20,
+        type: 'daily',
+        optimization: true, // campaign_budget_optimization
+        bidstrategy: 'LOWEST_COST_WITHOUT_CAP',
+        buying_type: 'AUCTION',
+      },
+      schedule: {
+        startDate: new Date(),
+        endDate: null as Date | null,
+      },
 
-      // Creative content
-      contentSource: isSmartCampaign ? 'auto' : 'upload',
-      existingCreatives: [],
-      selectedCreativeName: '',
-      selectedCreativeThumbnail: '',
-      existingCreativeIds: [],
-      uploadedFiles: [],
-      imageHash: '',
-      adHeadline: '',
-      adPrimaryText: '',
-      adDescription: '',
-      adCallToAction: 'LEARN_MORE',
-      creativeIdTesting: '',
+      adSets: [
+        {
+          adSetName: '',
+          page_id: '',
+          useAdvantageAudience: true,
+          useAdvantagePlacements: true,
+          billingEvent: 'IMPRESSIONS',
+          optimization_goal: OPTIMIZATION_GOALS.LEAD_GENERATION,
 
-      // Destination configurations
-      adDestinationForm: '',
-      adDestinationUrl: '',
+          // targeting sub‐object
+          targeting: {
+            location: {
+              markerPosition: null as { lat: number; lng: number } | null,
+              radius: 10,
+            },
+            age: {
+              min: 18,
+              max: 65,
+            },
+            genders: [] as string[],
+            interests: [] as string[],
+          },
+          // —————————————————————————————————————————
+          // 4. Creatives (array)
+          // —————————————————————————————————————————
+          creatives: [
+            {
+              contentSource: isFastCampaign ? 'auto' : 'upload',
+              existingCreativeIds: [] as string[],
+              uploadedFiles: [] as File[],
+              imageHash: '',
+              adHeadline: '',
+              adPrimaryText: '',
+              adDescription: '',
+              adCallToAction: 'LEARN_MORE' as string,
+            },
+          ],
+        },
+      ],
 
-      // Additional fields from the extended form
-      // useSavedAudience: false,
-      // savedAudienceId: '',
-      // languages: [],
-      // behaviors: [],
-      // adDestinationType: 'WEBSITE',
-      // adDestinationPhone: '',
-      // placementTypes: ['facebook', 'instagram'],
-      // headline: '',
-      // primaryText: '',
-      // description: '',
-      // callToAction: 'LEARN_MORE',
-      // trackingPixel: '',
-      // customParameters: '',
     },
+
     validate: {
-      campaignName: (value) => (!value ? 'Campaign name is required' : null),
-      budget: (value) => (value < 5 ? 'Minimum budget is $5' : null),
-      startDate: (value) => (!value ? 'Start date is required' : null),
-      page_id: (value) => (!value ? 'Facebook Page is required' : null),
-      adHeadline: (value) => (!value ? 'Ad headline is required' : null),
-      adPrimaryText: (value) => (!value ? 'Ad primary text is required' : null),
-      // adDestinationUrl: (value, values) =>
-      //   values.adDestinationType === 'WEBSITE' && !value ? 'Website URL is required' : null,
-      // adDestinationPhone: (value, values) =>
-      //   values.adDestinationType === 'PHONE' && !value ? 'Phone number is required' : null,
-      adDestinationForm: (value, values) =>
-        values.destinationType === 'FORM' && !value ? 'Please select a lead form' : null,
-    }
+      // Campaign fields
+      campaign: {
+        campaignName: (v) => v.trim() ? null : 'Campaign name is required',
+        destinationType: (v) => v ? null : 'Please select a destination type',
+        objective: (v) => v ? null : 'Objective is required',
+      },
+
+      // Budget
+      // 'budget.amount': (v) => (v >= 5 ? null : 'Minimum budget is $5'),
+
+      // // Schedule
+      // 'schedule.startDate': (v) =>
+      //   v ? null : 'Start date is required',
+
+      // // Ad Set array: validate first item as example
+      // 'adSets.0.adSetName': (v) =>
+      //   v.trim() ? null : 'Ad Set name is required',
+      // 'adSets.0.page_id': (v) =>
+      //   v ? null : 'Facebook Page is required',
+
+      // // Creative array: first creative
+      // 'creatives.0.adHeadline': (v) =>
+      //   v.trim() ? null : 'Ad headline is required',
+      // 'creatives.0.adPrimaryText': (v) =>
+      //   v.trim() ? null : 'Ad primary text is required',
+    },
   });
 }

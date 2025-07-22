@@ -9,14 +9,14 @@ import { AdSet } from "../../../../sdk/client"; // Import the SDK AdSet class
 export class LeadGenAdSetStrategy implements AdSetStrategy {
     buildAdSetParams(
         baseParams: any,
-        formData: CampaignFormValues,
+        formData: any,
         isSmartCampaign: boolean
     ): any {
         const params: Record<string, any> = { ...baseParams };
 
-        params[AdSet.Fields.billing_event] = "IMPRESSIONS";
-        params[AdSet.Fields.optimization_goal] = "LEAD_GENERATION";
-        params[AdSet.Fields.destination_type] = "ON_AD";
+        params[AdSet.Fields.billing_event] = AdSet.BillingEvent.impressions;
+        params[AdSet.Fields.optimization_goal] = AdSet.OptimizationGoal.lead_generation;
+        params[AdSet.Fields.destination_type] = AdSet.DestinationType.on_ad;
 
 
         params[AdSet.Fields.promoted_object] = {
@@ -28,23 +28,23 @@ export class LeadGenAdSetStrategy implements AdSetStrategy {
         return params;
     }
 
-    private buildTargeting(formData: CampaignFormValues, isSmartCampaign: boolean): any {
+    private buildTargeting(formData: any, isSmartCampaign: boolean): any {
         let geoLocations: any = {
             location_types: ["home", "recent"]
         };
 
-        if (formData.location?.markerPosition) {
+        if (formData.targeting.location?.markerPosition) {
             geoLocations.custom_locations = [{
-                latitude: formData.location.markerPosition.lat,
-                longitude: formData.location.markerPosition.lng,
-                radius: formData.location.radius || 10,
+                latitude: formData.targeting.location.markerPosition.lat,
+                longitude: formData.targeting.location.markerPosition.lng,
+                radius: formData.targeting.location.radius || 10,
                 distance_unit: "mile"
             }];
         }
 
         const targeting = {
-            age_max: formData.ageMax || 65,
-            age_min: formData.ageMin || 18,
+            age_max: formData.targeting.ageMax || 65,
+            age_min: formData.targeting.ageMin || 18,
             geo_locations: geoLocations
         };
 

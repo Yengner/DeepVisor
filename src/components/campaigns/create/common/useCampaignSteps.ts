@@ -19,10 +19,17 @@ interface UseCampaignStepsReturn {
  * @param totalSteps - Total number of steps in the campaign creation process
  * @returns Object with step state and navigation functions
 */
-export function useCampaignSteps(
+
+/**export function useCampaignSteps(
   form: UseFormReturnType<CampaignFormValues>,
   totalSteps: number = 7
 ): UseCampaignStepsReturn {
+*/
+
+export function useCampaignSteps(
+  form: any,
+  totalSteps: number = 7
+): any {
   const [active, setActive] = useState<number>(0);
 
   // Scroll to top when active step changes
@@ -36,12 +43,12 @@ export function useCampaignSteps(
     let isValid = true;
     const errors: Record<string, boolean> = {};
 
-    fields.forEach(field => {
-      if (!form.values[field as keyof CampaignFormValues]) {
-        errors[field] = true;
-        isValid = false;
-      }
-    });
+    // fields.forEach(field => {
+    //   if (!form.values[field as keyof CampaignFormValues]) {
+    //     errors[field] = true;
+    //     isValid = false;
+    //   }
+    // });
 
     if (!isValid) {
       Object.keys(errors).forEach(field => {
@@ -53,7 +60,6 @@ export function useCampaignSteps(
   }, [form]);
 
   const nextStep = useCallback(() => {
-    // Get platform from form
     const platform = form.values.platform;
     let isValid = false;
 

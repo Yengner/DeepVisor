@@ -8,15 +8,15 @@ import { logApiCallResult } from "../../../sdk/utils";
  * @param params - Parameters for ad creation
  * @returns Ad ID from Meta API
  */
-export async function createAd(params: MetaAdParams): Promise<string> {
+export async function createAd(params: any): Promise<string> {
   const { adAccountId, adsetId, creativeId, formData } = params;
 
   try {
     const adParams: Record<string, any> = {
-      [Ad.Fields.name]: `${formData.campaignName} - Ad`,
+      [Ad.Fields.name]: `${formData.campaign.campaignName} - Ad`,
       [Ad.Fields.adset_id]: adsetId,
       [Ad.Fields.creative]: { creative_id: creativeId },
-      [Ad.Fields.status]: "PAUSED", // Paused for testing
+      [Ad.Fields.status]: "PAUSED", 
     };
 
     const account = new AdAccount(adAccountId);

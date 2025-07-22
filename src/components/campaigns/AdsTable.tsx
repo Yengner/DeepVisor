@@ -17,7 +17,8 @@ import {
   Avatar,
   Box,
   Tooltip,
-  ScrollArea
+  ScrollArea,
+  Button
 } from '@mantine/core';
 import {
   IconDots,
@@ -26,7 +27,8 @@ import {
   IconChartBar,
   IconPhoto,
   IconEye,
-  IconCheck
+  IconCheck,
+  IconPlus
 } from '@tabler/icons-react';
 import useSWR from 'swr';
 import { fetcher } from '@/utils/fetcher';
@@ -85,6 +87,10 @@ export default function AdsTable({ adsetId }: AdsTableProps) {
     );
   }
 
+  const handleAddAd = () => {
+    // Replace with your modal or form logic
+    alert('Add Ad for ad set: ' + adsetId);
+  };
 
   if (isLoading) {
     return (
@@ -102,6 +108,19 @@ export default function AdsTable({ adsetId }: AdsTableProps) {
 
   return (
     <ScrollArea h="auto" type="always" offsetScrollbars>
+      <Group justify="space-between" align="center" px="md" py="sm" mb="sm" style={{ background: "#f8fafc", borderRadius: 8 }}>
+        <Text size="lg" fw={600}>Ads</Text>
+        <Button
+          leftSection={<IconPlus size={18} />}
+          color="blue"
+          variant="light"
+          radius="xl"
+          onClick={handleAddAd}
+          style={{ fontWeight: 500 }}
+        >
+          Add New Ad
+        </Button>
+      </Group>
       <Table
         striped
         highlightOnHover

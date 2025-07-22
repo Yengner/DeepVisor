@@ -7,6 +7,7 @@ import { createAd } from "./ads/create";
 import { getAccessToken } from "../common/accessToken";
 import { FacebookAdsApi } from "../../sdk/client";
 import { getLoggedInUser } from "../user";
+import { createCreative } from "./creatives/create";
 
 /**
  * Server action to create a Meta campaign
@@ -22,117 +23,109 @@ export async function createMetaCampaign(formData: CampaignFormValues): Promise<
     const userId = loggedIn?.id;
     const accessToken = await getAccessToken(formData.platformIntegrationId);
     const APP_SECRET = process.env.META_APP_SECRET!;
-    const adAccountId = formData.adAccountId;
+    const adAccountId = formData.campaign.adAccountId;
 
-    FacebookAdsApi.init(accessToken, APP_SECRET);
+    FacebookAdsApi.init(accessToken, APP_SECRET).setDebug(true);
 
     const isSmartCampaign = formData.type === 'AI Auto';
 
-    try {
+    console.log("Creating Meta campaign with formData:", formData);
 
+    try {
         // 1. Create The Campaign
         const campaignId = await createCampaign({
             adAccountId,
-            accessToken,
             formData: formData,
+            budgetData: formData.budget,
             isSmartCampaign
         });
 
-        // 2. Create a single Ad Set 
-        const adsetId = await createAdSet({
-            adAccountId,
-            accessToken,
-            campaignId,
-            formData: formData,
-            isSmartCampaign
-        });
+        // 2. Create all Ad Sets and collect their IDs
+        const adsetIds: string[] = [];
+        const creativeIds: string[] = [];
+        const adIds: string[] = [];
 
-        const adsetIds = [adsetId];
+        // Loop through each ad set in the form
+        for (const adSet of formData.adSets) {
+            console.log("Creating ad set:");
+            // Create Ad Set
+            const adsetId = await createAdSet({
+                adAccountId,
+                campaignId,
+                formData: {
+                    ...formData,
+                    ...adSet,
+                },
+                isSmartCampaign
+            });
+            adsetIds.push(adsetId);
 
-        // Skip for now as I need to have my app in live mode for testing.
-        // 3. Create a single Creative (with optimized parameters if smart campaign)
-        // const creativeId = await createCreative({
-        //   adAccountId,
-        //   accessToken,
-        //   pageId: formData.page_id,
-        //   formData: formData,
-        //   isSmartCampaign
-        // });
+            // For each creative in this ad set, use the existing creative ID for testing
+            for (const creative of adSet.creatives) {
+                // Use the first existing creative ID if available
+                const creativeId =
+                    creative.existingCreativeIds && creative.existingCreativeIds.length > 0
+                        ? creative.existingCreativeIds[0]
+                        : null;
 
-        const creativeId = formData.existingCreativeIds?.[0]
-        const creativeIds = [creativeId];
+                if (creativeId) {
+                    creativeIds.push(creativeId);
 
-        // 4. Create a single Ad
-        const adId = await createAd({
-            adAccountId,
-            accessToken,
-            adsetId,
-            creativeId,
-            formData: formData,
-            isSmartCampaign
-        });
+                    // Create Ad for this adset/creative pair
+                    const adId = await createAd({
+                        adAccountId,
+                        accessToken,
+                        adsetId,
+                        creativeId,
+                        formData: {
+                            ...formData,
+                            ...adSet,
+                            ...creative,
+                        },
+                        isSmartCampaign
+                    });
+                    adIds.push(adId);
+                } else {
+                    // Optionally handle the case where no existing creative ID is present
+                    console.warn("No existing creative ID found for creative in ad set", adSet.adSetName);
+                }
+            }
+        }
 
-        const adIds = [adId];
-
-        // 5. Store campaign information in database
+        // 5. Store campaign information in database (optional, unchanged)
         try {
             // Store main campaign record
             const campaignParams = {
                 user_id: userId,
-                name: formData.campaignName,
+                name: formData.campaign.campaignName,
                 platform: "meta",
                 platform_campaign_id: campaignId,
                 platform_adset_ids: adsetIds.join(','),
-                platform_creative_ids: creativeIds.join(','), // Added this line
+                platform_creative_ids: creativeIds.join(','),
                 platform_ad_ids: adIds.join(','),
                 status: "PAUSED",
                 created_by_deepvisor: true,
                 is_smart_campaign: isSmartCampaign,
-                budget: formData.budget,
-                budget_type: formData.budgetType,
-                objective: formData.objective,
-                optimization_goal: formData.optimization_goal,
-                start_date: formData.startDate,
-                end_date: formData.endDate || null,
-                location_data: formData.location ? JSON.stringify(formData.location) : null,
-                content_source: formData.contentSource,
-                destination_type: formData.destinationType,
+                budget: formData.budget?.amount,
+                budget_type: formData.budget?.type,
+                objective: formData.campaign.objective,
+                optimization_goal: formData.adSets[0]?.optimization_goal,
+                start_date: formData.schedule?.startDate,
+                end_date: formData.schedule?.endDate || null,
+                location_data: formData.adSets[0]?.targeting?.location
+                    ? JSON.stringify(formData.adSets[0].targeting.location)
+                    : null,
+                content_source: formData.adSets[0]?.creatives[0]?.contentSource,
+                destination_type: formData.campaign.destinationType,
 
                 // Add JSONB data for complete parameters
-                campaign_data: {
-                    name: formData.campaignName,
-                    objective: formData.objective,
-                    special_ad_categories: formData.special_ad_categories || ["NONE"],
-                    buying_type: formData.buying_type,
-                    bid_strategy: formData.bidStrategy,
-                    budget: formData.budget,
-                    budget_type: formData.budgetType,
-                    // Include all other campaign params
-                },
-
-                adset_data: {
-                    targeting: formData.location,
-                    optimization_goal: formData.optimization_goal,
-                    destination_type: formData.destinationType,
-                    billing_event: formData.billingEvent,
-                    // Include all other adset params
-                },
-
-                creative_data: {
-                    page_id: formData.page_id,
-                    headline: formData.adHeadline,
-                    primary_text: formData.adPrimaryText,
-                    description: formData.adDescription,
-                    call_to_action: formData.adCallToAction,
-                    image_hash: formData.imageHash,
-                    destination_form: formData.adDestinationForm,
-                    // Include all other creative params
-                },
-
+                campaign_data: formData.campaign,
+                adset_data: formData.adSets,
+                creative_data: formData.adSets.flatMap(a => a.creatives),
                 ad_data: {
-                    name: `${formData.campaignName} - Ad`,
+                    name: `${formData.campaign.campaignName} - Ad`,
                     status: "PAUSED"
-                    // Include all other ad params
+                    // Add more ad params if needed
                 }
             };
 

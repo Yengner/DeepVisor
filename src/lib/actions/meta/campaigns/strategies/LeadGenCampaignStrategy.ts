@@ -9,35 +9,41 @@ import { Campaign } from "../../../../sdk/client";
 export class LeadGenCampaignStrategy implements CampaignStrategy {
     buildCampaignParams(
         baseParams: any,
-        formData: CampaignFormValues,
+        formData: any,
         isSmartCampaign: boolean
     ): any {
+        isSmartCampaign = true;
         const params: Record<string, any> = { ...baseParams };
 
-        params[Campaign.Fields.objective] = "OUTCOME_LEADS";
-        params[Campaign.Fields.special_ad_categories] = ["NONE"];
-        params[Campaign.Fields.buying_type] = "AUCTION";
+        params[Campaign.Fields.objective] = Campaign.Objective.outcome_leads;
+        // params[Campaign.Fields.buying_type] = "AUCTION";
 
-        if (isSmartCampaign) {
-            params[Campaign.Fields.bid_strategy] = "LOWEST_COST_WITHOUT_CAP";
-        } else {
-            params[Campaign.Fields.bid_strategy] = formData.bidStrategy || "LOWEST_COST_WITHOUT_CAP";
+        params[Campaign.Fields.bid_strategy] = isSmartCampaign
+            ? Campaign.BidStrategy.lowest_cost_without_cap
+            : formData.budget?.bid_strategy
+            // || formData.bidStrategy
+            || Campaign.BidStrategy.lowest_cost_without_cap;
 
+        // Support both new and legacy formData structure for budget
+        const budgetType = formData.budget?.type
+        const budgetAmount = formData.budget?.amount
+
+        if (budgetType === 'daily') {
+            params[Campaign.Fields.daily_budget] = Math.floor(budgetAmount * 100);
+        } else if (budgetType === 'lifetime') {
+            params[Campaign.Fields.lifetime_budget] = Math.floor(budgetAmount * 100);
         }
 
-        if (formData.budgetType === 'daily') {
-            params[Campaign.Fields.daily_budget] = Math.floor(formData.budget * 100);
-        } else if (formData.budgetType === 'lifetime') {
-            params[Campaign.Fields.lifetime_budget] = Math.floor(formData.budget * 100);
+        // Support both new and legacy formData structure for dates
+        const startDate = formData.schedule?.startDate || formData.startDate;
+        const endDate = formData.schedule?.endDate || formData.endDate;
+
+        if (startDate) {
+            params[Campaign.Fields.start_time] = new Date(startDate).toISOString();
         }
 
-
-        if (formData.startDate) {
-            params[Campaign.Fields.start_time] = new Date(formData.startDate).toISOString();
-        }
-
-        if (formData.endDate) {
-            params[Campaign.Fields.stop_time] = new Date(formData.endDate).toISOString();
+        if (endDate) {
+            params[Campaign.Fields.stop_time] = new Date(endDate).toISOString();
         }
 
         return params;

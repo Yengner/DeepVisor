@@ -3,14 +3,14 @@
 import {
     Card, Group, Paper, Stack, Text, ThemeIcon, Title, Divider, Box,
     Badge, Button, Grid, Timeline, Alert, Progress,
-    List, Tooltip, SimpleGrid, Table
+    List, Tooltip, SimpleGrid, Table, Accordion, Avatar
 } from '@mantine/core';
 import {
     IconCheck, IconX, IconInfoCircle, IconBrandFacebook, IconBrandInstagram,
     IconCalendar, IconMapPin, IconUsers, IconTargetArrow, IconCurrencyDollar,
     IconPhoto, IconBulb, IconRocket, IconAd, IconChartBar, IconChartPie,
     IconSettings, IconEditCircle, IconMessageCircle, IconDeviceImac,
-    IconBuildingStore
+    IconBuildingStore, IconUser, IconEdit, IconListDetails
 } from '@tabler/icons-react';
 import { UseFormReturnType } from '@mantine/form';
 import { CampaignFormValues } from '@/lib/actions/meta/types';
@@ -36,15 +36,15 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
         return { min: minReach, max: maxReach };
     };
 
-    const estimatedReach = getEstimatedReach(form.values.budget);
+    const estimatedReach = getEstimatedReach(form.values.budget.amount);
 
     // Calculate total days of campaign
     const getTotalDays = () => {
-        if (!form.values.startDate) return 'N/A';
-        if (!form.values.endDate) return 'Ongoing';
+        if (!form.values.schedule.startDate) return 'N/A';
+        if (!form.values.schedule.endDate) return 'Ongoing';
 
-        const start = new Date(form.values.startDate);
-        const end = new Date(form.values.endDate);
+        const start = new Date(form.values.schedule.startDate);
+        const end = new Date(form.values.schedule.endDate);
         const diffTime = Math.abs(end.getTime() - start.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         return diffDays;
@@ -54,14 +54,122 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
     const getTotalBudget = () => {
         const days = getTotalDays();
         if (days === 'N/A' || days === 'Ongoing') return 'Varies';
-        if (form.values.budgetType === 'lifetime') return form.values.budget;
-        return form.values.budget * Number(days);
+        if (form.values.budget.type === 'lifetime') return form.values.budget.amount;
+        return form.values.budget.amount * Number(days);
     };
 
     // Handle campaign submission
     const handleSubmit = async () => {
         await submitCampaign(form.values);
     };
+
+    // Helper: Render creatives for an ad set
+    const renderCreatives = (adSet: any) => (
+        <Stack gap="xs" mt="xs">
+            {(adSet.creatives || []).length === 0 ? (
+                <Text size="xs" c="dimmed">No creatives added.</Text>
+            ) : (
+                adSet.creatives.map((creative: any, idx: number) => (
+                    <Paper key={idx} withBorder p="sm" radius="md" bg="violet.0">
+                        <Group align="flex-start" gap="sm">
+                            <ThemeIcon color="violet" size="sm" variant="light">
+                                <IconPhoto size={14} />
+                            </ThemeIcon>
+                            <Stack gap={2} style={{ flex: 1 }}>
+                                <Group gap={4}>
+                                    <Text size="xs" fw={500}>Headline:</Text>
+                                    <Text size="xs" lineClamp={1}>{creative.adHeadline || "Not set"}</Text>
+                                </Group>
+                                <Group gap={4}>
+                                    <Text size="xs" fw={500}>Primary Text:</Text>
+                                    <Text size="xs" lineClamp={1}>{creative.adPrimaryText || "Not set"}</Text>
+                                </Group>
+                                <Group gap={4}>
+                                    <Text size="xs" fw={500}>Description:</Text>
+                                    <Text size="xs" lineClamp={1}>{creative.adDescription || "Not set"}</Text>
+                                </Group>
+                                <Group gap={4}>
+                                    <Text size="xs" fw={500}>Destination:</Text>
+                                    <Text size="xs">{form.values.campaign.destinationType || "N/A"}</Text>
+                                </Group>
+                                <Group gap={4}>
+                                    <Text size="xs" fw={500}>Media:</Text>
+                                    <Text size="xs">
+                                        {creative.contentSource === 'upload'
+                                            ? `${creative.uploadedFiles?.length || 0} uploaded`
+                                            : creative.contentSource === 'existing'
+                                                ? `${creative.existingCreativeIds?.length || 0} existing`
+                                                : 'AI optimized'}
+                                    </Text>
+                                </Group>
+                            </Stack>
+                        </Group>
+                    </Paper>
+                ))
+            )}
+        </Stack>
+    );
+
+    // Helper: Render ad sets and their creatives
+    const renderAdSets = () => (
+        <Accordion variant="contained" radius="md" defaultValue={form.values.adSets?.length ? `adset-0` : undefined}>
+            {(form.values.adSets || []).map((adSet: any, idx: number) => (
+                <Accordion.Item key={idx} value={`adset-${idx}`}>
+                    <Accordion.Control icon={<IconListDetails size={18} />}>
+                        <Group gap={8}>
+                            <Text fw={500} size="sm">{adSet.adSetName || `Ad Set #${idx + 1}`}</Text>
+                            <Badge size="xs" color="orange" variant="light">{adSet.optimization_goal}</Badge>
+                        </Group>
+                    </Accordion.Control>
+                    <Accordion.Panel>
+                        <Stack gap="xs">
+                            <Group gap={8}>
+                                <ThemeIcon size="xs" color="orange" variant="light"><IconTargetArrow size={12} /></ThemeIcon>
+                                <Text size="xs" fw={500}>Audience:</Text>
+                                <Text size="xs">{adSet.useAdvantageAudience ? "Meta Advantage" : "Custom"}</Text>
+                            </Group>
+                            {!adSet.useAdvantageAudience && (
+                                <>
+                                    <Group gap={8}>
+                                        <ThemeIcon size="xs" color="blue" variant="light"><IconUser size={12} /></ThemeIcon>
+                                        <Text size="xs" fw={500}>Age:</Text>
+                                        <Text size="xs">{adSet.targeting.age.min} - {adSet.targeting.age.max}</Text>
+                                    </Group>
+                                    <Group gap={8}>
+                                        <ThemeIcon size="xs" color="blue" variant="light"><IconMapPin size={12} /></ThemeIcon>
+                                        <Text size="xs" fw={500}>Location:</Text>
+                                        <Text size="xs">
+                                            {adSet.targeting.location?.markerPosition
+                                                ? `${adSet.targeting.location.radius || 10}km radius`
+                                                : "Not specified"}
+                                        </Text>
+                                    </Group>
+                                </>
+                            )}
+                            <Group gap={8}>
+                                <ThemeIcon size="xs" color="green" variant="light"><IconCurrencyDollar size={12} /></ThemeIcon>
+                                <Text size="xs" fw={500}>Budget:</Text>
+                                <Text size="xs">{form.values.budget.amount} ({form.values.budget.type})</Text>
+                            </Group>
+                            <Group gap={8}>
+                                <ThemeIcon size="xs" color="indigo" variant="light"><IconCalendar size={12} /></ThemeIcon>
+                                <Text size="xs" fw={500}>Schedule:</Text>
+                                <Text size="xs">
+                                    {form.values.schedule.startDate ? new Date(form.values.schedule.startDate).toLocaleDateString() : "Not set"}
+                                    {" - "}
+                                    {form.values.schedule.endDate ? new Date(form.values.schedule.endDate).toLocaleDateString() : "Ongoing"}
+                                </Text>
+                            </Group>
+                            {/* Creatives */}
+                            <Divider my="xs" />
+                            <Text size="xs" fw={500} c="violet">Creatives</Text>
+                            {renderCreatives(adSet)}
+                        </Stack>
+                    </Accordion.Panel>
+                </Accordion.Item>
+            ))}
+        </Accordion>
+    );
 
     return (
         <Grid gutter="md">
@@ -80,224 +188,102 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
                                 <IconRocket size={24} />
                             </ThemeIcon>
                         </Group>
-
                         <Divider my="md" />
 
-                        {/* Campaign Summary */}
-                        <Paper withBorder p="md" radius="md" shadow="xs">
-                            <Group mb="md">
+                        {/* Campaign Details */}
+                        <Paper withBorder p="md" radius="md" shadow="xs" mb="md">
+                            <Group mb="xs">
                                 <ThemeIcon size="md" variant="filled" radius="md" color="blue">
                                     <IconAd size={16} />
                                 </ThemeIcon>
-                                <Title order={5}>Campaign Summary</Title>
+                                <Title order={5}>Campaign Details</Title>
+                                <Button
+                                    variant="subtle"
+                                    size="compact-xs"
+                                    onClick={() => setActive(1)}
+                                    ml="auto"
+                                >
+                                    Edit
+                                </Button>
                             </Group>
-
-                            <SimpleGrid cols={2}>
-                                {/* Campaign Details */}
-                                <Paper withBorder p="md" radius="md">
-                                    <Group mb="xs">
-                                        <ThemeIcon size="sm" variant="light" radius="md" color="blue">
-                                            <IconRocket size={14} />
-                                        </ThemeIcon>
-                                        <Text fw={500} size="sm">Campaign Details</Text>
-                                        <Button
-                                            variant="subtle"
-                                            size="compact-xs"
-                                            onClick={() => setActive(1)}
-                                            ml="auto"
-                                        >
-                                            Edit
-                                        </Button>
+                            <Divider mb="sm" />
+                            <SimpleGrid cols={2} spacing="xs">
+                                <Stack gap={2}>
+                                    <Group gap={4}>
+                                        <Text size="xs" c="dimmed">Name:</Text>
+                                        <Text size="xs" fw={500}>{form.values.campaign.campaignName || "Unnamed Campaign"}</Text>
                                     </Group>
-                                    <Divider mb="sm" />
-                                    <Stack gap="xs">
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Name:</Text>
-                                            <Text size="xs" fw={500}>{form.values.campaignName || "Unnamed Campaign"}</Text>
+                                    <Group gap={4}>
+                                        <Text size="xs" c="dimmed">Objective:</Text>
+                                        <Badge size="xs">{form.values.campaign.objective}</Badge>
+                                    </Group>
+                                    <Group gap={4}>
+                                        <Text size="xs" c="dimmed">Page:</Text>
+                                        <Group gap={4}>
+                                            <ThemeIcon size="xs" radius="xl">
+                                                <IconBrandFacebook size={10} />
+                                            </ThemeIcon>
+                                            <Text size="xs" fw={500}>
+                                                {(form.values.adSets[0]?.page_id) || "Not selected"}
+                                            </Text>
                                         </Group>
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Objective:</Text>
-                                            <Badge size="xs">{form.values.objective}</Badge>
-                                        </Group>
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Page:</Text>
-                                            <Group gap="xs">
-                                                <ThemeIcon size="xs" radius="xl">
-                                                    <IconBrandFacebook size={10} />
+                                    </Group>
+                                    <Group gap={4}>
+                                        <Text size="xs" c="dimmed">Platform:</Text>
+                                        <Group gap={4}>
+                                            <ThemeIcon size="xs" color="blue" radius="xl">
+                                                <IconBrandFacebook size={10} />
+                                            </ThemeIcon>
+                                            {form.values.adSets[0]?.useAdvantagePlacements && (
+                                                <ThemeIcon size="xs" color="grape" radius="xl">
+                                                    <IconBrandInstagram size={10} />
                                                 </ThemeIcon>
-                                                <Text size="xs" fw={500}>{form.values.page_id || "Not selected"}</Text>
-                                            </Group>
+                                            )}
                                         </Group>
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Platform:</Text>
-                                            <Group gap={5}>
-                                                <ThemeIcon size="xs" color="blue" radius="xl">
-                                                    <IconBrandFacebook size={10} />
-                                                </ThemeIcon>
-                                                {form.values.useAdvantagePlacements && (
-                                                    <ThemeIcon size="xs" color="grape" radius="xl">
-                                                        <IconBrandInstagram size={10} />
-                                                    </ThemeIcon>
-                                                )}
-                                            </Group>
-                                        </Group>
-                                    </Stack>
-                                </Paper>
-
-                                {/* Budget & Schedule */}
-                                <Paper withBorder p="md" radius="md">
-                                    <Group mb="xs">
-                                        <ThemeIcon size="sm" variant="light" radius="md" color="green">
-                                            <IconCurrencyDollar size={14} />
-                                        </ThemeIcon>
-                                        <Text fw={500} size="sm">Budget & Schedule</Text>
-                                        <Button
-                                            variant="subtle"
-                                            size="compact-xs"
-                                            onClick={() => setActive(2)}
-                                            ml="auto"
-                                        >
-                                            Edit
-                                        </Button>
                                     </Group>
-                                    <Divider mb="sm" />
-                                    <Stack gap="xs">
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Budget Type:</Text>
-                                            <Text size="xs" fw={500}>
-                                                {form.values.budgetType === 'daily' ? 'Daily' : 'Lifetime'} Budget
-                                            </Text>
-                                        </Group>
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Amount:</Text>
-                                            <Badge size="xs" color="green">{form.values.budget}</Badge>
-                                            <Text size="xs" c="dimmed">per {form.values.budgetType === 'daily' ? 'day' : 'campaign'}</Text>
-                                        </Group>
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Duration:</Text>
-                                            <Text size="xs" fw={500}>{getTotalDays()} days</Text>
-                                        </Group>
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Total Est. Spend:</Text>
-                                            <Badge size="xs" color="green">{getTotalBudget()}</Badge>
-                                        </Group>
-                                    </Stack>
-                                </Paper>
-
-                                {/* Ad Set & Targeting */}
-                                <Paper withBorder p="md" radius="md">
-                                    <Group mb="xs">
-                                        <ThemeIcon size="sm" variant="light" radius="md" color="orange">
-                                            <IconTargetArrow size={14} />
-                                        </ThemeIcon>
-                                        <Text fw={500} size="sm">Audience Targeting</Text>
-                                        <Button
-                                            variant="subtle"
-                                            size="compact-xs"
-                                            onClick={() => setActive(2)}
-                                            ml="auto"
-                                        >
-                                            Edit
-                                        </Button>
+                                </Stack>
+                                <Stack gap={2}>
+                                    <Group gap={4}>
+                                        <Text size="xs" c="dimmed">Budget Type:</Text>
+                                        <Text size="xs" fw={500}>
+                                            {form.values.budget.type === 'daily' ? 'Daily' : 'Lifetime'} Budget
+                                        </Text>
                                     </Group>
-                                    <Divider mb="sm" />
-                                    <Stack gap="xs">
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Targeting:</Text>
-                                            <Text size="xs" fw={500}>
-                                                {form.values.useAdvantageAudience ? "Meta Advantage Audience" : "Custom Audience"}
-                                            </Text>
-                                        </Group>
-                                        {!form.values.useAdvantageAudience && (
-                                            <>
-                                                <Group>
-                                                    <Text size="xs" c="dimmed">Age:</Text>
-                                                    <Text size="xs" fw={500}>{form.values.ageMin} - {form.values.ageMax}</Text>
-                                                </Group>
-                                                <Group>
-                                                    <Text size="xs" c="dimmed">Location:</Text>
-                                                    <Group gap={4}>
-                                                        <ThemeIcon size="xs" radius="xl" color="blue">
-                                                            <IconMapPin size={10} />
-                                                        </ThemeIcon>
-                                                        <Text size="xs">
-                                                            {form.values.location?.markerPosition
-                                                                ? `${form.values.location.radius || 10}km radius`
-                                                                : "Not specified"}
-                                                        </Text>
-                                                    </Group>
-                                                </Group>
-                                            </>
-                                        )}
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Optimization:</Text>
-                                            <Text size="xs" fw={500}>{form.values.optimization_goal}</Text>
-                                        </Group>
-                                    </Stack>
-                                </Paper>
-
-                                {/* Creative Assets */}
-                                <Paper withBorder p="md" radius="md">
-                                    <Group mb="xs">
-                                        <ThemeIcon size="sm" variant="light" radius="md" color="violet">
-                                            <IconPhoto size={14} />
-                                        </ThemeIcon>
-                                        <Text fw={500} size="sm">Creative Assets</Text>
-                                        <Button
-                                            variant="subtle"
-                                            size="compact-xs"
-                                            onClick={() => setActive(3)}
-                                            ml="auto"
-                                        >
-                                            Edit
-                                        </Button>
+                                    <Group gap={4}>
+                                        <Text size="xs" c="dimmed">Amount:</Text>
+                                        <Badge size="xs" color="green">{form.values.budget.amount}</Badge>
+                                        <Text size="xs" c="dimmed">per {form.values.budget.type === 'daily' ? 'day' : 'campaign'}</Text>
                                     </Group>
-                                    <Divider mb="sm" />
-                                    <Stack gap="xs">
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Source:</Text>
-                                            <Badge size="xs" color="violet">
-                                                {form.values.contentSource === 'upload' ? 'Uploaded Media' :
-                                                    form.values.contentSource === 'existing' ? 'Existing Posts' :
-                                                        'AI Selected'}
-                                            </Badge>
-                                        </Group>
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Assets:</Text>
-                                            <Text size="xs" fw={500}>
-                                                {form.values.contentSource === 'upload'
-                                                    ? `${form.values.uploadedFiles?.length || 0} uploaded files`
-                                                    : form.values.contentSource === 'existing'
-                                                        ? `${form.values.existingCreativeIds?.length || 0} selected posts`
-                                                        : 'AI optimized content'}
-                                            </Text>
-                                        </Group>
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Headline:</Text>
-                                            <Text size="xs" fw={500} lineClamp={1}>{form.values.adHeadline || "Not set"}</Text>
-                                        </Group>
-                                        <Group>
-                                            <Text size="xs" c="dimmed">Destination:</Text>
-                                            <Group gap={4}>
-                                                {form.values.destinationType === 'WEBSITE' ? (
-                                                    <ThemeIcon size="xs" radius="xl" color="blue">
-                                                        <IconDeviceImac size={10} />
-                                                    </ThemeIcon>
-                                                ) : form.values.destinationType === 'FORM' ? (
-                                                    <ThemeIcon size="xs" radius="xl" color="orange">
-                                                        <IconMessageCircle size={10} />
-                                                    </ThemeIcon>
-                                                ) : (
-                                                    <ThemeIcon size="xs" radius="xl" color="grape">
-                                                        <IconBuildingStore size={10} />
-                                                    </ThemeIcon>
-                                                )}
-                                                <Text size="xs">{form.values.destinationType}</Text>
-                                            </Group>
-                                        </Group>
-                                    </Stack>
-                                </Paper>
+                                    <Group gap={4}>
+                                        <Text size="xs" c="dimmed">Duration:</Text>
+                                        <Text size="xs" fw={500}>{getTotalDays()} days</Text>
+                                    </Group>
+                                    <Group gap={4}>
+                                        <Text size="xs" c="dimmed">Total Est. Spend:</Text>
+                                        <Badge size="xs" color="green">{getTotalBudget()}</Badge>
+                                    </Group>
+                                </Stack>
                             </SimpleGrid>
+                        </Paper>
+
+                        {/* Ad Sets & Creatives */}
+                        <Paper withBorder p="md" radius="md" shadow="xs" mb="md">
+                            <Group mb="xs">
+                                <ThemeIcon size="md" variant="filled" radius="md" color="orange">
+                                    <IconListDetails size={16} />
+                                </ThemeIcon>
+                                <Title order={5}>Ad Sets & Creatives</Title>
+                                <Button
+                                    variant="subtle"
+                                    size="compact-xs"
+                                    onClick={() => setActive(2)}
+                                    ml="auto"
+                                >
+                                    Edit
+                                </Button>
+                            </Group>
+                            <Divider mb="sm" />
+                            {renderAdSets()}
                         </Paper>
 
                         {/* Campaign Timeline */}
@@ -326,8 +312,8 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
 
                                 <Timeline.Item bullet={<IconChartBar size={12} />} title="Campaign Active">
                                     <Text size="sm" c="dimmed">
-                                        {form.values.startDate
-                                            ? new Date(form.values.startDate).toLocaleDateString()
+                                        {form.values.schedule.startDate
+                                            ? new Date(form.values.schedule.startDate).toLocaleDateString()
                                             : "Not scheduled"}
                                     </Text>
                                     <Text size="xs" mt={4}>
@@ -342,10 +328,10 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
                                     </Text>
                                 </Timeline.Item>
 
-                                {form.values.endDate && (
+                                {form.values.schedule.endDate && (
                                     <Timeline.Item bullet={<IconCheck size={12} />} title="Campaign End">
                                         <Text size="sm" c="dimmed">
-                                            {new Date(form.values.endDate).toLocaleDateString()}
+                                            {new Date(form.values.schedule.endDate).toLocaleDateString()}
                                         </Text>
                                         <Text size="xs" mt={4}>
                                             Campaign concludes, final reports available
@@ -387,7 +373,7 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
                                     <Badge color="blue" size="lg">People</Badge>
                                 </Group>
                                 <Text size="xs" c="dimmed" mt="xs">
-                                    Based on your {form.values.budget} {form.values.budgetType} budget
+                                    Based on your {form.values.budget.amount} {form.values.budget.type} budget
                                 </Text>
                             </Paper>
 
@@ -458,8 +444,8 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
                                             </Table.Td>
                                             <Table.Td align="right">
                                                 <Text size="xs" fw={500}>
-                                                    {form.values.budgetType === 'daily'
-                                                        ? form.values.budget
+                                                    {form.values.budget.type === 'daily'
+                                                        ? form.values.budget.amount
                                                         : 'Varies'}
                                                 </Text>
                                             </Table.Td>

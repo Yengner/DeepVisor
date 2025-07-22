@@ -259,7 +259,14 @@ export default function CampaignDashboard({ campaigns, userId, platform, account
                     <Group>
                         <Menu position="bottom-end" shadow="md">
                             <Menu.Target>
-                                <Button leftSection={<IconPlus size={16} />} color={getPlatformColor()} size='compact-md'>
+                                <Button
+                                    leftSection={<IconPlus size={18} />}
+                                    color={getPlatformColor()}
+                                    variant="light"
+                                    radius="xl"
+                                    onClick={() => router.push(`/campaigns/create?platform=${platform.id}`)}
+                                    style={{ fontWeight: 500 }}
+                                >
                                     Create Campaign
                                 </Button>
                             </Menu.Target>
