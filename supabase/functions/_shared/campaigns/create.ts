@@ -1,7 +1,6 @@
 import { getCampaignStrategy } from "./strategies/CampaignStrategyFactory";
 import { AdAccount, Campaign } from "../../../sdk/client";
 import { logApiCallResult } from "../../../sdk/utils";
-import { logProgress } from "../../utils";
 
 /**
  * Creates a campaign in the Meta Ads platform using the SDK
@@ -41,7 +40,6 @@ export async function createCampaign(params: any): Promise<string> {
 
         return campaign.id;
     } catch (err) {
-        console.error("Error creating campaign:", err);
         logApiCallResult("createCampaign ERROR", err, true);
         throw err;
     }

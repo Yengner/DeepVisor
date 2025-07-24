@@ -1,4 +1,3 @@
-// utils/layout.ts
 import dagre from '@dagrejs/dagre';
 import { Node, Edge, Position } from '@xyflow/react';
 
@@ -16,7 +15,7 @@ export function getLayoutedElements(
     dagreGraph.setGraph({ rankdir: direction });
 
     nodes.forEach((node) => {
-        dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+        dagreGraph.setNode(node.id, { width: node.width, height: node.height || node.initialHeight });
     });
 
     edges.forEach((edge) => {
@@ -34,11 +33,11 @@ export function getLayoutedElements(
             // We are shifting the dagre node position (anchor=center center) to the top left
             // so it matches the React Flow node anchor point (top left).
             position: {
-                x: nodeWithPosition.x - nodeWidth / 2,
-                y: nodeWithPosition.y - nodeHeight / 2,
+                x: nodeWithPosition.x - (node.width ?? nodeWidth) / 2,
+                y: nodeWithPosition.y - (node.initialHeight ?? nodeHeight) / 2,
             },
         };
-
+        console.log('new node', newNode);
         return newNode;
     });
 

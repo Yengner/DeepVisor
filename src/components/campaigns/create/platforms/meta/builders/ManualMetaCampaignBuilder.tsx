@@ -65,7 +65,7 @@ export default function ManualMetaCampaignBuilder({ platformData, adAccountId, o
             <Container size='lg' py='xl'>
                 {/* --- React Flow Preview Modal --- */}
 
-                {/* <Modal
+                <Modal
                     opened={flowModalOpen}
                     onClose={() => setFlowModalOpen(false)}
                     size="xl"
@@ -82,12 +82,13 @@ export default function ManualMetaCampaignBuilder({ platformData, adAccountId, o
                 >
                     <div style={{ padding: 24 }}>
                         <MetaCampaignFlowPreview
-                            campaign={form.values.campaign.campaignName ? campaign : null}
-                            adSets={adSets}
-                            creatives={creatives}
+                            campaign={form.values.campaign.campaignName ? form : null}
+                            adSets={form.values.adSets}
+                            budget={form.values.budget}
+                            creatives={form.values.adSets.flatMap(adSet => adSet.creatives)}
                         />
                     </div>
-                </Modal> */}
+                </Modal>
 
                 {/* --- Campaign Builder Header --- */}
                 <Group justify="apart" align="center" mb="xl">

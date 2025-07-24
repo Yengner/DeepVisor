@@ -3,14 +3,16 @@ import { ReactFlow, Background, Controls, MiniMap, Node, Edge, Position } from "
 import "@xyflow/react/dist/style.css";
 
 interface MetaCampaignFlowPreviewProps {
-    campaign: { name: string; budget: number; budgetType: string } | null;
-    adSets: { name: string; budget?: number }[];
-    creatives: { name: string }[];
+    campaign: any; // should be the form object or null
+    adSets: any[];
+    budget?: { amount: number; type: string };
+    creatives?: any; // not used, as creatives are inside adSets
 }
 
 export default function MetaCampaignFlowPreview({
     campaign,
     adSets,
+    budget,
     creatives,
 }: MetaCampaignFlowPreviewProps) {
     // Animate budget distribution
@@ -24,14 +26,15 @@ export default function MetaCampaignFlowPreview({
             }, 100);
             return () => clearInterval(interval);
         }
-    }, [adSets.length, campaign?.budget]);
+    }, [adSets.length, campaign?.values?.budget]);
 
     // Build nodes and edges based on form state
     const { nodes, edges } = useMemo(() => {
         const nodes: Node[] = [];
         const edges: Edge[] = [];
 
-        if (campaign) {
+        if (campaign && campaign.values) {
+            const c = campaign.values;
             nodes.push({
                 id: "campaign",
                 type: "input",
@@ -39,11 +42,32 @@ export default function MetaCampaignFlowPreview({
                 data: {
                     label: (
                         <div style={{ textAlign: "center" }}>
-                            <b>{campaign.name || "Campaign"}</b>
+                            <b>{c.campaign.campaignName || "Campaign"}</b>
                             <div style={{ fontSize: 12, color: "#22c55e" }}>
-                                {campaign.budgetType === "lifetime"
-                                    ? `Lifetime Budget: $${campaign.budget.amount}`
-                                    : `Daily Budget: $${campaign.budget.amount}`}
+                                {c.budget.type === "lifetime"
+                                    ? `Lifetime Budget: $${c.budget.amount}`
+                                    : `Daily Budget: $${c.budget.amount}`}
+                            </div>
+                            <div style={{ marginTop: 8 }}>
+                                <div style={{
+                                    width: 120,
+                                    height: 8,
+                                    background: '#e0e7ef',
+                                    borderRadius: 4,
+                                    margin: '0 auto',
+                                    overflow: 'hidden',
+                                    position: 'relative',
+                                }}>
+                                    <div style={{
+                                        width: `${budgetProgress}%`,
+                                        height: '100%',
+                                        background: '#22c55e',
+                                        transition: 'width 0.2s',
+                                    }} />
+                                </div>
+                                <div style={{ fontSize: 10, color: '#22c55e', marginTop: 2 }}>
+                                    Budget Progress: {budgetProgress}%
+                                </div>
                             </div>
                         </div>
                     ),
@@ -52,6 +76,7 @@ export default function MetaCampaignFlowPreview({
             });
         }
 
+        // Ad Sets and Creatives
         adSets.forEach((adset, i) => {
             nodes.push({
                 id: `adset-${i}`,
@@ -60,18 +85,13 @@ export default function MetaCampaignFlowPreview({
                 data: {
                     label: (
                         <div style={{ textAlign: "center" }}>
-                            <b>{adset.name || `Ad Set ${i + 1}`}</b>
-                            {/* <div style={{ fontSize: 12, color: "#2563eb" }}>
-                {campaign?.budgetType === "lifetime"
-                  ? `Budget: $${Math.round((campaign.budget.amount / adSets.length) * (budgetProgress / 100))}`
-                  : `Budget: $${Math.round((campaign.budget.amount / adSets.length) * (budgetProgress / 100))} / day`}
-              </div> */}
+                            <b>{adset.adSetName || `Ad Set ${i + 1}`}</b>
                         </div>
                     ),
                 },
                 style: { border: "2px solid #2563eb", borderRadius: 8, background: "#e6f0fa" },
             });
-            if (campaign) {
+            if (campaign && campaign.values) {
                 edges.push({
                     id: `e-campaign-adset-${i}`,
                     source: "campaign",
@@ -80,37 +100,37 @@ export default function MetaCampaignFlowPreview({
                     style: { stroke: "#22c55e", strokeWidth: 2, opacity: budgetProgress / 100 },
                 });
             }
-        });
-
-        creatives.forEach((creative, i) => {
-            nodes.push({
-                id: `creative-${i}`,
-                type: "output",
-                position: { x: 100 + i * 200, y: 280 },
-                data: {
-                    label: (
-                        <div style={{ textAlign: "center" }}>
-                            <b>{creative.name || `Creative ${i + 1}`}</b>
-                        </div>
-                    ),
-                },
-                style: { border: "2px solid #f59e42", borderRadius: 8, background: "#fff7ed" },
-            });
-            // Connect each creative to its ad set (simple: 1:1 mapping)
-            if (adSets[i]) {
-                edges.push({
-                    id: `e-adset-${i}-creative-${i}`,
-                    source: `adset-${i}`,
-                    target: `creative-${i}`,
-                    style: { stroke: "#f59e42", strokeWidth: 2 },
+            // Creatives for this ad set
+            if (Array.isArray(adset.creatives)) {
+                adset.creatives.forEach((creative, j) => {
+                    const creativeNodeId = `creative-${i}-${j}`;
+                    nodes.push({
+                        id: creativeNodeId,
+                        type: "output",
+                        position: { x: 100 + i * 200 + j * 60, y: 280 },
+                        data: {
+                            label: (
+                                <div style={{ textAlign: "center" }}>
+                                    <b>{creative.adHeadline || `Creative ${j + 1}`}</b>
+                                </div>
+                            ),
+                        },
+                        style: { border: "2px solid #f59e42", borderRadius: 8, background: "#fff7ed" },
+                    });
+                    edges.push({
+                        id: `e-adset-${i}-creative-${j}`,
+                        source: `adset-${i}`,
+                        target: creativeNodeId,
+                        style: { stroke: "#f59e42", strokeWidth: 2 },
+                    });
                 });
             }
         });
 
         return { nodes, edges };
-    }, [campaign, adSets, creatives, budgetProgress]);
+    }, [campaign, adSets, budgetProgress]);
 
-    if (!campaign) {
+    if (!campaign || !campaign.values) {
         return (
             <div style={{ textAlign: "center", color: "#888", padding: 32 }}>
                 <b>Fill out campaign details to see a live preview</b>

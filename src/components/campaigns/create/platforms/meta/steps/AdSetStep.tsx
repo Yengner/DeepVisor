@@ -33,7 +33,6 @@ export default function AdSetStep({
     form,
     isSmart = false
 }: AdSetStepProps) {
-    console.log('dawdwadawd adset,', form.values.step)
 
     const { values, insertListItem, removeListItem, setFieldValue, getInputProps } = form;
     const [locationModalOpened, { open: openLocationModal, close: closeLocationModal }] = useDisclosure(false);

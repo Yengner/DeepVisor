@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import { CampaignFormValues } from '@/lib/actions/meta/types';
-
+import { Node, Edge } from '@xyflow/react';
 
 /**
  * Response from campaign submission API
  */
 interface CampaignSubmitResponse {
   success: boolean;
-  campaignId?: string;
   error?: string;
   message?: string;
-  adsetIds?: string[];
-  creativeIds?: string[];
-  adIds?: string[];
+  jobId?: string;
+  nodes?: any;
+  edges?: any;
 }
 
 /**
@@ -29,8 +28,16 @@ interface UseCampaignSubmitReturn {
   submitSuccess: boolean;
   /** Reset submission state */
   resetSubmission: () => void;
-  /** Campaign ID if submission was successful */
-  campaignId: string | null;
+  /** Job ID for tracking submission progress */
+  jobId: string | null;
+  /** Show progress modal */
+  showProgressModal: boolean;
+  /** Function to set the visibility of the progress modal */
+  setShowProgressModal: (open: boolean) => void;
+  /** Nodes for the progress graph */
+  progressNodes: Node[];
+  /** Edges for the progress graph */
+  progressEdges: Edge[];
 
 }
 
@@ -45,7 +52,10 @@ export function useCampaignSubmit(): UseCampaignSubmitReturn {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
-  const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [progressNodes, setProgressNodes] = useState<any[]>([]);
+  const [progressEdges, setProgressEdges] = useState<any[]>([]);
 
   /**
    * Submit campaign data to API
@@ -57,7 +67,8 @@ export function useCampaignSubmit(): UseCampaignSubmitReturn {
     setIsSubmitting(true);
     setSubmitError(null);
     setSubmitSuccess(false);
-    setCampaignId(null);
+    setJobId(null);
+    setShowProgressModal(false);
 
     if (!form) {
       const errorMessage = "No form data provided and no test campaign type selected";
@@ -72,7 +83,6 @@ export function useCampaignSubmit(): UseCampaignSubmitReturn {
     const formData = form;
 
     try {
-      console.log("Submitting campaign with form data:", form);
       const res = await fetch('/api/meta/create-campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -80,6 +90,7 @@ export function useCampaignSubmit(): UseCampaignSubmitReturn {
       });
 
       const result = await res.json();
+      console.log("API response:", result);
 
       if (!result.success) {
         const errorMessage = result.error || 'Failed to create campaign';
@@ -90,17 +101,18 @@ export function useCampaignSubmit(): UseCampaignSubmitReturn {
         };
       }
 
-
       // Success
       setSubmitSuccess(true);
-      setCampaignId(result.campaignId || null);
+      setJobId(result.jobId || null);
+      setShowProgressModal(true);
+      setProgressNodes(result.nodes || null);
+      setProgressEdges(result.edges || null);
 
       return {
         success: true,
-        campaignId: result.campaignId,
-        adsetIds: result.adsetIds,
-        creativeIds: result.creativeIds,
-        adIds: result.adIds
+        jobId: result.jobId,
+        nodes: result.nodes,
+        edges: result.edges,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
@@ -116,20 +128,13 @@ export function useCampaignSubmit(): UseCampaignSubmitReturn {
   };
 
   /**
-   * Submit a test campaign using the selected test data type
-   * 
-   * @param testType - Type of test campaign to submit
-   * @returns Response from API with success status and campaign ID
-   */
-
-  /**
    * Reset submission state
    */
   const resetSubmission = () => {
     setIsSubmitting(false);
     setSubmitError(null);
     setSubmitSuccess(false);
-    setCampaignId(null);
+    setJobId(null);
   };
 
   return {
@@ -138,7 +143,10 @@ export function useCampaignSubmit(): UseCampaignSubmitReturn {
     submitError,
     submitSuccess,
     resetSubmission,
-    campaignId,
-
+    jobId,
+    showProgressModal,
+    setShowProgressModal,
+    progressNodes,
+    progressEdges,
   };
 }

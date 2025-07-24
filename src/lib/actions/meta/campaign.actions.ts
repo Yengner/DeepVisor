@@ -1,23 +1,50 @@
-"use server";
 import { createSupabaseClient } from "../../utils/supabase/clients/server";
 import { createAdSet } from "./adsets/create";
 import { createCampaign } from "./campaigns/create";
-import { CampaignFormValues, SmartCampaignResult } from "./types";
 import { createAd } from "./ads/create";
 import { getAccessToken } from "../common/accessToken";
 import { FacebookAdsApi } from "../../sdk/client";
 import { getLoggedInUser } from "../user";
-import { createCreative } from "./creatives/create";
+import { logProgress } from "../utils";
+import { CampaignFormValues, SmartCampaignResult } from "./types";
 
 /**
- * Server action to create a Meta campaign
- * Handles the entire campaign creation flow including ad sets, creatives, and ads
- * 
- * @param formData - Form data from the campaign builder
- * @returns Result object with IDs of created resources
+ * Utility to wait
  */
+const delayMs = 2000
+function wait(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-export async function createMetaCampaign(formData: CampaignFormValues): Promise<SmartCampaignResult> {
+/**
+ * Utility to run a single step with progress logging.
+ */
+async function runStep<T>(
+    supabase: any,
+    jobId: string,
+    stepId: string,
+    meta: Record<string, any> | null,
+    fn: () => Promise<{ value: T; meta?: Record<string, any> }>
+): Promise<T> {
+    try {
+        await logProgress(supabase, jobId, stepId, 'loading', meta);
+        await wait(delayMs);
+        const { value, meta: resultMeta } = await fn();
+        await logProgress(supabase, jobId, stepId, 'success', resultMeta ?? {});
+        return value;
+    } catch (err: any) {
+        await logProgress(supabase, jobId, stepId, 'error', { message: err.message });
+        throw err;
+    }
+}
+
+/**
+ * Server action to create a Meta campaign with full progress tracking.
+ */
+export async function createMetaCampaign(
+    jobId: string,
+    formData: CampaignFormValues
+): Promise<SmartCampaignResult> {
     const supabase = await createSupabaseClient();
     const loggedIn = await getLoggedInUser();
     const userId = loggedIn?.id;
@@ -27,132 +54,101 @@ export async function createMetaCampaign(formData: CampaignFormValues): Promise<
 
     FacebookAdsApi.init(accessToken, APP_SECRET).setDebug(true);
 
-    const isSmartCampaign = formData.type === 'AI Auto';
-
-    console.log("Creating Meta campaign with formData:", formData);
-
-    try {
-        // 1. Create The Campaign
-        const campaignId = await createCampaign({
-            adAccountId,
-            formData: formData,
-            budgetData: formData.budget,
-            isSmartCampaign
-        });
-
-        // 2. Create all Ad Sets and collect their IDs
-        const adsetIds: string[] = [];
-        const creativeIds: string[] = [];
-        const adIds: string[] = [];
-
-        // Loop through each ad set in the form
-        for (const adSet of formData.adSets) {
-            console.log("Creating ad set:");
-            // Create Ad Set
-            const adsetId = await createAdSet({
+    const isSmart = formData.type === 'AI Auto';
+    // Campaign
+    const campaignId = await runStep(
+        supabase,
+        jobId,
+        'campaign',
+        {
+            campaignName: formData.campaign.campaignName,
+            objective: formData.campaign.objective,
+            budget: formData.budget.amount,
+            budgetType: formData.budget.type,
+        },
+        async () => {
+            const id = await createCampaign({
                 adAccountId,
-                campaignId,
-                formData: {
-                    ...formData,
-                    ...adSet,
-                },
-                isSmartCampaign
+                formData,
+                budgetData: formData.budget,
+                isSmartCampaign: isSmart,
             });
-            adsetIds.push(adsetId);
-
-            // For each creative in this ad set, use the existing creative ID for testing
-            for (const creative of adSet.creatives) {
-                // Use the first existing creative ID if available
-                const creativeId =
-                    creative.existingCreativeIds && creative.existingCreativeIds.length > 0
-                        ? creative.existingCreativeIds[0]
-                        : null;
-
-                if (creativeId) {
-                    creativeIds.push(creativeId);
-
-                    // Create Ad for this adset/creative pair
-                    const adId = await createAd({
-                        adAccountId,
-                        accessToken,
-                        adsetId,
-                        creativeId,
-                        formData: {
-                            ...formData,
-                            ...adSet,
-                            ...creative,
-                        },
-                        isSmartCampaign
-                    });
-                    adIds.push(adId);
-                } else {
-                    // Optionally handle the case where no existing creative ID is present
-                    console.warn("No existing creative ID found for creative in ad set", adSet.adSetName);
-                }
-            }
+            return { value: id, meta: { campaignId: id } };
         }
+    );
 
-        // 5. Store campaign information in database (optional, unchanged)
-        try {
-            // Store main campaign record
-            const campaignParams = {
-                user_id: userId,
-                name: formData.campaign.campaignName,
-                platform: "meta",
-                platform_campaign_id: campaignId,
-                platform_adset_ids: adsetIds.join(','),
-                platform_creative_ids: creativeIds.join(','),
-                platform_ad_ids: adIds.join(','),
-                status: "PAUSED",
-                created_by_deepvisor: true,
-                is_smart_campaign: isSmartCampaign,
-                budget: formData.budget?.amount,
-                budget_type: formData.budget?.type,
-                objective: formData.campaign.objective,
-                optimization_goal: formData.adSets[0]?.optimization_goal,
-                start_date: formData.schedule?.startDate,
-                end_date: formData.schedule?.endDate || null,
-                location_data: formData.adSets[0]?.targeting?.location
-                    ? JSON.stringify(formData.adSets[0].targeting.location)
-                    : null,
-                content_source: formData.adSets[0]?.creatives[0]?.contentSource,
-                destination_type: formData.campaign.destinationType,
+    // Ad Sets
+    const adsetIds: string[] = [];
+    for (let i = 0; i < formData.adSets.length; i++) {
+        const adSet = formData.adSets[i];
+        const stepId = `adset-${i}`;
+        const adsetId = await runStep(
+            supabase,
+            jobId,
+            stepId,
+            {
+                adSetName: adSet.adSetName,
+                pageId: adSet.page_id,
+                useAdvantageAudience: adSet.useAdvantageAudience,
+                useAdvantagePlacements: adSet.useAdvantagePlacements,
+                startDate: formData.schedule.startDate,
+                endDate: formData.schedule.endDate ? null : null,
+            },
+            async () => {
+                const id = await createAdSet({
+                    adAccountId,
+                    campaignId,
+                    formData: { ...formData, ...adSet },
+                    isSmartCampaign: isSmart,
+                });
+                return { value: id, meta: { adsetId: id } };
+            }
+        );
+        adsetIds.push(adsetId);
 
-                // Add JSONB data for complete parameters
-                campaign_data: formData.campaign,
-                adset_data: formData.adSets,
-                creative_data: formData.adSets.flatMap(a => a.creatives),
-                ad_data: {
-                    name: `${formData.campaign.campaignName} - Ad`,
-                    status: "PAUSED"
-                    // Add more ad params if needed
-                }
-            };
-
-            const { data: campaignRecord, error: campaignRecordError } = await supabase
-                .from("campaigns")
-                .insert(campaignParams)
-                .select();
-
-            if (campaignRecordError) {
-                console.error("Failed to store campaign in DeepVisor database:", campaignRecordError);
+        // Creatives & Ads per AdSet
+        for (let j = 0; j < adSet.creatives.length; j++) {
+            const creative = adSet.creatives[j];
+            const cStep = `creative-${i}-${j}`;
+            await logProgress(supabase, jobId, cStep, 'loading', formData.adSets[i].creatives[j].existingCreativeIds?.[0] ?? null);
+            const creativeId = creative.existingCreativeIds?.[0] ?? null;
+            if (creativeId) {
+                await logProgress(supabase, jobId, cStep, 'success', { creativeId });
+                
+                await logProgress(supabase, jobId, cStep, 'success', { creativeId });
+                const aStep = `ad-${i}-${j}`;
+                const adId = await runStep(
+                    supabase,
+                    jobId,
+                    aStep,
+                    { adSetName: adSet.adSetName, creativeId },
+                    async () => {
+                        const id = await createAd({
+                            adAccountId,
+                            accessToken,
+                            adsetId,
+                            creativeId,
+                            formData: { ...formData, ...adSet, ...creative },
+                            isSmartCampaign: isSmart,
+                        });
+                        return { value: id, meta: { adId: id } };
+                    }
+                );
+                adsetIds.push(adsetId);
             } else {
-                console.log("✅ Campaign stored in DeepVisor database:", campaignRecord);
+                await logProgress(supabase, jobId, cStep, 'error', {
+                    message: 'No creative ID available',
+                });
             }
-        } catch (storageErr) {
-            console.error("Error storing campaign:", storageErr);
         }
-
-        return {
-            success: true,
-            campaignId,
-            adsetIds,
-            creativeIds,
-            adIds
-        };
-    } catch (error) {
-        console.error("Error creating Meta campaign:", error);
-        throw error;
     }
-}
 
+    await supabase
+        .from('campaign_job_progress')
+        .delete()
+        .eq('job_id', jobId);
+
+    await logProgress(supabase, jobId, 'function', 'success')
+
+    return { success: true, campaignId, adsetIds, creativeIds: [], adIds: [] };
+}

@@ -78,7 +78,7 @@ export interface SmartCampaignResult {
 export interface CampaignFormValues {
     step: 'list' | 'adset' | 'creative';
     activeAdSetIdx: number | null;
-    type: string;
+    type: string; 
     adSetSubStep: 'adset' | 'creative';
 
     mode: string;
