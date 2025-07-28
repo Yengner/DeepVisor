@@ -1,10 +1,10 @@
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
-import ReportsClient from "./components/ReportsClient";
 import { getCampaignsWithAdSetsAndAds } from "@/lib/quieries/campaigns/getCampaignsWithAdSetsAndAds";
 import { getLoggedInUser } from "@/lib/actions/user";
 import { getPlatformDetails } from "@/lib/quieries/platforms";
+import { ReportsClient } from "./components/ReportsClient";
 
 
 export default async function ReportsPage() {
@@ -41,9 +41,10 @@ export default async function ReportsPage() {
 
   const data = await getCampaignsWithAdSetsAndAds(adAccountData.ad_account_id);
   return (
-    <ReportsClient
-      rawData={data}
-    />
+    // <ReportsClient
+    //   rawData={data}
+    // />
+    <ReportsClient />
   );
 };
 

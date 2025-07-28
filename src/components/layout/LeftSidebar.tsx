@@ -42,41 +42,42 @@ const Sidebar = () => {
     router.push('/login');
   };
 
-  const sidebarBg = "#ffffff"; // Light blue background
-  const activeColor = "#1c7ed6"; // Deeper blue for active items
-  const hoverColor = "#e7f5ff"; // Slightly darker blue for hover
-  const iconInactiveColor = "#5c7cfa"; // Light blue for inactive icons
-  const textColor = "#495057"; // Darker text for better readability
+  const sidebarBg = "#ffffff";
+  const activeColor = "#1c7ed6";
+  const hoverColor = "#e7f5ff";
+  const iconInactiveColor = "#5c7cfa";
+  const textColor = "#22223b";
 
   return (
     <div
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
-      className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 border-r border-gray-200 
-        transition-all duration-300 ${isExpanded ? 'w-48' : 'w-16'}`}
+      className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 border-r border-gray-200 transition-all duration-300 ${isExpanded ? 'w-64' : 'w-20'}`}
       style={{
         backgroundColor: sidebarBg,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+        boxShadow: '0 1px 6px rgba(0,0,0,0.08)'
       }}
     >
-      <div className="h-full flex flex-col justify-between py-4">
+      <div className="h-full flex flex-col justify-between py-8">
         {/* Top Section: Menu Items */}
-        <Stack gap={4} px={isExpanded ? 'xs' : 4}>
+        <Stack gap={12} px={isExpanded ? 'md' : 4}>
           {menuItems.map((item) => (
             isExpanded ? (
               <NavLink
                 key={item.name}
-                label={item.name}
+                label={<span style={{ fontSize: 20, fontWeight: 600 }}>{item.name}</span>}
                 leftSection={
                   <ThemeIcon
-                    size="md"
+                    size={38}
                     variant={pathname === item.route ? "filled" : "light"}
                     color={pathname === item.route ? activeColor : iconInactiveColor}
                     style={{
-                      backgroundColor: pathname === item.route ? activeColor : 'transparent'
+                      backgroundColor: pathname === item.route ? activeColor : 'transparent',
+                      minWidth: 38,
+                      minHeight: 38
                     }}
                   >
-                    <item.icon size={18} stroke={1.5} color={pathname === item.route ? "#ffffff" : undefined} />
+                    <item.icon size={26} stroke={1.7} color={pathname === item.route ? "#ffffff" : undefined} />
                   </ThemeIcon>
                 }
                 active={pathname === item.route}
@@ -90,18 +91,21 @@ const Sidebar = () => {
                     },
                     '&:hover': {
                       backgroundColor: hoverColor
-                    }
+                    },
+                    borderRadius: 12,
+                    padding: '14px 18px',
                   },
                   label: {
                     color: pathname === item.route ? "#ffffff" : textColor,
-                    fontWeight: pathname === item.route ? 600 : 400
+                    fontWeight: pathname === item.route ? 700 : 600,
+                    fontSize: 20
                   }
                 })}
               />
             ) : (
               <Tooltip
                 key={item.name}
-                label={item.name}
+                label={<span style={{ fontSize: 16 }}>{item.name}</span>}
                 position="right"
                 withArrow
                 transitionProps={{ transition: "pop", duration: 200 }}
@@ -109,14 +113,16 @@ const Sidebar = () => {
                 <NavLink
                   leftSection={
                     <ThemeIcon
-                      size="md"
+                      size={38}
                       variant={pathname === item.route ? "filled" : "light"}
                       color={pathname === item.route ? activeColor : iconInactiveColor}
                       style={{
-                        backgroundColor: pathname === item.route ? activeColor : 'transparent'
+                        backgroundColor: pathname === item.route ? activeColor : 'transparent',
+                        minWidth: 38,
+                        minHeight: 38
                       }}
                     >
-                      <item.icon size={18} stroke={1.5} color={pathname === item.route ? "#ffffff" : undefined} />
+                      <item.icon size={26} stroke={1.7} color={pathname === item.route ? "#ffffff" : undefined} />
                     </ThemeIcon>
                   }
                   active={pathname === item.route}
@@ -124,13 +130,14 @@ const Sidebar = () => {
                   variant="subtle"
                   styles={(theme) => ({
                     root: {
-                      borderRadius: theme.radius.sm,
+                      borderRadius: theme.radius.md,
                       '&[dataActive]': {
                         backgroundColor: activeColor
                       },
                       '&:hover': {
                         backgroundColor: hoverColor
-                      }
+                      },
+                      padding: '14px 10px',
                     }
                   })}
                 />
@@ -140,36 +147,40 @@ const Sidebar = () => {
         </Stack>
 
         {/* Bottom Section: Settings & Logout */}
-        <Stack gap={4} px={isExpanded ? 'xs' : 4} mb={6}>
+        <Stack gap={10} px={isExpanded ? 'md' : 4} mb={10}>
           <Divider my="sm" color="#d0ebff" />
 
           {isExpanded ? (
             <>
               <NavLink
-                label="Settings"
+                label={<span style={{ fontSize: 18, fontWeight: 600 }}>Settings</span>}
                 leftSection={
-                  <ThemeIcon size="md" variant="light" color={iconInactiveColor}>
-                    <IconSettings size={18} stroke={1.5} />
+                  <ThemeIcon size={34} variant="light" color={iconInactiveColor}>
+                    <IconSettings size={22} stroke={1.7} />
                   </ThemeIcon>
                 }
                 onClick={() => handleNavigation('/settings')}
                 styles={{
                   label: {
-                    color: textColor
+                    color: textColor,
+                    fontWeight: 600,
+                    fontSize: 18
                   },
                   root: {
                     '&:hover': {
                       backgroundColor: hoverColor
-                    }
+                    },
+                    borderRadius: 10,
+                    padding: '12px 16px',
                   }
                 }}
               />
 
               <NavLink
-                label="Logout"
+                label={<span style={{ fontSize: 18, fontWeight: 600 }}>Logout</span>}
                 leftSection={
-                  <ThemeIcon size="md" variant="light" color="red">
-                    <IconLogout size={18} stroke={1.5} />
+                  <ThemeIcon size={34} variant="light" color="red">
+                    <IconLogout size={22} stroke={1.7} />
                   </ThemeIcon>
                 }
                 color="red"
@@ -178,7 +189,13 @@ const Sidebar = () => {
                   root: {
                     '&:hover': {
                       backgroundColor: '#ffe5e5'
-                    }
+                    },
+                    borderRadius: 10,
+                    padding: '12px 16px',
+                  },
+                  label: {
+                    fontWeight: 600,
+                    fontSize: 18
                   }
                 }}
               />
@@ -186,15 +203,15 @@ const Sidebar = () => {
           ) : (
             <>
               <Tooltip
-                label="Settings"
+                label={<span style={{ fontSize: 15 }}>Settings</span>}
                 position="right"
                 withArrow
                 transitionProps={{ transition: "pop", duration: 200 }}
               >
                 <NavLink
                   leftSection={
-                    <ThemeIcon size="md" variant="light" color={iconInactiveColor}>
-                      <IconSettings size={18} stroke={1.5} />
+                    <ThemeIcon size={34} variant="light" color={iconInactiveColor}>
+                      <IconSettings size={22} stroke={1.7} />
                     </ThemeIcon>
                   }
                   onClick={() => handleNavigation('/settings')}
@@ -203,22 +220,24 @@ const Sidebar = () => {
                     root: {
                       '&:hover': {
                         backgroundColor: hoverColor
-                      }
+                      },
+                      borderRadius: 10,
+                      padding: '12px 8px',
                     }
                   }}
                 />
               </Tooltip>
 
               <Tooltip
-                label="Logout"
+                label={<span style={{ fontSize: 15 }}>Logout</span>}
                 position="right"
                 withArrow
                 transitionProps={{ transition: "pop", duration: 200 }}
               >
                 <NavLink
                   leftSection={
-                    <ThemeIcon size="md" variant="light" color="red">
-                      <IconLogout size={18} stroke={1.5} />
+                    <ThemeIcon size={34} variant="light" color="red">
+                      <IconLogout size={22} stroke={1.7} />
                     </ThemeIcon>
                   }
                   onClick={handleLogout}
@@ -228,7 +247,9 @@ const Sidebar = () => {
                     root: {
                       '&:hover': {
                         backgroundColor: '#ffe5e5'
-                      }
+                      },
+                      borderRadius: 10,
+                      padding: '12px 8px',
                     }
                   }}
                 />

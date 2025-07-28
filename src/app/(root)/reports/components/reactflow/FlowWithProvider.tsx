@@ -11,7 +11,7 @@ import {
     MiniMap,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { getLayoutedElements } from '../utils/layout';
+import { getLayoutedElements } from '../../../../../components/reactFlow/utils/layout';
 import TransformNodesAndEdges from './Transform';
 import Sidebar from './Sidebar';
 

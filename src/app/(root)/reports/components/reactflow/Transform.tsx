@@ -1,7 +1,7 @@
 'use client';
 
 import { Node, Edge, Position } from "@xyflow/react";
-import { getLayoutedElements } from "../utils/layout";
+import { getLayoutedElements } from "../../../../../components/reactFlow/utils/layout";
 
 export default function TransformNodesAndEdges(raw: RawData) {
     const nodes: Node[] = [];

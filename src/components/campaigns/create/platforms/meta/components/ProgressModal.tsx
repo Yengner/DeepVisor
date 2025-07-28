@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/lib/utils/supabase/clients/browser';
 import { ReactFlow, Background, Node, Edge, Panel } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { getLayoutedElements } from '@/app/(root)/reports/utils/layout';
+import { getLayoutedElements } from '@/components/reactFlow/utils/layout';
 import { CustomNode } from '@/components/nodes/nodes';
 import { useRouter } from 'next/navigation';
 
