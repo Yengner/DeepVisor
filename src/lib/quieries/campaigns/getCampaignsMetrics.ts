@@ -11,15 +11,20 @@ const formatDate = (dateStr: string): string => {
 };
 
 
-export async function getCampaignMetrics(platform: string, adAccountId: string) {
+export async function getCampaignMetrics(adAccountId: string, campaign_id?: string) {
     const supabase = await createSupabaseClient();
-    const { data, error } = await supabase
+    let query = supabase
         .from('campaigns_metrics')
         .select(
             'campaign_id, name, status, objective, raw_data, start_date, platform_name, clicks, impressions, spend, leads, reach, link_clicks, messages, cpm, ctr, cpc, end_date, today_metrics, yesterday_metrics'
         )
-        .eq('platform_name', platform)
         .eq('ad_account_id', adAccountId);
+
+    if (campaign_id) {
+        query = query.eq('campaign_id', campaign_id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         console.error('Error fetching campaign data:', error);
@@ -33,7 +38,7 @@ export async function getCampaignMetrics(platform: string, adAccountId: string) 
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return data.map((campaign: any) => ({
-        campaign_id: campaign.campaign_id,
+        id: campaign.campaign_id,
         name: campaign.name,
         status: campaign.status,
         objective: campaign.objective,

@@ -73,7 +73,7 @@ interface FormattedCampaign {
 }
 
 export default async function CampaignPage() {
-  const userId = await getLoggedInUser().then((user) => user?.id);
+  const userId = await getLoggedInUser().then((user: { id: string }) => user?.id);
 
   const cookieStore = await cookies();
   const selectedPlatformId = cookieStore.get('platform_integration_id')?.value;

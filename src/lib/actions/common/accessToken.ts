@@ -5,7 +5,7 @@ import { getLoggedInUser } from "../user";
 export async function getAccessToken(platformId: string): Promise<string> {
     try {
         const supabase = await createSupabaseClient();
-        const userId = await getLoggedInUser().then((user) => user?.id);
+        const userId = await getLoggedInUser().then((user: { id: string }) => user?.id);
 
         const { data: integration, error: integrationError } = await supabase
             .from("platform_integrations")
