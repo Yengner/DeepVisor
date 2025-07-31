@@ -10,8 +10,8 @@ interface CampaignSubmitResponse {
   error?: string;
   message?: string;
   jobId?: string;
-  nodes?: any;
-  edges?: any;
+  nodes?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  edges?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 /**
@@ -48,6 +48,9 @@ interface UseCampaignSubmitReturn {
  * 
  * @returns Object with submission functions and state
  */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export function useCampaignSubmit(): UseCampaignSubmitReturn {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);

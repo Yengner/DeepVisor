@@ -6,7 +6,7 @@ export const revalidate = 60;
 
 export async function GET(
     request: Request,
-    { params }: { params: { adsetId: string } }
+    { params }: { params: Promise<{ adsetId: string }> }
 ) {
     const { adsetId } = await params;
     const supabase = await createSupabaseClient();

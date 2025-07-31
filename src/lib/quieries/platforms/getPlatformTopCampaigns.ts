@@ -57,6 +57,7 @@ export async function getPlatformsTopCampaigns(selectedPlatformId: string, userI
 
             if (campaigns) {
                 campaignMetrics.push(
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     ...campaigns.map((campaign: any) => {
                         const totalConversions = (campaign.leads || 0) + (campaign.messages || 0);
                         const costPerResult = totalConversions > 0 ? (campaign.spend || 0) / totalConversions : 0;

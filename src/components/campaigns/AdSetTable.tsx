@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import {
   Table,
   Group,
@@ -11,11 +10,8 @@ import {
   Badge,
   ActionIcon,
   Menu,
-  Divider,
   ThemeIcon,
   Skeleton,
-  Tooltip,
-  Checkbox,
   ScrollArea,
   Stack,
   Button
@@ -24,44 +20,11 @@ import {
   IconDots,
   IconPencil,
   IconTrash,
-  IconChartBar,
-  IconTargetArrow,
-  IconInfoCircle,
   IconCheck,
   IconPlus
 } from '@tabler/icons-react';
 import useSWR from 'swr'
 import { fetcher } from '@/utils/fetcher';
-
-interface AdSet {
-  id: number;
-  campaign_id: string;
-  adset_id: string;
-  name: string;
-  status: string;
-  start_date: string | null;
-  end_date: string | null;
-  clicks: number;
-  impressions: number;
-  spend: number;
-  leads: number;
-  reach: number;
-  link_clicks: number;
-  messages: number;
-  cpm: number;
-  ctr: number;
-  cpc: number;
-  raw_data: {
-    id: string;
-    name: string;
-    status: string;
-    optimization_goal: string;
-  };
-  created_at: string;
-  updated_at: string;
-  optimization_goal: string;
-  platform_name: string;
-}
 
 interface AdSetTableProps {
   campaignId: string;
@@ -154,7 +117,8 @@ export default function AdSetTable({ campaignId, onSelectAdSet, selectedAdSetId 
               </Table.Td>
             </Table.Tr>
           ) : (
-            adSets.map((adset) => (
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            adSets.map((adset: any) => (
               <Table.Tr
                 key={adset.adset_id}
                 style={{

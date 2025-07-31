@@ -1,3 +1,5 @@
+"use server";
+
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import { getErrorMessage } from "@/lib/utils/utils";
 

@@ -1,13 +1,15 @@
 'use client';
 
-import { Modal, Text, Stack, Group, Button } from '@mantine/core';
+import { Modal } from '@mantine/core';
 import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/lib/utils/supabase/clients/browser';
 import { ReactFlow, Background, Node, Edge, Panel } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { getLayoutedElements } from '@/components/reactFlow/utils/layout';
-import { CustomNode } from '@/components/nodes/nodes';
 import { useRouter } from 'next/navigation';
+import { CustomNode } from '@/components/reactFlow/nodes/nodes';
+
+/* eslint-disable */
 
 export interface ProgressEntry {
     id: string;

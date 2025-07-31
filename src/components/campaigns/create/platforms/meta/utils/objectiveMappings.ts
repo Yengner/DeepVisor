@@ -414,9 +414,9 @@ export function buildPromotedObject(
         product_set_id?: string,
         event_id?: string
     }
-): any {
+): any { // eslint-disable-line @typescript-eslint/no-explicit-any
     const requiredFields = getPromotedObjectFields(objective, destinationType);
-    const promotedObject: any = {};
+    const promotedObject: any = {}; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     requiredFields.forEach(field => {
         if (params[field as keyof typeof params]) {

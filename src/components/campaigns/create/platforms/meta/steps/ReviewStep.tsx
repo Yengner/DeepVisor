@@ -3,21 +3,20 @@
 import {
     Card, Group, Paper, Stack, Text, ThemeIcon, Title, Divider, Box,
     Badge, Button, Grid, Timeline, Alert, Progress,
-    List, Tooltip, SimpleGrid, Table, Accordion, Avatar
+    Tooltip, SimpleGrid, Table, Accordion,
 } from '@mantine/core';
 import {
     IconCheck, IconX, IconInfoCircle, IconBrandFacebook, IconBrandInstagram,
-    IconCalendar, IconMapPin, IconUsers, IconTargetArrow, IconCurrencyDollar,
+    IconCalendar, IconMapPin, IconTargetArrow, IconCurrencyDollar,
     IconPhoto, IconBulb, IconRocket, IconAd, IconChartBar, IconChartPie,
-    IconSettings, IconEditCircle, IconMessageCircle, IconDeviceImac,
-    IconBuildingStore, IconUser, IconEdit, IconListDetails
+    IconSettings,
+    IconUser, IconListDetails
 } from '@tabler/icons-react';
 import { UseFormReturnType } from '@mantine/form';
 import { CampaignFormValues } from '@/lib/actions/meta/types';
 import { useCampaignSubmit } from '../hooks/useCampaignSubmit';
 import { ProgressModal } from '../components/ProgressModal';
-import { useState } from 'react';
-import { ReactFlowProvider } from '@xyflow/react';
+
 
 interface ReviewStepProps {
     form: UseFormReturnType<CampaignFormValues>;
@@ -29,7 +28,9 @@ interface ReviewStepProps {
  * Campaign Review step
  * Provides a comprehensive overview of all campaign settings before submission
  */
-export default function ReviewStep({ form, setActive, isSmart = false }: ReviewStepProps) {
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export default function ReviewStep({ form, setActive }: ReviewStepProps) {
     const {
         submitCampaign,
         isSubmitting,
@@ -38,7 +39,6 @@ export default function ReviewStep({ form, setActive, isSmart = false }: ReviewS
         jobId,
         showProgressModal,
         setShowProgressModal,
-        resetSubmission,
         progressNodes,
         progressEdges
     } = useCampaignSubmit();

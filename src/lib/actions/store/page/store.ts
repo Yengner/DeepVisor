@@ -4,7 +4,7 @@ import { PageAccount } from "@/lib/api/platforms/meta/types";
  * Store page accounts
  */
 export async function storePageAccounts(
-    supabase: any,
+    supabase: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     userId: string,
     platformIntegrationId: string,
     pageAccounts: PageAccount[]

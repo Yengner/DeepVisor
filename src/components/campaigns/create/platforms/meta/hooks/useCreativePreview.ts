@@ -28,6 +28,7 @@ export function useCreativePreview({
     const [error, setError] = useState<string | null>(null);
     const [hasLoaded, setHasLoaded] = useState<boolean>(false);
 
+    /* eslint-disable react-hooks/exhaustive-deps */
     useEffect(() => {
         if (!enabled || !creativeId || !platformId) {
             return;
@@ -41,7 +42,7 @@ export function useCreativePreview({
             try {
                 const params = new URLSearchParams({
                     platformId,
-                    creativeId: creativeId || '', 
+                    creativeId: creativeId || '',
                     previewTypes: previewTypes.join(',')
                 });
                 const res = await fetch(`/api/meta/previews?${params.toString()}`);
@@ -52,8 +53,9 @@ export function useCreativePreview({
                 const data = await res.json();
                 setPreviews(data.previews || {});
                 setHasLoaded(true);
-            } catch (err: any) {
-                setError(err.message || 'An unexpected error occurred while loading the creative preview.');
+
+            } catch (err: unknown) {
+                setError((err as Error).message || 'An unexpected error occurred while loading the creative preview.');
             } finally {
                 setLoading(false);
             }

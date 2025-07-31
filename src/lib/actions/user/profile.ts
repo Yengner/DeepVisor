@@ -1,3 +1,5 @@
+"use server";
+
 import { AdAccountWithMetrics } from "@/lib/api/platforms/meta/types";
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import { getErrorMessage, parseStringify } from "@/lib/utils/utils";
@@ -110,7 +112,7 @@ async function getUserInfo({ userId }: { userId: string }) {
  * @return Promise that resolves when the update is complete
  */
 export async function updateUserConnectedAccounts(
-    supabase: any,
+    supabase: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     userId: string,
     accountsToAdd: AdAccountWithMetrics | AdAccountWithMetrics[],
     savedAdAccountIds: { [adAccountId: string]: string }
@@ -135,6 +137,7 @@ export async function updateUserConnectedAccounts(
 
     for (const account of Array.isArray(accountsToAdd) ? accountsToAdd : [accountsToAdd]) {
         const existingIndex = connectedAccounts.findIndex(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (acc: any) => acc.platform === 'meta' && acc.accountId === account.details.id
         );
 
@@ -234,7 +237,7 @@ export async function getUserSubscriptionTier(userId: string): Promise<Subscript
  * @param tier The subscription tier to get limits for
  * @return The limits for the specified tier
 */
-export function getTierLimits(tier: SubscriptionTier): TierLimits {
+export async function getTierLimits(tier: SubscriptionTier): Promise<TierLimits> {
     switch (tier) {
         case 'tier1':
             return {

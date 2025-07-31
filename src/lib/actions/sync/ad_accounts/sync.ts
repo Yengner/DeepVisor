@@ -1,8 +1,8 @@
 "use server";
 
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
-import { fetchMetaAdAccounts } from "../../meta/fetch/ad_accounts/fetch";
 import { storeAdAccounts } from "../../store/ad_accounts/store";
+import { fetchMetaAdAccounts } from "@/lib/api/platforms/meta/ad_accounts/fetch";
 
 
 /**

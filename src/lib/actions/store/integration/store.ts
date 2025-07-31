@@ -2,7 +2,7 @@
  * Store  integration data in Supabase
  */
 export async function storeIntegration(
-    supabase: any,
+    supabase: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     userId: string,
     accessToken: string,
     platformName: string

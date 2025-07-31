@@ -1,17 +1,5 @@
-import { useCallback, useRef, useEffect } from 'react';
-import { UseFormReturnType } from '@mantine/form';
-import { CampaignFormValues } from '@/lib/actions/meta/types';
-import { getDefaultOptimizationGoal, getValidDestinationTypes } from '../utils/objectiveMappings';
-
-/**
- * Return type for useObjectiveMapping hook
- */
-interface UseObjectiveMappingReturn {
-    /** Handler for objective changes, updates related form fields */
-    handleObjectiveChange: (value: string) => void;
-    /** Handler for destination type changes, updates optimization goals */
-    handleDestinationChange: (value: string) => void;
-}
+import { useCallback } from 'react';
+import { getDefaultOptimizationGoal } from '../utils/objectiveMappings';
 
 /**
  * Hook for managing the relationships between campaign objective,
@@ -31,6 +19,7 @@ interface UseObjectiveMappingReturn {
  */
 //UseFormReturnType<CampaignFormValues>
 //UseObjectiveMappingReturn
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useObjectiveMapping(form: any) {
     // // Use a ref to avoid dependency on the entire form object
     // const formRef = useRef(form);
@@ -44,6 +33,8 @@ export function useObjectiveMapping(form: any) {
      * Updates destination type based on new objective
      * and ensures a valid destination is selected
      */
+
+    /* eslint-disable react-hooks/exhaustive-deps */
     const handleDestinationChange = useCallback((value: string): void => {
         const currentForm = form.values;
 

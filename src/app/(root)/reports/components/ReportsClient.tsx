@@ -8,9 +8,8 @@ import {
     Container,
     Box,
     ActionIcon,
-    Text,
 } from '@mantine/core';
-import { IconChevronLeft, IconChevronRight, IconCurrencyDollar, IconUser, IconEye, IconClick, IconMenu2 } from '@tabler/icons-react';
+import { IconChevronLeft, IconChevronRight, IconCurrencyDollar, IconUser, IconEye, IconClick } from '@tabler/icons-react';
 import ReportsSidebar from './layout/ReportsSidebar';
 import ReportsHeader from './layout/ReportsHeader';
 import KpiFrequencyChart from './cards/KpiFrequencyChart';

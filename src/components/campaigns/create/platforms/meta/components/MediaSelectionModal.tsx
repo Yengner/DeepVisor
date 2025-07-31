@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import {
-    Modal, Text, Tabs, SimpleGrid, Paper, Image, Stack, Badge,
+    Modal, Text, SimpleGrid, Paper, Image, Stack, Badge,
     Group, ThemeIcon, Button, Center, Loader, Box, AspectRatio,
-    ScrollArea, Divider, Alert
+    ScrollArea, Alert
 } from '@mantine/core';
 import {
-    IconAlertCircle, IconPhoto, IconCheck, IconFileText, IconChevronLeft, IconChevronRight
+    IconAlertCircle, IconPhoto, IconCheck, IconChevronLeft, IconChevronRight
 } from '@tabler/icons-react';
 import { useExistingCreatives } from '../hooks/useExistingCreatives';
 import { MetaCreative } from '@/lib/actions/meta/creatives/actions';
@@ -35,16 +35,13 @@ export default function MediaSelectionModal({
     opened,
     onClose,
     onSelectCreative,
-    objective = '',
-    destinationType = '',
+    // objective = '',
+    // destinationType = '',
     platformId,
     adAccountId,
     initialSelectedId = null
 }: MediaSelectionModalProps) {
-    const [activeTab, setActiveTab] = useState<string>('creatives');
     const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
-
-    const shouldShowLeadTab = objective === 'OUTCOME_LEADS' && destinationType === 'ON_AD';
 
     const {
         creatives,
@@ -68,7 +65,7 @@ export default function MediaSelectionModal({
         previews,
         loading: loadingPreview,
         error: previewError,
-        hasLoaded: previewLoaded
+        hasLoaded: previewLoaded // eslint-disable-line @typescript-eslint/no-unused-vars
     } = useCreativePreview({
         platformId,
         creativeId: selectedId,

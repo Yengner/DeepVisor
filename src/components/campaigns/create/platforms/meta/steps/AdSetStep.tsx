@@ -7,16 +7,15 @@ import {
 } from '@mantine/core';
 
 import {
-    IconTarget, IconUsersGroup, IconMap, IconInfoCircle, IconChartPie,
+    IconTarget, IconUsersGroup, IconInfoCircle, IconChartPie,
     IconMapPin, IconAdjustments, IconUsers, IconDevices, IconChevronRight,
-    IconLanguage, IconBrandFacebook, IconPlus, IconEdit
+    IconLanguage, IconPlus, IconEdit
 } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
 import { UseFormReturnType } from '@mantine/form';
 import { useState, useEffect } from 'react';
 import { CampaignFormValues } from '@/lib/actions/meta/types';
 import { getObjectiveLabel, getOptimizationLabel, getValidOptimizationGoals } from '../utils/objectiveMappings';
-import { MetaPage } from '@/lib/actions/meta/pages/actions';
 import { useMetaPages } from '../hooks/useMetaPages';
 import GoogleMapSelector from '../components/GoogleMapSelector';
 
@@ -34,7 +33,7 @@ export default function AdSetStep({
     isSmart = false
 }: AdSetStepProps) {
 
-    const { values, insertListItem, removeListItem, setFieldValue, getInputProps } = form;
+    const { values, insertListItem, removeListItem, setFieldValue } = form;
     const [locationModalOpened, { open: openLocationModal, close: closeLocationModal }] = useDisclosure(false);
     const [audienceEstimate, setAudienceEstimate] = useState({
         size: '8.9M - 10.5M',
@@ -52,6 +51,8 @@ export default function AdSetStep({
 
     // Set default page_id when pages are loaded and adSet doesn't have one
     // This effect runs when metaPages or idx changes
+
+    /* eslint-disable react-hooks/exhaustive-deps */
     useEffect(() => {
         if (
             hasLoaded &&
@@ -313,7 +314,7 @@ export default function AdSetStep({
                                             radius="md"
                                             mt="md"
                                         >
-                                            We'll show ads to people matching your targeting suggestions, and other audiences when it's
+                                            We&apos;ll show ads to people matching your targeting suggestions, and other audiences when it&apos;s
                                             likely to improve performance.
                                         </Alert>
                                     )}
@@ -497,7 +498,7 @@ export default function AdSetStep({
                                         <Stack gap={0} style={{ flex: 1 }}>
                                             <Text fw={600}>Advantage+ Placements</Text>
                                             <Text size="sm" c="dimmed">
-                                                Your budget will be allocated across multiple placements based on where it's likely to perform best
+                                                Your budget will be allocated across multiple placements based on where it&apos;s likely to perform best
                                             </Text>
                                         </Stack>
                                         <Switch

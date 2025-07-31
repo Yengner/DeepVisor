@@ -1,5 +1,4 @@
 import { AdSetStrategy } from "./AdSetStrategy";
-import { CampaignFormValues } from "../../types";
 import { AdSet } from "../../../../sdk/client"; // Import the SDK AdSet class
 
 /**
@@ -7,13 +6,14 @@ import { AdSet } from "../../../../sdk/client"; // Import the SDK AdSet class
  * Uses ON_AD destination_type as required for lead forms
  */
 export class LeadGenAdSetStrategy implements AdSetStrategy {
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+
     buildAdSetParams(
         baseParams: any,
         formData: any,
         isSmartCampaign: boolean
     ): any {
         const params: Record<string, any> = { ...baseParams };
-
         params[AdSet.Fields.billing_event] = AdSet.BillingEvent.impressions;
         params[AdSet.Fields.optimization_goal] = AdSet.OptimizationGoal.lead_generation;
         params[AdSet.Fields.destination_type] = AdSet.DestinationType.on_ad;
@@ -28,8 +28,9 @@ export class LeadGenAdSetStrategy implements AdSetStrategy {
         return params;
     }
 
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     private buildTargeting(formData: any, isSmartCampaign: boolean): any {
-        let geoLocations: any = {
+        const geoLocations: any = {
             location_types: ["home", "recent"]
         };
 
@@ -59,4 +60,6 @@ export class LeadGenAdSetStrategy implements AdSetStrategy {
 
         return targeting;
     }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
+
 }

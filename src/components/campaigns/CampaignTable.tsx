@@ -37,20 +37,6 @@ interface CampaignTableProps {
   platformColor?: string;
 }
 
-const getPlatformImage = (platform: string = '') => {
-  switch (platform.toLowerCase()) {
-    case 'facebook':
-    case 'meta':
-      return '/images/meta-logo.png';
-    case 'tiktok':
-      return '/images/tiktok-logo.png';
-    case 'google':
-      return '/images/google-logo.png';
-    default:
-      return null;
-  }
-};
-
 export default function CampaignTable({
   campaigns,
   selectedCampaignId,
@@ -60,7 +46,7 @@ export default function CampaignTable({
   platformColor = 'blue'
 }: CampaignTableProps) {
   // Column visibility state
-  const [columns, setColumns] = useState({
+  const [columns] = useState({
     status: true,
     objective: true,
     dates: true,

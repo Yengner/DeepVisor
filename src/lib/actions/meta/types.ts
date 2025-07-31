@@ -21,7 +21,18 @@ export interface MetaBaseParams {
  * Campaign creation parameters
  */
 export interface MetaCampaignParams extends MetaBaseParams {
-    // Campaign-specific parameters
+    /** Name of the campaign */
+    campaignName: string;
+    /** Objective of the campaign */
+    objective: string;
+    /** Buying type for the campaign */
+    buyingType: string;
+    /** Special ad categories if any */
+    specialAdCategories?: string[];
+    /** Bid strategy for the campaign */
+    bidStrategy?: string;
+    /** Destination type for the campaign */
+    destinationType?: string;
 }
 
 /**

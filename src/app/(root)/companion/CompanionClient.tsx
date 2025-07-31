@@ -1,6 +1,6 @@
 'use client';
 
-import { Container, Card, Title, Text, Stack, Box, Button, Group, Divider } from '@mantine/core';
+import { Container, Card, Title, Text, Stack, Button, Group, Divider } from '@mantine/core';
 import { IconRobot, IconSettings, IconMessage, IconBolt, IconBulb } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 

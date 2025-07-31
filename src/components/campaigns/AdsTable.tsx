@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import {
   Table,
   Group,
@@ -12,7 +11,6 @@ import {
   ActionIcon,
   Menu,
   Divider,
-  ThemeIcon,
   Skeleton,
   Avatar,
   Box,
@@ -27,45 +25,10 @@ import {
   IconChartBar,
   IconPhoto,
   IconEye,
-  IconCheck,
   IconPlus
 } from '@tabler/icons-react';
 import useSWR from 'swr';
 import { fetcher } from '@/utils/fetcher';
-
-// Updated interface to match actual ads_metrics data
-interface Ad {
-  id: number;
-  campaign_id: string;
-  adset_id: string;
-  ad_id: string;
-  name: string;
-  status: string;
-  start_date: string | null;
-  end_date: string | null;
-  clicks: number;
-  impressions: number;
-  spend: number;
-  leads: number;
-  reach: number;
-  link_clicks: number;
-  messages: number;
-  cpm: number;
-  ctr: number;
-  cpc: number;
-  raw_data: {
-    id: string;
-    name: string;
-    status: string;
-    creative?: {
-      image_url?: string;
-      video_url?: string;
-    };
-  };
-  created_at: string;
-  updated_at: string;
-  platform_name: string;
-}
 
 // Changed prop from campaignId to adsetId
 interface AdsTableProps {
@@ -153,11 +116,11 @@ export default function AdsTable({ adsetId }: AdsTableProps) {
               </Table.Td>
             </Table.Tr>
           ) : (
-            ads.map((ad) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ads.map((ad: any) => {
               const conversionActions = ad.leads + ad.messages;
               const results = conversionActions > 0 ? `${conversionActions} ${conversionActions === 1 ? 'Lead' : 'Leads'}` : "0 Leads";
               const costPerResult = conversionActions > 0 ? `$${(ad.spend / conversionActions).toFixed(2)}` : "$0.00";
-              const ctr = ad.clicks > 0 && ad.impressions > 0 ? `${(ad.clicks / ad.impressions * 100).toFixed(2)}%` : "0.00%";
               const isActive = ad.status === "ACTIVE";
               const previewImage = ad.raw_data?.creative?.image_url || ad.raw_data?.creative?.video_url || null;
 

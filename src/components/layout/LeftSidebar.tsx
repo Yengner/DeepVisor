@@ -54,7 +54,7 @@ const Sidebar = () => {
     <div
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
-      className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 border-r border-gray-200 transition-all duration-500 ${isExpanded ? 'w-64' : 'w-16'}`}
+      className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 border-r border-gray-200 transition-all duration-500 ${isExpanded ? 'w-52' : 'w-16'}`}
       style={{
         backgroundColor: sidebarBg,
         boxShadow: '0 1px 6px rgba(0,0,0,0.08)'

@@ -13,7 +13,7 @@ export interface ErrorDetails {
     code: ErrorCode;
     message: string;         // Technical message
     userMessage: string;     // User-friendly message
-    details?: Record<string, any>;
+    details?: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export type ApiResponse<T> = {

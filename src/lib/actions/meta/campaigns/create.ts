@@ -1,7 +1,6 @@
 import { getCampaignStrategy } from "./strategies/CampaignStrategyFactory";
 import { AdAccount, Campaign } from "../../../sdk/client";
 import { logApiCallResult } from "../../../sdk/utils";
-import { logProgress } from "../../utils";
 
 /**
  * Creates a campaign in the Meta Ads platform using the SDK
@@ -9,6 +8,8 @@ import { logProgress } from "../../utils";
  * @param params - Campaign creation parameters
  * @returns Campaign ID from Meta API
  */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function createCampaign(params: any): Promise<string> {
     console.log("Creating campaign with params:", params);
     const { adAccountId, formData, isSmartCampaign, budgetData } = params;

@@ -1,17 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { showError } from '@/lib/utils/toasts';
-import { UseFormReturnType } from '@mantine/form';
-import { CampaignFormValues } from '@/lib/actions/meta/types';
 import { validateMetaStep } from '../platforms/meta/utils/validation';
-
-
-
-interface UseCampaignStepsReturn {
-  active: number;
-  setActive: (value: number | ((current: number) => number)) => void;
-  nextStep: () => void;
-  prevStep: () => void;
-}
 
 /**
  * Core hook for managing campaign creation steps with platform-specific validation
@@ -25,6 +14,8 @@ interface UseCampaignStepsReturn {
   totalSteps: number = 7
 ): UseCampaignStepsReturn {
 */
+
+/* eslint-disable */
 
 export function useCampaignSteps(
   form: any,

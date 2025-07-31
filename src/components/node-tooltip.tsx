@@ -111,3 +111,4 @@ export const NodeTooltipContent = forwardRef<HTMLDivElement, NodeToolbarProps>(
     );
   },
 );
+NodeTooltipContent.displayName = "NodeTooltipContent";

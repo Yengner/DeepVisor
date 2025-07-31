@@ -1,5 +1,4 @@
 import { useForm } from '@mantine/form';
-import { CampaignFormValues } from '@/lib/actions/meta/types';
 import { CAMPAIGN_OBJECTIVES, DESTINATION_TYPES, OPTIMIZATION_GOALS } from '../utils/objectiveMappings';
 
 /**

@@ -1,6 +1,6 @@
 'use client';
 
-import { updateBusinessProfileData } from '@/lib/actions/user/user.actions';
+import { updateBusinessProfileData } from '@/lib/actions/user/onboarding';
 import { Button, Text, Title, Stack, Group, MultiSelect, Checkbox, Card, SimpleGrid } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconSettings, IconChartBar, IconBell } from '@tabler/icons-react';
@@ -26,6 +26,7 @@ export default function PreferencesStep({
   const formInitialized = useRef(false);
 
   // Log what we're initializing with
+  /* eslint-disable */
   useEffect(() => {
     console.log("PreferencesStep initial userData:", {
       adGoals: userData.adGoals,
@@ -36,6 +37,8 @@ export default function PreferencesStep({
     });
     formInitialized.current = true;
   }, []);
+
+  /* eslint-enable */
 
   const form = useForm({
     initialValues: {

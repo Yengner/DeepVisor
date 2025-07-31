@@ -1,4 +1,3 @@
-import { CampaignFormValues } from '@/lib/actions/meta/types';
 import { UseFormReturnType } from '@mantine/form';
 
 
@@ -26,7 +25,7 @@ export function validateMetaStep(
 
 export function validateMetaStep(
     activeStep: number,
-    form: UseFormReturnType<any>,
+    form: UseFormReturnType<any>, // eslint-disable-line @typescript-eslint/no-explicit-any
     validateFormFields: ValidateFormFields,
     showError: ShowError
 ): boolean {

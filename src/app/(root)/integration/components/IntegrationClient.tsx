@@ -26,16 +26,11 @@ import {
 } from '@mantine/core';
 import {
     IconBrandFacebook,
-    IconBrandGoogle,
-    IconBrandTiktok,
     IconCheck,
     IconLink,
     IconPlus,
     IconLock,
     IconX,
-    IconBrandSnapchat,
-    IconBrandLinkedin,
-    IconBrandTwitter,
     IconChartBar,
     IconRefresh,
     IconTrash,
@@ -104,7 +99,8 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms, userId }) => {
         }
     };
 
-    const handleDisconnect = async (platform: string, integrationId?: string) => {
+    // Probably change to include platform_integration_id
+    const handleDisconnect = async (platform: string) => {
         if (!confirm('Are you sure you want to disconnect this platform? This will remove all associated data.')) {
             return;
         }

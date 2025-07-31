@@ -1,28 +1,13 @@
 'use client';
-
-import { useState, useEffect } from 'react';
 import {
     Modal,
     Text,
-    Tabs,
-    SimpleGrid,
     Paper,
-    Image,
     Stack,
-    Badge,
-    Checkbox,
     Group,
-    ThemeIcon,
     Button,
-    Center,
-    Loader,
-    Pagination,
-    ActionIcon,
     Divider,
-    Box,
-    AspectRatio
 } from '@mantine/core';
-import { IconBrandFacebook, IconBrandInstagram, IconAlertCircle, IconPhoto, IconCheck } from '@tabler/icons-react';
 
 interface PresetModalProps {
     opened: boolean;

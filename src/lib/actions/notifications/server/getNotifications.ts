@@ -15,6 +15,7 @@ export async function getNotifications(userId: string) {
             throw error;
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const notifications = (data || []).map((notification: any) => ({
             ...notification,
             created_at: formatRelativeTime(notification.created_at),

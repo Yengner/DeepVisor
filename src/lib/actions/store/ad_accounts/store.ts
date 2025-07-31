@@ -12,12 +12,13 @@ import { date } from "../../utils";
  * @returns An object containing the stored ad accounts and a mapping of ad account IDs to Sup
  */
 export async function storeAdAccounts(
-    supabase: any,
+    supabase: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     userId: string,
     platformIntegrationId: string,
-    adAccountsData: any,
+    adAccountsData: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     sync?: boolean,
     userTier?: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<{ accounts: any, accountIdMap: { [adAccountId: string]: string } } | void> {
 
     if (sync) {
@@ -44,8 +45,8 @@ export async function storeAdAccounts(
 
         return;
     }
-
-    const { maxAdAccounts } = getTierLimits(userTier as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { maxAdAccounts } = await getTierLimits(userTier as any);
 
     let accountsToSave = Array.isArray(adAccountsData) ? [...adAccountsData] : [adAccountsData];
 

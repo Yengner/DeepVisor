@@ -1,17 +1,12 @@
 import React from 'react';
 import { NodeStatusIndicator } from '@/components/node-status-indicator';
 import { Handle, Position } from '@xyflow/react';
-import { Collapse, Loader, Text } from '@mantine/core';
-import {
-  DatabaseSchemaNode,
-  DatabaseSchemaNodeHeader,
-  DatabaseSchemaNodeBody,
-  DatabaseSchemaTableRow,
-  DatabaseSchemaTableCell,
-} from '@/components/database-schema-node';
-import { BaseNode, BaseNodeContent } from '../base-node';
-import { NodeAppendix } from '../node-appendix';
-import { NodeTooltip, NodeTooltipContent, NodeTooltipTrigger } from '../node-tooltip';
+import { Loader, Text } from '@mantine/core';
+import { NodeTooltip, NodeTooltipContent, NodeTooltipTrigger } from '@/components/node-tooltip';
+import { BaseNode, BaseNodeContent } from '@/components/base-node';
+
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export type NodeProps = {
   data: Record<string, any>;
@@ -91,3 +86,4 @@ export const CustomNode = ({ data }: NodeProps) => {
   );
 };
 
+/* eslint-enable @typescript-eslint/no-explicit-any */

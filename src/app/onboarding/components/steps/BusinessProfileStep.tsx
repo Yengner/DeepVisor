@@ -1,11 +1,11 @@
 'use client';
 
+import { updateBusinessProfileData } from '@/lib/actions/user/onboarding';
 import { Button, Text, Title, Stack, Group, Select, TextInput, Textarea } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconBuilding } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { updateBusinessProfileData } from '@/lib/actions/user/user.actions';
 
 type BusinessProfileStepProps = {
   onNext: () => void;
@@ -26,6 +26,8 @@ export default function BusinessProfileStep({
   const formInitialized = useRef(false);
 
   // Log what we're initializing with
+
+  /* eslint-disable */
   useEffect(() => {
     console.log("BusinessProfileStep initial userData:", {
       businessName: userData.businessName,
@@ -37,6 +39,7 @@ export default function BusinessProfileStep({
     });
     formInitialized.current = true;
   }, []);
+  /* eslint-enable */
 
   const form = useForm({
     initialValues: {
@@ -74,7 +77,7 @@ export default function BusinessProfileStep({
     try {
       // Log what we're about to send
       console.log("Submitting business profile:", values);
-      
+
       // Update parent state
       updateUserData({
         ...userData,
@@ -85,7 +88,7 @@ export default function BusinessProfileStep({
         description: values.description,
         monthlyBudget: values.monthlyBudget
       });
-      
+
       // Save directly to database for additional safety
       await updateBusinessProfileData({
         businessName: values.businessName,
@@ -95,7 +98,7 @@ export default function BusinessProfileStep({
         description: values.description,
         monthlyBudget: values.monthlyBudget
       });
-      
+
       // Proceed to next step
       onNext();
     } catch (error) {

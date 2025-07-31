@@ -53,6 +53,7 @@ export default async function ReportsPage({
   const adAccountData = await getAdAccountData(selectedAdAccountId, selectedPlatformId, userId);
   const rawArray = adAccountData?.time_increment_metrics[timeIncrement];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const timeIncrementArray = rawArray.map((row: any) => ({
     ...row,
     date_stop: formatDate(row.date_stop),

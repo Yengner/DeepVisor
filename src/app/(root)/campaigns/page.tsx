@@ -1,11 +1,11 @@
 import CampaignDashboard from "@/components/campaigns/CampaignDashboard";
 import { getCampaignMetrics } from "@/lib/quieries/campaigns/getCampaignsMetrics";
-import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { getPlatformDetails } from "@/lib/quieries/platforms/getPlatformDetails";
 import { getLoggedInUser } from "@/lib/actions/user";
 import { getAdAccountData } from "@/lib/quieries/ad_accounts";
+import { CampaignMetrics } from "@/components/campaigns/types";
 
 // Define interfaces for better type safety
 interface AggregatedMetrics {
@@ -21,31 +21,6 @@ interface AggregatedMetrics {
   cpm: number;
 }
 
-interface AdAccount {
-  id: string;
-  ad_account_id: string;
-  name: string;
-  aggregated_metrics: AggregatedMetrics | null;
-}
-
-interface CampaignData {
-  campaign_id: string;
-  name: string;
-  status: string;
-  type?: string;
-  objective: string;
-  start_date: string;
-  end_date?: string;
-  spend: number;
-  leads: number;
-  messages: number;
-  reach: number;
-  clicks: number;
-  impressions: number;
-  cpm: number;
-  ctr: number;
-  cpc: number;
-}
 
 interface FormattedCampaign {
   id: string;
@@ -98,17 +73,18 @@ export default async function CampaignPage() {
     cpm: adAccountDetails.aggregated_metrics?.cpm || 0,
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const campaignsData: any = await getCampaignMetrics(
     adAccountDetails.ad_account_id,
     undefined,
     platformDetails.platform_name,
   );
 
-  const allCampaigns: FormattedCampaign[] = (campaignsData ?? []).map((campaign: any) => ({
+  const allCampaigns: FormattedCampaign[] = (campaignsData ?? []).map((campaign: CampaignMetrics) => ({
     id: campaign.id,
     name: campaign.name,
     delivery: (campaign.status ?? "").toUpperCase() === "ACTIVE",
-    type: campaign.type || "Manual",
+    type: "Manual",
     status: campaign.status,
     objective: campaign.objective,
     startDate: campaign.start_date,
@@ -124,8 +100,8 @@ export default async function CampaignPage() {
     frequency: campaign.reach && campaign.impressions
       ? (campaign.impressions / campaign.reach).toFixed(2)
       : "0",
-    costPerResult: campaign.leads + campaign.messages > 0 && campaign.spend
-      ? `$${(campaign.spend / (campaign.leads + campaign.messages)).toFixed(2)}`
+    costPerResult: Number(campaign.leads) + Number(campaign.messages) > 0 && Number(campaign.spend)
+      ? `$${(Number(campaign.spend) / (Number(campaign.leads) + Number(campaign.messages))).toFixed(2)}`
       : "$0.00",
     cpm: campaign.cpm,
     ctr: campaign.ctr,

@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import {
-    Button, Group, Paper, Title, Text, Tabs, ActionIcon,
-    Tooltip, Select, TextInput, Menu, Badge, Stack, Avatar,
+    Button, Group, Paper, Text, Tabs, ActionIcon,
+    Tooltip, Select, TextInput, Menu, Badge, Avatar,
     Container
 } from '@mantine/core';
 import {
     IconRefresh, IconPlus, IconSearch, IconAdjustments,
-    IconFilterOff, IconChartBar, IconTable, IconBrandFacebook,
-    IconBrandTiktok, IconBrandGoogle, IconInfoCircle
+    IconFilterOff, IconChartBar, IconTable
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import CampaignTable from './CampaignTable';
@@ -202,13 +201,6 @@ export default function CampaignDashboard({ campaigns, userId, platform, account
         setTypeFilter(null);
     };
 
-    // Calculate summary statistics
-    const totalSpend = filteredCampaigns.reduce((sum, c) =>
-        sum + (typeof c.spend === 'string' ? parseFloat(c.spend) : (c.spend || 0)), 0);
-    const totalImpressions = filteredCampaigns.reduce((sum, c) => sum + (c.impressions || 0), 0);
-    const totalClicks = filteredCampaigns.reduce((sum, c) => sum + (c.clicks || 0), 0);
-    const avgCTR = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
-
     // Reset selected adset when campaign changes
     useEffect(() => {
         setSelectedAdSetId(null);
@@ -352,6 +344,7 @@ export default function CampaignDashboard({ campaigns, userId, platform, account
 
             {/* Campaign Hierarchy Tabs - now with more space for table */}
             <Paper p="xs" radius="md" withBorder style={{ height: 'auto', display: 'flex', flexDirection: 'column' }}>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <Tabs value={activeTab} onChange={setActiveTab as any}>
                     <Tabs.List>
                         <Tabs.Tab

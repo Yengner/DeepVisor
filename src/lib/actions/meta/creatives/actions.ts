@@ -56,6 +56,7 @@ export async function fetchMetaCreatives({
             AdCreative.Fields.asset_feed_spec,
         ];
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const params: Record<string, any> = {
             limit,
             thumbnail_width: thumbnailWidth,
@@ -65,6 +66,7 @@ export async function fetchMetaCreatives({
         if (before) params.before = before;
 
         const creativesCursor = await account.getAdCreatives(fields, params);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const creatives = creativesCursor.map((c: any) => c);
 
         const paging = creativesCursor.paging || {};

@@ -13,12 +13,13 @@ interface NumericCol {
     label: string;
     light: number[];
     dark: number[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     format: (v: any) => string | number;
 }
 
 interface PerformanceTableProps {
     title: string;
-    rows: any[];
+    rows: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
     columns: { key: string; label: string }[];
     numericCols: NumericCol[];
     minMax?: Record<string, { min: number; max: number }>;

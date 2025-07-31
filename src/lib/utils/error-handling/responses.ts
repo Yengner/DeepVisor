@@ -1,4 +1,4 @@
-import { ApiResponse, ErrorCode, ErrorDetails } from "@/lib/utils/error-handling/types/api";
+import { ApiResponse, ErrorCode } from "@/lib/utils/error-handling/types/api";
 import { DEFAULT_ERROR_MESSAGES } from "./constants";
 import { NextResponse } from "next/server";
 
@@ -6,7 +6,7 @@ export function createErrorResponse(
     code: ErrorCode,
     message: string,
     userMessage?: string,
-    details?: Record<string, any>
+    details?: Record<string, any> //eslint-disable-line @typescript-eslint/no-explicit-any
 ): ApiResponse<never> {
     return {
         success: false,

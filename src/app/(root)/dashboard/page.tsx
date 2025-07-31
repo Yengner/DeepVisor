@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { getLoggedInUser } from "@/lib/actions/user";
 import { getPlatformDetails } from "@/lib/quieries/platforms";
-import { getAdAccountData, getAdAccountTopCampaigns } from "@/lib/quieries/ad_accounts";
+import { getAdAccountData } from "@/lib/quieries/ad_accounts";
 
 export default async function MainDashboardPage() {
 
@@ -24,7 +24,7 @@ export default async function MainDashboardPage() {
 
   const platformDetails = await getPlatformDetails(selectedPlatformId, userId);
   const adAccountData = await getAdAccountData(selectedAdAccountId, selectedPlatformId, userId);
-  const topAdAccountCampaigns = await getAdAccountTopCampaigns(adAccountData.ad_account_id);
+  // const topAdAccountCampaigns = await getAdAccountTopCampaigns(adAccountData.ad_account_id);
 
   // const platformData = await getPlatformData(selectedPlatformId);
   // const topCampaigns = await getTopPlatformsCampaigns(selectedPlatformId, selectedAdAccountId);
@@ -34,7 +34,6 @@ export default async function MainDashboardPage() {
       userData={user}
       platform={platformDetails}
       adAccountData={adAccountData}
-      topAdAccountCampaigns={topAdAccountCampaigns}
     />
   );
 }

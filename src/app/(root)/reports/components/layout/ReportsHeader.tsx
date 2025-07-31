@@ -4,17 +4,15 @@ import React from 'react';
 import {
     Card,
     Group,
-    Text,
     Button,
     ActionIcon,
-    useMantineTheme,
     Menu,
     Box,
     Badge,
     Title,
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
-import { IconRefresh, IconDownload, IconSettings, IconTarget, IconBell } from '@tabler/icons-react';
+import { IconRefresh, IconSettings, IconTarget, IconBell } from '@tabler/icons-react';
 
 interface ReportsHeaderProps {
     title: string;
@@ -23,7 +21,6 @@ interface ReportsHeaderProps {
 }
 
 export default function ReportsHeader({ title, type, platform = "Meta" }: ReportsHeaderProps) {
-    const theme = useMantineTheme();
 
     const typeBadge: Record<ReportsHeaderProps['type'], { label: string; color: string }> = {
         adAccount: { label: "Ad Account", color: "blue" },

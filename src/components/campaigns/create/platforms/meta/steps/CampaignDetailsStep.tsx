@@ -4,7 +4,7 @@
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
 import { Card, Group, Paper, Radio, Stack, Text, TextInput, ThemeIcon, Title, Switch, Alert, SegmentedControl, Grid, Badge, NumberInput, Tooltip, ActionIcon, Box, Button } from '@mantine/core';
-import { IconBuildingStore, IconInfoCircle, IconChartBar, IconCalendar, IconCurrencyDollar, IconArrowAutofitUp, IconBulb } from '@tabler/icons-react';
+import { IconBuildingStore, IconInfoCircle, IconCalendar, IconCurrencyDollar, IconArrowAutofitUp, IconBulb } from '@tabler/icons-react';
 import { DateTimePicker } from '@mantine/dates';
 import { UseFormReturnType } from '@mantine/form';
 import { useState } from 'react';
@@ -18,23 +18,19 @@ interface CampaignDetailsStepProps {
     form: UseFormReturnType<CampaignFormValues>;
     handleDestinationChange: (value: string) => void;
     getDestinationConfig: (destinationType: string) => { label: string; description: string };
-    isSmart?: boolean;
-    setPresetModalOpened?: (opened: boolean) => void;
 }
 
 export default function CampaignDetailsStep({
     form,
     handleDestinationChange,
     getDestinationConfig,
-    isSmart = false,
-    setPresetModalOpened
 }: CampaignDetailsStepProps) {
     // Determine recommended settings based on objective -- CHANGE COMING SOON 
     const getRecommendedSettings = () => {
         const objective = form.values.campaign.objective;
 
         // Default recommendations
-        let recommended = {
+        const recommended = {
             buyingType: 'AUCTION',
             budgetType: 'daily',
             bidStrategy: 'LOWEST_COST_WITHOUT_CAP',
@@ -91,7 +87,7 @@ export default function CampaignDetailsStep({
     const isUsingRecommendedBudgetType = form.values.budget.type === recommended.budgetType;
     const isUsingRecommendedBudgetAmount = form.values.budget.amount >= recommended.minBudget;
     const isUsingRecommendedCBO = form.values.budget.optimization === recommended.campaignBudgetOptimization;
-    const isUsingRecommendedBidStrategy = form.values.budget.bidStrategy === recommended.bidStrategy;
+    // const isUsingRecommendedBidStrategy = form.values.budget.bidstrategy === recommended.bidStrategy;
 
     // Add local state for CBO modal
     const [cboModalOpened, setCboModalOpened] = useState(false);

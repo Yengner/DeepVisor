@@ -16,34 +16,15 @@ import ConnectAccountsStep from './steps/ConnectAccountsStep';
 import PreferencesStep from './steps/PreferencesStep';
 import BusinessProfileStep from './steps/BusinessProfileStep';
 import CompletionStep from './steps/CompletionStep';
-import { createClient } from '@/lib/utils/supabase/clients/browser';
-import { getLoggedInUser, getOnboardingProgress, updateBusinessProfileData, updateOnboardingProgress } from '@/lib/actions/user/user.actions';
+import { getOnboardingProgress, updateBusinessProfileData, updateOnboardingProgress } from '@/lib/actions/user/onboarding';
+import { UserData } from './types';
+import { updateConnectedAccountsInDatabase } from './utils';
 
-export default function OnboardingProvider() {
+
+export default function OnboardingProvider({ userId }: { userId: string }) {
   const [active, setActive] = useState(0);
   const [loading, setLoading] = useState(true); // Start with loading true
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-
-  interface ConnectedAccount {
-    platform: string;
-    accountId: string;
-    connectedAt: string;
-  }
-
-  interface UserData {
-    businessName: string;
-    businessType: string;
-    industry: string;
-    monthlyBudget: string;
-    website: string;
-    description: string;
-    adGoals: string[];
-    preferredPlatforms: string[];
-    emailNotifications: boolean;
-    weeklyReports: boolean;
-    performanceAlerts: boolean;
-    connectedAccounts: ConnectedAccount[];
-  }
 
   const [userData, setUserData] = useState<UserData>({
     businessName: '',
@@ -108,6 +89,7 @@ export default function OnboardingProvider() {
   }, []);
 
   // Check for account connection callbacks (only after initial load)
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (!initialLoadComplete) return;
 
@@ -137,7 +119,7 @@ export default function OnboardingProvider() {
         }));
 
         // Also save to database
-        updateConnectedAccountsInDatabase(newConnectedAccounts);
+        updateConnectedAccountsInDatabase({ userId, accounts: newConnectedAccounts });
 
         toast.success(`Successfully connected ${platform} account!`);
 
@@ -158,23 +140,7 @@ export default function OnboardingProvider() {
   }, [searchParams, initialLoadComplete, userData.connectedAccounts, active, router]);
 
   // Save connected accounts to database
-  const updateConnectedAccountsInDatabase = async (accounts: ConnectedAccount[]) => {
-    try {
-      const supabase = createClient();
-      const user = await getLoggedInUser();;
-      if (user) {
-        await supabase
-          .from('profiles')
-          .update({
-            connected_accounts: accounts,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id);
-      }
-    } catch (error) {
-      console.error('Failed to update connected accounts:', error);
-    }
-  };
+
 
   const nextStep = async () => {
     setLoading(true);

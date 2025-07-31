@@ -134,6 +134,7 @@ export async function GET(request: Request) {
  */
 function needsAccountSelection(
   userTier: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   adAccounts: any,
   isOnboarding: boolean
 ): boolean {

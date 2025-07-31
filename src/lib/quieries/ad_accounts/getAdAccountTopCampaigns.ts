@@ -20,7 +20,7 @@ export async function getAdAccountTopCampaigns(adAccountId: string,) {
             console.error('Error fetching top campaigns for ad account:', error.message);
             throw new Error('Failed to fetch top campaigns for ad account');
         }
-
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const processedCampaigns = (data || []).map((campaign: any) => {
             const totalConversions = (campaign.leads || 0) + (campaign.messages || 0);
             const costPerResult = totalConversions > 0 ? (campaign.spend || 0) / totalConversions : 0;
@@ -35,6 +35,7 @@ export async function getAdAccountTopCampaigns(adAccountId: string,) {
 
         // Sort by conversions and return the top 5 for now
         const topCampaigns = processedCampaigns
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .sort((a: any, b: any) => b.conversion - a.conversion)
             .slice(0, 5);
 

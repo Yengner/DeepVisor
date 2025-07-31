@@ -1,13 +1,6 @@
-import { AdAccountMetrics, InsightEntry } from "../api/platforms/meta/types";
-
-
-
-
 export const date = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
 
-
-
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function logProgress(supabase: any, jobId: string, step: string, status: string, metaObj?: any) {
 
     try {

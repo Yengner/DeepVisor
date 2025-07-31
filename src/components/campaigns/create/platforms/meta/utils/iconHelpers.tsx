@@ -1,7 +1,6 @@
 import {
   IconTarget,
   IconBrandFacebook,
-  IconCurrencyDollar,
   IconUsers,
   IconPhoto,
   IconClipboardCheck,

@@ -15,6 +15,7 @@ export async function getAdsMetrics(adset_id: string, ad_id?: string) {
     if (error) {
         throw new Error(error.message);
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (data || []).map((row: any) => ({
         id: row.ad_id,
         name: row.name,

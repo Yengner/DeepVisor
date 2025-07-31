@@ -16,6 +16,8 @@ function wait(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/* eslint-disable */
+
 /**
  * Utility to run a single step with progress logging.
  */
@@ -114,9 +116,10 @@ export async function createMetaCampaign(
             const creativeId = creative.existingCreativeIds?.[0] ?? null;
             if (creativeId) {
                 await logProgress(supabase, jobId, cStep, 'success', { creativeId });
-                
+
                 await logProgress(supabase, jobId, cStep, 'success', { creativeId });
                 const aStep = `ad-${i}-${j}`;
+
                 const adId = await runStep(
                     supabase,
                     jobId,
@@ -152,3 +155,4 @@ export async function createMetaCampaign(
 
     return { success: true, campaignId, adsetIds, creativeIds: [], adIds: [] };
 }
+/* eslint-enable */

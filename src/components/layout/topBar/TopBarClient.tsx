@@ -31,7 +31,7 @@ import {
     IconChartBar,
     IconTable
 } from '@tabler/icons-react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
 // import { handleSignOut } from '@/lib/actions/user';
@@ -69,7 +69,6 @@ export default function TopBarClient({
     initialAccountId
 }: TopBarClientProps) {
     const router = useRouter();
-    const pathname = usePathname();
     const [searchQuery, setSearchQuery] = useState('');
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [userNotifications, setUserNotifications] = useState<Notification[]>(notifications);

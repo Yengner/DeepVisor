@@ -85,7 +85,7 @@ export default function SmartCampaignClient({
             router.push('/campaigns/agency/status');
         } catch (error) {
             setLoading(false);
-            // Optionally show error notification
+            console.error('Error creating campaign:', error);
         }
     }
 

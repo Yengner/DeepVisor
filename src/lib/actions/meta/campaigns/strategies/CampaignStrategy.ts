@@ -1,8 +1,9 @@
-import { CampaignFormValues } from "../../types";
 
 /**
  * Base interface for all campaign parameter strategies
  */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface CampaignStrategy {
     /**
      * Build the campaign parameters based on campaign objective

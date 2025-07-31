@@ -7,10 +7,9 @@ import {
 } from '@mantine/core';
 import {
     IconPhoto, IconUpload, IconBrandFacebook, IconSearch, IconChartBar,
-    IconBuildingStore, IconSettings, IconTarget, IconBrandWhatsapp,
-    IconMessageCircle, IconMapPin, IconDeviceImac, IconAlertCircle
+    IconBuildingStore, IconSettings, IconTarget, IconMessageCircle
 } from '@tabler/icons-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { UseFormReturnType } from '@mantine/form';
 import { CampaignFormValues } from '@/lib/actions/meta/types';
 import { useFilePreview } from '../hooks/useFilePreview';
@@ -43,7 +42,6 @@ export default function CreativeAssetsStep({
     form,
     platformData,
     adAccountId,
-    isSmart = false
 }: CreativeAssetsStepProps) {
     // Get current ad set index
     const idx = form.values.activeAdSetIdx ?? 0;
@@ -55,6 +53,7 @@ export default function CreativeAssetsStep({
     const uploadedFiles = useMemo(() => creative.uploadedFiles || [], [creative.uploadedFiles]);
 
     const [mediaModalOpened, setMediaModalOpened] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [selectedCreative, setSelectedCreative] = useState<SelectedCreative | null>(null);
 
     // Use memoized uploadedFiles
@@ -64,7 +63,7 @@ export default function CreativeAssetsStep({
         previews,
         loading: loadingPreview,
         error: previewError,
-        hasLoaded: previewLoaded
+        hasLoaded: previewLoaded // eslint-disable-line @typescript-eslint/no-unused-vars
     } = useCreativePreview({
         platformId: platformData.id,
         creativeId: creative.existingCreativeIds?.[0],
@@ -108,7 +107,7 @@ export default function CreativeAssetsStep({
             return filePreview[0];
         }
         else if (creative.contentSource === 'existing' && creative.existingCreativeIds?.length > 0) {
-            return creative.selectedCreativeThumbnail || placeholderAd.image;
+            return creative.adPrimaryText || placeholderAd.image;
         }
         return placeholderAd.image;
     };
@@ -290,14 +289,14 @@ export default function CreativeAssetsStep({
                                             <Group>
                                                 <AspectRatio ratio={1} style={{ width: 80 }}>
                                                     <Image
-                                                        src={creative.selectedCreativeThumbnail || placeholderAd.image}
+                                                        src={creative.adPrimaryText || placeholderAd.image}
                                                         radius="md"
                                                         alt="Selected creative"
                                                         fit="cover"
                                                     />
                                                 </AspectRatio>
                                                 <Stack gap={0}>
-                                                    <Text size="sm" fw={500}>{creative.selectedCreativeName || "Selected Creative"}</Text>
+                                                    <Text size="sm" fw={500}>{creative.adHeadline || "Selected Creative"}</Text>
                                                     <Text size="xs" c="dimmed">
                                                         ID: {creative.existingCreativeIds[0]?.slice(-8) || ""}
                                                     </Text>

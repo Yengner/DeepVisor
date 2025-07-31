@@ -16,10 +16,10 @@ export interface CreativeStrategy {
    * @returns Complete creative parameters ready for API
    */
   buildCreativeParams(
-    baseParams: any, 
+    baseParams: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     formData: CampaignFormValues, 
     pageId: string,
     isSmartCampaign: boolean,
     creativeVariation: number
-  ): any;
+  ): any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }

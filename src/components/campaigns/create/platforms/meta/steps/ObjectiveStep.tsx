@@ -9,8 +9,9 @@ import {
 import { CAMPAIGN_OBJECTIVES } from '../utils/objectiveMappings';
 import { getObjectiveIcon } from '../utils/iconHelpers';
 
+
 interface ObjectiveStepProps {
-    form: any;
+    form: any; // eslint-disable-line @typescript-eslint/no-explicit-any
     isFast?: boolean;
 }
 
@@ -178,7 +179,7 @@ export default function ObjectiveStep({
                             </ThemeIcon>
                             <Text size="sm">
                                 Our AI will automatically optimize your campaign based on the selected objective.
-                                We'll continuously learn and adjust your targeting and creative delivery for best results.
+                                We&apos;ll continuously learn and adjust your targeting and creative delivery for best results.
                             </Text>
                         </Group>
                     </Paper>

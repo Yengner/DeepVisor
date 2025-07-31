@@ -73,9 +73,9 @@ export interface AdAccountData {
     name: string;
     platform_name: string;
     time_increment_metrics: {
-        '1': any[];
-        '7': any[];
-        '30': any[];
+        '1': any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+        '7': any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+        '30': any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
     }
 
     //{ '1': [], '7': [], '30': [Array] }
@@ -118,7 +118,7 @@ export interface RawCampaignData {
     id: string;
     name: string;
     status: string;
-    insights: any;
+    insights: any; // eslint-disable-line @typescript-eslint/no-explicit-any
     objective: string;
     stop_time: string;
     start_time: string;

@@ -1,5 +1,5 @@
 import { AdAccount, FacebookAdsApi } from "@/lib/sdk/client";
-import { AdAccountDetails, AdAccountIncrementMetrics, AdAccountMetrics, AdAccountWithMetrics, InsightEntry } from "../types";
+import { AdAccountDetails, AdAccountIncrementMetrics, AdAccountWithMetrics, InsightEntry } from "../types";
 import { formatIncrementMetrics, formatMaximumMetrics, getDateRangeForLastDays } from "../utils";
 
 /**
@@ -63,7 +63,7 @@ export async function fetchMetaAdAccounts(
  * @returns AdAccountWithMetrics
  */
 
-export async function fetchMetricsForAccount(accountId: string, accessToken: string): Promise<any> {
+export async function fetchMetricsForAccount(accountId: string, accessToken: string): Promise<any> { // eslint-disable-line @typescript-eslint/no-explicit-any
     FacebookAdsApi.init(accessToken);
     const account = new AdAccount(accountId);
 

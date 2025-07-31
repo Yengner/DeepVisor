@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { Select, Group, ThemeIcon, Text } from '@mantine/core';
-import { IconBrandFacebook, IconBrandGoogle, IconBrandTiktok, IconChevronDown } from '@tabler/icons-react';
+import { IconChevronDown } from '@tabler/icons-react';
 import { setCookie } from 'cookies-next';
 import { useRouter } from 'next/navigation';
 import { getPlatformIcon } from '@/utils/utils';
 
+/* eslint-disable */
 interface PlatformAdAccountDropdownClientProps {
   userInfo: any;
   platforms: any[];
@@ -128,3 +129,4 @@ export default function PlatformAdAccountDropdownClient({
     </Group>
   );
 }
+/* eslint-enable */

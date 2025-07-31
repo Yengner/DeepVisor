@@ -1,4 +1,4 @@
-import { Stack, Text, Card, Button } from '@mantine/core';
+import { Stack } from '@mantine/core';
 
 export default async function CampaignStatus() {
     // const { data: jobs, error } = await fetch('/api/n8n/jobs', { next: { revalidate: 5 } }).then(res => res.json());

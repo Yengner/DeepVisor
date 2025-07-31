@@ -11,7 +11,6 @@ import CampaignDetailsStep from '../steps/CampaignDetailsStep';
 import { getDestinationConfig } from '../utils/destinationHelpers';
 import AdSetStep from '../steps/AdSetStep';
 import CreativeAssetsStep from '../steps/CreativeAssetsStep';
-import { useMetaPages } from '../hooks/useMetaPages';
 import ReviewStep from '../steps/ReviewStep';
 import MetaCampaignFlowPreview from '../components/MetaCampaignFlowPreview';
 import { useState } from 'react';
@@ -154,7 +153,6 @@ export default function ManualMetaCampaignBuilder({ platformData, adAccountId, o
                                 form={form}
                                 handleDestinationChange={handleDestinationChange}
                                 getDestinationConfig={getDestinationConfig}
-                                isSmart={false}
                             />
 
                             <Group justify="apart" mt="md">

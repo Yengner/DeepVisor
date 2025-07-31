@@ -1,4 +1,3 @@
-import { MetaAdParams } from "../types";
 import { AdAccount, Ad } from "../../../sdk/client";
 import { logApiCallResult } from "../../../sdk/utils";
 
@@ -8,15 +7,18 @@ import { logApiCallResult } from "../../../sdk/utils";
  * @param params - Parameters for ad creation
  * @returns Ad ID from Meta API
  */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function createAd(params: any): Promise<string> {
   const { adAccountId, adsetId, creativeId, formData } = params;
 
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const adParams: Record<string, any> = {
       [Ad.Fields.name]: `${formData.campaign.campaignName} - Ad`,
       [Ad.Fields.adset_id]: adsetId,
       [Ad.Fields.creative]: { creative_id: creativeId },
-      [Ad.Fields.status]: "PAUSED", 
+      [Ad.Fields.status]: "PAUSED",
     };
 
     const account = new AdAccount(adAccountId);

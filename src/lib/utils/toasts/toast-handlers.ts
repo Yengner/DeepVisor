@@ -1,6 +1,5 @@
 import { ApiResponse, ErrorCode, ErrorDetails } from "@/lib/utils/error-handling/types/api";
 import { showError, showSuccess } from "../toasts";
-import { DEFAULT_ERROR_MESSAGES } from "../error-handling/constants";
 
 interface ToastOptions {
     successTitle?: string;

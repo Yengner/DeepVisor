@@ -1,7 +1,7 @@
+import { CAMPAIGN_OBJECTIVES } from "@/components/campaigns/create/platforms/meta/utils/objectiveMappings";
 import { CreativeStrategy } from "./CreativeStrategy";
 import { LeadGenerationStrategy } from "./LeadGenerationStrategy";
 // import { TrafficStrategy } from "./TrafficStrategy";
-import { CAMPAIGN_OBJECTIVES } from "@/components/campaigns/create/common/utils/objectiveMappings";
 
 export function getCreativeStrategy(objective: string): CreativeStrategy {
     switch (objective) {

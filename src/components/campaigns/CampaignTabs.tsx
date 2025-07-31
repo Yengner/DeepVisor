@@ -42,24 +42,6 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
   const [activeTab, setActiveTab] = useState<'campaigns' | 'adsets' | 'ads'>('campaigns');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Handler for auto-optimization toggle
-  const handleToggleAuto = async (campaignId: string, autoOptimize: boolean) => {
-    const response = await fetch('/api/campaigns/autoOptimize', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ campaignId: campaignId, autoOptimize }),
-    })
-
-    if (!response.ok) {
-      console.warn(await response.text());
-      alert('Failed to update campaign.');
-      return;
-    }
-
-    setCampaignData(prev =>
-      prev.map(c => (c.id === campaignId ? { ...c, auto_optimize: autoOptimize } : c))
-    );
-  }
 
   // Allow for selecting a campaign when the component mounts
   const handleSelectCampaign = (campaignId: string) => {

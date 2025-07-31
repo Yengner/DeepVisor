@@ -1,4 +1,3 @@
-import { CampaignFormValues } from "../../types";
 import { CampaignStrategy } from "./CampaignStrategy";
 import { Campaign } from "../../../../sdk/client";
 
@@ -6,6 +5,8 @@ import { Campaign } from "../../../../sdk/client";
  * Strategy for Lead Generation campaigns
  * Uses Meta's OUTCOME_LEADS objective (new API version)
  */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export class LeadGenCampaignStrategy implements CampaignStrategy {
     buildCampaignParams(
         baseParams: any,
@@ -14,7 +15,7 @@ export class LeadGenCampaignStrategy implements CampaignStrategy {
     ): any {
         isSmartCampaign = true;
         const params: Record<string, any> = { ...baseParams };
-
+        /* eslint-enable @typescript-eslint/no-explicit-any */
         params[Campaign.Fields.objective] = Campaign.Objective.outcome_leads;
         // params[Campaign.Fields.buying_type] = "AUCTION";
 
