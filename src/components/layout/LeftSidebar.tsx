@@ -54,7 +54,7 @@ const Sidebar = () => {
     <div
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
-      className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 border-r border-gray-200 transition-all duration-300 ${isExpanded ? 'w-64' : 'w-20'}`}
+      className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 border-r border-gray-200 transition-all duration-500 ${isExpanded ? 'w-64' : 'w-16'}`}
       style={{
         backgroundColor: sidebarBg,
         boxShadow: '0 1px 6px rgba(0,0,0,0.08)'
@@ -62,7 +62,7 @@ const Sidebar = () => {
     >
       <div className="h-full flex flex-col justify-between py-8">
         {/* Top Section: Menu Items */}
-        <Stack gap={12} px={isExpanded ? 'md' : 4}>
+        <Stack gap={12} >
           {menuItems.map((item) => (
             isExpanded ? (
               <NavLink
@@ -95,7 +95,7 @@ const Sidebar = () => {
                       backgroundColor: hoverColor
                     },
                     borderRadius: 12,
-                    padding: '12px 15px',
+                    padding: '12px 12px',
                   },
                   label: {
                     color: pathname === item.route ? "#ffffff" : textColor,
@@ -139,7 +139,7 @@ const Sidebar = () => {
                       '&:hover': {
                         backgroundColor: hoverColor
                       },
-                      padding: '12px 8px',
+                      padding: '12px 12px',
                     }
                   })}
                 />
@@ -149,7 +149,7 @@ const Sidebar = () => {
         </Stack>
 
         {/* Bottom Section: Settings & Logout */}
-        <Stack gap={10} px={isExpanded ? 'md' : 4} mb={10}>
+        <Stack gap={10} mb={10}>
           <Divider my="sm" color="#d0ebff" />
 
           {isExpanded ? (
@@ -173,7 +173,7 @@ const Sidebar = () => {
                       backgroundColor: hoverColor
                     },
                     borderRadius: 10,
-                    padding: '12px 16px',
+                    padding: '12px 12px',
                   }
                 }}
               />
@@ -193,7 +193,7 @@ const Sidebar = () => {
                       backgroundColor: '#ffe5e5'
                     },
                     borderRadius: 10,
-                    padding: '12px 16px',
+                    padding: '12px 12px',
                   },
                   label: {
                     fontWeight: 600,
@@ -224,7 +224,7 @@ const Sidebar = () => {
                         backgroundColor: hoverColor
                       },
                       borderRadius: 10,
-                      padding: '12px 8px',
+                      padding: '12px 12px',
                     }
                   }}
                 />
@@ -251,7 +251,7 @@ const Sidebar = () => {
                         backgroundColor: '#ffe5e5'
                       },
                       borderRadius: 10,
-                      padding: '12px 8px',
+                      padding: '12px 12px',
                     }
                   }}
                 />

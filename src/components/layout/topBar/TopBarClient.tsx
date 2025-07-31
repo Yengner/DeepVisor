@@ -194,7 +194,7 @@ export default function TopBarClient({
                         <Menu.Divider />
                         <Menu.Item
                             leftSection={<IconChartBar size={18} />}
-                            onClick={() => router.push('/reports/new')}
+                            onClick={() => router.push('/reports')}
                         >
                             Report
                         </Menu.Item>
