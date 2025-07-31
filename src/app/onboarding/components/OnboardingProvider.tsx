@@ -187,7 +187,7 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
       await updateOnboardingProgress(nextStepIndex === 4, nextStepIndex);
 
       // If this is the last step, redirect to dashboard
-      if (nextStepIndex === 5) {
+      if (nextStepIndex >= 5) {
         router.push('/dashboard');
         return;
       }

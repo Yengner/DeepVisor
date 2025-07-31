@@ -4,6 +4,7 @@
 
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import { getErrorMessage } from "@/lib/utils/utils";
+import { cookies } from "next/headers";
 
 /**
  * Handles user login with email and password
@@ -79,6 +80,11 @@ export async function handleSignOut() {
     try {
         const supabase = await createSupabaseClient();
         const { error } = await supabase.auth.signOut();
+
+        // Clear platform and ad account cookies
+        const cookieStore = cookies();
+        (await cookieStore).set('platform_integration_id', '', { path: '/', maxAge: 0 });
+        (await cookieStore).set('ad_account_id', '', { path: '/', maxAge: 0 });
 
         if (error) {
             throw error;

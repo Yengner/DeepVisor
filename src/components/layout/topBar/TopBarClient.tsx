@@ -13,7 +13,6 @@ import {
     Divider,
     ActionIcon,
     Button,
-    Tooltip,
     Indicator
 } from '@mantine/core';
 import {
@@ -26,8 +25,6 @@ import {
     IconBell,
     IconPlus,
     IconPresentationAnalytics,
-    IconSun,
-    IconMoon,
     IconChartBar,
     IconTable
 } from '@tabler/icons-react';
@@ -37,6 +34,7 @@ import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
 // import { handleSignOut } from '@/lib/actions/user';
 import { markAllNotificationsAsReadClient } from '@/lib/actions/notifications/client/markAllNotificationsAsReadClient';
 import { markNotificationReadClient } from '@/lib/actions/notifications/client/markNotificationReadClient';
+import { handleSignOut } from '@/lib/actions/user';
 
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -70,7 +68,6 @@ export default function TopBarClient({
 }: TopBarClientProps) {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
-    const [isDarkMode, setIsDarkMode] = useState(false);
     const [userNotifications, setUserNotifications] = useState<Notification[]>(notifications);
     const [notificationCount, setNotificationCount] = useState(0);
 
@@ -81,18 +78,6 @@ export default function TopBarClient({
 
     const fullName = userInfo?.full_name || 'User';
     const userInitials = fullName.split(' ').map((name: string) => name[0]).join('').toUpperCase();
-
-    const handleLogout = async () => {
-        // await handleSignOut();
-        router.push('/login');
-    };
-
-    // Toggle theme mode
-    // Not important 
-    const toggleTheme = () => {
-        setIsDarkMode(!isDarkMode);
-        // Implement actual theme change logic here
-    };
 
     // Mark all notifications as read
     const markAllRead = async () => {
@@ -133,8 +118,8 @@ export default function TopBarClient({
 
     return (
         <div
-            className="w-full h-20 bg-white px-10 border-b border-gray-300 flex items-center justify-between z-50 shadow-sm"
-            style={{ minHeight: 80 }}
+            className="w-full h-16 bg-white px-10 border-b border-gray-300 flex items-center justify-between z-50 shadow-sm"
+            style={{ minHeight: 30 }}
         >
             {/* Left Section */}
             <div className="flex items-center space-x-6">
@@ -167,9 +152,9 @@ export default function TopBarClient({
                 <Menu position="bottom-end" shadow="md">
                     <Menu.Target>
                         <Button
-                            leftSection={<IconPlus size={20} />}
+                            leftSection={<IconPlus size={18} />}
                             variant="light"
-                            size="md"
+                            size="sm"
                             radius="md"
                             fw={600}
                         >
@@ -205,21 +190,21 @@ export default function TopBarClient({
                     placeholder="Try searching 'link with Ads'"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    leftSection={<IconSearch size={18} color="gray" />}
+                    leftSection={<IconSearch size={15} color="gray" />}
                     styles={() => ({
                         root: {
-                            width: rem(340),
+                            width: rem(240),
                         },
                         input: {
-                            height: rem(44),
-                            fontSize: rem(16)
+                            height: rem(24),
+                            fontSize: rem(15)
                         }
                     })}
                     className="text-base hidden md:block"
                 />
 
                 {/* Notifications */}
-                <Menu shadow="md" width={340} position="bottom-end">
+                <Menu shadow="md" width={140} position="bottom-end">
                     <Menu.Target>
                         <Indicator disabled={notificationCount === 0} label={notificationCount} size={18}>
                             <ActionIcon size="xl" radius="xl" variant="subtle">
@@ -271,20 +256,8 @@ export default function TopBarClient({
                     </Menu.Dropdown>
                 </Menu>
 
-                {/* Theme Toggle */}
-                <Tooltip label={isDarkMode ? 'Light mode' : 'Dark mode'} position="bottom">
-                    <ActionIcon
-                        onClick={toggleTheme}
-                        size="xl"
-                        radius="xl"
-                        variant="subtle"
-                    >
-                        {isDarkMode ? <IconSun size={24} /> : <IconMoon size={24} />}
-                    </ActionIcon>
-                </Tooltip>
-
                 {/* Divider */}
-                <Divider orientation="vertical" className="h-10" />
+                <Divider orientation="vertical" className="h-16" />
 
                 {/* User menu */}
                 <Menu shadow="md" width={220} position="bottom-end">
@@ -294,16 +267,16 @@ export default function TopBarClient({
                                 <Avatar
                                     color="blue"
                                     radius="xl"
-                                    size="lg"
+                                    size={45}
                                 >
                                     {userInitials}
                                 </Avatar>
                                 <div className="hidden md:block">
-                                    <Text size="md" fw={600} lineClamp={1}>
+                                    <Text size="sm" fw={600} lineClamp={1}>
                                         {fullName}
                                     </Text>
                                     <Text c="dimmed" size="sm" lineClamp={1}>
-                                        {userInfo?.email}
+                                        {userInfo?.business_name}
                                     </Text>
                                 </div>
                                 <IconChevronDown size={20} className="hidden md:block" />
@@ -335,7 +308,7 @@ export default function TopBarClient({
                         <Menu.Item
                             color="red"
                             leftSection={<IconLogout size={16} />}
-                            onClick={handleLogout}
+                            onClick={handleSignOut}
                         >
                             Logout
                         </Menu.Item>

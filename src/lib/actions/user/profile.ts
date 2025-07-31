@@ -63,6 +63,7 @@ export async function createUserProfile(userId: string) {
 /**
  * Gets the currently logged-in user or redirects to login
 */
+
 export async function getLoggedInUser() {
     const supabase = await createSupabaseClient();
     const { data, error } = await supabase.auth.getUser();
@@ -73,11 +74,6 @@ export async function getLoggedInUser() {
     }
 
     const user = await getUserInfo({ userId: data.user.id });
-
-    if (user.onboarding_completed === false) {
-        console.warn('User onboarding not completed. Redirecting to /onboarding.');
-        redirect('/onboarding');
-    }
 
     return user;
 }
@@ -267,3 +263,20 @@ export async function getTierLimits(tier: SubscriptionTier): Promise<TierLimits>
     }
 }
 
+export async function InitPlatformID(userId: string): Promise<string | null> {
+    const supabase = await createSupabaseClient();
+    
+    const { data, error } = await supabase
+        .from('platform_integrations')
+        .select('id')
+        .eq('platform_name', 'meta')
+        .eq('user_id', userId)
+        .single();
+
+    if (error || !data) {
+        console.error("Error fetching platform integration ID:", error);
+        return null;
+    }
+    
+    return data.id;
+}

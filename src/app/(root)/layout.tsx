@@ -1,7 +1,33 @@
 import Topbar from "@/components/layout/topBar/TopBar";
 import Sidebar from "@/components/layout/LeftSidebar";
+import { getLoggedInUser, InitPlatformID } from "@/lib/actions/user";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { setCookie } from "cookies-next";
 
-export default function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+
+  const cookieStore = await cookies();
+  const user = await getLoggedInUser().then((user: { id: string, onboarding_completed: boolean, connected_accounts: [{ accountId: string }] }) => user);
+  let selectedPlatformId = cookieStore.get('platform_integration_id')?.value || null;
+  if (!selectedPlatformId) {
+    selectedPlatformId = await InitPlatformID(user.id);
+    setCookie('platform_integration_id', selectedPlatformId, { maxAge: 60 * 60 * 24 * 30 });
+  }
+  let selectedAdAccountId = cookieStore.get('ad_account_id')?.value || null;
+  if (!selectedAdAccountId) {
+    selectedAdAccountId = user?.connected_accounts?.[0]?.accountId || null;
+    setCookie('ad_account_id', selectedAdAccountId, { maxAge: 60 * 60 * 24 * 30 });
+  }
+
+
+  if (user.onboarding_completed === false) {
+    console.warn('User onboarding not completed. Redirecting to /onboarding.');
+    redirect('/onboarding');
+  }
+
+
+
   return (
     <div className="h-screen flex flex-col">
       {/* Topbar */}

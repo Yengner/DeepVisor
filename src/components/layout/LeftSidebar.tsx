@@ -15,7 +15,6 @@ import {
   IconPuzzle,
   IconPresentation,
   IconSettings,
-  IconUpload,
   IconLogout,
   IconRobot
 } from '@tabler/icons-react';
@@ -31,7 +30,6 @@ const Sidebar = () => {
     { name: 'Companion', icon: IconRobot, route: '/companion' }, 
     { name: 'Campaigns', icon: IconPresentation, route: '/campaigns' },
     { name: 'Reports', icon: IconChartBar, route: '/reports' },
-    { name: 'Upload', icon: IconUpload, route: '/upload' },
     { name: 'Integration', icon: IconPuzzle, route: '/integration' },
   ];
 
