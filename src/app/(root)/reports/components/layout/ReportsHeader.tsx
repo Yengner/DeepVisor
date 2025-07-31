@@ -17,21 +17,20 @@ import { DateTimePicker } from '@mantine/dates';
 import { IconRefresh, IconDownload, IconSettings, IconTarget, IconBell } from '@tabler/icons-react';
 
 interface ReportsHeaderProps {
-    dateRange: [Date | null, Date | null];
-    setDateRange: (range: [Date | null, Date | null]) => void;
-    title?: string;
-    onRefresh?: () => void;
-    onExport?: () => void;
+    title: string;
+    type: 'adAccount' | 'campaigns' | 'adsets' | 'ads';
+    platform?: string; // e.g., "Meta", "Google", etc.
 }
 
-export default function ReportsHeader({
-    dateRange,
-    setDateRange,
-    title = "Reports",
-    onRefresh,
-    onExport,
-}: ReportsHeaderProps) {
+export default function ReportsHeader({ title, type, platform = "Meta" }: ReportsHeaderProps) {
     const theme = useMantineTheme();
+
+    const typeBadge: Record<ReportsHeaderProps['type'], { label: string; color: string }> = {
+        adAccount: { label: "Ad Account", color: "blue" },
+        campaigns: { label: "Campaign", color: "grape" },
+        adsets: { label: "Ad Set", color: "teal" },
+        ads: { label: "Ad", color: "orange" },
+    };
 
     return (
         <Card
@@ -44,16 +43,34 @@ export default function ReportsHeader({
             <Group justify="space-between" align="center">
                 {/* Left Section */}
                 <Box>
-                    <Title order={2} size="h3" style={{ margin: 0 }}>
-                        Meta {title}
-                    </Title>
+                    <Group gap="xs">
+                        {/* Platform badge */}
+                        <Badge
+                            color="indigo"
+                            variant="filled"
+                            size="md"
+                            style={{ textTransform: 'uppercase', letterSpacing: 1 }}
+                        >
+                            {platform}
+                        </Badge>
+                        {/* Title */}
+                        <Title order={2} size="h3" style={{ margin: 0 }}>
+                            {title}
+                        </Title>
+                        {/* Type badge */}
+                        <Badge
+                            color={typeBadge[type].color}
+                            variant="light"
+                            size="md"
+                            style={{ marginLeft: 8, textTransform: 'capitalize' }}
+                        >
+                            {typeBadge[type].label}
+                        </Badge>
+                    </Group>
                 </Box>
                 {/* Date Range Picker */}
                 <Group gap='lg'>
                     <DateTimePicker
-                        type="range"
-                        value={dateRange}
-                        onChange={setDateRange}
                         placeholder="Select date range"
                     />
                     <Button variant='filled' color='pink'>

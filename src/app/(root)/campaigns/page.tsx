@@ -99,12 +99,13 @@ export default async function CampaignPage() {
   };
 
   const campaignsData: any = await getCampaignMetrics(
+    adAccountDetails.ad_account_id,
+    undefined,
     platformDetails.platform_name,
-    adAccountDetails.ad_account_id
   );
 
   const allCampaigns: FormattedCampaign[] = (campaignsData ?? []).map((campaign: any) => ({
-    id: campaign.campaign_id,
+    id: campaign.id,
     name: campaign.name,
     delivery: (campaign.status ?? "").toUpperCase() === "ACTIVE",
     type: campaign.type || "Manual",

@@ -2,15 +2,10 @@
 
 import { Card, Box, Text, Group, Paper, SimpleGrid } from "@mantine/core";
 import { DonutChart } from "@mantine/charts";
+import { KPI } from "../ReportsClient";
 
-export interface Kpi {
-    label: string;
-    value: number;
-    color: string;
-    icon: React.ReactNode;
-}
 export interface KpiFrequencyChartProps {
-    kpis: Kpi[];
+    kpis: KPI[];
     frequencyValue?: number;
     frequencyMax?: number;
 }

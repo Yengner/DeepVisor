@@ -11,7 +11,7 @@ const formatDate = (dateStr: string): string => {
 };
 
 
-export async function getCampaignMetrics(adAccountId: string, campaign_id?: string) {
+export async function getCampaignMetrics(adAccountId: string, campaign_id?: string, platform_name?: string) {
     const supabase = await createSupabaseClient();
     let query = supabase
         .from('campaigns_metrics')
@@ -22,6 +22,9 @@ export async function getCampaignMetrics(adAccountId: string, campaign_id?: stri
 
     if (campaign_id) {
         query = query.eq('campaign_id', campaign_id);
+    }
+    if (platform_name) {
+        query = query.eq('platform_name', platform_name);
     }
 
     const { data, error } = await query;

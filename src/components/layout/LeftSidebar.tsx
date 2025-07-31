@@ -16,7 +16,8 @@ import {
   IconPresentation,
   IconSettings,
   IconUpload,
-  IconLogout
+  IconLogout,
+  IconRobot
 } from '@tabler/icons-react';
 import { handleSignOut } from '@/lib/actions/user/auth';
 
@@ -27,6 +28,7 @@ const Sidebar = () => {
 
   const menuItems = [
     { name: 'Home', icon: IconHome2, route: '/dashboard' },
+    { name: 'Companion', icon: IconRobot, route: '/companion' }, 
     { name: 'Campaigns', icon: IconPresentation, route: '/campaigns' },
     { name: 'Reports', icon: IconChartBar, route: '/reports' },
     { name: 'Upload', icon: IconUpload, route: '/upload' },
@@ -65,19 +67,19 @@ const Sidebar = () => {
             isExpanded ? (
               <NavLink
                 key={item.name}
-                label={<span style={{ fontSize: 20, fontWeight: 600 }}>{item.name}</span>}
+                label={<span style={{ fontSize: 17, fontWeight: 600 }}>{item.name}</span>}
                 leftSection={
                   <ThemeIcon
-                    size={38}
+                    size={32}
                     variant={pathname === item.route ? "filled" : "light"}
                     color={pathname === item.route ? activeColor : iconInactiveColor}
                     style={{
                       backgroundColor: pathname === item.route ? activeColor : 'transparent',
-                      minWidth: 38,
-                      minHeight: 38
+                      minWidth: 32,
+                      minHeight: 32
                     }}
                   >
-                    <item.icon size={26} stroke={1.7} color={pathname === item.route ? "#ffffff" : undefined} />
+                    <item.icon size={21} stroke={1.5} color={pathname === item.route ? "#ffffff" : undefined} />
                   </ThemeIcon>
                 }
                 active={pathname === item.route}
@@ -93,19 +95,19 @@ const Sidebar = () => {
                       backgroundColor: hoverColor
                     },
                     borderRadius: 12,
-                    padding: '14px 18px',
+                    padding: '12px 15px',
                   },
                   label: {
                     color: pathname === item.route ? "#ffffff" : textColor,
                     fontWeight: pathname === item.route ? 700 : 600,
-                    fontSize: 20
+                    fontSize: 17
                   }
                 })}
               />
             ) : (
               <Tooltip
                 key={item.name}
-                label={<span style={{ fontSize: 16 }}>{item.name}</span>}
+                label={<span style={{ fontSize: 14 }}>{item.name}</span>}
                 position="right"
                 withArrow
                 transitionProps={{ transition: "pop", duration: 200 }}
@@ -113,16 +115,16 @@ const Sidebar = () => {
                 <NavLink
                   leftSection={
                     <ThemeIcon
-                      size={38}
+                      size={32}
                       variant={pathname === item.route ? "filled" : "light"}
                       color={pathname === item.route ? activeColor : iconInactiveColor}
                       style={{
                         backgroundColor: pathname === item.route ? activeColor : 'transparent',
-                        minWidth: 38,
-                        minHeight: 38
+                        minWidth: 32,
+                        minHeight: 32
                       }}
                     >
-                      <item.icon size={26} stroke={1.7} color={pathname === item.route ? "#ffffff" : undefined} />
+                      <item.icon size={21} stroke={1.5} color={pathname === item.route ? "#ffffff" : undefined} />
                     </ThemeIcon>
                   }
                   active={pathname === item.route}
@@ -137,7 +139,7 @@ const Sidebar = () => {
                       '&:hover': {
                         backgroundColor: hoverColor
                       },
-                      padding: '14px 10px',
+                      padding: '12px 8px',
                     }
                   })}
                 />

@@ -31,7 +31,6 @@ export default function ReportsSidebar({ items = [], paramKey }: ReportsSidebarP
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    console.log("Current search params:", searchParams.toString());
 
     if (!items || !Array.isArray(items)) {
         return null;
@@ -42,8 +41,6 @@ export default function ReportsSidebar({ items = [], paramKey }: ReportsSidebarP
     );
 
     const selectedId = searchParams.get("campaign_id") || '';
-    console.log("Key for search params:", paramKey);
-    console.log("Selected ID from search params:", selectedId);
 
     const handleSelect = (id: string) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -55,7 +52,7 @@ export default function ReportsSidebar({ items = [], paramKey }: ReportsSidebarP
         router.push(`?${params.toString()}`);
     };
 
-
+    // Come back to fix
     const handleBack = () => {
         const params = new URLSearchParams(searchParams.toString());
         params.delete(paramKey);
