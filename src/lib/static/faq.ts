@@ -1,4 +1,4 @@
-import { IFAQ } from "@/types/public/types";
+import { IFAQ } from "@/lib/static/types";
 import { siteDetails } from "./siteDetails";
 
 export const faqs: IFAQ[] = [

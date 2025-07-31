@@ -13,7 +13,6 @@ import {
     Divider,
     ActionIcon,
     Button,
-    Tooltip,
     Indicator
 } from '@mantine/core';
 import {
@@ -26,16 +25,17 @@ import {
     IconBell,
     IconPlus,
     IconPresentationAnalytics,
-    IconSun,
-    IconMoon,
-    IconChartBar
+    IconChartBar,
+    IconTable
 } from '@tabler/icons-react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { handleSignOut } from '@/lib/actions/user.actions';
 import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
-// Import utility functions from the correct locations
-import { formatRelativeTime, markNotificationReadClient, markAllNotificationsAsReadClient } from '@/lib/utils/notifications';
+// import { handleSignOut } from '@/lib/actions/user';
+import { markAllNotificationsAsReadClient } from '@/lib/actions/notifications/client/markAllNotificationsAsReadClient';
+import { markNotificationReadClient } from '@/lib/actions/notifications/client/markNotificationReadClient';
+import { handleSignOut } from '@/lib/actions/user';
+
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface Notification {
@@ -53,6 +53,8 @@ interface TopBarClientProps {
     platforms?: any[];
     adAccounts?: any[];
     notifications?: Notification[];
+    initialPlatformId?: string | null;
+    initialAccountId?: string | null;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -60,12 +62,12 @@ export default function TopBarClient({
     userInfo,
     platforms = [],
     adAccounts = [],
-    notifications = []
+    notifications = [],
+    initialPlatformId,
+    initialAccountId
 }: TopBarClientProps) {
     const router = useRouter();
-    const pathname = usePathname();
     const [searchQuery, setSearchQuery] = useState('');
-    const [isDarkMode, setIsDarkMode] = useState(false);
     const [userNotifications, setUserNotifications] = useState<Notification[]>(notifications);
     const [notificationCount, setNotificationCount] = useState(0);
 
@@ -77,31 +79,17 @@ export default function TopBarClient({
     const fullName = userInfo?.full_name || 'User';
     const userInitials = fullName.split(' ').map((name: string) => name[0]).join('').toUpperCase();
 
-    const handleLogout = async () => {
-        await handleSignOut();
-        router.push('/login');
-    };
-
-    // Toggle theme mode
-    const toggleTheme = () => {
-        setIsDarkMode(!isDarkMode);
-        // Implement actual theme change logic here
-    };
-
     // Mark all notifications as read
     const markAllRead = async () => {
-        // Get IDs of unread notifications
         const unreadIds = userNotifications
             .filter(notification => !notification.read)
             .map(notification => notification.id);
 
         if (unreadIds.length === 0) return;
 
-        // Use the utility function from notifications.ts
         const success = await markAllNotificationsAsReadClient(unreadIds);
 
         if (success) {
-            // Update local state
             setUserNotifications(prevNotifications =>
                 prevNotifications.map(notification => ({ ...notification, read: true }))
             );
@@ -110,42 +98,40 @@ export default function TopBarClient({
         }
     };
 
-    // Handle notification click
     const handleNotificationClick = async (notification: Notification) => {
-        // Mark as read
         if (!notification.read) {
             const success = await markNotificationReadClient(notification.id);
 
             if (success) {
-                // Update the notification in state
                 setUserNotifications(prev =>
                     prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
                 );
 
-                // Update the count
                 setNotificationCount(prev => Math.max(0, prev - 1));
             }
         }
 
-        // Navigate if link is provided
         if (notification.link) {
             router.push(notification.link);
         }
     };
 
     return (
-        <div className="w-full h-16 bg-white px-6 border-b border-gray-300 flex items-center justify-between z-50">
+        <div
+            className="w-full h-16 bg-white px-10 border-b border-gray-300 flex items-center justify-between z-50 shadow-sm"
+            style={{ minHeight: 30 }}
+        >
             {/* Left Section */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
                 {/* Logo */}
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-4">
                     <Image
                         src="/images/logo/deepvisor.ico"
                         alt="DeepVisor"
-                        width={20}
-                        height={20}
+                        width={32}
+                        height={32}
                     />
-                    <Text fw={600} size="lg" className="text-gray-700">
+                    <Text fw={700} size="xl" className="text-gray-700">
                         DeepVisor
                     </Text>
                 </div>
@@ -155,35 +141,22 @@ export default function TopBarClient({
                     userInfo={userInfo}
                     platforms={platforms}
                     adAccounts={adAccounts}
+                    initialPlatformId={initialPlatformId}
+                    initialAccountId={initialAccountId}
                 />
             </div>
 
-            {/* Mid Section - Breadcrumbs */}
-            <div className="hidden md:flex items-center">
-                {pathname !== '/dashboard' && (
-                    <Text size="sm" c="dimmed" className="truncate max-w-md">
-                        Dashboard {pathname.split('/').filter(Boolean).map((segment, i, arr) => (
-                            <span key={i}>
-                                <span className="text-gray-400 mx-1">›</span>
-                                <span className={`capitalize ${i === arr.length - 1 ? 'text-blue-500 font-medium' : ''}`}>
-                                    {segment}
-                                </span>
-                            </span>
-                        ))}
-                    </Text>
-                )}
-            </div>
-
             {/* Right Section */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
                 {/* Quick Action Button */}
                 <Menu position="bottom-end" shadow="md">
                     <Menu.Target>
                         <Button
-                            leftSection={<IconPlus size={16} />}
+                            leftSection={<IconPlus size={18} />}
                             variant="light"
-                            size="xs"
+                            size="sm"
                             radius="md"
+                            fw={600}
                         >
                             Create New
                         </Button>
@@ -191,21 +164,21 @@ export default function TopBarClient({
                     <Menu.Dropdown>
                         <Menu.Label>Campaigns</Menu.Label>
                         <Menu.Item
-                            leftSection={<IconPresentationAnalytics size={16} />}
-                            onClick={() => router.push('/campaigns/new?mode=smart')}
+                            leftSection={<IconPresentationAnalytics size={18} />}
+                            onClick={() => router.push('/campaigns/create?mode=smart')}
                         >
                             Smart Campaign
                         </Menu.Item>
                         <Menu.Item
-                            leftSection={<IconPresentationAnalytics size={16} />}
-                            onClick={() => router.push('/campaigns/new?mode=manual')}
+                            leftSection={<IconTable size={18} />}
+                            onClick={() => router.push('/campaigns/create?mode=manual')}
                         >
                             Custom Campaign
                         </Menu.Item>
                         <Menu.Divider />
                         <Menu.Item
-                            leftSection={<IconChartBar size={16} />}
-                            onClick={() => router.push('/reports/new')}
+                            leftSection={<IconChartBar size={18} />}
+                            onClick={() => router.push('/reports')}
                         >
                             Report
                         </Menu.Item>
@@ -217,32 +190,32 @@ export default function TopBarClient({
                     placeholder="Try searching 'link with Ads'"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    leftSection={<IconSearch size={16} color="gray" />}
+                    leftSection={<IconSearch size={15} color="gray" />}
                     styles={() => ({
                         root: {
-                            width: rem(300),
+                            width: rem(240),
                         },
                         input: {
-                            height: rem(36),
-                            fontSize: rem(14)
+                            height: rem(24),
+                            fontSize: rem(15)
                         }
                     })}
-                    className="text-sm hidden md:block"
+                    className="text-base hidden md:block"
                 />
 
                 {/* Notifications */}
-                <Menu shadow="md" width={320} position="bottom-end">
+                <Menu shadow="md" width={140} position="bottom-end">
                     <Menu.Target>
-                        <Indicator disabled={notificationCount === 0} label={notificationCount} size={16}>
-                            <ActionIcon size="lg" radius="xl" variant="subtle">
-                                <IconBell size={20} />
+                        <Indicator disabled={notificationCount === 0} label={notificationCount} size={18}>
+                            <ActionIcon size="xl" radius="xl" variant="subtle">
+                                <IconBell size={24} />
                             </ActionIcon>
                         </Indicator>
                     </Menu.Target>
 
                     <Menu.Dropdown>
                         <div className="flex justify-between items-center px-3 py-2">
-                            <Text fw={500}>Notifications</Text>
+                            <Text fw={600}>Notifications</Text>
                             {notificationCount > 0 && (
                                 <Button variant="subtle" size="xs" onClick={markAllRead}>
                                     Mark all read
@@ -261,64 +234,52 @@ export default function TopBarClient({
                                     >
                                         <div>
                                             <Group justify="apart" mb={4}>
-                                                <Text size="sm" fw={500}>{notification.title}</Text>
-                                                <Text size="xs" c="dimmed">{formatRelativeTime(notification.created_at)}</Text>
+                                                <Text size="md" fw={600}>{notification.title}</Text>
+                                                <Text size="sm" c="dimmed">{notification.created_at}</Text>
                                             </Group>
-                                            <Text size="xs" c="dimmed">{notification.message}</Text>
+                                            <Text size="sm" c="dimmed">{notification.message}</Text>
                                         </div>
                                     </Menu.Item>
                                 ))}
                                 <Menu.Divider />
                                 <Menu.Item ta="center">
-                                    <Text size="xs" component="a" href="/notifications" c="blue">
+                                    <Text size="sm" component="a" href="/notifications" c="blue">
                                         View all notifications
                                     </Text>
                                 </Menu.Item>
                             </>
                         ) : (
                             <Box p="md" ta="center">
-                                <Text size="sm" c="dimmed">No new notifications</Text>
+                                <Text size="md" c="dimmed">No new notifications</Text>
                             </Box>
                         )}
                     </Menu.Dropdown>
                 </Menu>
 
-                {/* Theme Toggle */}
-                <Tooltip label={isDarkMode ? 'Light mode' : 'Dark mode'} position="bottom">
-                    <ActionIcon
-                        onClick={toggleTheme}
-                        size="lg"
-                        radius="xl"
-                        variant="subtle"
-                    >
-                        {isDarkMode ? <IconSun size={20} /> : <IconMoon size={20} />}
-                    </ActionIcon>
-                </Tooltip>
-
                 {/* Divider */}
-                <Divider orientation="vertical" className="h-8" />
+                <Divider orientation="vertical" className="h-16" />
 
                 {/* User menu */}
-                <Menu shadow="md" width={200} position="bottom-end">
+                <Menu shadow="md" width={220} position="bottom-end">
                     <Menu.Target>
                         <UnstyledButton className="flex items-center">
-                            <Group gap="sm">
+                            <Group gap="md">
                                 <Avatar
                                     color="blue"
                                     radius="xl"
-                                    size="md"
+                                    size={45}
                                 >
                                     {userInitials}
                                 </Avatar>
                                 <div className="hidden md:block">
-                                    <Text size="sm" fw={500} lineClamp={1}>
+                                    <Text size="sm" fw={600} lineClamp={1}>
                                         {fullName}
                                     </Text>
-                                    <Text c="dimmed" size="xs" lineClamp={1}>
-                                        {userInfo?.email}
+                                    <Text c="dimmed" size="sm" lineClamp={1}>
+                                        {userInfo?.business_name}
                                     </Text>
                                 </div>
-                                <IconChevronDown size={16} className="hidden md:block" />
+                                <IconChevronDown size={20} className="hidden md:block" />
                             </Group>
                         </UnstyledButton>
                     </Menu.Target>
@@ -326,19 +287,19 @@ export default function TopBarClient({
                     <Menu.Dropdown>
                         <Menu.Label>Account</Menu.Label>
                         <Menu.Item
-                            leftSection={<IconUser size={14} />}
+                            leftSection={<IconUser size={16} />}
                             onClick={() => router.push('/settings/profile')}
                         >
                             Profile
                         </Menu.Item>
                         <Menu.Item
-                            leftSection={<IconSettings size={14} />}
+                            leftSection={<IconSettings size={16} />}
                             onClick={() => router.push('/settings')}
                         >
                             Settings
                         </Menu.Item>
                         <Menu.Item
-                            leftSection={<IconHelp size={14} />}
+                            leftSection={<IconHelp size={16} />}
                             onClick={() => router.push('/help')}
                         >
                             Help Center
@@ -346,8 +307,8 @@ export default function TopBarClient({
                         <Menu.Divider />
                         <Menu.Item
                             color="red"
-                            leftSection={<IconLogout size={14} />}
-                            onClick={handleLogout}
+                            leftSection={<IconLogout size={16} />}
+                            onClick={handleSignOut}
                         >
                             Logout
                         </Menu.Item>

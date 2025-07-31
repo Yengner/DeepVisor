@@ -3,7 +3,7 @@
 const date = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
 
 
-export async function fetchMetaCampaignMetrics(platform_name, ad_account_id, accessToken, industry) {
+export async function fetchMetaCampaignMetrics(platform_name, ad_account_id, accessToken) {
     console.log(`Fetching Meta campaigns for ad account: ${ad_account_id}`);
 
     const datePresets = [
@@ -73,7 +73,6 @@ export async function fetchMetaCampaignMetrics(platform_name, ad_account_id, acc
                 link_clicks: actions.find(action => action.action_type === "link_click")?.value || 0,
                 messages: actions.find(action => action.action_type === "onsite_conversion.total_messaging_connection")?.value || 0,
                 raw_data: campaign,
-                industry_id: industry,
                 platform_name,
                 updated_at: new Date().toISOString(),
             };
@@ -111,7 +110,7 @@ export async function fetchMetaCampaignMetrics(platform_name, ad_account_id, acc
 
 
 // Fetch Ad Set Metrics for Meta
-export async function fetchMetaAdSetMetrics(platform_name, campaignId, accessToken, industry) {
+export async function fetchMetaAdSetMetrics(platform_name, campaignId, accessToken) {
     console.log(`Fetching Meta ad sets for campaign: ${campaignId}`);
   
     const url = `https://graph.facebook.com/v21.0/${campaignId}/adsets?fields=name,status,optimization_goal,insights.date_preset(maximum){clicks,impressions,spend,reach,actions,cpm,ctr,cpc}&access_token=${accessToken}`;
@@ -145,14 +144,13 @@ export async function fetchMetaAdSetMetrics(platform_name, campaignId, accessTok
         link_clicks: actions.find(action => action.action_type === "link_click")?.value || 0,
         messages: actions.find(action => action.action_type === "onsite_conversion.total_messaging_connection")?.value || 0,
         raw_data: adSet, // For additional details
-        industry_id: industry,
         platform_name: platform_name,
         };
     });
     }
 
 // Fetch Ad Metrics for Meta
-export async function fetchMetaAdMetrics(platform_name, adSetId, accessToken, industry) {
+export async function fetchMetaAdMetrics(platform_name, adSetId, accessToken) {
     console.log(`Fetching Meta ads for ad set: ${adSetId}`);
 
     const url = `https://graph.facebook.com/v21.0/${adSetId}/ads?fields=id,name,status,creative,insights.date_preset(maximum){clicks,impressions,spend,reach,actions,cpm,ctr,cpc,date_stop,date_start}&access_token=${accessToken}`;
@@ -189,7 +187,6 @@ export async function fetchMetaAdMetrics(platform_name, adSetId, accessToken, in
         messages: actions.find(action => action.action_type === "onsite_conversion.total_messaging_connection")?.value || 0,
         raw_data: ad, // For additional details
         platform_name: platform_name,
-        industry_id: industry,
         };
     });
     }

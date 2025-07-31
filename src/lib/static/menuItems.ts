@@ -1,4 +1,4 @@
-import { IMenuItem } from "@/types/public/types.d";
+import { IMenuItem } from "@/lib/static/types";
 
 export const menuItems: IMenuItem[] = [
     {

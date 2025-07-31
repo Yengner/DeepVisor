@@ -1,9 +1,8 @@
 import Footer from "@/components/public/Footer";
 import Header from "@/components/public/Header";
-import React from "react";
 import { Toaster } from "react-hot-toast";
 
-export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function AuthenticatedLayout({ children }: Readonly<{ children: React.ReactNode }>) {
 
 
   return (

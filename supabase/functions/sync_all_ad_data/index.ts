@@ -60,7 +60,7 @@ Deno.serve(async () => {
           console.log(campaignsToUpsert)
 
           const { error: campaignsError } = await supabase
-            .from("campaigns")
+            .from("campaigns_metrics")
             .upsert(campaignsToUpsert, { onConflict: ["campaign_id"] }); // Ensure campaign_id is unique
 
           if (campaignsError) throw campaignsError;
@@ -119,7 +119,7 @@ Deno.serve(async () => {
             const ads = await fetchAdMetricsByPlatform(adAccount.platform_integrations.platform_name, adSet.adset_id, adAccount.platform_integrations.access_token, adAccount.industry_id);
             if (ads.length > 0) {
               const { error: adsError } = await supabase
-                .from("ad_metrics")
+                .from("ads_metrics")
                 .upsert(ads, { onConflict: ["ad_id"] }); // Ensure ad_id is unique
               if (adsError) throw adsError;
               console.log(`Upserted ${ads.length} ads for ad set: ${adSet.name}`);

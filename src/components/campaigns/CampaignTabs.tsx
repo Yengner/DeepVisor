@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CampaignTable from '@/components/campaigns/CampaignTable';
 import AdSetTable from '@/components/campaigns/AdSetTable';
 import AdsTable from '@/components/campaigns/AdsTable';
@@ -38,27 +38,10 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
   const initialCampaignId = campaigns.length > 0 ? campaigns[0].id : null;
   const [campaignData, setCampaignData] = useState(campaigns);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId);
+  const [selectedAdSetId, setSelectedAdSetId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'campaigns' | 'adsets' | 'ads'>('campaigns');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Handler for auto-optimization toggle
-  const handleToggleAuto = async (campaignId: string, autoOptimize: boolean) => {
-    const response = await fetch('/api/campaign/autoOptimize', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ campaignId: campaignId, autoOptimize}),
-    })
-
-    if (!response.ok) {
-      console.warn(await response.text());
-      alert('Failed to update campaign.');
-      return;
-    }
-
-    setCampaignData(prev =>
-      prev.map(c => (c.id === campaignId ? { ...c, auto_optimize: autoOptimize } : c))
-    );
-  }
 
   // Allow for selecting a campaign when the component mounts
   const handleSelectCampaign = (campaignId: string) => {
@@ -69,7 +52,7 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch('/api/campaign/refreshCampaignData', {
+      const response = await fetch('/api/campaigns/refreshCampaignData', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +73,7 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
 
   // Handler for toggling campaign status
   const handleToggleCampaign = async (campaignId: string, newStatus: boolean) => {
-    const response = await fetch('/api/campaign/toggleCampaign', {
+    const response = await fetch('/api/campaigns/toggleCampaign', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -131,6 +114,13 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
       setSelectedCampaignId(null);
     }
   };
+
+  // Add this effect
+  useEffect(() => {
+    // Reset selected adset when campaign changes
+    setSelectedAdSetId(null);
+  }, [selectedCampaignId]);
+
   return (
     <div className="p-4">
       <div className="flex justify-end mb-4">
@@ -160,10 +150,9 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
           Ad Sets
         </button>
         <button
-          className={`px-4 py-2 text-sm ${activeTab === 'ads' ? 'border-b-2 border-emerald-600 font-semibold' : ''
-            }`}
+          className={`px-4 py-2 text-sm ${activeTab === 'ads' ? 'border-b-2 border-emerald-600 font-semibold' : ''}`}
           onClick={() => setActiveTab('ads')}
-          disabled={!selectedCampaignId}
+          disabled={!selectedAdSetId} // Changed from selectedCampaignId to selectedAdSetId
         >
           Ads
         </button>
@@ -183,15 +172,18 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
             onSelectCampaign={handleSelectCampaign}
             onToggleCampaign={handleToggleCampaign}
             onDeleteCampaign={handleDeleteCampaign}
-            onAutoOptimize={handleToggleAuto}
           />
         </div>
       )}
       {activeTab === 'adsets' && selectedCampaignId && (
-        <AdSetTable campaignId={selectedCampaignId} />
+        <AdSetTable
+          campaignId={selectedCampaignId}
+          onSelectAdSet={setSelectedAdSetId}
+          selectedAdSetId={selectedAdSetId}
+        />
       )}
-      {activeTab === 'ads' && selectedCampaignId && (
-        <AdsTable campaignId={selectedCampaignId} />
+      {activeTab === 'ads' && selectedAdSetId && (
+        <AdsTable adsetId={selectedAdSetId} />
       )}
     </div>
   );

@@ -1,270 +1,240 @@
 'use client';
 
-import { Switch } from "@headlessui/react";
-import { cn } from "@/lib/utils/utils";
-import { useRouter } from "next/navigation";
-import React from "react";
-import Image from "next/image";
+import { Table, Group, Text, Badge, Switch, ActionIcon, Menu, ThemeIcon, ScrollArea, Tooltip, Stack } from '@mantine/core';
+import { IconCheck, IconPencil, IconTrash, IconDots, IconChartBar, IconRobot } from '@tabler/icons-react';
+import { useState } from 'react';
 
-interface CampaignObjects {
-    id: string;
-    name: string;
-    delivery: boolean;
-    type: "AI Auto" | "Manual" | "Semi-Auto";
-    status: string;
-    objective: string;
-    startDate: string;
-    endDate: string;
-    attribution: string;
-    spend?: number;
-    results?: string;
-    reach?: number;
-    clicks?: number;
-    impressions?: number;
-    frequency?: string;
-    costPerResult?: string;
-    cpm?: number;
-    ctr?: number;
-    cpc?: number;
-    platform?: string;
-    auto_optimize: boolean;
+interface CampaignObject {
+  id: string;
+  name: string;
+  delivery: boolean;
+  type: string;
+  status: string;
+  objective: string;
+  startDate: string;
+  endDate: string;
+  attribution: string;
+  spend?: number;
+  results?: string;
+  reach?: number;
+  clicks?: number;
+  impressions?: number;
+  frequency?: string;
+  costPerResult?: string;
+  cpm?: number;
+  ctr?: number;
+  cpc?: number;
+  platform?: string;
+  accountName?: string;
 }
 
 interface CampaignTableProps {
-    campaigns: CampaignObjects[];
-    selectedCampaignId?: string;
-    onSelectCampaign: (campaignId: string) => void;
-    onToggleCampaign: (campaignId: string, newStatus: boolean) => void;
-    onDeleteCampaign: (campaignId: string) => void;
-    onAutoOptimize: (campaignId: string, autoOptimize: boolean) => void;
+  campaigns: CampaignObject[];
+  selectedCampaignId?: string;
+  onSelectCampaign: (campaignId: string) => void;
+  onToggleCampaign: (campaignId: string, newStatus: boolean) => void;
+  onDeleteCampaign: (campaignId: string) => void;
+  platformColor?: string;
 }
 
-const getPlatformImage = (platform?: string) => {
-    switch ((platform || "meta").toLowerCase()) {
-        case "meta":
-            return "/images/platforms/logo/meta.png";
-        case "tiktok":
-            return "/images/platforms/logo/tiktok.png";
-        // add more cases as needed for other platforms
-        default:
-            return "/images/platforms/logo/default.png";
-    }
-};
-
-
 export default function CampaignTable({
-    campaigns,
-    selectedCampaignId,
-    onSelectCampaign,
-    onToggleCampaign,
-    onDeleteCampaign,
-    onAutoOptimize,
+  campaigns,
+  selectedCampaignId,
+  onSelectCampaign,
+  onToggleCampaign,
+  onDeleteCampaign,
+  platformColor = 'blue'
 }: CampaignTableProps) {
-    const router = useRouter();
+  // Column visibility state
+  const [columns] = useState({
+    status: true,
+    objective: true,
+    dates: true,
+    spend: true,
+    results: true,
+    metrics: true,
+  });
 
-    const CheckIcon = () => (
-        <svg
-            className="w-4 h-4 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-        >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-        </svg>
-    );
+  return (
+    <ScrollArea h="auto" type="always" offsetScrollbars>
+      <Table
+        striped
+        highlightOnHover
+        border={1}
+        withColumnBorders
+        style={{ minWidth: 800 }}
+      >
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th style={{ width: 40 }}></Table.Th>
+            <Table.Th>Campaign</Table.Th>
+            <Table.Th>Status</Table.Th>
+            {columns.objective && <Table.Th>Objective</Table.Th>}
+            {columns.dates && <Table.Th>Date Range</Table.Th>}
+            {columns.spend && <Table.Th>Spend</Table.Th>}
+            {columns.results && <Table.Th>Results</Table.Th>}
+            {columns.metrics && <Table.Th>KPI</Table.Th>}
+            <Table.Th style={{ width: 50 }}></Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {campaigns.length === 0 ? (
+            <Table.Tr>
+              <Table.Td colSpan={12}>
+                <Text ta="center" py="md" c="dimmed">
+                  No campaigns found
+                </Text>
+              </Table.Td>
+            </Table.Tr>
+          ) : (
+            campaigns.map((campaign) => (
+              <Table.Tr
+                key={campaign.id}
+                style={{
+                  background: selectedCampaignId === campaign.id ? `rgba(var(--mantine-color-${platformColor}-light-rgb), 0.2)` : 'transparent',
+                  cursor: 'pointer'
+                }}
+                onClick={() => onSelectCampaign(campaign.id)}
+              >
+                <Table.Td>
+                  {selectedCampaignId === campaign.id && (
+                    <ThemeIcon radius="xl" size="sm" color={platformColor}>
+                      <IconCheck size={14} />
+                    </ThemeIcon>
+                  )}
+                </Table.Td>
+                <Table.Td>
+                  <Group gap="xs">
+                    <Text size="sm" fw={500}>
+                      {campaign.name}
+                    </Text>
+                    {campaign.type === "AI Auto" && (
+                      <Tooltip label="AI Optimized Campaign">
+                        <ThemeIcon color={platformColor} variant="light" radius="xl" size="xs">
+                          <IconRobot size={10} />
+                        </ThemeIcon>
+                      </Tooltip>
+                    )}
+                  </Group>
+                  {campaign.accountName && (
+                    <Text size="xs" color="dimmed">
+                      Account: {campaign.accountName}
+                    </Text>
+                  )}
+                </Table.Td>
 
-    return (
-        <div className="w-full bg-white border rounded-xl shadow-sm">
-            <div className="flex items-center justify-between px-4 py-3 border-b">
-                <h2 className="text-lg font-semibold">Campaigns</h2>
-                <button
-                    disabled
-                    className="bg-emerald-600 disabled-button text-white px-4 py-2 rounded-md hover:bg-emerald-700"
-                    onClick={() => router.push("/campaigns/create")}
-                >
-                    + Create
-                </button>
-            </div>
+                <Table.Td>
+                  <Group gap="xs" wrap="nowrap">
+                    <Switch
+                      checked={campaign.delivery}
+                      onChange={(event) => {
+                        event.stopPropagation();
+                        onToggleCampaign(campaign.id, event.currentTarget.checked);
+                      }}
+                      size="sm"
+                      onLabel="ON"
+                      offLabel="OFF"
+                      color="green"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <Badge
+                      color={campaign.status?.toUpperCase() === "ACTIVE" ? "green" : "gray"}
+                      variant="light"
+                    >
+                      {campaign.status}
+                    </Badge>
+                  </Group>
+                </Table.Td>
 
-            <div className="overflow-x-auto">
-                <table className="min-w-[1200px] w-full text-sm text-left">
-                    <thead className="bg-gray-100 text-gray-600">
-                        <tr>
-                            {/* Select column */}
-                            <th className="px-4 py-2 font-medium text-center">Select</th>
-                            <th className="px-4 py-2 font-medium">Platform</th>
-                            <th className="px-4 py-2 font-medium">Off / On</th>
-                            <th className="px-4 py-2 font-medium">Campaign</th>
-                            <th className="px-4 py-2 font-medium">Type</th>
-                            <th className="px-4 py-2 font-medium">Status</th>
-                            <th className="px-4 py-2 font-medium">Objective</th>
-                            <th className="px-4 py-2 font-medium">Start Date</th>
-                            <th className="px-4 py-2 font-medium">End Date</th>
-                            <th className="px-4 py-2 font-medium">Delivery</th>
-                            <th className="px-4 py-2 font-medium">Attribution</th>
-                            <th className="px-4 py-2 font-medium">Spend</th>
-                            <th className="px-4 py-2 font-medium">Results</th>
-                            <th className="px-4 py-2 font-medium">Reach</th>
-                            <th className="px-4 py-2 font-medium">Clicks</th>
-                            <th className="px-4 py-2 font-medium">Impressions</th>
-                            <th className="px-4 py-2 font-medium">Frequency</th>
-                            <th className="px-4 py-2 font-medium">Cost / Result</th>
-                            <th className="px-4 py-2 font-medium">cpm</th>
-                            <th className="px-4 py-2 font-medium">ctr</th>
-                            <th className="px-4 py-2 font-medium">cpc</th>
-                            <th className="px-4 py-2 font-medium">Auto-Opt</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {campaigns.map((campaign) => (
-                            <React.Fragment key={campaign.id}>
+                {columns.objective && (
+                  <Table.Td>
+                    <Text size="sm">{campaign.objective}</Text>
+                  </Table.Td>
+                )}
 
-                                <tr
-                                    key={campaign.id}
-                                    className={cn(
-                                        "border-b cursor-pointer hover:bg-gray-50",
-                                        selectedCampaignId === campaign.id ? "bg-blue-50" : ""
-                                    )}
-                                    onClick={() => onSelectCampaign(campaign.id)}
-                                >
-                                    {/* Select indicator */}
-                                    <td className="px-4 py-2 text-center">
-                                        {selectedCampaignId === campaign.id ? (
-                                            <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                                                <CheckIcon />
-                                            </div>
-                                        ) : (
-                                            <div className="w-5 h-5 rounded-full border border-gray-300" />
-                                        )}
-                                    </td>
+                {columns.dates && (
+                  <Table.Td>
+                    <Stack gap={0}>
+                      <Text size="xs">Start: {new Date(campaign.startDate).toLocaleDateString()}</Text>
+                      <Text size="xs">End: {campaign.endDate !== "No End Date"
+                        ? new Date(campaign.endDate).toLocaleDateString()
+                        : "Ongoing"}
+                      </Text>
+                    </Stack>
+                  </Table.Td>
+                )}
 
-                                    {/* Platform Icon */}
-                                    <td className="px-4 py-2">
-                                        <Image
-                                            src={getPlatformImage(campaign.platform)}
-                                            alt={campaign.platform || "Meta"}
-                                            width={32}
-                                            height={32}
-                                            className="rounded-full"
-                                            priority={false}  // optional: remove if you don't need LCP priority
-                                        />
-                                    </td>
+                {columns.spend && (
+                  <Table.Td>
+                    <Text fw={500} size="sm">
+                      ${Number(campaign.spend || 0).toFixed(2)}
+                    </Text>
+                  </Table.Td>
+                )}
 
-                                    {/* Off / On toggle */}
-                                    <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
-                                        <Switch
-                                            checked={campaign.delivery}
-                                            onChange={(checked) => onToggleCampaign(campaign.id, checked)}
-                                            className={cn(
-                                                "relative inline-flex h-5 w-9 items-center rounded-full",
-                                                // animate only background‐color, 200ms, ease‑in‑out
-                                                campaign.delivery
-                                                    ? "bg-emerald-600"
-                                                    : "bg-gray-300",
-                                                "transition-colors duration-200 ease-in-out"
-                                            )}
-                                        >
-                                            <span className="sr-only">Enable Campaign</span>
-                                            <span
-                                                className={cn(
-                                                    // move from x=1 to x=5
-                                                    campaign.delivery ? "translate-x-5" : "translate-x-1",
-                                                    // animate only transform, 200ms, ease‑in‑out
-                                                    "inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200 ease-in-out"
-                                                )}
-                                            />
-                                        </Switch>
+                {columns.results && (
+                  <Table.Td>
+                    <Text size="sm">{campaign.results}</Text>
+                  </Table.Td>
+                )}
 
-                                    </td>
+                {columns.metrics && (
+                  <Table.Td>
+                    <Stack gap={0}>
+                      <Text size="xs">CTR: {campaign.ctr ? `${campaign.ctr}%` : "0%"}</Text>
+                      <Text size="xs">CPC: ${campaign.cpc || "0.00"}</Text>
+                      <Text size="xs">CPM: ${campaign.cpm || "0.00"}</Text>
+                    </Stack>
+                  </Table.Td>
+                )}
 
-                                    {/* Campaign details */}
-                                    <td className="px-4 py-2 font-medium truncate max-w-[350px] text-emerald-700 hover:underline">
-                                        {campaign.name}
-                                    </td>
-                                    <td className="px-4 py-2">{campaign.type}</td>
-                                    <td className="px-4 py-2">{campaign.status}</td>
-                                    <td className="px-4 py-2">{campaign.objective}</td>
-                                    <td className="px-4 py-2 truncate">{campaign.startDate}</td>
-                                    <td className="px-4 py-2 truncate">{campaign.endDate ?? "—"}</td>
-                                    <td className="px-4 py-2">{campaign.delivery ? "On" : "Off"}</td>
-                                    <td className="px-4 py-2">{campaign.attribution}</td>
-                                    <td className="px-4 py-2">{campaign.spend}</td>
-                                    <td className="px-4 py-2">{campaign.results}</td>
-                                    <td className="px-4 py-2">{(campaign.reach)?.toLocaleString()}</td>
-                                    <td className="px-4 py-2">{(campaign.clicks)?.toLocaleString()}</td>
-                                    <td className="px-4 py-2">{(campaign.impressions)?.toLocaleString()}</td>
-                                    <td className="px-4 py-2">{campaign.frequency}</td>
-                                    <td className="px-4 py-2">{campaign.costPerResult}</td>
-                                    <td className="px-4 py-2">{campaign.cpm}</td>
-                                    <td className="px-4 py-2">{campaign.ctr}</td>
-                                    <td className="px-4 py-2">{campaign.cpc}</td>
-
-                                    {/* Auto-Optimize toggle */}
-                                    <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
-                                        <Switch
-                                            checked={campaign.auto_optimize}
-                                            onChange={(checked) => onAutoOptimize(campaign.id, checked)}
-                                            className={cn(
-                                                campaign.auto_optimize ? "bg-emerald-600" : "bg-gray-300",
-                                                "relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200"
-                                            )}
-                                        >
-                                            <span className="sr-only">Auto Optimize</span>
-                                            <span
-                                                className={cn(
-                                                    campaign.auto_optimize ? "translate-x-5" : "translate-x-1",
-                                                    "inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200"
-                                                )}
-                                            />
-                                        </Switch>
-                                    </td>
-                                </tr>
-
-                                {/* Bottom row for selected campaign */}
-                                {selectedCampaignId === campaign.id && (
-                                    <tr
-                                        className="bg-gray-50">
-                                        <td colSpan={21} className="px-4 py-3">
-                                            <div className="flex items-center space-x-4">
-                                                <div className="text-sm text-gray-600">
-                                                    Selected campaign: <span className="font-semibold">{campaign.name}</span>
-                                                </div>
-                                                <div className="space-x-2">
-                                                    <button
-                                                        className="px-1 rounded-md text-sm  text-primary-accent hover:text-[#788ebb]"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            // Go to edit page
-                                                            router.push(`/campaigns/${campaign.id}/edit`);
-                                                        }}
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        className="px-1 rounded-md text-sm text-red-500 hover:text-red-200"
-                                                        onClick={async (e) => {
-                                                            e.stopPropagation();
-                                                            const confirm = window.confirm(`Are you sure you want to delete ${campaign.name}?`);
-                                                            if (!confirm) return;
-                                                            else {
-                                                                onDeleteCampaign?.(campaign.id);
-                                                            }
-                                                        }}
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </React.Fragment>
-
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
+                <Table.Td>
+                  <Menu
+                    position="bottom-end"
+                    withArrow
+                    offset={4}
+                  >
+                    <Menu.Target>
+                      <ActionIcon onClick={(e) => e.stopPropagation()}>
+                        <IconDots size={16} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item
+                        leftSection={<IconPencil size={16} />}
+                        component="a"
+                        href={`/campaigns/${campaign.id}/edit`}
+                      >
+                        Edit Campaign
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconChartBar size={16} />}
+                        component="a"
+                        href={`/campaigns/${campaign.id}/analytics`}
+                      >
+                        View Analytics
+                      </Menu.Item>
+                      <Menu.Divider />
+                      <Menu.Item
+                        color="red"
+                        leftSection={<IconTrash size={16} />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Are you sure you want to delete "${campaign.name}"?`)) {
+                            onDeleteCampaign(campaign.id);
+                          }
+                        }}
+                      >
+                        Delete Campaign
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Table.Td>
+              </Table.Tr>
+            ))
+          )}
+        </Table.Tbody>
+      </Table>
+    </ScrollArea>
+  );
 }

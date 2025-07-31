@@ -3,10 +3,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/utils/supabase/clients/browser';
-import { createUserProfile } from '@/lib/actions/user.actions';
 import { Loader, Title, Text, Stack, Button, TextInput, Center } from '@mantine/core';
 import { IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
+import { createUserProfile } from '@/lib/actions/user/profile';
 
 export default function VerifyEmailContent() {
     const router = useRouter();

@@ -1,4 +1,4 @@
-import { ITestimonial } from "@/types/public/types";
+import { ITestimonial } from "@/lib/static/types";
 import { siteDetails } from "./siteDetails";
 
 export const testimonials: ITestimonial[] = [

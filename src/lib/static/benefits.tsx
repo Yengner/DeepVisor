@@ -1,4 +1,4 @@
-import { IBenefit } from "@/types/public/types";
+import { IBenefit } from "@/lib/static/types";
 import { FiZap, FiGlobe, FiClipboard, FiMessageSquare, FiCpu, FiTrendingUp, FiTool } from "react-icons/fi";
 
 export const benefits: IBenefit[] = [

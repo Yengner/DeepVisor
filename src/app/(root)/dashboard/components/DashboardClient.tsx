@@ -2,175 +2,173 @@
 
 import { useState } from 'react';
 import {
-    Title,
-    Text,
-    Group,
-    SimpleGrid,
-    Card,
-    Button,
-    // Badge,
-    Stack,
-    Tabs,
-    // rem,
-    // useMantineTheme,
-    ThemeIcon,
-    // ActionIcon
+    Container, SimpleGrid, Card, Group, Box, Text, Button, Paper, Stack, Progress, Alert
 } from '@mantine/core';
-import {
-    IconRefresh,
-    // IconChartBar,
-    IconBrandFacebook,
-    // IconBrandGoogle,
-    // IconBrandTiktok,
-    // IconAlertCircle,
-    // IconArrowUp,
-    // IconArrowDown,
-    IconPresentationAnalytics,
-    IconChartPie,
-    IconBulb,
-    // IconCoin,
-    // IconClick,
-    // IconEye
-} from '@tabler/icons-react';
-import { useRouter } from 'next/navigation';
-import StatsCards from './StatsCards';
-import PlatformPerformance from './PlatformPerformance';
-import TopCampaigns from './TopCampaigns';
-import Recommendations from './Recommendations';
-import PlatformMetrics from './PlatformMetrics';
+import { IconAlertCircle, IconFileExport, IconList } from '@tabler/icons-react';
+import DashboardHeader from './DashboardHeader';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-interface DashboardClientProps {
+
+export type DashboardClientProps = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     userData: any;
-    businessName: string;
-    platforms: any[];
-    featuredPlatform: any;
-    platformMetrics: any[];
-    campaigns: any[];
-    recommendations: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    platform: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    adAccountData: any;
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export default function DashboardClient({
-    // userData,
-    businessName,
-    // platforms,
-    featuredPlatform,
-    platformMetrics,
-    campaigns,
-    recommendations
+    userData,
+    platform,
+    adAccountData,
 }: DashboardClientProps) {
-    const router = useRouter();
-    // const theme = useMantineTheme();
     const [refreshing, setRefreshing] = useState(false);
-
-    // Calculate aggregated stats
-    const totalSpend = platformMetrics.reduce((sum, p) => sum + (p.total_spend || 0), 0);
-    const totalImpressions = platformMetrics.reduce((sum, p) => sum + (p.total_impressions || 0), 0);
-    const totalClicks = platformMetrics.reduce((sum, p) => sum + (p.total_clicks || 0), 0);
-    const totalLeads = platformMetrics.reduce((sum, p) => sum + (p.total_leads || 0), 0);
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        // Add your refresh logic here
+        // Simulate refresh logic
         setTimeout(() => {
             setRefreshing(false);
         }, 1000);
     };
 
     return (
-        <Stack gap="xl">
-            {/* Header Section */}
-            <Group justify="apart">
-                <div>
-                    <Title order={2}>{businessName} Dashboard</Title>
-                    <Text c="dimmed">Overview of your advertising performance</Text>
-                </div>
-                <Button
-                    leftSection={<IconRefresh size={16} />}
-                    variant="light"
-                    onClick={handleRefresh}
-                    loading={refreshing}
-                >
-                    Refresh Data
-                </Button>
-            </Group>
-
-            {/* Stats Cards */}
-            <StatsCards
-                totalSpend={totalSpend}
-                totalImpressions={totalImpressions}
-                totalClicks={totalClicks}
-                totalLeads={totalLeads}
+        <Container size="xl" py="md">
+            <DashboardHeader
+                businessName={userData.business_name || userData?.full_name + "'s Business"}
+                platformName={platform.platform_name}
+                adAccountData={adAccountData}
+                onRefresh={handleRefresh}
+                refreshing={refreshing}
             />
 
-            {/* Tab Navigation */}
-            <Tabs defaultValue="overview">
-                <Tabs.List>
-                    <Tabs.Tab
-                        value="overview"
-                        leftSection={<IconChartPie size={16} />}
-                    >
-                        Overview
-                    </Tabs.Tab>
-                    <Tabs.Tab
-                        value="platforms"
-                        leftSection={<IconBrandFacebook size={16} />}
-                    >
-                        Platforms
-                    </Tabs.Tab>
-                    <Tabs.Tab
-                        value="campaigns"
-                        leftSection={<IconPresentationAnalytics size={16} />}
-                    >
-                        Campaigns
-                    </Tabs.Tab>
-                </Tabs.List>
+            <SimpleGrid cols={{ base: 1, md: 4 }} spacing="lg" mb="xl">
+                <Card withBorder p="md">
+                    <Group justify="space-between">
+                        <Box>
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Future Action</Text>
+                            <Text fw={700} size="xl">Placeholder</Text>
+                        </Box>
+                    </Group>
+                </Card>
+                <Card withBorder p="md">
+                    <Group justify="space-between">
+                        <Box>
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Progress</Text>
+                            <Progress value={50} color="blue" size="lg" radius="xl" striped animated={true} />
+                            <Text size="xs" mt={4}>50% Complete</Text>
+                        </Box>
+                    </Group>
+                </Card>
+                <Card withBorder p="md">
+                    <Group justify="space-between">
+                        <Box>
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Status</Text>
+                            <Text fw={700} size="xl">Active</Text>
+                        </Box>
+                    </Group>
+                </Card>
+                <Card withBorder p="md">
+                    <Group justify="space-between">
+                        <Box>
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Updates</Text>
+                            <Text fw={700} size="xl">No updates yet</Text>
+                        </Box>
+                    </Group>
+                </Card>
+            </SimpleGrid>
 
-                <Tabs.Panel value="overview" pt="md">
-                    <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
-                        {/* Platform Performance */}
-                        <PlatformPerformance
-                            featuredPlatform={featuredPlatform}
-                            onViewAll={() => router.push('/dashboard/platforms')}
-                        />
+            <Group align="flex-start" gap="xl" mb="xl" wrap="nowrap">
+                {/* Main content */}
+                <Box style={{ flex: 3, minWidth: 0 }}>
+                    <Paper withBorder p="md" mb="xl">
+                        <Text fw={700} mb="sm">Trends & Analytics</Text>
+                        <Box h={200} bg="#f8f9fa" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Text c="dimmed">[Trends Chart Placeholder]</Text>
+                        </Box>
+                    </Paper>
 
-                        {/* Top Campaigns */}
-                        <TopCampaigns
-                            campaigns={campaigns.slice(0, 5)}
-                            onViewAll={() => router.push('/campaigns')}
-                        />
+                    <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md" mb="xl">
+                        <Card withBorder p="md">
+                            <Text size="xs" c="dimmed" mb={4}>Insight 1</Text>
+                            <Text fw={700}>Placeholder</Text>
+                        </Card>
+                        <Card withBorder p="md">
+                            <Text size="xs" c="dimmed" mb={4}>Insight 2</Text>
+                            <Text fw={700}>Placeholder</Text>
+                        </Card>
+                        <Card withBorder p="md">
+                            <Text size="xs" c="dimmed" mb={4}>Insight 3</Text>
+                            <Text fw={700}>Placeholder</Text>
+                        </Card>
                     </SimpleGrid>
 
-                    {/* Recommendations */}
-                    <Card withBorder mt="md">
-                        <Card.Section withBorder inheritPadding py="xs">
-                            <Group justify="apart">
-                                <Group>
-                                    <ThemeIcon color="yellow" size="md" variant="light">
-                                        <IconBulb size={16} />
-                                    </ThemeIcon>
-                                    <Text fw={500}>AI Recommendations</Text>
-                                </Group>
-                            </Group>
-                        </Card.Section>
+                    <Paper withBorder p="md" mb="xl">
+                        <Text fw={700} mb="sm">Metric Comparison</Text>
+                        <SimpleGrid cols={3}>
+                            <Box>
+                                <Text size="sm" c="dimmed">Metric 1</Text>
+                                <Text fw={700}>Placeholder</Text>
+                            </Box>
+                            <Box>
+                                <Text size="sm" c="dimmed">Metric 2</Text>
+                                <Text fw={700}>Placeholder</Text>
+                            </Box>
+                            <Box>
+                                <Text size="sm" c="dimmed">Metric 3</Text>
+                                <Text fw={700}>Placeholder</Text>
+                            </Box>
+                        </SimpleGrid>
+                    </Paper>
 
-                        <Recommendations recommendations={recommendations} />
-                    </Card>
-                </Tabs.Panel>
+                    <Paper withBorder p="md">
+                        <Text fw={700} mb="sm">Top Campaigns</Text>
+                        <Box h={120} bg="#f8f9fa" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Text c="dimmed">[Top Campaigns Table Placeholder]</Text>
+                        </Box>
+                    </Paper>
+                </Box>
 
-                <Tabs.Panel value="platforms" pt="md">
-                    <PlatformMetrics platforms={platformMetrics} />
-                </Tabs.Panel>
-
-                <Tabs.Panel value="campaigns" pt="md">
-                    <TopCampaigns
-                        campaigns={campaigns}
-                        onViewAll={() => router.push('/campaigns')}
-                        showAll
-                    />
-                </Tabs.Panel>
-            </Tabs>
-        </Stack>
+                {/* Sidebar: Notifications & Actions */}
+                <Stack style={{ flex: 1, minWidth: 260 }}>
+                    <Paper withBorder p="md" mb="md">
+                        <Text fw={700} mb="sm">Quick Actions</Text>
+                        <Stack>
+                            <Button
+                                leftSection={<IconList size={16} />}
+                                variant="light"
+                                fullWidth
+                            >
+                                View All Campaigns
+                            </Button>
+                            <Button
+                                leftSection={<IconFileExport size={16} />}
+                                variant="light"
+                                fullWidth
+                            >
+                                Export Report
+                            </Button>
+                            <Button
+                                variant="light"
+                                color="blue"
+                                fullWidth
+                                onClick={handleRefresh}
+                                loading={refreshing}
+                            >
+                                Refresh Data
+                            </Button>
+                        </Stack>
+                    </Paper>
+                    <Paper withBorder p="md">
+                        <Text fw={700} mb="sm">Notifications</Text>
+                        <Stack>
+                            <Alert icon={<IconAlertCircle size={16} />} color="yellow" mb="xs">
+                                No notifications yet.
+                            </Alert>
+                        </Stack>
+                    </Paper>
+                </Stack>
+            </Group>
+        </Container>
     );
 }

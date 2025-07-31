@@ -17,6 +17,9 @@ const nextConfig = {
   // Add transpilePackages to handle ESM modules
   experimental: {
     esmExternals: 'loose', // Loosen restrictions for ESM imports
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
   },
   output: 'standalone', // Ensures the app is built as a standalone Node.js server
 };

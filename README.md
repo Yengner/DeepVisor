@@ -1,98 +1,206 @@
-# **DeepVisor** 🚀
-### **All-in-One Advertising Platform & Agency Companion**
+# DeepVisor 🚀
 
-DeepVisor is a SaaS solution that helps **individuals and businesses** manage advertising across multiple networks, including **Meta (Facebook & Instagram), TikTok, Google Ads, Reddit, YouTube, and more**. The platform is built to work alongside our advertising agency, giving clients transparent access to campaign results while also generating leads for the agency itself.
+<div align="center">
+  <h3>Digital Advertising Platform Project</h3>
+  <p><i>A work-in-progress learning project with startup aspirations</i></p>
+</div>
 
-Users can **integrate, track, analyze, and optimize ad campaigns** from one dashboard. DeepVisor offers automation tools, AI-driven suggestions, and unique marketing utilities like scannable barcodes that link to a business hub and the option to add a digital business card to **Apple Wallet**.
+## Project Overview
 
-With the recent addition of the `/public/proposal/[token]` page, clients will receive proposal links via email. Visiting this link opens a public proposal page where they can approve the proposal or request revisions (functionality in progress).
+DeepVisor is an in-development platform that aims to simplify digital advertising management across multiple platforms. As a college project focused on learning modern web development and API integration, it serves both as a practical education in software engineering and a potential startup concept.
 
-This README outlines the current workflow, database structure, and features planned for future development.
+**Current Status**: Early development with Meta API integration in progress.
 
----
+### Vision
 
-## **🌟 Features & Functionality**  
+The vision for DeepVisor is to create a unified dashboard where users can:
+- Create and manage ad campaigns across multiple platforms
+- View normalized performance metrics in one place
+- Leverage AI for campaign optimization and budget allocation
+- Generate client-friendly reports and analytics
 
-### **1. Multi-Platform Integration**
-- ✅ Connect with **Meta (Facebook & Instagram), TikTok, Google Ads, Reddit, YouTube, Twitter (X), and more**.
-- ✅ Pull real-time **campaign, ad set, and ad-level data** from integrated accounts.
-- ✅ Manage ads, set budgets, and optimize performance across platforms.
+### Tech Stack
 
-### **2. Centralized Dashboard & Insights**
-- 📊 **Key marketing metrics** like impressions, clicks, conversions, CTR, CPC, and ROI.
-- 📈 **Real-time analytics** with interactive charts and visual reports.
-- 🎯 **AI-driven recommendations** to improve campaign results.
+- **Frontend**: Next.js 15+ with Mantine UI
+- **Backend**: Next.js API routes with Node.js
+- **Database & Auth**: Supabase (PostgreSQL + Authentication)
+- **API Integrations**: Meta Marketing API (in progress)
 
-### **3. Campaign Management & Collaboration**
-- ⚡ **Create, edit, and launch campaigns** with a guided setup.
-- 🔄 **Automated optimizations** based on AI-driven insights.
-- 🤝 **Multi-account support** to manage several brands in one place.
-- 📱 **Scannable barcodes** that link to your business hub and digital Apple Wallet card.
+## Current Implementation
 
-### **4. Proposal Workflow**
-- 📧 Send proposal links via email using the new `/public/proposal/[token]` page.
-- ✅ Clients can approve a proposal or request revisions *(coming soon)*.
+### Meta Integration (In Progress)
 
-### **5. Secure Authentication & User Management**
-- 🔐 **Supabase Auth** for secure user authentication.
-- 🛠 **Role-based access control** for managing teams and permissions.
-- ✅ Add, remove, and manage ad accounts dynamically.
+The current focus is on implementing Meta (Facebook & Instagram) ad campaign creation:
 
----
+- ✅ OAuth authentication with Meta Business accounts
+- ✅ Campaign builder UI with form validation
+- 🔄 Campaign creation API integration
+- 🔄 Strategy Pattern for flexible campaign parameters
+- ⬜ Reporting and analytics
 
-## **📂 Tech Stack**  
+### Code Architecture
 
-| **Technology**  | **Usage** |
-|---------------|----------|
-| **Next.js 15 (App Router)**  | Frontend framework |
-| **TypeScript** | Type safety & scalability |
-| **Tailwind CSS** | UI styling |
-| **Node.js + Express.js** | Backend API |
-| **Supabase** | Database & authentication |
-| **PostgreSQL (RDS)** | Database for structured data |
-| **Meta & TikTok API** | Ad data fetching |
-| **ApexCharts** | Data visualization |
+We're implementing the Strategy Pattern for flexible campaign parameter building:
 
----
-
-## **🗄️ Database Structure**  
-
-DeepVisor uses **PostgreSQL** to store essential data for **ad campaigns, user integrations, and analytics**.
-
-### **Main Tables**:
-- **`users`** → Stores user details (ID, name, email, role).  
-- **`integrations`** → Tracks user integrations (Meta, TikTok, etc.).  
-- **`ad_accounts`** → Contains linked ad accounts per user.  
-- **`campaigns`** → Stores campaign details with budget, targeting, and performance stats.  
-- **`ads`** → Tracks individual ads within campaigns.
-
-Example **ERD (Entity Relationship Diagram)**:
-
-```plaintext
-users (id) ---< integrations (id) ---< ad_accounts (id) ---< campaigns (id) ---< ads (id)
+```typescript
+// Example of Strategy Pattern implementation
+export async function createCreative(params: MetaCreativeParams): Promise<string> {
+  // Get the appropriate strategy based on campaign objective
+  const strategy = getCreativeStrategy(formData.objective);
+  
+  // Apply the strategy to get objective-specific parameters
+  const creativeParams = strategy.buildCreativeParams(
+    baseParams, 
+    formData, 
+    pageId,
+    isSmartCampaign,
+    creativeVariation
+  );
+  
+  // API call with the parameters
+  // ...
+}
 ```
 
+## Future Development Plans
+
+While currently focused on Meta integration, the project has ambitious plans for expansion:
+
+### System Architecture Vision
+
+```mermaid
+graph TD
+    A[Client Application] --> B[API Gateway]
+    
+    B --> C[Campaign Service]
+    B --> D[Analytics Service]
+    B --> E[User Management]
+    B --> F[Billing Service]
+    B --> G[AI Optimization Service]
+    
+    C --> H[Meta Integration]
+    C --> I[TikTok Integration]
+    C --> J[Google Integration]
+    
+    D --> K[Data Lake]
+    G --> K
+    
+    K --> L[Analytics Engine]
+    L --> D
+```
+
+### Development Roadmap
+
+```
+┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
+│     Current State   │ -> │  Near-Term Goals    │ -> │ Long-Term Vision    │
+├─────────────────────┤    ├─────────────────────┤    ├─────────────────────┤
+│ • Meta Integration  │    │ • Enhanced Smart    │    │ • Full AI-Powered   │
+│   (in progress)     │    │   Campaigns         │    │   Media Buying      │
+│ • Basic Campaign UI │    │ • Multi-Platform    │    │ • Budget Management │
+│ • Strategy Pattern  │    │   Campaigns         │    │   Across Platforms  │
+└─────────────────────┘    │ • Unified Analytics │    │ • Creative Testing  │
+                           └─────────────────────┘    └─────────────────────┘
+```
+
+### Multi-Platform Strategy
+
+The architectural plan includes a Platform Adapter pattern to support multiple advertising platforms:
+
+```mermaid
+graph TD
+    A[Campaign Creation UI] --> B[Platform Adapter Factory]
+    B --> C[Meta Adapter]
+    B --> D[TikTok Adapter]
+    B --> E[Google Ads Adapter]
+    B --> F[LinkedIn Adapter]
+    
+    C --> H[Meta Campaign Strategy]
+    D --> I[TikTok Campaign Strategy]
+    E --> J[Google Campaign Strategy]
+    F --> K[LinkedIn Campaign Strategy]
+```
+
+### Smart Campaigns Feature Plan
+
+Future versions aim to implement AI-powered campaign optimization:
+
+```mermaid
+graph LR
+    A[Smart Campaigns] --> B[Audience Discovery]
+    A --> C[Creative Testing]
+    A --> D[Budget Optimization]
+    
+    B --> B1[Lookalike Generation]
+    B --> B2[Interest Analysis]
+    
+    C --> C1[Multi-Variate Testing]
+    C --> C2[Creative Elements Analysis]
+    
+    D --> D1[Budget Shifting]
+    D --> D2[ROAS Optimization]
+```
+
+### Analytics Vision
+
+The planned analytics system will unify data from multiple platforms:
+
+```mermaid
+graph TD
+    A[Platform APIs] --> B[Data Ingestion Layer]
+    B --> C[Data Normalization]
+    C --> D[Unified Data Schema]
+    D --> E[Combined Analytics]
+    E --> F[Unified Dashboard]
+    E --> G[Cross-Platform Insights]
+```
+
+## Learning Goals
+
+This project serves as a practical application of:
+
+1. **Modern Web Development**
+   - Next.js framework with React
+   - Mantine UI component library
+   - Server-side rendering and API routes
+
+2. **Database Design**
+   - Supabase PostgreSQL schema design
+   - Authentication and authorization
+   - Data relationships for complex ad structures
+
+3. **External API Integration**
+   - OAuth flows and token management
+   - Campaign creation via Meta Marketing API
+   - Error handling and rate limiting
+
+4. **Design Patterns**
+   - Strategy Pattern for flexible parameter building
+   - Adapter Pattern for platform-agnostic interfaces
+   - Factory Pattern for strategy creation
+
+5. **System Architecture**
+   - Planning scalable systems
+   - Designing for future expansion
+   - API design best practices
+
+## Project Scope
+
+As a learning project with startup potential, DeepVisor focuses on:
+
+1. **Technical Implementation**: Building a functional system that integrates with ad platforms
+2. **Architecture Design**: Creating a foundation that can scale with additional features
+3. **Software Engineering Practice**: Following best practices for code organization and patterns
+4. **User Experience**: Designing intuitive interfaces for complex advertising tasks
+
+## About the Developer
+
+I'm a college student developing DeepVisor to enhance my software engineering skills while exploring the digital advertising market. The project represents both a learning journey and a potential business idea.
+
+For questions or collaboration opportunities, feel free to contact me at yengnerb475@gmail.com.
+
 ---
 
-## **🚀 Getting Started**
-
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
-2. **Add environment variables** required for Next.js and Supabase (see `.env.example`).
-3. **Run the development server**
-   ```bash
-   npm run dev
-   ```
-
-Visit `http://localhost:3000` to view the app.
-
-## **📝 Latest Update**
-
-The proposal page now properly handles route parameters. See commit `78d1b49` titled *"Trying to fix PageProps Issue in proposal page"* for details.
-
-## **🤝 Contributing**
-
-Contributions and feature requests are welcome! Open an issue or submit a pull request.
-
+<div align="center">
+  <p>© 2023 DeepVisor - A Software Engineering Learning Project</p>
+</div>

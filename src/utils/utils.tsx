@@ -1,3 +1,4 @@
+import { IconBrandFacebook, IconBrandGoogle, IconBrandLinkedin, IconBrandSnapchat, IconBrandTiktok, IconBrandTwitter } from "@tabler/icons-react";
 import { JSX } from "react";
 import { FaFacebook, FaGithub, FaInstagram, FaLinkedin, FaThreads, FaTwitter, FaXTwitter, FaYoutube } from "react-icons/fa6";
 
@@ -20,7 +21,7 @@ export const getPlatformIconByName = (platformName: string): JSX.Element | null 
         }
         case 'twitter': {
             return <FaTwitter size={24} className='min-w-fit' />;
-        } 
+        }
         case 'youtube': {
             return <FaYoutube size={24} className='min-w-fit' />;
         }
@@ -32,3 +33,25 @@ export const getPlatformIconByName = (platformName: string): JSX.Element | null 
             return null;
     }
 }
+
+export const getPlatformIcon = (platformName: string, size: number = 24, stroke?: number) => {
+    switch (platformName?.toLowerCase()) {
+        case 'facebook':
+        case 'meta':
+            return <IconBrandFacebook size={size} stroke={stroke} />;
+        case 'google':
+            return <IconBrandGoogle size={24} stroke={stroke} />;
+        case 'tiktok':
+            return <IconBrandTiktok size={24} stroke={stroke} />;
+        case 'snapchat':
+            return <IconBrandSnapchat size={24} stroke={stroke} />;
+        case 'linkedin':
+            return <IconBrandLinkedin size={24} stroke={stroke} />;
+        case 'twitter':
+        case 'x':
+            return <IconBrandTwitter size={24} stroke={stroke} />;
+        default:
+            return null;
+    }
+}
+

@@ -1,110 +1,81 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { Select, Group, ThemeIcon, Text } from '@mantine/core';
-import { IconBrandFacebook, IconBrandGoogle, IconBrandTiktok, IconChevronDown } from '@tabler/icons-react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { IconChevronDown } from '@tabler/icons-react';
+import { setCookie } from 'cookies-next';
+import { useRouter } from 'next/navigation';
+import { getPlatformIcon } from '@/utils/utils';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable */
 interface PlatformAdAccountDropdownClientProps {
   userInfo: any;
   platforms: any[];
   adAccounts: any[];
+  initialPlatformId?: string | null;
+  initialAccountId?: string | null;
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export default function PlatformAdAccountDropdownClient({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   userInfo,
   platforms,
-  adAccounts
+  adAccounts,
+  initialPlatformId,
+  initialAccountId,
 }: PlatformAdAccountDropdownClientProps) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  // Initialize with null and update after component mounts
-  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(
-    searchParams.get('platform') || null
-  );
-
-  const [selectedAccount, setSelectedAccount] = useState<string | null>(
-    searchParams.get('account') || null
-  );
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(initialPlatformId ?? null);
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(initialAccountId ?? null);
 
   useEffect(() => {
-    const savedPlatform = localStorage.getItem('selectedPlatform');
-    const savedAccount = localStorage.getItem('selectedAccount');
-
-    if (savedPlatform && !selectedPlatform) {
-      setSelectedPlatform(savedPlatform);
+    if (selectedPlatform) {
+      localStorage.setItem('selectedPlatformId', selectedPlatform);
+      setCookie('platform_integration_id', selectedPlatform, { maxAge: 60 * 60 * 24 * 30 });
     }
-
-    if (savedAccount && !selectedAccount) {
-      setSelectedAccount(savedAccount);
+    if (selectedAccount) {
+      localStorage.setItem('selectedAccountId', selectedAccount);
+      setCookie('ad_account_id', selectedAccount, { maxAge: 60 * 60 * 24 * 30 });
     }
-  }, []);
+    if (!selectedAccount) {
+      localStorage.removeItem('selectedAccountId');
+      setCookie('ad_account_id', '', { maxAge: 0 });
+    }
+  }, [selectedPlatform, selectedAccount]);
 
-  // Filter accounts based on selected platform
+  useEffect(() => {
+    if (!selectedPlatform) return;
+    const accountsForPlatform = adAccounts.filter(a => a.platform_integration_id === selectedPlatform);
+    if (accountsForPlatform.length === 0) {
+      setSelectedAccount(null);
+      return;
+    }
+    if (!selectedAccount || !accountsForPlatform.some(a => a.id === selectedAccount)) {
+      setSelectedAccount(accountsForPlatform[0].id);
+    }
+  }, [selectedPlatform, adAccounts]);
+
+  useEffect(() => {
+    router.refresh();
+  }, [selectedPlatform, selectedAccount, router]);
+
   const filteredAccounts = selectedPlatform
     ? adAccounts.filter(account => account.platform_integration_id === selectedPlatform)
     : [];
 
   const handlePlatformChange = (value: string | null) => {
+    if (!value || value === selectedPlatform) return;
     setSelectedPlatform(value);
-    setSelectedAccount(null);
-
-    if (value) {
-      localStorage.setItem('selectedPlatform', value);
-
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('platform', value);
-      params.delete('account');
-
-      if (pathname.includes('/dashboard')) {
-        router.push(`${pathname}?${params.toString()}`);
-      }
-    } else {
-      localStorage.removeItem('selectedPlatform');
-    }
   };
 
   const handleAccountChange = (value: string | null) => {
+    if (!value || value === selectedAccount) return;
     setSelectedAccount(value);
-
-    if (value) {
-      localStorage.setItem('selectedAccount', value);
-
-      // Update URL
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('account', value);
-
-      // Only navigate if we're already on a dashboard page
-      if (pathname.includes('/dashboard')) {
-        router.push(`${pathname}?${params.toString()}`);
-      }
-    } else {
-      localStorage.removeItem('selectedAccount');
-    }
-  };
-
-  const getPlatformIcon = (platformName: string) => {
-    switch (platformName?.toLowerCase()) {
-      case 'facebook':
-      case 'meta':
-        return <IconBrandFacebook size={16} />;
-      case 'google':
-        return <IconBrandGoogle size={16} />;
-      case 'tiktok':
-        return <IconBrandTiktok size={16} />;
-      default:
-        return null;
-    }
   };
 
   const platformItems = platforms.map(platform => ({
     value: platform.id,
     label: platform.platform_name.charAt(0).toUpperCase() + platform.platform_name.slice(1),
-    customIcon: getPlatformIcon(platform.platform_name) // Renamed to avoid conflict with ComboboxItem type
+    customIcon: getPlatformIcon(platform.platform_name, 20)
   }));
 
   const accountItems = filteredAccounts.map(account => ({
@@ -121,7 +92,6 @@ export default function PlatformAdAccountDropdownClient({
         value={selectedPlatform}
         onChange={handlePlatformChange}
         w={160}
-        clearable
         rightSection={<IconChevronDown size={14} />}
         /* @ts-expect-error - Mantine types don't match how we're using the styles prop */
         styles={() => ({
@@ -130,7 +100,7 @@ export default function PlatformAdAccountDropdownClient({
         renderOption={({ option }) => (
           <Group gap="xs">
             {/* @ts-expect-error - customIcon is a custom property we added to the option */}
-            {option.customIcon && <ThemeIcon size="sm" variant="light">{option.customIcon}</ThemeIcon>}
+            {option.customIcon && <ThemeIcon size="md" variant="light">{option.customIcon}</ThemeIcon>}
             <Text>{option.label}</Text>
           </Group>
         )}
@@ -143,7 +113,6 @@ export default function PlatformAdAccountDropdownClient({
         onChange={handleAccountChange}
         w={200}
         disabled={!selectedPlatform || accountItems.length === 0}
-        clearable
         rightSection={<IconChevronDown size={14} />}
         /* @ts-expect-error - Mantine types don't match how we're using the styles prop */
         styles={() => ({
@@ -160,3 +129,4 @@ export default function PlatformAdAccountDropdownClient({
     </Group>
   );
 }
+/* eslint-enable */
