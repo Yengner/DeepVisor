@@ -3,6 +3,7 @@ import SmartCampaignClient from "./SmartCampaignClient";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { getLoggedInUser } from "@/lib/actions/user";
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
+import { getAdAccountData } from "@/lib/quieries/ad_accounts";
 
 
 export default async function SmartCampaignPage() {
@@ -26,12 +27,13 @@ export default async function SmartCampaignPage() {
     if (!selectedAdAccountId) {
         return <EmptyCampaignState type="adAccount" platformName={platformName} />;
     }
+    const adAccountId = await getAdAccountData(selectedAdAccountId, selectedPlatformId, userId).then((account: { ad_account_id: string }) => account?.ad_account_id);
 
     return (
         <SmartCampaignClient
             userId={userId}
             platformName={platformName}
             platformId={selectedPlatformId}
-            adAccountId={selectedAdAccountId}
+            adAccountId={adAccountId}
         />);
 }

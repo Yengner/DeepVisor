@@ -15,7 +15,7 @@ const TIMEFRAMES = [
 ];
 
 const OBJECTIVES = [
-    { value: 'leads', label: 'Leads' },
+    { value: 'OUTCOME_LEADS', label: 'Leads' },
 ];
 
 const BUDGET_TYPES = [
@@ -40,17 +40,22 @@ export default function SmartCampaignClient({
     const form = useForm({
         initialValues: {
             budgetType: 'daily',
-            budget: '',
-            objective: '',
-            destinationType: '',
+            budget: 32,
+            objective: 'OUTCOME_LEADS',
+            destinationType: 'ON_AD',
             timeframe: '30',
             creatives: '',
+            // Optional user-editables:
+            link: 'https://fb.me/',
+            message: '',
+            imageHash: '',
+            formId: ''
         },
         validate: {
-            budget: value => value && Number(value) > 0 ? null : 'Budget must be greater than 0',
-            objective: value => value ? null : 'Objective is required',
-            destinationType: value => value ? null : 'Destination type is required',
-            timeframe: value => value ? null : 'Timeframe is required',
+            budget: v => (v && Number(v) > 0 ? null : 'Budget must be greater than 0'),
+            objective: v => (v ? null : 'Objective is required'),
+            destinationType: v => (v ? null : 'Destination type is required'),
+            timeframe: v => (v ? null : 'Timeframe is required'),
         },
     });
 
@@ -58,31 +63,37 @@ export default function SmartCampaignClient({
 
     // Calculate total campaign cost
     const days = Number(form.values.timeframe);
-    let totalCost = 0;
-    if (form.values.budgetType === 'daily' && form.values.budget) {
-        totalCost = days * Number(form.values.budget);
-    } else if (form.values.budgetType === 'lifetime' && form.values.budget) {
-        totalCost = Number(form.values.budget);
-    }
+    const totalCost = form.values.budgetType === 'daily'
+        ? days * Number(form.values.budget)
+        : Number(form.values.budget || 0);
 
     async function handleSubmit(values: typeof form.values) {
         setLoading(true);
         try {
-            await fetch('/api/n8n/smart-campaign', {
+            const res = await fetch('/api/n8n/campaign/create-draft', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId,
                     platformId,
                     adAccountId,
-                    budget: values.budget,
+                    budget: Number(values.budget),
                     budgetType: values.budgetType,
                     objective: values.objective,
-                    timeframe: values.timeframe,
-                    creatives: values.creatives
+                    destinationType: values.destinationType,
+                    timeframe: Number(values.timeframe),
+                    creatives: values.creatives,
+                    link: values.link,
+                    message: values.message,
+                    imageHash: values.imageHash,
+                    formId: values.formId,
                 }),
             });
-            router.push('/campaigns/agency/status');
+            // router.push('/campaigns/agency/status');
+            const data = await res.json();
+            if (!res.ok || !data?.draftId) throw new Error(data?.error || 'Draft init failed');
+            router.push(`/campaigns/drafts/${data.draftId}`);
+
         } catch (error) {
             setLoading(false);
             console.error('Error creating campaign:', error);
