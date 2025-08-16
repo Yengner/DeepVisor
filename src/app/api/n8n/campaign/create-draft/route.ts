@@ -1,9 +1,11 @@
 import { getAccessToken } from "@/lib/actions/common/accessToken";
+import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 import crypto from "node:crypto";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+    const supabase = await createSupabaseClient();
     const requestBody = await req.json();
     console.log('Received request body:', requestBody);
 
@@ -14,7 +16,7 @@ export async function POST(req: Request) {
     const accessToken = await getAccessToken(requestBody.platformId);
     const actionTypes = ['APPLY_NOW', 'DOWNLOAD', 'GET_QUOTE', 'LEARN_MORE', 'SIGN_UP', 'SUBSCRIBE'];
 
-    // ---- Basic normalization / defaults ----
+    // ---- Basic normalization 
     const destinationType = String(requestBody.destinationType || 'ON_AD');
     const objective = String(requestBody.objective || 'OUTCOME_LEADS');
     const budget = Number(requestBody.budget || 0);
@@ -30,11 +32,6 @@ export async function POST(req: Request) {
     const mLink = requestBody.mLink || '';
     const igLink = requestBody.igLink || '';
     const phoneNumber = requestBody.phoneNumber || '';
-
-    if (!budget || budget <= 0) {
-        return new Response(JSON.stringify({ ok: false, error: 'Invalid budget' }), { status: 400 });
-    }
-
     const creativeBuilder = {
         ON_AD: ({ pageId, link, image, formId, msg, description, type }: {
             pageId: string; link: string; image?: string; formId?: string; msg?: string; description?: string; type?: string;
@@ -123,7 +120,32 @@ export async function POST(req: Request) {
         });
     }
     const draftId = crypto.randomUUID();
+    const jobId = crypto.randomUUID();
+
+    // Create the Job (queued)
+    const { data: job, error } = await supabase
+        .from("jobs")
+        .insert({
+            id: jobId,
+            user_id: requestBody.userId,
+            type: "campaign_draft",
+            status: "queued",
+            percent: 0,
+            step: "init",
+            meta: {
+                adAccountId: adAccountId,
+                objective: objective,
+                destinationType: destinationType
+            }
+        })
+        .select()
+        .single();
+
+    if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+
+    // Prepare payload for n8n
     const payloadToN8n = {
+        jobId,
         draftId,
         userId: String(requestBody.userId || ''),
         platformId: String(requestBody.platformId || ''),
@@ -156,7 +178,7 @@ export async function POST(req: Request) {
         });
     }
 
-    return new Response(JSON.stringify({ ok: true, draftId }), {
+    return new Response(JSON.stringify({ ok: true, jobId, draftId }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
     });

@@ -21,7 +21,7 @@ export default async function Topbar() {
 
   const { data: adAccounts, error: adAccountError } = await supabase
     .from("ad_accounts")
-    .select("id, name, platform_integration_id, ad_account_id")
+    .select("id, name, platform_integration_id, external_account_id")
     .eq("user_id", userId);
 
   if (adAccountError) {

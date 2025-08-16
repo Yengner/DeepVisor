@@ -52,6 +52,7 @@ interface CampaignDashboardProps {
     campaigns: Campaign[];
     userId: string;
     platform: PlatformInfo;
+    adAccountId: string;
     accountMetrics: {
         spend: number;
         impressions: number;
@@ -66,7 +67,7 @@ interface CampaignDashboardProps {
     };
 }
 
-export default function CampaignDashboard({ campaigns, userId, platform, accountMetrics }: CampaignDashboardProps) {
+export default function CampaignDashboard({ campaigns, userId, platform, adAccountId, accountMetrics }: CampaignDashboardProps) {
     const router = useRouter();
     const initialCampaignId = campaigns.length > 0 ? campaigns[0].id : null;
     const [campaignData, setCampaignData] = useState(campaigns);
@@ -171,15 +172,26 @@ export default function CampaignDashboard({ campaigns, userId, platform, account
     const handleRefresh = async () => {
         setIsRefreshing(true);
         try {
-            const response = await fetch('/api/campaigns/refreshCampaignData', {
+            // const response = await fetch('/api/campaigns/refreshCampaignData', {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //     },
+            //     body: JSON.stringify({
+            //         userId,
+            //         platformId: platform.id
+            //     }),
+            // });
+
+            const response = await fetch('/api/metrics/backfill', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId,
-                    platformId: platform.id
-                }),
+                    userId,                // or derive on the server from session!
+                    adAccountId,           // internal UUID
+                    fullBackfillDays: 350, // optional
+                    vendor: 'meta'         // optional
+                })
             });
 
             if (!response.ok) {

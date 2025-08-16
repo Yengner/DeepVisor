@@ -1,65 +1,47 @@
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 
-const formatDate = (dateStr: string): string => {
-    if (!dateStr) return '';
-    const options: Intl.DateTimeFormatOptions = {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    };
-    return new Date(dateStr).toLocaleDateString('en-US', options);
-};
+const formatDate = (d?: string | null) =>
+    d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
 
-
-export async function getCampaignMetrics(adAccountId: string, campaign_id?: string, platform_name?: string) {
+export async function getCampaignLifetimeIncludingZeros(
+    adAccountUuid: string,
+    campaignExternalId?: string,
+    vendor: "meta" | "google" | "tiktok" = "meta"
+) {
     const supabase = await createSupabaseClient();
-    let query = supabase
-        .from('campaigns_metrics')
-        .select(
-            'campaign_id, name, status, objective, raw_data, start_date, platform_name, clicks, impressions, spend, leads, reach, link_clicks, messages, cpm, ctr, cpc, end_date, today_metrics, yesterday_metrics'
-        )
-        .eq('ad_account_id', adAccountId);
 
-    if (campaign_id) {
-        query = query.eq('campaign_id', campaign_id);
-    }
-    if (platform_name) {
-        query = query.eq('platform_name', platform_name);
+    let q = supabase
+        .from("v_campaigns_lifetime_full")
+        .select("*")
+        .eq("vendor", vendor)
+        .eq("ad_account_id", adAccountUuid);
+
+    if (campaignExternalId) {
+        q = q.eq("campaign_external_id", campaignExternalId);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
 
-    if (error) {
-        console.error('Error fetching campaign data:', error);
-        throw new Error(`Failed to fetch campaign data: ${error.message}`);
-    }
-
-    if (!data || data.length === 0) {
-        console.warn("No campaign data found for the given platform and ad account.");
-        return [];
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return data.map((campaign: any) => ({
-        id: campaign.campaign_id,
-        name: campaign.name,
-        status: campaign.status,
-        objective: campaign.objective,
-        raw_data: campaign.raw_data,
-        clicks: Number(campaign.clicks),
-        impressions: Number(campaign.impressions),
-        spend: Number(campaign.spend).toFixed(2),
-        leads: Number(campaign.leads),
-        reach: Number(campaign.reach),
-        link_clicks: Number(campaign.link_clicks),
-        messages: Number(campaign.messages),
-        cpm: Number(campaign.cpm).toFixed(2),
-        ctr: Number(campaign.ctr).toFixed(2),
-        cpc: Number(campaign.cpc).toFixed(2),
-        start_date: formatDate(campaign.start_date),
-        end_date: formatDate(campaign.end_date),
-        today_metrics: campaign.today_metrics,
-        yesterday_metrics: campaign.yesterday_metrics,
-        platform_name: campaign.platform_name,
+    // shape it like your old function’s return
+    return (data || []).map((row: any) => ({
+        id: row.campaign_external_id,
+        name: row.campaign_name,
+        status: row.campaign_current_status,
+        objective: row.campaign_objective,
+        clicks: Number(row.clicks || 0),
+        impressions: Number(row.impressions || 0),
+        spend: Number(row.spend || 0).toFixed(2),
+        leads: Number(row.leads || 0),
+        reach: Number(row.reach || 0),
+        link_clicks: Number(row.inline_link_clicks || 0),
+        cpm: row.cpm != null ? Number(row.cpm).toFixed(2) : null,
+        ctr: row.ctr != null ? Number(row.ctr).toFixed(4) : null,
+        cpc: row.cpc != null ? Number(row.cpc).toFixed(2) : null,
+        cpl: row.cpl != null ? Number(row.cpl).toFixed(2) : null,
+        frequency: row.frequency != null ? Number(row.frequency).toFixed(2) : null,
+        start_date: formatDate(row.first_day),
+        end_date: formatDate(row.last_day),
+        platform_name: vendor, // optional for display
     }));
 }

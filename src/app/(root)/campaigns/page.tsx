@@ -1,5 +1,5 @@
 import CampaignDashboard from "@/components/campaigns/CampaignDashboard";
-import { getCampaignMetrics } from "@/lib/quieries/campaigns/getCampaignsMetrics";
+import { getCampaignLifetimeIncludingZeros } from "@/lib/quieries/campaigns/getCampaignsMetrics";
 import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { getPlatformDetails } from "@/lib/quieries/platforms/getPlatformDetails";
@@ -74,8 +74,8 @@ export default async function CampaignPage() {
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const campaignsData: any = await getCampaignMetrics(
-    adAccountDetails.ad_account_id,
+  const campaignsData: any = await getCampaignLifetimeIncludingZeros(
+    adAccountDetails.id,
     undefined,
     platformDetails.platform_name,
   );
@@ -120,6 +120,7 @@ export default async function CampaignPage() {
         id: platformDetails.id,
         name: platformDetails.platform_name
       }}
+      adAccountId={selectedAdAccountId}
       accountMetrics={accountMetrics}
     />
   );

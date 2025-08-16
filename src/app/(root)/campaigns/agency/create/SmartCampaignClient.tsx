@@ -7,6 +7,7 @@ import {
 } from '@mantine/core';
 import { IconBulb } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
+import JobLoadingModal from '@/components/ui/states/JobLoadingModal';
 
 const TIMEFRAMES = [
     { value: '7', label: '1 Week' },
@@ -60,6 +61,9 @@ export default function SmartCampaignClient({
     });
 
     const [loading, setLoading] = useState(false);
+    const [jobId, setJobId] = useState<string | null>(null);
+    const [showLoadingModal, setShowLoadingModal] = useState(false);
+    const [draftId, setDraftId] = useState<string | null>(null);
 
     // Calculate total campaign cost
     const days = Number(form.values.timeframe);
@@ -91,8 +95,10 @@ export default function SmartCampaignClient({
             });
             // router.push('/campaigns/agency/status');
             const data = await res.json();
-            if (!res.ok || !data?.draftId) throw new Error(data?.error || 'Draft init failed');
-            router.push(`/campaigns/drafts/${data.draftId}`);
+            if (!res.ok || !data?.jobId) throw new Error(data?.error || 'Draft init failed');
+            setJobId(data.jobId);
+            setDraftId(data.draftId);
+            setShowLoadingModal(true);
 
         } catch (error) {
             setLoading(false);
@@ -101,92 +107,110 @@ export default function SmartCampaignClient({
     }
 
     return (
-        <Container size="sm" py="xl">
-            <Card withBorder p="xl" radius="md">
-                <Group align="center" mb="md">
-                    <IconBulb size={32} color="#fab005" />
-                    <Title order={2}>Create Smart Campaign</Title>
-                </Group>
-                <Text mb="xs">
-                    <b>Platform:</b> <span style={{ color: '#228be6' }}>{platformName}</span>
-                </Text>
-                <Divider my="md" />
-                <form onSubmit={form.onSubmit(handleSubmit)}>
-                    <Stack gap="md">
-                        <Grid gutter="md">
-                            <Grid.Col span={6}>
-                                <Paper withBorder p="md" radius="md">
-                                    <Select
-                                        label="Objective"
-                                        placeholder="Select campaign objective"
-                                        data={OBJECTIVES}
-                                        {...form.getInputProps('objective')}
-                                        required
-                                    />
-                                    <Select
-                                        label="Destination"
-                                        placeholder="Select where to send leads"
-                                        data={DestinationTypes}
-                                        {...form.getInputProps('destinationType')}
-                                        required
-                                    />
-                                </Paper>
-                            </Grid.Col>
-                            <Grid.Col span={6}>
-                                <Paper withBorder p="md" radius="md">
-                                    <Select
-                                        label="Timeframe"
-                                        placeholder="Select campaign duration"
-                                        data={TIMEFRAMES}
-                                        {...form.getInputProps('timeframe')}
-                                        required
-                                    />
-                                    <Select
-                                        label="Budget Type"
-                                        placeholder="Choose budget type"
-                                        data={BUDGET_TYPES}
-                                        {...form.getInputProps('budgetType')}
-                                        required
-                                    />
-                                    <NumberInput
-                                        label={form.values.budgetType === 'daily' ? "Daily Budget ($)" : "Lifetime Budget ($)"}
-                                        placeholder="Enter budget"
-                                        {...form.getInputProps('budget')}
-                                        min={1}
-                                        required
-                                    />
-                                    <Box mt="sm">
-                                        <Text size="sm" c="dimmed">
-                                            {form.values.budgetType === 'daily'
-                                                ? `Total campaign cost for ${days} days: `
-                                                : 'Total campaign cost:'}
-                                            <b>${totalCost.toLocaleString()}</b>
-                                        </Text>
-                                    </Box>
-                                </Paper>
-                            </Grid.Col>
-                        </Grid>
-                        <Paper withBorder p="md" radius="md">
-                            <TextInput
-                                label="Creatives (optional)"
-                                placeholder="Comma separated asset IDs or URLs"
-                                {...form.getInputProps('creatives')}
-                            />
-                        </Paper>
-                        <Button
-                            leftSection={loading ? <Loader size={18} color="yellow" /> : <IconBulb size={18} />}
-                            variant="gradient"
-                            gradient={{ from: 'yellow', to: 'teal', deg: 60 }}
-                            size="md"
-                            radius="md"
-                            type="submit"
-                            disabled={loading}
-                        >
-                            {loading ? 'Creating...' : 'Create Smart Campaign'}
-                        </Button>
-                    </Stack>
-                </form>
-            </Card>
-        </Container>
+
+        <>
+            {jobId && (
+                <JobLoadingModal
+                    jobId={jobId}
+                    opened={showLoadingModal}
+                    onClose={() => setShowLoadingModal(false)}
+                    onDone={async () => {
+                        setShowLoadingModal(false);
+                        if (draftId) router.push(`/campaigns/drafts/${draftId}`);
+                        else router.push(`/campaigns`); // fallback
+                    }}
+                />
+            )}
+
+            <Container size="sm" py="xl">
+                <Card withBorder p="xl" radius="md">
+                    <Group align="center" mb="md">
+                        <IconBulb size={32} color="#fab005" />
+                        <Title order={2}>Create Smart Campaign</Title>
+                    </Group>
+                    <Text mb="xs">
+                        <b>Platform:</b> <span style={{ color: '#228be6' }}>{platformName}</span>
+                    </Text>
+                    <Divider my="md" />
+                    <form onSubmit={form.onSubmit(handleSubmit)}>
+                        <Stack gap="md">
+                            <Grid gutter="md">
+                                <Grid.Col span={6}>
+                                    <Paper withBorder p="md" radius="md">
+                                        <Select
+                                            label="Objective"
+                                            placeholder="Select campaign objective"
+                                            data={OBJECTIVES}
+                                            {...form.getInputProps('objective')}
+                                            required
+                                        />
+                                        <Select
+                                            label="Destination"
+                                            placeholder="Select where to send leads"
+                                            data={DestinationTypes}
+                                            {...form.getInputProps('destinationType')}
+                                            required
+                                        />
+                                    </Paper>
+                                </Grid.Col>
+
+
+                                <Grid.Col span={6}>
+                                    <Paper withBorder p="md" radius="md">
+                                        <Select
+                                            label="Timeframe"
+                                            placeholder="Select campaign duration"
+                                            data={TIMEFRAMES}
+                                            {...form.getInputProps('timeframe')}
+                                            required
+                                        />
+                                        <Select
+                                            label="Budget Type"
+                                            placeholder="Choose budget type"
+                                            data={BUDGET_TYPES}
+                                            {...form.getInputProps('budgetType')}
+                                            required
+                                        />
+                                        <NumberInput
+                                            label={form.values.budgetType === 'daily' ? "Daily Budget ($)" : "Lifetime Budget ($)"}
+                                            placeholder="Enter budget"
+                                            {...form.getInputProps('budget')}
+                                            min={1}
+                                            required
+                                        />
+                                        <Box mt="sm">
+                                            <Text size="sm" c="dimmed">
+                                                {form.values.budgetType === 'daily'
+                                                    ? `Total campaign cost for ${days} days: `
+                                                    : 'Total campaign cost:'}
+                                                <b>${totalCost.toLocaleString()}</b>
+                                            </Text>
+                                        </Box>
+                                    </Paper>
+                                </Grid.Col>
+                            </Grid>
+                            <Paper withBorder p="md" radius="md">
+                                <TextInput
+                                    label="Creatives (optional)"
+                                    placeholder="Comma separated asset IDs or URLs"
+                                    {...form.getInputProps('creatives')}
+                                />
+                            </Paper>
+                            <Button
+                                leftSection={loading ? <Loader size={18} color="yellow" /> : <IconBulb size={18} />}
+                                variant="gradient"
+                                gradient={{ from: 'yellow', to: 'teal', deg: 60 }}
+                                size="md"
+                                radius="md"
+                                type="submit"
+                                disabled={loading}
+                            >
+                                {loading ? 'Creating...' : 'Create Smart Campaign'}
+                            </Button>
+                        </Stack>
+                    </form>
+                </Card>
+            </Container>
+        </>
     );
 }

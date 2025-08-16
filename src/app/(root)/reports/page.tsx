@@ -3,11 +3,11 @@ import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { getLoggedInUser } from "@/lib/actions/user";
 import { ReportsClient } from "./components/ReportsClient";
 import { getAdAccountData } from "@/lib/quieries/ad_accounts";
-import { getCampaignMetrics } from "@/lib/quieries/campaigns";
 import { getAdSetsMetrics } from "@/lib/quieries/adsets/getAdSetsMetrics";
 import { getAdsMetrics } from "@/lib/quieries/ads/getAdsMetrics";
 import { Suspense } from "react";
 import ReportsClientFallback from "./components/ReportClientFallback";
+import { getCampaignLifetimeIncludingZeros } from "@/lib/quieries/campaigns";
 
 const formatDate = (dateStr: string) => {
   const d = new Date(dateStr);
@@ -62,13 +62,13 @@ export default async function ReportsPage({
   let data;
   if (viewType === "adAccount") {
     data = {
-      campaignsMetrics: await getCampaignMetrics(adAccountData.ad_account_id),
+      campaignsMetrics: await getCampaignLifetimeIncludingZeros(selectedAdAccountId),
       adAccountData,
       timeIncrementArray
     };
   } else if (viewType === "campaigns") {
     data = {
-      campaignMetrics: await getCampaignMetrics(adAccountData.ad_account_id, campaignIds[0]),
+      campaignMetrics: await getCampaignLifetimeIncludingZeros(adAccountData.ad_account_id, campaignIds[0]),
       adSetsMetrics: await getAdSetsMetrics(campaignIds[0]),
     };
   } else if (viewType === "adsets") {
