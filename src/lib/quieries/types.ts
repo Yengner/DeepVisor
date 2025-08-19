@@ -15,7 +15,7 @@ export interface AggregatedMetric {
 // getPlatformDetails() interface
 export interface PlatformDetails {
     id: string;
-    platform_name: string;
+    vendor:  "meta" | "google" | "tiktok";
     is_integrated: boolean;
     access_token: string;
     updated_at: string;

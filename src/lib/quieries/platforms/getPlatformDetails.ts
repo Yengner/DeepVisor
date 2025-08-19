@@ -24,7 +24,7 @@ export async function getPlatformDetails(selectedPlatformId: string, userId: str
 
     const platformDetails: PlatformDetails = {
         id: data.id,
-        platform_name: data.platform_name,
+        vendor: data.platform_name as "meta" | "google" | "tiktok",
         is_integrated: data.is_integrated,
         access_token: data.access_token,
         updated_at: data.updated_at,

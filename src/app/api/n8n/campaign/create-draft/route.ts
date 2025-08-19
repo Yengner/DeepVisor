@@ -123,7 +123,7 @@ export async function POST(req: Request) {
     const jobId = crypto.randomUUID();
 
     // Create the Job (queued)
-    const { data: job, error } = await supabase
+    const { error } = await supabase
         .from("jobs")
         .insert({
             id: jobId,

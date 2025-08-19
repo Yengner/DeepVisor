@@ -1,47 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import {
-    Button, Group, Paper, Text, Tabs, ActionIcon,
-    Tooltip, Select, TextInput, Menu, Badge, Avatar,
-    Container
+    Button, Group, Paper, Text, Tabs, ActionIcon, Tooltip, Select, TextInput, Menu, Badge, Avatar, Container
 } from '@mantine/core';
-import {
-    IconRefresh, IconPlus, IconSearch, IconAdjustments,
-    IconFilterOff, IconChartBar, IconTable
-} from '@tabler/icons-react';
-import { useRouter } from 'next/navigation';
+import { IconRefresh, IconPlus, IconSearch, IconAdjustments, IconFilterOff, IconChartBar, IconTable } from '@tabler/icons-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import CampaignTable from './CampaignTable';
 import AdSetTable from './AdSetTable';
 import AdsTable from './AdsTable';
 import CampaignStats from './CampaignStats';
 import { EmptyCampaignState } from './EmptyStates';
 import { getPlatformIcon } from '@/utils/utils';
+import type { FormattedCampaign } from '@/app/(root)/campaigns/page';
+import { fetchAdSetsForCampaign, fetchAdsForAdset } from '@/lib/quieries/components/actions';
 
-interface Campaign {
-    id: string;
-    name: string;
-    delivery: boolean;
-    type: string;
-    status: string;
-    objective: string;
-    startDate: string;
-    endDate: string;
-    attribution: string;
-    spend?: number;
-    results?: string;
-    reach?: number;
-    clicks?: number;
-    impressions?: number;
-    frequency?: string;
-    costPerResult?: string;
-    cpm?: number;
-    ctr?: number;
-    cpc?: number;
-    platform?: string;
-    accountName?: string;
-    ad_account_id?: string;
-}
+type TabKey = 'campaigns' | 'adsets' | 'ads';
 
 interface PlatformInfo {
     id: string;
@@ -49,7 +23,7 @@ interface PlatformInfo {
 }
 
 interface CampaignDashboardProps {
-    campaigns: Campaign[];
+    campaigns: FormattedCampaign[];
     userId: string;
     platform: PlatformInfo;
     adAccountId: string;
@@ -65,176 +39,158 @@ interface CampaignDashboardProps {
         cpc: number;
         cpm: number;
     };
+    initialSelection?: {
+        tab?: TabKey;
+        campaignId?: string | null;
+        adsetId?: string | null;
+    };
+    initialAdSets?: any[]; // seed when tab=adsets
+    initialAds?: any[];    // seed when tab=ads
 }
 
-export default function CampaignDashboard({ campaigns, userId, platform, adAccountId, accountMetrics }: CampaignDashboardProps) {
+export default function CampaignDashboard(props: CampaignDashboardProps) {
+    const {
+        campaigns, userId, platform, adAccountId, accountMetrics,
+        initialSelection, initialAdSets, initialAds
+    } = props;
+
     const router = useRouter();
-    const initialCampaignId = campaigns.length > 0 ? campaigns[0].id : null;
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
+    const initialCampaignFallback = campaigns.length > 0 ? campaigns[0].id : null;
+
     const [campaignData, setCampaignData] = useState(campaigns);
-    const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(initialCampaignId);
-    const [activeTab, setActiveTab] = useState<string>('campaigns');
+    const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
+        initialSelection?.campaignId ?? initialCampaignFallback
+    );
+    const [selectedAdSetId, setSelectedAdSetId] = useState<string | null>(
+        initialSelection?.adsetId ?? null
+    );
+    const [activeTab, setActiveTab] = useState<TabKey>(
+        (initialSelection?.tab as TabKey) || 'campaigns'
+    );
+
+    // Caches
+    const [adSetsByCampaign, setAdSetsByCampaign] = useState<Record<string, any[]>>(() => {
+        const seed: Record<string, any[]> = {};
+        if (initialSelection?.campaignId && initialAdSets) {
+            seed[initialSelection.campaignId] = initialAdSets;
+        }
+        return seed;
+    });
+
+    const [adsByAdset, setAdsByAdset] = useState<Record<string, any[]>>(() => {
+        const seed: Record<string, any[]> = {};
+        if (initialSelection?.adsetId && initialAds) {
+            seed[initialSelection.adsetId] = initialAds;
+        }
+        return seed;
+    });
+
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [adsetsLoading, setAdsetsLoading] = useState(false);
+    const [adsLoading, setAdsLoading] = useState(false);
+    const [isPending, startTransition] = useTransition();
+
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
     const [typeFilter, setTypeFilter] = useState<string | null>(null);
-    const [selectedAdSetId, setSelectedAdSetId] = useState<string | null>(null);
 
-    // Get unique statuses and types for filter dropdowns
-    const types = Array.from(new Set(campaignData.map(c => c.type))).filter(Boolean);
-    const statuses = Array.from(new Set(campaignData.map(c => c.status?.toUpperCase()))).filter(Boolean);
+    const types = useMemo(() => Array.from(new Set(campaignData.map(c => c.type))).filter(Boolean), [campaignData]);
+    const statuses = useMemo(() => Array.from(new Set(campaignData.map(c => c.status?.toUpperCase()))).filter(Boolean), [campaignData]);
 
-    // Get platform color and icon
     const getPlatformColor = () => {
         switch (platform.name.toLowerCase()) {
             case 'facebook':
-            case 'meta': return 'blue';
+            case 'meta': return 'orange';
             case 'tiktok': return 'dark';
             case 'google': return 'red';
             default: return 'gray';
         }
     };
 
-    // Filtered campaigns
-    const filteredCampaigns = campaignData.filter(campaign => {
-        const matchesSearch = !searchQuery ||
-            campaign.name.toLowerCase().includes(searchQuery.toLowerCase());
-
-        const matchesStatus = !statusFilter ||
-            campaign.status?.toUpperCase() === statusFilter;
-
-        const matchesType = !typeFilter ||
-            campaign.type === typeFilter;
-
+    const filteredCampaigns = campaignData.filter(c => {
+        const matchesSearch = !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = !statusFilter || c.status?.toUpperCase() === statusFilter;
+        const matchesType = !typeFilter || c.type === typeFilter;
         return matchesSearch && matchesStatus && matchesType;
     });
 
-    // Handler for toggling campaign status
-    const handleToggleCampaign = async (campaignId: string, newStatus: boolean) => {
-        try {
-            const campaign = campaignData.find(c => c.id === campaignId);
-            const response = await fetch('/api/campaigns/toggleCampaign', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    userId,
-                    campaignId,
-                    newStatus,
-                    platform: campaign?.platform,
-                    adAccountId: campaign?.ad_account_id
-                }),
-            });
+    // Keep tab validity coherent with selection
+    useEffect(() => {
+        if (!selectedCampaignId && activeTab !== 'campaigns') setActiveTab('campaigns');
+        if (!selectedAdSetId && activeTab === 'ads') setActiveTab('adsets');
+    }, [selectedCampaignId, selectedAdSetId, activeTab]);
 
-            if (!response.ok) {
-                throw new Error(await response.text());
+    // Reflect state in the URL
+    useEffect(() => {
+        const sp = new URLSearchParams(searchParams?.toString());
+        sp.delete('campaign_id'); sp.delete('adset_id'); sp.delete('tab');
+        if (selectedCampaignId) sp.set('campaign_id', selectedCampaignId);
+        if (selectedAdSetId) sp.set('adset_id', selectedAdSetId);
+        if (activeTab) sp.set('tab', activeTab);
+        router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedCampaignId, selectedAdSetId, activeTab]);
+
+    // Reset selected adset when campaign changes
+    useEffect(() => { setSelectedAdSetId(null); }, [selectedCampaignId]);
+
+    // ⬇ Lazy-load ADSETS on demand
+    useEffect(() => {
+        if (activeTab !== 'adsets') return;
+        if (!selectedCampaignId) return;
+        if (adSetsByCampaign[selectedCampaignId]) return; // cached
+
+        setAdsetsLoading(true);
+        startTransition(async () => {
+            try {
+                const rows = await fetchAdSetsForCampaign(adAccountId, selectedCampaignId);
+                setAdSetsByCampaign(prev => ({ ...prev, [selectedCampaignId]: rows || [] }));
+            } finally {
+                setAdsetsLoading(false);
             }
+        });
+    }, [activeTab, selectedCampaignId, adAccountId, adSetsByCampaign]);
 
-            setCampaignData(prev =>
-                prev.map(c => (c.id === campaignId ? { ...c, delivery: newStatus } : c))
-            );
-        } catch (error) {
-            console.error('Failed to toggle campaign:', error);
-        }
-    };
+    // ⬇ Lazy-load ADS on demand
+    useEffect(() => {
+        if (activeTab !== 'ads') return;
+        if (!selectedAdSetId) return;
+        if (adsByAdset[selectedAdSetId]) return; // cached
 
-    // Handler for deleting a campaign
-    const handleDeleteCampaign = async (campaignId: string) => {
-        try {
-            const campaign = campaignData.find(c => c.id === campaignId);
-            const response = await fetch('/api/campaigns/deleteCampaign', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    userId,
-                    campaignId,
-                    platform: campaign?.platform,
-                    adAccountId: campaign?.ad_account_id
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error(await response.text());
+        setAdsLoading(true);
+        startTransition(async () => {
+            try {
+                const rows = await fetchAdsForAdset(adAccountId, selectedAdSetId);
+                setAdsByAdset(prev => ({ ...prev, [selectedAdSetId]: rows || [] }));
+            } finally {
+                setAdsLoading(false);
             }
+        });
+    }, [activeTab, selectedAdSetId, adAccountId, adsByAdset]);
 
-            setCampaignData((prev) => prev.filter((c) => c.id !== campaignId));
-            if (selectedCampaignId === campaignId) {
-                setSelectedCampaignId(null);
-            }
-        } catch (error) {
-            console.error('Failed to delete campaign:', error);
-        }
-    };
-
-    // Handler for refreshing campaigns data
     const handleRefresh = async () => {
         setIsRefreshing(true);
         try {
-            // const response = await fetch('/api/campaigns/refreshCampaignData', {
-            //     method: 'POST',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //     },
-            //     body: JSON.stringify({
-            //         userId,
-            //         platformId: platform.id
-            //     }),
-            // });
-
-            const response = await fetch('/api/metrics/backfill', {
+            const res = await fetch('/api/metrics/backfill', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId,                // or derive on the server from session!
-                    adAccountId,           // internal UUID
-                    fullBackfillDays: 350, // optional
-                    vendor: 'meta'         // optional
-                })
+                body: JSON.stringify({ userId, adAccountId, fullBackfillDays: 350, vendor: 'meta' })
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to refresh campaigns data');
-            }
-            // Refresh the campaigns data
+            if (!res.ok) throw new Error('Failed to refresh campaigns data');
             window.location.reload();
-        } catch (error) {
-            console.error('Error refreshing campaigns data:', error);
+        } catch (e) {
+            console.error('Error refreshing campaigns data:', e);
         } finally {
             setIsRefreshing(false);
         }
     };
 
-    // Reset all filters
-    const resetFilters = () => {
-        setSearchQuery('');
-        setStatusFilter(null);
-        setTypeFilter(null);
-    };
+    const resetFilters = () => { setSearchQuery(''); setStatusFilter(null); setTypeFilter(null); };
 
-    // Reset selected adset when campaign changes
-    useEffect(() => {
-        setSelectedAdSetId(null);
-    }, [selectedCampaignId]);
-
-    // Handle tab transitions
-    useEffect(() => {
-        // If we're on adsets tab but no campaign is selected, go back to campaigns
-        if (!selectedCampaignId && activeTab === 'adsets') {
-            setActiveTab('campaigns');
-        }
-
-        // If we're on ads tab but no adset is selected, go back to adsets
-        if (!selectedAdSetId && activeTab === 'ads') {
-            setActiveTab('adsets');
-        }
-    }, [selectedAdSetId, selectedCampaignId, activeTab]);
-
-    // Show empty state if no campaigns
-    if (campaignData.length === 0) {
-        return <EmptyCampaignState type="campaigns" platformName={platform.name} />;
-    }
+    if (campaignData.length === 0) return <EmptyCampaignState type="campaigns" platformName={platform.name} />;
 
     return (
         <Container size="xl" py="md">
@@ -359,55 +315,33 @@ export default function CampaignDashboard({ campaigns, userId, platform, adAccou
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <Tabs value={activeTab} onChange={setActiveTab as any}>
                     <Tabs.List>
-                        <Tabs.Tab
-                            value="campaigns"
-                            leftSection={<IconChartBar size={14} />}
-                        >
-                            Campaigns
-                        </Tabs.Tab>
-                        <Tabs.Tab
-                            value="adsets"
-                            leftSection={<IconTable size={14} />}
-                            disabled={!selectedCampaignId}
-                        >
-                            Ad Sets
-                        </Tabs.Tab>
-                        <Tabs.Tab
-                            value="ads"
-                            disabled={!selectedAdSetId}
-                        >
-                            Ads
-                        </Tabs.Tab>
+                        <Tabs.Tab value="campaigns" leftSection={<IconChartBar size={14} />}>Campaigns</Tabs.Tab>
+                        <Tabs.Tab value="adsets" leftSection={<IconTable size={14} />} disabled={!selectedCampaignId}>Ad Sets</Tabs.Tab>
+                        <Tabs.Tab value="ads" disabled={!selectedAdSetId}>Ads</Tabs.Tab>
                     </Tabs.List>
 
-                    <Tabs.Panel value="campaigns" pt="xs" style={{ height: 'calc(100% - 36px)' }}>
-                        {filteredCampaigns.length > 0 ? (
-                            <CampaignTable
-                                campaigns={filteredCampaigns}
-                                selectedCampaignId={selectedCampaignId || undefined}
-                                onSelectCampaign={setSelectedCampaignId}
-                                onToggleCampaign={handleToggleCampaign}
-                                onDeleteCampaign={handleDeleteCampaign}
-                                platformColor={getPlatformColor()}
-                            />
-                        ) : (
-                            <div className="p-4 text-center">
-                                <Text size="sm" c="dimmed">No campaigns match your filters</Text>
-                                {(searchQuery || statusFilter || typeFilter) && (
-                                    <Button variant="subtle" onClick={resetFilters} mt="md" size="xs">
-                                        Clear Filters
-                                    </Button>
-                                )}
-                            </div>
-                        )}
+                    <Tabs.Panel value="campaigns" pt="xs">
+                        <CampaignTable
+                            campaigns={filteredCampaigns}
+                            selectedCampaignId={selectedCampaignId ?? undefined}
+                            onSelectCampaign={setSelectedCampaignId}
+                            onToggleCampaign={(id, on) => {
+                                setCampaignData(prev => prev.map(c => c.id === id ? { ...c, delivery: on } : c));
+                            }}
+                            onDeleteCampaign={(id) => setCampaignData(prev => prev.filter(c => c.id !== id))}
+                            platformColor={getPlatformColor()}
+                        />
                     </Tabs.Panel>
 
                     <Tabs.Panel value="adsets" pt="xs">
                         {selectedCampaignId && (
                             <AdSetTable
                                 campaignId={selectedCampaignId}
+                                adSets={adSetsByCampaign[selectedCampaignId] ?? []}
+                                loading={adsetsLoading || isPending}
                                 onSelectAdSet={setSelectedAdSetId}
                                 selectedAdSetId={selectedAdSetId}
+                                platformColor={getPlatformColor()}
                             />
                         )}
                     </Tabs.Panel>
@@ -416,6 +350,9 @@ export default function CampaignDashboard({ campaigns, userId, platform, adAccou
                         {selectedAdSetId && (
                             <AdsTable
                                 adsetId={selectedAdSetId}
+                                ads={adsByAdset[selectedAdSetId] ?? []}
+                                loading={adsLoading || isPending}
+                                platformColor={getPlatformColor()}
                             />
                         )}
                     </Tabs.Panel>

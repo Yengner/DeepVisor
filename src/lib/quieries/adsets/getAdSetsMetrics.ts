@@ -1,41 +1,54 @@
+// lib/quieries/adsets/getAdSetsLifetimeIncludingZeros.ts
 import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
 
-export async function getAdSetsMetrics(campaignId: string, adset_id?: string) {
+const formatDate = (d?: string | null) =>
+    d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+
+export async function getAdSetsLifetimeIncludingZeros(
+    adAccountUuid: string,
+    opts?: { campaignExternalId?: string; adsetExternalId?: string; vendor?: "meta" | "google" | "tiktok" }
+) {
     const supabase = await createSupabaseClient();
-    const query = supabase
-        .from("adset_metrics")
+    const vendor = opts?.vendor ?? "meta";
+
+    let q = supabase
+        .from("v_adsets_lifetime_full")
         .select("*")
-        .eq("campaign_id", campaignId);
+        .eq("vendor", vendor)
+        .eq("ad_account_id", adAccountUuid);
 
-    if (adset_id) {
-        query.eq("adset_id", adset_id);
-    }
-    const { data, error } = await query;
+    if (opts?.campaignExternalId) q = q.eq("campaign_external_id", opts.campaignExternalId);
+    if (opts?.adsetExternalId) q = q.eq("adset_external_id", opts.adsetExternalId);
 
-    if (error) {
-        throw new Error(error.message);
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+
+    // Match the shape/pattern you used for campaigns
     return (data || []).map((row: any) => ({
-        id: row.adset_id,
-        name: row.name,
-        status: row.status,
-        start_date: row.start_date,
-        end_date: row.end_date,
-        clicks: Number(row.clicks),
-        impressions: Number(row.impressions),
-        spend: Number(row.spend),
-        leads: Number(row.leads),
-        reach: Number(row.reach),
-        link_clicks: Number(row.link_clicks),
-        messages: Number(row.messages),
-        cpm: Number(row.cpm),
-        ctr: Number(row.ctr),
-        cpc: Number(row.cpc),
-        optimization_goal: row.optimization_goal,
-        platform_name: row.platform_name,
-        raw_data: row.raw_data,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
+        id: row.adset_external_id,
+        name: row.adset_name,
+        status: row.adset_current_status,
+        objective: row.optimization_goal,              // (ad set "objective" ≈ optimization_goal)
+        campaign_id: row.campaign_external_id,
+        campaign_name: row.campaign_name,
+
+        clicks: Number(row.clicks || 0),
+        impressions: Number(row.impressions || 0),
+        spend: row.spend != null ? Number(row.spend).toFixed(2) : "0.00",
+        leads: Number(row.leads || 0),
+        reach: Number(row.reach || 0),
+        link_clicks: Number(row.inline_link_clicks || 0),
+        messages: Number(row.messages || 0),
+
+        cpm: row.cpm != null ? Number(row.cpm).toFixed(2) : null,
+        ctr: row.ctr != null ? Number(row.ctr).toFixed(4) : null,
+        cpc: row.cpc != null ? Number(row.cpc).toFixed(2) : null,
+        cpl: row.cpl != null ? Number(row.cpl).toFixed(2) : null,
+        frequency: row.frequency != null ? Number(row.frequency).toFixed(2) : null,
+
+        start_date: formatDate(row.first_day),
+        end_date: formatDate(row.last_day),
+
+        platform_name: vendor,
     }));
 }

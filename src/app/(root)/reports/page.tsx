@@ -3,8 +3,8 @@ import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { getLoggedInUser } from "@/lib/actions/user";
 import { ReportsClient } from "./components/ReportsClient";
 import { getAdAccountData } from "@/lib/quieries/ad_accounts";
-import { getAdSetsMetrics } from "@/lib/quieries/adsets/getAdSetsMetrics";
-import { getAdsMetrics } from "@/lib/quieries/ads/getAdsMetrics";
+import { getAdSetsLifetimeIncludingZeros } from "@/lib/quieries/adsets/getAdSetsMetrics";
+import { getAdsLifetimeIncludingZeros } from "@/lib/quieries/ads/getAdsMetrics";
 import { Suspense } from "react";
 import ReportsClientFallback from "./components/ReportClientFallback";
 import { getCampaignLifetimeIncludingZeros } from "@/lib/quieries/campaigns";
@@ -26,18 +26,13 @@ export default async function ReportsPage({
 }) {
   const userId = await getLoggedInUser().then((user: { id: string }) => user?.id);
 
-  // Get platform ID & Selected Ad Account Id from cookies
   const cookieStore = await cookies();
   const selectedPlatformId = cookieStore.get('platform_integration_id')?.value;
-  if (!selectedPlatformId) {
+  const selectedAdAccountId = cookieStore.get('ad_account_id')?.value;
+
+  if (!selectedPlatformId || !selectedAdAccountId) {
     return <EmptyCampaignState type="platform" />;
   }
-
-  const selectedAdAccountId = cookieStore.get('ad_account_id')?.value;
-  if (!selectedAdAccountId) {
-    return <EmptyCampaignState type="adAccount" platformName={selectedPlatformId} />;
-  }
-  // 
 
   const params = await searchParams;
   const timeIncrement = params.time_increment?.toString() || "30";
@@ -66,18 +61,19 @@ export default async function ReportsPage({
       adAccountData,
       timeIncrementArray
     };
+    console.log("Ad Account Data:", data);
   } else if (viewType === "campaigns") {
     data = {
-      campaignMetrics: await getCampaignLifetimeIncludingZeros(adAccountData.ad_account_id, campaignIds[0]),
-      adSetsMetrics: await getAdSetsMetrics(campaignIds[0]),
+      campaignMetrics: await getCampaignLifetimeIncludingZeros(selectedAdAccountId, campaignIds[0]),
+      adSetsMetrics: await getAdSetsLifetimeIncludingZeros(selectedAdAccountId, { campaignExternalId: campaignIds[0] }),
     };
   } else if (viewType === "adsets") {
     data = {
-      adSetMetrics: await getAdSetsMetrics(campaignIds[0], adsetIds[0]),
-      adsMetrics: await getAdsMetrics(adsetIds[0]),
+      adSetMetrics: await getAdSetsLifetimeIncludingZeros(selectedAdAccountId, { campaignExternalId: campaignIds[0], adsetExternalId: adsetIds[0] }),
+      adsMetrics: await getAdsLifetimeIncludingZeros(selectedAdAccountId, { adsetExternalId: adsetIds[0] }),
     };
   } else if (viewType === "ads") {
-    data = { adMetrics: await getAdsMetrics(adsetIds[0], adIds[0]) };
+    data = { adMetrics: await getAdsLifetimeIncludingZeros(selectedAdAccountId, { adsetExternalId: adsetIds[0], adExternalId: adIds[0] }) };
   }
 
   return (

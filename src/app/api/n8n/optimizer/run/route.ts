@@ -110,17 +110,6 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // 3) Mark running + seed first progress row
-        await supabase.from('jobs').update({ status: 'running', percent: 5, step: 'start' }).eq('id', jobId);
-        await supabase.from('job_progress').insert({
-            job_id: jobId,
-            step: 'start',
-            status: 'loading',
-            percent: 5,
-            message: 'Optimizer requested',
-            meta: { adAccountId, mode, caps },
-        });
-
         return new Response(JSON.stringify({ ok: true, jobId }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
