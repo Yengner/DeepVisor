@@ -13,7 +13,6 @@ import { showError } from '@/lib/utils/toasts';
 interface PlatformSelectorProps {
     campaignType: 'smart' | 'manual';
     onSelectPlatform: (platform: string) => void;
-    // Optional prop to control which platforms are available
     availablePlatforms?: Array<{
         id: string;
         available: boolean;

@@ -23,7 +23,7 @@ export default async function SmartCampaignPage() {
         return <EmptyCampaignState type="platform" />;
     }
 
-    const selectedAdAccountId = cookieStore.get('ad_account_id')?.value;
+    const selectedAdAccountId = cookieStore.get('ad_account_row_id')?.value;
     if (!selectedAdAccountId) {
         return <EmptyCampaignState type="adAccount" platformName={platformName} />;
     }

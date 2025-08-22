@@ -28,7 +28,7 @@ export default async function ReportsPage({
 
   const cookieStore = await cookies();
   const selectedPlatformId = cookieStore.get('platform_integration_id')?.value;
-  const selectedAdAccountId = cookieStore.get('ad_account_id')?.value;
+  const selectedAdAccountId = cookieStore.get('ad_account_row_id')?.value;
 
   if (!selectedPlatformId || !selectedAdAccountId) {
     return <EmptyCampaignState type="platform" />;

@@ -8,7 +8,7 @@ export default async function CreateCampaignPage() {
 
     const cookieStore = await cookies();
     const platformIntegrationId = cookieStore.get('platform_integration_id')?.value;
-    const adAccountDBId = cookieStore.get('ad_account_id')?.value;
+    const adAccountDBId = cookieStore.get('ad_account_row_id')?.value;
 
     if (!platformIntegrationId || !adAccountDBId) {
         return (
@@ -30,11 +30,11 @@ export default async function CreateCampaignPage() {
     // Get ad account ID
     const { data: adAccountData } = await supabase
         .from('ad_accounts')
-        .select('ad_account_id')
+        .select('external_account_id')
         .eq('id', adAccountDBId)
         .single();
 
-    if (!platformData?.id || !platformData?.platform_name || !adAccountData?.ad_account_id) {
+    if (!platformData?.id || !adAccountData?.external_account_id) {
         return (
             <div className="p-8 text-center">
                 <h2 className="text-xl font-semibold mb-4">Invalid ad account selection</h2>
@@ -47,7 +47,7 @@ export default async function CreateCampaignPage() {
     return (
         <CustomCampaignFlow
             platformData={platformData}
-            adAccountId={adAccountData.ad_account_id}
+            adAccountId={adAccountData.external_account_id}
         />
     );
 }

@@ -1,17 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { Select, Group, ThemeIcon, Text } from '@mantine/core';
 import { IconChevronDown } from '@tabler/icons-react';
-import { setCookie } from 'cookies-next';
 import { useRouter } from 'next/navigation';
 import { getPlatformIcon } from '@/utils/utils';
+import { setSelection } from './setSelection';
 
-/* eslint-disable */
 interface PlatformAdAccountDropdownClientProps {
   userInfo: any;
-  platforms: any[];
-  adAccounts: any[];
+  platforms: Array<{ id: string; platform_name: string }>;
+  adAccounts: Array<{
+    id: string; 
+    name: string | null;
+    platform_integration_id: string;
+    external_account_id: string | null; 
+  }>;
   initialPlatformId?: string | null;
   initialAccountId?: string | null;
 }
@@ -26,41 +30,48 @@ export default function PlatformAdAccountDropdownClient({
   const router = useRouter();
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(initialPlatformId ?? null);
   const [selectedAccount, setSelectedAccount] = useState<string | null>(initialAccountId ?? null);
+  const [isPending, startTransition] = useTransition();
+
+  // Default a platform if none was selected (rare, but safe)
+  useEffect(() => {
+    if (!selectedPlatform && platforms.length > 0) {
+      setSelectedPlatform(platforms[0].id);
+    }
+  }, [platforms, selectedPlatform]);
+
+  const filteredAccounts = useMemo(
+    () =>
+      selectedPlatform
+        ? adAccounts.filter((a) => a.platform_integration_id === selectedPlatform)
+        : [],
+    [selectedPlatform, adAccounts]
+  );
 
   useEffect(() => {
-    if (selectedPlatform) {
-      localStorage.setItem('selectedPlatformId', selectedPlatform);
-      setCookie('platform_integration_id', selectedPlatform, { maxAge: 60 * 60 * 24 * 30 });
-    }
-    if (selectedAccount) {
-      localStorage.setItem('selectedAccountId', selectedAccount);
-      setCookie('ad_account_id', selectedAccount, { maxAge: 60 * 60 * 24 * 30 });
-    }
-    if (!selectedAccount) {
-      localStorage.removeItem('selectedAccountId');
-      setCookie('ad_account_id', '', { maxAge: 0 });
-    }
-  }, [selectedPlatform, selectedAccount]);
-
-  useEffect(() => {
-    if (!selectedPlatform) return;
-    const accountsForPlatform = adAccounts.filter(a => a.platform_integration_id === selectedPlatform);
-    if (accountsForPlatform.length === 0) {
+    if (!selectedPlatform) {
       setSelectedAccount(null);
       return;
     }
-    if (!selectedAccount || !accountsForPlatform.some(a => a.id === selectedAccount)) {
-      setSelectedAccount(accountsForPlatform[0].id);
+    if (!filteredAccounts.length) {
+      setSelectedAccount(null);
+      return;
     }
-  }, [selectedPlatform, adAccounts]);
+    if (!selectedAccount || !filteredAccounts.some((a) => a.id === selectedAccount)) {
+      setSelectedAccount(filteredAccounts[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlatform, filteredAccounts]);
 
+  // Persist selection to httpOnly cookies via server action, then refresh
   useEffect(() => {
-    router.refresh();
+    startTransition(async () => {
+      await setSelection({
+        platformId: selectedPlatform,
+        accountRowId: selectedAccount,
+      });
+      router.refresh();
+    });
   }, [selectedPlatform, selectedAccount, router]);
-
-  const filteredAccounts = selectedPlatform
-    ? adAccounts.filter(account => account.platform_integration_id === selectedPlatform)
-    : [];
 
   const handlePlatformChange = (value: string | null) => {
     if (!value || value === selectedPlatform) return;
@@ -72,16 +83,16 @@ export default function PlatformAdAccountDropdownClient({
     setSelectedAccount(value);
   };
 
-  const platformItems = platforms.map(platform => ({
+  const platformItems = platforms.map((platform) => ({
     value: platform.id,
     label: platform.platform_name.charAt(0).toUpperCase() + platform.platform_name.slice(1),
-    customIcon: getPlatformIcon(platform.platform_name, 20)
+    customIcon: getPlatformIcon(platform.platform_name, 20),
   }));
 
-  const accountItems = filteredAccounts.map(account => ({
-    value: account.id,
-    label: account.name,
-    description: account.ad_account_id
+  const accountItems = filteredAccounts.map((account) => ({
+    value: account.id, 
+    label: account.name ?? 'Unnamed',
+    description: account.external_account_id ? `ID: …${account.external_account_id.slice(-6)}` : undefined,
   }));
 
   return (
@@ -92,14 +103,13 @@ export default function PlatformAdAccountDropdownClient({
         value={selectedPlatform}
         onChange={handlePlatformChange}
         w={160}
+        disabled={isPending}
         rightSection={<IconChevronDown size={14} />}
-        /* @ts-expect-error - Mantine types don't match how we're using the styles prop */
-        styles={() => ({
-          rightSection: { pointerEvents: 'none' }
-        })}
+        /* @ts-expect-error Mantine styles type */
+        styles={() => ({ rightSection: { pointerEvents: 'none' } })}
         renderOption={({ option }) => (
           <Group gap="xs">
-            {/* @ts-expect-error - customIcon is a custom property we added to the option */}
+            {/* @ts-expect-error custom */}
             {option.customIcon && <ThemeIcon size="md" variant="light">{option.customIcon}</ThemeIcon>}
             <Text>{option.label}</Text>
           </Group>
@@ -112,21 +122,18 @@ export default function PlatformAdAccountDropdownClient({
         value={selectedAccount}
         onChange={handleAccountChange}
         w={200}
-        disabled={!selectedPlatform || accountItems.length === 0}
+        disabled={!selectedPlatform || accountItems.length === 0 || isPending}
         rightSection={<IconChevronDown size={14} />}
-        /* @ts-expect-error - Mantine types don't match how we're using the styles prop */
-        styles={() => ({
-          rightSection: { pointerEvents: 'none' }
-        })}
+        /* @ts-expect-error Mantine styles type */
+        styles={() => ({ rightSection: { pointerEvents: 'none' } })}
         renderOption={({ option }) => (
           <div>
             <Text size="sm">{option.label}</Text>
-            {/* @ts-expect-error - description is a custom property we added to the option */}
-            {option.description && (<Text size="xs" c="dimmed">ID: {option.description}</Text>)}
+            {/* @ts-expect-error custom */}
+            {option.description && <Text size="xs" c="dimmed">{option.description}</Text>}
           </div>
         )}
       />
     </Group>
   );
 }
-/* eslint-enable */

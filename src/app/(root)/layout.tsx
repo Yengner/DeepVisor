@@ -7,17 +7,17 @@ import { setCookie } from "cookies-next";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
 
-  const cookieStore = await cookies();
+  const cs = await cookies();
   const user = await getLoggedInUser().then((user: { id: string, onboarding_completed: boolean, connected_accounts: [{ accountId: string }] }) => user);
-  let selectedPlatformId = cookieStore.get('platform_integration_id')?.value || null;
+  let selectedPlatformId = cs.get('platform_integration_id')?.value || null;
   if (!selectedPlatformId) {
     selectedPlatformId = await InitPlatformID(user.id);
     setCookie('platform_integration_id', selectedPlatformId, { maxAge: 60 * 60 * 24 * 30 });
   }
-  let selectedAdAccountId = cookieStore.get('ad_account_id')?.value || null;
+  let selectedAdAccountId = cs.get('ad_account_row_id')?.value || null;
   if (!selectedAdAccountId) {
     selectedAdAccountId = user?.connected_accounts?.[0]?.accountId || null;
-    setCookie('ad_account_id', selectedAdAccountId, { maxAge: 60 * 60 * 24 * 30 });
+    setCookie('ad_account_row_id', selectedAdAccountId, { maxAge: 60 * 60 * 24 * 30 });
   }
 
 
@@ -25,8 +25,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     console.warn('User onboarding not completed. Redirecting to /onboarding.');
     redirect('/onboarding');
   }
-
-
 
   return (
     <div className="h-screen flex flex-col">

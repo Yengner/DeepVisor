@@ -123,7 +123,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
         if (!selectedAdSetId && activeTab === 'ads') setActiveTab('adsets');
     }, [selectedCampaignId, selectedAdSetId, activeTab]);
 
-    // Reflect state in the URL
+
     useEffect(() => {
         const sp = new URLSearchParams(searchParams?.toString());
         sp.delete('campaign_id'); sp.delete('adset_id'); sp.delete('tab');
@@ -134,10 +134,9 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedCampaignId, selectedAdSetId, activeTab]);
 
-    // Reset selected adset when campaign changes
+
     useEffect(() => { setSelectedAdSetId(null); }, [selectedCampaignId]);
 
-    // ⬇ Lazy-load ADSETS on demand
     useEffect(() => {
         if (activeTab !== 'adsets') return;
         if (!selectedCampaignId) return;
@@ -154,7 +153,6 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
         });
     }, [activeTab, selectedCampaignId, adAccountId, adSetsByCampaign]);
 
-    // ⬇ Lazy-load ADS on demand
     useEffect(() => {
         if (activeTab !== 'ads') return;
         if (!selectedAdSetId) return;

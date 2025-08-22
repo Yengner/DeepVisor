@@ -9,9 +9,6 @@ import {
 import { IconRobot, IconBolt, IconCheck, IconX, IconAlertTriangle, IconClock, IconPlayerPlay, IconSettings } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 
-// ─────────────────────────────────────────────────────────────
-// Types (align with your DB)
-// ─────────────────────────────────────────────────────────────
 type JobRow = {
     id: string;
     user_id: string;
@@ -222,7 +219,6 @@ export default function CompanionClient({
         });
         const data = await res.json();
         if (!res.ok || !data?.jobId) {
-            // show toast in your app
             toast.error('Failed to start optimizer: ' + (data?.error || 'Unknown error'));
             console.error('Failed to start optimizer', data?.error);
             return;
@@ -232,14 +228,13 @@ export default function CompanionClient({
         setShowModal(true);
     }
 
-    // save settings (optional)
     async function saveSettings() {
         await fetch(`/api/accounts/${adAccountId}/optimizer-mode`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ optimizer_mode: mode, caps: { max_account_budget_change_pct: capPct } }),
         });
-        // toast “Saved”
+        toast.success('Settings saved successfully');
     }
 
     const lastJob = jobs[0];
@@ -252,7 +247,6 @@ export default function CompanionClient({
                 jobId={runningJobId}
                 onDone={() => {
                     setShowModal(false);
-                    // refresh tables after run
                     (async () => {
                         const [{ data: j }, { data: d }] = await Promise.all([
                             supabase.from('jobs').select('*').eq('user_id', userId).eq('type', 'daily_optimizer').order('created_at', { ascending: false }).limit(5),
@@ -264,7 +258,7 @@ export default function CompanionClient({
                 }}
             />
 
-            <Container size="lg" py="xl">
+            <Container size="lg" py="md">
                 <Stack gap="xl">
                     {/* Hero / Controls */}
                     <Card withBorder p="xl" radius="md">

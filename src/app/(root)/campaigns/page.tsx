@@ -146,7 +146,6 @@ export default async function CampaignPage({
     adsetId: adsetIds[0] ?? null,
   };
 
-  // ⬇ Prefetch only when the URL is already on those tabs
   let initialAdSets: any[] | undefined;
   let initialAds: any[] | undefined;
 

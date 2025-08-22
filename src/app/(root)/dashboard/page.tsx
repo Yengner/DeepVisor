@@ -12,13 +12,13 @@ export default async function MainDashboardPage() {
 
   const cookieStore = await cookies();
   const selectedPlatformId = cookieStore.get('platform_integration_id')?.value;
-  const selectedAdAccountId = cookieStore.get('ad_account_id')?.value;
+  const selectedAdAccountId = cookieStore.get('ad_account_row_id')?.value;
 
   if (selectedPlatformId === undefined) {
     return <EmptyCampaignState type="platform" />;
   } else if (selectedAdAccountId === undefined) {
     const platformDetails = await getPlatformDetails(selectedPlatformId, userId);
-    return <EmptyCampaignState type="adAccount" platformName={platformDetails.platform_name} />;
+    return <EmptyCampaignState type="adAccount" platformName={platformDetails.vendor} />;
   }
 
 
