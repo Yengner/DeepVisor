@@ -44,8 +44,8 @@ interface CampaignDashboardProps {
         campaignId?: string | null;
         adsetId?: string | null;
     };
-    initialAdSets?: any[]; // seed when tab=adsets
-    initialAds?: any[];    // seed when tab=ads
+    initialAdSets?: any[];
+    initialAds?: any[];
 }
 
 export default function CampaignDashboard(props: CampaignDashboardProps) {
@@ -103,7 +103,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     const getPlatformColor = () => {
         switch (platform.name.toLowerCase()) {
             case 'facebook':
-            case 'meta': return 'orange';
+            case 'meta': return 'blue';
             case 'tiktok': return 'dark';
             case 'google': return 'red';
             default: return 'gray';

@@ -61,7 +61,6 @@ export default async function ReportsPage({
       adAccountData,
       timeIncrementArray
     };
-    console.log("Ad Account Data:", data);
   } else if (viewType === "campaigns") {
     data = {
       campaignMetrics: await getCampaignLifetimeIncludingZeros(selectedAdAccountId, campaignIds[0]),

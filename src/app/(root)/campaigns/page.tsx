@@ -8,6 +8,8 @@ import { getLoggedInUser } from "@/lib/actions/user";
 import { getAdAccountData } from "@/lib/quieries/ad_accounts";
 import { getAdsLifetimeIncludingZeros } from "@/lib/quieries/ads/getAdsMetrics";
 import { getAdSetsLifetimeIncludingZeros } from "@/lib/quieries/adsets/getAdSetsMetrics";
+import { Suspense } from "react";
+import CampaignClientFallback from "./CampaignClientFallback";
 
 interface AggregatedMetrics {
   spend: number; impressions: number; clicks: number; link_clicks: number; reach: number;
@@ -163,15 +165,19 @@ export default async function CampaignPage({
   }
 
   return (
-    <CampaignDashboard
-      campaigns={allCampaigns}
-      userId={userId as string}
-      platform={{ id: platformDetails.id, name: platformDetails.vendor }}
-      adAccountId={selectedAdAccountId}
-      accountMetrics={accountMetrics}
-      initialSelection={initialSelection}
-      initialAdSets={initialAdSets}
-      initialAds={initialAds}
-    />
+    <>
+      <Suspense fallback={<CampaignClientFallback />}>
+        <CampaignDashboard
+          campaigns={allCampaigns}
+          userId={userId as string}
+          platform={{ id: platformDetails.id, name: platformDetails.vendor }}
+          adAccountId={selectedAdAccountId}
+          accountMetrics={accountMetrics}
+          initialSelection={initialSelection}
+          initialAdSets={initialAdSets}
+          initialAds={initialAds}
+        />
+      </Suspense>
+    </>
   );
 }
