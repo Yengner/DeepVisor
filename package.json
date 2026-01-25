@@ -63,7 +63,7 @@
     "jspdf": "^3.0.1",
     "lru-cache": "^11.0.2",
     "lucide-react": "^0.475.0",
-    "next": "^15.3.0",
+    "next": "15.3.8",
     "openai": "^4.77.0",
     "passkit-generator": "^3.3.1",
     "qr-scanner": "^1.4.2",
