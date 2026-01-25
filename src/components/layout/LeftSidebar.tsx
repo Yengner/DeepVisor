@@ -27,7 +27,7 @@ const Sidebar = () => {
 
   const menuItems = [
     { name: 'Home', icon: IconHome2, route: '/dashboard' },
-    { name: 'Companion', icon: IconRobot, route: '/companion' }, 
+    { name: 'Agency', icon: IconRobot, route: '/agency' }, 
     { name: 'Campaigns', icon: IconPresentation, route: '/campaigns' },
     { name: 'Reports', icon: IconChartBar, route: '/reports' },
     { name: 'Integration', icon: IconPuzzle, route: '/integration' },

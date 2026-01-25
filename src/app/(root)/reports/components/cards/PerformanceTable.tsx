@@ -110,11 +110,14 @@ export default function PerformanceTable({
                                 {numericCols.map((col) => {
                                     const { min, max } = minMax[col.key];
                                     const factor = min === max ? 0 : (row[col.key] - min) / (max - min);
+                                    // Use a consistent blue background for all numeric columns.
+                                    // Slightly vary alpha by factor so larger values stand out a bit.
+                                    const alpha = 0.15 + Math.max(0, Math.min(1, factor)) * 0.55;
                                     return (
                                         <Table.Td
                                             key={col.key}
                                             style={{
-                                                background: interpolateColor(col.light, col.dark, factor),
+                                                background: `rgba(37,99,235, ${alpha})`, // blue
                                                 color: factor > 0.6 ? "#fff" : "#22223b",
                                                 fontWeight: col.key === "spend" || col.key === "cpm" ? 600 : 500,
                                             }}

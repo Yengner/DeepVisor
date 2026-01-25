@@ -58,7 +58,7 @@ export default async function CampaignPage({
 
   const cs = await cookies();
   const selectedPlatformId = cs.get("platform_integration_id")?.value;
-  const selectedAdAccountId = cs.get("ad_account_id")?.value;
+  const selectedAdAccountId = cs.get("ad_account_row_id")?.value;
 
   if (!selectedPlatformId || !selectedAdAccountId) {
     return <EmptyCampaignState type="platform" />;
@@ -68,6 +68,7 @@ export default async function CampaignPage({
     getPlatformDetails(selectedPlatformId, userId),
     getAdAccountData(selectedAdAccountId, selectedPlatformId, userId),
   ]);
+  console.log("Details", platformDetails, adAccountDetails)
 
   const accountMetrics: AggregatedMetrics = {
     spend: adAccountDetails.aggregated_metrics?.spend || 0,

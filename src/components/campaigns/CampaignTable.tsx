@@ -283,8 +283,8 @@ export default function CampaignTable({
                     <Menu position="bottom-end" withArrow offset={4} >
                       <Menu.Target>
                         <ActionIcon
-                        variant="filled"
-                        color={platformColor}
+                          variant="filled"
+                          color={platformColor}
                         ><IconDots size={16} /></ActionIcon>
                       </Menu.Target>
                       <Menu.Dropdown>

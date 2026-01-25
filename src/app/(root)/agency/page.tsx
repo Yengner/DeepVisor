@@ -1,10 +1,10 @@
 import { getLoggedInUser } from '@/lib/actions/user';
-import CompanionClient from './CompanionClient';
+import AgencyClient from './AgencyClient';
 import { cookies } from 'next/headers';
 import { getAdAccountData } from '@/lib/quieries/ad_accounts';
 import { EmptyCampaignState } from '@/components/campaigns/EmptyStates';
 
-export default async function CompanionPage() {
+export default async function AgencyPage() {
     const userId = await getLoggedInUser().then((user: { id: string }) => user?.id);
     const cookieStore = await cookies();
     const selectedPlatformId = cookieStore.get('platform_integration_id')?.value;
@@ -15,5 +15,5 @@ export default async function CompanionPage() {
 
     const adAccountId = await getAdAccountData(selectedAdAccountId, selectedPlatformId, userId).then((account: { external_account_id: string }) => account?.external_account_id);
 
-    return <CompanionClient userId={userId} adAccountId={adAccountId} />;
+    return <AgencyClient userId={userId} adAccountId={selectedAdAccountId} tenantId={selectedPlatformId}/>;
 }

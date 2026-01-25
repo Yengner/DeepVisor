@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import "../../styles/globals.css";
-import Header from "@/components/public/Header";
-import Footer from "@/components/public/Footer";
 import Script from "next/script";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
 
 
 export const metadata: Metadata = {
@@ -67,7 +67,7 @@ export default function RootLayout({
       {/* End Google Analytics gtag.js */}
 
       <Header />
-      <main className="pt-20 md:pt-24">{children}</main>
+      <main>{children}</main>
       <Footer />
     </>
   );

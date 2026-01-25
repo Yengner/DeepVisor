@@ -201,7 +201,7 @@ export default function DecisionReviewClient({
             };
             await postToCallback(payload);
             toast.success('Approved. Executing…');
-            router.push('/companion');
+            router.push('/agency');
         } catch (e: any) { toast.error(e.message); }
     }
 
@@ -219,7 +219,7 @@ export default function DecisionReviewClient({
             };
             await postToCallback(payload);
             toast.success('Edits submitted for execution');
-            router.push('/companion');
+            router.push('/agency');
         } catch (e: any) { toast.error(e.message); }
     }
 
@@ -237,7 +237,7 @@ export default function DecisionReviewClient({
             };
             await postToCallback(payload);
             toast.success('Decision rejected');
-            router.push('/companion');
+            router.push('/agency');
         } catch (e: any) { toast.error(e.message); }
     }
 
@@ -249,7 +249,7 @@ export default function DecisionReviewClient({
                 {/* Header */}
                 <Group justify="space-between" align="center">
                     <Group gap="sm">
-                        <ActionIcon variant="subtle" onClick={() => router.push('/companion')} aria-label="Back">
+                        <ActionIcon variant="subtle" onClick={() => router.push('/agency')} aria-label="Back">
                             <IconArrowLeft />
                         </ActionIcon>
                         <Title order={2}>Review Optimizer Plan</Title>
