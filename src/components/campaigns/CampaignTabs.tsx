@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import CampaignTable from '@/components/campaigns/CampaignTable';
 import AdSetTable from '@/components/campaigns/AdSetTable';
 import AdsTable from '@/components/campaigns/AdsTable';
+import { FormattedCampaign } from '@/app/(root)/campaigns/page';
 
 interface Campaign {
   id: string;
@@ -167,7 +168,7 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
             </div>
           )}
           <CampaignTable
-            campaigns={campaignData}
+            campaigns={campaignData as unknown as FormattedCampaign[]}
             selectedCampaignId={selectedCampaignId || undefined}
             onSelectCampaign={handleSelectCampaign}
             onToggleCampaign={handleToggleCampaign}

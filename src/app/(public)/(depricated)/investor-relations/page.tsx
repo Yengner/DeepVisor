@@ -5,7 +5,7 @@ import { FaEnvelope, FaPhoneAlt } from 'react-icons/fa';
 import { FiGlobe, FiCpu, FiLayers, FiTrendingUp, FiTarget, FiBarChart2 } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import SectionHeader from '@/components/public/SectionHeader';
+import SectionHeader from '@/components/public/depricated/SectionHeader';
 
 export default function InvestorPage() {
   // Inline features specifically for the SaaS
