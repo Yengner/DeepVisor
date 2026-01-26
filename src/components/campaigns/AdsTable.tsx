@@ -104,11 +104,12 @@ export default function AdsTable({
         style={{ borderRadius: 8 }}
       >
         <Table
-          striped
           highlightOnHover
-          withColumnBorders
           stickyHeader
-          style={{ minWidth: 1400, tableLayout: 'auto' }}
+          verticalSpacing="sm"
+          horizontalSpacing="md"
+          withColumnBorders={false}
+          style={{ minWidth: 1200, tableLayout: 'auto' }}
         >
           <Table.Thead>
             <Table.Tr>

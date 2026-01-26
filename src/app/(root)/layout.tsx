@@ -10,10 +10,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const cs = await cookies();
   const user = await getLoggedInUser().then((user: { id: string, onboarding_completed: boolean, connected_accounts: [{ accountId: string }] }) => user);
   let selectedPlatformId = cs.get('platform_integration_id')?.value || null;
+  
   if (!selectedPlatformId) {
     selectedPlatformId = await InitPlatformID(user.id);
     setCookie('platform_integration_id', selectedPlatformId, { maxAge: 60 * 60 * 24 * 30 });
   }
+
   let selectedAdAccountId = cs.get('ad_account_row_id')?.value || null;
   if (!selectedAdAccountId) {
     selectedAdAccountId = user?.connected_accounts?.[0]?.accountId || null;

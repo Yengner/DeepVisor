@@ -92,7 +92,7 @@ async function getUserInfo({ userId }: { userId: string }) {
             .select('*')
             .eq('id', userId)
             .single();
-
+            
         return parseStringify(data);
     } catch (error) {
         return { errorMessage: getErrorMessage(error) };

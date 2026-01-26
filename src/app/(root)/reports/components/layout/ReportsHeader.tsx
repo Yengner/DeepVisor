@@ -31,54 +31,68 @@ export default function ReportsHeader({ title, type, platform = "Meta" }: Report
 
     return (
         <Card
-            mb="xl"
-            p="lg"
-            radius="md"
+            mb="lg"
+            p="xl"
+            radius="lg"
             withBorder
-
+            style={{
+                position: 'relative',
+                overflow: 'hidden',
+                background: 'linear-gradient(120deg, #0f172a 0%, #111827 50%, #0ea5e9 130%)',
+                borderColor: 'rgba(255,255,255,0.08)',
+            }}
         >
-            <Group justify="space-between" align="center">
-                {/* Left Section */}
+            <Box
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background:
+                        'radial-gradient(circle at 10% 20%, rgba(14,165,233,0.2), transparent 34%), radial-gradient(circle at 80% 0%, rgba(14,165,233,0.18), transparent 28%)',
+                }}
+            />
+            <Group justify="space-between" align="center" pos="relative">
                 <Box>
-                    <Group gap="xs">
-                        {/* Platform badge */}
+                    <Group gap="xs" align="center">
                         <Badge
                             color="indigo"
-                            variant="filled"
+                            variant="light"
                             size="md"
                             style={{ textTransform: 'uppercase', letterSpacing: 1 }}
                         >
                             {platform}
                         </Badge>
-                        {/* Title */}
-                        <Title order={2} size="h3" style={{ margin: 0 }}>
-                            {title}
-                        </Title>
-                        {/* Type badge */}
                         <Badge
                             color={typeBadge[type].color}
                             variant="light"
                             size="md"
-                            style={{ marginLeft: 8, textTransform: 'capitalize' }}
+                            style={{ textTransform: 'capitalize' }}
                         >
                             {typeBadge[type].label}
                         </Badge>
                     </Group>
+                    <Title order={2} size="h2" c="white" mt="xs" mb={4}>
+                        {title}
+                    </Title>
+                    <Group gap="xs">
+                        <Badge variant="light" color="green">Live</Badge>
+                        <Badge variant="outline" color="gray">Reporting workspace</Badge>
+                    </Group>
                 </Box>
-                {/* Date Range Picker */}
-                <Group gap='lg'>
+                <Group gap="sm">
                     <DateTimePicker
                         placeholder="Select date range"
+                        size="sm"
+                        radius="md"
                     />
-                    <Button variant='filled' color='pink'>
+                    <Button variant='white' color='dark' radius="md">
                         Export CSV
                     </Button>
 
                     <Button
                         leftSection={<IconRefresh size={16} />}
-                        variant="light"
-                    // onClick={onRefresh}
-                    // loading={refreshing}
+                        variant="outline"
+                        color="gray"
+                        radius="md"
                     >
                         Refresh
                     </Button>
@@ -86,7 +100,7 @@ export default function ReportsHeader({ title, type, platform = "Meta" }: Report
 
                     <Menu shadow="md" width={200}>
                         <Menu.Target>
-                            <ActionIcon variant="light" size="lg">
+                            <ActionIcon variant="light" size="lg" radius="md">
                                 <IconSettings size={16} />
                             </ActionIcon>
                         </Menu.Target>

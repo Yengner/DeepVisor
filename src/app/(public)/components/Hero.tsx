@@ -3,9 +3,9 @@
 import type { FC } from "react";
 
 const channels = [
-    { name: "Meta + Instagram", spend: "$18.4k", trend: "+18%", fill: "w-[78%]" },
-    { name: "TikTok", spend: "$9.7k", trend: "+11%", fill: "w-[64%]" },
-    { name: "Google Ads", spend: "$12.1k", trend: "+6%", fill: "w-[58%]" },
+    { name: "Meta + Instagram (live)", spend: "$18.4k", trend: "+18%", fill: "w-[78%]" },
+    { name: "TikTok (planned)", spend: "—", trend: "next", fill: "w-[40%]" },
+    { name: "Google Ads (planned)", spend: "—", trend: "next", fill: "w-[32%]" },
 ];
 
 const quickSignals = [
@@ -29,7 +29,7 @@ const Hero: FC = () => {
                     <div className="space-y-8">
                         <div className="inline-flex max-w-fit items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1 text-[11px] font-semibold tracking-[0.18em] uppercase text-amber-100/90 backdrop-blur">
                             <span className="h-1.5 w-1.5 rounded-full bg-amber-300 shadow-[0_0_0_6px_rgba(251,191,36,0.15)]" />
-                            Private alpha · 2024
+                            Private alpha · 2026
                         </div>
 
                         <div className="space-y-5">
@@ -61,17 +61,18 @@ const Hero: FC = () => {
                         <div className="flex flex-wrap gap-6 text-sm text-white/70">
                             <div className="flex items-center gap-2">
                                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                                34 operators shaping the alpha
+                                Early access is limited (hands-on onboarding)
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="h-2 w-2 rounded-full bg-amber-300" />
-                                Built for Meta, TikTok, Google first
+                                Built for Meta first · TikTok + Google next
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="h-2 w-2 rounded-full bg-blue-300" />
-                                Weekly updates, transparent roadmap
+                                Draft-first automation with approvals
                             </div>
                         </div>
+
                     </div>
 
                     <div className="relative">
@@ -79,11 +80,11 @@ const Hero: FC = () => {
                         <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-white/5 shadow-[0_18px_60px_rgba(0,0,0,0.35)] backdrop-blur">
                             <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
                                 <div>
-                                    <p className="text-xs uppercase tracking-[0.25em] text-white/60">Signal board</p>
-                                    <p className="text-lg font-semibold text-white">DeepVisor daily</p>
+                                    <p className="text-xs uppercase tracking-[0.25em] text-white/60">Unified signal board</p>
+                                    <p className="text-lg font-semibold text-white">Today’s clarity</p>
                                 </div>
                                 <div className="rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold text-emerald-200">
-                                    Stable today
+                                    Guardrails OK
                                 </div>
                             </div>
 

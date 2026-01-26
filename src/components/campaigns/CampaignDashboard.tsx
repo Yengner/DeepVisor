@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import {
-    Button, Group, Paper, Text, Tabs, ActionIcon, Tooltip, Select, TextInput, Menu, Badge, Avatar, Container
+    Button, Group, Text, Tabs, ActionIcon, Tooltip, Select, TextInput, Menu, Badge, Avatar, Container,
+    Card, Stack, Title, Box
 } from '@mantine/core';
 import { IconRefresh, IconPlus, IconSearch, IconAdjustments, IconFilterOff, IconChartBar, IconTable } from '@tabler/icons-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -192,170 +193,195 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
 
     return (
         <Container size="xl" py="md">
-            {/* Header with more compact layout */}
-            <Paper p="md" radius="md" withBorder mb="xs">
-                <Group justify="apart" mb="xs">
-                    <Group>
-                        <Avatar
-                            color={getPlatformColor()}
-                            radius="xl"
-                            size="md"
-                        >
-                            {getPlatformIcon(platform.name, 24)}
-                        </Avatar>
-                        <div>
+            <Stack gap="lg">
+                <Card
+                    withBorder
+                    radius="lg"
+                    p="xl"
+                    style={{
+                        position: 'relative',
+                        overflow: 'hidden',
+                        background: 'linear-gradient(120deg, #0f172a 0%, #111827 50%, #0ea5e9 130%)',
+                        borderColor: 'rgba(255,255,255,0.08)',
+                    }}
+                >
+                    <Box
+                        style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background:
+                                'radial-gradient(circle at 10% 10%, rgba(14,165,233,0.2), transparent 30%), radial-gradient(circle at 80% 0%, rgba(14,165,233,0.18), transparent 26%)',
+                        }}
+                    />
+                    <Group justify="space-between" align="flex-start" pos="relative">
+                        <Stack gap="sm">
                             <Group gap="xs">
-                                <Text fw={600} size="lg">
-                                    {platform.name.charAt(0).toUpperCase() + platform.name.slice(1)} Campaigns
-                                </Text>
-                                <Badge color={getPlatformColor()}>
-                                    {filteredCampaigns.length}
+                                <Avatar color={getPlatformColor()} radius="xl" size="md">
+                                    {getPlatformIcon(platform.name, 24)}
+                                </Avatar>
+                                <Badge size="md" variant="light" color="cyan">
+                                    {platform.name}
+                                </Badge>
+                                <Badge size="md" variant="outline" color="gray">
+                                    {filteredCampaigns.length} campaigns
                                 </Badge>
                             </Group>
-                        </div>
+                            <Title order={2} size="h2" c="white">
+                                Campaigns command
+                            </Title>
+                            <Text size="sm" c="gray.2" maw={520}>
+                                A clean view of your campaigns, ad sets, and ads with faster filtering and clearer metrics.
+                            </Text>
+                            <Group gap="sm">
+                                <Menu position="bottom-end" shadow="md">
+                                    <Menu.Target>
+                                        <Button
+                                            leftSection={<IconPlus size={18} />}
+                                            color="dark"
+                                            variant="white"
+                                            radius="xl"
+                                            onClick={() => router.push(`/campaigns/create?platform=${platform.id}`)}
+                                            style={{ fontWeight: 600 }}
+                                        >
+                                            Create campaign
+                                        </Button>
+                                    </Menu.Target>
+                                    <Menu.Dropdown>
+                                        <Menu.Label>Campaign type</Menu.Label>
+                                        <Menu.Item
+                                            onClick={() => router.push(`/campaigns/create?mode=smart&platform=${platform.id}`)}
+                                        >
+                                            AI-assisted
+                                        </Menu.Item>
+                                        <Menu.Item
+                                            onClick={() => router.push(`/campaigns/create?mode=manual&platform=${platform.id}`)}
+                                        >
+                                            Custom
+                                        </Menu.Item>
+                                    </Menu.Dropdown>
+                                </Menu>
+                                <Tooltip label="Refresh data">
+                                    <ActionIcon
+                                        onClick={handleRefresh}
+                                        loading={isRefreshing}
+                                        variant="light"
+                                        color="gray"
+                                        size="lg"
+                                    >
+                                        <IconRefresh size={18} />
+                                    </ActionIcon>
+                                </Tooltip>
+                            </Group>
+                            <Group gap="xs">
+                                <Badge variant="light" color="green">Live data</Badge>
+                                <Badge variant="outline" color="gray">Ad account view</Badge>
+                                <Badge variant="light" color={getPlatformColor()}>
+                                    {filteredCampaigns.length} showing
+                                </Badge>
+                            </Group>
+                        </Stack>
                     </Group>
-                    <Group>
-                        <Menu position="bottom-end" shadow="md">
-                            <Menu.Target>
-                                <Button
-                                    leftSection={<IconPlus size={18} />}
-                                    color={getPlatformColor()}
-                                    variant="light"
-                                    radius="xl"
-                                    onClick={() => router.push(`/campaigns/create?platform=${platform.id}`)}
-                                    style={{ fontWeight: 500 }}
-                                >
-                                    Create Campaign
-                                </Button>
-                            </Menu.Target>
-                            <Menu.Dropdown>
-                                <Menu.Label>Campaign Type</Menu.Label>
-                                <Menu.Item
-                                    onClick={() => router.push(`/campaigns/create?mode=smart&platform=${platform.id}`)}
-                                >
-                                    AI-Assisted Campaign
-                                </Menu.Item>
-                                <Menu.Item
-                                    onClick={() => router.push(`/campaigns/create?mode=manual&platform=${platform.id}`)}
-                                >
-                                    Custom Campaign
-                                </Menu.Item>
-                            </Menu.Dropdown>
-                        </Menu>
-                        <Tooltip label="Refresh data">
-                            <ActionIcon
-                                onClick={handleRefresh}
-                                loading={isRefreshing}
-                                variant="light"
-                                color={getPlatformColor()}
-                                size="lg"
-                            >
-                                <IconRefresh size={18} />
-                            </ActionIcon>
-                        </Tooltip>
-                    </Group>
-                </Group>
+                </Card>
 
-                {/* More compact stats */}
                 <CampaignStats
                     totalCampaigns={filteredCampaigns.length}
                     accountMetrics={accountMetrics}
                     platformColor={getPlatformColor()}
                 />
-            </Paper>
 
-            {/* Filters - make more compact */}
-            <Paper p="xs" radius="md" withBorder mb="xs">
-                <Group gap="xs" justify="apart">
-                    <Text size="sm" fw={500}>Filters</Text>
-                    {(searchQuery || statusFilter || typeFilter) && (
-                        <Tooltip label="Clear all filters">
-                            <ActionIcon onClick={resetFilters} variant="subtle" size="sm">
-                                <IconFilterOff size={14} />
-                            </ActionIcon>
-                        </Tooltip>
-                    )}
-                </Group>
-
-                <Group gap="xs" mt="xs">
-                    <TextInput
-                        placeholder="Search campaigns..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.currentTarget.value)}
-                        leftSection={<IconSearch size={14} />}
-                        style={{ flexGrow: 1 }}
-                        size="xs"
-                    />
-                    <Select
-                        placeholder="Status"
-                        value={statusFilter}
-                        onChange={setStatusFilter}
-                        data={statuses.map(s => ({ value: s, label: s }))}
-                        clearable
-                        leftSection={<IconAdjustments size={14} />}
-                        style={{ width: 120 }}
-                        size="xs"
-                    />
-                    <Select
-                        placeholder="Type"
-                        value={typeFilter}
-                        onChange={setTypeFilter}
-                        data={types.map(t => ({ value: t, label: t }))}
-                        clearable
-                        style={{ width: 120 }}
-                        size="xs"
-                    />
-                </Group>
-            </Paper>
-
-            {/* Campaign Hierarchy Tabs - now with more space for table */}
-            <Paper p="xs" radius="md" withBorder style={{ height: 'auto', display: 'flex', flexDirection: 'column' }}>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                <Tabs value={activeTab} onChange={setActiveTab as any}>
-                    <Tabs.List>
-                        <Tabs.Tab value="campaigns" leftSection={<IconChartBar size={14} />}>Campaigns</Tabs.Tab>
-                        <Tabs.Tab value="adsets" leftSection={<IconTable size={14} />} disabled={!selectedCampaignId}>Ad Sets</Tabs.Tab>
-                        <Tabs.Tab value="ads" disabled={!selectedAdSetId}>Ads</Tabs.Tab>
-                    </Tabs.List>
-
-                    <Tabs.Panel value="campaigns" pt="xs">
-                        <CampaignTable
-                            campaigns={filteredCampaigns}
-                            selectedCampaignId={selectedCampaignId ?? undefined}
-                            onSelectCampaign={setSelectedCampaignId}
-                            onToggleCampaign={(id, on) => {
-                                setCampaignData(prev => prev.map(c => c.id === id ? { ...c, delivery: on } : c));
-                            }}
-                            onDeleteCampaign={(id) => setCampaignData(prev => prev.filter(c => c.id !== id))}
-                            platformColor={getPlatformColor()}
+                <Card p="md" radius="lg" withBorder>
+                    <Group justify="space-between" align="center" mb="sm">
+                        <div>
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Search & filters</Text>
+                            <Text fw={700}>Find the right campaigns quickly</Text>
+                        </div>
+                        {(searchQuery || statusFilter || typeFilter) && (
+                            <Tooltip label="Clear all filters">
+                                <ActionIcon onClick={resetFilters} variant="subtle" size="md">
+                                    <IconFilterOff size={14} />
+                                </ActionIcon>
+                            </Tooltip>
+                        )}
+                    </Group>
+                    <Group gap="sm">
+                        <TextInput
+                            placeholder="Search campaigns"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.currentTarget.value)}
+                            leftSection={<IconSearch size={14} />}
+                            style={{ flexGrow: 1 }}
+                            size="sm"
                         />
-                    </Tabs.Panel>
+                        <Select
+                            placeholder="Status"
+                            value={statusFilter}
+                            onChange={setStatusFilter}
+                            data={statuses.map(s => ({ value: s, label: s }))}
+                            clearable
+                            leftSection={<IconAdjustments size={14} />}
+                            style={{ width: 160 }}
+                            size="sm"
+                        />
+                        <Select
+                            placeholder="Type"
+                            value={typeFilter}
+                            onChange={setTypeFilter}
+                            data={types.map(t => ({ value: t, label: t }))}
+                            clearable
+                            style={{ width: 160 }}
+                            size="sm"
+                        />
+                    </Group>
+                </Card>
 
-                    <Tabs.Panel value="adsets" pt="xs">
-                        {selectedCampaignId && (
-                            <AdSetTable
-                                campaignId={selectedCampaignId}
-                                adSets={adSetsByCampaign[selectedCampaignId] ?? []}
-                                loading={adsetsLoading || isPending}
-                                onSelectAdSet={setSelectedAdSetId}
-                                selectedAdSetId={selectedAdSetId}
+                <Card p="md" radius="lg" withBorder style={{ background: 'linear-gradient(180deg, rgba(14,165,233,0.04), rgba(15,23,42,0.02))' }}>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    <Tabs value={activeTab} onChange={setActiveTab as any}>
+                        <Tabs.List>
+                            <Tabs.Tab value="campaigns" leftSection={<IconChartBar size={14} />}>Campaigns</Tabs.Tab>
+                            <Tabs.Tab value="adsets" leftSection={<IconTable size={14} />} disabled={!selectedCampaignId}>Ad Sets</Tabs.Tab>
+                            <Tabs.Tab value="ads" disabled={!selectedAdSetId}>Ads</Tabs.Tab>
+                        </Tabs.List>
+
+                        <Tabs.Panel value="campaigns" pt="md">
+                            <CampaignTable
+                                campaigns={filteredCampaigns}
+                                selectedCampaignId={selectedCampaignId ?? undefined}
+                                onSelectCampaign={setSelectedCampaignId}
+                                onToggleCampaign={(id, on) => {
+                                    setCampaignData(prev => prev.map(c => c.id === id ? { ...c, delivery: on } : c));
+                                }}
+                                onDeleteCampaign={(id) => setCampaignData(prev => prev.filter(c => c.id !== id))}
                                 platformColor={getPlatformColor()}
                             />
-                        )}
-                    </Tabs.Panel>
+                        </Tabs.Panel>
 
-                    <Tabs.Panel value="ads" pt="xs">
-                        {selectedAdSetId && (
-                            <AdsTable
-                                adsetId={selectedAdSetId}
-                                ads={adsByAdset[selectedAdSetId] ?? []}
-                                loading={adsLoading || isPending}
-                                platformColor={getPlatformColor()}
-                            />
-                        )}
-                    </Tabs.Panel>
-                </Tabs>
-            </Paper>
+                        <Tabs.Panel value="adsets" pt="md">
+                            {selectedCampaignId && (
+                                <AdSetTable
+                                    campaignId={selectedCampaignId}
+                                    adSets={adSetsByCampaign[selectedCampaignId] ?? []}
+                                    loading={adsetsLoading || isPending}
+                                    onSelectAdSet={setSelectedAdSetId}
+                                    selectedAdSetId={selectedAdSetId}
+                                    platformColor={getPlatformColor()}
+                                />
+                            )}
+                        </Tabs.Panel>
+
+                        <Tabs.Panel value="ads" pt="md">
+                            {selectedAdSetId && (
+                                <AdsTable
+                                    adsetId={selectedAdSetId}
+                                    ads={adsByAdset[selectedAdSetId] ?? []}
+                                    loading={adsLoading || isPending}
+                                    platformColor={getPlatformColor()}
+                                />
+                            )}
+                        </Tabs.Panel>
+                    </Tabs>
+                </Card>
+            </Stack>
         </Container>
     );
 }

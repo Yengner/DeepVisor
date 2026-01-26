@@ -6,75 +6,78 @@ import Hero from "./components/Hero";
 
 const highlights = [
     {
-        badge: "Unified view",
-        title: "One view for every ad platform",
-        copy: "Meta, TikTok, Google - brought into a single, calm dashboard so you stop guessing and start deciding.",
-        chips: ["Cross-platform performance", "Budget clarity", "Next best actions"],
+        badge: "Control center",
+        title: "Your marketing OS across platforms",
+        copy: "DeepVisor pulls Meta first, then TikTok + Google, into one calm dashboard — so you see what’s working, what’s wasting spend, and what to do next.",
+        chips: ["Unified reporting", "Goal-based views", "Clear next steps"],
         gradient: "from-amber-100/80 via-white to-white",
-        bars: [28, 46, 64, 78, 58],
+        bars: [24, 40, 66, 82, 60],
     },
     {
-        badge: "Guardrails",
-        title: "Catch waste before it drains budget",
-        copy: "We surface spend drift, tracking gaps, and CPA spikes early - so you fix problems while they're small.",
-        chips: ["Spend anomalies", "Tracking health", "Creative fatigue"],
+        badge: "AI campaigns (in progress)",
+        title: "Launch campaigns with guardrails + approvals",
+        copy: "We’re building a guided flow where you answer a few questions (budget, location, goal) and DeepVisor handles setup — while you stay in control with approvals and overrides.",
+        chips: ["AI Auto / Semi / Manual", "Draft-first publishing", "Human override"],
         gradient: "from-orange-100/70 via-amber-50 to-white",
-        bars: [16, 34, 52, 70, 92],
+        bars: [18, 38, 58, 72, 88],
     },
     {
-        badge: "Automation-ready",
-        title: "From insight → action in minutes",
-        copy: "We’re building workflows that make optimizing ads feel simple - with guardrails, approvals, and transparency.",
-        chips: ["Guided setup", "Smart recommendations", "Human override"],
+        badge: "Waste detection",
+        title: "Catch tracking gaps + spend drift early",
+        copy: "We flag CPA spikes, broken tracking, creative fatigue, and spend drift before they become expensive — with simple explanations, not charts for the sake of charts.",
+        chips: ["Spend drift", "Tracking health", "Creative fatigue"],
         gradient: "from-amber-100/70 via-amber-50 to-white",
-        bars: [20, 44, 72, 62, 56],
+        bars: [14, 32, 55, 74, 92],
     },
 ];
 
+
 const steps = [
     {
-        title: "Understand your reality",
-        copy: "We learn how you run ads today: platforms, goals, budgets, tracking, and what “good” actually means for you.",
-        tag: "Week 0",
+        title: "Connect your platform",
+        copy: "Start with Meta. We pull ad accounts, campaigns, ad sets, ads, and performance — then organize it into a dashboard that’s actually readable.",
+        tag: "Day 1",
     },
     {
-        title: "Connect + set guardrails",
-        copy: "We configure spend/CPA alerts, tracking checks, and reporting so you're protected before you scale.",
+        title: "Define your goal + guardrails",
+        copy: "Tell us what success looks like (leads, calls, WhatsApp, etc.). We set guardrails like CPA and budget alerts so you’re protected while scaling.",
         tag: "Week 1",
     },
     {
-        title: "Weekly clarity that compounds",
-        copy: "A consistent weekly summary: what changed, what matters, and what we'd adjust next — without the noise.",
+        title: "Automate what you trust",
+        copy: "Enable AI automation per campaign: draft-first creation, approvals, A/B testing on top creatives, and monthly re-ranking — all with transparency.",
         tag: "Week 2+",
     },
 ];
 
+
 const updateFeed = [
     {
         channel: "Meta",
-        title: "Spend spike flagged on 1 campaign",
-        impact: "Guardrail prevented budget bleed",
-        tone: "text-emerald-200",
-    },
-    {
-        channel: "TikTok",
-        title: "CPA drift detected early",
-        impact: "Paused + rotated creative in time",
+        title: "Creative fatigue detected on lead campaign",
+        impact: "Suggested 2 replacements + kept budget stable",
         tone: "text-amber-200",
     },
     {
-        channel: "Google Ads",
-        title: "Search terms quality drop spotted",
-        impact: "Added negatives + tightened targeting",
+        channel: "Meta",
+        title: "Tracking health check flagged missing events",
+        impact: "Prevented false 'low performance' conclusions",
         tone: "text-sky-200",
+    },
+    {
+        channel: "AI Campaign Builder",
+        title: "Draft campaign generated from top post",
+        impact: "Ready for approval (objective + budget applied)",
+        tone: "text-emerald-200",
     },
     {
         channel: "All channels",
         title: "Weekly clarity report generated",
-        impact: "Top moves + why they matter",
+        impact: "Top moves + why they matter (no fluff)",
         tone: "text-white/80",
     },
 ];
+
 
 export default function HomePage() {
     return (
@@ -106,13 +109,14 @@ const HighlightsSection = () => {
                             What makes DeepVisor different
                         </h2>
                         <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-                            Less noise, more signal. DeepVisor is built to make cross-platform ads understandable, controllable, and easier to improve.
+                            DeepVisor is an early-stage product building a calm, cross-platform ads operating system — starting with Meta, expanding to TikTok and Google.
+                            We’re actively developing AI-assisted campaign automation with approvals and guardrails, and we’re open to funding to accelerate development.
                         </p>
 
                     </div>
                     <div className="inline-flex items-center gap-2 rounded-full border border-amber-200/70 bg-white/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700 shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
                         <span className="h-2 w-2 rounded-full bg-amber-400" />
-                        Alpha includes weekly partner time
+                        Alpha includes weekly optimization review + product feedback loop
                     </div>
                 </div>
 
@@ -171,19 +175,21 @@ const MomentumSection = () => {
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="space-y-3">
                         <p className="text-xs uppercase tracking-[0.22em] text-amber-100/80">
-                            Your ads, on autopilot (with guardrails)
+                            Guided automation · draft-first · approvals built-in
                         </p>
 
                         <h2 className="text-balance text-3xl font-semibold leading-tight sm:text-4xl">
-                            How we keep the loop calm and honest
+                            Calm clarity, then automation you actually trust
                         </h2>
+
                         <p className="max-w-2xl text-sm text-white/70 sm:text-base">
-                            We pair the product with a real cadence: listening first, setting guardrails early, and keeping the weekly board human-readable.
+                            DeepVisor starts by making performance readable (Meta-first), then layers in guardrails and a guided campaign builder that drafts changes for approval — not surprise automation.
                         </p>
+
                     </div>
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/80">
                         <span className="h-2 w-2 rounded-full bg-emerald-300" />
-                        6 alpha spots open this month
+                        Limited alpha spots · hands-on onboarding
                     </div>
                 </div>
 
@@ -216,8 +222,8 @@ const MomentumSection = () => {
                         <div className="relative space-y-5">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
-                                    <p className="text-xs uppercase tracking-[0.22em] text-white/60">Alpha feed</p>
-                                    <p className="text-lg font-semibold text-white">Signals we caught this week</p>
+                                    <p className="text-xs uppercase tracking-[0.22em] text-white/60">Signal feed</p>
+                                    <p className="text-lg font-semibold text-white">What changed this week</p>
                                 </div>
                                 <div className="rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold text-emerald-100">
                                     Low chaos
@@ -240,16 +246,16 @@ const MomentumSection = () => {
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                                     <p className="text-xs uppercase tracking-[0.18em] text-white/60">Operator load</p>
-                                    <p className="mt-2 text-2xl font-semibold text-white">12m</p>
-                                    <p className="text-xs text-white/60">Time to align per week</p>
+                                    <p className="mt-2 text-2xl font-semibold text-white">~15m</p>
+                                    <p className="text-xs text-white/60">Weekly alignment time (target)</p>
                                     <div className="mt-3 h-2 w-full rounded-full bg-white/10">
                                         <div className="h-full w-[68%] rounded-full bg-gradient-to-r from-emerald-300 to-amber-300" />
                                     </div>
                                 </div>
                                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                                     <p className="text-xs uppercase tracking-[0.18em] text-white/60">Signal coverage</p>
-                                    <p className="mt-2 text-2xl font-semibold text-white">93%</p>
-                                    <p className="text-xs text-white/60">Accounts with clean tracking + alerts</p>
+                                    <p className="mt-2 text-2xl font-semibold text-white">Guardrails</p>
+                                    <p className="text-xs text-white/60">Spend drift + tracking checks + CPA spikes</p>
                                     <div className="mt-3 h-2 w-full rounded-full bg-white/10">
                                         <div className="h-full w-[74%] rounded-full bg-gradient-to-r from-sky-300 to-indigo-300" />
                                     </div>

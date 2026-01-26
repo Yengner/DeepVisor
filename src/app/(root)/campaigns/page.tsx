@@ -68,7 +68,6 @@ export default async function CampaignPage({
     getPlatformDetails(selectedPlatformId, userId),
     getAdAccountData(selectedAdAccountId, selectedPlatformId, userId),
   ]);
-  console.log("Details", platformDetails, adAccountDetails)
 
   const accountMetrics: AggregatedMetrics = {
     spend: adAccountDetails.aggregated_metrics?.spend || 0,

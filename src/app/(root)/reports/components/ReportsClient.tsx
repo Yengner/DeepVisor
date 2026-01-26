@@ -8,6 +8,8 @@ import {
     Container,
     Box,
     ActionIcon,
+    Stack,
+    Card,
 } from '@mantine/core';
 import { IconChevronLeft, IconChevronRight, IconCurrencyDollar, IconUser, IconEye, IconClick } from '@tabler/icons-react';
 import ReportsSidebar from './layout/ReportsSidebar';
@@ -300,50 +302,53 @@ export function ReportsClient({ data, viewType }: ReportsClientProps) {
 
     return (
         <Container size="xl" py="md" style={{ position: 'relative', minHeight: '100vh' }}>
-            {headerContent}
-            <Box style={{ display: 'flex', flexDirection: 'row', minHeight: 'calc(100vh - 60px)' }}>
-                <Box style={{
-                    transition: 'width 0.3s',
-                    width: sidebarCollapsed ? 56 : 180,
-                    minWidth: sidebarCollapsed ? 56 : 90,
-                    maxWidth: sidebarCollapsed ? 56 : 260,
-                    borderRight: '1px solid #e9ecef',
-                    position: 'relative',
-                    height: 'calc(100vh - 80px)',
-                }}>
-                    <Box
-                        style={{
-                            position: 'absolute',
-                            top: 24,
-                            right: -23,
-                            zIndex: 10,
-                        }}
-                    >
-                        <ActionIcon
-                            variant="light"
-                            size={36}
-                            radius="xl"
-                            style={{
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
-                                border: '1px solid #e9ecef',
-                                background: '#f8f9fa',
-                            }}
-                            onClick={() => setSidebarCollapsed((c) => !c)}
-                            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                        >
-                            {sidebarCollapsed ? <IconChevronRight size={22} /> : <IconChevronLeft size={22} />}
-                        </ActionIcon>
+            <Stack gap="lg">
+                {headerContent}
+                <Card withBorder radius="lg" p="md" style={{ background: 'linear-gradient(180deg, rgba(14,165,233,0.04), rgba(15,23,42,0.01))' }}>
+                    <Box style={{ display: 'flex', flexDirection: 'row', minHeight: 'calc(100vh - 200px)' }}>
+                        <Box style={{
+                            transition: 'width 0.3s',
+                            width: sidebarCollapsed ? 64 : 240,
+                            minWidth: sidebarCollapsed ? 64 : 180,
+                            maxWidth: sidebarCollapsed ? 64 : 260,
+                            borderRight: '1px solid #e9ecef',
+                            position: 'relative',
+                            height: '100%',
+                        }}>
+                            <Box
+                                style={{
+                                    position: 'absolute',
+                                    top: 16,
+                                    right: -22,
+                                    zIndex: 10,
+                                }}
+                            >
+                                <ActionIcon
+                                    variant="filled"
+                                    color="blue"
+                                    size={32}
+                                    radius="xl"
+                                    style={{
+                                        boxShadow: '0 8px 24px rgba(14,165,233,0.15)',
+                                    }}
+                                    onClick={() => setSidebarCollapsed((c) => !c)}
+                                    aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                                >
+                                    {sidebarCollapsed ? <IconChevronRight size={18} /> : <IconChevronLeft size={18} />}
+                                </ActionIcon>
+                            </Box>
+                            {!sidebarCollapsed && sidebarContent}
+                        </Box>
+                        <Box style={{
+                            flex: 1,
+                            padding: '4px 0 0 20px',
+                            minHeight: '100%',
+                        }}>
+                            {mainContent}
+                        </Box>
                     </Box>
-                    {!sidebarCollapsed && sidebarContent}
-                </Box>
-                <Box style={{
-                    flex: 1,
-                    padding: '25px 0 0 25px',
-                    minHeight: '100%',
-                }}>
-                    {mainContent}
-                </Box>
-            </Box>
+                </Card>
+            </Stack>
         </Container>
     );
 }

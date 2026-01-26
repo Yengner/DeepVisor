@@ -96,11 +96,12 @@ export default function AdSetTable({
         style={{ borderRadius: 8 }}
       >
         <Table
-          striped
           highlightOnHover
-          withColumnBorders
           stickyHeader
-          style={{ minWidth: 1400, tableLayout: 'auto' }}  // matches campaign table
+          verticalSpacing="sm"
+          horizontalSpacing="md"
+          withColumnBorders={false}
+          style={{ minWidth: 1200, tableLayout: 'auto' }}  // matches campaign table
         >
           <Table.Thead>
             <Table.Tr>

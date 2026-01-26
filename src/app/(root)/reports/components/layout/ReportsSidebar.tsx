@@ -63,21 +63,23 @@ export default function ReportsSidebar({ items = [], paramKey }: ReportsSidebarP
     return (
         <Box
             style={{
-                width: 180,
+                width: 220,
                 minHeight: '100vh',
                 borderRight: `1px solid ${theme.colors.gray[3]}`,
-                padding: theme.spacing.xs,
+                padding: theme.spacing.sm,
                 zIndex: 100,
+                background: 'linear-gradient(180deg, rgba(15,23,42,0.02), rgba(14,165,233,0.04))',
             }}
         >
             {/* Back Button */}
             <Button
-                variant="light"
-                size="xs"
-                mb="sm"
+                variant="subtle"
+                size="sm"
+                mb="md"
                 fullWidth
                 onClick={handleBack}
                 disabled={!selectedId}
+                radius="md"
             >
                 Back
             </Button>
@@ -85,15 +87,16 @@ export default function ReportsSidebar({ items = [], paramKey }: ReportsSidebarP
             {/* Search */}
             <TextInput
                 size="sm"
-                placeholder="Search campaigns..."
+                placeholder="Search…"
                 leftSection={<IconSearch size={16} />}
                 mb="sm"
                 value={filter}
                 onChange={(e) => setFilter(e.currentTarget.value)}
+                radius="md"
             />
 
             {/* List */}
-            <ScrollArea style={{ height: 'calc(100vh - 72px)' }}>
+            <ScrollArea style={{ height: 'calc(100vh - 120px)' }}>
                 <Stack gap="xs">
                     {filtered.map((item) => (
                         <Tooltip label={item.name} withArrow key={item.id} position="right">
@@ -101,13 +104,14 @@ export default function ReportsSidebar({ items = [], paramKey }: ReportsSidebarP
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    padding: '4px 8px',
-                                    borderRadius: 6,
+                                    padding: '6px 10px',
+                                    borderRadius: 10,
                                     background: selectedId === item.id
                                         ? theme.colors.blue[0]
-                                        : theme.colors.gray[1],
+                                        : 'rgba(255,255,255,0.65)',
                                     transition: 'background 0.15s',
                                     cursor: 'pointer',
+                                    border: `1px solid ${theme.colors.gray[2]}`,
                                 }}
                                 onClick={() => handleSelect(item.id)}
                             >
