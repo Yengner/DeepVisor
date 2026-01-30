@@ -11,12 +11,14 @@ import {
     Button,
     Image as MantineImage,
     ThemeIcon,
+    Grid,
     Tabs,
     Paper,
     Divider,
     Accordion,
     Stack,
     Progress,
+    Select,
     Container,
     Modal,
     Tooltip,
@@ -82,7 +84,8 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms, userId }) => {
 
     const totalIntegrations = platforms.length;
     const activeIntegrations = platforms.filter(p => p.isIntegrated).length;
-    const integrationPercentage = (activeIntegrations / totalIntegrations) * 100;
+    const availableIntegrations = totalIntegrations - activeIntegrations;
+    const integrationPercentage = totalIntegrations > 0 ? (activeIntegrations / totalIntegrations) * 100 : 0;
 
     const handleConnect = async (platform: string) => {
         setConnecting(platform);
@@ -160,32 +163,18 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms, userId }) => {
     };
 
     return (
-        <Container size="xl" pos="relative">
+        <Container size="xl" pos="relative" pb="xl">
             <LoadingOverlay visible={refreshing} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
 
-            {/* Stats Section */}
-            <Paper withBorder radius="md" p="md" mb={30}>
-                <Stack>
-                    <Title order={4}>Platform Integrations</Title>
-                    <Group justify="apart" align="center">
-                        <div>
-                            <Text size="sm" c="dimmed">Connected Platforms</Text>
-                            <Text fw={700} size="xl">{activeIntegrations} of {totalIntegrations}</Text>
-                        </div>
-
-                        <div style={{ width: '70%' }}>
-                            <Group justify="apart" mb={5}>
-                                <Text size="xs" c="dimmed">Integration Progress</Text>
-                                <Text size="xs" c="dimmed">{Math.round(integrationPercentage)}%</Text>
-                            </Group>
-                            <Progress
-                                value={integrationPercentage}
-                                size="md"
-                                radius="xl"
-                                color={integrationPercentage > 0 ? "blue" : "gray"}
-                            />
-                        </div>
-
+            <Stack gap="xl">
+                <Group justify="apart" align="flex-start">
+                    <Stack gap={6}>
+                        <Title order={2}>Integrations</Title>
+                        <Text size="sm" c="dimmed">
+                            Connect your ad platforms to sync performance data, unlock automation, and keep reporting consistent.
+                        </Text>
+                    </Stack>
+                    <Group>
                         <Button
                             leftSection={<IconRefresh size={16} />}
                             variant="subtle"
@@ -194,360 +183,410 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms, userId }) => {
                         >
                             Refresh Connections
                         </Button>
+                        <Button leftSection={<IconPlus size={16} />} variant="outline">
+                            Request New Integration
+                        </Button>
                     </Group>
-                </Stack>
-            </Paper>
-
-            {/* Featured Integration - Meta */}
-            <Title order={3} mb="md">Featured Integration</Title>
-            <Card withBorder radius="md" shadow="sm" mb={40}>
-                <Group justify="apart" mb="lg">
-                    <Group gap="xl">
-                        <ThemeIcon size={70} variant="light" color="blue" radius="md">
-                            <IconBrandFacebook size={40} stroke={1.5} />
-                        </ThemeIcon>
-                        <div>
-                            <Title order={3}>{metaPlatform.platform_name}</Title>
-                            <Text c="dimmed" size="sm">
-                                Connect to Facebook Ads Manager to sync campaigns, ad sets, and performance data
-                            </Text>
-                        </div>
-                    </Group>
-                    <Badge
-                        size="lg"
-                        color={metaPlatform.isIntegrated ? "green" : "gray"}
-                        variant="filled"
-                        leftSection={metaPlatform.isIntegrated ?
-                            <IconCheck size={14} /> :
-                            <IconX size={14} />
-                        }
-                    >
-                        {metaPlatform.isIntegrated ? "Connected" : "Not Connected"}
-                    </Badge>
                 </Group>
 
-                <Tabs defaultValue="overview">
-                    <Tabs.List mb="md">
-                        <Tabs.Tab value="overview">Overview</Tabs.Tab>
-                        <Tabs.Tab value="features">Features</Tabs.Tab>
-                        <Tabs.Tab value="settings" disabled={!metaPlatform.isIntegrated}>Settings</Tabs.Tab>
-                    </Tabs.List>
+                <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
+                    <Paper withBorder radius="md" p="md">
+                        <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+                            Connected
+                        </Text>
+                        <Group justify="apart" align="flex-end" mt="xs">
+                            <Title order={3}>{activeIntegrations}</Title>
+                            <Text size="sm" c="dimmed">
+                                of {totalIntegrations}
+                            </Text>
+                        </Group>
+                        <Text size="xs" c="dimmed">
+                            Platforms currently synced
+                        </Text>
+                    </Paper>
 
-                    <Tabs.Panel value="overview">
-                        <Grid>
-                            <Grid.Col span={8}>
-                                <Text mb="md">{metaPlatform.full_description || metaPlatform.description}</Text>
+                    <Paper withBorder radius="md" p="md">
+                        <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+                            Available
+                        </Text>
+                        <Group justify="apart" align="flex-end" mt="xs">
+                            <Title order={3}>{availableIntegrations}</Title>
+                            <Text size="sm" c="dimmed">
+                                platforms
+                            </Text>
+                        </Group>
+                        <Text size="xs" c="dimmed">
+                            Ready to connect when you are
+                        </Text>
+                    </Paper>
 
-                                <Accordion variant="separated" mt="md">
-                                    <Accordion.Item value="strengths">
-                                        <Accordion.Control>
-                                            <Text fw={500}>Strengths</Text>
-                                        </Accordion.Control>
-                                        <Accordion.Panel>
-                                            <Text size="sm">{metaPlatform.strengths}</Text>
-                                        </Accordion.Panel>
-                                    </Accordion.Item>
+                    <Paper withBorder radius="md" p="md">
+                        <Group justify="apart" align="center" mb="xs">
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+                                Integration progress
+                            </Text>
+                            <Badge size="sm" color={integrationPercentage > 0 ? "blue" : "gray"} variant="light">
+                                {Math.round(integrationPercentage)}%
+                            </Badge>
+                        </Group>
+                        <Progress
+                            value={integrationPercentage}
+                            size="md"
+                            radius="xl"
+                            color={integrationPercentage > 0 ? "blue" : "gray"}
+                        />
+                        <Text size="xs" c="dimmed" mt="xs">
+                            Add platforms to unlock more insights
+                        </Text>
+                    </Paper>
+                </SimpleGrid>
 
-                                    <Accordion.Item value="weaknesses">
-                                        <Accordion.Control>
-                                            <Text fw={500}>Limitations</Text>
-                                        </Accordion.Control>
-                                        <Accordion.Panel>
-                                            <Text size="sm">{metaPlatform.weaknesses}</Text>
-                                        </Accordion.Panel>
-                                    </Accordion.Item>
-                                </Accordion>
-                            </Grid.Col>
+                {/* Featured Integration - Meta */}
+                <div>
+                    <Title order={3} mb="md">
+                        Featured Integration
+                    </Title>
+                    <Card withBorder radius="md" shadow="sm">
+                        <Group justify="apart" mb="lg">
+                            <Group gap="xl">
+                                <ThemeIcon size={70} variant="light" color="blue" radius="md">
+                                    <IconBrandFacebook size={40} stroke={1.5} />
+                                </ThemeIcon>
+                                <div>
+                                    <Title order={3}>{metaPlatform.platform_name}</Title>
+                                    <Text c="dimmed" size="sm">
+                                        Connect to Facebook Ads Manager to sync campaigns, ad sets, and performance data
+                                    </Text>
+                                </div>
+                            </Group>
+                            <Badge
+                                size="lg"
+                                color={metaPlatform.isIntegrated ? "green" : "gray"}
+                                variant="filled"
+                                leftSection={
+                                    metaPlatform.isIntegrated ? <IconCheck size={14} /> : <IconX size={14} />
+                                }
+                            >
+                                {metaPlatform.isIntegrated ? "Connected" : "Not Connected"}
+                            </Badge>
+                        </Group>
 
-                            <Grid.Col span={4}>
-                                <Paper withBorder p="md" radius="md">
-                                    <Title order={5} mb="md">Meta Integration</Title>
+                        <Tabs defaultValue="overview">
+                            <Tabs.List mb="md">
+                                <Tabs.Tab value="overview">Overview</Tabs.Tab>
+                                <Tabs.Tab value="features">Features</Tabs.Tab>
+                                <Tabs.Tab value="settings" disabled={!metaPlatform.isIntegrated}>
+                                    Settings
+                                </Tabs.Tab>
+                            </Tabs.List>
 
-                                    {metaPlatform.isIntegrated ? (
-                                        <>
-                                            <Group>
-                                                <ThemeIcon color="green" size="md" radius="xl">
-                                                    <IconCheck size={16} />
-                                                </ThemeIcon>
-                                                <div>
-                                                    <Text fw={500}>Connected</Text>
-                                                    <Text size="xs" color="dimmed">Your Meta account is linked</Text>
-                                                </div>
-                                            </Group>
+                            <Tabs.Panel value="overview">
+                                <Grid>
+                                    <Grid.Col span={{ base: 12, md: 8 }}>
+                                        <Text mb="md">{metaPlatform.full_description || metaPlatform.description}</Text>
 
-                                            <Divider my="md" />
+                                        <Accordion variant="separated" mt="md">
+                                            <Accordion.Item value="strengths">
+                                                <Accordion.Control>
+                                                    <Text fw={500}>Strengths</Text>
+                                                </Accordion.Control>
+                                                <Accordion.Panel>
+                                                    <Text size="sm">{metaPlatform.strengths}</Text>
+                                                </Accordion.Panel>
+                                            </Accordion.Item>
 
-                                            <Group justify="apart">
-                                                <Text size="sm">Last synced</Text>
-                                                <Text size="sm" c="dimmed">10 minutes ago</Text>
-                                            </Group>
+                                            <Accordion.Item value="weaknesses">
+                                                <Accordion.Control>
+                                                    <Text fw={500}>Limitations</Text>
+                                                </Accordion.Control>
+                                                <Accordion.Panel>
+                                                    <Text size="sm">{metaPlatform.weaknesses}</Text>
+                                                </Accordion.Panel>
+                                            </Accordion.Item>
+                                        </Accordion>
+                                    </Grid.Col>
 
-                                            <Group mt="md">
-                                                <Button
-                                                    leftSection={<IconRefresh size={16} />}
-                                                    variant="light"
-                                                    flex="1"
-                                                >
-                                                    Sync Data
-                                                </Button>
+                                    <Grid.Col span={{ base: 12, md: 4 }}>
+                                        <Paper withBorder p="md" radius="md">
+                                            <Title order={5} mb="md">
+                                                Meta Integration
+                                            </Title>
 
-                                                <Menu shadow="md">
-                                                    <Menu.Target>
-                                                        <ActionIcon variant="default">
-                                                            <IconSettings size={16} />
-                                                        </ActionIcon>
-                                                    </Menu.Target>
-                                                    <Menu.Dropdown>
-                                                        <Menu.Label>Integration</Menu.Label>
-                                                        <Menu.Item>
-                                                            View Details
-                                                        </Menu.Item>
-                                                        <Menu.Divider />
-                                                        <Menu.Label>Danger</Menu.Label>
-                                                        <Menu.Item
-                                                            color="red"
-                                                            leftSection={<IconTrash size={14} />}
-                                                            onClick={() => handleDisconnect('meta')}
-                                                            disabled={disconnecting === 'meta'}
+                                            {metaPlatform.isIntegrated ? (
+                                                <>
+                                                    <Group>
+                                                        <ThemeIcon color="green" size="md" radius="xl">
+                                                            <IconCheck size={16} />
+                                                        </ThemeIcon>
+                                                        <div>
+                                                            <Text fw={500}>Connected</Text>
+                                                            <Text size="xs" color="dimmed">
+                                                                Your Meta account is linked
+                                                            </Text>
+                                                        </div>
+                                                    </Group>
+
+                                                    <Divider my="md" />
+
+                                                    <Group justify="apart">
+                                                        <Text size="sm">Last synced</Text>
+                                                        <Text size="sm" c="dimmed">
+                                                            10 minutes ago
+                                                        </Text>
+                                                    </Group>
+
+                                                    <Group mt="md">
+                                                        <Button
+                                                            leftSection={<IconRefresh size={16} />}
+                                                            variant="light"
+                                                            flex="1"
                                                         >
-                                                            {disconnecting === 'meta' ? 'Disconnecting...' : 'Disconnect'}
-                                                        </Menu.Item>
-                                                    </Menu.Dropdown>
-                                                </Menu>
+                                                            Sync Data
+                                                        </Button>
+
+                                                        <Menu shadow="md">
+                                                            <Menu.Target>
+                                                                <ActionIcon variant="default">
+                                                                    <IconSettings size={16} />
+                                                                </ActionIcon>
+                                                            </Menu.Target>
+                                                            <Menu.Dropdown>
+                                                                <Menu.Label>Integration</Menu.Label>
+                                                                <Menu.Item>View Details</Menu.Item>
+                                                                <Menu.Divider />
+                                                                <Menu.Label>Danger</Menu.Label>
+                                                                <Menu.Item
+                                                                    color="red"
+                                                                    leftSection={<IconTrash size={14} />}
+                                                                    onClick={() => handleDisconnect("meta")}
+                                                                    disabled={disconnecting === "meta"}
+                                                                >
+                                                                    {disconnecting === "meta"
+                                                                        ? "Disconnecting..."
+                                                                        : "Disconnect"}
+                                                                </Menu.Item>
+                                                            </Menu.Dropdown>
+                                                        </Menu>
+                                                    </Group>
+                                                </>
+                                            ) : (
+                                                <Button
+                                                    fullWidth
+                                                    size="md"
+                                                    variant="filled"
+                                                    color="blue"
+                                                    leftSection={<IconPlus size={16} />}
+                                                    onClick={() => handleConnect("meta")}
+                                                    loading={connecting === "meta"}
+                                                    mt="md"
+                                                >
+                                                    Connect Meta Account
+                                                </Button>
+                                            )}
+                                        </Paper>
+                                    </Grid.Col>
+                                </Grid>
+                            </Tabs.Panel>
+
+                            <Tabs.Panel value="features">
+                                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                                    <FeatureCard
+                                        title="Automated Campaign Syncing"
+                                        description="Automatically sync all campaigns, ad sets, and ads with real-time performance data"
+                                        icon={<IconRefresh size={18} />}
+                                    />
+                                    <FeatureCard
+                                        title="Detailed Analytics"
+                                        description="Get comprehensive analytics on campaigns across demographics, placements, and objectives"
+                                        icon={<IconChartBar size={18} />}
+                                    />
+                                    <FeatureCard
+                                        title="Cross-Platform Insights"
+                                        description="Compare Facebook performance with other connected platforms for holistic marketing insights"
+                                        icon={<IconBrandFacebook size={18} />}
+                                    />
+                                    <FeatureCard
+                                        title="Customizable Reports"
+                                        description="Generate and schedule custom reports with the KPIs that matter most to your business"
+                                        icon={<IconChartBar size={18} />}
+                                    />
+                                </SimpleGrid>
+                            </Tabs.Panel>
+
+                            <Tabs.Panel value="settings">
+                                <Paper withBorder p="md" radius="md">
+                                    {metaPlatform.isIntegrated ? (
+                                        <Stack>
+                                            <Group justify="apart">
+                                                <Text fw={500}>Connection Status</Text>
+                                                <Badge color="green">Active</Badge>
                                             </Group>
-                                        </>
+                                            <Group justify="apart">
+                                                <Text fw={500}>Sync Frequency</Text>
+                                                <Select
+                                                    defaultValue="1h"
+                                                    data={[
+                                                        { value: "30m", label: "Every 30 minutes" },
+                                                        { value: "1h", label: "Every hour" },
+                                                        { value: "3h", label: "Every 3 hours" },
+                                                        { value: "1d", label: "Daily" },
+                                                    ]}
+                                                    w={200}
+                                                />
+                                            </Group>
+                                            <Divider />
+                                            <Button color="red" variant="light" leftSection={<IconX size={16} />}>
+                                                Disconnect
+                                            </Button>
+                                        </Stack>
                                     ) : (
-                                        <Button
-                                            fullWidth
-                                            size="md"
-                                            variant="filled"
-                                            color="blue"
-                                            leftSection={<IconPlus size={16} />}
-                                            onClick={() => handleConnect('meta')}
-                                            loading={connecting === 'meta'}
-                                            mt="md"
-                                        >
-                                            Connect Meta Account
-                                        </Button>
+                                        <Text>Connect Meta to access settings</Text>
                                     )}
                                 </Paper>
-                            </Grid.Col>
-                        </Grid>
-                    </Tabs.Panel>
-
-                    <Tabs.Panel value="features">
-                        <SimpleGrid cols={2} spacing="md">
-                            <FeatureCard
-                                title="Automated Campaign Syncing"
-                                description="Automatically sync all campaigns, ad sets, and ads with real-time performance data"
-                                icon={<IconRefresh size={18} />}
-                            />
-                            <FeatureCard
-                                title="Detailed Analytics"
-                                description="Get comprehensive analytics on campaigns across demographics, placements, and objectives"
-                                icon={<IconChartBar size={18} />}
-                            />
-                            <FeatureCard
-                                title="Cross-Platform Insights"
-                                description="Compare Facebook performance with other connected platforms for holistic marketing insights"
-                                icon={<IconBrandFacebook size={18} />}
-                            />
-                            <FeatureCard
-                                title="Customizable Reports"
-                                description="Generate and schedule custom reports with the KPIs that matter most to your business"
-                                icon={<IconChartBar size={18} />}
-                            />
-                        </SimpleGrid>
-                    </Tabs.Panel>
-
-                    <Tabs.Panel value="settings">
-                        <Paper withBorder p="md" radius="md">
-                            {metaPlatform.isIntegrated ? (
-                                <Stack>
-                                    <Group justify="apart">
-                                        <Text fw={500}>Connection Status</Text>
-                                        <Badge color="green">Active</Badge>
-                                    </Group>
-                                    <Group justify="apart">
-                                        <Text fw={500}>Sync Frequency</Text>
-                                        <Select
-                                            defaultValue="1h"
-                                            data={[
-                                                { value: '30m', label: 'Every 30 minutes' },
-                                                { value: '1h', label: 'Every hour' },
-                                                { value: '3h', label: 'Every 3 hours' },
-                                                { value: '1d', label: 'Daily' },
-                                            ]}
-                                            style={{ width: 200 }}
-                                        />
-                                    </Group>
-                                    <Divider />
-                                    <Button
-                                        color="red"
-                                        variant="light"
-                                        leftSection={<IconX size={16} />}
-                                    >
-                                        Disconnect
-                                    </Button>
-                                </Stack>
-                            ) : (
-                                <Text>Connect Meta to access settings</Text>
-                            )}
-                        </Paper>
-                    </Tabs.Panel>
-                </Tabs>
-            </Card>
-
-            {/* Other Platforms */}
-            <Group justify="apart" mb="md">
-                <Title order={3}>Other Platforms</Title>
-                <Button leftSection={<IconPlus size={16} />} variant="outline" size='compact-md'>
-                    Request New Integration
-                </Button>
-            </Group>
-
-            <SimpleGrid
-                cols={{ base: 3, md: 2, sm: 1 }}
-                spacing="lg"
-            >
-                {otherPlatforms.map((platform) => (
-                    <Card key={platform.id} withBorder radius="md" p="md">
-                        <Card.Section p="md" mb="md">
-                            <Group justify="apart">
-                                <Group>
-                                    <ThemeIcon size="lg" radius="md" color="blue" variant="light">
-                                        {getPlatformIcon(platform.id, 24, 1.5)}
-                                    </ThemeIcon>
-                                    <Text fw={500}>{platform.platform_name}</Text>
-                                </Group>
-                                <Badge
-                                    color={platform.isIntegrated ? "green" : "gray"}
-                                    variant={platform.isIntegrated ? "filled" : "outline"}
-                                >
-                                    {platform.isIntegrated ? "Connected" : "Not Connected"}
-                                </Badge>
-                            </Group>
-                        </Card.Section>
-
-                        <Text size="sm" lineClamp={3} mb="md">
-                            {platform.description}
-                        </Text>
-
-                        <Card.Section p="md">
-                            <Group justify="apart">
-                                <Button
-                                    variant="light"
-                                    size='compact-md'
-                                    onClick={() => handleViewDetails(platform)}
-                                >
-                                    View Details
-                                </Button>
-                                {platform.id !== 'meta' && (
-                                    <>
-                                        {platform.id === 'google' ? (
-                                            <Button
-                                                leftSection={<IconLink size={16} />}
-                                                variant="filled"
-                                                size='compact-md'
-                                            >
-                                                Connect
-                                            </Button>
-                                        ) : (
-                                            <Tooltip label="Coming soon">
-                                                <Button
-                                                    leftSection={<IconLock size={16} />}
-                                                    variant="subtle"
-                                                    size='compact-md'
-                                                    disabled
-                                                >
-                                                    Coming Soon
-                                                </Button>
-                                            </Tooltip>
-                                        )}
-                                    </>
-                                )}
-                            </Group>
-                        </Card.Section>
+                            </Tabs.Panel>
+                        </Tabs>
                     </Card>
-                ))}
-            </SimpleGrid>
+                </div>
 
-            {/* Platform Details Modal */}
-            <Modal
-                opened={detailsOpened}
-                onClose={closeDetails}
-                size="lg"
-                title={
-                    <Group>
-                        {selectedPlatform && (
-                            <>
-                                <ThemeIcon size="md" radius="md" color="blue" variant="light">
-                                    {getPlatformIcon(selectedPlatform.id, 24, 1.5)}
-                                </ThemeIcon>
-                                <Text fw={700}>{selectedPlatform?.platform_name} Integration</Text>
-                            </>
-                        )}
+                <div>
+                    <Group justify="apart" mb="md">
+                        <Title order={3}>Other Platforms</Title>
+                        <Text size="sm" c="dimmed">
+                            Additional channels ready for connection
+                        </Text>
                     </Group>
-                }
-            >
-                {selectedPlatform && (
-                    <Stack>
-                        <MantineImage
-                            src={selectedPlatform.image_url}
-                            alt={selectedPlatform.platform_name}
-                            width={100}
-                            height={100}
-                            fit="contain"
-                        />
-                        <Text>{selectedPlatform.full_description || selectedPlatform.description}</Text>
 
-                        <Title order={5}>Strengths</Title>
-                        <Text size="sm">{selectedPlatform.strengths}</Text>
+                    <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+                        {otherPlatforms.map((platform) => (
+                            <Card key={platform.id} withBorder radius="md" p="md">
+                                <Card.Section p="md" mb="md">
+                                    <Group justify="apart">
+                                        <Group>
+                                            <ThemeIcon size="lg" radius="md" color="blue" variant="light">
+                                                {getPlatformIcon(platform.id, 24, 1.5)}
+                                            </ThemeIcon>
+                                            <Text fw={500}>{platform.platform_name}</Text>
+                                        </Group>
+                                        <Badge
+                                            color={platform.isIntegrated ? "green" : "gray"}
+                                            variant={platform.isIntegrated ? "filled" : "outline"}
+                                        >
+                                            {platform.isIntegrated ? "Connected" : "Not Connected"}
+                                        </Badge>
+                                    </Group>
+                                </Card.Section>
 
-                        <Title order={5}>Limitations</Title>
-                        <Text size="sm">{selectedPlatform.weaknesses}</Text>
+                                <Text size="sm" lineClamp={3} mb="md">
+                                    {platform.description}
+                                </Text>
 
-                        <Divider my="sm" />
+                                <Card.Section p="md">
+                                    <Group justify="apart">
+                                        <Button variant="light" size="compact-md" onClick={() => handleViewDetails(platform)}>
+                                            View Details
+                                        </Button>
+                                        {platform.id !== "meta" && (
+                                            <>
+                                                {platform.id === "google" ? (
+                                                    <Button leftSection={<IconLink size={16} />} variant="filled" size="compact-md">
+                                                        Connect
+                                                    </Button>
+                                                ) : (
+                                                    <Tooltip label="Coming soon">
+                                                        <Button
+                                                            leftSection={<IconLock size={16} />}
+                                                            variant="subtle"
+                                                            size="compact-md"
+                                                            disabled
+                                                        >
+                                                            Coming Soon
+                                                        </Button>
+                                                    </Tooltip>
+                                                )}
+                                            </>
+                                        )}
+                                    </Group>
+                                </Card.Section>
+                            </Card>
+                        ))}
+                    </SimpleGrid>
+                </div>
 
-                        <Group justify="apart">
-                            {selectedPlatform.id === 'meta' ? (
-                                selectedPlatform.isIntegrated ? (
-                                    <Button
-                                        color="red"
-                                        variant="outline"
-                                        leftSection={<IconTrash size={14} />}
-                                        onClick={() => handleDisconnect('meta')}
-                                        loading={disconnecting === 'meta'}
-                                    >
-                                        Disconnect {selectedPlatform.platform_name}
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        color="blue"
-                                        leftSection={<IconLink size={16} />}
-                                        onClick={() => handleConnect('meta')}
-                                        loading={connecting === 'meta'}
-                                    >
-                                        Connect {selectedPlatform.platform_name}
-                                    </Button>
-                                )
-                            ) : selectedPlatform.id === 'google' ? (
-                                <Button leftSection={<IconLink size={16} />}>Connect Google Ads</Button>
-                            ) : (
-                                <Button
-                                    leftSection={<IconLock size={16} />}
-                                    variant="subtle"
-                                    disabled
-                                >
-                                    Coming Soon
-                                </Button>
+                {/* Platform Details Modal */}
+                <Modal
+                    opened={detailsOpened}
+                    onClose={closeDetails}
+                    size="lg"
+                    title={
+                        <Group>
+                            {selectedPlatform && (
+                                <>
+                                    <ThemeIcon size="md" radius="md" color="blue" variant="light">
+                                        {getPlatformIcon(selectedPlatform.id, 24, 1.5)}
+                                    </ThemeIcon>
+                                    <Text fw={700}>{selectedPlatform?.platform_name} Integration</Text>
+                                </>
                             )}
-
-                            <Button variant="subtle" onClick={closeDetails}>Close</Button>
                         </Group>
-                    </Stack>
-                )}
-            </Modal>
+                    }
+                >
+                    {selectedPlatform && (
+                        <Stack>
+                            <MantineImage
+                                src={selectedPlatform.image_url}
+                                alt={selectedPlatform.platform_name}
+                                width={100}
+                                height={100}
+                                fit="contain"
+                            />
+                            <Text>{selectedPlatform.full_description || selectedPlatform.description}</Text>
+
+                            <Title order={5}>Strengths</Title>
+                            <Text size="sm">{selectedPlatform.strengths}</Text>
+
+                            <Title order={5}>Limitations</Title>
+                            <Text size="sm">{selectedPlatform.weaknesses}</Text>
+
+                            <Divider my="sm" />
+
+                            <Group justify="apart">
+                                {selectedPlatform.id === "meta" ? (
+                                    selectedPlatform.isIntegrated ? (
+                                        <Button
+                                            color="red"
+                                            variant="outline"
+                                            leftSection={<IconTrash size={14} />}
+                                            onClick={() => handleDisconnect("meta")}
+                                            loading={disconnecting === "meta"}
+                                        >
+                                            Disconnect {selectedPlatform.platform_name}
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            color="blue"
+                                            leftSection={<IconLink size={16} />}
+                                            onClick={() => handleConnect("meta")}
+                                            loading={connecting === "meta"}
+                                        >
+                                            Connect {selectedPlatform.platform_name}
+                                        </Button>
+                                    )
+                                ) : selectedPlatform.id === "google" ? (
+                                    <Button leftSection={<IconLink size={16} />}>Connect Google Ads</Button>
+                                ) : (
+                                    <Button leftSection={<IconLock size={16} />} variant="subtle" disabled>
+                                        Coming Soon
+                                    </Button>
+                                )}
+
+                                <Button variant="subtle" onClick={closeDetails}>
+                                    Close
+                                </Button>
+                            </Group>
+                        </Stack>
+                    )}
+                </Modal>
+            </Stack>
         </Container>
     );
 };
@@ -569,54 +608,6 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, icon }) =
         </Group>
         <Text size="sm" c="dimmed">{description}</Text>
     </Paper>
-);
-
-// Grid component for layout
-const Grid = ({ children }: { children: React.ReactNode }) => (
-    <div style={{ display: 'flex', flexWrap: 'wrap', margin: '-8px' }}>
-        {children}
-    </div>
-);
-
-// Create the Col component with proper display name
-const GridCol: React.FC<{ span: number; children: React.ReactNode }> = ({ span, children }) => (
-    <div style={{ flex: `0 0 ${(span / 12) * 100}%`, padding: '8px' }}>
-        {children}
-    </div>
-);
-
-// Assign it as a property and set the display name
-Grid.Col = GridCol;
-GridCol.displayName = 'Grid.Col'; // This fixes the ESLint error
-
-// Define types for Select component
-interface SelectOption {
-    value: string;
-    label: string;
-}
-
-interface SelectProps {
-    data: SelectOption[];
-    defaultValue: string;
-    style?: React.CSSProperties;
-}
-
-const Select = ({ data, defaultValue, style }: SelectProps) => (
-    <select
-        defaultValue={defaultValue}
-        style={{
-            ...style,
-            padding: '8px 12px',
-            borderRadius: '4px',
-            border: '1px solid #ced4da'
-        }}
-    >
-        {data.map(option => (
-            <option key={option.value} value={option.value}>
-                {option.label}
-            </option>
-        ))}
-    </select>
 );
 
 export default PlatformList;

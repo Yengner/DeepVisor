@@ -1,4 +1,3 @@
-// lib/quieries/adsets/getAdSetsLifetimeIncludingZeros.ts
 import { createSupabaseClient } from "@/lib/server/supabase/server";
 
 const formatDate = (d?: string | null) =>

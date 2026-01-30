@@ -2,12 +2,12 @@ import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { getLoggedInUser } from "@/lib/server/actions/user";
 import { ReportsClient } from "./components/ReportsClient";
-import { getAdAccountData } from "@/lib/quieries/ad_accounts";
-import { getAdSetsLifetimeIncludingZeros } from "@/lib/quieries/adsets/getAdSetsMetrics";
-import { getAdsLifetimeIncludingZeros } from "@/lib/quieries/ads/getAdsMetrics";
+import { getAdAccountData } from '@/lib/server/repositories/ad_accounts';
+import { getAdSetsLifetimeIncludingZeros } from "@/lib/server/repositories/adsets/getAdSetsMetrics";
+import { getAdsLifetimeIncludingZeros } from "@/lib/server/repositories/ads/getAdsMetrics";
 import { Suspense } from "react";
 import ReportsClientFallback from "./components/ReportClientFallback";
-import { getCampaignLifetimeIncludingZeros } from "@/lib/quieries/campaigns";
+import { getCampaignLifetimeIncludingZeros } from "@/lib/server/repositories/campaigns";
 
 const formatDate = (dateStr: string) => {
   const d = new Date(dateStr);
