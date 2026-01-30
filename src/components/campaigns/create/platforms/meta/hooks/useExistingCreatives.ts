@@ -1,4 +1,4 @@
-import { MetaCreative } from '@/lib/actions/meta/creatives/actions';
+import { MetaCreative } from '@/lib/server/actions/meta/creatives/actions';
 import { useState, useEffect, useCallback } from 'react';
 
 export interface UseExistingCreativesOptions {

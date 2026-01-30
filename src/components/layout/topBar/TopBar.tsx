@@ -1,8 +1,8 @@
-import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
+import { createSupabaseClient } from '@/lib/server/supabase/server';
 import TopBarClient from './TopBarClient';
 import { cookies } from 'next/headers';
-import { getLoggedInUser } from '@/lib/actions/user';
-import { getNotifications } from '@/lib/actions/notifications/server/getNotifications';
+import { getLoggedInUser } from '@/lib/server/actions/user';
+import { getNotifications } from '@/lib/server/actions/notifications/server/getNotifications';
 
 export default async function Topbar() {
   const user = await getLoggedInUser();

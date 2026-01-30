@@ -1,5 +1,5 @@
 "use client";
-import { useJobProgress } from "@/app/hooks/useJobProgress";
+import { useJobProgress } from "@/lib/client/hooks/useJobProgress";
 import { Modal, Progress, Text, Timeline, Group, Button } from "@mantine/core";
 import { IconCheck, IconAlertTriangle, IconLoader } from "@tabler/icons-react";
 

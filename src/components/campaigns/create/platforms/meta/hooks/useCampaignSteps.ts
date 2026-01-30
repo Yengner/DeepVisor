@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { showError } from '@/lib/utils/toasts';
+import { showError } from '@/lib/client/toasts';
 import { UseFormReturnType } from '@mantine/form';
-import { CampaignFormValues } from '@/lib/actions/meta/types';
+import { CampaignFormValues } from '@/lib/server/actions/meta/types';
 
 interface UseCampaignStepsReturn {
   active: number;

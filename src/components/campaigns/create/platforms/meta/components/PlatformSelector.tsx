@@ -8,7 +8,7 @@ import {
     IconBrandFacebook, IconBrandGoogle, IconBrandTiktok,
     IconChevronRight
 } from '@tabler/icons-react';
-import { showError } from '@/lib/utils/toasts';
+import { showError } from '@/lib/client/toasts';
 
 interface PlatformSelectorProps {
     campaignType: 'smart' | 'manual';

@@ -10,7 +10,7 @@ import { UseFormReturnType } from '@mantine/form';
 import { useState } from 'react';
 
 // Objective mappings and types
-import { CampaignFormValues } from '@/lib/actions/meta/types';
+import { CampaignFormValues } from '@/lib/server/actions/meta/types';
 import { getObjectiveLabel, getValidDestinationTypes } from '../utils/objectiveMappings';
 import CboDiagramModal from './CboDiagramModal';
 

@@ -1,6 +1,6 @@
 
 import ProposalClient from '@/components/proposal/ProposalClient';
-import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
+import { createSupabaseClient } from '@/lib/server/supabase/server';
 
 
 interface PageProps {

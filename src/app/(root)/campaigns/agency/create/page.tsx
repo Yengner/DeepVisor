@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import SmartCampaignClient from "./SmartCampaignClient";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
-import { getLoggedInUser } from "@/lib/actions/user";
-import { createSupabaseClient } from "@/lib/utils/supabase/clients/server";
+import { getLoggedInUser } from "@/lib/server/actions/user";
+import { createSupabaseClient } from "@/lib/server/supabase/server";
 import { getAdAccountData } from "@/lib/quieries/ad_accounts";
 
 

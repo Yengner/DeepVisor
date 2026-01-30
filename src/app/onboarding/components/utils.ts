@@ -1,12 +1,12 @@
 "use server";
-import { createClient } from "@/lib/utils/supabase/clients/browser";
+import { createServerClient } from "@/lib/server/supabase/server";
 import { ConnectedAccount } from "./types";
 
 
 
 export const updateConnectedAccountsInDatabase = async ({ userId, accounts }: { userId: string; accounts: ConnectedAccount[] }) => {
     try {
-        const supabase = createClient();
+        const supabase = await createServerClient();
         if (userId) {
             await supabase
                 .from('profiles')

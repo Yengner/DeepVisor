@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
-import { getLoggedInUser } from "@/lib/actions/user";
+import { getLoggedInUser } from "@/lib/server/actions/user";
 import { ReportsClient } from "./components/ReportsClient";
 import { getAdAccountData } from "@/lib/quieries/ad_accounts";
 import { getAdSetsLifetimeIncludingZeros } from "@/lib/quieries/adsets/getAdSetsMetrics";

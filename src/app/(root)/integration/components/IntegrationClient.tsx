@@ -38,7 +38,7 @@ import {
 } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/utils/supabase/clients/browser';
+import { createClient } from '@/lib/client/supabase/browser';
 import toast from 'react-hot-toast';
 import { getPlatformIcon } from '@/utils/utils';
 

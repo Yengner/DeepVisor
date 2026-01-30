@@ -1,5 +1,5 @@
 // app/decisions/[decisionId]/page.tsx
-import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
+import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { notFound } from 'next/navigation';
 import DecisionReviewClient, { DecisionSSR, OptimizerActionRow } from '../../components/DecisionReviewClient';
 // Adjust this import to your actual server supabase helper

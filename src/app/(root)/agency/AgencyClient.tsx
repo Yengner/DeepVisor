@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { createClient } from '@/lib/utils/supabase/clients/browser';
+import { createClient } from '@/lib/client/supabase/browser';
 import {
   Container, Card, Title, Text, Stack, Button, Group, Badge, NumberInput,
   Paper, Progress, ThemeIcon, Drawer, JsonInput, Switch, Table, Box, Grid,

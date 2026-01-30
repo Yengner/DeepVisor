@@ -1,24 +1,43 @@
-"use client";
-
+import Link from "next/link";
 import type { FC } from "react";
+import { Container } from "@/components/marketing";
 
 const Footer: FC = () => {
     return (
-        <footer className="mt-16 border-t border-border bg-background">
-            <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-medium tracking-tight">
-                        © {new Date().getFullYear()} DeepVisor.
-                    </span>
-                    <span>Exploring the future of small-business advertising.</span>
+        <footer className="border-t border-white/10 bg-ink text-white/70">
+            <Container className="flex flex-col gap-6 py-10 text-xs sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-white">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[10px] font-semibold">
+                            DV
+                        </span>
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
+                            DeepVisor
+                        </span>
+                    </div>
+                    <p className="max-w-xs text-white/60">
+                        Enterprise-grade signal for ad teams that want clarity, guardrails, and calm execution.
+                    </p>
+                    <p className="text-[11px] text-white/40">
+                        © {new Date().getFullYear()} DeepVisor. All rights reserved.
+                    </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4">
-                    <button className="hover:text-foreground">Contact</button>
-                    <button className="hover:text-foreground">For investors</button>
-                    <button className="hover:text-foreground">Privacy</button>
+                <div className="flex flex-wrap gap-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">
+                    <Link href="#platform" className="transition hover:text-white">
+                        Platform
+                    </Link>
+                    <Link href="#use-cases" className="transition hover:text-white">
+                        Use cases
+                    </Link>
+                    <Link href="#cta" className="transition hover:text-white">
+                        Contact
+                    </Link>
+                    <Link href="/privacy-policy" className="transition hover:text-white">
+                        Privacy
+                    </Link>
                 </div>
-            </div>
+            </Container>
         </footer>
     );
 };

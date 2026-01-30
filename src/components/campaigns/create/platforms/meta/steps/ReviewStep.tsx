@@ -13,7 +13,7 @@ import {
     IconUser, IconListDetails
 } from '@tabler/icons-react';
 import { UseFormReturnType } from '@mantine/form';
-import { CampaignFormValues } from '@/lib/actions/meta/types';
+import { CampaignFormValues } from '@/lib/server/actions/meta/types';
 import { useCampaignSubmit } from '../hooks/useCampaignSubmit';
 import { ProgressModal } from '../components/ProgressModal';
 

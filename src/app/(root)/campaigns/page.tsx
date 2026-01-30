@@ -4,7 +4,7 @@ import { getCampaignReviewSummary } from "@/lib/quieries/campaigns/getCampaignRe
 import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { getPlatformDetails } from "@/lib/quieries/platforms/getPlatformDetails";
-import { getLoggedInUser } from "@/lib/actions/user";
+import { getLoggedInUser } from "@/lib/server/actions/user";
 import { getAdAccountData } from "@/lib/quieries/ad_accounts";
 import { getAdsLifetimeIncludingZeros } from "@/lib/quieries/ads/getAdsMetrics";
 import { getAdSetsLifetimeIncludingZeros } from "@/lib/quieries/adsets/getAdSetsMetrics";

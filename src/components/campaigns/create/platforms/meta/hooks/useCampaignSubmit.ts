@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CampaignFormValues } from '@/lib/actions/meta/types';
+import { CampaignFormValues } from '@/lib/server/actions/meta/types';
 import { Node, Edge } from '@xyflow/react';
 
 /**

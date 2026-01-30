@@ -1,7 +1,7 @@
 import { forwardRef, type HTMLAttributes } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/shared/utils";
 
 const appendixVariants = cva(
   "node-appendix absolute flex w-full flex-col items-center rounded-md border bg-card p-1 text-card-foreground",

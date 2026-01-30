@@ -11,7 +11,7 @@ import {
 } from '@tabler/icons-react';
 import { useState, useMemo } from 'react';
 import { UseFormReturnType } from '@mantine/form';
-import { CampaignFormValues } from '@/lib/actions/meta/types';
+import { CampaignFormValues } from '@/lib/server/actions/meta/types';
 import { useFilePreview } from '../hooks/useFilePreview';
 import MediaSelectionModal from '../components/MediaSelectionModal';
 import { useCreativePreview } from '../hooks/useCreativePreview';

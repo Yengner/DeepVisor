@@ -1,6 +1,6 @@
-import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
+import { createSupabaseClient } from '@/lib/server/supabase/server';
 import IntegrationClient from './components/IntegrationClient';
-import { getLoggedInUser } from '@/lib/actions/user';
+import { getLoggedInUser } from '@/lib/server/actions/user';
 
 export default async function IntegrationPage() {
   const supabase = await createSupabaseClient();

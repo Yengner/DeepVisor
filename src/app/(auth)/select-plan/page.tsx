@@ -6,7 +6,7 @@ import { IconCheck, IconX, IconCircleCheck, IconAward, IconRocket, IconBuildingS
 import { useRouter } from 'next/navigation';
 import { ErrorState } from '@/components/ui/states/ErrorState';
 import toast from 'react-hot-toast';
-import { createCheckoutSession } from '@/lib/actions/stripe/stripe.actions';
+import { createCheckoutSession } from '@/lib/server/actions/stripe/stripe.actions';
 
 export default function PlansPage() {
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);

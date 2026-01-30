@@ -1,6 +1,6 @@
 import Topbar from "@/components/layout/topBar/TopBar";
 import Sidebar from "@/components/layout/LeftSidebar";
-import { getLoggedInUser, InitPlatformID } from "@/lib/actions/user";
+import { getLoggedInUser, InitPlatformID } from "@/lib/server/actions/user";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { setCookie } from "cookies-next";

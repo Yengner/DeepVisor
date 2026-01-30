@@ -1,6 +1,6 @@
-import { getMetaPages, MetaPage } from '@/lib/actions/meta/pages/actions';
-import { ErrorDetails } from '@/lib/utils/error-handling/types/api';
-import { handleApiPromise } from '@/lib/utils/toasts/toast-handlers';
+import { getMetaPages, MetaPage } from '@/lib/server/actions/meta/pages/actions';
+import { ErrorDetails } from '@/lib/shared/types/api';
+import { handleApiPromise } from '@/lib/client/toasts/toast-handlers';
 import { useState, useEffect } from 'react';
 
 /**

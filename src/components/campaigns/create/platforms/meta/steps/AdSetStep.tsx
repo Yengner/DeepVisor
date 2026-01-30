@@ -14,7 +14,7 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { UseFormReturnType } from '@mantine/form';
 import { useState, useEffect } from 'react';
-import { CampaignFormValues } from '@/lib/actions/meta/types';
+import { CampaignFormValues } from '@/lib/server/actions/meta/types';
 import { getObjectiveLabel, getOptimizationLabel, getValidOptimizationGoals } from '../utils/objectiveMappings';
 import { useMetaPages } from '../hooks/useMetaPages';
 import GoogleMapSelector from '../components/GoogleMapSelector';

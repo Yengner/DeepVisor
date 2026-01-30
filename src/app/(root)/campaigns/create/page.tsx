@@ -1,5 +1,5 @@
 import CustomCampaignFlow from '@/components/campaigns/create/flows/manual/ManualCampaignFlow';
-import { createSupabaseClient } from '@/lib/utils/supabase/clients/server';
+import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { cookies } from 'next/headers';
 
 export default async function CreateCampaignPage() {

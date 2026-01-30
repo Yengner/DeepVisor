@@ -1,7 +1,7 @@
-import { getLoggedInUser } from '@/lib/actions/user';
+import { getLoggedInUser } from '@/lib/server/actions/user';
 import AgencyClient from './AgencyClient';
 import { cookies } from 'next/headers';
-import { getAdAccountData } from '@/lib/quieries/ad_accounts';
+import { getAdAccountData } from '@/lib/server/repositories/ad_accounts';
 import { EmptyCampaignState } from '@/components/campaigns/EmptyStates';
 
 export default async function AgencyPage() {

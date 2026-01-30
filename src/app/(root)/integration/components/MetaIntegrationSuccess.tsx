@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/utils/supabase/clients/browser';
+import { createClient } from '@/lib/client/supabase/browser';
 
 interface AdAccount {
     id: string;

@@ -18,7 +18,7 @@ import {
   IconLogout,
   IconRobot
 } from '@tabler/icons-react';
-import { handleSignOut } from '@/lib/actions/user/auth';
+import { handleSignOut } from '@/lib/server/actions/user/auth';
 
 const Sidebar = () => {
   const [isExpanded, setIsExpanded] = useState(false);

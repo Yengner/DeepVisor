@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { Handle, type HandleProps } from "@xyflow/react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/shared/utils";
 
 export type BaseHandleProps = HandleProps;
 

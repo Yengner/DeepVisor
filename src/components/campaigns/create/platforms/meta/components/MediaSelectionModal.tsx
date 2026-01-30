@@ -10,7 +10,7 @@ import {
     IconAlertCircle, IconPhoto, IconCheck, IconChevronLeft, IconChevronRight
 } from '@tabler/icons-react';
 import { useExistingCreatives } from '../hooks/useExistingCreatives';
-import { MetaCreative } from '@/lib/actions/meta/creatives/actions';
+import { MetaCreative } from '@/lib/server/actions/meta/creatives/actions';
 import { useCreativePreview } from '../hooks/useCreativePreview';
 
 interface MediaSelectionModalProps {

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { showError } from '@/lib/utils/toasts';
+import { showError } from '@/lib/client/toasts';
 import { validateMetaStep } from '../platforms/meta/utils/validation';
 
 /**
