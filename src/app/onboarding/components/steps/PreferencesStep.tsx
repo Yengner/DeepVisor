@@ -1,7 +1,7 @@
 'use client';
 
 import { updateBusinessProfileData } from '@/lib/server/actions/user/onboarding';
-import { Button, Text, Title, Stack, Group, MultiSelect, Checkbox, Card, SimpleGrid } from '@mantine/core';
+import { Button, Text, Title, Stack, Group, MultiSelect, Checkbox, Card, SimpleGrid, Divider } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconSettings, IconChartBar, IconBell } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
@@ -100,25 +100,26 @@ export default function PreferencesStep({
   };
 
   return (
-    <Stack gap="xl" py={20}>
-      <Title order={2} ta="center">Customize Your Experience</Title>
-
-      <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto mb-6">
-        Set your preferences to make DeepVisor work best for you
-      </Text>
+    <Stack gap="xl" py={16}>
+      <div>
+        <Title order={2} ta="center">Customize Your Experience</Title>
+        <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto mb-6">
+          Tell us what outcomes and alerts matter most so we can prioritize the right insights.
+        </Text>
+      </div>
 
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="xl">
-          <Card withBorder p="md">
-            <Title order={4} className="mb-4">
-              <Group>
-                <IconChartBar />
-                <span>Advertising Goals</span>
-              </Group>
-            </Title>
-
+          <Card withBorder p="lg" radius="md">
+            <Group mb="sm">
+              <IconChartBar />
+              <Title order={4}>Advertising Goals</Title>
+            </Group>
+            <Text size="sm" c="dimmed" mb="md">
+              Pick the outcomes you care about most. You can change this anytime.
+            </Text>
             <MultiSelect
-              label="What are your main advertising goals?"
+              label="Primary goals"
               placeholder="Select all that apply"
               data={[
                 { value: 'brand_awareness', label: 'Brand Awareness' },
@@ -132,16 +133,16 @@ export default function PreferencesStep({
             />
           </Card>
 
-          <Card withBorder p="md">
-            <Title order={4} className="mb-4">
-              <Group>
-                <IconSettings />
-                <span>Platform Preferences</span>
-              </Group>
-            </Title>
-
+          <Card withBorder p="lg" radius="md">
+            <Group mb="sm">
+              <IconSettings />
+              <Title order={4}>Platform Preferences</Title>
+            </Group>
+            <Text size="sm" c="dimmed" mb="md">
+              We&apos;ll use this to prioritize channel insights and future integrations.
+            </Text>
             <MultiSelect
-              label="Which platforms do you prefer to advertise on?"
+              label="Preferred platforms"
               placeholder="Select all that apply"
               data={[
                 { value: 'facebook', label: 'Facebook' },
@@ -156,15 +157,15 @@ export default function PreferencesStep({
             />
           </Card>
 
-          <Card withBorder p="md">
-            <Title order={4} className="mb-4">
-              <Group>
-                <IconBell />
-                <span>Notifications</span>
-              </Group>
-            </Title>
-
-            <SimpleGrid cols={1}>
+          <Card withBorder p="lg" radius="md">
+            <Group mb="sm">
+              <IconBell />
+              <Title order={4}>Notifications</Title>
+            </Group>
+            <Text size="sm" c="dimmed" mb="md">
+              Choose what we should notify you about. Default settings are recommended.
+            </Text>
+            <SimpleGrid cols={1} spacing="sm">
               <Checkbox
                 label="Email notifications for important updates"
                 {...form.getInputProps('emailNotifications', { type: 'checkbox' })}
@@ -181,7 +182,9 @@ export default function PreferencesStep({
           </Card>
         </Stack>
 
-        <Group justify="apart" mt="xl">
+        <Divider my="xl" />
+
+        <Group justify="apart">
           <Button variant="light" onClick={onPrev} type="button">
             Back
           </Button>

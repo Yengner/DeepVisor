@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Text, Title, Stack, Group, Card, Avatar, Badge, Paper } from '@mantine/core';
+import { Button, Text, Title, Stack, Group, Card, Avatar, Badge, Paper, Alert } from '@mantine/core';
 import { IconBrandFacebook, IconPlus, IconCheck, IconInfoCircle } from '@tabler/icons-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
@@ -58,12 +58,13 @@ export default function ConnectAccountsStep({
     const metaDetails = getConnectionDetails('meta');
 
     return (
-        <Stack gap="xl" py={20}>
-            <Title order={2} ta="center">Connect Your Meta Ad Account</Title>
-
-            <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto">
-                Link your Meta Business Manager to import your Facebook and Instagram campaigns, ad sets, and ads automatically.
-            </Text>
+        <Stack gap="xl" py={16}>
+            <div>
+                <Title order={2} ta="center">Connect your Meta account</Title>
+                <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto">
+                    Link Meta Business Manager to import campaigns, ad sets, and performance data automatically.
+                </Text>
+            </div>
 
             <Paper withBorder p="md" radius="md" className="max-w-xl mx-auto w-full">
                 <Card withBorder p="lg" radius="md">
@@ -109,12 +110,14 @@ export default function ConnectAccountsStep({
                     </Stack>
                 </Card>
 
-                <Group align="center" mt="md" gap="xs">
-                    <IconInfoCircle size={16} style={{ color: 'var(--mantine-color-blue-6)' }} />
-                    <Text size="sm" c="dimmed">
-                        Additional platforms can be connected later from your account settings.
-                    </Text>
-                </Group>
+                <Alert
+                    mt="md"
+                    icon={<IconInfoCircle size={16} />}
+                    color="blue"
+                    variant="light"
+                >
+                    Additional platforms can be connected later from your settings.
+                </Alert>
             </Paper>
 
             <Text c="dimmed" size="sm" ta="center" mt="md">
@@ -126,9 +129,14 @@ export default function ConnectAccountsStep({
                 <Button variant="light" onClick={onPrev}>
                     Back
                 </Button>
-                <Button onClick={onNext}>
-                    Continue
-                </Button>
+                <Group>
+                    <Button variant="subtle" onClick={onNext}>
+                        Skip for now
+                    </Button>
+                    <Button onClick={onNext}>
+                        Continue
+                    </Button>
+                </Group>
             </Group>
         </Stack>
     );

@@ -194,7 +194,6 @@ export async function updateBusinessProfileData(businessData: {
             throw error;
         }
 
-        console.log('Update successful, returned data:', data);
         return { success: true };
     } catch (error) {
         console.error('Error updating business profile data:', error);

@@ -8,6 +8,9 @@ import {
   Title,
   Text,
   Card,
+  Group,
+  Badge,
+  Stack,
   LoadingOverlay
 } from '@mantine/core';
 import WelcomeStep from './steps/WelcomeStep';
@@ -19,6 +22,7 @@ import CompletionStep from './steps/CompletionStep';
 import { getOnboardingProgress, updateBusinessProfileData, updateOnboardingProgress } from '@/lib/server/actions/user/onboarding';
 import { UserData } from './types';
 import { updateConnectedAccountsInDatabase } from './utils';
+import { IconCheck, IconDeviceAnalytics, IconPlug, IconSettings } from '@tabler/icons-react';
 
 
 export default function OnboardingProvider({ userId }: { userId: string }) {
@@ -216,22 +220,39 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
     });
   };
 
+  const stepLabels = ["Welcome", "Connect", "Business", "Preferences"];
+  const stepDescription = [
+    "Get started",
+    "Link platforms",
+    "About your business",
+    "Customize your experience",
+  ];
+
   return (
-    <Container size="md" className="py-8 relative">
+    <Container size="lg" className="py-10 relative">
       <LoadingOverlay visible={loading} />
 
-      <div className="text-center mb-12">
-        <Title order={1} className="text-3xl mb-2">Welcome to DeepVisor</Title>
-        <Text c="dimmed" size="lg">
-          Let&apos;s set up your account to get you the best experience
-        </Text>
-      </div>
+      <Stack gap="lg" className="mb-8">
+        <Group justify="apart" align="flex-start">
+          <div>
+            <Title order={1} className="text-3xl mb-2">Welcome to DeepVisor</Title>
+            <Text c="dimmed" size="lg">
+              Let&apos;s set up your account with a few quick steps.
+            </Text>
+          </div>
+          <Badge size="lg" variant="light">
+            Step {Math.min(active + 1, 4)} of 4
+          </Badge>
+        </Group>
+      </Stack>
 
       <Card shadow="md" radius="lg" p="xl" withBorder>
-        <Stepper active={active} onStepClick={() => { }}>
+        <Stepper active={active} onStepClick={() => { }} size="sm">
           <Stepper.Step
-            label="Welcome"
-            description="Get started">
+            label={stepLabels[0]}
+            description={stepDescription[0]}
+            icon={<IconCheck size={16} />}
+          >
             <WelcomeStep
               onNext={nextStep}
               userData={userData}
@@ -240,8 +261,10 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
           </Stepper.Step>
 
           <Stepper.Step
-            label="Connect Accounts"
-            description="Link your platforms">
+            label={stepLabels[1]}
+            description={stepDescription[1]}
+            icon={<IconPlug size={16} />}
+          >
             <ConnectAccountsStep
               onNext={nextStep}
               onPrev={prevStep}
@@ -251,8 +274,10 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
           </Stepper.Step>
 
           <Stepper.Step
-            label="Business Profile"
-            description="About your business">
+            label={stepLabels[2]}
+            description={stepDescription[2]}
+            icon={<IconDeviceAnalytics size={16} />}
+          >
             <BusinessProfileStep
               onNext={nextStep}
               onPrev={prevStep}
@@ -262,8 +287,10 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
           </Stepper.Step>
 
           <Stepper.Step
-            label="Preferences"
-            description="Customize your experience">
+            label={stepLabels[3]}
+            description={stepDescription[3]}
+            icon={<IconSettings size={16} />}
+          >
             <PreferencesStep
               onNext={nextStep}
               onPrev={prevStep}

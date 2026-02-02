@@ -1,13 +1,13 @@
 import CampaignDashboard from "@/components/campaigns/CampaignDashboard";
-import { getCampaignLifetimeIncludingZeros, type CampaignLifetimeRow } from "@/lib/quieries/campaigns/getCampaignsMetrics";
-import { getCampaignReviewSummary } from "@/lib/quieries/campaigns/getCampaignReviewSummary";
+import { getCampaignLifetimeIncludingZeros, type CampaignLifetimeRow } from "@/lib/server/repositories/campaigns/getCampaignsMetrics";
+import { getCampaignReviewSummary } from "@/lib/server/repositories/campaigns/getCampaignReviewSummary";
 import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
-import { getPlatformDetails } from "@/lib/quieries/platforms/getPlatformDetails";
+import { getPlatformDetails } from "@/lib/server/repositories/platforms/getPlatformDetails";
 import { getLoggedInUser } from "@/lib/server/actions/user";
-import { getAdAccountData } from "@/lib/quieries/ad_accounts";
-import { getAdsLifetimeIncludingZeros } from "@/lib/quieries/ads/getAdsMetrics";
-import { getAdSetsLifetimeIncludingZeros } from "@/lib/quieries/adsets/getAdSetsMetrics";
+import { getAdAccountData } from "@/lib/server/repositories/ad_accounts";
+import { getAdsLifetimeIncludingZeros } from "@/lib/server/repositories/ads/getAdsMetrics";
+import { getAdSetsLifetimeIncludingZeros } from "@/lib/server/repositories/adsets/getAdSetsMetrics";
 import { Suspense } from "react";
 import CampaignClientFallback from "./CampaignClientFallback";
 
@@ -68,7 +68,9 @@ export default async function CampaignPage({
     getPlatformDetails(selectedPlatformId, userId),
     getAdAccountData(selectedAdAccountId, selectedPlatformId, userId),
   ]);
-
+  //
+  //Refactor # Too many calculation on pre-server load, Do this on the database to pre fetch dashboard data and then grab it. 
+  //
   const accountMetrics: AggregatedMetrics = {
     spend: adAccountDetails.aggregated_metrics?.spend || 0,
     impressions: adAccountDetails.aggregated_metrics?.impressions || 0,

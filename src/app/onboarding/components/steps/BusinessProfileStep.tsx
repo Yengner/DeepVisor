@@ -1,7 +1,7 @@
 'use client';
 
 import { updateBusinessProfileData } from '@/lib/server/actions/user/onboarding';
-import { Button, Text, Title, Stack, Group, Select, TextInput, Textarea } from '@mantine/core';
+import { Button, Text, Title, Stack, Group, Select, TextInput, Textarea, Card, SimpleGrid } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconBuilding } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
@@ -110,85 +110,88 @@ export default function BusinessProfileStep({
   };
 
   return (
-    <Stack gap="xl" py={20}>
-      <Title order={2} ta="center">Business Profile</Title>
-
-      <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto mb-6">
-        Tell us about your business to help us personalize your experience
-      </Text>
+    <Stack gap="xl" py={16}>
+      <div>
+        <Title order={2} ta="center">Business Profile</Title>
+        <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto mb-6">
+          A few details help us tailor insights and recommendations.
+        </Text>
+      </div>
 
       <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Stack gap="md">
-          <TextInput
-            label="Business Name"
-            placeholder="Your business name"
-            required
-            leftSection={<IconBuilding size={16} />}
-            {...form.getInputProps('businessName')}
-          />
-
-          <Group grow>
-            <Select
-              label="Business Type"
-              placeholder="Select business type"
+        <Card withBorder p="lg" radius="md">
+          <Stack gap="md">
+            <TextInput
+              label="Business Name"
+              placeholder="Your business name"
               required
-              data={[
-                { value: 'ecommerce', label: 'Ecommerce' },
-                { value: 'service', label: 'Service-based' },
-                { value: 'local', label: 'Local Business' },
-                { value: 'agency', label: 'Agency' },
-                { value: 'saas', label: 'SaaS / Software' },
-                { value: 'other', label: 'Other' },
-              ]}
-              {...form.getInputProps('businessType')}
+              leftSection={<IconBuilding size={16} />}
+              {...form.getInputProps('businessName')}
+            />
+
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+              <Select
+                label="Business Type"
+                placeholder="Select business type"
+                required
+                data={[
+                  { value: 'ecommerce', label: 'Ecommerce' },
+                  { value: 'service', label: 'Service-based' },
+                  { value: 'local', label: 'Local Business' },
+                  { value: 'agency', label: 'Agency' },
+                  { value: 'saas', label: 'SaaS / Software' },
+                  { value: 'other', label: 'Other' },
+                ]}
+                {...form.getInputProps('businessType')}
+              />
+
+              <Select
+                label="Industry"
+                placeholder="Select industry"
+                required
+                data={[
+                  { value: 'retail', label: 'Retail' },
+                  { value: 'technology', label: 'Technology' },
+                  { value: 'healthcare', label: 'Healthcare' },
+                  { value: 'finance', label: 'Finance' },
+                  { value: 'education', label: 'Education' },
+                  { value: 'food', label: 'Food & Restaurant' },
+                  { value: 'travel', label: 'Travel' },
+                  { value: 'entertainment', label: 'Entertainment' },
+                  { value: 'fashion', label: 'Fashion' },
+                  { value: 'other', label: 'Other' },
+                ]}
+                {...form.getInputProps('industry')}
+              />
+            </SimpleGrid>
+
+            <TextInput
+              label="Website"
+              placeholder="https://yourbusiness.com"
+              {...form.getInputProps('website')}
+            />
+
+            <Textarea
+              label="Business Description"
+              placeholder="Tell us briefly about your business"
+              minRows={3}
+              {...form.getInputProps('description')}
             />
 
             <Select
-              label="Industry"
-              placeholder="Select industry"
-              required
+              label="Monthly Ad Budget"
+              placeholder="Select budget range"
               data={[
-                { value: 'retail', label: 'Retail' },
-                { value: 'technology', label: 'Technology' },
-                { value: 'healthcare', label: 'Healthcare' },
-                { value: 'finance', label: 'Finance' },
-                { value: 'education', label: 'Education' },
-                { value: 'food', label: 'Food & Restaurant' },
-                { value: 'travel', label: 'Travel' },
-                { value: 'entertainment', label: 'Entertainment' },
-                { value: 'fashion', label: 'Fashion' },
-                { value: 'other', label: 'Other' },
+                { value: 'under_1000', label: 'Under $1,000' },
+                { value: '1000_5000', label: '$1,000 - $5,000' },
+                { value: '5000_10000', label: '$5,000 - $10,000' },
+                { value: '10000_50000', label: '$10,000 - $50,000' },
+                { value: 'over_50000', label: 'Over $50,000' },
               ]}
-              {...form.getInputProps('industry')}
+              {...form.getInputProps('monthlyBudget')}
             />
-          </Group>
-
-          <TextInput
-            label="Website"
-            placeholder="https://yourbusiness.com"
-            {...form.getInputProps('website')}
-          />
-
-          <Textarea
-            label="Business Description"
-            placeholder="Tell us briefly about your business"
-            minRows={3}
-            {...form.getInputProps('description')}
-          />
-
-          <Select
-            label="Monthly Ad Budget"
-            placeholder="Select budget range"
-            data={[
-              { value: 'under_1000', label: 'Under $1,000' },
-              { value: '1000_5000', label: '$1,000 - $5,000' },
-              { value: '5000_10000', label: '$5,000 - $10,000' },
-              { value: '10000_50000', label: '$10,000 - $50,000' },
-              { value: 'over_50000', label: 'Over $50,000' },
-            ]}
-            {...form.getInputProps('monthlyBudget')}
-          />
-        </Stack>
+          </Stack>
+        </Card>
 
         <Group justify="apart" mt="xl">
           <Button variant="light" onClick={onPrev} type="button">

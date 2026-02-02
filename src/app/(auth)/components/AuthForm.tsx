@@ -123,9 +123,9 @@ export default function AuthForm({ type }: AuthFormProps) {
               minLength={6}
             />
 
-            <Button type="submit" fullWidth loading={loading}>
+            {!showVerifyEmailButton && <Button type="submit" fullWidth loading={loading}>
               {type === 'signup' ? 'Sign Up' : 'Sign In'}
-            </Button>
+            </Button> }
           </Stack>
         </form>
 

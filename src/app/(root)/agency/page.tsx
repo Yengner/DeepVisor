@@ -13,7 +13,11 @@ export default async function AgencyPage() {
         return <EmptyCampaignState type="platform" />;
     }
 
-    const adAccountId = await getAdAccountData(selectedAdAccountId, selectedPlatformId, userId).then((account: { external_account_id: string }) => account?.external_account_id);
+    /// Question: Unused??? What would this be used for
+    // const adAccountId = await getAdAccountData(selectedAdAccountId, selectedPlatformId, userId).then((account: { external_account_id: string }) => account?.external_account_id);
 
+    ///
+      // Update: Add Skeleton to Agency Client for unprocessed data while server loads data
+    ////
     return <AgencyClient userId={userId} adAccountId={selectedAdAccountId} tenantId={selectedPlatformId}/>;
 }

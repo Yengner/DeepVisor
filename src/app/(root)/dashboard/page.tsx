@@ -29,6 +29,10 @@ export default async function MainDashboardPage() {
   // const platformData = await getPlatformData(selectedPlatformId);
   // const topCampaigns = await getTopPlatformsCampaigns(selectedPlatformId, selectedAdAccountId);
   // const recommendations = await getRecommendations(userId);
+
+  ///
+  // Update: Add Skeleton to Dashboard Client for unprocessed data while server loads data
+  ///  
   return (
     <DashboardClient
       userData={user}

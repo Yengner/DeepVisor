@@ -8,16 +8,7 @@ import { getAdsLifetimeIncludingZeros } from "@/lib/server/repositories/ads/getA
 import { Suspense } from "react";
 import ReportsClientFallback from "./components/ReportClientFallback";
 import { getCampaignLifetimeIncludingZeros } from "@/lib/server/repositories/campaigns";
-
-const formatDate = (dateStr: string) => {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-};
+import { formatDate } from "@/utils/utils";
 
 export default async function ReportsPage({
   searchParams,

@@ -7,7 +7,7 @@ export default async function OnboardingPage() {
     const userId = await getLoggedInUser().then((user: { id: string }) => user?.id);
     return (
         <Suspense fallback={<LoadingState message="Loading Onboarding..." />}>
-            <OnboardingProvider userId={userId} />;
+            <OnboardingProvider userId={userId} />
         </Suspense>
     )
 }
