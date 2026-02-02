@@ -3,7 +3,7 @@ import SmartCampaignClient from "./SmartCampaignClient";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { getLoggedInUser } from "@/lib/server/actions/user";
 import { createSupabaseClient } from "@/lib/server/supabase/server";
-import { getAdAccountData } from "@/lib/quieries/ad_accounts";
+import { getAdAccountData } from "@/lib/server/repositories/ad_accounts";
 
 
 export default async function SmartCampaignPage() {

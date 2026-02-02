@@ -124,6 +124,7 @@ export default function BusinessProfileStep({
             <TextInput
               label="Business Name"
               placeholder="Your business name"
+              description="This appears on reports and dashboards."
               required
               leftSection={<IconBuilding size={16} />}
               {...form.getInputProps('businessName')}
@@ -133,6 +134,7 @@ export default function BusinessProfileStep({
               <Select
                 label="Business Type"
                 placeholder="Select business type"
+                description="Helps us tailor benchmarks and recommendations."
                 required
                 data={[
                   { value: 'ecommerce', label: 'Ecommerce' },
@@ -148,6 +150,7 @@ export default function BusinessProfileStep({
               <Select
                 label="Industry"
                 placeholder="Select industry"
+                description="Used for reporting baselines."
                 required
                 data={[
                   { value: 'retail', label: 'Retail' },
@@ -168,12 +171,14 @@ export default function BusinessProfileStep({
             <TextInput
               label="Website"
               placeholder="https://yourbusiness.com"
+              description="Optional. Adds context to your profile."
               {...form.getInputProps('website')}
             />
 
             <Textarea
               label="Business Description"
               placeholder="Tell us briefly about your business"
+              description="Optional. Helps us personalize insights."
               minRows={3}
               {...form.getInputProps('description')}
             />
@@ -181,6 +186,7 @@ export default function BusinessProfileStep({
             <Select
               label="Monthly Ad Budget"
               placeholder="Select budget range"
+              description="Used for pacing suggestions and guardrails."
               data={[
                 { value: 'under_1000', label: 'Under $1,000' },
                 { value: '1000_5000', label: '$1,000 - $5,000' },

@@ -121,6 +121,7 @@ export default function PreferencesStep({
             <MultiSelect
               label="Primary goals"
               placeholder="Select all that apply"
+              description="Choose outcomes we should prioritize."
               data={[
                 { value: 'brand_awareness', label: 'Brand Awareness' },
                 { value: 'lead_generation', label: 'Lead Generation' },
@@ -144,6 +145,7 @@ export default function PreferencesStep({
             <MultiSelect
               label="Preferred platforms"
               placeholder="Select all that apply"
+              description="We will highlight insights for these channels."
               data={[
                 { value: 'facebook', label: 'Facebook' },
                 { value: 'instagram', label: 'Instagram' },
@@ -168,14 +170,17 @@ export default function PreferencesStep({
             <SimpleGrid cols={1} spacing="sm">
               <Checkbox
                 label="Email notifications for important updates"
+                description="Recommended if you want urgent alerts."
                 {...form.getInputProps('emailNotifications', { type: 'checkbox' })}
               />
               <Checkbox
                 label="Weekly performance reports"
+                description="A weekly summary with key wins and risks."
                 {...form.getInputProps('weeklyReports', { type: 'checkbox' })}
               />
               <Checkbox
                 label="Alert me about significant performance changes"
+                description="Realtime alerts when guardrails are triggered."
                 {...form.getInputProps('performanceAlerts', { type: 'checkbox' })}
               />
             </SimpleGrid>

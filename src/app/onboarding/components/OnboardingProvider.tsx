@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Container,
@@ -11,6 +11,10 @@ import {
   Group,
   Badge,
   Stack,
+  Grid,
+  Paper,
+  Progress,
+  ThemeIcon,
   LoadingOverlay
 } from '@mantine/core';
 import WelcomeStep from './steps/WelcomeStep';
@@ -22,13 +26,16 @@ import CompletionStep from './steps/CompletionStep';
 import { getOnboardingProgress, updateBusinessProfileData, updateOnboardingProgress } from '@/lib/server/actions/user/onboarding';
 import { UserData } from './types';
 import { updateConnectedAccountsInDatabase } from './utils';
-import { IconCheck, IconDeviceAnalytics, IconPlug, IconSettings } from '@tabler/icons-react';
+import { IconCheck, IconDeviceAnalytics, IconPlug, IconSettings, IconCircleCheck, IconClock } from '@tabler/icons-react';
 
 
 export default function OnboardingProvider({ userId }: { userId: string }) {
   const [active, setActive] = useState(0);
   const [loading, setLoading] = useState(true); // Start with loading true
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [isAutosaving, setIsAutosaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const autosaveTimer = useRef<number | null>(null);
 
   const [userData, setUserData] = useState<UserData>({
     businessName: '',
@@ -92,6 +99,14 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
     loadOnboardingProgress();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (autosaveTimer.current) {
+        window.clearTimeout(autosaveTimer.current);
+      }
+    };
+  }, []);
+
   // Check for account connection callbacks (only after initial load)
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
@@ -148,6 +163,7 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
 
   const nextStep = async () => {
     setLoading(true);
+    setIsAutosaving(true);
     try {
       if (active === 2) {
         console.log("Saving business profile data:", {
@@ -202,6 +218,8 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
       toast.error('Error saving progress. Please try again.');
     } finally {
       setLoading(false);
+      setIsAutosaving(false);
+      setLastSavedAt(new Date());
     }
   };
 
@@ -218,6 +236,14 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
       console.log("New userData state:", newState);
       return newState;
     });
+    setIsAutosaving(true);
+    if (autosaveTimer.current) {
+      window.clearTimeout(autosaveTimer.current);
+    }
+    autosaveTimer.current = window.setTimeout(() => {
+      setIsAutosaving(false);
+      setLastSavedAt(new Date());
+    }, 800);
   };
 
   const stepLabels = ["Welcome", "Connect", "Business", "Preferences"];
@@ -227,6 +253,13 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
     "About your business",
     "Customize your experience",
   ];
+  const totalSteps = 4;
+  const progressValue = Math.min(100, Math.round(((Math.min(active, totalSteps)) / totalSteps) * 100));
+  const autosaveLabel = isAutosaving
+    ? "Saving changes…"
+    : lastSavedAt
+      ? `Saved ${lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+      : "Autosave enabled";
 
   return (
     <Container size="lg" className="py-10 relative">
@@ -240,73 +273,128 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
               Let&apos;s set up your account with a few quick steps.
             </Text>
           </div>
-          <Badge size="lg" variant="light">
-            Step {Math.min(active + 1, 4)} of 4
-          </Badge>
+          <Stack gap={4} align="flex-end">
+            <Badge size="lg" variant="light">
+              Step {Math.min(active + 1, totalSteps)} of {totalSteps}
+            </Badge>
+            <Text size="xs" c="dimmed">
+              {autosaveLabel}
+            </Text>
+          </Stack>
         </Group>
       </Stack>
 
-      <Card shadow="md" radius="lg" p="xl" withBorder>
-        <Stepper active={active} onStepClick={() => { }} size="sm">
-          <Stepper.Step
-            label={stepLabels[0]}
-            description={stepDescription[0]}
-            icon={<IconCheck size={16} />}
-          >
-            <WelcomeStep
-              onNext={nextStep}
-              userData={userData}
-              updateUserData={handleUpdateUserData}
-            />
-          </Stepper.Step>
+      <Grid gutter="lg">
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <Card shadow="sm" radius="lg" p="lg" withBorder>
+            <Stack gap="md">
+              <div>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+                  Progress
+                </Text>
+                <Group justify="apart" mt={4}>
+                  <Text fw={600}>{progressValue}% complete</Text>
+                  <Text size="xs" c="dimmed">
+                    ~3–5 min
+                  </Text>
+                </Group>
+                <Progress value={progressValue} size="sm" radius="xl" mt="xs" />
+              </div>
 
-          <Stepper.Step
-            label={stepLabels[1]}
-            description={stepDescription[1]}
-            icon={<IconPlug size={16} />}
-          >
-            <ConnectAccountsStep
-              onNext={nextStep}
-              onPrev={prevStep}
-              userData={userData}
-              updateUserData={handleUpdateUserData}
-            />
-          </Stepper.Step>
+              <Stack gap="sm">
+                {stepLabels.map((label, idx) => {
+                  const isDone = active > idx;
+                  const isActive = active === idx;
+                  return (
+                    <Paper key={label} withBorder radius="md" p="sm" style={{ borderColor: isActive ? "var(--mantine-color-blue-5)" : undefined }}>
+                      <Group justify="apart" align="center">
+                        <Group gap="xs">
+                          <ThemeIcon size="sm" radius="xl" color={isDone ? "green" : isActive ? "blue" : "gray"} variant="light">
+                            {isDone ? <IconCircleCheck size={14} /> : <IconClock size={14} />}
+                          </ThemeIcon>
+                          <div>
+                            <Text size="sm" fw={600}>{label}</Text>
+                            <Text size="xs" c="dimmed">{stepDescription[idx]}</Text>
+                          </div>
+                        </Group>
+                        {isDone && (
+                          <Badge size="xs" color="green" variant="light">
+                            Done
+                          </Badge>
+                        )}
+                      </Group>
+                    </Paper>
+                  );
+                })}
+              </Stack>
+            </Stack>
+          </Card>
+        </Grid.Col>
 
-          <Stepper.Step
-            label={stepLabels[2]}
-            description={stepDescription[2]}
-            icon={<IconDeviceAnalytics size={16} />}
-          >
-            <BusinessProfileStep
-              onNext={nextStep}
-              onPrev={prevStep}
-              userData={userData}
-              updateUserData={handleUpdateUserData}
-            />
-          </Stepper.Step>
+        <Grid.Col span={{ base: 12, md: 8 }}>
+          <Card shadow="md" radius="lg" p="xl" withBorder>
+            <Stepper active={active} onStepClick={() => { }} size="sm">
+              <Stepper.Step
+                label={stepLabels[0]}
+                description={stepDescription[0]}
+                icon={<IconCheck size={16} />}
+              >
+                <WelcomeStep
+                  onNext={nextStep}
+                  userData={userData}
+                  updateUserData={handleUpdateUserData}
+                />
+              </Stepper.Step>
 
-          <Stepper.Step
-            label={stepLabels[3]}
-            description={stepDescription[3]}
-            icon={<IconSettings size={16} />}
-          >
-            <PreferencesStep
-              onNext={nextStep}
-              onPrev={prevStep}
-              userData={userData}
-              updateUserData={handleUpdateUserData}
-            />
-          </Stepper.Step>
+              <Stepper.Step
+                label={stepLabels[1]}
+                description={stepDescription[1]}
+                icon={<IconPlug size={16} />}
+              >
+                <ConnectAccountsStep
+                  onNext={nextStep}
+                  onPrev={prevStep}
+                  userData={userData}
+                  updateUserData={handleUpdateUserData}
+                />
+              </Stepper.Step>
 
-          <Stepper.Completed>
-            <CompletionStep
-              onComplete={nextStep}
-              userData={userData}
-            />
-          </Stepper.Completed>
-        </Stepper>
-      </Card>
+              <Stepper.Step
+                label={stepLabels[2]}
+                description={stepDescription[2]}
+                icon={<IconDeviceAnalytics size={16} />}
+              >
+                <BusinessProfileStep
+                  onNext={nextStep}
+                  onPrev={prevStep}
+                  userData={userData}
+                  updateUserData={handleUpdateUserData}
+                />
+              </Stepper.Step>
+
+              <Stepper.Step
+                label={stepLabels[3]}
+                description={stepDescription[3]}
+                icon={<IconSettings size={16} />}
+              >
+                <PreferencesStep
+                  onNext={nextStep}
+                  onPrev={prevStep}
+                  userData={userData}
+                  updateUserData={handleUpdateUserData}
+                />
+              </Stepper.Step>
+
+              <Stepper.Completed>
+                <CompletionStep
+                  onComplete={nextStep}
+                  userData={userData}
+                />
+              </Stepper.Completed>
+            </Stepper>
+          </Card>
+        </Grid.Col>
+      </Grid>
     </Container>
   );
 }

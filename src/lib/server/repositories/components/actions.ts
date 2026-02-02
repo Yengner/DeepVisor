@@ -1,7 +1,7 @@
 'use server';
 
-import { getAdSetsLifetimeIncludingZeros } from '@/lib/quieries/adsets/getAdSetsMetrics';
-import { getAdsLifetimeIncludingZeros } from '@/lib/quieries/ads/getAdsMetrics';
+import { getAdSetsLifetimeIncludingZeros } from '@/lib/server/repositories/adsets/getAdSetsMetrics';
+import { getAdsLifetimeIncludingZeros } from '@/lib/server/repositories/ads/getAdsMetrics';
 
 // Ad sets for a campaign (adAccountId is your internal UUID)
 export async function fetchAdSetsForCampaign(adAccountId: string, campaignExternalId: string) {

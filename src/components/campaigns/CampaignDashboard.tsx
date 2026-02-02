@@ -14,7 +14,7 @@ import CampaignStats from './CampaignStats';
 import { EmptyCampaignState } from './EmptyStates';
 import { getPlatformIcon } from '@/utils/utils';
 import type { FormattedCampaign } from '@/app/(root)/campaigns/page';
-import { fetchAdSetsForCampaign, fetchAdsForAdset } from '@/lib/quieries/components/actions';
+import { fetchAdSetsForCampaign, fetchAdsForAdset } from '@/lib/server/repositories/components/actions';
 
 type TabKey = 'campaigns' | 'adsets' | 'ads';
 
