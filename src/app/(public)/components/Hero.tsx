@@ -3,10 +3,23 @@ import Link from "next/link";
 import { Badge, Button, Card, Container, Section } from "@/components/marketing";
 
 const metrics = [
-    { label: "Active channels", value: "Meta + Instagram", note: "TikTok + Google queued" },
-    { label: "Weekly signal review", value: "15 min", note: "Auto-summarized insights" },
-    { label: "Guardrail coverage", value: "93%", note: "Spend, CPA, tracking health" },
+    {
+        label: "Time saved",
+        value: "10+ hrs",
+        note: "From automated analysis & insights",
+    },
+    {
+        label: "Channels unified",
+        value: "Meta • Google +",
+        note: "All ad data in one dashboard",
+    },
+    {
+        label: "Auto insights",
+        value: "100% automated",
+        note: "AI-drafted, human-verified insights",
+    },
 ];
+
 
 const Hero: FC = () => {
     return (
@@ -36,18 +49,19 @@ const Hero: FC = () => {
                                 className="text-balance text-4xl font-semibold leading-tight motion-safe:animate-fade-up sm:text-5xl lg:text-6xl"
                                 style={{ animationDelay: "120ms" }}
                             >
-                                DeepVisor gives ad teams a calm, enterprise-grade command center.
+                                DeepVisor:
                                 <span className="block bg-gradient-to-r from-signal/80 via-amber-200 to-orange-400 bg-clip-text text-transparent">
-                                    Clarity, guardrails, and automation you can actually trust.
+                                    AI-Powered Ad Performance & Automation
                                 </span>
                             </h1>
+
                             <p
                                 className="max-w-xl text-base text-white/70 motion-safe:animate-fade-up sm:text-lg"
                                 style={{ animationDelay: "180ms" }}
                             >
-                                Aggregate every signal, surface the risks, and ship confident decisions without the sprawl of 12 dashboards.
-                                DeepVisor keeps spend predictable and teams aligned.
+                                Unify your ad data, cut noise, and automate actionable insights.
                             </p>
+
                         </div>
 
                         <div className="flex flex-wrap items-center gap-4 motion-safe:animate-fade-up" style={{ animationDelay: "240ms" }}>
@@ -78,7 +92,8 @@ const Hero: FC = () => {
                         <Card variant="glass" padding="lg" className="relative">
                             <div className="flex items-start justify-between gap-6 border-b border-white/10 pb-5">
                                 <div>
-                                    <p className="text-xs uppercase tracking-[0.22em] text-white/50">Unified signal board</p>
+                                    <p className="text-xs uppercase tracking-[0.22em] text-white/50"> Unified performance board
+                                    </p>
                                     <p className="mt-2 text-lg font-semibold text-white">Weekly clarity report</p>
                                 </div>
                                 <div className="rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold text-emerald-200">

@@ -10,60 +10,62 @@ const logos = ["Northwind Labs", "Helios Group", "Vector Studios", "Signalworks"
 
 const features = [
     {
-        title: "Unified signal view",
-        description: "Bring Meta, TikTok, and Google into one calm command board with consistent KPIs.",
+        title: "Unified performance view",
+        description: "See Meta, TikTok, and Google in one dashboard with consistent KPIs.",
         icon: Radar,
     },
     {
-        title: "Guardrails that hold",
-        description: "Auto-detect spend drift, CPA spikes, and tracking gaps before they derail performance.",
+        title: "Guardrails that catch issues",
+        description: "Detect spend drift, CPA spikes, and tracking gaps before performance slips.",
         icon: ShieldCheck,
     },
     {
         title: "Draft-first automation",
-        description: "AI drafts campaigns and optimizations for review, with approvals baked in.",
+        description: "AI drafts campaigns and optimizations for review, with approvals built in.",
         icon: Sparkles,
     },
     {
         title: "Executive-ready reporting",
-        description: "One summary view that keeps leadership aligned without endless slide decks.",
+        description: "A single summary view that keeps leadership aligned without slide decks.",
         icon: ChartLine,
     },
     {
-        title: "Operational calm",
-        description: "Weekly clarity reports highlight what changed and what actions matter most.",
+        title: "Weekly clarity",
+        description: "Weekly reports highlight what changed and what to do next.",
         icon: Activity,
     },
     {
         title: "Real-time alerts",
-        description: "Signal feed surfaces urgent changes with context, not noise.",
+        description: "Alert feed surfaces urgent changes with context, not noise.",
         icon: BellRing,
     },
 ];
 
+
 const outcomes = [
-    { label: "Hours saved weekly", value: "6–10", note: "Fewer dashboards + auto summaries" },
-    { label: "Guardrail coverage", value: "90%+", note: "Spend, CPA, tracking health" },
-    { label: "Actionable insights", value: "3x", note: "Cleaner prioritization" },
+    { label: "Hours saved weekly", value: "6–10", note: "Fewer dashboards and auto summaries" },
+    { label: "Guardrail coverage", value: "90%+", note: "Spend, CPA, and tracking health" },
+    { label: "Faster prioritization", value: "Clear", note: "Less noise, clearer actions" },
 ];
 
 const steps = [
     {
         title: "Connect your channels",
-        copy: "Securely link Meta today, with TikTok + Google next. We normalize data into a single baseline.",
+        copy: "Securely link Meta today, with TikTok and Google next. We normalize metrics into one consistent view.",
         tag: "Day 1",
     },
     {
-        title: "Set guardrails + goals",
-        copy: "Define CPA, budget, and pacing thresholds. DeepVisor keeps performance inside your boundaries.",
+        title: "Set guardrails and goals",
+        copy: "Define CPA, budget, and pacing thresholds. DeepVisor keeps performance within your boundaries.",
         tag: "Week 1",
     },
     {
         title: "Approve the automation",
-        copy: "Review AI-generated optimizations before they ship. Keep human oversight by default.",
+        copy: "Review AI-generated optimizations before they go live. Human oversight stays on by default.",
         tag: "Week 2+",
     },
 ];
+
 
 const useCases = [
     {
@@ -88,8 +90,8 @@ const useCases = [
     },
     {
         title: "Founder-led marketing",
-        description: "Make fast decisions without hiring an analyst first.",
-        bullets: ["Simple summaries", "Priority cues", "Weekly report"],
+        description: "Make fast decisions without hiring an analyst.",
+        bullets: ["Simple summaries", "Clear priorities", "Weekly report"],
     },
     {
         title: "Enterprise pilots",
@@ -148,7 +150,7 @@ const FeatureGrid = () => {
                         Platform capabilities
                     </p>
                     <h2 className="text-balance text-3xl font-semibold text-foreground sm:text-4xl">
-                        Enterprise clarity without enterprise chaos
+                        Enterprise clarity without operational chaos
                     </h2>
                     <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base">
                         A modern operating layer for ad teams: clean data, visible risk, and automation that respects approvals.
