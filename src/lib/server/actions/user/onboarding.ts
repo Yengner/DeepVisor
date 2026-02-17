@@ -5,10 +5,9 @@ import { getErrorMessage } from "@/lib/shared/utils/guards";
 import type { Database } from "@/lib/shared/types/supabase";
 
 
-type BusinessProfileRow = Database["public"]["Tables"]["business_profiles"]["Row"]
-type BusinessProfileUpdate = Database["public"]["Tables"]["business_profiles"]["Update"]
+// type BusinessProfileRow = Database["public"]["Tables"]["business_profiles"]["Row"]
+// type BusinessProfileUpdate = Database["public"]["Tables"]["business_profiles"]["Update"]
 
-type ActionResult
 function _coerceStringArray(value: unknown): string[] {
     if (Array.isArray(value)) {
         return value.filter((item): item is string => typeof item === "string");
