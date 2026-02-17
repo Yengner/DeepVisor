@@ -42,8 +42,8 @@ export default function PreferencesStep({
 
   const form = useForm({
     initialValues: {
-      adGoals: userData.adGoals || [],
-      preferredPlatforms: userData.preferredPlatforms || [],
+      adGoals: Array.isArray(userData.adGoals) ? userData.adGoals : [],
+      preferredPlatforms: Array.isArray(userData.preferredPlatforms) ? userData.preferredPlatforms : [],
       emailNotifications: userData.emailNotifications !== false,
       weeklyReports: userData.weeklyReports !== false,
       performanceAlerts: userData.performanceAlerts !== false,

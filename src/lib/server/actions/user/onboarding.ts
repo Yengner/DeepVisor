@@ -2,6 +2,37 @@
 
 import { createSupabaseClient } from "@/lib/server/supabase/server";
 import { getErrorMessage } from "@/lib/shared/utils/guards";
+import type { Database } from "@/lib/shared/types/supabase";
+
+
+type BusinessProfileRow = Database["public"]["Tables"]["business_profiles"]["Row"]
+type BusinessProfileUpdate = Database["public"]["Tables"]["business_profiles"]["Update"]
+
+type ActionResult
+function _coerceStringArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+        return value.filter((item): item is string => typeof item === "string");
+    }
+
+    if (typeof value !== "string") return [];
+
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    try {
+        const parsed = JSON.parse(trimmed) as unknown;
+        if (Array.isArray(parsed)) {
+            return parsed.filter((item): item is string => typeof item === "string");
+        }
+    } catch {
+        // Ignore JSON parse errors; fall back to comma-separated parsing below.
+    }
+
+    return trimmed
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
 
 /**
  * Updates user onboarding progress
@@ -102,8 +133,8 @@ export async function getOnboardingProgress() {
                 monthlyBudget: data?.monthly_budget || '',
                 website: data?.website || '',
                 description: data?.description || '',
-                adGoals: data?.ad_goals || [],
-                preferredPlatforms: data?.preferred_platforms || [],
+                adGoals: _coerceStringArray(data?.ad_goals),
+                preferredPlatforms: _coerceStringArray(data?.preferred_platforms),
                 emailNotifications: data?.email_notifications || false,
                 weeklyReports: data?.weekly_reports || false,
                 performanceAlerts: data?.performance_alerts || false
@@ -143,8 +174,8 @@ export async function updateBusinessProfileData(businessData: {
     monthlyBudget?: string;
     website?: string;
     description?: string;
-    adGoals?: string[];
-    preferredPlatforms?: string[];
+    adGoals?: string[] | string;
+    preferredPlatforms?: string[] | string;
     weeklyReports?: boolean;
     emailNotifications?: boolean;
     performanceAlerts?: boolean;
@@ -166,8 +197,8 @@ export async function updateBusinessProfileData(businessData: {
             monthly_budget: businessData.monthlyBudget,
             website: businessData.website,
             description: businessData.description,
-            ad_goals: businessData.adGoals,
-            preferred_platforms: businessData.preferredPlatforms,
+            ad_goals: businessData.adGoals === undefined ? undefined : _coerceStringArray(businessData.adGoals),
+            preferred_platforms: businessData.preferredPlatforms === undefined ? undefined : _coerceStringArray(businessData.preferredPlatforms),
             weekly_reports: businessData.weeklyReports,
             email_notifications: businessData.emailNotifications,
             performance_alerts: businessData.performanceAlerts,
@@ -184,7 +215,7 @@ export async function updateBusinessProfileData(businessData: {
 
         // Update the profile
         const { error, data } = await supabase
-            .from('profiles')
+            .from('business_profiles')
             .update(updateData)
             .eq('id', user.id)
             .select();
