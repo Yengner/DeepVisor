@@ -15,6 +15,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - Specific asset file types like .svg, .png, etc.
      */
-    '/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|contact-us|about-us|services|investor-relations|proposal|privacy-policy|verify-email|$).*)',
+    "/((?!$|_next/|api/|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map)$).*)",
   ],
 };

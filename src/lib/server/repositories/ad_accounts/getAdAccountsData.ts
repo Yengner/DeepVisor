@@ -14,11 +14,11 @@ export async function getAdAccountData(selectedAdAccountId: string, selectedPlat
         const { data, error } = await supabase
             .from('ad_accounts')
             .select('*')
-            .eq('id', selectedAdAccountId)
-            .eq('platform_integration_id', selectedPlatformId)
-            .eq('user_id', userId)
+            // .eq('id', selectedAdAccountId)
+            .eq('business_id', "8f1f8a8c-13c2-42b5-99bb-3d69e7622205")
             .single();
 
+        console.log(data)
         if (error) {
             console.error('Error fetching ad account data:', error.message);
             throw new Error('Failed to fetch ad account data');
