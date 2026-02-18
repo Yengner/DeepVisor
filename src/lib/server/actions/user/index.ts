@@ -1,3 +1,3 @@
 export * from './auth';
 export * from './profile';
-export * from './onboarding';
+export * from '../onboarding/onboarding';

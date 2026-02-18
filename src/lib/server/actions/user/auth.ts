@@ -3,8 +3,10 @@
 // ===== AUTHENTICATION ACTIONS =====
 
 import { createSupabaseClient } from "@/lib/server/supabase/server";
-import { getErrorMessage } from "@/lib/shared/utils/guards";
-import { cookies } from "next/headers";
+import { type ApiResponse } from "@/lib/shared/types/api";
+import { fromSupabaseAuthError } from "@/lib/server/supabase/authError";
+import { EmailOtpType } from "@supabase/supabase-js";
+import { ok } from "@/lib/shared/utils/responses";
 
 /**
  * Handles user login with email and password
@@ -12,18 +14,18 @@ import { cookies } from "next/headers";
  * @param password User's password
  * @return Success status and error message if any
 */
-export async function handleLogin(email: string, password: string) {
+export async function handleLogin(email: string, password: string): Promise<ApiResponse<null>> {
     try {
         const supabase = await createSupabaseClient();
         const { error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
-            throw error;
+            return fromSupabaseAuthError(error);
         }
 
-        return { success: true, errorMessage: null };
-    } catch (error) {
-        return { success: false, errorMessage: getErrorMessage(error) };
+        return ok(null);
+    } catch (e: unknown) {
+        return fromSupabaseAuthError(e);
     }
 }
 
@@ -42,13 +44,13 @@ export async function handleSignUp(
     first_name: string,
     last_name: string,
     phone_number: string
-) {
+): Promise<ApiResponse<{ userId: string }>> {
     try {
         const supabase = await createSupabaseClient();
 
         const { data, error } = await supabase.auth.signUp({
             email,
-            phone: phone_number, // Have to fix this later but focusing on email for now
+            phone: phone_number,
             password,
             options: {
                 data: {
@@ -58,17 +60,17 @@ export async function handleSignUp(
                 },
             },
         });
+        if (error) return fromSupabaseAuthError(error);
 
-        if (error) {
-            console.error("Supabase signUp Error:", error.message, error);
-            throw error;
+        let userId = data.user?.id;
+
+        if (!userId) {
+            return fromSupabaseAuthError(new Error('User ID not returned after sign up'));
         }
 
-        // No longer creating profile here - will create after verification
-
-        return { success: true, userId: data.user?.id, errorMessage: null };
-    } catch (error) {
-        return { success: false, errorMessage: getErrorMessage(error) };
+        return ok({ userId });
+    } catch (e: unknown) {
+        return fromSupabaseAuthError(e);
     }
 }
 
@@ -76,34 +78,71 @@ export async function handleSignUp(
  * Handles user sign out
  * @return Success status and error message if any
 */
-export async function handleSignOut() {
+export async function handleSignOut(): Promise<ApiResponse<null>> {
     try {
         const supabase = await createSupabaseClient();
         const { error } = await supabase.auth.signOut();
 
         // Clear platform and ad account cookies
-        const cookieStore = cookies();
-        (await cookieStore).set('platform_integration_id', '', { path: '/', maxAge: 0 });
-        (await cookieStore).set('ad_account_id', '', { path: '/', maxAge: 0 });
+        // DEPRECATED - we should be handling this on the client side instead of server side since these cookies are only used on the client and not needed for auth - will remove this later
+
+        // const cookieStore = cookies();
+        // (await cookieStore).set('platform_integration_id', '', { path: '/', maxAge: 0 });
+        // (await cookieStore).set('ad_account_id', '', { path: '/', maxAge: 0 });
 
         if (error) {
-            throw error;
+            return fromSupabaseAuthError(error);
         }
 
-        return { success: true, errorMessage: null };
-    } catch (error) {
-        return { success: false, errorMessage: getErrorMessage(error) };
+        return ok(null);
+    } catch (e: unknown) {
+        return fromSupabaseAuthError(e);
     }
 }
 
 // ===== EMAIL VERIFICATION ACTIONS =====
 
 /**
+ * Handles email verification using the code from the email link
+ * @param code Verification code from email link
+ * @return Success status and error message if any
+*/
+
+export async function handleEmailVerificationFromUrl(params: {
+    token_hash: string;
+    type: EmailOtpType;
+}): Promise<ApiResponse<null>> {
+    try {
+        const supabase = await createSupabaseClient();
+
+        if (params.token_hash) {
+            const tokenHash = params.token_hash;
+            const type = params.type
+
+            const { error } = await supabase.auth.verifyOtp({
+                token_hash: tokenHash,
+                type: type ?? 'signup',
+            });
+
+            if (error) {
+                return fromSupabaseAuthError(error);
+            }
+
+            return ok(null);
+        }
+
+        return fromSupabaseAuthError(new Error("Missing token_hash in verification URL."));
+    } catch (e: unknown) {
+        return fromSupabaseAuthError(e);
+    }
+}
+
+/**
  * Resends verification email
  * @param email User's email to resend verification to
  * @return Success status and error message if any
 */
-export async function resendVerificationEmail(email: string) {
+export async function handleResendVerificationEmail(email: string): Promise<ApiResponse<null>> {
     try {
         const supabase = await createSupabaseClient();
 
@@ -113,13 +152,11 @@ export async function resendVerificationEmail(email: string) {
         });
 
         if (error) {
-            console.error('Error resending verification email:', error.message);
-            throw error;
+            return fromSupabaseAuthError(error);
         }
 
-        return { success: true };
-    } catch (error) {
-        console.error('Unexpected error while resending verification email:', error);
-        return { success: false, error: getErrorMessage(error) };
+        return ok(null);
+    } catch (e: unknown) {
+        return fromSupabaseAuthError(e);
     }
 }

@@ -23,7 +23,7 @@ import ConnectAccountsStep from './steps/ConnectAccountsStep';
 import PreferencesStep from './steps/PreferencesStep';
 import BusinessProfileStep from './steps/BusinessProfileStep';
 import CompletionStep from './steps/CompletionStep';
-import { getOnboardingProgress, updateBusinessProfileData, updateOnboardingProgress } from '@/lib/server/actions/user/onboarding';
+import { getOnboardingProgress, updateBusinessProfileData, updateOnboardingProgress } from '@/lib/server/actions/onboarding/onboarding';
 import { UserData } from './types';
 import { updateConnectedAccountsInDatabase } from './utils';
 import { IconCheck, IconDeviceAnalytics, IconPlug, IconSettings, IconCircleCheck, IconClock } from '@tabler/icons-react';

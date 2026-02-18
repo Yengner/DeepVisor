@@ -93,7 +93,7 @@ async function getUserInfo({ userId }: { userId: string }) {
             .select('*')
             .eq('id', userId)
             .single();
-            
+
         return parseStringify(data);
     } catch (error) {
         return { errorMessage: getErrorMessage(error) };
@@ -266,7 +266,7 @@ export async function getTierLimits(tier: SubscriptionTier): Promise<TierLimits>
 
 export async function InitPlatformID(userId: string): Promise<string | null> {
     const supabase = await createSupabaseClient();
-    
+
     const { data, error } = await supabase
         .from('platform_integrations')
         .select('id')
@@ -278,6 +278,6 @@ export async function InitPlatformID(userId: string): Promise<string | null> {
         console.error("Error fetching platform integration ID:", error);
         return null;
     }
-    
+
     return data.id;
 }
