@@ -1,104 +1,31 @@
-"use server";
+import { AdAccountWithMetrics } from "../../services";
+import { createSupabaseClient } from "../../supabase/server";
 
-import { AdAccountWithMetrics } from "@/lib/server/services/platforms/meta/types";
-import { createSupabaseClient } from "@/lib/server/supabase/server";
-import { getErrorMessage } from "@/lib/shared/utils/guards";
-import { parseStringify } from "@/lib/shared/utils/format";
-import { redirect } from "next/navigation";
-
-
-// ====== USER PROFILE ACTIONS =====
 /**
- * Creates user profile after email verification
- * @param userId The ID of the user for whom the profile is being created
- * @return Success status and error message if any
-*/
-export async function createUserProfile(userId: string) {
+ * 
+ * @param userId The ID of the user to fetch notifications for
+ * @param limit The maximum number of notifications to fetch
+ * @returns An array of notifications for the user
+ */
+export async function getUserNotifications(userId: string, limit = 10) {
     try {
         const supabase = await createSupabaseClient();
 
-        // Get user data
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-
-        if (userError || !userData.user) {
-            console.error("Error fetching user data:", userError);
-            return { success: false, errorMessage: "Failed to retrieve user data" };
-        }
-
-        const metadata = userData.user.user_metadata;
-        const first_name = metadata?.first_name || '';
-        const last_name = metadata?.last_name || '';
-        const phone_number = metadata?.phone_number || '';
-
-        // Insert profile record
-        const { error } = await supabase.from("profiles").insert({
-            id: userId,
-            full_name: `${first_name} ${last_name}`.trim(),
-            phone_number: phone_number,
-            avatar_url: null,
-            plan_tier: null,
-            subscription_status: null,
-            stripe_customer_id: null,
-            stripe_subscription_id: null,
-            subscription_start_date: null,
-            subscription_end_date: null,
-            subscription_created: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        });
-
-        if (error) {
-            console.error("Error creating profile:", error);
-            return { success: false, errorMessage: "Failed to create user profile" };
-        }
-
-        return { success: true, errorMessage: null };
-    } catch (error) {
-        console.error("Unexpected error creating profile:", error);
-        return { success: false, errorMessage: getErrorMessage(error) };
-    }
-}
-
-// ===== USER DATA ACTIONS =====
-
-/**
- * Gets the currently logged-in user or redirects to login
-*/
-
-export async function getLoggedInUser() {
-    const supabase = await createSupabaseClient();
-    const { data, error } = await supabase.auth.getUser();
-
-    if (error || !data?.user) {
-        console.warn('No active user found. Redirecting to /login.');
-        redirect('/login');
-    }
-
-    const user = await getUserInfo({ userId: data.user.id });
-
-    return user;
-}
-
-/**
- * Gets user information by user ID
- * @param userId The ID of the user to retrieve information for
- * @return User information or error message
-*/
-async function getUserInfo({ userId }: { userId: string }) {
-    try {
-        const supabase = await createSupabaseClient();
-
-        const { data } = await supabase
-            .from('profiles')
+        const { data, error } = await supabase
+            .from('notifications')
             .select('*')
-            .eq('id', userId)
-            .single();
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(limit);
 
-        return parseStringify(data);
+        if (error) throw error;
+        return data || [];
     } catch (error) {
-        return { errorMessage: getErrorMessage(error) };
+        console.error('Error fetching notifications:', error);
+        return [];
     }
 }
+
 
 /**
  * Update user's connected accounts in profile
@@ -164,31 +91,6 @@ export async function updateUserConnectedAccounts(
             .from('profiles')
             .update({ connected_accounts: connectedAccounts })
             .eq('id', userId);
-    }
-}
-
-/**
- * 
- * @param userId The ID of the user to fetch notifications for
- * @param limit The maximum number of notifications to fetch
- * @returns An array of notifications for the user
- */
-export async function getUserNotifications(userId: string, limit = 10) {
-    try {
-        const supabase = await createSupabaseClient();
-
-        const { data, error } = await supabase
-            .from('notifications')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(limit);
-
-        if (error) throw error;
-        return data || [];
-    } catch (error) {
-        console.error('Error fetching notifications:', error);
-        return [];
     }
 }
 
@@ -262,22 +164,4 @@ export async function getTierLimits(tier: SubscriptionTier): Promise<TierLimits>
                 allowMultipleAccounts: false
             };
     }
-}
-
-export async function InitPlatformID(userId: string): Promise<string | null> {
-    const supabase = await createSupabaseClient();
-
-    const { data, error } = await supabase
-        .from('platform_integrations')
-        .select('id')
-        .eq('platform_name', 'meta')
-        .eq('user_id', userId)
-        .single();
-
-    if (error || !data) {
-        console.error("Error fetching platform integration ID:", error);
-        return null;
-    }
-
-    return data.id;
 }

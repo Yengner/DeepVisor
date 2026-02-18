@@ -1,13 +1,13 @@
 import DashboardClient from "./components/DashboardClient";
 import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
-import { getLoggedInUser } from "@/lib/server/actions/user";
 import { getPlatformDetails } from "@/lib/server/repositories/platforms.repo";
 import { getAdAccountData } from "@/lib/server/repositories/ad-accounts.repo";
+import { getLoggedInUserOrRedirect } from "@/lib/server/actions/user/account";
 
 export default async function MainDashboardPage() {
 
-  const user = await getLoggedInUser();
+  const user = await getLoggedInUserOrRedirect();
   const userId = user?.id;
 
   const cookieStore = await cookies();

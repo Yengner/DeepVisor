@@ -1,32 +1,34 @@
 import Topbar from "@/components/layout/topBar/TopBar";
 import Sidebar from "@/components/layout/LeftSidebar";
-import { getLoggedInUser, InitPlatformID } from "@/lib/server/actions/user";
-import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
-import { setCookie } from "cookies-next";
+import { getLoggedInUserOrRedirect } from "@/lib/server/actions/user/account";
+import { requireBusinessContextOrRedirect } from "@/lib/server/actions/business/context";
+// import { cookies } from "next/headers";
+// import { setCookie } from "cookies-next";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
 
-  const cs = await cookies();
-  const user = await getLoggedInUser().then((user: { id: string, onboarding_completed: boolean, connected_accounts: [{ accountId: string }] }) => user);
-  let selectedPlatformId = cs.get('platform_integration_id')?.value || null;
-  
-  if (!selectedPlatformId) {
-    selectedPlatformId = await InitPlatformID(user.id);
-    setCookie('platform_integration_id', selectedPlatformId, { maxAge: 60 * 60 * 24 * 30 });
-  }
+  // const cs = await cookies();
+  const user = await getLoggedInUserOrRedirect()
+  const ctx = await requireBusinessContextOrRedirect(user.id);
 
-  let selectedAdAccountId = cs.get('ad_account_row_id')?.value || null;
-  if (!selectedAdAccountId) {
-    selectedAdAccountId = user?.connected_accounts?.[0]?.accountId || null;
-    setCookie('ad_account_row_id', selectedAdAccountId, { maxAge: 60 * 60 * 24 * 30 });
-  }
+  console.log("User context in RootLayout:", { user, ctx });
 
+  /**
+   * Depricated process until later
+   */
+  // let selectedPlatformId = cs.get('platform_integration_id')?.value || null;
 
-  if (user.onboarding_completed === false) {
-    console.warn('User onboarding not completed. Redirecting to /onboarding.');
-    redirect('/onboarding');
-  }
+  // if (!selectedPlatformId) {
+  //   selectedPlatformId = await InitPlatformID(user.id);
+  //   setCookie('platform_integration_id', selectedPlatformId, { maxAge: 60 * 60 * 24 * 30 });
+  // }
+
+  // let selectedAdAccountId = cs.get('ad_account_row_id')?.value || null;
+  // if (!selectedAdAccountId) {
+  //   selectedAdAccountId = user?.connected_accounts?.[0]?.accountId || null;
+  //   setCookie('ad_account_row_id', selectedAdAccountId, { maxAge: 60 * 60 * 24 * 30 });
+  // }
+
 
   return (
     <div className="h-screen flex flex-col">

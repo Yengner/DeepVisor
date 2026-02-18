@@ -1,6 +1,6 @@
 'use client';
 
-import { updateBusinessProfileData } from '@/lib/server/actions/onboarding/onboarding';
+import { updateBusinessProfileData } from '@/lib/server/actions/business/onboarding/onboarding';
 import { Button, Text, Title, Stack, Group, MultiSelect, Checkbox, Card, SimpleGrid, Divider } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconSettings, IconChartBar, IconBell } from '@tabler/icons-react';
