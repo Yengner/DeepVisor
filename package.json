@@ -1,13 +1,14 @@
 {
   "name": "deepvisor",
-  "version": "0.6.0",
+  "version": "0.8.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "lint:fix": "next lint --fix"
+    "lint:fix": "next lint --fix",
+    "types:supabase": "npx supabase gen types typescript --linked > src/lib/shared/types/supabase.ts"
   },
   "dependencies": {
     "@babel/runtime": "^7.27.0",

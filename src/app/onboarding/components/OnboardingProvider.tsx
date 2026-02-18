@@ -23,7 +23,7 @@ import ConnectAccountsStep from './steps/ConnectAccountsStep';
 import PreferencesStep from './steps/PreferencesStep';
 import BusinessProfileStep from './steps/BusinessProfileStep';
 import CompletionStep from './steps/CompletionStep';
-import { getOnboardingProgress, updateBusinessProfileData, updateOnboardingProgress } from '@/lib/server/actions/onboarding/onboarding';
+import { getOnboardingProgress, updateBusinessProfileData, updateOnboardingProgress } from '@/lib/server/actions/business/onboarding/onboarding';
 import { UserData } from './types';
 import { updateConnectedAccountsInDatabase } from './utils';
 import { IconCheck, IconDeviceAnalytics, IconPlug, IconSettings, IconCircleCheck, IconClock } from '@tabler/icons-react';
@@ -59,7 +59,7 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
   useEffect(() => {
     async function loadOnboardingProgress() {
       try {
-        const { success, step, connectedAccounts, businessData } = await getOnboardingProgress();
+        const { success, step, connectedAccounts, businessData } = await getOnboardingProgress(userId);
 
         if (success) {
           setActive(step);

@@ -1,11 +1,11 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
 import TopBarClient from './TopBarClient';
 import { cookies } from 'next/headers';
-import { getLoggedInUser } from '@/lib/server/actions/user';
 import { getNotifications } from '@/lib/server/actions/notifications/server/getNotifications';
+import { getLoggedInUserOrRedirect } from '@/lib/server/actions/user/account';
 
 export default async function Topbar() {
-  const user = await getLoggedInUser();
+  const user = await getLoggedInUserOrRedirect();
   const userId = user?.id;
   if (!userId) return null;
 
