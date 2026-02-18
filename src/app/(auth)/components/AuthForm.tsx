@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { TextInput, PasswordInput, Button, Paper, Group, Divider, Stack, Title, Text, Anchor } from '@mantine/core';
 import { IconBrandGoogle } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
-import { handleLogin, handleSignUp, resendVerificationEmail } from '@/lib/server/actions/user/auth';
+import { handleLogin, handleSignUp, handleResendVerificationEmail } from '@/lib/server/actions/user/auth';
+import { ErrorCode } from '@/lib/shared/types/api';
 
 interface AuthFormProps {
   type: 'login' | 'signup';
@@ -18,38 +19,53 @@ export default function AuthForm({ type }: AuthFormProps) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phoneNo, setPhoneNo] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [showVerifyEmailButton, setShowVerifyEmailButton] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    setShowVerifyEmailButton(false);
+
     try {
       if (type === 'login') {
-        const { errorMessage } = await handleLogin(email, password);
-        if (errorMessage) {
-          if (errorMessage === 'Email not confirmed') {
-            toast.error('Your email is not confirmed. Please verify your email.');
-            setShowVerifyEmailButton(true); // Show the verify email button
-          } else {
-            toast.error(errorMessage);
+        const res = await handleLogin(email, password);
+        if (!res.success) {
+
+          if (res.error.message === "Email not confirmed") {
+            toast.error(res.error.userMessage);
+            setShowVerifyEmailButton(true);
+            return;
           }
-        } else {
-          toast.success('Logged In!');
-          router.push('/dashboard');
+
+          if (res.error.message === "Invalid login credentials") {
+            toast.error(res.error.userMessage);
+            return
+          }
+
+          toast.error(res.error.userMessage ?? 'Login failed.');
+          return;
         }
-      } else if (type === 'signup') {
-        const { errorMessage } = await handleSignUp(email, password, firstName, lastName, phoneNo);
-        if (errorMessage) {
-          toast.error(errorMessage);
-        } else {
-          toast.success('Verify Your Email!');
-          router.push('/verify-email?email=' + encodeURIComponent(email) + '&type=email');
-        }
+
+        toast.success('Logged in!');
+        router.push('/dashboard');
+        return;
       }
-    } catch (error) {
-      console.error('Error during submission:', error);
-      toast.error('An error occurred. Please try again.');
+
+      // signup
+      const res = await handleSignUp(email, password, firstName, lastName, phoneNo);
+
+      if (!res.success) {
+        toast.error(res.error.userMessage ?? 'Signup failed.');
+        return;
+      }
+
+      toast.success('Check your email to verify your account!');
+      router.push('/login');
+    } catch (err) {
+      console.error('Error during submission:', err);
+      toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -58,13 +74,20 @@ export default function AuthForm({ type }: AuthFormProps) {
   async function handleResendVerification() {
     setLoading(true);
     try {
-      const { success, error } = await resendVerificationEmail(email);
-      if (success) {
-        toast.success('Verification email sent!');
-        router.push('/verify-email?email=' + encodeURIComponent(email) + '&type=email');
-      } else {
-        toast.error(error || 'Failed to resend verification email.');
+      const res = await handleResendVerificationEmail(email);
+
+      if (!res.success) {
+        // show a nicer message
+        if (res.error.code === ErrorCode.RATE_LIMITED) {
+          toast.error('Too many requests. Please wait a bit and try again.');
+          return;
+        }
+
+        toast.error(res.error.userMessage ?? 'Failed to resend verification email.');
+        return;
       }
+
+      toast.success('Verification email sent!');
     } catch (err) {
       console.error('Error resending verification email:', err);
       toast.error('An unexpected error occurred.');
@@ -125,7 +148,7 @@ export default function AuthForm({ type }: AuthFormProps) {
 
             {!showVerifyEmailButton && <Button type="submit" fullWidth loading={loading}>
               {type === 'signup' ? 'Sign Up' : 'Sign In'}
-            </Button> }
+            </Button>}
           </Stack>
         </form>
 

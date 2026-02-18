@@ -6,14 +6,18 @@ export enum ErrorCode {
     DATABASE_ERROR = 'DATABASE_ERROR',
     EXTERNAL_API_ERROR = 'EXTERNAL_API_ERROR',
     RATE_LIMITED = 'RATE_LIMITED',
-    UNKNOWN_ERROR = 'UNKNOWN_ERROR'
+    UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+    FORBIDDEN = 'FORBIDDEN',
+    CONFLICT = 'CONFLICT',
+    BAD_REQUEST = 'BAD_REQUEST',
+
 }
 
 export interface ErrorDetails {
     code: ErrorCode;
-    message: string;         // Technical message
-    userMessage: string;     // User-friendly message
-    details?: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+    message: string;
+    userMessage: string;
+    details?: Record<string, unknown>;
 }
 
 export type ApiResponse<T> = {
@@ -23,3 +27,4 @@ export type ApiResponse<T> = {
     success: false;
     error: ErrorDetails;
 };
+
