@@ -1,5 +1,6 @@
 'use client';
 
+import { clientHandleSignOut, markAllNotificationsAsReadClient, markNotificationReadClient } from '@/lib/client';
 import {
     Group,
     TextInput,
@@ -31,11 +32,6 @@ import {
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
-// import { handleSignOut } from '@/lib/actions/user';
-import { markAllNotificationsAsReadClient } from '@/lib/client/notifications/markAllNotificationsAsReadClient';
-import { markNotificationReadClient } from '@/lib/client/notifications/markNotificationReadClient';
-import { handleSignOut } from '@/lib/server/actions/user';
-
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface Notification {
@@ -308,7 +304,7 @@ export default function TopBarClient({
                         <Menu.Item
                             color="red"
                             leftSection={<IconLogout size={16} />}
-                            onClick={handleSignOut}
+                            onClick={clientHandleSignOut}
                         >
                             Logout
                         </Menu.Item>

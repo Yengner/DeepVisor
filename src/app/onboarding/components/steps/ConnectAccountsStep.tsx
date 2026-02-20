@@ -25,9 +25,8 @@ export default function ConnectAccountsStep({
     const handleConnect = async (platform: string) => {
         setConnecting(platform);
         try {
-            // Redirect to the OAuth connection URL for Meta
-            const returnPath = encodeURIComponent(`/onboarding`)
-            window.location.href = `/api/integrations/connect/${platform}?returnPath=${returnPath}`;
+            const returnPath = encodeURIComponent(`/onboarding`);
+            window.open(`/api/integrations/connect/${platform}?returnPath=${returnPath}`, "_blank");
         } catch (error) {
             console.error(`Error connecting to ${platform}:`, error);
             toast.error(`Failed to connect to ${platform}. Please try again.`);
@@ -50,7 +49,7 @@ export default function ConnectAccountsStep({
 
         return {
             id: account.accountId,
-            name: account.accountName,
+            name: account.accountName ?? 'Connected account',
             date: formattedDate
         };
     };

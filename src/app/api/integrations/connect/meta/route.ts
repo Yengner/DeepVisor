@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { generateState } from '@/lib/shared/utils/guards';
-import { redirectWithError } from '@/lib/shared/responses';
-import { getLoggedInUser } from '@/lib/server/actions/user';
+import { getLoggedInUserOrRedirect } from '@/lib/server/actions/user';
+
 
 
 export async function GET(request: NextRequest) {
@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
         const isOnboarding = returnPath.includes('/onboarding');
 
         const supabase = await createSupabaseClient();
-        const loggedIn = await getLoggedInUser();
-        const userId = loggedIn?.id;
+        const loggedInUser = await getLoggedInUserOrRedirect();
+        const userId = loggedInUser.id;
 
         const state = generateState();
         const { error: stateError } = await supabase.from('oauth_states').insert({
@@ -25,10 +25,10 @@ export async function GET(request: NextRequest) {
             expires_at: new Date(Date.now() + 3600000).toISOString() // 1 hour expiry
         });
 
-        if (stateError) {
-            console.error('Failed to store OAuth state:', stateError);
-            return redirectWithError(request, isOnboarding, 'state_storage_error');
-        }
+        // if (stateError) {
+        //     console.error('Failed to store OAuth state:', stateError);
+        //     return redirectWithError(request, isOnboarding, 'state_storage_error');
+        // }
 
         const oauthUrl = new URL('https://www.facebook.com/v23.0/dialog/oauth');
 
@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
         const returnPath = searchParams.get('return') || '/integrations';
         const isOnboarding = returnPath.includes('/onboarding');
 
-        redirectWithError(request, isOnboarding, 'server_error');
+        // redirectWithError(request, isOnboarding, 'server_error');
+        return NextResponse.redirect(new URL(returnPath, process.env.NEXT_PUBLIC_BASE_URL!));
     }
 }

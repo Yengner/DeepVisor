@@ -1,6 +1,6 @@
 'use client';
 
-import { updateBusinessProfileData } from '@/lib/server/actions/business/onboarding/onboarding';
+import { updateBusinessProfileData } from '@/lib/server/actions/business/onboarding';
 import { Button, Text, Title, Stack, Group, MultiSelect, Checkbox, Card, SimpleGrid, Divider } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconSettings, IconChartBar, IconBell } from '@tabler/icons-react';
@@ -81,13 +81,14 @@ export default function PreferencesStep({
       });
 
       // Save directly to database for additional safety
-      await updateBusinessProfileData({
+      const saveRes = await updateBusinessProfileData({
         adGoals: values.adGoals,
         preferredPlatforms: values.preferredPlatforms,
-        emailNotifications: values.emailNotifications,
-        weeklyReports: values.weeklyReports,
-        performanceAlerts: values.performanceAlerts
       });
+      if (!saveRes.success) {
+        toast.error(saveRes.error.userMessage);
+        return;
+      }
 
       // Proceed to next step
       onNext();
