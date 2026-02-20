@@ -11,7 +11,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const user = await getLoggedInUserOrRedirect()
   const ctx = await requireBusinessContextOrRedirect(user.id);
 
-  console.log("User context in RootLayout:", { user, ctx });
+  console.log("User context in RootLayout:", { user });
 
   /**
    * Depricated process until later

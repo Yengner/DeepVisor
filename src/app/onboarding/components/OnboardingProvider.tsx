@@ -23,81 +23,69 @@ import ConnectAccountsStep from './steps/ConnectAccountsStep';
 import PreferencesStep from './steps/PreferencesStep';
 import BusinessProfileStep from './steps/BusinessProfileStep';
 import CompletionStep from './steps/CompletionStep';
-import { getOnboardingProgress, updateBusinessProfileData, updateOnboardingProgress } from '@/lib/server/actions/business/onboarding/onboarding';
+import { updateOnboardingProgress } from '@/lib/server/actions/business/onboarding';
 import { UserData } from './types';
 import { updateConnectedAccountsInDatabase } from './utils';
 import { IconCheck, IconDeviceAnalytics, IconPlug, IconSettings, IconCircleCheck, IconClock } from '@tabler/icons-react';
 
+export type OnboardingInitial = {
+  step: number;
+  completed: boolean;
+  businessId: string | null;
+  businessData: {
+    businessName: string;
+    industry: string | null;
+    monthlyBudget: string | null;
+    website: string | null;
+    description: string | null;
+    adGoals: string[];
+    preferredPlatforms: string[];
+  };
+};
 
-export default function OnboardingProvider({ userId }: { userId: string }) {
-  const [active, setActive] = useState(0);
-  const [loading, setLoading] = useState(true); // Start with loading true
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+type OnboardingProviderProps = {
+  initial: OnboardingInitial;
+  userId: string;
+};
+
+export default function OnboardingProvider({ initial, userId }: OnboardingProviderProps) {
+  const stepLabels = ["Welcome", "Connect", "Business", "Preferences"];
+  const stepDescription = [
+    "Get started",
+    "Link platforms",
+    "About your business",
+    "Customize your experience",
+  ];
+  const totalSteps = stepLabels.length;
+  const clampStep = (step: number) => Math.min(Math.max(step, 0), totalSteps);
+
+  const [active, setActive] = useState(() => {
+    if (initial.completed) return totalSteps;
+    return clampStep(initial.step);
+  });
+  const [loading, setLoading] = useState(false);
   const [isAutosaving, setIsAutosaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const autosaveTimer = useRef<number | null>(null);
 
-  const [userData, setUserData] = useState<UserData>({
-    businessName: '',
+  const [userData, setUserData] = useState<UserData>(() => ({
+    businessName: initial.businessData.businessName ?? '',
     businessType: '',
-    industry: '',
-    monthlyBudget: '',
-    website: '',
-    description: '',
-    adGoals: [],
-    preferredPlatforms: [],
+    industry: initial.businessData.industry ?? '',
+    monthlyBudget: initial.businessData.monthlyBudget ?? '',
+    website: initial.businessData.website ?? '',
+    description: initial.businessData.description ?? '',
+    adGoals: Array.isArray(initial.businessData.adGoals) ? initial.businessData.adGoals : [],
+    preferredPlatforms: Array.isArray(initial.businessData.preferredPlatforms) ? initial.businessData.preferredPlatforms : [],
     emailNotifications: true,
     weeklyReports: true,
     performanceAlerts: true,
     connectedAccounts: [],
-  });
+  }));
 
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  // Load initial state when component mounts
-  useEffect(() => {
-    async function loadOnboardingProgress() {
-      try {
-        const { success, step, connectedAccounts, businessData } = await getOnboardingProgress(userId);
-
-        if (success) {
-          setActive(step);
-
-          if (connectedAccounts && connectedAccounts.length > 0) {
-            setUserData(prev => ({
-              ...prev,
-              connectedAccounts: connectedAccounts
-            }));
-          }
-
-          if (businessData) {
-            setUserData(prev => ({
-              ...prev,
-              businessName: businessData.businessName || prev.businessName,
-              businessType: businessData.businessType || prev.businessType,
-              industry: businessData.industry || prev.industry,
-              monthlyBudget: businessData.monthlyBudget || prev.monthlyBudget,
-              adGoals: Array.isArray(businessData.adGoals) && businessData.adGoals.length ? businessData.adGoals : prev.adGoals,
-              website: businessData.website || prev.website,
-              description: businessData.description || prev.description,
-              preferredPlatforms: Array.isArray(businessData.preferredPlatforms) && businessData.preferredPlatforms.length ? businessData.preferredPlatforms : prev.preferredPlatforms,
-              emailNotifications: businessData.emailNotifications !== undefined ? businessData.emailNotifications : prev.emailNotifications,
-              weeklyReports: businessData.weeklyReports !== undefined ? businessData.weeklyReports : prev.weeklyReports,
-              performanceAlerts: businessData.performanceAlerts !== undefined ? businessData.performanceAlerts : prev.performanceAlerts,
-            }));
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load onboarding progress:', error);
-      } finally {
-        setLoading(false);
-        setInitialLoadComplete(true);
-      }
-    }
-
-    loadOnboardingProgress();
-  }, []);
+  const canPersist = Boolean(initial.businessId);
 
   useEffect(() => {
     return () => {
@@ -107,11 +95,9 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
     };
   }, []);
 
-  // Check for account connection callbacks (only after initial load)
+  // Check for account connection callbacks
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
-    if (!initialLoadComplete) return;
-
     const platform = searchParams.get('platform');
     const status = searchParams.get('status');
     const accountId = searchParams.get('account_id');
@@ -156,77 +142,51 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
       // Clear URL params
       router.replace('/onboarding');
     }
-  }, [searchParams, initialLoadComplete, userData.connectedAccounts, active, router]);
-
-  // Save connected accounts to database
+  }, [searchParams, userData.connectedAccounts, active, router]);
 
 
-  const nextStep = async () => {
-    setLoading(true);
+  const persistProgress = async (step: number, completed?: boolean) => {
+    if (!canPersist) return true;
     setIsAutosaving(true);
     try {
-      if (active === 2) {
-        console.log("Saving business profile data:", {
-          businessName: userData.businessName,
-          businessType: userData.businessType,
-          industry: userData.industry,
-          website: userData.website,
-          description: userData.description,
-          monthlyBudget: userData.monthlyBudget
-        });
-        await updateBusinessProfileData({
-          businessName: userData.businessName,
-          businessType: userData.businessType,
-          industry: userData.industry,
-          website: userData.website,
-          description: userData.description,
-          monthlyBudget: userData.monthlyBudget
-        });
+      const progressRes = await updateOnboardingProgress({ step, completed });
+      if (!progressRes.success) {
+        toast.error(progressRes.error.userMessage);
+        return false;
       }
-      else if (active === 3) {
-        console.log("Saving preferences data:", {
-          adGoals: userData.adGoals,
-          preferredPlatforms: userData.preferredPlatforms,
-          emailNotifications: userData.emailNotifications,
-          weeklyReports: userData.weeklyReports,
-          performanceAlerts: userData.performanceAlerts
-        });
-        await updateBusinessProfileData({
-          adGoals: userData.adGoals,
-          preferredPlatforms: userData.preferredPlatforms,
-          emailNotifications: userData.emailNotifications,
-          weeklyReports: userData.weeklyReports,
-          performanceAlerts: userData.performanceAlerts
-        });
-      }
-
-      // After saving, proceed to next step
-      const nextStepIndex = active + 1;
-
-      // Save current progress
-      await updateOnboardingProgress(nextStepIndex === 4, nextStepIndex);
-
-      // If this is the last step, redirect to dashboard
-      if (nextStepIndex >= 5) {
-        router.push('/dashboard');
-        return;
-      }
-
-      setActive(nextStepIndex);
+      setLastSavedAt(new Date());
+      return true;
     } catch (error) {
       console.error('Error updating onboarding progress:', error);
       toast.error('Error saving progress. Please try again.');
+      return false;
     } finally {
-      setLoading(false);
       setIsAutosaving(false);
-      setLastSavedAt(new Date());
     }
   };
 
+  const nextStep = async () => {
+    if (loading) return;
+    const nextStepIndex = active + 1;
+
+    // Leaving completion -> finalize and redirect
+    if (nextStepIndex > totalSteps) {
+      setLoading(true);
+      const saved = await persistProgress(totalSteps, true);
+      setLoading(false);
+      if (saved) router.push('/dashboard');
+      return;
+    }
+
+    setActive(nextStepIndex);
+    void persistProgress(Math.min(nextStepIndex, totalSteps), false);
+  };
+
   const prevStep = () => {
+    if (loading) return;
     const prevStepIndex = active > 0 ? active - 1 : 0;
-    updateOnboardingProgress(false, prevStepIndex).catch(console.error);
     setActive(prevStepIndex);
+    void persistProgress(prevStepIndex, false);
   };
 
   const handleUpdateUserData = (data: Partial<typeof userData>) => {
@@ -246,14 +206,6 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
     }, 800);
   };
 
-  const stepLabels = ["Welcome", "Connect", "Business", "Preferences"];
-  const stepDescription = [
-    "Get started",
-    "Link platforms",
-    "About your business",
-    "Customize your experience",
-  ];
-  const totalSteps = 4;
   const progressValue = Math.min(100, Math.round(((Math.min(active, totalSteps)) / totalSteps) * 100));
   const autosaveLabel = isAutosaving
     ? "Saving changes…"
@@ -295,7 +247,7 @@ export default function OnboardingProvider({ userId }: { userId: string }) {
                 <Group justify="apart" mt={4}>
                   <Text fw={600}>{progressValue}% complete</Text>
                   <Text size="xs" c="dimmed">
-                    ~3–5 min
+                    ~3-5 min
                   </Text>
                 </Group>
                 <Progress value={progressValue} size="sm" radius="xl" mt="xs" />

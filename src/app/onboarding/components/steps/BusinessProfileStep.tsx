@@ -1,6 +1,6 @@
 'use client';
 
-import { updateBusinessProfileData } from '@/lib/server/actions/business/onboarding/onboarding';
+import { updateBusinessProfileData } from '@/lib/server/actions/business/onboarding';
 import { Button, Text, Title, Stack, Group, Select, TextInput, Textarea, Card, SimpleGrid } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconBuilding } from '@tabler/icons-react';
@@ -90,14 +90,17 @@ export default function BusinessProfileStep({
       });
 
       // Save directly to database for additional safety
-      await updateBusinessProfileData({
+      const saveRes = await updateBusinessProfileData({
         businessName: values.businessName,
-        businessType: values.businessType,
         industry: values.industry,
         website: values.website,
         description: values.description,
         monthlyBudget: values.monthlyBudget
       });
+      if (!saveRes.success) {
+        toast.error(saveRes.error.userMessage);
+        return;
+      }
 
       // Proceed to next step
       onNext();
