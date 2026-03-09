@@ -35,6 +35,7 @@ export async function fetchMetaAdAccounts(
         fields: [AdAccount.Fields.id, AdAccount.Fields.name, AdAccount.Fields.account_status],
         limit: 10,
     });
+    console.log('Fetched ad accounts from Meta API:', { response }); // Debug log
     const adAccounts: AdAccountDetails[] = response.data;
 
     if (!withMetrics) {

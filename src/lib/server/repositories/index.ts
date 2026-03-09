@@ -1,7 +1,0 @@
-export * from './ad-accounts.repo'
-export * from './platforms.repo'
-export * from './campaigns.repo'
-export * from './ads.repo'
-export * from './adsets.repo'
-export * from './components.repo'
-export * from './types'

@@ -1,6 +1,6 @@
 'use client';
 
-import { AdAccountData } from '@/lib/server/repositories/types';
+import { AdAccountData } from '@/lib/server/data/types';
 import { Box, Group, Card, Title, Text, Badge, Button, Menu, ActionIcon, Stack } from '@mantine/core';
 import { IconRefresh, IconSettings, IconTarget, IconBell, IconClock, IconArrowUpRight } from '@tabler/icons-react';
 
@@ -26,8 +26,16 @@ interface DashboardHeaderProps {
  * @param timestamp - ISO timestamp string (e.g., "2025-07-13T15:00:04")
  * @returns Formatted string (e.g., "July 13, 2025, 3:00 PM")
  */
-export function formatLastSynced(timestamp: string): string {
+export function formatLastSynced(timestamp: string | null): string {
+    if (!timestamp) {
+        return 'Not synced yet';
+    }
+
     const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) {
+        return 'Not synced yet';
+    }
+
     const options: Intl.DateTimeFormatOptions = {
         year: 'numeric',
         month: 'long',

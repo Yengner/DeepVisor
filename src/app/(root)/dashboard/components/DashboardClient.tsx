@@ -1,430 +1,621 @@
 'use client';
 
-import { useState } from 'react';
+import '@mantine/charts/styles.css';
+
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
+import { LineChart } from '@mantine/charts';
 import {
-    Container,
-    SimpleGrid,
-    Card,
-    Group,
-    Box,
-    Text,
-    Button,
-    Paper,
-    Stack,
-    Progress,
-    Alert,
-    Badge,
-    ActionIcon,
-    Grid,
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Container,
+  Grid,
+  Group,
+  Paper,
+  Progress,
+  SimpleGrid,
+  Stack,
+  Table,
+  Text,
+  ThemeIcon,
+  Title,
 } from '@mantine/core';
 import {
-    IconAlertCircle,
-    IconFileExport,
-    IconList,
-    IconCurrencyDollar,
-    IconUsers,
-    IconMouse,
-    IconChartLine,
-    IconArrowUpRight,
-    IconClock,
+  IconAlertCircle,
+  IconArrowUpRight,
+  IconChartLine,
+  IconClock,
+  IconCurrencyDollar,
+  IconLink,
+  IconRefresh,
+  IconTarget,
+  IconUsers,
 } from '@tabler/icons-react';
-import DashboardHeader, { formatLastSynced } from './DashboardHeader';
+import type { DashboardPayload, DashboardState } from '../types';
 
-
-export type DashboardClientProps = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    userData: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    platform: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    adAccountData: any;
-}
+type DashboardClientProps = {
+  payload: DashboardPayload;
+};
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
 });
-const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 
-const formatCurrency = (value?: number) => {
-    if (value === undefined || value === null || Number.isNaN(value)) return '$0';
-    return currencyFormatter.format(value);
-};
+const numberFormatter = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 0,
+});
 
-const formatNumber = (value?: number) => {
-    if (value === undefined || value === null || Number.isNaN(value)) return '0';
-    return numberFormatter.format(value);
-};
+const percentFormatter = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 1,
+});
 
-const formatPercent = (value?: number) => {
-    if (value === undefined || value === null || Number.isNaN(value)) return '—';
-    const normalized = value < 1 ? value * 100 : value;
-    return `${normalized.toFixed(normalized >= 10 ? 0 : 1)}%`;
-};
+function formatCurrency(value: number): string {
+  return currencyFormatter.format(Number.isFinite(value) ? value : 0);
+}
 
-const toPercentNumber = (value?: number) => {
-    if (value === undefined || value === null || Number.isNaN(value)) return 0;
-    if (value === 0) return 0;
-    const normalized = value < 1 ? value * 100 : value;
-    return Math.max(0, Math.min(100, normalized));
-};
+function formatNumber(value: number): string {
+  return numberFormatter.format(Number.isFinite(value) ? value : 0);
+}
 
-export default function DashboardClient({
-    userData,
-    platform,
-    adAccountData,
-}: DashboardClientProps) {
-    const [refreshing, setRefreshing] = useState(false);
-    const aggregatedMetrics = adAccountData?.aggregated_metrics || {};
+function formatPercent(value: number): string {
+  return `${percentFormatter.format(Number.isFinite(value) ? value : 0)}%`;
+}
 
-    const messageRate = aggregatedMetrics.clicks
-        ? aggregatedMetrics.messages / aggregatedMetrics.clicks
-        : 0;
-    const leadRate = aggregatedMetrics.clicks ? aggregatedMetrics.leads / aggregatedMetrics.clicks : 0;
+function formatDateTime(value: string | null): string {
+  if (!value) {
+    return 'Not synced yet';
+  }
 
-    const handleRefresh = async () => {
-        setRefreshing(true);
-        // Simulate refresh logic
-        setTimeout(() => {
-            setRefreshing(false);
-        }, 1000);
-    };
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Not synced yet';
+  }
 
-    const statCards = [
-        {
-            label: 'Spend',
-            value: formatCurrency(aggregatedMetrics.spend),
-            helper: 'Total tracked spend',
-            icon: IconCurrencyDollar,
-            color: 'cyan',
-        },
-        {
-            label: 'Leads',
-            value: formatNumber(aggregatedMetrics.leads),
-            helper: `${formatNumber(aggregatedMetrics.messages)} messages`,
-            icon: IconUsers,
-            color: 'teal',
-        },
-        {
-            label: 'CTR',
-            value: formatPercent(aggregatedMetrics.ctr),
-            helper: `${formatNumber(aggregatedMetrics.clicks)} clicks`,
-            icon: IconMouse,
-            color: 'violet',
-        },
-        {
-            label: 'Reach',
-            value: formatNumber(aggregatedMetrics.reach ?? aggregatedMetrics.impressions),
-            helper: `${formatNumber(aggregatedMetrics.impressions)} impressions`,
-            icon: IconChartLine,
-            color: 'blue',
-        },
-    ];
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
 
-    const secondaryMetrics = [
-        { label: 'Avg CPC', value: formatCurrency(aggregatedMetrics.cpc) },
-        { label: 'Avg CPM', value: formatCurrency(aggregatedMetrics.cpm) },
-        {
-            label: 'Link clicks',
-            value: formatNumber(aggregatedMetrics.link_clicks ?? aggregatedMetrics.clicks),
-        },
-    ];
+function statusColor(status: string | undefined): string {
+  switch (status) {
+    case 'connected':
+      return 'green';
+    case 'error':
+      return 'red';
+    case 'needs_reauth':
+      return 'orange';
+    default:
+      return 'gray';
+  }
+}
 
-    const qualitySignals = [
-        {
-            label: 'Click-through rate',
-            value: formatPercent(aggregatedMetrics.ctr),
-            progress: toPercentNumber(aggregatedMetrics.ctr),
-            color: 'teal',
-            caption: 'Clicks relative to impressions',
-        },
-        {
-            label: 'Message rate',
-            value: formatPercent(messageRate),
-            progress: toPercentNumber(messageRate),
-            color: 'blue',
-            caption: 'Messages per click (proxy for intent)',
-        },
-        {
-            label: 'Lead rate',
-            value: formatPercent(leadRate),
-            progress: toPercentNumber(leadRate),
-            color: 'violet',
-            caption: 'Leads generated per click',
-        },
-    ];
+function stateContent(state: DashboardState): {
+  color: 'blue' | 'orange' | 'yellow' | 'teal' | 'red' | 'green';
+  title: string;
+  description: string;
+} {
+  switch (state) {
+    case 'no_platform_selected':
+      return {
+        color: 'blue',
+        title: 'Select an integration to unlock dashboard detail',
+        description:
+          'No platform integration is selected yet. Open integrations and connect one to start syncing business data.',
+      };
+    case 'platform_not_found_or_not_connected':
+      return {
+        color: 'orange',
+        title: 'Selected integration is missing or disconnected',
+        description:
+          'The saved platform selection is stale or not connected. Reconnect it from integrations to restore live data.',
+      };
+    case 'no_ad_account_selected':
+      return {
+        color: 'yellow',
+        title: 'Select an ad account for account-level analytics',
+        description:
+          'Your business rollup is available, but an ad account is not selected in the top bar yet.',
+      };
+    case 'ad_account_selected_no_metrics':
+      return {
+        color: 'teal',
+        title: 'Ad account connected, metrics still populating',
+        description:
+          'The account is selected but no aggregated metrics are available yet. Run a refresh after the next sync window.',
+      };
+    default:
+      return {
+        color: 'green',
+        title: 'Dashboard is live',
+        description: 'Selected account metrics and business rollups are loaded from your connected integrations.',
+      };
+  }
+}
 
-    const campaignPlaceholders = [
-        { title: 'Campaign pacing', value: 'Awaiting fresh data', badge: 'Momentum' },
-        { title: 'Creative fatigue', value: 'No signals yet', badge: 'Quality' },
-        { title: 'Audience insights', value: 'Populating after next sync', badge: 'Reach' },
-    ];
+export default function DashboardClient({ payload }: DashboardClientProps) {
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshFeedback, setRefreshFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
-    return (
-        <Container size="xl" py="md">
-            <DashboardHeader
-                businessName={userData.business_name || userData?.full_name + "'s Business"}
-                platformName={platform.platform_name}
-                adAccountData={adAccountData}
-                onRefresh={handleRefresh}
-                refreshing={refreshing}
-            />
+  const stateMeta = stateContent(payload.state);
+  const selectedMetrics = payload.adAccount?.aggregated_metrics ?? null;
+  const businessTotals = payload.businessRollup.totals;
 
-            <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg" mb="xl">
-                {statCards.map((card) => (
-                    <Card
-                        key={card.label}
-                        withBorder
-                        radius="lg"
-                        p="lg"
-                        style={{
-                            background:
-                                'linear-gradient(135deg, rgba(14,165,233,0.08), rgba(14,165,233,0.02))',
-                        }}
-                    >
-                        <Group justify="space-between" mb="sm">
-                            <Badge size="sm" variant="light" color={card.color}>
-                                {card.label}
+  const selectedSpendShare =
+    selectedMetrics && businessTotals.spend > 0
+      ? Math.min(100, (selectedMetrics.spend / businessTotals.spend) * 100)
+      : 0;
+
+  const selectedLeadShare =
+    selectedMetrics && businessTotals.leads > 0
+      ? Math.min(100, (selectedMetrics.leads / businessTotals.leads) * 100)
+      : 0;
+
+  const trendData = useMemo(
+    () =>
+      payload.trend.points
+        .map((point) => {
+          const rawDate = point.date_stop ?? point.date_start;
+          const date = rawDate
+            ? new Date(rawDate).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })
+            : null;
+
+          if (!date) {
+            return null;
+          }
+
+          return {
+            date,
+            Spend: Number(point.spend.toFixed(2)),
+            Leads: Number(point.leads.toFixed(2)),
+            Clicks: Number(point.clicks.toFixed(2)),
+          };
+        })
+        .filter((point): point is { date: string; Spend: number; Leads: number; Clicks: number } =>
+          Boolean(point)
+        ),
+    [payload.trend.points]
+  );
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    setRefreshFeedback(null);
+
+    try {
+      const response = await fetch('/api/integrations/refresh', { method: 'POST' });
+      const result = (await response.json()) as {
+        success?: boolean;
+        refreshedCount?: number;
+        failedCount?: number;
+      };
+
+      if (!response.ok || !result.success) {
+        throw new Error('Refresh failed');
+      }
+
+      setRefreshFeedback({
+        type: 'success',
+        message: `Refresh completed: ${result.refreshedCount ?? 0} updated, ${result.failedCount ?? 0} failed.`,
+      });
+    } catch {
+      setRefreshFeedback({
+        type: 'error',
+        message: 'Refresh failed. Check integration status and try again.',
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  const kpiCards = [
+    {
+      label: 'Selected Spend',
+      value: selectedMetrics ? formatCurrency(selectedMetrics.spend) : '—',
+      helper: selectedMetrics ? 'Current selected account' : 'Select an account for detail',
+      icon: IconCurrencyDollar,
+      color: 'green',
+    },
+    {
+      label: 'Selected Leads',
+      value: selectedMetrics ? formatNumber(selectedMetrics.leads) : '—',
+      helper: selectedMetrics ? `${formatNumber(selectedMetrics.messages)} messages` : 'No selected account',
+      icon: IconUsers,
+      color: 'blue',
+    },
+    {
+      label: 'Selected Clicks',
+      value: selectedMetrics ? formatNumber(selectedMetrics.clicks) : '—',
+      helper: selectedMetrics
+        ? `${formatNumber(selectedMetrics.link_clicks)} link clicks`
+        : 'No selected account',
+      icon: IconLink,
+      color: 'cyan',
+    },
+    {
+      label: 'Selected CTR',
+      value: selectedMetrics ? formatPercent(selectedMetrics.ctr) : '—',
+      helper: selectedMetrics ? 'Click-through performance' : 'No selected account',
+      icon: IconTarget,
+      color: 'violet',
+    },
+  ];
+
+  return (
+    <Container size="xl" py="md">
+      <Stack gap="lg">
+        <Card
+          withBorder
+          radius="lg"
+          p="xl"
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            background: 'linear-gradient(120deg, #0f172a 0%, #111827 50%, #0ea5e9 130%)',
+            borderColor: 'rgba(255,255,255,0.08)',
+          }}
+        >
+          <Group justify="space-between" align="flex-start" gap="xl">
+            <Stack gap="sm" style={{ flex: 1 }}>
+              <Group gap="xs">
+                <Badge color="cyan" variant="light" size="lg">
+                  {payload.business.name}
+                </Badge>
+                {payload.platform ? (
+                  <Badge color={statusColor(payload.platform.status)} variant="light" size="lg">
+                    {payload.platform.displayName} {payload.platform.status}
+                  </Badge>
+                ) : (
+                  <Badge color="gray" variant="outline" size="lg">
+                    No platform selected
+                  </Badge>
+                )}
+                {payload.adAccount?.name ? (
+                  <Badge color="teal" variant="light" size="lg">
+                    {payload.adAccount.name}
+                  </Badge>
+                ) : null}
+              </Group>
+
+              <Title order={2} c="white">
+                Executive Dashboard
+              </Title>
+              <Text c="gray.2">
+                Business-scoped performance with account detail when available and inline fallback guidance when it is
+                not.
+              </Text>
+
+              <Group gap="sm">
+                <Button
+                  component={Link}
+                  href="/integration"
+                  leftSection={<IconArrowUpRight size={16} />}
+                  variant="white"
+                  color="dark"
+                >
+                  Open integrations
+                </Button>
+                <Button
+                  onClick={handleRefresh}
+                  leftSection={<IconRefresh size={16} />}
+                  loading={refreshing}
+                  disabled={!payload.platform || payload.platform.status !== 'connected'}
+                  variant="light"
+                  color="blue"
+                >
+                  Refresh snapshot
+                </Button>
+              </Group>
+            </Stack>
+
+            <Stack gap={6} align="flex-end">
+              <Group gap={6}>
+                <IconClock size={14} color="var(--mantine-color-gray-3)" />
+                <Text size="sm" c="gray.2">
+                  Integration sync {formatDateTime(payload.platform?.lastSyncedAt ?? null)}
+                </Text>
+              </Group>
+              <Text size="sm" c="gray.2">
+                Account sync {formatDateTime(payload.adAccount?.last_synced ?? null)}
+              </Text>
+              {payload.platform?.lastError ? (
+                <Badge color="red" variant="light">
+                  {payload.platform.lastError}
+                </Badge>
+              ) : null}
+            </Stack>
+          </Group>
+        </Card>
+
+        <Alert color={stateMeta.color} title={stateMeta.title} icon={<IconAlertCircle size={16} />}>
+          {stateMeta.description}
+        </Alert>
+
+        {refreshFeedback ? (
+          <Alert color={refreshFeedback.type === 'success' ? 'green' : 'red'} icon={<IconRefresh size={16} />}>
+            {refreshFeedback.message}
+          </Alert>
+        ) : null}
+
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+          {kpiCards.map((card) => (
+            <Card key={card.label} withBorder radius="lg" p="lg">
+              <Group justify="space-between" mb="sm">
+                <Badge color={card.color} variant="light">
+                  {card.label}
+                </Badge>
+                <ThemeIcon variant="light" color={card.color} radius="xl">
+                  <card.icon size={16} />
+                </ThemeIcon>
+              </Group>
+              <Text fw={800} size="xl">
+                {card.value}
+              </Text>
+              <Text size="sm" c="dimmed">
+                {card.helper}
+              </Text>
+            </Card>
+          ))}
+        </SimpleGrid>
+
+        <Paper withBorder radius="lg" p="lg">
+          <Group justify="space-between" mb="sm">
+            <div>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                Business Rollup
+              </Text>
+              <Text fw={700}>All ad accounts in this business</Text>
+            </div>
+            <Badge variant="light" color="gray">
+              {payload.businessRollup.accountCount} accounts
+            </Badge>
+          </Group>
+
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md" mb="md">
+            <Card withBorder radius="md" p="md">
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                Total Spend
+              </Text>
+              <Text fw={700}>{formatCurrency(businessTotals.spend)}</Text>
+            </Card>
+            <Card withBorder radius="md" p="md">
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                Total Leads
+              </Text>
+              <Text fw={700}>{formatNumber(businessTotals.leads)}</Text>
+            </Card>
+            <Card withBorder radius="md" p="md">
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                Total Clicks
+              </Text>
+              <Text fw={700}>{formatNumber(businessTotals.clicks)}</Text>
+            </Card>
+            <Card withBorder radius="md" p="md">
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                Last Business Sync
+              </Text>
+              <Text fw={700}>{formatDateTime(payload.businessRollup.lastSyncedAt)}</Text>
+            </Card>
+          </SimpleGrid>
+
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+            <Paper withBorder radius="md" p="md">
+              <Text size="sm" fw={600} mb={6}>
+                Selected account share of spend
+              </Text>
+              <Progress value={selectedSpendShare} size="lg" radius="xl" />
+              <Text size="xs" c="dimmed" mt={6}>
+                {selectedMetrics
+                  ? `${formatPercent(selectedSpendShare)} of business spend`
+                  : 'Select an account to compare against total spend'}
+              </Text>
+            </Paper>
+            <Paper withBorder radius="md" p="md">
+              <Text size="sm" fw={600} mb={6}>
+                Selected account share of leads
+              </Text>
+              <Progress value={selectedLeadShare} size="lg" radius="xl" color="teal" />
+              <Text size="xs" c="dimmed" mt={6}>
+                {selectedMetrics
+                  ? `${formatPercent(selectedLeadShare)} of business leads`
+                  : 'Select an account to compare against total leads'}
+              </Text>
+            </Paper>
+          </SimpleGrid>
+        </Paper>
+
+        <Grid gutter="lg">
+          <Grid.Col span={{ base: 12, lg: 8 }}>
+            <Stack gap="lg">
+              <Paper withBorder radius="lg" p="lg">
+                <Group justify="space-between" mb="sm">
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                      Trend
+                    </Text>
+                    <Text fw={700}>30-day trajectory</Text>
+                  </div>
+                  <Badge color="blue" variant="light">
+                    Window {payload.trend.defaultWindow}d
+                  </Badge>
+                </Group>
+
+                {trendData.length > 0 ? (
+                  <LineChart
+                    h={280}
+                    data={trendData}
+                    dataKey="date"
+                    withLegend
+                    legendProps={{ verticalAlign: 'top', height: 36 }}
+                    tooltipAnimationDuration={200}
+                    curveType="linear"
+                    gridAxis="xy"
+                    series={[
+                      { name: 'Spend', color: 'blue.6' },
+                      { name: 'Leads', color: 'teal.6' },
+                      { name: 'Clicks', color: 'violet.6' },
+                    ]}
+                  />
+                ) : (
+                  <Paper withBorder radius="md" p="lg">
+                    <Text fw={600}>Trend data unavailable</Text>
+                    <Text size="sm" c="dimmed">
+                      Once daily metrics are synced for the selected account, this section will chart spend, leads, and
+                      clicks for the last 30 days.
+                    </Text>
+                  </Paper>
+                )}
+              </Paper>
+
+              <Paper withBorder radius="lg" p="lg">
+                <Group justify="space-between" mb="sm">
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                      Campaign Snapshot
+                    </Text>
+                    <Text fw={700}>Top campaigns by conversion signal</Text>
+                  </div>
+                  <Badge color="gray" variant="light">
+                    {payload.campaignSnapshot.length} rows
+                  </Badge>
+                </Group>
+
+                {payload.campaignSnapshot.length > 0 ? (
+                  <Table striped highlightOnHover withTableBorder withColumnBorders>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th>Campaign</Table.Th>
+                        <Table.Th>Status</Table.Th>
+                        <Table.Th>Spend</Table.Th>
+                        <Table.Th>Leads</Table.Th>
+                        <Table.Th>Clicks</Table.Th>
+                        <Table.Th>Cost / Result</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {payload.campaignSnapshot.map((campaign) => (
+                        <Table.Tr key={campaign.campaignId}>
+                          <Table.Td>{campaign.campaignName}</Table.Td>
+                          <Table.Td>
+                            <Badge color="gray" variant="light">
+                              {campaign.status}
                             </Badge>
-                            <ActionIcon variant="subtle" color={card.color}>
-                                <card.icon size={16} />
-                            </ActionIcon>
-                        </Group>
-                        <Text fw={800} size="xl">
-                            {card.value}
-                        </Text>
-                        <Text size="sm" c="dimmed">
-                            {card.helper}
-                        </Text>
-                    </Card>
-                ))}
-            </SimpleGrid>
+                          </Table.Td>
+                          <Table.Td>{formatCurrency(campaign.spend)}</Table.Td>
+                          <Table.Td>{formatNumber(campaign.leads)}</Table.Td>
+                          <Table.Td>{formatNumber(campaign.clicks)}</Table.Td>
+                          <Table.Td>{formatCurrency(campaign.costPerResult)}</Table.Td>
+                        </Table.Tr>
+                      ))}
+                    </Table.Tbody>
+                  </Table>
+                ) : (
+                  <Paper withBorder radius="md" p="lg">
+                    <Text fw={600}>No campaign rows yet</Text>
+                    <Text size="sm" c="dimmed">
+                      Campaign-level highlights will appear here after enough synced delivery data is available.
+                    </Text>
+                  </Paper>
+                )}
+              </Paper>
+            </Stack>
+          </Grid.Col>
 
-            <Grid columns={12} gutter="xl" mb="xl">
-                <Grid.Col span={{ base: 12, lg: 8 }}>
-                    <Stack gap="lg">
-                        <Paper withBorder radius="lg" p="lg">
-                            <Group justify="space-between" align="center" mb="sm">
-                                <div>
-                                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                                        Performance pulse
-                                    </Text>
-                                    <Text fw={700} size="lg">
-                                        Acquisition overview
-                                    </Text>
-                                </div>
-                                <Badge color="blue" variant="light">
-                                    Live view
-                                </Badge>
-                            </Group>
+          <Grid.Col span={{ base: 12, lg: 4 }}>
+            <Stack gap="lg">
+              <Paper withBorder radius="lg" p="lg">
+                <Group justify="space-between" mb="sm">
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                      Health
+                    </Text>
+                    <Text fw={700}>Integration status</Text>
+                  </div>
+                  <ThemeIcon variant="light" color="blue" radius="xl">
+                    <IconChartLine size={16} />
+                  </ThemeIcon>
+                </Group>
 
-                            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mb="md">
-                                {secondaryMetrics.map((metric) => (
-                                    <Card key={metric.label} withBorder radius="md" p="md">
-                                        <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                                            {metric.label}
-                                        </Text>
-                                        <Text fw={700} size="lg">
-                                            {metric.value}
-                                        </Text>
-                                    </Card>
-                                ))}
-                            </SimpleGrid>
+                <Stack gap={8}>
+                  <Group justify="space-between">
+                    <Text size="sm" c="dimmed">
+                      Platform
+                    </Text>
+                    <Badge color={statusColor(payload.platform?.status)} variant="light">
+                      {payload.platform?.status ?? 'not selected'}
+                    </Badge>
+                  </Group>
+                  <Group justify="space-between">
+                    <Text size="sm" c="dimmed">
+                      Integration sync
+                    </Text>
+                    <Text size="sm">{formatDateTime(payload.platform?.lastSyncedAt ?? null)}</Text>
+                  </Group>
+                  <Group justify="space-between">
+                    <Text size="sm" c="dimmed">
+                      Ad account sync
+                    </Text>
+                    <Text size="sm">{formatDateTime(payload.adAccount?.last_synced ?? null)}</Text>
+                  </Group>
+                  {payload.platform?.lastError ? (
+                    <Alert color="red" icon={<IconAlertCircle size={14} />}>
+                      {payload.platform.lastError}
+                    </Alert>
+                  ) : null}
+                </Stack>
+              </Paper>
 
-                            <Box
-                                h={220}
-                                p="md"
-                                style={{
-                                    position: 'relative',
-                                    borderRadius: 12,
-                                    overflow: 'hidden',
-                                    background:
-                                        'linear-gradient(180deg, rgba(14,165,233,0.08), rgba(15,23,42,0.55))',
-                                    border: '1px dashed var(--mantine-color-gray-5)',
-                                }}
-                            >
-                                <Box
-                                    style={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        background:
-                                            'radial-gradient(circle at 20% 30%, rgba(14,165,233,0.18), transparent 38%), radial-gradient(circle at 80% 0%, rgba(59,130,246,0.18), transparent 30%)',
-                                        opacity: 0.7,
-                                    }}
-                                />
-                                <Stack align="center" justify="center" h="100%" gap={4}>
-                                    <Text c="dimmed" size="sm">
-                                        Performance chart will populate after your next sync.
-                                    </Text>
-                                    <Group gap="xs" align="center">
-                                        <IconArrowUpRight size={14} color="var(--mantine-color-blue-5)" />
-                                        <Text size="xs" c="dimmed">
-                                            We keep this view live against your ad accounts.
-                                        </Text>
-                                    </Group>
-                                </Stack>
-                            </Box>
-                        </Paper>
-
-                        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-                            <Paper withBorder radius="lg" p="lg">
-                                <Group justify="space-between" mb="sm">
-                                    <div>
-                                        <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                                            Quality
-                                        </Text>
-                                        <Text fw={700}>Engagement health</Text>
-                                    </div>
-                                    <Badge color="teal" variant="light">
-                                        Real-time
-                                    </Badge>
-                                </Group>
-                                <Stack gap="md">
-                                    {qualitySignals.map((signal) => (
-                                        <Box key={signal.label}>
-                                            <Group justify="space-between">
-                                                <Text size="sm" fw={600}>
-                                                    {signal.label}
-                                                </Text>
-                                                <Text size="sm" c="dimmed">
-                                                    {signal.value}
-                                                </Text>
-                                            </Group>
-                                            <Progress
-                                                value={signal.progress}
-                                                color={signal.color}
-                                                size="lg"
-                                                radius="xl"
-                                            />
-                                            <Text size="xs" c="dimmed" mt={4}>
-                                                {signal.caption}
-                                            </Text>
-                                        </Box>
-                                    ))}
-                                </Stack>
-                            </Paper>
-
-                            <Paper withBorder radius="lg" p="lg">
-                                <Group justify="space-between" mb="sm">
-                                    <div>
-                                        <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                                            Campaigns
-                                        </Text>
-                                        <Text fw={700}>Snapshot</Text>
-                                    </div>
-                                    <ActionIcon variant="subtle" color="blue">
-                                        <IconArrowUpRight size={16} />
-                                    </ActionIcon>
-                                </Group>
-                                <Stack gap="sm">
-                                    {campaignPlaceholders.map((item) => (
-                                        <Group
-                                            key={item.title}
-                                            justify="space-between"
-                                            style={{
-                                                border: '1px solid var(--mantine-color-gray-3)',
-                                                borderRadius: 12,
-                                                padding: '12px 14px',
-                                            }}
-                                        >
-                                            <div>
-                                                <Text fw={600}>{item.title}</Text>
-                                                <Text size="sm" c="dimmed">
-                                                    {item.value}
-                                                </Text>
-                                            </div>
-                                            <Badge variant="light" color="gray">
-                                                {item.badge}
-                                            </Badge>
-                                        </Group>
-                                    ))}
-                                    <Text size="xs" c="dimmed">
-                                        We will surface pacing, creative fatigue, and CPA movements here once data flows.
-                                    </Text>
-                                </Stack>
-                            </Paper>
-                        </SimpleGrid>
-                    </Stack>
-                </Grid.Col>
-
-                <Grid.Col span={{ base: 12, lg: 4 }}>
-                    <Stack gap="lg">
-                        <Paper
-                            withBorder
-                            radius="lg"
-                            p="lg"
-                            style={{
-                                background:
-                                    'linear-gradient(135deg, rgba(14,165,233,0.12), rgba(14,165,233,0.04))',
-                            }}
-                        >
-                            <Group justify="space-between" mb="sm">
-                                <div>
-                                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                                        Quick actions
-                                    </Text>
-                                    <Text fw={700}>Keep momentum</Text>
-                                </div>
-                                <Badge color="blue" variant="light">
-                                    Recommended
-                                </Badge>
-                            </Group>
-                            <Stack>
-                                <Button
-                                    leftSection={<IconList size={16} />}
-                                    variant="gradient"
-                                    gradient={{ from: 'blue', to: 'cyan' }}
-                                    fullWidth
-                                >
-                                    View all campaigns
-                                </Button>
-                                <Button
-                                    leftSection={<IconFileExport size={16} />}
-                                    variant="light"
-                                    color="gray"
-                                    fullWidth
-                                >
-                                    Export snapshot
-                                </Button>
-                                <Button
-                                    variant="light"
-                                    color="blue"
-                                    fullWidth
-                                    onClick={handleRefresh}
-                                    loading={refreshing}
-                                    leftSection={<IconArrowUpRight size={16} />}
-                                >
-                                    Refresh data
-                                </Button>
-                            </Stack>
-                            <Group gap="xs" mt="md">
-                                <IconClock size={14} color="var(--mantine-color-gray-6)" />
-                                <Text size="xs" c="dimmed">
-                                    Last synced {formatLastSynced(adAccountData.last_synced)}
-                                </Text>
-                            </Group>
-                        </Paper>
-
-                        <Paper withBorder radius="lg" p="lg">
-                            <Group justify="space-between" mb="sm">
-                                <Text fw={700}>Notifications</Text>
-                                <Badge color="yellow" variant="light">
-                                    Quiet
-                                </Badge>
-                            </Group>
-                            <Stack>
-                                <Alert icon={<IconAlertCircle size={16} />} color="yellow" mb="xs">
-                                    No notifications yet.
-                                </Alert>
-                                <Text size="xs" c="dimmed">
-                                    Performance and delivery alerts will show up here once campaigns begin pacing.
-                                </Text>
-                            </Stack>
-                        </Paper>
-                    </Stack>
-                </Grid.Col>
-            </Grid>
-        </Container>
-    );
+              <Paper withBorder radius="lg" p="lg">
+                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                  Actions
+                </Text>
+                <Text fw={700} mb="sm">
+                  Next best steps
+                </Text>
+                <Stack>
+                  <Button
+                    component={Link}
+                    href="/integration"
+                    leftSection={<IconArrowUpRight size={16} />}
+                    variant="light"
+                    color="blue"
+                    fullWidth
+                  >
+                    Manage integrations
+                  </Button>
+                  <Button
+                    onClick={handleRefresh}
+                    leftSection={<IconRefresh size={16} />}
+                    loading={refreshing}
+                    disabled={!payload.platform || payload.platform.status !== 'connected'}
+                    variant="light"
+                    color="teal"
+                    fullWidth
+                  >
+                    Refresh integrations
+                  </Button>
+                  <Text size="xs" c="dimmed">
+                    If no ad account is selected, choose one from the top bar to unlock account-level KPI and trend
+                    views.
+                  </Text>
+                </Stack>
+              </Paper>
+            </Stack>
+          </Grid.Col>
+        </Grid>
+      </Stack>
+    </Container>
+  );
 }

@@ -1,39 +1,38 @@
-import { cookies } from "next/headers";
 import SmartCampaignClient from "./SmartCampaignClient";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
-import { getLoggedInUser } from "@/lib/server/actions/user";
-import { createSupabaseClient } from "@/lib/server/supabase/server";
-import { getAdAccountData } from "@/lib/server/repositories/ad_accounts";
+import { getCurrentSelection } from "@/lib/server/actions/app/selection";
+import { getRequiredAppContext } from "@/lib/server/actions/app/context";
+import { getAdAccountData, getPlatformDetails } from '@/lib/server/data';
 
 
 export default async function SmartCampaignPage() {
-    const userId = await getLoggedInUser().then((user: { id: string }) => user?.id);
-    const supabase = await createSupabaseClient();
+    const { user, businessId } = await getRequiredAppContext();
+    const userId = user.id;
 
-    const cookieStore = await cookies();
-    const selectedPlatformId = cookieStore.get('platform_integration_id')?.value;
-    const { data } = await supabase
-        .from("platform_integrations")
-        .select("platform_name")
-        .eq("id", selectedPlatformId)
-        .single();
+    const { selectedPlatformId, selectedAdAccountId } = await getCurrentSelection();
 
-    const platformName = data?.platform_name;
-    if (!selectedPlatformId || !platformName) {
+    if (!selectedPlatformId) {
         return <EmptyCampaignState type="platform" />;
     }
 
-    const selectedAdAccountId = cookieStore.get('ad_account_row_id')?.value;
-    if (!selectedAdAccountId) {
-        return <EmptyCampaignState type="adAccount" platformName={platformName} />;
+    const platformDetails = await getPlatformDetails(selectedPlatformId, businessId);
+    if (!platformDetails || platformDetails.status !== "connected") {
+        return <EmptyCampaignState type="platform" />;
     }
-    const adAccountId = await getAdAccountData(selectedAdAccountId, selectedPlatformId, userId).then((account: { ad_account_id: string }) => account?.ad_account_id);
+
+    if (!selectedAdAccountId) {
+        return <EmptyCampaignState type="adAccount" platformName={platformDetails.vendor} />;
+    }
+    const adAccount = await getAdAccountData(selectedAdAccountId, selectedPlatformId, businessId);
+    if (!adAccount?.ad_account_id) {
+        return <EmptyCampaignState type="adAccount" platformName={platformDetails.vendor} />;
+    }
 
     return (
         <SmartCampaignClient
             userId={userId}
-            platformName={platformName}
-            platformId={selectedPlatformId}
-            adAccountId={adAccountId}
+            platformName={platformDetails.displayName}
+            platformId={platformDetails.integrationId}
+            adAccountId={adAccount.ad_account_id}
         />);
 }

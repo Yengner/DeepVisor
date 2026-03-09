@@ -1,14 +1,13 @@
 import CustomCampaignFlow from '@/components/campaigns/create/flows/manual/ManualCampaignFlow';
-import { createSupabaseClient } from '@/lib/server/supabase/server';
-import { cookies } from 'next/headers';
+import { getCurrentSelection } from '@/lib/server/actions/app/selection';
+import { getRequiredAppContext } from '@/lib/server/actions/app/context';
+import { getAdAccountData, getPlatformDetails } from '@/lib/server/data';
 
 export default async function CreateCampaignPage() {
 
-    const supabase = await createSupabaseClient();
+    const { businessId } = await getRequiredAppContext();
 
-    const cookieStore = await cookies();
-    const platformIntegrationId = cookieStore.get('platform_integration_id')?.value;
-    const adAccountDBId = cookieStore.get('ad_account_row_id')?.value;
+    const { selectedPlatformId: platformIntegrationId, selectedAdAccountId: adAccountDBId } = await getCurrentSelection();
 
     if (!platformIntegrationId || !adAccountDBId) {
         return (
@@ -19,22 +18,12 @@ export default async function CreateCampaignPage() {
         );
     }
 
-    // Get platform name
-    const { data: platformData } = await supabase
-        .from('platform_integrations')
-        .select('id, platform_name')
-        .eq('id', platformIntegrationId)
+    const [platformData, adAccountData] = await Promise.all([
+        getPlatformDetails(platformIntegrationId, businessId),
+        getAdAccountData(adAccountDBId, platformIntegrationId, businessId),
+    ]);
 
-        .single();
-
-    // Get ad account ID
-    const { data: adAccountData } = await supabase
-        .from('ad_accounts')
-        .select('external_account_id')
-        .eq('id', adAccountDBId)
-        .single();
-
-    if (!platformData?.id || !adAccountData?.external_account_id) {
+    if (!platformData?.integrationId || platformData.status !== 'connected' || !adAccountData?.external_account_id) {
         return (
             <div className="p-8 text-center">
                 <h2 className="text-xl font-semibold mb-4">Invalid ad account selection</h2>
@@ -46,7 +35,10 @@ export default async function CreateCampaignPage() {
 
     return (
         <CustomCampaignFlow
-            platformData={platformData}
+            platformData={{
+                id: platformData.integrationId,
+                platform_name: platformData.vendor,
+            }}
             adAccountId={adAccountData.external_account_id}
         />
     );
