@@ -19,3 +19,21 @@ export interface RefreshIntegrationsResponse {
   refreshedCount: number;
   failedCount: number;
 }
+
+export interface RefetchAdAccountsResult {
+  businessId: string;
+  refreshedIntegrations: number;
+  failedIntegrations: number;
+  syncedAdAccounts: number;
+}
+
+export interface RefetchAdAccountsResponse {
+  success: boolean;
+  platform?: SupportedIntegrationPlatform;
+  businessesProcessed?: number;
+  refreshedIntegrations?: number;
+  failedIntegrations?: number;
+  syncedAdAccounts?: number;
+  results?: RefetchAdAccountsResult[];
+  error?: string;
+}

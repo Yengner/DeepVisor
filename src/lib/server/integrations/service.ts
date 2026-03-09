@@ -10,7 +10,10 @@ import type {
   SupportedIntegrationPlatform,
   UpsertIntegrationInput,
 } from '@/lib/server/integrations/types';
-import { fetchMetaAdAccountSnapshots } from '@/lib/server/integrations/adapters/meta';
+import {
+  fetchMetaAdAccountSnapshots,
+  validateMetaAccessToken,
+} from '@/lib/server/integrations/adapters/meta';
 
 type AppSupabaseClient = SupabaseClient<Database>;
 type PlatformIntegrationStorageRow = {
@@ -379,6 +382,12 @@ export type BusinessIntegration = {
   integrationDetails: Json;
 };
 
+export type RefreshBusinessAdAccountsResult = {
+  refreshedCount: number;
+  failedCount: number;
+  syncedAccountCount: number;
+};
+
 export async function listBusinessIntegrations(
   supabase: AppSupabaseClient,
   businessId: string
@@ -406,6 +415,87 @@ export async function listBusinessIntegrations(
       integrationDetails: row.integration_details,
     };
   });
+}
+
+export async function resolveIntegrationAccessToken(
+  supabase: AppSupabaseClient,
+  integration: BusinessIntegration
+): Promise<string | null> {
+  const tokenOrSecretId = extractAccessToken(integration.integrationDetails, integration.accessToken);
+  if (!tokenOrSecretId) {
+    return null;
+  }
+
+  const { data, error } = await (supabase as any).rpc('get_platform_token', {
+    secret_id: tokenOrSecretId,
+  });
+
+  if (!error && typeof data === 'string' && data.length > 0) {
+    return data;
+  }
+
+  // Fallback for legacy rows where raw token may still exist.
+  return tokenOrSecretId;
+}
+
+export async function refreshBusinessAdAccounts(
+  supabase: AppSupabaseClient,
+  input: { businessId: string; platform?: SupportedIntegrationPlatform }
+): Promise<RefreshBusinessAdAccountsResult> {
+  const integrations = await listBusinessIntegrations(supabase, input.businessId);
+
+  let refreshedCount = 0;
+  let failedCount = 0;
+  let syncedAccountCount = 0;
+
+  for (const integration of integrations) {
+    if (!integration.isIntegrated) {
+      continue;
+    }
+
+    if (input.platform && integration.platformKey !== input.platform) {
+      continue;
+    }
+
+    if (integration.platformKey !== 'meta') {
+      continue;
+    }
+
+    const accessToken = await resolveIntegrationAccessToken(supabase, integration);
+    if (!accessToken) {
+      failedCount += 1;
+      await markIntegrationError(supabase, integration.id, 'Missing access token');
+      continue;
+    }
+
+    try {
+      await validateMetaAccessToken(accessToken);
+
+      const syncedAccounts = await syncMetaAdAccountsSnapshot(supabase, {
+        businessId: input.businessId,
+        platformId: integration.platformId,
+        accessToken,
+      });
+
+      await markIntegrationHealthy(supabase, integration.id);
+
+      refreshedCount += 1;
+      syncedAccountCount += syncedAccounts;
+    } catch (error) {
+      failedCount += 1;
+      await markIntegrationError(
+        supabase,
+        integration.id,
+        error instanceof Error ? error.message : 'Failed to refresh integration'
+      );
+    }
+  }
+
+  return {
+    refreshedCount,
+    failedCount,
+    syncedAccountCount,
+  };
 }
 
 export async function syncMetaAdAccountsSnapshot(

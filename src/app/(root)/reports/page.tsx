@@ -1,25 +1,25 @@
-import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
-import { getLoggedInUser } from "@/lib/server/actions/user";
 import { ReportsClient } from "./components/ReportsClient";
-import { getAdAccountData } from '@/lib/server/repositories/ad_accounts';
-import { getAdSetsLifetimeIncludingZeros } from "@/lib/server/repositories/adsets/getAdSetsMetrics";
-import { getAdsLifetimeIncludingZeros } from "@/lib/server/repositories/ads/getAdsMetrics";
 import { Suspense } from "react";
 import ReportsClientFallback from "./components/ReportClientFallback";
-import { getCampaignLifetimeIncludingZeros } from "@/lib/server/repositories/campaigns";
+import {
+  getAdAccountData,
+  getAdSetsLifetimeIncludingZeros,
+  getAdsLifetimeIncludingZeros,
+  getCampaignLifetimeIncludingZeros,
+} from '@/lib/server/data';
 import { formatDate } from "@/utils/utils";
+import { getCurrentSelection } from "@/lib/server/actions/app/selection";
+import { getRequiredAppContext } from "@/lib/server/actions/app/context";
 
 export default async function ReportsPage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const userId = await getLoggedInUser().then((user: { id: string }) => user?.id);
+  const { businessId } = await getRequiredAppContext();
 
-  const cookieStore = await cookies();
-  const selectedPlatformId = cookieStore.get('platform_integration_id')?.value;
-  const selectedAdAccountId = cookieStore.get('ad_account_row_id')?.value;
+  const { selectedPlatformId, selectedAdAccountId } = await getCurrentSelection();
 
   if (!selectedPlatformId || !selectedAdAccountId) {
     return <EmptyCampaignState type="platform" />;
@@ -36,13 +36,16 @@ export default async function ReportsPage({
   else if (adsetIds.length) viewType = "adsets";
   else if (campaignIds.length) viewType = "campaigns";
 
-  const adAccountData = await getAdAccountData(selectedAdAccountId, selectedPlatformId, userId);
-  const rawArray = adAccountData?.time_increment_metrics[timeIncrement];
+  const adAccountData = await getAdAccountData(selectedAdAccountId, selectedPlatformId, businessId);
+  if (!adAccountData) {
+    return <EmptyCampaignState type="adAccount" />;
+  }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const timeIncrementArray = rawArray.map((row: any) => ({
+  const rawArray = adAccountData.time_increment_metrics[timeIncrement] ?? [];
+
+  const timeIncrementArray = rawArray.map((row) => ({
     ...row,
-    date_stop: formatDate(row.date_stop),
+    date_stop: formatDate(row.date_stop ?? ''),
   }));
 
   let data;
@@ -74,4 +77,3 @@ export default async function ReportsPage({
     </>
   );
 };
-

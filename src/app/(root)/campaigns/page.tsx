@@ -1,15 +1,18 @@
 import CampaignDashboard from "@/components/campaigns/CampaignDashboard";
-import { getCampaignLifetimeIncludingZeros, type CampaignLifetimeRow } from "@/lib/server/repositories/campaigns/getCampaignsMetrics";
-import { getCampaignReviewSummary } from "@/lib/server/repositories/campaigns/getCampaignReviewSummary";
-import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
-import { getPlatformDetails } from "@/lib/server/repositories/platforms/getPlatformDetails";
-import { getLoggedInUser } from "@/lib/server/actions/user";
-import { getAdAccountData } from "@/lib/server/repositories/ad_accounts";
-import { getAdsLifetimeIncludingZeros } from "@/lib/server/repositories/ads/getAdsMetrics";
-import { getAdSetsLifetimeIncludingZeros } from "@/lib/server/repositories/adsets/getAdSetsMetrics";
 import { Suspense } from "react";
 import CampaignClientFallback from "./CampaignClientFallback";
+import { getCurrentSelection } from "@/lib/server/actions/app/selection";
+import { getRequiredAppContext } from "@/lib/server/actions/app/context";
+import {
+  getAdAccountData,
+  getAdSetsLifetimeIncludingZeros,
+  getAdsLifetimeIncludingZeros,
+  getCampaignLifetimeIncludingZeros,
+  getCampaignReviewSummary,
+  getPlatformDetails,
+} from '@/lib/server/data';
+import type { CampaignLifetimeRow } from '@/lib/server/data';
 
 interface AggregatedMetrics {
   spend: number; impressions: number; clicks: number; link_clicks: number; reach: number;
@@ -54,20 +57,27 @@ export default async function CampaignPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const userId = await getLoggedInUser().then((u: { id: string }) => u?.id);
+  const { user, businessId } = await getRequiredAppContext();
+  const userId = user.id;
 
-  const cs = await cookies();
-  const selectedPlatformId = cs.get("platform_integration_id")?.value;
-  const selectedAdAccountId = cs.get("ad_account_row_id")?.value;
+  const { selectedPlatformId, selectedAdAccountId } = await getCurrentSelection();
 
   if (!selectedPlatformId || !selectedAdAccountId) {
     return <EmptyCampaignState type="platform" />;
   }
 
   const [platformDetails, adAccountDetails] = await Promise.all([
-    getPlatformDetails(selectedPlatformId, userId),
-    getAdAccountData(selectedAdAccountId, selectedPlatformId, userId),
+    getPlatformDetails(selectedPlatformId, businessId),
+    getAdAccountData(selectedAdAccountId, selectedPlatformId, businessId),
   ]);
+
+  if (!platformDetails || platformDetails.status !== "connected") {
+    return <EmptyCampaignState type="platform" />;
+  }
+
+  if (!adAccountDetails) {
+    return <EmptyCampaignState type="adAccount" platformName={platformDetails.vendor} />;
+  }
   //
   //Refactor # Too many calculation on pre-server load, Do this on the database to pre fetch dashboard data and then grab it. 
   //
@@ -120,7 +130,7 @@ export default async function CampaignPage({
       messages: Number(c.messages || 0),
       link_clicks: Number(c.link_clicks || 0),
       platform: platformDetails.vendor,
-      accountName: adAccountDetails.name,
+      accountName: adAccountDetails.name ?? "Unknown account",
       ad_account_id: adAccountDetails.ad_account_id,
       review: review
         ? {

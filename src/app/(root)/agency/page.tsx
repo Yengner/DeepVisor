@@ -1,14 +1,12 @@
-import { getLoggedInUser } from '@/lib/server/actions/user';
 import AgencyClient from './AgencyClient';
-import { cookies } from 'next/headers';
-import { getAdAccountData } from '@/lib/server/repositories/ad_accounts';
 import { EmptyCampaignState } from '@/components/campaigns/EmptyStates';
+import { getCurrentSelection } from '@/lib/server/actions/app/selection';
+import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 
 export default async function AgencyPage() {
-    const userId = await getLoggedInUser().then((user: { id: string }) => user?.id);
-    const cookieStore = await cookies();
-    const selectedPlatformId = cookieStore.get('platform_integration_id')?.value;
-    const selectedAdAccountId = cookieStore.get('ad_account_row_id')?.value;
+    const { user } = await getRequiredAppContext();
+    const userId = user.id;
+    const { selectedPlatformId, selectedAdAccountId } = await getCurrentSelection();
     if (!selectedPlatformId || !selectedAdAccountId) {
         return <EmptyCampaignState type="platform" />;
     }

@@ -1,7 +1,7 @@
 "use server";
 
 import { ApiResponse, ErrorCode } from "@/lib/shared/types/api";
-import { createErrorResponse, createSuccessResponse } from "@/lib/shared/responses";
+import { createErrorResponse, createSuccessResponse } from "@/lib/shared/utils/responses";
 import { createSupabaseClient } from "@/lib/server/supabase/server";
 
 export interface MetaPage {

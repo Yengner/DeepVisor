@@ -1,7 +1,7 @@
 import { createServerClient } from '@/lib/server/supabase/server';
 import TopBarClient from './TopBarClient';
-import { cookies } from 'next/headers';
 import type { Database } from '@/lib/shared/types/supabase';
+import { getCurrentSelection } from '@/lib/server/actions/app/selection';
 
 type UserRow = Database['public']['Tables']['users']['Row'];
 
@@ -69,9 +69,10 @@ export default async function Topbar({ user, businessId }: TopbarProps) {
     }));
   }
 
-  const cookieStore = await cookies();
-  const platformCookie = cookieStore.get('platform_integration_id')?.value ?? null;
-  const accountCookie = cookieStore.get('ad_account_row_id')?.value ?? null;
+  const {
+    selectedPlatformId: platformCookie,
+    selectedAdAccountId: accountCookie,
+  } = await getCurrentSelection();
 
   const selectedPlatformId =
     platforms.find((platform) => platform.id === platformCookie)?.id ??
