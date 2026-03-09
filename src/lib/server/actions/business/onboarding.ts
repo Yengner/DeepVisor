@@ -1,51 +1,39 @@
 "use server";
 
-import { createSupabaseClient } from "@/lib/server/supabase/server";
-import { ok, fail, type ApiResponse, ErrorCode } from "@/lib/shared";
-import { getErrorMessage } from "@/lib/shared/utils/guards";
+import { createServerClient } from '@/lib/server/supabase/server';
+import { ok, fail, type ApiResponse, ErrorCode } from '@/lib/shared';
+import { getErrorMessage } from '@/lib/shared/utils/guards';
+import { requireUserId } from '@/lib/server/actions/user/session';
+import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
 
-async function requireActiveBusinessIdOrFail(): Promise<ApiResponse<{ businessId: string }>> {
-  const supabase = await createSupabaseClient();
-  const { data, error } = await supabase.auth.getUser();
+type ActiveBusinessContext = {
+  userId: string;
+  businessId: string;
+};
 
-  if (error || !data?.user) {
-    return fail("User not authenticated", ErrorCode.UNAUTHORIZED, {
-      userMessage: "Please sign in again.",
+async function requireActiveBusinessContextOrFail(): Promise<ApiResponse<ActiveBusinessContext>> {
+  try {
+    const userId = await requireUserId();
+    const context = await getOrCreateOrganizationBusinessContext(userId);
+    return ok({ userId, businessId: context.businessId });
+  } catch (error) {
+    return fail(getErrorMessage(error), ErrorCode.UNAUTHORIZED, {
+      userMessage: 'Please sign in again.',
     });
   }
-
-  const { data: membership, error: mErr } = await supabase
-    .from("business_memberships")
-    .select("business_id, role")
-    .eq("user_id", data.user.id)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (mErr) {
-    return fail(getErrorMessage(mErr), ErrorCode.DATABASE_ERROR);
-  }
-
-  if (!membership?.business_id) {
-    return fail("No business membership found", ErrorCode.NOT_FOUND, {
-      userMessage: "Let's create your business to continue onboarding.",
-    });
-  }
-
-  return ok({ businessId: membership.business_id });
 }
 
-function _coerceStringArray(value: string[] | string | undefined): string[] | undefined {
+function coerceStringArray(value: string[] | string | undefined): string[] | undefined {
   if (value === undefined) return undefined;
   if (Array.isArray(value)) return value.filter(Boolean);
-  if (typeof value === "string") return value.split(",").map(s => s.trim()).filter(Boolean);
+  if (typeof value === 'string') return value.split(',').map((item) => item.trim()).filter(Boolean);
   return undefined;
 }
 
 function cleanUndefined<T extends Record<string, unknown>>(obj: T): Partial<T> {
   const out: Partial<T> = {};
   for (const [k, v] of Object.entries(obj)) {
-    if (v !== undefined) (out as any)[k] = v;
+    if (v !== undefined) (out as Record<string, unknown>)[k] = v;
   }
   return out;
 }
@@ -54,6 +42,7 @@ export type OnboardingInitial = {
   step: number;
   completed: boolean;
   businessId: string;
+  connectedPlatformKeys: string[];
   businessData: {
     businessName: string;
     industry: string | null;
@@ -66,40 +55,61 @@ export type OnboardingInitial = {
 };
 
 export async function getOnboardingInitial(): Promise<ApiResponse<OnboardingInitial>> {
-  const supabase = await createSupabaseClient();
+  const supabase = await createServerClient();
 
-  const businessRes = await requireActiveBusinessIdOrFail();
-  if (!businessRes.success) return businessRes;
+  const contextRes = await requireActiveBusinessContextOrFail();
+  if (!contextRes.success) return contextRes;
 
-  const { businessId } = businessRes.data;
+  const { businessId } = contextRes.data;
 
-  const { data: bp, error } = await supabase
-    .from("business_profiles")
-    .select(`
-      id,
-      business_name,
-      industry,
-      monthly_budget,
-      website,
-      description,
-      ad_goals,
-      preferred_platforms,
-      onboarding_step,
-      onboarding_completed
-    `)
-    .eq("id", businessId)
-    .single();
+  const [{ data: bp, error: profileError }, { data: integrations, error: integrationsError }] = await Promise.all([
+    supabase
+      .from('business_profiles')
+      .select(
+        `
+          id,
+          business_name,
+          industry,
+          monthly_budget,
+          website,
+          description,
+          ad_goals,
+          preferred_platforms,
+          onboarding_step,
+          onboarding_completed
+        `
+      )
+      .eq('id', businessId)
+      .single(),
+    supabase
+      .from('platform_integrations')
+      .select('status, platforms ( key )')
+      .eq('business_id', businessId)
+      .eq('status', 'connected'),
+  ]);
 
-  if (error) {
-    return fail(getErrorMessage(error), ErrorCode.DATABASE_ERROR);
+  if (profileError || !bp) {
+    return fail(getErrorMessage(profileError), ErrorCode.DATABASE_ERROR);
   }
+
+  if (integrationsError) {
+    return fail(getErrorMessage(integrationsError), ErrorCode.DATABASE_ERROR);
+  }
+
+  const connectedPlatformKeys = (integrations ?? [])
+    .map((row) => {
+      const platform = Array.isArray(row.platforms) ? row.platforms[0] : row.platforms;
+      return typeof platform?.key === 'string' ? platform.key : null;
+    })
+    .filter((key): key is string => key !== null);
 
   return ok({
     step: bp.onboarding_step ?? 0,
     completed: bp.onboarding_completed ?? false,
     businessId: bp.id,
+    connectedPlatformKeys,
     businessData: {
-      businessName: bp.business_name ?? "",
+      businessName: bp.business_name ?? '',
       industry: bp.industry ?? null,
       monthlyBudget: bp.monthly_budget ?? null,
       website: bp.website ?? null,
@@ -120,12 +130,12 @@ export async function updateBusinessProfileData(input: {
   preferredPlatforms?: string[] | string;
 }): Promise<ApiResponse<null>> {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = await createServerClient();
 
-    const businessRes = await requireActiveBusinessIdOrFail();
-    if (!businessRes.success) return businessRes;
+    const contextRes = await requireActiveBusinessContextOrFail();
+    if (!contextRes.success) return contextRes;
 
-    const { businessId } = businessRes.data;
+    const { businessId } = contextRes.data;
 
     const updateData = cleanUndefined({
       business_name: input.businessName,
@@ -133,55 +143,55 @@ export async function updateBusinessProfileData(input: {
       monthly_budget: input.monthlyBudget ?? undefined,
       website: input.website ?? undefined,
       description: input.description ?? undefined,
-      ad_goals: _coerceStringArray(input.adGoals),
-      preferred_platforms: _coerceStringArray(input.preferredPlatforms),
+      ad_goals: coerceStringArray(input.adGoals),
+      preferred_platforms: coerceStringArray(input.preferredPlatforms),
       updated_at: new Date().toISOString(),
     });
 
     const { error } = await supabase
-      .from("business_profiles")
+      .from('business_profiles')
       .update(updateData)
-      .eq("id", businessId);
+      .eq('id', businessId);
 
     if (error) {
       return fail(getErrorMessage(error), ErrorCode.DATABASE_ERROR);
     }
 
     return ok(null);
-  } catch (e) {
-    return fail(getErrorMessage(e), ErrorCode.UNKNOWN_ERROR);
+  } catch (error) {
+    return fail(getErrorMessage(error), ErrorCode.UNKNOWN_ERROR);
   }
 }
 
 export async function updateOnboardingProgress(input: {
-    step: number;
-    completed?: boolean;
+  step: number;
+  completed?: boolean;
 }): Promise<ApiResponse<null>> {
-    try {
-        const supabase = await createSupabaseClient();
+  try {
+    const supabase = await createServerClient();
 
-        const businessRes = await requireActiveBusinessIdOrFail();
-        if (!businessRes.success) return businessRes;
+    const contextRes = await requireActiveBusinessContextOrFail();
+    if (!contextRes.success) return contextRes;
 
-        const { businessId } = businessRes.data;
+    const { businessId } = contextRes.data;
 
-        const updateData = cleanUndefined({
-            onboarding_step: input.step,
-            onboarding_completed: input.completed,
-            updated_at: new Date().toISOString(),
-        });
+    const updateData = cleanUndefined({
+      onboarding_step: input.step,
+      onboarding_completed: input.completed,
+      updated_at: new Date().toISOString(),
+    });
 
-        const { error } = await supabase
-            .from("business_profiles")
-            .update(updateData)
-            .eq("id", businessId);
+    const { error } = await supabase
+      .from('business_profiles')
+      .update(updateData)
+      .eq('id', businessId);
 
-        if (error) {
-            return fail(getErrorMessage(error), ErrorCode.DATABASE_ERROR);
-        }
-
-        return ok(null);
-    } catch (e) {
-        return fail(getErrorMessage(e), ErrorCode.UNKNOWN_ERROR);
+    if (error) {
+      return fail(getErrorMessage(error), ErrorCode.DATABASE_ERROR);
     }
+
+    return ok(null);
+  } catch (error) {
+    return fail(getErrorMessage(error), ErrorCode.UNKNOWN_ERROR);
+  }
 }

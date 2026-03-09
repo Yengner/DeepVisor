@@ -3,11 +3,11 @@ import { cookies } from "next/headers";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { getPlatformDetails } from "@/lib/server/repositories/platforms.repo";
 import { getAdAccountData } from "@/lib/server/repositories/ad-accounts.repo";
-import { getLoggedInUserOrRedirect } from "@/lib/server/actions/user/account";
+import { getRequiredAppContext } from "@/lib/server/actions/app/context";
 
 export default async function MainDashboardPage() {
 
-  const user = await getLoggedInUserOrRedirect();
+  const { user } = await getRequiredAppContext();
   const userId = user?.id;
 
   const cookieStore = await cookies();

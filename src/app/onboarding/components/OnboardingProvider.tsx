@@ -15,7 +15,7 @@ import {
   Paper,
   Progress,
   ThemeIcon,
-  LoadingOverlay
+  LoadingOverlay,
 } from '@mantine/core';
 import WelcomeStep from './steps/WelcomeStep';
 import toast from 'react-hot-toast';
@@ -25,13 +25,13 @@ import BusinessProfileStep from './steps/BusinessProfileStep';
 import CompletionStep from './steps/CompletionStep';
 import { updateOnboardingProgress } from '@/lib/server/actions/business/onboarding';
 import { UserData } from './types';
-import { updateConnectedAccountsInDatabase } from './utils';
 import { IconCheck, IconDeviceAnalytics, IconPlug, IconSettings, IconCircleCheck, IconClock } from '@tabler/icons-react';
 
 export type OnboardingInitial = {
   step: number;
   completed: boolean;
   businessId: string | null;
+  connectedPlatformKeys: string[];
   businessData: {
     businessName: string;
     industry: string | null;
@@ -48,14 +48,9 @@ type OnboardingProviderProps = {
   userId: string;
 };
 
-export default function OnboardingProvider({ initial, userId }: OnboardingProviderProps) {
-  const stepLabels = ["Welcome", "Connect", "Business", "Preferences"];
-  const stepDescription = [
-    "Get started",
-    "Link platforms",
-    "About your business",
-    "Customize your experience",
-  ];
+export default function OnboardingProvider({ initial }: OnboardingProviderProps) {
+  const stepLabels = ['Welcome', 'Connect', 'Business', 'Preferences'];
+  const stepDescription = ['Get started', 'Link platforms', 'About your business', 'Customize your experience'];
   const totalSteps = stepLabels.length;
   const clampStep = (step: number) => Math.min(Math.max(step, 0), totalSteps);
 
@@ -76,11 +71,13 @@ export default function OnboardingProvider({ initial, userId }: OnboardingProvid
     website: initial.businessData.website ?? '',
     description: initial.businessData.description ?? '',
     adGoals: Array.isArray(initial.businessData.adGoals) ? initial.businessData.adGoals : [],
-    preferredPlatforms: Array.isArray(initial.businessData.preferredPlatforms) ? initial.businessData.preferredPlatforms : [],
+    preferredPlatforms: Array.isArray(initial.businessData.preferredPlatforms)
+      ? initial.businessData.preferredPlatforms
+      : [],
     emailNotifications: true,
     weeklyReports: true,
     performanceAlerts: true,
-    connectedAccounts: [],
+    connectedPlatforms: Array.isArray(initial.connectedPlatformKeys) ? initial.connectedPlatformKeys : [],
   }));
 
   const router = useRouter();
@@ -94,56 +91,6 @@ export default function OnboardingProvider({ initial, userId }: OnboardingProvid
       }
     };
   }, []);
-
-  // Check for account connection callbacks
-  /* eslint-disable react-hooks/exhaustive-deps */
-  useEffect(() => {
-    const platform = searchParams.get('platform');
-    const status = searchParams.get('status');
-    const accountId = searchParams.get('account_id');
-
-    if (platform && status === 'success' && accountId) {
-      const isAlreadyConnected = userData.connectedAccounts.some(
-        acc => acc.platform === platform && acc.accountId === accountId
-      );
-
-      if (!isAlreadyConnected) {
-        // Add connected account
-        const newConnectedAccounts = [
-          ...userData.connectedAccounts,
-          {
-            platform,
-            accountId,
-            connectedAt: new Date().toISOString()
-          }
-        ];
-
-        setUserData(prev => ({
-          ...prev,
-          connectedAccounts: newConnectedAccounts
-        }));
-
-        // Also save to database
-        updateConnectedAccountsInDatabase({ userId, accounts: newConnectedAccounts });
-
-        toast.success(`Successfully connected ${platform} account!`);
-
-        // If we're on the connect step, move to next step
-        if (active === 1) {
-          nextStep();
-        }
-      } else {
-        toast(`Your ${platform} account was already connected.`);
-      }
-
-      router.replace('/onboarding');
-    } else if (platform && status === 'error') {
-      toast.error(`Failed to connect ${platform} account. Please try again.`);
-      // Clear URL params
-      router.replace('/onboarding');
-    }
-  }, [searchParams, userData.connectedAccounts, active, router]);
-
 
   const persistProgress = async (step: number, completed?: boolean) => {
     if (!canPersist) return true;
@@ -169,7 +116,6 @@ export default function OnboardingProvider({ initial, userId }: OnboardingProvid
     if (loading) return;
     const nextStepIndex = active + 1;
 
-    // Leaving completion -> finalize and redirect
     if (nextStepIndex > totalSteps) {
       setLoading(true);
       const saved = await persistProgress(totalSteps, true);
@@ -189,13 +135,36 @@ export default function OnboardingProvider({ initial, userId }: OnboardingProvid
     void persistProgress(prevStepIndex, false);
   };
 
+  /* eslint-disable react-hooks/exhaustive-deps */
+  useEffect(() => {
+    const integration = searchParams.get('integration');
+    const status = searchParams.get('status');
+
+    if (!integration || !status) return;
+
+    if (status === 'connected') {
+      setUserData((prev) => {
+        if (prev.connectedPlatforms.includes(integration)) return prev;
+        return {
+          ...prev,
+          connectedPlatforms: [...prev.connectedPlatforms, integration],
+        };
+      });
+
+      toast.success(`Successfully connected ${integration}.`);
+      if (active === 1) {
+        void nextStep();
+      }
+    } else if (status === 'error') {
+      toast.error(`Failed to connect ${integration}. Please try again.`);
+    }
+
+    router.replace('/onboarding');
+  }, [searchParams, active, router]);
+  /* eslint-enable react-hooks/exhaustive-deps */
+
   const handleUpdateUserData = (data: Partial<typeof userData>) => {
-    console.log("Updating userData in parent:", data);
-    setUserData(prev => {
-      const newState = { ...prev, ...data };
-      console.log("New userData state:", newState);
-      return newState;
-    });
+    setUserData((prev) => ({ ...prev, ...data }));
     setIsAutosaving(true);
     if (autosaveTimer.current) {
       window.clearTimeout(autosaveTimer.current);
@@ -206,12 +175,12 @@ export default function OnboardingProvider({ initial, userId }: OnboardingProvid
     }, 800);
   };
 
-  const progressValue = Math.min(100, Math.round(((Math.min(active, totalSteps)) / totalSteps) * 100));
+  const progressValue = Math.min(100, Math.round((Math.min(active, totalSteps) / totalSteps) * 100));
   const autosaveLabel = isAutosaving
-    ? "Saving changes…"
+    ? 'Saving changes...'
     : lastSavedAt
-      ? `Saved ${lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-      : "Autosave enabled";
+      ? `Saved ${lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+      : 'Autosave enabled';
 
   return (
     <Container size="lg" className="py-10 relative">
@@ -258,10 +227,21 @@ export default function OnboardingProvider({ initial, userId }: OnboardingProvid
                   const isDone = active > idx;
                   const isActive = active === idx;
                   return (
-                    <Paper key={label} withBorder radius="md" p="sm" style={{ borderColor: isActive ? "var(--mantine-color-blue-5)" : undefined }}>
+                    <Paper
+                      key={label}
+                      withBorder
+                      radius="md"
+                      p="sm"
+                      style={{ borderColor: isActive ? 'var(--mantine-color-blue-5)' : undefined }}
+                    >
                       <Group justify="apart" align="center">
                         <Group gap="xs">
-                          <ThemeIcon size="sm" radius="xl" color={isDone ? "green" : isActive ? "blue" : "gray"} variant="light">
+                          <ThemeIcon
+                            size="sm"
+                            radius="xl"
+                            color={isDone ? 'green' : isActive ? 'blue' : 'gray'}
+                            variant="light"
+                          >
                             {isDone ? <IconCircleCheck size={14} /> : <IconClock size={14} />}
                           </ThemeIcon>
                           <div>
@@ -338,10 +318,7 @@ export default function OnboardingProvider({ initial, userId }: OnboardingProvid
               </Stepper.Step>
 
               <Stepper.Completed>
-                <CompletionStep
-                  onComplete={nextStep}
-                  userData={userData}
-                />
+                <CompletionStep onComplete={nextStep} userData={userData} />
               </Stepper.Completed>
             </Stepper>
           </Card>

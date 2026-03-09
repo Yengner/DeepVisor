@@ -370,45 +370,6 @@ export type Database = {
           },
         ]
       }
-      business_memberships: {
-        Row: {
-          business_id: string
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["business_role"]
-          user_id: string
-        }
-        Insert: {
-          business_id: string
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["business_role"]
-          user_id: string
-        }
-        Update: {
-          business_id?: string
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["business_role"]
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "business_memberships_business_id_fkey"
-            columns: ["business_id"]
-            isOneToOne: false
-            referencedRelation: "business_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "business_memberships_user_id_fkey1"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       business_profiles: {
         Row: {
           ad_goals: string[] | null
@@ -420,6 +381,7 @@ export type Database = {
           monthly_budget: string | null
           onboarding_completed: boolean
           onboarding_step: number
+          organization_id: string | null
           preferred_platforms: string[] | null
           updated_at: string
           website: string | null
@@ -434,6 +396,7 @@ export type Database = {
           monthly_budget?: string | null
           onboarding_completed?: boolean
           onboarding_step?: number
+          organization_id?: string | null
           preferred_platforms?: string[] | null
           updated_at?: string
           website?: string | null
@@ -448,11 +411,20 @@ export type Database = {
           monthly_budget?: string | null
           onboarding_completed?: boolean
           onboarding_step?: number
+          organization_id?: string | null
           preferred_platforms?: string[] | null
           updated_at?: string
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "business_profiles_org_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       campaign_dims: {
         Row: {
@@ -624,39 +596,132 @@ export type Database = {
           },
         ]
       }
-      platform_integrations: {
+      organization_memberships: {
         Row: {
-          access_token: string
-          business_id: string
-          created_at: string | null
+          created_at: string
           id: string
-          integration_details: Json | null
-          is_integrated: boolean | null
-          platform_id: string
-          refresh_token: string | null
-          updated_at: string | null
+          organization_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          user_id: string
         }
         Insert: {
-          access_token: string
-          business_id: string
-          created_at?: string | null
+          created_at?: string
           id?: string
-          integration_details?: Json | null
-          is_integrated?: boolean | null
-          platform_id: string
-          refresh_token?: string | null
-          updated_at?: string | null
+          organization_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id: string
         }
         Update: {
-          access_token?: string
-          business_id?: string
-          created_at?: string | null
+          created_at?: string
           id?: string
-          integration_details?: Json | null
-          is_integrated?: boolean | null
+          organization_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_memberships_org_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_memberships_user_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          branding: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          primary_language: string
+          type: Database["public"]["Enums"]["organization_type"]
+          updated_at: string
+        }
+        Insert: {
+          branding?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          primary_language?: string
+          type: Database["public"]["Enums"]["organization_type"]
+          updated_at?: string
+        }
+        Update: {
+          branding?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          primary_language?: string
+          type?: Database["public"]["Enums"]["organization_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_integrations: {
+        Row: {
+          access_token_secret_id: string | null
+          business_id: string
+          connected_at: string | null
+          connected_by_user_id: string | null
+          created_at: string
+          disconnected_at: string | null
+          id: string
+          integration_details: Json
+          last_error: string | null
+          last_synced_at: string | null
+          platform_id: string
+          refresh_token_secret_id: string | null
+          scopes: string[]
+          status: string
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token_secret_id?: string | null
+          business_id: string
+          connected_at?: string | null
+          connected_by_user_id?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          id?: string
+          integration_details?: Json
+          last_error?: string | null
+          last_synced_at?: string | null
+          platform_id: string
+          refresh_token_secret_id?: string | null
+          scopes?: string[]
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token_secret_id?: string | null
+          business_id?: string
+          connected_at?: string | null
+          connected_by_user_id?: string | null
+          created_at?: string
+          disconnected_at?: string | null
+          id?: string
+          integration_details?: Json
+          last_error?: string | null
+          last_synced_at?: string | null
           platform_id?: string
-          refresh_token?: string | null
-          updated_at?: string | null
+          refresh_token_secret_id?: string | null
+          scopes?: string[]
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -664,6 +729,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_integrations_connected_by_user_id_fkey"
+            columns: ["connected_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -680,6 +752,7 @@ export type Database = {
           api_info: Json
           created_at: string
           id: string
+          is_enabled: boolean
           key: string
           name: string
           updated_at: string
@@ -688,6 +761,7 @@ export type Database = {
           api_info?: Json
           created_at?: string
           id?: string
+          is_enabled?: boolean
           key: string
           name: string
           updated_at?: string
@@ -696,6 +770,7 @@ export type Database = {
           api_info?: Json
           created_at?: string
           id?: string
+          is_enabled?: boolean
           key?: string
           name?: string
           updated_at?: string
@@ -797,12 +872,24 @@ export type Database = {
         Args: { p_ad_account_id: string }
         Returns: boolean
       }
+      get_platform_token: { Args: { secret_id: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       obj_code: { Args: { raw: string }; Returns: string }
       obj_label: { Args: { raw: string }; Returns: string }
+      store_platform_token: {
+        Args: {
+          secret_description?: string
+          secret_name: string
+          secret_value: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       business_role: "owner" | "admin" | "member"
+      org_role: "owner" | "admin" | "member" | "viewer"
+      organization_type: "agency" | "business"
+      report_type: "weekly" | "monthly" | "custom"
     }
     CompositeTypes: {
       q_msg: {
@@ -940,6 +1027,9 @@ export const Constants = {
   public: {
     Enums: {
       business_role: ["owner", "admin", "member"],
+      org_role: ["owner", "admin", "member", "viewer"],
+      organization_type: ["agency", "business"],
+      report_type: ["weekly", "monthly", "custom"],
     },
   },
 } as const
