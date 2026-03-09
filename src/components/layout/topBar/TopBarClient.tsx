@@ -1,6 +1,6 @@
 'use client';
 
-import { clientHandleSignOut, markAllNotificationsAsReadClient, markNotificationReadClient } from '@/lib/client';
+import { clientHandleSignOut } from '@/lib/client';
 import {
     Group,
     TextInput,
@@ -44,6 +44,26 @@ interface Notification {
     link?: string;
 }
 
+const STATIC_NOTIFICATIONS: Notification[] = [
+    {
+        id: 'notification-coming-soon',
+        title: 'Notifications',
+        message: 'Live notifications are not enabled yet. This is placeholder data for now.',
+        created_at: 'Just now',
+        read: false,
+        type: 'system',
+    },
+    {
+        id: 'integration-hint',
+        title: 'Integrations',
+        message: 'Connect your first ad platform to receive sync and account alerts later.',
+        created_at: 'Today',
+        read: true,
+        type: 'hint',
+        link: '/integration',
+    },
+];
+
 interface TopBarClientProps {
     userInfo: any;
     platforms?: any[];
@@ -64,7 +84,9 @@ export default function TopBarClient({
 }: TopBarClientProps) {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
-    const [userNotifications, setUserNotifications] = useState<Notification[]>(notifications);
+    const [userNotifications, setUserNotifications] = useState<Notification[]>(
+        notifications.length > 0 ? notifications : STATIC_NOTIFICATIONS
+    );
     const [notificationCount, setNotificationCount] = useState(0);
 
     // Calculate unread notification count
@@ -76,35 +98,17 @@ export default function TopBarClient({
     const userInitials = fullName.split(' ').map((name: string) => name[0]).join('').toUpperCase();
 
     // Mark all notifications as read
-    const markAllRead = async () => {
-        const unreadIds = userNotifications
-            .filter(notification => !notification.read)
-            .map(notification => notification.id);
-
-        if (unreadIds.length === 0) return;
-
-        const success = await markAllNotificationsAsReadClient(unreadIds);
-
-        if (success) {
-            setUserNotifications(prevNotifications =>
-                prevNotifications.map(notification => ({ ...notification, read: true }))
-            );
-
-            setNotificationCount(0);
-        }
+    const markAllRead = () => {
+        setUserNotifications(prevNotifications =>
+            prevNotifications.map(notification => ({ ...notification, read: true }))
+        );
     };
 
-    const handleNotificationClick = async (notification: Notification) => {
+    const handleNotificationClick = (notification: Notification) => {
         if (!notification.read) {
-            const success = await markNotificationReadClient(notification.id);
-
-            if (success) {
-                setUserNotifications(prev =>
-                    prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
-                );
-
-                setNotificationCount(prev => Math.max(0, prev - 1));
-            }
+            setUserNotifications(prev =>
+                prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+            );
         }
 
         if (notification.link) {
