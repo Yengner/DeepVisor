@@ -1,9 +1,9 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
 import type { AdAccountData } from '../types';
+import { toSupportedVendor } from '../platforms/normalizers';
 import {
   parseAggregatedMetrics,
   parseTimeIncrementMetrics,
-  toSupportedVendor,
 } from './normalizers';
 
 /**

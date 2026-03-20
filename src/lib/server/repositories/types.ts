@@ -1,5 +1,7 @@
+import type { IntegrationStatus } from '@/lib/shared/types/integrations';
+
 export type SupportedPlatformVendor = 'meta' | 'google' | 'tiktok';
-export type PlatformIntegrationStatus = 'connected' | 'disconnected' | 'needs_reauth' | 'error';
+export type PlatformIntegrationStatus = IntegrationStatus;
 
 export interface AggregatedMetric {
   total_spend: number;

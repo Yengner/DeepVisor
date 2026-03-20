@@ -8,7 +8,7 @@ import {
   getAdsLifetimeIncludingZeros,
   getCampaignLifetimeIncludingZeros,
 } from '@/lib/server/data';
-import { formatDate } from "@/utils/utils";
+import { formatDate } from "@/components/utils/utils";
 import { getCurrentSelection } from "@/lib/server/actions/app/selection";
 import { getRequiredAppContext } from "@/lib/server/actions/app/context";
 

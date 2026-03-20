@@ -10,3 +10,4 @@ export async function fetchAdSetsForCampaign(adAccountId: string, campaignExtern
 export async function fetchAdsForAdset(adAccountId: string, adsetExternalId: string) {
   return getAdsLifetimeIncludingZeros(adAccountId, { adsetExternalId });
 }
+

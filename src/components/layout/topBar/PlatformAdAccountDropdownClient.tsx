@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import { Select, Group, ThemeIcon, Text } from '@mantine/core';
 import { IconChevronDown } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
-import { getPlatformIcon } from '@/utils/utils';
+import { getPlatformIcon } from '@/components/utils/utils';
 import { setSelection } from './setSelection';
 
 interface PlatformAdAccountDropdownClientProps {

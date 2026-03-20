@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { asRecord } from '@/lib/shared';
 import { generateState } from '@/lib/shared/utils/guards';
 import type { Database, Json } from '@/lib/shared/types/supabase';
 import type {
@@ -10,6 +11,7 @@ import type {
   SupportedIntegrationPlatform,
   UpsertIntegrationInput,
 } from '@/lib/server/integrations/types';
+import { toIntegrationStatus } from '@/lib/server/integrations/normalizers';
 import {
   fetchMetaAdAccountSnapshots,
   validateMetaAccessToken,
@@ -60,13 +62,8 @@ export function getBaseUrl(requestUrl: string): string {
   return process.env.NEXT_PUBLIC_BASE_URL || new URL(requestUrl).origin;
 }
 
-function asObject(value: Json | Record<string, unknown> | null | undefined): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  return value as Record<string, unknown>;
-}
-
 export function extractAccessToken(details: Json | null | undefined, fallback?: string | null): string | null {
-  const tokenObject = asObject(details);
+  const tokenObject = asRecord(details);
   const token =
     (typeof tokenObject.access_token === 'string' && tokenObject.access_token) ||
     (typeof tokenObject.access_token_secret_id === 'string' && tokenObject.access_token_secret_id) ||
@@ -83,15 +80,8 @@ function stripTokens(details: Json | Record<string, unknown> | null | undefined)
     access_token_secret_id: _as,
     refresh_token_secret_id: _rs,
     ...rest
-  } = asObject(details);
+  } = asRecord(details);
   return rest as IntegrationDetails;
-}
-
-function normalizeIntegrationStatus(value: unknown): IntegrationStatus {
-  if (value === 'connected' || value === 'disconnected' || value === 'error' || value === 'needs_reauth') {
-    return value;
-  }
-  return 'disconnected';
 }
 
 function mergeDetails(
@@ -99,7 +89,7 @@ function mergeDetails(
   patch: Record<string, unknown>
 ): IntegrationDetails {
   return {
-    ...asObject(details),
+    ...asRecord(details),
     ...patch,
   };
 }
@@ -401,9 +391,8 @@ export async function listBusinessIntegrations(
 
   return ((data ?? []) as unknown as PlatformIntegrationStorageRow[]).map((row) => {
     const platform = Array.isArray(row.platforms) ? row.platforms[0] : row.platforms;
-    const details = asObject(row.integration_details);
-    const statusFromDetails = normalizeIntegrationStatus(details.status);
-    const status = normalizeIntegrationStatus(row.status ?? statusFromDetails);
+    const details = asRecord(row.integration_details);
+    const status = toIntegrationStatus(row.status ?? details.status);
 
     return {
       id: row.id,
