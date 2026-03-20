@@ -1,14 +1,25 @@
 'use client';
 
-import { FormattedCampaign } from '@/app/(root)/campaigns/page';
+import type { FormattedCampaign } from '@/app/(root)/campaigns/page';
 import {
-  Table, Group, Text, Badge, Switch, ActionIcon, Menu, ThemeIcon,
-  ScrollArea, Tooltip, Stack
+  ActionIcon,
+  Badge,
+  Group,
+  Menu,
+  ScrollArea,
+  Switch,
+  Table,
+  Text,
+  ThemeIcon,
+  Tooltip,
 } from '@mantine/core';
 import {
-  IconCheck, IconPencil, IconTrash, IconDots, IconChartBar, IconRobot, IconAlertTriangle
+  IconChartBar,
+  IconCheck,
+  IconDots,
+  IconPencil,
+  IconTrash,
 } from '@tabler/icons-react';
-import React from 'react';
 
 interface CampaignTableProps {
   campaigns: FormattedCampaign[];
@@ -24,7 +35,6 @@ const BORDER = 'var(--mantine-color-gray-3)';
 const Z_HEADER = 2;
 const Z_STICKY_RIGHT = 4;
 const RIGHT_COL_WIDTH = 24;
-
 
 export default function CampaignTable({
   campaigns,
@@ -60,7 +70,7 @@ export default function CampaignTable({
         <Table.Thead>
           <Table.Tr>
             <Table.Th />
-            <Table.Th style={{ width: 320, maxWidth: 320 }} >Campaign</Table.Th>
+            <Table.Th style={{ width: 320, maxWidth: 320 }}>Campaign</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Status</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Objective</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Start</Table.Th>
@@ -104,23 +114,15 @@ export default function CampaignTable({
               </Table.Td>
             </Table.Tr>
           ) : (
-            campaigns.map((c) => {
-              const selected = selectedCampaignId === c.id;
-              const needs = !!c.review?.needsReview;
-              const pending = Number(c.review?.pendingCount || 0);
-              const reviewHref = c.review?.lastDecisionId
-                ? `/optimizer/review/${c.review.lastDecisionId}?campaign=${c.id}`
-                : undefined;
-
-              const rowBg = selected
-                ? `var(--mantine-color-${platformColor}-1)`
-                : 'transparent';
+            campaigns.map((campaign) => {
+              const selected = selectedCampaignId === campaign.id;
+              const rowBg = selected ? `var(--mantine-color-${platformColor}-1)` : 'transparent';
 
               return (
                 <Table.Tr
-                  key={c.id}
+                  key={campaign.id}
                   style={{ background: rowBg, cursor: 'pointer' }}
-                  onClick={() => onSelectCampaign(c.id)}
+                  onClick={() => onSelectCampaign(campaign.id)}
                 >
                   <Table.Td>
                     {selected && (
@@ -131,143 +133,102 @@ export default function CampaignTable({
                   </Table.Td>
 
                   <Table.Td style={{ width: 320, maxWidth: 320 }}>
-                    {/* compute review helpers for this row */}
-                    {(() => {
-                      const needs = !!c.review?.needsReview;
-                      const pending = Number(c.review?.pendingCount || 0);
-                      const reviewHref = c.review?.lastDecisionId
-                        ? `/optimizer/review/${c.review.lastDecisionId}?campaign=${c.id}`
-                        : undefined;
+                    <Tooltip
+                      label={campaign.name}
+                      multiline
+                      withArrow
+                      withinPortal
+                      position="top-start"
+                      maw={420}
+                      openDelay={200}
+                    >
+                      <Text
+                        size="sm"
+                        fw={500}
+                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                      >
+                        {campaign.name}
+                      </Text>
+                    </Tooltip>
 
-                      return (
-                        <>
-                          <Group gap="xs" wrap="nowrap" align="center" style={{ minWidth: 0 }}>
-                            {/* truncated name with tooltip */}
-                            <Tooltip
-                              label={c.name}
-                              multiline
-                              withArrow
-                              withinPortal
-                              position="top-start"
-                              maw={420}
-                              openDelay={200}
-                            >
-                              <Text
-                                size="sm"
-                                fw={500}
-                                style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                              >
-                                {c.name}
-                              </Text>
-                            </Tooltip>
-
-                            {/* review badge/icon (clickable, doesn’t select the row) */}
-                            {needs && (
-                              <Tooltip label="This campaign has actions waiting for review" withArrow>
-                                <Badge
-                                  leftSection={<IconAlertTriangle size={10} />}
-                                  color="yellow"
-                                  variant="filled"
-                                  size="xs"
-                                  component={reviewHref ? 'a' : 'div'}
-                                  href={reviewHref}
-                                  onClick={(e: any) => e.stopPropagation()}
-                                  style={{ cursor: reviewHref ? 'pointer' : 'default', flexShrink: 0 }}
-                                >
-                                  Review{pending > 0 ? ` • ${pending}` : ''}
-                                </Badge>
-                              </Tooltip>
-                            )}
-                          </Group>
-
-                          {/* account name (also truncated with tooltip) */}
-                          {c.accountName && (
-                            <Tooltip
-                              label={c.accountName}
-                              multiline
-                              withArrow
-                              withinPortal
-                              position="top-start"
-                              maw={420}
-                              openDelay={200}
-                            >
-                              <Text
-                                size="xs"
-                                c="dimmed"
-                                style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                              >
-                                Account: {c.accountName}
-                              </Text>
-                            </Tooltip>
-                          )}
-                        </>
-                      );
-                    })()}
+                    {campaign.accountName && (
+                      <Tooltip
+                        label={campaign.accountName}
+                        multiline
+                        withArrow
+                        withinPortal
+                        position="top-start"
+                        maw={420}
+                        openDelay={200}
+                      >
+                        <Text
+                          size="xs"
+                          c="dimmed"
+                          style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                        >
+                          Account: {campaign.accountName}
+                        </Text>
+                      </Tooltip>
+                    )}
                   </Table.Td>
 
                   <Table.Td>
-                    <Group gap="xs" wrap="nowrap" onClick={(e) => e.stopPropagation()}>
+                    <Group gap="xs" wrap="nowrap" onClick={(event) => event.stopPropagation()}>
                       <Switch
-                        checked={c.delivery}
-                        onChange={(ev) => onToggleCampaign(c.id, ev.currentTarget.checked)}
+                        checked={campaign.delivery}
+                        onChange={(event) => onToggleCampaign(campaign.id, event.currentTarget.checked)}
                         size="sm"
                         onLabel="ON"
                         offLabel="OFF"
                         color="green"
                       />
-                      <Badge color={c.status?.toUpperCase() === 'ACTIVE' ? 'green' : 'gray'} variant="light">
-                        {c.status}
+                      <Badge
+                        color={campaign.status?.toUpperCase() === 'ACTIVE' ? 'green' : 'gray'}
+                        variant="light"
+                      >
+                        {campaign.status}
                       </Badge>
                     </Group>
                   </Table.Td>
 
-                  <Table.Td><Text size="sm">{c.objective}</Text></Table.Td>
-
-                  {/* Start */}
-                  <Table.Td style={{ whiteSpace: 'nowrap' }}>
-                    <Text size="sm">{c.startDate}</Text>
-                  </Table.Td>
-
-                  {/* End */}
+                  <Table.Td><Text size="sm">{campaign.objective}</Text></Table.Td>
+                  <Table.Td style={{ whiteSpace: 'nowrap' }}><Text size="sm">{campaign.startDate}</Text></Table.Td>
                   <Table.Td style={{ whiteSpace: 'nowrap' }}>
                     <Text size="sm">
-                      {c.endDate && c.endDate !== 'No End Date' ? c.endDate : 'Ongoing'}
+                      {campaign.endDate && campaign.endDate !== 'No End Date' ? campaign.endDate : 'Ongoing'}
                     </Text>
                   </Table.Td>
-
-
-                  <Table.Td><Text fw={500} size="sm">{fmt$(c.spend)}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{c.results}</Text></Table.Td>
-
-                  <Table.Td><Text size="sm">{c.ctr != null ? `${c.ctr}%` : '0%'}</Text>
-                  </Table.Td>
-                  <Table.Td><Text size="sm">{c.cpc != null ? fmt$(c.cpc) : '—'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{c.cpm != null ? fmt$(c.cpm) : '—'}</Text></Table.Td>
-
-                  {/* Extra metrics */}
-                  <Table.Td><Text size="sm">{c.reach ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{c.impressions ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{c.clicks ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{c.link_clicks ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{c.leads ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{c.messages ?? 0}</Text></Table.Td>
+                  <Table.Td><Text fw={500} size="sm">{fmt$(campaign.spend)}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.results}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.ctr != null ? `${campaign.ctr}%` : '0%'}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.cpc != null ? fmt$(campaign.cpc) : '—'}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.cpm != null ? fmt$(campaign.cpm) : '—'}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.reach ?? 0}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.impressions ?? 0}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.clicks ?? 0}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.link_clicks ?? 0}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.leads ?? 0}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.messages ?? 0}</Text></Table.Td>
                   <Table.Td>
                     <Text size="sm">
-                      {c.reach && c.impressions ? (Number(c.impressions) / Number(c.reach)).toFixed(2) : '0.00'}
+                      {campaign.reach && campaign.impressions
+                        ? (Number(campaign.impressions) / Number(campaign.reach)).toFixed(2)
+                        : '0.00'}
                     </Text>
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm">
-                      {Number(c.leads) > 0 ? fmt$(Number(c.spend || 0) / Number(c.leads)) : '$0.00'}
+                      {Number(campaign.leads) > 0 ? fmt$(Number(campaign.spend || 0) / Number(campaign.leads)) : '$0.00'}
                     </Text>
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm">
-                      {Number(c.messages) > 0 ? fmt$(Number(c.spend || 0) / Number(c.messages)) : '$0.00'}
+                      {Number(campaign.messages) > 0
+                        ? fmt$(Number(campaign.spend || 0) / Number(campaign.messages))
+                        : '$0.00'}
                     </Text>
                   </Table.Td>
 
-                  {/* sticky RIGHT actions cell */}
                   <Table.Td
                     style={{
                       width: RIGHT_COL_WIDTH,
@@ -278,39 +239,28 @@ export default function CampaignTable({
                       background: rowBg || BG,
                       boxShadow: `inset 1px 0 0 ${BORDER}`,
                     }}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
                   >
-                    <Menu position="bottom-end" withArrow offset={4} >
+                    <Menu position="bottom-end" withArrow offset={4}>
                       <Menu.Target>
-                        <ActionIcon
-                          variant="filled"
-                          color={platformColor}
-                        ><IconDots size={16} /></ActionIcon>
+                        <ActionIcon variant="filled" color={platformColor}>
+                          <IconDots size={16} />
+                        </ActionIcon>
                       </Menu.Target>
                       <Menu.Dropdown>
-                        {needs && reviewHref && (
-                          <Menu.Item
-                            leftSection={<IconAlertTriangle size={16} />}
-                            component="a"
-                            href={reviewHref}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Review pending actions{pending > 0 ? ` (${pending})` : ''}
-                          </Menu.Item>
-                        )}
                         <Menu.Item
                           leftSection={<IconPencil size={16} />}
                           component="a"
-                          href={`/campaigns/${c.id}/edit`}
-                          onClick={(e) => e.stopPropagation()}
+                          href={`/campaigns/${campaign.id}/edit`}
+                          onClick={(event) => event.stopPropagation()}
                         >
                           Edit Campaign
                         </Menu.Item>
                         <Menu.Item
                           leftSection={<IconChartBar size={16} />}
                           component="a"
-                          href={`/campaigns/${c.id}/analytics`}
-                          onClick={(e) => e.stopPropagation()}
+                          href={`/campaigns/${campaign.id}/analytics`}
+                          onClick={(event) => event.stopPropagation()}
                         >
                           View Analytics
                         </Menu.Item>
@@ -318,9 +268,9 @@ export default function CampaignTable({
                         <Menu.Item
                           color="red"
                           leftSection={<IconTrash size={16} />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteCampaign(c.id);
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onDeleteCampaign(campaign.id);
                           }}
                         >
                           Delete Campaign

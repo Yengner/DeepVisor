@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import {
-    Button, Group, Text, Tabs, ActionIcon, Tooltip, Select, TextInput, Menu, Badge, Avatar, Container,
+    Alert, Button, Group, Text, Tabs, ActionIcon, Tooltip, Select, TextInput, Menu, Badge, Avatar, Container,
     Card, Stack, Title, Box
 } from '@mantine/core';
 import { IconRefresh, IconPlus, IconSearch, IconAdjustments, IconFilterOff, IconChartBar, IconTable } from '@tabler/icons-react';
@@ -13,10 +13,17 @@ import AdsTable from './AdsTable';
 import CampaignStats from './CampaignStats';
 import { EmptyCampaignState } from './EmptyStates';
 import { getPlatformIcon } from '@/components/utils/utils';
+import { formatRetryDelay } from '@/lib/shared';
+import type { AdLifetimeRow, AdSetLifetimeRow } from '@/lib/server/data';
+import type { RefreshIntegrationsResponse } from '@/lib/shared/types/integrations';
 import type { FormattedCampaign } from '@/app/(root)/campaigns/page';
 import { fetchAdSetsForCampaign, fetchAdsForAdset } from '@/lib/server/data/queries/components.query';
 
 type TabKey = 'campaigns' | 'adsets' | 'ads';
+
+function isTabKey(value: string | null): value is TabKey {
+    return value === 'campaigns' || value === 'adsets' || value === 'ads';
+}
 
 interface PlatformInfo {
     id: string;
@@ -25,7 +32,6 @@ interface PlatformInfo {
 
 interface CampaignDashboardProps {
     campaigns: FormattedCampaign[];
-    userId: string;
     platform: PlatformInfo;
     adAccountId: string;
     accountMetrics: {
@@ -45,13 +51,13 @@ interface CampaignDashboardProps {
         campaignId?: string | null;
         adsetId?: string | null;
     };
-    initialAdSets?: any[];
-    initialAds?: any[];
+    initialAdSets?: AdSetLifetimeRow[];
+    initialAds?: AdLifetimeRow[];
 }
 
 export default function CampaignDashboard(props: CampaignDashboardProps) {
     const {
-        campaigns, userId, platform, adAccountId, accountMetrics,
+        campaigns, platform, adAccountId, accountMetrics,
         initialSelection, initialAdSets, initialAds
     } = props;
 
@@ -73,16 +79,16 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     );
 
     // Caches
-    const [adSetsByCampaign, setAdSetsByCampaign] = useState<Record<string, any[]>>(() => {
-        const seed: Record<string, any[]> = {};
+    const [adSetsByCampaign, setAdSetsByCampaign] = useState<Record<string, AdSetLifetimeRow[]>>(() => {
+        const seed: Record<string, AdSetLifetimeRow[]> = {};
         if (initialSelection?.campaignId && initialAdSets) {
             seed[initialSelection.campaignId] = initialAdSets;
         }
         return seed;
     });
 
-    const [adsByAdset, setAdsByAdset] = useState<Record<string, any[]>>(() => {
-        const seed: Record<string, any[]> = {};
+    const [adsByAdset, setAdsByAdset] = useState<Record<string, AdLifetimeRow[]>>(() => {
+        const seed: Record<string, AdLifetimeRow[]> = {};
         if (initialSelection?.adsetId && initialAds) {
             seed[initialSelection.adsetId] = initialAds;
         }
@@ -93,6 +99,10 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     const [adsetsLoading, setAdsetsLoading] = useState(false);
     const [adsLoading, setAdsLoading] = useState(false);
     const [isPending, startTransition] = useTransition();
+    const [refreshFeedback, setRefreshFeedback] = useState<{
+        type: 'success' | 'error';
+        message: string;
+    } | null>(null);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -124,6 +134,14 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
         if (!selectedAdSetId && activeTab === 'ads') setActiveTab('adsets');
     }, [selectedCampaignId, selectedAdSetId, activeTab]);
 
+    useEffect(() => {
+        setCampaignData(campaigns);
+        setSelectedCampaignId(current =>
+            current && campaigns.some(campaign => campaign.id === current)
+                ? current
+                : campaigns[0]?.id ?? null
+        );
+    }, [campaigns]);
 
     useEffect(() => {
         const sp = new URLSearchParams(searchParams?.toString());
@@ -172,16 +190,38 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
+        setRefreshFeedback(null);
+
         try {
-            const res = await fetch('/api/metrics/backfill', {
+            const response = await fetch('/api/sync/refresh', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, adAccountId, fullBackfillDays: 350, vendor: 'meta' })
             });
-            if (!res.ok) throw new Error('Failed to refresh campaigns data');
-            window.location.reload();
-        } catch (e) {
-            console.error('Error refreshing campaigns data:', e);
+            const result = await response.json() as RefreshIntegrationsResponse;
+
+            if (!response.ok || !result.success) {
+                if (response.status === 429) {
+                    throw new Error(result.message || formatRetryDelay(result.retryAfterMs));
+                }
+
+                throw new Error(result.message || 'Failed to refresh campaign data');
+            }
+
+            setAdSetsByCampaign({});
+            setAdsByAdset({});
+            setRefreshFeedback({
+                type: 'success',
+                message: `Sync completed: ${result.refreshedCount} updated, ${result.failedCount} failed.`,
+            });
+            router.refresh();
+        } catch (error) {
+            console.error('Error refreshing campaigns data:', error);
+            setRefreshFeedback({
+                type: 'error',
+                message:
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to refresh campaign data.',
+            });
         } finally {
             setIsRefreshing(false);
         }
@@ -283,6 +323,12 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                     </Group>
                 </Card>
 
+                {refreshFeedback && (
+                    <Alert color={refreshFeedback.type === 'success' ? 'green' : 'red'} icon={<IconRefresh size={16} />}>
+                        {refreshFeedback.message}
+                    </Alert>
+                )}
+
                 <CampaignStats
                     totalCampaigns={filteredCampaigns.length}
                     accountMetrics={accountMetrics}
@@ -335,8 +381,14 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                 </Card>
 
                 <Card p="md" radius="lg" withBorder style={{ background: 'linear-gradient(180deg, rgba(14,165,233,0.04), rgba(15,23,42,0.02))' }}>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <Tabs value={activeTab} onChange={setActiveTab as any}>
+                    <Tabs
+                        value={activeTab}
+                        onChange={(value) => {
+                            if (isTabKey(value)) {
+                                setActiveTab(value);
+                            }
+                        }}
+                    >
                         <Tabs.List>
                             <Tabs.Tab value="campaigns" leftSection={<IconChartBar size={14} />}>Campaigns</Tabs.Tab>
                             <Tabs.Tab value="adsets" leftSection={<IconTable size={14} />} disabled={!selectedCampaignId}>Ad Sets</Tabs.Tab>

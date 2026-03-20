@@ -1,6 +1,23 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
 
-export async function getCampaignsWithAdSetsAndAds(adAccountId: string) {
+export interface CampaignTreeAdNode {
+  id: string;
+  name: string;
+}
+
+export interface CampaignTreeAdsetNode {
+  id: string;
+  name: string;
+  ads_metrics: CampaignTreeAdNode[];
+}
+
+export interface CampaignTreeNode {
+  id: string;
+  name: string;
+  adset_metrics: CampaignTreeAdsetNode[];
+}
+
+export async function getCampaignsWithAdSetsAndAds(adAccountId: string): Promise<CampaignTreeNode[]> {
   const supabase = await createSupabaseClient();
   const [{ data: campaigns, error: campaignsError }, { data: adsets, error: adsetsError }, { data: ads, error: adsError }] =
     await Promise.all([
@@ -27,7 +44,7 @@ export async function getCampaignsWithAdSetsAndAds(adAccountId: string) {
     throw error;
   }
 
-  const adsByAdsetExternalId = new Map<string, { id: string; name: string }[]>();
+  const adsByAdsetExternalId = new Map<string, CampaignTreeAdNode[]>();
 
   for (const ad of ads ?? []) {
     const items = adsByAdsetExternalId.get(ad.adset_external_id) ?? [];
@@ -38,10 +55,7 @@ export async function getCampaignsWithAdSetsAndAds(adAccountId: string) {
     adsByAdsetExternalId.set(ad.adset_external_id, items);
   }
 
-  const adsetsByCampaignExternalId = new Map<
-    string,
-    { id: string; name: string; ads_metrics: { id: string; name: string }[] }[]
-  >();
+  const adsetsByCampaignExternalId = new Map<string, CampaignTreeAdsetNode[]>();
 
   for (const adset of adsets ?? []) {
     const items = adsetsByCampaignExternalId.get(adset.campaign_external_id) ?? [];
