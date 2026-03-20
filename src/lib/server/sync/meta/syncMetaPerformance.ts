@@ -1,11 +1,13 @@
 import 'server-only';
 
+import { upsertAdAccountPerformanceDaily } from '@/lib/server/repositories/ad_accounts/upsertAdAccountPerformanceDaily';
 import { upsertAdPerformanceDaily } from '@/lib/server/repositories/ads/upsertAdPerformanceDaily';
 import { upsertAdsetPerformanceDaily } from '@/lib/server/repositories/adsets/upsertAdsetPerformanceDaily';
 import { upsertCampaignPerformanceDaily } from '@/lib/server/repositories/campaigns/upsertCampaignPerformanceDaily';
 import type { Database } from '@/lib/shared/types/supabase';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
 import {
+  fetchMetaAdAccountPerformanceSeeds,
   fetchMetaAdPerformanceSeeds,
   fetchMetaAdsetPerformanceSeeds,
   fetchMetaCampaignPerformanceSeeds,
@@ -26,12 +28,18 @@ export async function syncMetaPerformance(input: {
   backfillDays: number;
   syncedAt: string;
 }) {
+  const adAccountPerformanceInputs: Parameters<typeof upsertAdAccountPerformanceDaily>[1] = [];
   const campaignPerformanceInputs: Parameters<typeof upsertCampaignPerformanceDaily>[1] = [];
   const adsetPerformanceInputs: Parameters<typeof upsertAdsetPerformanceDaily>[1] = [];
   const adPerformanceInputs: Parameters<typeof upsertAdPerformanceDaily>[1] = [];
 
   for (const adAccount of input.adAccounts) {
-    const [campaignRows, adsetRows, adRows] = await Promise.all([
+    const [adAccountRows, campaignRows, adsetRows, adRows] = await Promise.all([
+      fetchMetaAdAccountPerformanceSeeds({
+        accessToken: input.accessToken,
+        adAccountExternalId: adAccount.external_account_id,
+        backfillDays: input.backfillDays,
+      }),
       fetchMetaCampaignPerformanceSeeds({
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
@@ -48,6 +56,24 @@ export async function syncMetaPerformance(input: {
         backfillDays: input.backfillDays,
       }),
     ]);
+
+    for (const row of adAccountRows) {
+      adAccountPerformanceInputs.push({
+        adAccountId: adAccount.id,
+        day: row.day,
+        currencyCode: row.currencyCode ?? adAccount.currency_code,
+        source: 'meta',
+        status: adAccount.status,
+        spend: row.spend,
+        reach: row.reach,
+        impressions: row.impressions,
+        clicks: row.clicks,
+        inlineLinkClicks: row.inlineLinkClicks,
+        leads: row.leads,
+        messages: row.messages,
+        syncedAt: input.syncedAt,
+      });
+    }
 
     for (const row of campaignRows) {
       const campaign = input.campaignsByExternalId.get(row.campaignExternalId);
@@ -133,13 +159,15 @@ export async function syncMetaPerformance(input: {
     }
   }
 
-  const [campaignPerformance, adsetPerformance, adPerformance] = await Promise.all([
+  const [adAccountPerformance, campaignPerformance, adsetPerformance, adPerformance] = await Promise.all([
+    upsertAdAccountPerformanceDaily(input.supabase, adAccountPerformanceInputs),
     upsertCampaignPerformanceDaily(input.supabase, campaignPerformanceInputs),
     upsertAdsetPerformanceDaily(input.supabase, adsetPerformanceInputs),
     upsertAdPerformanceDaily(input.supabase, adPerformanceInputs),
   ]);
 
   return {
+    adAccountPerformanceRows: adAccountPerformance.count,
     campaignPerformanceRows: campaignPerformance.count,
     adsetPerformanceRows: adsetPerformance.count,
     adPerformanceRows: adPerformance.count,

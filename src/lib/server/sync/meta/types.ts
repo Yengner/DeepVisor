@@ -51,6 +51,18 @@ export interface MetaCampaignPerformanceSeed {
   calls: number;
 }
 
+export interface MetaAdAccountPerformanceSeed {
+  day: string;
+  currencyCode: string | null;
+  spend: number;
+  reach: number;
+  impressions: number;
+  clicks: number;
+  inlineLinkClicks: number;
+  leads: number;
+  messages: number;
+}
+
 export interface MetaAdsetPerformanceSeed {
   adsetExternalId: string;
   day: string;

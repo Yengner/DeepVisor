@@ -5,6 +5,7 @@ import type { Json } from '@/lib/shared/types/supabase';
 import { fetchMetaAdAccountSnapshots } from '@/lib/server/integrations/adapters/meta';
 import { fetchMetaCollection, getBackfillDateRange } from './client';
 import type {
+  MetaAdAccountPerformanceSeed,
   MetaActionMetric,
   MetaAdPerformanceSeed,
   MetaAdSeed,
@@ -122,6 +123,54 @@ function normalizeInsightMetrics(row: MetaInsightRow) {
 }
 
 export { fetchMetaAdAccountSnapshots };
+
+export async function fetchMetaAdAccountPerformanceSeeds(input: {
+  accessToken: string;
+  adAccountExternalId: string;
+  backfillDays: number;
+}): Promise<MetaAdAccountPerformanceSeed[]> {
+  const insights = await fetchMetaCollection<MetaInsightRow>({
+    path: `${input.adAccountExternalId}/insights`,
+    accessToken: input.accessToken,
+    params: {
+      level: 'account',
+      time_increment: '1',
+      time_range: JSON.stringify(getBackfillDateRange(input.backfillDays)),
+      fields: [
+        'date_start',
+        'account_currency',
+        'spend',
+        'reach',
+        'impressions',
+        'clicks',
+        'actions',
+      ].join(','),
+      limit: 500,
+    },
+  });
+
+  return insights
+    .map((row) => {
+      const metrics = normalizeInsightMetrics(row);
+
+      if (!metrics.day) {
+        return null;
+      }
+
+      return {
+        day: metrics.day,
+        currencyCode: metrics.currencyCode,
+        spend: metrics.spend,
+        reach: metrics.reach,
+        impressions: metrics.impressions,
+        clicks: metrics.clicks,
+        inlineLinkClicks: metrics.inlineLinkClicks,
+        leads: metrics.leads,
+        messages: metrics.messages,
+      } satisfies MetaAdAccountPerformanceSeed;
+    })
+    .filter((row): row is MetaAdAccountPerformanceSeed => row !== null);
+}
 
 export async function fetchMetaCampaignSeeds(input: {
   accessToken: string;

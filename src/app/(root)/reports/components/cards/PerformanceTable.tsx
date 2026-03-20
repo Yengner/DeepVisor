@@ -1,136 +1,138 @@
 "use client";
 
-import { Card, Text, Table, Tooltip } from "@mantine/core";
-
-function interpolateColor(light: number[], dark: number[], factor: number) {
-    const adjusted = Math.pow(factor, 0.5) * 0.5;
-    const rgb = light.map((l, i) => Math.round(l + (dark[i] - l) * adjusted));
-    return `rgb(${rgb.join(",")})`;
-}
-
-interface NumericCol {
-    key: string;
-    label: string;
-    light: number[];
-    dark: number[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    format: (v: any) => string | number;
-}
+import { Badge, Card, Group, Table, Text } from "@mantine/core";
+import type { ReportBreakdownRow } from "@/lib/server/reports/types";
 
 interface PerformanceTableProps {
-    title: string;
-    rows: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
-    columns: { key: string; label: string }[];
-    numericCols: NumericCol[];
-    minMax?: Record<string, { min: number; max: number }>;
+  title: string;
+  rows: ReportBreakdownRow[];
+  currencyCode: string | null;
+}
+
+function formatCurrency(value: number, currencyCode: string | null) {
+  if (!currencyCode || currencyCode === 'MIXED') {
+    return value.toFixed(2);
+  }
+
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return `$${value.toFixed(2)}`;
+  }
+}
+
+function formatDateWindow(startDate: string | null, endDate: string | null) {
+  if (!startDate && !endDate) {
+    return '—';
+  }
+
+  if (startDate && endDate && startDate !== endDate) {
+    return `${startDate} to ${endDate}`;
+  }
+
+  return startDate ?? endDate ?? '—';
+}
+
+function getLevelColor(level: ReportBreakdownRow['level']) {
+  if (level === 'campaign') {
+    return 'blue';
+  }
+
+  if (level === 'adset') {
+    return 'violet';
+  }
+
+  return 'teal';
 }
 
 export default function PerformanceTable({
-    title,
-    rows,
-    columns,
-    numericCols,
-    minMax: minMaxProp,
+  title,
+  rows,
+  currencyCode,
 }: PerformanceTableProps) {
-    // Compute min/max if not provided
-    const minMax = minMaxProp || {};
-    numericCols.forEach((col) => {
-        if (!minMax[col.key]) {
-            const values = rows.map((row) => row[col.key]);
-            minMax[col.key] = { min: Math.min(...values), max: Math.max(...values) };
-        }
-    });
+  return (
+    <Card withBorder p="md" radius="lg">
+      <Text fw={700} size="lg" mb="md">
+        {title}
+      </Text>
 
-    return (
-        <Card
-            withBorder
-            p={16}
-            style={{
-                borderRadius: 16,
-                display: "flex",
-                flexDirection: "column",
-                width: "100%",
-                alignItems: "flex-start",
-                marginBottom: 32,
-            }}
-        >
-            <Text fw={700} size="xl" style={{ color: "#22223b", marginBottom: 12 }}>
-                {title}
-            </Text>
-            <Table.ScrollContainer minWidth={200} maxHeight={300} type="native" style={{ width: "100%" }}>
-                <Table striped highlightOnHover withColumnBorders>
-                    <Table.Thead>
-                        <Table.Tr>
-                            {columns.map((col) => (
-                                <Table.Th key={col.key} style={{ fontWeight: 700 }}>
-                                    {col.label}
-                                </Table.Th>
-                            ))}
-                            {numericCols.map((col) => (
-                                <Table.Th key={col.key} style={{ fontWeight: 700 }}>
-                                    {col.label}
-                                </Table.Th>
-                            ))}
-                        </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                        {rows.map((row, idx) => (
-                            <Table.Tr key={row.id || row.name || idx}>
-                                {columns.map((col) => (
-                                    col.key === "name" ? (
-                                        <Table.Td
-                                            key={col.key}
-                                            style={{
-                                                fontWeight: 500,
-                                                maxWidth: 130,
-                                                overflow: "hidden",
-                                                textOverflow: "ellipsis",
-                                                whiteSpace: "nowrap",
-                                            }}
-                                        >
-                                            <Tooltip label={row[col.key]} withArrow position="right">
-                                                <span style={{ cursor: "help" }}>{row[col.key]}</span>
-                                            </Tooltip>
-                                        </Table.Td>
-                                    ) : (
-                                        <Table.Td
-                                            key={col.key}
-                                            style={{
-                                                fontWeight: 500,
-                                                maxWidth: 130,
-                                                overflow: "hidden",
-                                                textOverflow: "ellipsis",
-                                                whiteSpace: "nowrap",
-                                            }}
-                                        >
-                                            {row[col.key]}
-                                        </Table.Td>
-                                    )
-                                ))}
-                                {numericCols.map((col) => {
-                                    const { min, max } = minMax[col.key];
-                                    const factor = min === max ? 0 : (row[col.key] - min) / (max - min);
-                                    // Use a consistent blue background for all numeric columns.
-                                    // Slightly vary alpha by factor so larger values stand out a bit.
-                                    const alpha = 0.15 + Math.max(0, Math.min(1, factor)) * 0.55;
-                                    return (
-                                        <Table.Td
-                                            key={col.key}
-                                            style={{
-                                                background: `rgba(37,99,235, ${alpha})`, // blue
-                                                color: factor > 0.6 ? "#fff" : "#22223b",
-                                                fontWeight: col.key === "spend" || col.key === "cpm" ? 600 : 500,
-                                            }}
-                                        >
-                                            {col.format(row[col.key])}
-                                        </Table.Td>
-                                    );
-                                })}
-                            </Table.Tr>
-                        ))}
-                    </Table.Tbody>
-                </Table>
-            </Table.ScrollContainer>
-        </Card>
-    );
+      <Table.ScrollContainer minWidth={1100}>
+        <Table striped highlightOnHover withTableBorder withColumnBorders>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Entity</Table.Th>
+              <Table.Th>Level</Table.Th>
+              <Table.Th>Status</Table.Th>
+              <Table.Th>Context</Table.Th>
+              <Table.Th>Window</Table.Th>
+              <Table.Th ta="right">Spend</Table.Th>
+              <Table.Th ta="right">Results</Table.Th>
+              <Table.Th ta="right">Impressions</Table.Th>
+              <Table.Th ta="right">Clicks</Table.Th>
+              <Table.Th ta="right">CTR</Table.Th>
+              <Table.Th ta="right">CPC</Table.Th>
+              <Table.Th ta="right">Cost / Result</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {rows.length === 0 ? (
+              <Table.Tr>
+                <Table.Td colSpan={12}>
+                  <Text ta="center" c="dimmed" py="md">
+                    No performance rows available for the selected filters.
+                  </Text>
+                </Table.Td>
+              </Table.Tr>
+            ) : (
+              rows.map((row) => (
+                <Table.Tr key={row.id}>
+                  <Table.Td>
+                    <Text fw={700}>{row.name}</Text>
+                    <Text size="xs" c="dimmed">
+                      {row.id}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge variant="light" color={getLevelColor(row.level)}>
+                      {row.level}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    {row.status ? (
+                      <Badge variant="light" color="gray">
+                        {row.status}
+                      </Badge>
+                    ) : (
+                      '—'
+                    )}
+                  </Table.Td>
+                  <Table.Td>
+                    <Group gap={4}>
+                      <Text size="sm">{row.primaryContext || '—'}</Text>
+                    </Group>
+                    <Text size="xs" c="dimmed">
+                      {row.secondaryContext || '—'}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>{formatDateWindow(row.startDate, row.endDate)}</Table.Td>
+                  <Table.Td ta="right">{formatCurrency(row.spend, currencyCode)}</Table.Td>
+                  <Table.Td ta="right">{row.conversion.toLocaleString()}</Table.Td>
+                  <Table.Td ta="right">{row.impressions.toLocaleString()}</Table.Td>
+                  <Table.Td ta="right">{row.clicks.toLocaleString()}</Table.Td>
+                  <Table.Td ta="right">{row.ctr.toFixed(2)}%</Table.Td>
+                  <Table.Td ta="right">{formatCurrency(row.cpc, currencyCode)}</Table.Td>
+                  <Table.Td ta="right">{formatCurrency(row.costPerResult, currencyCode)}</Table.Td>
+                </Table.Tr>
+              ))
+            )}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
+    </Card>
+  );
 }

@@ -1,149 +1,157 @@
 'use client';
 
-import { useState } from 'react';
-import {
-    Box,
-    Text,
-    Checkbox,
-    Stack,
-    TextInput,
-    ScrollArea,
-    useMantineTheme,
-    Tooltip,
-    Button,
-} from '@mantine/core';
-import { IconSearch } from '@tabler/icons-react';
-import { useRouter, useSearchParams } from 'next/navigation';
-
-interface SidebarItem {
-    id: string;
-    name: string;
-}
+import { Card, MultiSelect, Select, Stack, Text } from '@mantine/core';
+import type { ReportFilterOptions, ReportQueryInput } from '@/lib/server/reports/types';
 
 interface ReportsSidebarProps {
-    items: SidebarItem[];
-    paramKey: string;
+  query: ReportQueryInput;
+  filterOptions: ReportFilterOptions;
+  onUpdate: (mutate: (params: URLSearchParams) => void) => void;
 }
 
-export default function ReportsSidebar({ items = [], paramKey }: ReportsSidebarProps) {
-    const theme = useMantineTheme();
-    const [filter, setFilter] = useState('');
-    const router = useRouter();
-    const searchParams = useSearchParams();
+export default function ReportsSidebar({
+  query,
+  filterOptions,
+  onUpdate,
+}: ReportsSidebarProps) {
+  const adAccountOptions = filterOptions.adAccounts.filter((option) =>
+    !query.platformIntegrationId || option.parentId === query.platformIntegrationId
+  );
+  const campaignOptions = filterOptions.campaigns.filter((option) =>
+    query.adAccountIds.length === 0 || query.adAccountIds.includes(option.parentId || '')
+  );
+  const adsetOptions = filterOptions.adsets.filter((option) =>
+    query.campaignIds.length === 0 || query.campaignIds.includes(option.parentId || '')
+  );
+  const adOptions = filterOptions.ads.filter((option) =>
+    query.adsetIds.length === 0 || query.adsetIds.includes(option.parentId || '')
+  );
 
+  return (
+    <Card withBorder radius="lg" p="md" h="fit-content">
+      <Stack gap="md">
+        <div>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+            Filters
+          </Text>
+          <Text fw={700}>Reporting scope</Text>
+        </div>
 
-    if (!items || !Array.isArray(items)) {
-        return null;
-    }
+        <Select
+          label="Platform"
+          placeholder="All platforms"
+          searchable
+          clearable
+          value={query.platformIntegrationId}
+          data={filterOptions.platforms.map((option) => ({
+            value: option.id,
+            label: option.label,
+          }))}
+          onChange={(value) => {
+            onUpdate((params) => {
+              if (!value) {
+                params.delete('platform_integration_id');
+              } else {
+                params.set('platform_integration_id', value);
+              }
 
-    const filtered = items.filter((item) =>
-        item.name?.toLowerCase().includes(filter.toLowerCase())
-    );
+              params.delete('ad_account_id');
+              params.delete('campaign_id');
+              params.delete('adset_id');
+              params.delete('ad_id');
+            });
+          }}
+        />
 
-    const selectedId = searchParams.get("campaign_id") || '';
+        <MultiSelect
+          label="Ad accounts"
+          placeholder="All ad accounts"
+          searchable
+          value={query.adAccountIds}
+          data={adAccountOptions.map((option) => ({
+            value: option.id,
+            label: option.label,
+          }))}
+          onChange={(value) => {
+            onUpdate((params) => {
+              if (value.length === 0) {
+                params.delete('ad_account_id');
+              } else {
+                params.set('ad_account_id', value.join(','));
+              }
 
-    const handleSelect = (id: string) => {
-        const params = new URLSearchParams(searchParams.toString());
-        if (selectedId === id) {
-            params.delete(paramKey);
-        } else {
-            params.set(paramKey, id);
-        }
-        router.push(`?${params.toString()}`);
-    };
+              params.delete('campaign_id');
+              params.delete('adset_id');
+              params.delete('ad_id');
+            });
+          }}
+        />
 
-    // Come back to fix
-    const handleBack = () => {
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete(paramKey);
-        router.push(`?${params.toString()}`);
-    };
+        <MultiSelect
+          label="Campaigns"
+          placeholder="All campaigns"
+          searchable
+          value={query.campaignIds}
+          data={campaignOptions.map((option) => ({
+            value: option.id,
+            label: option.label,
+          }))}
+          onChange={(value) => {
+            onUpdate((params) => {
+              if (value.length === 0) {
+                params.delete('campaign_id');
+              } else {
+                params.set('campaign_id', value.join(','));
+              }
 
+              params.delete('adset_id');
+              params.delete('ad_id');
+            });
+          }}
+        />
 
-    return (
-        <Box
-            style={{
-                width: 220,
-                minHeight: '100vh',
-                borderRight: `1px solid ${theme.colors.gray[3]}`,
-                padding: theme.spacing.sm,
-                zIndex: 100,
-                background: 'linear-gradient(180deg, rgba(15,23,42,0.02), rgba(14,165,233,0.04))',
-            }}
-        >
-            {/* Back Button */}
-            <Button
-                variant="subtle"
-                size="sm"
-                mb="md"
-                fullWidth
-                onClick={handleBack}
-                disabled={!selectedId}
-                radius="md"
-            >
-                Back
-            </Button>
+        <MultiSelect
+          label="Ad sets"
+          placeholder="All ad sets"
+          searchable
+          value={query.adsetIds}
+          data={adsetOptions.map((option) => ({
+            value: option.id,
+            label: option.label,
+          }))}
+          onChange={(value) => {
+            onUpdate((params) => {
+              if (value.length === 0) {
+                params.delete('adset_id');
+              } else {
+                params.set('adset_id', value.join(','));
+              }
 
-            {/* Search */}
-            <TextInput
-                size="sm"
-                placeholder="Search…"
-                leftSection={<IconSearch size={16} />}
-                mb="sm"
-                value={filter}
-                onChange={(e) => setFilter(e.currentTarget.value)}
-                radius="md"
-            />
+              params.delete('ad_id');
+            });
+          }}
+        />
 
-            {/* List */}
-            <ScrollArea style={{ height: 'calc(100vh - 120px)' }}>
-                <Stack gap="xs">
-                    {filtered.map((item) => (
-                        <Tooltip label={item.name} withArrow key={item.id} position="right">
-                            <Box
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    padding: '6px 10px',
-                                    borderRadius: 10,
-                                    background: selectedId === item.id
-                                        ? theme.colors.blue[0]
-                                        : 'rgba(255,255,255,0.65)',
-                                    transition: 'background 0.15s',
-                                    cursor: 'pointer',
-                                    border: `1px solid ${theme.colors.gray[2]}`,
-                                }}
-                                onClick={() => handleSelect(item.id)}
-                            >
-                                <Checkbox
-                                    checked={selectedId === item.id}
-                                    onChange={() => handleSelect(item.id)}
-                                    mr={6}
-                                    tabIndex={-1}
-                                    style={{ pointerEvents: 'none' }}
-                                />
-                                <Text
-                                    size="sm"
-                                    style={{
-                                        color: theme.colors.gray[9],
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                        flex: 1,
-                                    }}
-                                >
-                                    {item.name}
-                                </Text>
-                            </Box>
-                        </Tooltip>
-                    ))}
-                    {filtered.length === 0 && (
-                        <Text size="sm" c="dimmed" ta="center">
-                            No campaigns found
-                        </Text>
-                    )}
-                </Stack>
-            </ScrollArea>
-        </Box>
-    );
+        <MultiSelect
+          label="Ads"
+          placeholder="All ads"
+          searchable
+          value={query.adIds}
+          data={adOptions.map((option) => ({
+            value: option.id,
+            label: option.label,
+          }))}
+          onChange={(value) => {
+            onUpdate((params) => {
+              if (value.length === 0) {
+                params.delete('ad_id');
+              } else {
+                params.set('ad_id', value.join(','));
+              }
+            });
+          }}
+        />
+      </Stack>
+    </Card>
+  );
 }
