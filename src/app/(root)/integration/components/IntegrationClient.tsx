@@ -42,6 +42,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { getPlatformIcon } from '@/components/utils/utils';
+import { formatRetryDelay } from '@/lib/shared';
 import type { IntegrationStatus } from '@/lib/shared/types/integrations';
 
 type Platform = {
@@ -171,19 +172,28 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms }) => {
   const handleRefreshConnections = async () => {
     setRefreshing(true);
     try {
-      const response = await fetch('/api/integrations/refresh', {
+      const response = await fetch('/api/sync/refresh', {
         method: 'POST',
       });
+      const result = (await response.json()) as {
+        success?: boolean;
+        message?: string;
+        retryAfterMs?: number;
+      };
 
-      if (!response.ok) {
-        throw new Error('Failed to refresh integrations');
+      if (!response.ok || !result.success) {
+        if (response.status === 429) {
+          throw new Error(result.message || formatRetryDelay(result.retryAfterMs));
+        }
+
+        throw new Error(result.message || 'Failed to refresh sync');
       }
 
-      toast.success('Connections refreshed successfully.');
+      toast.success(result.message || 'Sync completed successfully.');
       router.refresh();
     } catch (error) {
       console.error('Error refreshing connections:', error);
-      toast.error('Failed to refresh connections.');
+      toast.error(error instanceof Error ? error.message : 'Failed to refresh sync.');
     } finally {
       setRefreshing(false);
     }
@@ -213,7 +223,7 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms }) => {
               onClick={handleRefreshConnections}
               loading={refreshing}
             >
-              Refresh Connections
+              Sync Data
             </Button>
             <Button leftSection={<IconPlus size={16} />} variant="outline">
               Request New Integration

@@ -11,12 +11,11 @@ import {
   consumeOAuthState,
   getBaseUrl,
   markIntegrationError,
-  markIntegrationHealthy,
   resolvePlatformByKey,
   sanitizeReturnTo,
-  syncMetaAdAccountsSnapshot,
   upsertPlatformIntegration,
 } from '@/lib/server/integrations/service';
+import { syncBusinessPlatform } from '@/lib/server/sync';
 import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integrations';
 
 function toSupportedPlatform(platform: string): SupportedIntegrationPlatform | null {
@@ -104,13 +103,11 @@ export async function GET(
       },
     });
 
-    await syncMetaAdAccountsSnapshot(supabase, {
+    await syncBusinessPlatform({
       businessId: businessContext.businessId,
       platformId: integrationPlatform.id,
-      accessToken: token.access_token,
+      trigger: 'integration',
     });
-
-    await markIntegrationHealthy(supabase, integrationId);
 
     return redirectWithStatus(request.url, returnTo, platformKey, 'connected');
   } catch (error) {

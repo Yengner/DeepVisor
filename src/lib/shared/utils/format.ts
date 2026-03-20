@@ -34,3 +34,19 @@ export function asRecord(value: unknown): Record<string, unknown> {
 
   return value as Record<string, unknown>;
 }
+
+export function formatRetryDelay(retryAfterMs: number | undefined): string {
+  if (!retryAfterMs || retryAfterMs <= 0) {
+    return 'Please try again shortly.';
+  }
+
+  const totalSeconds = Math.max(1, Math.ceil(retryAfterMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  if (minutes > 0) {
+    return `Try again in ${minutes}m ${seconds}s.`;
+  }
+
+  return `Try again in ${seconds}s.`;
+}

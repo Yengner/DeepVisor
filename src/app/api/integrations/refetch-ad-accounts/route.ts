@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/server/supabase/admin';
-import { refreshBusinessAdAccounts } from '@/lib/server/integrations/service';
+import { syncConnectedBusinessPlatforms } from '@/lib/server/sync';
 import type {
   RefetchAdAccountsResponse,
   SupportedIntegrationPlatform,
@@ -56,8 +56,8 @@ function assertAuthorized(request: NextRequest): NextResponse | null {
   return null;
 }
 
-function normalizePlatform(value: unknown): SupportedIntegrationPlatform {
-  return value === 'meta' ? 'meta' : 'meta';
+function normalizePlatform(value: unknown): SupportedIntegrationPlatform | undefined {
+  return value === 'meta' ? 'meta' : undefined;
 }
 
 export async function POST(request: NextRequest) {
@@ -105,17 +105,21 @@ export async function POST(request: NextRequest) {
     }> = [];
 
     for (const businessId of businessIds) {
-      const summary = await refreshBusinessAdAccounts(supabase, { businessId, platform });
+      const summary = await syncConnectedBusinessPlatforms({
+        businessId,
+        trigger: 'cron',
+        platformKey: platform,
+      });
 
-      refreshedIntegrations += summary.refreshedCount;
+      refreshedIntegrations += summary.successCount;
       failedIntegrations += summary.failedCount;
-      syncedAdAccounts += summary.syncedAccountCount;
+      syncedAdAccounts += summary.syncedAdAccounts;
 
       results.push({
         businessId,
-        refreshedIntegrations: summary.refreshedCount,
+        refreshedIntegrations: summary.successCount,
         failedIntegrations: summary.failedCount,
-        syncedAdAccounts: summary.syncedAccountCount,
+        syncedAdAccounts: summary.syncedAdAccounts,
       });
     }
 

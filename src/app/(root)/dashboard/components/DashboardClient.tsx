@@ -3,6 +3,7 @@
 import '@mantine/charts/styles.css';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { LineChart } from '@mantine/charts';
 import {
@@ -33,6 +34,7 @@ import {
   IconTarget,
   IconUsers,
 } from '@tabler/icons-react';
+import { formatRetryDelay } from '@/lib/shared';
 import type { DashboardPayload, DashboardState } from '../types';
 
 type DashboardClientProps = {
@@ -146,6 +148,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+  const router = useRouter();
 
   const stateMeta = stateContent(payload.state);
   const selectedMetrics = payload.adAccount?.aggregated_metrics ?? null;
@@ -195,25 +198,35 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     setRefreshFeedback(null);
 
     try {
-      const response = await fetch('/api/integrations/refresh', { method: 'POST' });
+      const response = await fetch('/api/sync/refresh', { method: 'POST' });
       const result = (await response.json()) as {
         success?: boolean;
         refreshedCount?: number;
         failedCount?: number;
+        message?: string;
+        retryAfterMs?: number;
       };
 
       if (!response.ok || !result.success) {
-        throw new Error('Refresh failed');
+        if (response.status === 429) {
+          throw new Error(result.message || formatRetryDelay(result.retryAfterMs));
+        }
+
+        throw new Error(result.message || 'Refresh failed');
       }
 
+      router.refresh();
       setRefreshFeedback({
         type: 'success',
-        message: `Refresh completed: ${result.refreshedCount ?? 0} updated, ${result.failedCount ?? 0} failed.`,
+        message: `Sync completed: ${result.refreshedCount ?? 0} updated, ${result.failedCount ?? 0} failed.`,
       });
-    } catch {
+    } catch (error) {
       setRefreshFeedback({
         type: 'error',
-        message: 'Refresh failed. Check integration status and try again.',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Sync failed. Check integration status and try again.',
       });
     } finally {
       setRefreshing(false);
@@ -315,7 +328,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                   variant="light"
                   color="blue"
                 >
-                  Refresh snapshot
+                  Sync now
                 </Button>
               </Group>
             </Stack>
@@ -604,7 +617,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                     color="teal"
                     fullWidth
                   >
-                    Refresh integrations
+                    Sync now
                   </Button>
                   <Text size="xs" c="dimmed">
                     If no ad account is selected, choose one from the top bar to unlock account-level KPI and trend
