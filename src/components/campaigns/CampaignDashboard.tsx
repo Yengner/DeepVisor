@@ -12,7 +12,7 @@ import AdSetTable from './AdSetTable';
 import AdsTable from './AdsTable';
 import CampaignStats from './CampaignStats';
 import { EmptyCampaignState } from './EmptyStates';
-import { getPlatformIcon } from '@/utils/utils';
+import { getPlatformIcon } from '@/components/utils/utils';
 import type { FormattedCampaign } from '@/app/(root)/campaigns/page';
 import { fetchAdSetsForCampaign, fetchAdsForAdset } from '@/lib/server/data/queries/components.query';
 

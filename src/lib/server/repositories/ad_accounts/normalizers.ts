@@ -1,18 +1,9 @@
+import { asNumber, asRecord } from '@/lib/shared';
 import type {
   AdAccountAggregatedMetrics,
   AdAccountTimeIncrementMetrics,
   AdAccountTimeIncrementPoint,
-  PlatformIntegrationStatus,
-  SupportedPlatformVendor,
 } from '../types';
-
-const SUPPORTED_VENDORS = new Set<SupportedPlatformVendor>(['meta', 'google', 'tiktok']);
-const SUPPORTED_INTEGRATION_STATUSES = new Set<PlatformIntegrationStatus>([
-  'connected',
-  'disconnected',
-  'needs_reauth',
-  'error',
-]);
 
 const ZERO_METRICS: AdAccountAggregatedMetrics = {
   spend: 0,
@@ -26,45 +17,6 @@ const ZERO_METRICS: AdAccountAggregatedMetrics = {
   cpc: 0,
   cpm: 0,
 };
-
-function asNumber(value: unknown): number {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    const parsed = Number.parseFloat(value);
-    if (Number.isFinite(parsed)) {
-      return parsed;
-    }
-  }
-
-  return 0;
-}
-
-export function asRecord(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {};
-  }
-
-  return value as Record<string, unknown>;
-}
-
-export function toSupportedVendor(value: unknown): SupportedPlatformVendor {
-  if (typeof value === 'string' && SUPPORTED_VENDORS.has(value as SupportedPlatformVendor)) {
-    return value as SupportedPlatformVendor;
-  }
-
-  return 'meta';
-}
-
-export function toIntegrationStatus(value: unknown): PlatformIntegrationStatus {
-  if (typeof value === 'string' && SUPPORTED_INTEGRATION_STATUSES.has(value as PlatformIntegrationStatus)) {
-    return value as PlatformIntegrationStatus;
-  }
-
-  return 'disconnected';
-}
 
 export function parseAggregatedMetrics(value: unknown): AdAccountAggregatedMetrics {
   const metrics = asRecord(value);

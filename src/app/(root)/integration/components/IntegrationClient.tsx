@@ -41,7 +41,7 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { getPlatformIcon } from '@/utils/utils';
+import { getPlatformIcon } from '@/components/utils/utils';
 import type { IntegrationStatus } from '@/lib/shared/types/integrations';
 
 type Platform = {

@@ -1,10 +1,8 @@
+import { asRecord } from '@/lib/shared';
+import { toIntegrationStatus } from '@/lib/server/integrations/normalizers';
 import { createSupabaseClient } from '@/lib/server/supabase/server';
 import type { PlatformDetails } from '../types';
-import {
-  asRecord,
-  toIntegrationStatus,
-  toSupportedVendor,
-} from '../ad_accounts/normalizers';
+import { toSupportedVendor } from './normalizers';
 
 type PlatformJoin = {
   id: string;

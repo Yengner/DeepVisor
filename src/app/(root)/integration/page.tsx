@@ -1,24 +1,10 @@
+import { asRecord, asString } from '@/lib/shared';
+import { toIntegrationStatus } from '@/lib/server/integrations/normalizers';
 import { createServerClient } from '@/lib/server/supabase/server';
 import IntegrationClient from './components/IntegrationClient';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import type { Database } from '@/lib/shared/types/supabase';
 import type { IntegrationStatus } from '@/lib/shared/types/integrations';
-
-function asString(value: unknown): string {
-  return typeof value === 'string' ? value : '';
-}
-
-function asObject(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  return value as Record<string, unknown>;
-}
-
-function asStatus(value: unknown): IntegrationStatus | null {
-  if (value === 'connected' || value === 'disconnected' || value === 'needs_reauth' || value === 'error') {
-    return value;
-  }
-  return null;
-}
 
 type PlatformRow = Pick<Database['public']['Tables']['platforms']['Row'], 'id' | 'key' | 'name' | 'api_info'>;
 type PlatformIntegrationRow = {
@@ -109,9 +95,9 @@ export default async function IntegrationPage() {
 
   const platformsWithIntegration = availablePlatforms.map((platform) => {
     const integration = integrationByPlatformId.get(platform.id);
-    const apiInfo = asObject(platform.api_info);
-    const integrationDetails = asObject(integration?.integration_details);
-    const status = asStatus(integration?.status) ?? asStatus(integrationDetails.status) ?? 'disconnected';
+    const apiInfo = asRecord(platform.api_info);
+    const integrationDetails = asRecord(integration?.integration_details);
+    const status = toIntegrationStatus(integration?.status ?? integrationDetails.status);
 
     return {
       id: platform.id,
