@@ -18,6 +18,9 @@ export interface RefreshIntegrationsResponse {
   success: boolean;
   refreshedCount: number;
   failedCount: number;
+  message?: string;
+  retryAfterMs?: number;
+  nextAllowedAt?: string;
 }
 
 export interface RefetchAdAccountsResult {

@@ -53,10 +53,10 @@ export default async function MainDashboardPage() {
     : false;
 
   let campaignSnapshot: DashboardCampaignSnapshotItem[] = [];
-  if (adAccount?.ad_account_id && platformConnected) {
+  if (adAccount?.id && platformConnected) {
     try {
       campaignSnapshot = normalizeCampaignSnapshot(
-        await getAdAccountTopCampaigns(adAccount.ad_account_id)
+        await getAdAccountTopCampaigns(adAccount.id)
       );
     } catch (error) {
       console.error('Failed to fetch dashboard campaign snapshot:', error);

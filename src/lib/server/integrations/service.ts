@@ -427,6 +427,10 @@ export async function resolveIntegrationAccessToken(
   return tokenOrSecretId;
 }
 
+/**
+ * @deprecated Prefer `syncConnectedBusinessPlatforms` / `syncBusinessPlatform`
+ * from `@/lib/server/sync` for business-platform sync orchestration.
+ */
 export async function refreshBusinessAdAccounts(
   supabase: AppSupabaseClient,
   input: { businessId: string; platform?: SupportedIntegrationPlatform }
@@ -487,6 +491,9 @@ export async function refreshBusinessAdAccounts(
   };
 }
 
+/**
+ * @deprecated Prefer `syncBusinessPlatform` from `@/lib/server/sync`.
+ */
 export async function syncMetaAdAccountsSnapshot(
   supabase: AppSupabaseClient,
   input: {
@@ -555,20 +562,25 @@ export async function markIntegrationHealthy(
   supabase: AppSupabaseClient,
   integrationId: string
 ): Promise<void> {
+  await markIntegrationSynced(supabase, integrationId);
+}
+
+export async function markIntegrationSynced(
+  supabase: AppSupabaseClient,
+  integrationId: string
+): Promise<void> {
   const now = new Date().toISOString();
   await patchIntegrationDetails(
     supabase,
     integrationId,
     {
       status: 'connected',
-      connected_at: now,
       disconnected_at: null,
       last_synced_at: now,
       last_error: null,
     },
     {
       status: 'connected',
-      connected_at: now,
       disconnected_at: null,
       last_synced_at: now,
       last_error: null,

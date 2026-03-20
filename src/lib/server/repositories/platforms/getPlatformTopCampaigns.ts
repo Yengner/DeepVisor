@@ -1,5 +1,5 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
-import { deriveCampaignResultMetrics } from '../campaigns/normalizers';
+import { getCampaignSummaries } from '../campaigns/getCampaignSummaries';
 import type { CampaignMetric } from '../types';
 
 /**
@@ -32,7 +32,7 @@ export async function getPlatformsTopCampaigns(
 
     const { data: adAccounts, error: adAccountsError } = await supabase
       .from('ad_accounts')
-      .select('external_account_id, name')
+      .select('id, name')
       .eq('business_id', businessId)
       .eq('platform_id', integration.platform_id);
 
@@ -46,65 +46,36 @@ export async function getPlatformsTopCampaigns(
       return [];
     }
 
-    const campaignMetrics: CampaignMetric[] = [];
+    const adAccountNameById = new Map(
+      (adAccounts ?? []).map((adAccount) => [adAccount.id, adAccount.name ?? 'Unknown account'])
+    );
+    const campaigns = await getCampaignSummaries({
+      adAccountIds: (adAccounts ?? []).map((adAccount) => adAccount.id),
+      limit: 3,
+    });
 
-    for (const adAccount of adAccounts) {
-      const { data: campaigns, error: campaignError } = await supabase
-        .from('campaigns_metrics')
-        .select(`
-                    ad_account_id,
-                    campaign_id,
-                    name,
-                    objective,
-                    leads,
-                    clicks,
-                    messages,
-                    spend,
-                    link_clicks,
-                    status,
-                    impressions,
-                    ctr,
-                    cpc,
-                    cpm
-                `)
-        .eq('ad_account_id', adAccount.external_account_id);
-
-      if (campaignError) {
-        console.error(
-          `Error fetching campaigns for ad account ${adAccount.name}:`,
-          campaignError.message
-        );
-        continue;
-      }
-
-      if (campaigns) {
-        campaignMetrics.push(
-          ...campaigns.map((campaign) => ({
-            ad_account_id: campaign.ad_account_id,
-            campaign_id: campaign.campaign_id,
-            campaign_name: campaign.name,
-            leads: campaign.leads || 0,
-            clicks: campaign.clicks || 0,
-            messages: campaign.messages || 0,
-            spend: campaign.spend || 0,
-            link_clicks: campaign.link_clicks || 0,
-            status: campaign.status || 'UNKNOWN',
-            impressions: campaign.impressions || 0,
-            ctr: campaign.ctr || 0,
-            cpc: campaign.cpc || 0,
-            cpm: campaign.cpm || 0,
-            ad_account_name: adAccount.name,
-            ...deriveCampaignResultMetrics(campaign),
-          }))
-        );
-      }
-    }
-
-    const topCampaigns = campaignMetrics
-      .sort((a, b) => b.conversion - a.conversion)
-      .slice(0, 3);
-
-    return topCampaigns;
+    return campaigns.map(
+      (campaign) =>
+        ({
+          ad_account_id: campaign.adAccountId,
+          campaign_id: campaign.campaignId,
+          campaign_name: campaign.campaignName,
+          leads: campaign.leads,
+          clicks: campaign.clicks,
+          messages: campaign.messages,
+          spend: campaign.spend,
+          link_clicks: campaign.linkClicks,
+          conversion: campaign.conversion,
+          conversion_rate: campaign.conversionRate,
+          status: campaign.status ?? 'UNKNOWN',
+          impressions: campaign.impressions,
+          ctr: campaign.ctr,
+          cpc: campaign.cpc,
+          cpm: campaign.cpm,
+          cost_per_result: campaign.costPerResult,
+          ad_account_name: adAccountNameById.get(campaign.adAccountId) ?? 'Unknown account',
+        }) satisfies CampaignMetric
+    );
   } catch (error) {
     console.error('Error in getTopCampaignsForPlatform:', error);
     throw error;

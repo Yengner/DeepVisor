@@ -1,27 +1,61 @@
-import { createSupabaseClient } from "@/lib/server/supabase/server";
+import { createSupabaseClient } from '@/lib/server/supabase/server';
 
 export async function getCampaignsWithAdSetsAndAds(adAccountId: string) {
-    const supabase = await createSupabaseClient();
-    const { data, error } = await supabase
-        .from('campaigns_metrics')
-        .select(`
-                id,
-                name,
-                adset_metrics (
-                            id,
-                            name,
-                            ads_metrics (
-                                    id,
-                                    name
-                                    )
-                            )
-            `)
-        .eq('ad_account_id', adAccountId);
+  const supabase = await createSupabaseClient();
+  const [{ data: campaigns, error: campaignsError }, { data: adsets, error: adsetsError }, { data: ads, error: adsError }] =
+    await Promise.all([
+      supabase
+        .from('campaign_dims')
+        .select('external_id, name')
+        .eq('ad_account_id', adAccountId)
+        .order('name', { ascending: true }),
+      supabase
+        .from('adset_dims')
+        .select('external_id, campaign_external_id, name')
+        .eq('ad_account_id', adAccountId)
+        .order('name', { ascending: true }),
+      supabase
+        .from('ad_dims')
+        .select('external_id, adset_external_id, name')
+        .eq('ad_account_id', adAccountId)
+        .order('name', { ascending: true }),
+    ]);
 
-    if (error) {
-        console.error('Supabase fetch error:', error);
-        throw error;
-    }
+  if (campaignsError || adsetsError || adsError) {
+    const error = campaignsError || adsetsError || adsError;
+    console.error('Supabase fetch error:', error);
+    throw error;
+  }
 
-    return data;
+  const adsByAdsetExternalId = new Map<string, { id: string; name: string }[]>();
+
+  for (const ad of ads ?? []) {
+    const items = adsByAdsetExternalId.get(ad.adset_external_id) ?? [];
+    items.push({
+      id: ad.external_id,
+      name: ad.name || 'Unnamed ad',
+    });
+    adsByAdsetExternalId.set(ad.adset_external_id, items);
+  }
+
+  const adsetsByCampaignExternalId = new Map<
+    string,
+    { id: string; name: string; ads_metrics: { id: string; name: string }[] }[]
+  >();
+
+  for (const adset of adsets ?? []) {
+    const items = adsetsByCampaignExternalId.get(adset.campaign_external_id) ?? [];
+    items.push({
+      id: adset.external_id,
+      name: adset.name || 'Unnamed ad set',
+      ads_metrics: adsByAdsetExternalId.get(adset.external_id) ?? [],
+    });
+    adsetsByCampaignExternalId.set(adset.campaign_external_id, items);
+  }
+
+  return (campaigns ?? []).map((campaign) => ({
+    id: campaign.external_id,
+    name: campaign.name || 'Unnamed campaign',
+    adset_metrics: adsetsByCampaignExternalId.get(campaign.external_id) ?? [],
+  }));
 }

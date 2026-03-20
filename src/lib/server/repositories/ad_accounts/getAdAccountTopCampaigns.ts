@@ -1,37 +1,39 @@
-import { createSupabaseClient } from '@/lib/server/supabase/server';
-import { deriveCampaignResultMetrics } from '../campaigns/normalizers';
+import { getCampaignSummaries } from '../campaigns/getCampaignSummaries';
 
 /**
  * Fetches top campaigns for a specific ad account
- * @param adAccountId - The ID of the ad account to fetch campaigns for
+ * @param adAccountId - The internal ad account UUID to fetch campaigns for
  * @returns An array of the top 5 campaigns for the ad account
  */
 export async function getAdAccountTopCampaigns(adAccountId: string) {
-  const supabase = await createSupabaseClient();
-
   try {
-    const { data, error } = await supabase
-      .from('campaigns_metrics')
-      .select('*')
-      .eq('ad_account_id', adAccountId)
-      .order('spend', { ascending: false })
-      .limit(5);
+    const campaigns = await getCampaignSummaries({
+      adAccountIds: [adAccountId],
+      limit: 5,
+    });
 
-    if (error) {
-      console.error('Error fetching top campaigns for ad account:', error.message);
-      throw new Error('Failed to fetch top campaigns for ad account');
-    }
-
-    const processedCampaigns = (data ?? []).map((campaign) => ({
-      ...campaign,
-      ...deriveCampaignResultMetrics(campaign),
+    return campaigns.map((campaign) => ({
+      id: campaign.campaignId,
+      ad_account_id: campaign.adAccountId,
+      campaign_id: campaign.campaignId,
+      name: campaign.campaignName,
+      campaign_name: campaign.campaignName,
+      objective: campaign.objective,
+      status: campaign.status ?? 'UNKNOWN',
+      spend: campaign.spend,
+      reach: campaign.reach,
+      impressions: campaign.impressions,
+      clicks: campaign.clicks,
+      link_clicks: campaign.linkClicks,
+      messages: campaign.messages,
+      leads: campaign.leads,
+      ctr: campaign.ctr,
+      cpc: campaign.cpc,
+      cpm: campaign.cpm,
+      conversion: campaign.conversion,
+      conversion_rate: campaign.conversionRate,
+      cost_per_result: campaign.costPerResult,
     }));
-
-    const topCampaigns = processedCampaigns
-      .sort((a, b) => b.conversion - a.conversion)
-      .slice(0, 5);
-
-    return topCampaigns;
   } catch (error) {
     console.error('Error in getTopAdAccountCampaigns Function:', error);
     throw error;

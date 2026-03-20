@@ -4,6 +4,43 @@ import { AdAccount, FacebookAdsApi } from "@/lib/server/sdk/client";
 import { AdAccountDetails, AdAccountIncrementMetrics, AdAccountWithMetrics, InsightEntry } from "../types";
 import { formatIncrementMetrics, formatMaximumMetrics, getDateRangeForLastDays } from "../utils";
 
+type MetaAdAccountsResponse = {
+    data?: AdAccountDetails[];
+    paging?: {
+        next?: string;
+    };
+    error?: {
+        message?: string;
+    };
+};
+
+async function fetchAllMetaAdAccountDetails(accessToken: string): Promise<AdAccountDetails[]> {
+    let nextUrl: URL | null = new URL('https://graph.facebook.com/v23.0/me/adaccounts');
+    nextUrl.searchParams.set('fields', [
+        AdAccount.Fields.id,
+        AdAccount.Fields.name,
+        AdAccount.Fields.account_status
+    ].join(','));
+    nextUrl.searchParams.set('limit', '200');
+    nextUrl.searchParams.set('access_token', accessToken);
+
+    const rows: AdAccountDetails[] = [];
+
+    while (nextUrl) {
+        const response = await fetch(nextUrl);
+        if (!response.ok) {
+            const body = (await response.json().catch(() => ({}))) as MetaAdAccountsResponse;
+            throw new Error(body.error?.message || 'Failed to fetch Meta ad accounts');
+        }
+
+        const body = (await response.json()) as MetaAdAccountsResponse;
+        rows.push(...(body.data || []));
+        nextUrl = body.paging?.next ? new URL(body.paging.next) : null;
+    }
+
+    return rows;
+}
+
 /**
  * Fetch Meta ad accounts details and metrics for a specific ad account
  * @param withMetrics - Whether to fetch metrics or not
@@ -16,7 +53,7 @@ export async function fetchMetaAdAccounts(
     accessToken: string,
     adAccountId?: string
 ): Promise<AdAccountWithMetrics | AdAccountWithMetrics[] | AdAccountDetails[]> {
-    const api = FacebookAdsApi.init(accessToken);
+    FacebookAdsApi.init(accessToken);
 
     if (adAccountId) {
         const account = await new AdAccount(adAccountId).read([
@@ -31,12 +68,7 @@ export async function fetchMetaAdAccounts(
         };
     }
 
-    const response = await api.call('GET', ['me', 'adaccounts'], {
-        fields: [AdAccount.Fields.id, AdAccount.Fields.name, AdAccount.Fields.account_status],
-        limit: 10,
-    });
-    console.log('Fetched ad accounts from Meta API:', { response }); // Debug log
-    const adAccounts: AdAccountDetails[] = response.data;
+    const adAccounts = await fetchAllMetaAdAccountDetails(accessToken);
 
     if (!withMetrics) {
         return adAccounts;
