@@ -102,6 +102,65 @@ export type Database = {
           },
         ]
       }
+      ad_accounts_performance_daily: {
+        Row: {
+          ad_account_id: string
+          clicks: number
+          created_at: string | null
+          currency_code: string | null
+          day: string
+          impressions: number
+          inline_link_clicks: number
+          leads: number
+          messages: number
+          reach: number
+          source: string
+          spend: number
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ad_account_id: string
+          clicks?: number
+          created_at?: string | null
+          currency_code?: string | null
+          day: string
+          impressions?: number
+          inline_link_clicks?: number
+          leads?: number
+          messages?: number
+          reach?: number
+          source?: string
+          spend?: number
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ad_account_id?: string
+          clicks?: number
+          created_at?: string | null
+          currency_code?: string | null
+          day?: string
+          impressions?: number
+          inline_link_clicks?: number
+          leads?: number
+          messages?: number
+          reach?: number
+          source?: string
+          spend?: number
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_accounts_performance_daily_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_dims: {
         Row: {
           ad_account_id: string

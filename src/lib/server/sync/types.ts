@@ -7,6 +7,7 @@ export interface BusinessPlatformSyncCounts {
   campaignDims: number;
   adsetDims: number;
   adDims: number;
+  adAccountPerformanceRows: number;
   campaignPerformanceRows: number;
   adsetPerformanceRows: number;
   adPerformanceRows: number;
