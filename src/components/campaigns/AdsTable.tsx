@@ -1,35 +1,34 @@
 'use client';
 
+import type { AdLifetimeRow } from '@/lib/server/data';
+import { asRecord, asString } from '@/lib/shared/utils/format';
 import {
-  Table,
-  Group,
-  Text,
-  Switch,
-  Loader,
-  Paper,
-  Badge,
   ActionIcon,
-  Menu,
-  Divider,
-  Skeleton,
   Avatar,
+  Badge,
   Box,
-  Tooltip,
-  ScrollArea,
   Button,
+  Divider,
+  Group,
+  Loader,
+  Menu,
+  Paper,
+  ScrollArea,
+  Skeleton,
+  Switch,
+  Table,
+  Text,
+  Tooltip,
 } from '@mantine/core';
 import {
-  IconDots,
-  IconPencil,
-  IconTrash,
   IconChartBar,
-  IconPhoto,
+  IconDots,
   IconEye,
+  IconPencil,
+  IconPhoto,
   IconPlus,
+  IconTrash,
 } from '@tabler/icons-react';
-import useSWR from 'swr';
-import { fetcher } from '@/utils/fetcher';
-import React from 'react';
 
 const BG = 'var(--mantine-color-body)';
 const BORDER = 'var(--mantine-color-gray-3)';
@@ -39,30 +38,34 @@ const RIGHT_COL_WIDTH = 24;
 
 const fmt$ = (n?: number) => `$${Number(n || 0).toFixed(2)}`;
 const fmtPct = (n?: number) => {
-  if (n == null) return '0%';
-  const val = n <= 1 ? n * 100 : n;
-  return `${val.toFixed(2)}%`;
+  if (n == null) {
+    return '0%';
+  }
+
+  const value = n <= 1 ? n * 100 : n;
+  return `${value.toFixed(2)}%`;
 };
+
+interface AdsTableProps {
+  adsetId: string;
+  ads?: AdLifetimeRow[];
+  loading?: boolean;
+  platformColor?: string;
+}
 
 export default function AdsTable({
   adsetId,
-  ads,
+  ads = [],
   loading = false,
   platformColor = 'dark',
-
-}: {
-  adsetId: string;
-  ads: any[];
-  loading?: boolean;
-  platformColor?: string;
-
-}) {
+}: AdsTableProps) {
   const maxRowsBeforeScroll = 12;
   const headerH = 44;
   const rowH = 48;
-  const rows = Array.isArray(ads) ? ads.length : 0;
+  const rows = ads.length;
   const tableHeight = Math.min(rows, maxRowsBeforeScroll) * rowH + headerH + 8;
   const rowBg = `var(--mantine-color-${platformColor}-1)`;
+
   const handleAddAd = () => {
     alert('Add Ad for ad set: ' + adsetId);
   };
@@ -83,7 +86,14 @@ export default function AdsTable({
 
   return (
     <>
-      <Group justify="space-between" align="center" px="md" py="sm" mb="sm" style={{ background: '#f8fafc', borderRadius: 8 }}>
+      <Group
+        justify="space-between"
+        align="center"
+        px="md"
+        py="sm"
+        mb="sm"
+        style={{ background: '#f8fafc', borderRadius: 8 }}
+      >
         <Text size="lg" fw={600}>Ads</Text>
         <Button
           leftSection={<IconPlus size={18} />}
@@ -100,7 +110,7 @@ export default function AdsTable({
       <ScrollArea
         h={rows > maxRowsBeforeScroll ? tableHeight : undefined}
         type="always"
-        offsetScrollbars='x'
+        offsetScrollbars="x"
         style={{ borderRadius: 8 }}
       >
         <Table
@@ -129,8 +139,6 @@ export default function AdsTable({
               <Table.Th style={{ whiteSpace: 'nowrap' }}>Link Clicks</Table.Th>
               <Table.Th style={{ whiteSpace: 'nowrap' }}>Leads</Table.Th>
               <Table.Th style={{ whiteSpace: 'nowrap' }}>Messages</Table.Th>
-
-              {/* sticky right header (actions) */}
               <Table.Th
                 style={{
                   width: RIGHT_COL_WIDTH,
@@ -147,19 +155,17 @@ export default function AdsTable({
           </Table.Thead>
 
           <Table.Tbody>
-            {!ads || ads.length === 0 ? (
+            {ads.length === 0 ? (
               <Table.Tr>
                 <Table.Td colSpan={20}>
-                  <Text ta="center" py="md" c="dimmed">No ads found for this ad set</Text>
+                  <Text ta="center" py="md" c="dimmed">
+                    No ads found for this ad set
+                  </Text>
                 </Table.Td>
               </Table.Tr>
             ) : (
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ads.map((ad: any) => {
+              ads.map((ad) => {
                 const id = ad.ad_id ?? ad.id;
-                const name = ad.name ?? '—';
-                const isActive = (ad.status || '').toUpperCase() === 'ACTIVE';
-
                 const spend = Number(ad.spend || 0);
                 const clicks = Number(ad.clicks || 0);
                 const impressions = Number(ad.impressions || 0);
@@ -167,29 +173,21 @@ export default function AdsTable({
                 const linkClicks = Number(ad.link_clicks || 0);
                 const leads = Number(ad.leads || 0);
                 const messages = Number(ad.messages || 0);
-
-                const ctr = ad.ctr != null ? Number(ad.ctr) : null;
-                const cpc = ad.cpc != null ? Number(ad.cpc) : null;
-                const cpm = ad.cpm != null ? Number(ad.cpm) : null;
-
                 const conversions = leads + messages;
-                const results = conversions > 0 ? `${conversions} ${conversions === 1 ? 'Result' : 'Results'}` : '0 Results';
-                const costPerResult = conversions > 0 ? fmt$(spend / conversions) : '$0.00';
-
+                const raw = asRecord(ad.raw_data);
+                const creative = asRecord(raw.creative);
                 const previewImage =
-                  ad.raw_data?.creative?.image_url ||
-                  ad.raw_data?.creative?.video_url ||
-                  ad.raw_data?.image_url ||
+                  asString(creative.image_url) ||
+                  asString(creative.video_url) ||
+                  asString(raw.image_url) ||
                   null;
 
                 return (
                   <Table.Tr key={id} style={{ cursor: 'pointer' }}>
                     <Table.Td />
-
-                    {/* Name (truncate + tooltip) */}
                     <Table.Td style={{ width: 340, maxWidth: 340 }}>
                       <Tooltip
-                        label={name}
+                        label={ad.name ?? '—'}
                         multiline
                         withArrow
                         withinPortal
@@ -202,12 +200,10 @@ export default function AdsTable({
                           fw={500}
                           style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                         >
-                          {name}
+                          {ad.name ?? '—'}
                         </Text>
                       </Tooltip>
                     </Table.Td>
-
-                    {/* Preview */}
                     <Table.Td style={{ textAlign: 'center' }}>
                       <Box w={40} mx="auto">
                         <Avatar src={previewImage} radius="sm">
@@ -215,32 +211,27 @@ export default function AdsTable({
                         </Avatar>
                       </Box>
                     </Table.Td>
-
-                    {/* Status + toggle (read-only here; wire later if needed) */}
                     <Table.Td>
-                      <Group gap="xs" wrap="nowrap" onClick={(e) => e.stopPropagation()}>
+                      <Group gap="xs" wrap="nowrap" onClick={(event) => event.stopPropagation()}>
                         <Switch
-                          checked={isActive}
+                          checked={(ad.status || '').toUpperCase() === 'ACTIVE'}
                           size="sm"
                           onLabel="ON"
                           offLabel="OFF"
                           color="green"
                           readOnly
                         />
-                        <Badge color={isActive ? 'green' : 'gray'} variant="light">
+                        <Badge color={(ad.status || '').toUpperCase() === 'ACTIVE' ? 'green' : 'gray'} variant="light">
                           {ad.status || '—'}
                         </Badge>
                       </Group>
                     </Table.Td>
-
                     <Table.Td>{fmt$(spend)}</Table.Td>
-                    <Table.Td>{results}</Table.Td>
-                    <Table.Td>{costPerResult}</Table.Td>
-
-                    <Table.Td>{fmtPct(ctr ?? 0)}</Table.Td>
-                    <Table.Td>{cpc != null ? fmt$(cpc) : '—'}</Table.Td>
-                    <Table.Td>{cpm != null ? fmt$(cpm) : '—'}</Table.Td>
-
+                    <Table.Td>{conversions > 0 ? `${conversions} ${conversions === 1 ? 'Result' : 'Results'}` : '0 Results'}</Table.Td>
+                    <Table.Td>{conversions > 0 ? fmt$(spend / conversions) : '$0.00'}</Table.Td>
+                    <Table.Td>{fmtPct(ad.ctr != null ? Number(ad.ctr) : 0)}</Table.Td>
+                    <Table.Td>{ad.cpc != null ? fmt$(Number(ad.cpc)) : '—'}</Table.Td>
+                    <Table.Td>{ad.cpm != null ? fmt$(Number(ad.cpm)) : '—'}</Table.Td>
                     <Table.Td>{impressions.toLocaleString()}</Table.Td>
                     <Table.Td>{clicks.toLocaleString()}</Table.Td>
                     <Table.Td>{reach.toLocaleString()}</Table.Td>
@@ -248,7 +239,6 @@ export default function AdsTable({
                     <Table.Td>{leads.toLocaleString()}</Table.Td>
                     <Table.Td>{messages.toLocaleString()}</Table.Td>
 
-                    {/* sticky RIGHT actions cell */}
                     <Table.Td
                       style={{
                         width: RIGHT_COL_WIDTH,
@@ -259,7 +249,7 @@ export default function AdsTable({
                         background: rowBg || BG,
                         boxShadow: `inset 1px 0 0 ${BORDER}`,
                       }}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(event) => event.stopPropagation()}
                     >
                       <Group gap={8} justify="center">
                         {previewImage && (

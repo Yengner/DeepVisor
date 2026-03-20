@@ -51,6 +51,7 @@ export async function getPlatformsTopCampaigns(
     );
     const campaigns = await getCampaignSummaries({
       adAccountIds: (adAccounts ?? []).map((adAccount) => adAccount.id),
+      sort: 'performance',
       limit: 3,
     });
 

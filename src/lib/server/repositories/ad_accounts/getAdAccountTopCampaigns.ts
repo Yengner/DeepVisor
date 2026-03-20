@@ -9,6 +9,7 @@ export async function getAdAccountTopCampaigns(adAccountId: string) {
   try {
     const campaigns = await getCampaignSummaries({
       adAccountIds: [adAccountId],
+      sort: 'performance',
       limit: 5,
     });
 

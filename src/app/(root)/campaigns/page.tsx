@@ -9,10 +9,9 @@ import {
   getAdSetsLifetimeIncludingZeros,
   getAdsLifetimeIncludingZeros,
   getCampaignLifetimeIncludingZeros,
-  getCampaignReviewSummary,
   getPlatformDetails,
 } from '@/lib/server/data';
-import type { CampaignLifetimeRow } from '@/lib/server/data';
+import type { AdLifetimeRow, AdSetLifetimeRow, CampaignLifetimeRow } from '@/lib/server/data';
 
 interface AggregatedMetrics {
   spend: number; impressions: number; clicks: number; link_clicks: number; reach: number;
@@ -45,11 +44,6 @@ export interface FormattedCampaign {
   platform: string;
   accountName: string;
   ad_account_id: string;
-  review?: {
-    needsReview: boolean;
-    pendingCount: number;
-    lastDecisionId?: string | null;
-  };
 }
 
 export default async function CampaignPage({
@@ -57,8 +51,7 @@ export default async function CampaignPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const { user, businessId } = await getRequiredAppContext();
-  const userId = user.id;
+  const { businessId } = await getRequiredAppContext();
 
   const { selectedPlatformId, selectedAdAccountId } = await getCurrentSelection();
 
@@ -94,15 +87,13 @@ export default async function CampaignPage({
     cpm: adAccountDetails.aggregated_metrics?.cpm || 0,
   };
 
-  const [campaignsData, reviewSummary] = await Promise.all([
-    getCampaignLifetimeIncludingZeros(selectedAdAccountId, undefined, platformDetails.vendor),
-    getCampaignReviewSummary(selectedAdAccountId),
-  ]);
-
-  const { byId: reviewByCampaign } = reviewSummary;
+  const campaignsData = await getCampaignLifetimeIncludingZeros(
+    selectedAdAccountId,
+    undefined,
+    platformDetails.vendor
+  );
 
   const allCampaigns: FormattedCampaign[] = (campaignsData ?? []).map((c: CampaignLifetimeRow) => {
-    const review = reviewByCampaign[c.id];
     const totalResults = Number(c.leads || 0) + Number(c.messages || 0);
     const spendNum = Number(c.spend || 0);
 
@@ -117,7 +108,7 @@ export default async function CampaignPage({
       endDate: c.end_date || "No End Date",
       attribution: "7-day click or view",
       spend: spendNum,
-      results: totalResults > 0 ? `${totalResults} Leads` : "0 Leads",
+      results: totalResults > 0 ? `${totalResults} Results` : "0 Results",
       reach: Number(c.reach || 0),
       clicks: Number(c.clicks || 0),
       impressions: Number(c.impressions || 0),
@@ -132,13 +123,6 @@ export default async function CampaignPage({
       platform: platformDetails.vendor,
       accountName: adAccountDetails.name ?? "Unknown account",
       ad_account_id: adAccountDetails.ad_account_id,
-      review: review
-        ? {
-          needsReview: !!review.needs_review,
-          pendingCount: Number(review.actions_requiring_human || 0),
-          lastDecisionId: review.last_decision_id,
-        }
-        : { needsReview: false, pendingCount: 0, lastDecisionId: null },
     };
   });
 
@@ -158,8 +142,8 @@ export default async function CampaignPage({
     adsetId: adsetIds[0] ?? null,
   };
 
-  let initialAdSets: any[] | undefined;
-  let initialAds: any[] | undefined;
+  let initialAdSets: AdSetLifetimeRow[] | undefined;
+  let initialAds: AdLifetimeRow[] | undefined;
 
   if (initialSelection.tab === 'adsets' && initialSelection.campaignId) {
     initialAdSets = await getAdSetsLifetimeIncludingZeros(
@@ -180,7 +164,6 @@ export default async function CampaignPage({
       <Suspense fallback={<CampaignClientFallback />}>
         <CampaignDashboard
           campaigns={allCampaigns}
-          userId={userId as string}
           platform={{ id: platformDetails.id, name: platformDetails.vendor }}
           adAccountId={selectedAdAccountId}
           accountMetrics={accountMetrics}
