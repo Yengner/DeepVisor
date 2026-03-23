@@ -1,7 +1,7 @@
 "use server";
 
 import { ApiResponse, ErrorCode } from "@/lib/shared/types/api";
-import { createErrorResponse, createSuccessResponse } from "@/lib/shared/utils/responses";
+import { fail, ok } from "@/lib/shared/utils/responses";
 import { createSupabaseClient } from "@/lib/server/supabase/server";
 
 export interface MetaPage {
@@ -28,18 +28,16 @@ export async function getMetaPages({ platformId }: GetMetaPagesParams): Promise<
             .eq('platform_integration_id', platformId);
 
         if (error) {
-            const errorResponse = createErrorResponse(
-                ErrorCode.DATABASE_ERROR,
-                error.message,
-                "We couldn't load your Meta pages. Please try again.",
-                error
-            );
+            const errorResponse = fail(error.message, ErrorCode.DATABASE_ERROR, {
+                userMessage: "We couldn't load your Meta pages. Please try again.",
+                details: { platformId },
+            });
             console.log("Returning error response:", errorResponse);
             return errorResponse;
         }
 
         if (!data || data.length === 0) {
-            return createSuccessResponse([]);
+            return ok([]);
         }
 
 
@@ -50,13 +48,15 @@ export async function getMetaPages({ platformId }: GetMetaPagesParams): Promise<
             instagram_account_id: page.instagram_account_id,
         }));
 
-        return createSuccessResponse(pages);
+        return ok(pages);
     } catch (err) {
         console.error("Unexpected error fetching Meta pages:", err);
-        return createErrorResponse(
-            ErrorCode.UNKNOWN_ERROR,
+        return fail(
             err instanceof Error ? err.message : 'Unknown error',
-            "An unexpected error occurred while loading your Meta pages."
+            ErrorCode.UNKNOWN_ERROR,
+            {
+                userMessage: "An unexpected error occurred while loading your Meta pages."
+            }
         );
     }
 

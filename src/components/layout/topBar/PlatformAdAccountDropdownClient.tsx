@@ -95,45 +95,57 @@ export default function PlatformAdAccountDropdownClient({
     description: account.external_account_id ? `ID: …${account.external_account_id.slice(-6)}` : undefined,
   }));
 
+  const showPlatformSelect = platformItems.length > 1;
+  const showAccountSelect =
+    accountItems.length > 1 || (platformItems.length > 1 && accountItems.length > 0);
+
+  if (!showPlatformSelect && !showAccountSelect) {
+    return null;
+  }
+
   return (
     <Group>
-      <Select
-        placeholder="Select Platform"
-        data={platformItems}
-        value={selectedPlatform}
-        onChange={handlePlatformChange}
-        w={160}
-        disabled={isPending}
-        rightSection={<IconChevronDown size={14} />}
-        /* @ts-expect-error Mantine styles type */
-        styles={() => ({ rightSection: { pointerEvents: 'none' } })}
-        renderOption={({ option }) => (
-          <Group gap="xs">
-            {/* @ts-expect-error custom */}
-            {option.customIcon && <ThemeIcon size="md" variant="light">{option.customIcon}</ThemeIcon>}
-            <Text>{option.label}</Text>
-          </Group>
-        )}
-      />
+      {showPlatformSelect ? (
+        <Select
+          placeholder="Select Platform"
+          data={platformItems}
+          value={selectedPlatform}
+          onChange={handlePlatformChange}
+          w={160}
+          disabled={isPending}
+          rightSection={<IconChevronDown size={14} />}
+          /* @ts-expect-error Mantine styles type */
+          styles={() => ({ rightSection: { pointerEvents: 'none' } })}
+          renderOption={({ option }) => (
+            <Group gap="xs">
+              {/* @ts-expect-error custom */}
+              {option.customIcon && <ThemeIcon size="md" variant="light">{option.customIcon}</ThemeIcon>}
+              <Text>{option.label}</Text>
+            </Group>
+          )}
+        />
+      ) : null}
 
-      <Select
-        placeholder="Select Ad Account"
-        data={accountItems}
-        value={selectedAccount}
-        onChange={handleAccountChange}
-        w={200}
-        disabled={!selectedPlatform || accountItems.length === 0 || isPending}
-        rightSection={<IconChevronDown size={14} />}
-        /* @ts-expect-error Mantine styles type */
-        styles={() => ({ rightSection: { pointerEvents: 'none' } })}
-        renderOption={({ option }) => (
-          <div>
-            <Text size="sm">{option.label}</Text>
-            {/* @ts-expect-error custom */}
-            {option.description && <Text size="xs" c="dimmed">{option.description}</Text>}
-          </div>
-        )}
-      />
+      {showAccountSelect ? (
+        <Select
+          placeholder="Select Ad Account"
+          data={accountItems}
+          value={selectedAccount}
+          onChange={handleAccountChange}
+          w={200}
+          disabled={!selectedPlatform || accountItems.length === 0 || isPending}
+          rightSection={<IconChevronDown size={14} />}
+          /* @ts-expect-error Mantine styles type */
+          styles={() => ({ rightSection: { pointerEvents: 'none' } })}
+          renderOption={({ option }) => (
+            <div>
+              <Text size="sm">{option.label}</Text>
+              {/* @ts-expect-error custom */}
+              {option.description && <Text size="xs" c="dimmed">{option.description}</Text>}
+            </div>
+          )}
+        />
+      ) : null}
     </Group>
   );
 }

@@ -25,6 +25,7 @@ import {
   ActionIcon,
   Menu,
   LoadingOverlay,
+  Loader,
 } from '@mantine/core';
 import {
   IconBrandFacebook,
@@ -97,14 +98,59 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms }) => {
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [accountSelectionOpened, { open: openAccountSelection, close: closeAccountSelection }] =
+    useDisclosure(false);
+  const [accountSelectionIntegrationId, setAccountSelectionIntegrationId] = useState<string | null>(null);
+  const [accountOptions, setAccountOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [selectedAccountExternalId, setSelectedAccountExternalId] = useState<string | null>(null);
+  const [loadingAccountOptions, setLoadingAccountOptions] = useState(false);
+  const [submittingAccountSelection, setSubmittingAccountSelection] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
     const integration = searchParams.get('integration');
     const status = searchParams.get('status');
+    const requiresAccountSelection = searchParams.get('requires_account_selection') === '1';
+    const integrationId = searchParams.get('integrationId');
 
     if (!integration || !status) return;
+
+    if (requiresAccountSelection && integration === 'meta' && integrationId) {
+      setAccountSelectionIntegrationId(integrationId);
+      openAccountSelection();
+      setLoadingAccountOptions(true);
+
+      void fetch(`/api/integrations/meta/ad-accounts?integrationId=${integrationId}`)
+        .then(async (response) => {
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok || !body?.success) {
+            throw new Error(body?.error?.userMessage || 'Failed to load Meta ad accounts');
+          }
+
+          const options = Array.isArray(body.data?.accounts)
+            ? body.data.accounts.map((account: { externalAccountId: string; name: string | null }) => ({
+                value: account.externalAccountId,
+                label: account.name || account.externalAccountId,
+              }))
+            : [];
+
+          setAccountOptions(options);
+          setSelectedAccountExternalId(
+            typeof body.data?.primaryAdAccountExternalId === 'string'
+              ? body.data.primaryAdAccountExternalId
+              : options[0]?.value ?? null
+          );
+        })
+        .catch((error) => {
+          toast.error(error instanceof Error ? error.message : 'Failed to load Meta ad accounts');
+        })
+        .finally(() => {
+          setLoadingAccountOptions(false);
+        });
+
+      return;
+    }
 
     if (status === 'connected') {
       toast.success(`${integration} connected successfully.`);
@@ -113,7 +159,43 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms }) => {
     }
 
     router.replace('/integration');
-  }, [searchParams, router]);
+  }, [searchParams, router, openAccountSelection]);
+
+  const handleConfirmMetaAccountSelection = async () => {
+    if (!accountSelectionIntegrationId || !selectedAccountExternalId) {
+      toast.error('Choose one Meta ad account to continue.');
+      return;
+    }
+
+    setSubmittingAccountSelection(true);
+
+    try {
+      const response = await fetch('/api/integrations/meta/select-ad-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          integrationId: accountSelectionIntegrationId,
+          externalAccountId: selectedAccountExternalId,
+        }),
+      });
+      const body = await response.json().catch(() => ({}));
+
+      if (!response.ok || !body?.success) {
+        throw new Error(body?.error?.userMessage || 'Failed to select Meta ad account');
+      }
+
+      toast.success('Meta ad account selected and synced.');
+      closeAccountSelection();
+      router.replace('/integration');
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to select Meta ad account');
+    } finally {
+      setSubmittingAccountSelection(false);
+    }
+  };
 
   const metaPlatform = platforms.find((platform) => platform.platformKey === 'meta') || platforms[0];
   const otherPlatforms = platforms.filter((platform) => platform.platformKey !== 'meta');
@@ -207,6 +289,59 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms }) => {
   return (
     <Container size="xl" pos="relative" pb="xl">
       <LoadingOverlay visible={refreshing} zIndex={1000} overlayProps={{ radius: 'sm', blur: 2 }} />
+      <Modal
+        opened={accountSelectionOpened}
+        onClose={() => {
+          if (!submittingAccountSelection) {
+            closeAccountSelection();
+            router.replace('/integration');
+          }
+        }}
+        title="Choose your Meta ad account"
+        closeOnClickOutside={!submittingAccountSelection}
+        closeOnEscape={!submittingAccountSelection}
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            For V1, each Meta integration uses one primary ad account. Choose the account DeepVisor
+            should sync, assess, and plan against for this integration.
+          </Text>
+          {loadingAccountOptions ? (
+            <Group justify="center" py="md">
+              <Loader size="sm" />
+            </Group>
+          ) : (
+            <Select
+              label="Meta ad account"
+              data={accountOptions}
+              value={selectedAccountExternalId}
+              onChange={setSelectedAccountExternalId}
+              placeholder="Choose an ad account"
+              searchable
+            />
+          )}
+          <Group justify="space-between">
+            <Button
+              variant="subtle"
+              color="gray"
+              onClick={() => {
+                closeAccountSelection();
+                router.replace('/integration');
+              }}
+              disabled={submittingAccountSelection}
+            >
+              Later
+            </Button>
+            <Button
+              onClick={handleConfirmMetaAccountSelection}
+              loading={submittingAccountSelection}
+              disabled={!selectedAccountExternalId || loadingAccountOptions}
+            >
+              Select and sync
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Stack gap="xl">
         <Group justify="apart" align="flex-start">

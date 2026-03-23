@@ -143,7 +143,6 @@ export default function BusinessProfileStep({
                   { value: 'ecommerce', label: 'Ecommerce' },
                   { value: 'service', label: 'Service-based' },
                   { value: 'local', label: 'Local Business' },
-                  { value: 'agency', label: 'Agency' },
                   { value: 'saas', label: 'SaaS / Software' },
                   { value: 'other', label: 'Other' },
                 ]}

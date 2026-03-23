@@ -11,15 +11,15 @@ export function EmptyCampaignState({ type, platformName }: EmptyCampaignStatePro
     const config = {
         platform: {
             icon: <IconPlug size={30} />,
-            title: 'No Platform Selected',
-            description: 'You need to connect and select an ad platform to view your campaigns.',
+            title: 'No Ad Platform Connected',
+            description: 'Connect an ad platform to sync data and unlock campaigns, reports, and your AI agency workspace.',
             buttonText: 'Connect a Platform',
             buttonLink: '/integration',
         },
         adAccount: {
             icon: <IconBuildingStore size={30} />,
-            title: `No ${platformName} Ad Accounts Found`,
-            description: `Add an ad account for ${platformName} to manage your campaigns.`,
+            title: `No ${platformName} Ad Accounts Synced`,
+            description: `Sync at least one ${platformName} ad account to manage campaigns and receive AI recommendations.`,
             buttonText: 'Add Ad Account',
             buttonLink: '/integration',
         },

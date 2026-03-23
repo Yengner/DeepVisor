@@ -1,5 +1,5 @@
 import CustomCampaignFlow from '@/components/campaigns/create/flows/manual/ManualCampaignFlow';
-import { getCurrentSelection } from '@/lib/server/actions/app/selection';
+import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { getAdAccountData, getPlatformDetails } from '@/lib/server/data';
 
@@ -7,7 +7,7 @@ export default async function CreateCampaignPage() {
 
     const { businessId } = await getRequiredAppContext();
 
-    const { selectedPlatformId: platformIntegrationId, selectedAdAccountId: adAccountDBId } = await getCurrentSelection();
+    const { selectedPlatformId: platformIntegrationId, selectedAdAccountId: adAccountDBId } = await resolveCurrentSelection(businessId);
 
     if (!platformIntegrationId || !adAccountDBId) {
         return (

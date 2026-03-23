@@ -161,6 +161,76 @@ export type Database = {
           },
         ]
       }
+      ad_account_assessments: {
+        Row: {
+          ad_account_id: string
+          assessment_json: Json
+          business_id: string
+          created_at: string
+          digest_json: Json
+          has_conversion_signal: boolean
+          has_delivery: boolean
+          history_days: number
+          id: string
+          maturity_score: number
+          platform_integration_id: string
+          state: string
+          tracking_confidence: string
+        }
+        Insert: {
+          ad_account_id: string
+          assessment_json?: Json
+          business_id: string
+          created_at?: string
+          digest_json?: Json
+          has_conversion_signal?: boolean
+          has_delivery?: boolean
+          history_days?: number
+          id?: string
+          maturity_score?: number
+          platform_integration_id: string
+          state: string
+          tracking_confidence?: string
+        }
+        Update: {
+          ad_account_id?: string
+          assessment_json?: Json
+          business_id?: string
+          created_at?: string
+          digest_json?: Json
+          has_conversion_signal?: boolean
+          has_delivery?: boolean
+          history_days?: number
+          id?: string
+          maturity_score?: number
+          platform_integration_id?: string
+          state?: string
+          tracking_confidence?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_account_assessments_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_account_assessments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_account_assessments_platform_integration_id_fkey"
+            columns: ["platform_integration_id"]
+            isOneToOne: false
+            referencedRelation: "platform_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_dims: {
         Row: {
           ad_account_id: string
@@ -481,6 +551,41 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_assessments: {
+        Row: {
+          assessment_json: Json
+          business_id: string
+          created_at: string
+          digest_json: Json
+          id: string
+          scope: string
+        }
+        Insert: {
+          assessment_json?: Json
+          business_id: string
+          created_at?: string
+          digest_json?: Json
+          id?: string
+          scope?: string
+        }
+        Update: {
+          assessment_json?: Json
+          business_id?: string
+          created_at?: string
+          digest_json?: Json
+          id?: string
+          scope?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_assessments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
             referencedColumns: ["id"]
           },
         ]
