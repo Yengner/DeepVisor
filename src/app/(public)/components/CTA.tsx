@@ -54,7 +54,7 @@ const CTA: FC = () => {
                         <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:pb-0">
                             {[
                                 { label: "Current focus", value: "Meta", hint: "Campaign clarity + guardrails" },
-                                { label: "Next integrations", value: "TikTok + Google", hint: "Multi-platform roll-out" },
+                                { label: "Next integrations", value: "7 planned", hint: "Google Ads, Amazon Ads, TikTok Ads + more" },
                                 { label: "Automation layer", value: "Draft-first", hint: "Approvals + human override" },
                                 { label: "Build cadence", value: "Weekly", hint: "Transparent roadmap updates" },
                             ].map((stat) => (

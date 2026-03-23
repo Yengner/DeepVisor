@@ -1,6 +1,7 @@
 import { Activity, BellRing, ChartLine, Radar, ShieldCheck, Sparkles } from "lucide-react";
 import CTA from "./components/CTA";
 import Hero from "./components/Hero";
+import IntegrationsSection from "./components/IntegrationsSection";
 import { Badge, Button, Card, Container, Section } from "@/components/marketing";
 
 const SUPPORT_FORM_URL =
@@ -10,8 +11,8 @@ const logos = ["Northwind Labs", "Helios Group", "Vector Studios", "Signalworks"
 
 const features = [
     {
-        title: "Unified performance view",
-        description: "See Meta, TikTok, and Google in one dashboard with consistent KPIs.",
+        title: "Meta-first foundation",
+        description: "Start on Meta now while DeepVisor builds the shared data and automation layer for every major channel on the roadmap.",
         icon: Radar,
     },
     {
@@ -51,7 +52,7 @@ const outcomes = [
 const steps = [
     {
         title: "Connect your channels",
-        copy: "Securely link Meta today, with TikTok and Google next. We normalize metrics into one consistent view.",
+        copy: "Securely connect Meta first. Google Ads, Amazon Ads, TikTok Ads, Microsoft Advertising, Snapchat Ads, LinkedIn Ads, and Pinterest Ads follow on the rollout plan.",
         tag: "Day 1",
     },
     {
@@ -106,6 +107,7 @@ export default function HomePage() {
     return (
         <>
             <Hero />
+            <IntegrationsSection />
             {/* <SocialProof /> */}
             <FeatureGrid />
             <OutcomesSection />
