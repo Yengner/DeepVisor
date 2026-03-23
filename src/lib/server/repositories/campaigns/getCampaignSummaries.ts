@@ -139,13 +139,14 @@ export async function getCampaignSummaries(input: {
   includeEmpty?: boolean;
   limit?: number;
   sort?: CampaignSummarySort;
+  supabase?: SupabaseClient;
 }): Promise<CampaignSummary[]> {
   const adAccountIds = Array.from(new Set(input.adAccountIds.filter(Boolean)));
   if (adAccountIds.length === 0) {
     return [];
   }
 
-  const supabase = await createSupabaseClient();
+  const supabase = input.supabase ?? (await createSupabaseClient());
   const campaignDims = await listCampaignDims({
     supabase,
     adAccountIds,

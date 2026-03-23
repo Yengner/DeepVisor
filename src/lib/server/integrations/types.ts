@@ -32,6 +32,9 @@ export interface IntegrationDetails extends Record<string, unknown> {
   issued_at?: string;
   token_expires_at?: string;
   scopes?: string[];
+  primary_ad_account_external_id?: string;
+  primary_ad_account_name?: string;
+  account_selection_completed_at?: string;
 }
 
 export interface UpsertIntegrationInput {

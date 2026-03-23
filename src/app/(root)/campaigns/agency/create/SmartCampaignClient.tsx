@@ -116,8 +116,7 @@ export default function SmartCampaignClient({
                     onClose={() => setShowLoadingModal(false)}
                     onDone={async () => {
                         setShowLoadingModal(false);
-                        if (draftId) router.push(`/campaigns/drafts/${draftId}`);
-                        else router.push(`/campaigns`); // fallback
+                        router.push('/agency');
                     }}
                 />
             )}

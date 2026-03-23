@@ -1,11 +1,13 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/shared/types/supabase';
 import { derivePerformanceMetrics } from '../campaigns/normalizers';
 import { chunkArray } from '../utils';
 
 const formatDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 
-type SupabaseClient = Awaited<ReturnType<typeof createSupabaseClient>>;
+type QuerySupabaseClient = SupabaseClient<Database>;
 
 type AdsetDimRow = {
   id: string;
@@ -60,7 +62,7 @@ export interface AdSetLifetimeRow {
 }
 
 async function listAdsetDims(input: {
-  supabase: SupabaseClient;
+  supabase: QuerySupabaseClient;
   adAccountId: string;
   campaignExternalId?: string;
   adsetExternalId?: string;
@@ -87,7 +89,7 @@ async function listAdsetDims(input: {
 }
 
 async function listAdsetPerformanceRows(input: {
-  supabase: SupabaseClient;
+  supabase: QuerySupabaseClient;
   adsetIds: string[];
 }): Promise<AdsetPerformanceRow[]> {
   const rows: AdsetPerformanceRow[] = [];
@@ -109,7 +111,7 @@ async function listAdsetPerformanceRows(input: {
 }
 
 async function listCampaignNames(input: {
-  supabase: SupabaseClient;
+  supabase: QuerySupabaseClient;
   adAccountId: string;
   campaignExternalIds: string[];
 }): Promise<Map<string, string>> {
@@ -136,9 +138,14 @@ async function listCampaignNames(input: {
 
 export async function getAdSetsLifetimeIncludingZeros(
   adAccountUuid: string,
-  opts?: { campaignExternalId?: string; adsetExternalId?: string; vendor?: 'meta' | 'google' | 'tiktok' }
+  opts?: {
+    campaignExternalId?: string;
+    adsetExternalId?: string;
+    vendor?: 'meta' | 'google' | 'tiktok';
+    supabase?: QuerySupabaseClient;
+  }
 ): Promise<AdSetLifetimeRow[]> {
-  const supabase = await createSupabaseClient();
+  const supabase = opts?.supabase ?? (await createSupabaseClient());
   const vendor = opts?.vendor ?? 'meta';
   const adsets = await listAdsetDims({
     supabase,

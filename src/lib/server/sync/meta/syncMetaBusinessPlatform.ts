@@ -14,6 +14,7 @@ export async function syncMetaBusinessPlatform(input: {
   accessToken: string;
   backfillDays: number;
   syncedAt: string;
+  primaryExternalAccountId: string;
 }) {
   const adAccounts = await syncMetaAdAccounts({
     supabase: input.supabase,
@@ -21,6 +22,7 @@ export async function syncMetaBusinessPlatform(input: {
     platformId: input.platformId,
     accessToken: input.accessToken,
     syncedAt: input.syncedAt,
+    primaryExternalAccountId: input.primaryExternalAccountId,
   });
 
   const campaigns = await syncMetaCampaigns({

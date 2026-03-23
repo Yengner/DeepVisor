@@ -10,8 +10,15 @@ export async function syncMetaAdAccounts(input: {
   platformId: string;
   accessToken: string;
   syncedAt: string;
+  primaryExternalAccountId: string;
 }) {
-  const snapshots = await fetchMetaAdAccountSnapshots(input.accessToken);
+  const snapshots = (await fetchMetaAdAccountSnapshots(input.accessToken)).filter(
+    (snapshot) => snapshot.externalAccountId === input.primaryExternalAccountId
+  );
+
+  if (snapshots.length === 0) {
+    throw new Error('Selected Meta ad account is no longer accessible for this integration');
+  }
 
   return upsertAdAccounts(
     input.supabase,

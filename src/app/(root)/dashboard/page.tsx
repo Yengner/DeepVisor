@@ -12,7 +12,7 @@ import {
   resolveDashboardState,
 } from '@/lib/server/dashboard';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
-import { getCurrentSelection } from '@/lib/server/actions/app/selection';
+import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import type {
   DashboardCampaignSnapshotItem,
   DashboardPayload,
@@ -21,7 +21,7 @@ import type {
 export default async function MainDashboardPage() {
   const supabase = await createServerClient();
   const { user, businessId } = await getRequiredAppContext();
-  const { selectedPlatformId, selectedAdAccountId } = await getCurrentSelection();
+  const { selectedPlatformId, selectedAdAccountId } = await resolveCurrentSelection(businessId);
 
   const [businessRollup, businessProfileResult] = await Promise.all([
     getBusinessAdAccountsRollup(businessId),

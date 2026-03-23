@@ -2,7 +2,7 @@ import CampaignDashboard from "@/components/campaigns/CampaignDashboard";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { Suspense } from "react";
 import CampaignClientFallback from "./CampaignClientFallback";
-import { getCurrentSelection } from "@/lib/server/actions/app/selection";
+import { resolveCurrentSelection } from "@/lib/server/actions/app/selection";
 import { getRequiredAppContext } from "@/lib/server/actions/app/context";
 import {
   getAdAccountData,
@@ -53,7 +53,7 @@ export default async function CampaignPage({
 }) {
   const { businessId } = await getRequiredAppContext();
 
-  const { selectedPlatformId, selectedAdAccountId } = await getCurrentSelection();
+  const { selectedPlatformId, selectedAdAccountId } = await resolveCurrentSelection(businessId);
 
   if (!selectedPlatformId || !selectedAdAccountId) {
     return <EmptyCampaignState type="platform" />;

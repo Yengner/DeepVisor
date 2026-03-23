@@ -1,21 +1,70 @@
 import AgencyClient from './AgencyClient';
 import { EmptyCampaignState } from '@/components/campaigns/EmptyStates';
-import { getCurrentSelection } from '@/lib/server/actions/app/selection';
+import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
+import { buildBusinessAgencyWorkspace } from '@/lib/server/agency';
+import type { BusinessAgencyPlanningScope } from '@/lib/server/agency';
 
-export default async function AgencyPage() {
-    const { user } = await getRequiredAppContext();
-    const userId = user.id;
-    const { selectedPlatformId, selectedAdAccountId } = await getCurrentSelection();
-    if (!selectedPlatformId || !selectedAdAccountId) {
+function parseScope(value: string | string[] | undefined): BusinessAgencyPlanningScope | undefined {
+    const raw = Array.isArray(value) ? value[0] : value;
+    if (
+        raw === 'business' ||
+        raw === 'integration' ||
+        raw === 'selected_integrations'
+    ) {
+        return raw;
+    }
+
+    return undefined;
+}
+
+function parseIdList(value: string | string[] | undefined): string[] {
+    const raw = Array.isArray(value) ? value[0] : value;
+    if (!raw) {
+        return [];
+    }
+
+    return raw
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
+export default async function AgencyPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+    const { businessId } = await getRequiredAppContext();
+    const { selectedPlatformId, selectedAdAccountId } = await resolveCurrentSelection(businessId);
+    const params = await searchParams;
+
+    const workspace = await buildBusinessAgencyWorkspace(
+      businessId,
+      {
+        scope: parseScope(params.scope),
+        platformIntegrationId:
+          typeof params.platform_integration_id === 'string'
+            ? params.platform_integration_id
+            : null,
+        platformIntegrationIds: parseIdList(params.platform_integration_ids),
+        defaultPlatformIntegrationId: selectedPlatformId,
+        defaultAdAccountId: selectedAdAccountId,
+      }
+    );
+
+    if (workspace.platforms.length === 0) {
         return <EmptyCampaignState type="platform" />;
     }
 
-    /// Question: Unused??? What would this be used for
-    // const adAccountId = await getAdAccountData(selectedAdAccountId, selectedPlatformId, userId).then((account: { external_account_id: string }) => account?.external_account_id);
+    if (workspace.adAccounts.length === 0) {
+        return (
+            <EmptyCampaignState
+                type="adAccount"
+                platformName={workspace.platforms[0]?.label || 'connected'}
+            />
+        );
+    }
 
-    ///
-      // Update: Add Skeleton to Agency Client for unprocessed data while server loads data
-    ////
-    return <AgencyClient userId={userId} adAccountId={selectedAdAccountId} tenantId={selectedPlatformId}/>;
+    return <AgencyClient workspace={workspace} />;
 }

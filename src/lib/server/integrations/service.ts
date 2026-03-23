@@ -372,6 +372,12 @@ export type BusinessIntegration = {
   integrationDetails: Json;
 };
 
+export type MetaIntegrationAccountOption = {
+  externalAccountId: string;
+  name: string | null;
+  status: string | null;
+};
+
 export type RefreshBusinessAdAccountsResult = {
   refreshedCount: number;
   failedCount: number;
@@ -425,6 +431,108 @@ export async function resolveIntegrationAccessToken(
 
   // Fallback for legacy rows where raw token may still exist.
   return tokenOrSecretId;
+}
+
+export function getPrimaryAdAccountSelection(details: Json | null | undefined): {
+  externalAccountId: string | null;
+  name: string | null;
+  selectedAt: string | null;
+} {
+  const record = asRecord(details);
+
+  return {
+    externalAccountId:
+      typeof record.primary_ad_account_external_id === 'string'
+        ? record.primary_ad_account_external_id
+        : null,
+    name:
+      typeof record.primary_ad_account_name === 'string'
+        ? record.primary_ad_account_name
+        : null,
+    selectedAt:
+      typeof record.account_selection_completed_at === 'string'
+        ? record.account_selection_completed_at
+        : null,
+  };
+}
+
+export async function getBusinessIntegrationById(
+  supabase: AppSupabaseClient,
+  input: { businessId: string; integrationId: string }
+): Promise<BusinessIntegration | null> {
+  const { data, error } = await supabase
+    .from('platform_integrations')
+    .select('*, platforms ( key )')
+    .eq('business_id', input.businessId)
+    .eq('id', input.integrationId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  const row = data as unknown as PlatformIntegrationStorageRow;
+  const platform = Array.isArray(row.platforms) ? row.platforms[0] : row.platforms;
+  const details = asRecord(row.integration_details);
+  const status = toIntegrationStatus(row.status ?? details.status);
+
+  return {
+    id: row.id,
+    platformId: row.platform_id,
+    platformKey: platform?.key ?? '',
+    status,
+    isIntegrated: status === 'connected',
+    accessToken: row.access_token_secret_id,
+    integrationDetails: row.integration_details,
+  };
+}
+
+export async function listMetaAccessibleAdAccounts(
+  supabase: AppSupabaseClient,
+  integration: BusinessIntegration
+): Promise<MetaIntegrationAccountOption[]> {
+  if (integration.platformKey !== 'meta') {
+    return [];
+  }
+
+  const accessToken = await resolveIntegrationAccessToken(supabase, integration);
+  if (!accessToken) {
+    throw new Error('Missing access token');
+  }
+
+  const snapshots = await fetchMetaAdAccountSnapshots(accessToken);
+  return snapshots.map((snapshot) => ({
+    externalAccountId: snapshot.externalAccountId,
+    name: snapshot.name,
+    status: snapshot.status,
+  }));
+}
+
+export async function setPrimaryMetaAdAccount(
+  supabase: AppSupabaseClient,
+  input: {
+    integrationId: string;
+    externalAccountId: string;
+    name: string | null;
+  }
+): Promise<void> {
+  await patchIntegrationDetails(
+    supabase,
+    input.integrationId,
+    {
+      primary_ad_account_external_id: input.externalAccountId,
+      primary_ad_account_name: input.name,
+      account_selection_completed_at: new Date().toISOString(),
+      last_error: null,
+    },
+    {
+      last_error: null,
+    }
+  );
 }
 
 /**

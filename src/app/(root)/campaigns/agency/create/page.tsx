@@ -1,6 +1,6 @@
 import SmartCampaignClient from "./SmartCampaignClient";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
-import { getCurrentSelection } from "@/lib/server/actions/app/selection";
+import { resolveCurrentSelection } from "@/lib/server/actions/app/selection";
 import { getRequiredAppContext } from "@/lib/server/actions/app/context";
 import { getAdAccountData, getPlatformDetails } from '@/lib/server/data';
 
@@ -9,7 +9,7 @@ export default async function SmartCampaignPage() {
     const { user, businessId } = await getRequiredAppContext();
     const userId = user.id;
 
-    const { selectedPlatformId, selectedAdAccountId } = await getCurrentSelection();
+    const { selectedPlatformId, selectedAdAccountId } = await resolveCurrentSelection(businessId);
 
     if (!selectedPlatformId) {
         return <EmptyCampaignState type="platform" />;

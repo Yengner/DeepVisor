@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { requireUserId } from '@/lib/server/actions/user/session';
+import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
 import {
   exchangeMetaCodeForToken,
+  fetchMetaAdAccountSnapshots,
   validateMetaAccessToken,
 } from '@/lib/server/integrations/adapters/meta';
 import {
@@ -13,6 +15,7 @@ import {
   markIntegrationError,
   resolvePlatformByKey,
   sanitizeReturnTo,
+  setPrimaryMetaAdAccount,
   upsertPlatformIntegration,
 } from '@/lib/server/integrations/service';
 import { syncBusinessPlatform } from '@/lib/server/sync';
@@ -32,6 +35,19 @@ function redirectWithStatus(
   const baseUrl = getBaseUrl(requestUrl);
   const path = buildIntegrationResultPath(returnTo, platform, status);
   return NextResponse.redirect(new URL(path, baseUrl));
+}
+
+function redirectWithAccountSelection(input: {
+  requestUrl: string;
+  platform: SupportedIntegrationPlatform;
+  integrationId: string;
+}) {
+  const baseUrl = getBaseUrl(input.requestUrl);
+  const path = buildIntegrationResultPath('/integration', input.platform, 'connected');
+  const url = new URL(path, baseUrl);
+  url.searchParams.set('requires_account_selection', '1');
+  url.searchParams.set('integrationId', input.integrationId);
+  return NextResponse.redirect(url);
 }
 
 export async function GET(
@@ -103,13 +119,56 @@ export async function GET(
       },
     });
 
+    const accessibleAccounts = await fetchMetaAdAccountSnapshots(token.access_token);
+    if (accessibleAccounts.length === 0) {
+      throw new Error('No accessible Meta ad accounts were found for this integration');
+    }
+
+    if (accessibleAccounts.length > 1) {
+      return redirectWithAccountSelection({
+        requestUrl: request.url,
+        platform: platformKey,
+        integrationId,
+      });
+    }
+
+    const selectedAccount = accessibleAccounts[0];
+    await setPrimaryMetaAdAccount(supabase, {
+      integrationId,
+      externalAccountId: selectedAccount.externalAccountId,
+      name: selectedAccount.name,
+    });
+
     await syncBusinessPlatform({
       businessId: businessContext.businessId,
       platformId: integrationPlatform.id,
       trigger: 'integration',
     });
 
-    return redirectWithStatus(request.url, returnTo, platformKey, 'connected');
+    const response = redirectWithStatus(request.url, returnTo, platformKey, 'connected');
+    const selection = await resolveCurrentSelection(businessContext.businessId);
+
+    if (selection.selectedPlatformId) {
+      response.cookies.set('platform_integration_id', selection.selectedPlatformId, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      });
+    }
+
+    if (selection.selectedAdAccountId) {
+      response.cookies.set('ad_account_row_id', selection.selectedAdAccountId, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      });
+    }
+
+    return response;
   } catch (error) {
     console.error('Integration callback failed:', error);
 

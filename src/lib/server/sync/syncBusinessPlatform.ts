@@ -1,8 +1,13 @@
 import 'server-only';
 
 import { createAdminClient } from '@/lib/server/supabase/admin';
+import {
+  runBusinessAssessment,
+  runMetaAdAccountAssessment,
+} from '@/lib/server/agency';
 import { toIntegrationStatus } from '@/lib/server/integrations/normalizers';
 import {
+  getPrimaryAdAccountSelection,
   markIntegrationError,
   markIntegrationSynced,
   resolveIntegrationAccessToken,
@@ -49,6 +54,10 @@ function resolveBackfillDays(trigger: SyncTrigger, override?: number): number {
     default:
       return 30;
   }
+}
+
+function toAssessmentTrigger(trigger: SyncTrigger): 'integration' | 'sync' {
+  return trigger === 'integration' ? 'integration' : 'sync';
 }
 
 function toPlatformKey(
@@ -138,21 +147,59 @@ export async function syncBusinessPlatform(input: {
     throw new Error('Missing access token');
   }
 
+  const primaryAdAccountSelection = getPrimaryAdAccountSelection(integration.integrationDetails);
+
   try {
     const counts =
       integration.platformKey === 'meta'
-        ? await syncMetaBusinessPlatform({
-            supabase,
-            businessId: input.businessId,
-            platformId: input.platformId,
-            accessToken,
-            backfillDays,
-            syncedAt: startedAt,
-          })
+        ? await (() => {
+            if (!primaryAdAccountSelection.externalAccountId) {
+              throw new Error('Select a Meta ad account before syncing this integration');
+            }
+
+            return syncMetaBusinessPlatform({
+              supabase,
+              businessId: input.businessId,
+              platformId: input.platformId,
+              accessToken,
+              backfillDays,
+              syncedAt: startedAt,
+              primaryExternalAccountId: primaryAdAccountSelection.externalAccountId,
+            });
+          })()
         : null;
 
     if (!counts) {
       throw new Error(`Unsupported sync platform: ${integration.platformKey}`);
+    }
+
+    if (integration.platformKey === 'meta' && primaryAdAccountSelection.externalAccountId) {
+      const { data: syncedAccount, error: syncedAccountError } = await supabase
+        .from('ad_accounts')
+        .select('id')
+        .eq('business_id', input.businessId)
+        .eq('platform_id', input.platformId)
+        .eq('external_account_id', primaryAdAccountSelection.externalAccountId)
+        .maybeSingle();
+
+      if (syncedAccountError) {
+        throw syncedAccountError;
+      }
+
+      if (syncedAccount?.id) {
+        await runMetaAdAccountAssessment({
+          supabase,
+          businessId: input.businessId,
+          platformIntegrationId: integration.id,
+          adAccountId: syncedAccount.id,
+          trigger: toAssessmentTrigger(input.trigger),
+        });
+        await runBusinessAssessment({
+          supabase,
+          businessId: input.businessId,
+          trigger: toAssessmentTrigger(input.trigger),
+        });
+      }
     }
 
     await markIntegrationSynced(supabase, integration.id);
