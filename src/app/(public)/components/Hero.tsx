@@ -4,18 +4,18 @@ import { Badge, Button, Card, Container, Section } from "@/components/marketing"
 
 const metrics = [
     {
-        label: "Time saved",
-        value: "10+ hrs",
-        note: "From automated analysis & insights",
+        label: "Current build",
+        value: "Meta",
+        note: "Foundation channel for launch",
     },
     {
-        label: "Channels unified",
-        value: "Meta • Google +",
-        note: "All ad data in one dashboard",
+        label: "Expansion plan",
+        value: "7 planned",
+        note: "Google Ads, Amazon Ads, TikTok Ads + more",
     },
     {
         label: "Auto insights",
-        value: "100% automated",
+        value: "Draft-first",
         note: "AI-drafted, human-verified insights",
     },
 ];
@@ -59,7 +59,7 @@ const Hero: FC = () => {
                                 className="max-w-xl text-base text-white/70 motion-safe:animate-fade-up sm:text-lg"
                                 style={{ animationDelay: "180ms" }}
                             >
-                                Unify your ad data, cut noise, and automate actionable insights.
+                                Start with a Meta-first control layer, then expand toward a unified ads operating system built for modern growth teams.
                             </p>
 
                         </div>
