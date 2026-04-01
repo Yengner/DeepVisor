@@ -1,7 +1,5 @@
 import type {
   AdAccountData,
-  AdAccountTimeIncrementPoint,
-  BusinessAdAccountRollup,
   PlatformDetails,
 } from '@/lib/server/data/types';
 
@@ -11,6 +9,51 @@ export type DashboardState =
   | 'no_ad_account_selected'
   | 'ad_account_selected_no_metrics'
   | 'ready';
+
+export type DashboardWindow = '7d' | '30d';
+
+export type DashboardOutcomeMetric = 'leads' | 'messages' | 'clicks';
+
+export type DashboardAlertTone = 'red' | 'yellow' | 'blue' | 'teal';
+
+export interface DashboardAlert {
+  id: string;
+  tone: DashboardAlertTone;
+  title: string;
+  description: string;
+}
+
+export interface DashboardSummaryCard {
+  key: 'spend' | 'leads' | 'messages' | 'link_clicks';
+  label: string;
+  value: number;
+  previousValue: number | null;
+  changePercent: number | null;
+}
+
+export interface DashboardTrendPoint {
+  label: string;
+  spend: number;
+  outcome: number;
+}
+
+export interface DashboardTrendSeries {
+  outcomeMetric: DashboardOutcomeMetric;
+  outcomeLabel: string;
+  points: DashboardTrendPoint[];
+}
+
+export interface DashboardViewContext {
+  businessName: string;
+  platformName: string | null;
+  platformStatus: PlatformDetails['status'] | null;
+  adAccountName: string | null;
+  adAccountStatus: string | null;
+  lastSyncedAt: string | null;
+  currencyCode: string | null;
+  platformError: string | null;
+  canRefresh: boolean;
+}
 
 export interface DashboardCampaignSnapshotItem {
   campaignId: string;
@@ -25,22 +68,29 @@ export interface DashboardCampaignSnapshotItem {
   costPerResult: number;
 }
 
+export interface DashboardCampaignPreviewItem {
+  campaignId: string;
+  campaignName: string;
+  status: string;
+  spend: number;
+  primaryOutcomeMetric: DashboardOutcomeMetric;
+  primaryOutcomeLabel: string;
+  primaryOutcomeValue: number;
+}
+
 export interface DashboardPayload {
   state: DashboardState;
-  business: {
-    id: string;
-    name: string;
-  };
   selection: {
     selectedPlatformIntegrationId: string | null;
     selectedAdAccountId: string | null;
   };
+  activeWindow: DashboardWindow;
+  windowOptions: DashboardWindow[];
+  viewContext: DashboardViewContext;
+  alerts: DashboardAlert[];
+  summaryByWindow: Record<DashboardWindow, DashboardSummaryCard[]>;
+  trendByWindow: Record<DashboardWindow, DashboardTrendSeries>;
+  campaignPreview: DashboardCampaignPreviewItem[];
   platform: PlatformDetails | null;
   adAccount: AdAccountData | null;
-  businessRollup: BusinessAdAccountRollup;
-  trend: {
-    defaultWindow: '30';
-    points: AdAccountTimeIncrementPoint[];
-  };
-  campaignSnapshot: DashboardCampaignSnapshotItem[];
 }

@@ -52,18 +52,25 @@ export async function fetchMetaAdAccounts(
     withMetrics: boolean = false,
     accessToken: string,
     adAccountId?: string
-): Promise<AdAccountWithMetrics | AdAccountWithMetrics[] | AdAccountDetails[]> {
+): Promise<AdAccountWithMetrics | AdAccountWithMetrics[] | AdAccountDetails | AdAccountDetails[]> {
     FacebookAdsApi.init(accessToken);
 
     if (adAccountId) {
         const account = await new AdAccount(adAccountId).read([
-            AdAccount.Fields.id,
-            AdAccount.Fields.name,
-            AdAccount.Fields.account_status
+            'id',
+            'name',
+            'account_status',
+            'currency',
+            'timezone_name',
         ]);
+
+        if (!withMetrics) {
+            return account._data as AdAccountDetails;
+        }
+
         const metrics = await fetchMetricsForAccount(adAccountId, accessToken);
         return {
-            details: account._data,
+            details: account._data as AdAccountDetails,
             ...metrics
         };
     }

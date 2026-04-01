@@ -1,4 +1,3 @@
-import React from 'react';
 import { NodeStatusIndicator } from '@/components/node-status-indicator';
 import { Handle, Position } from '@xyflow/react';
 import { Loader, Text } from '@mantine/core';

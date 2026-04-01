@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { createSupabaseClient } from '@/lib/server/supabase/server';
+import { parseDailyMetricsRowsFromTimeIncrementMetrics } from '@/lib/server/repositories/ad_accounts/normalizers';
 import { derivePerformanceMetrics } from '@/lib/server/repositories/campaigns/normalizers';
 import { chunkArray } from '@/lib/server/repositories/utils';
 import type { Database } from '@/lib/shared/types/supabase';
@@ -106,18 +107,9 @@ type AdPerformanceRow = Pick<
   | 'messages'
 >;
 
-type AdAccountPerformanceRow = Pick<
-  Database['public']['Tables']['ad_accounts_performance_daily']['Row'],
-  | 'ad_account_id'
-  | 'day'
-  | 'currency_code'
-  | 'spend'
-  | 'reach'
-  | 'impressions'
-  | 'clicks'
-  | 'inline_link_clicks'
-  | 'leads'
-  | 'messages'
+type AdAccountTimeseriesRow = Pick<
+  Database['public']['Tables']['ad_accounts']['Row'],
+  'id' | 'currency_code' | 'time_increment_metrics'
 >;
 
 type EntityAggregate = {
@@ -589,7 +581,6 @@ async function listDailyRows<T extends MetricsRow>(
   supabase: SupabaseClient,
   input: {
     table:
-      | 'ad_accounts_performance_daily'
       | 'campaigns_performance_daily'
       | 'adsets_performance_daily'
       | 'ads_performance_daily';
@@ -616,6 +607,50 @@ async function listDailyRows<T extends MetricsRow>(
     }
 
     rows.push(...((data ?? []) as unknown as T[]));
+  }
+
+  return rows;
+}
+
+async function listAdAccountDailyRows(
+  supabase: SupabaseClient,
+  input: {
+    ids: string[];
+    dateFrom: string;
+    dateTo: string;
+  }
+): Promise<MetricsRow[]> {
+  const rows: MetricsRow[] = [];
+
+  for (const idsChunk of chunkArray(input.ids, 200)) {
+    const { data, error } = await supabase
+      .from('ad_accounts')
+      .select('id, currency_code, time_increment_metrics')
+      .in('id', idsChunk);
+
+    if (error) {
+      throw error;
+    }
+
+    for (const row of (data ?? []) as AdAccountTimeseriesRow[]) {
+      rows.push(
+        ...parseDailyMetricsRowsFromTimeIncrementMetrics(row.time_increment_metrics, {
+          currencyCode: row.currency_code,
+        })
+          .filter((metricRow) => metricRow.day >= input.dateFrom && metricRow.day <= input.dateTo)
+          .map((metricRow) => ({
+            day: metricRow.day,
+            currency_code: metricRow.currency_code,
+            spend: metricRow.spend,
+            reach: metricRow.reach,
+            impressions: metricRow.impressions,
+            clicks: metricRow.clicks,
+            inline_link_clicks: metricRow.inline_link_clicks,
+            leads: metricRow.leads,
+            messages: metricRow.messages,
+          }))
+      );
+    }
   }
 
   return rows;
@@ -786,27 +821,11 @@ async function buildTopLevelMetricsRows(
   }
 
   if (query.scope === 'business' || query.scope === 'platform' || query.scope === 'ad_account') {
-    const rows = await listDailyRows<AdAccountPerformanceRow>(supabase, {
-      table: 'ad_accounts_performance_daily',
-      idColumn: 'ad_account_id',
+    return listAdAccountDailyRows(supabase, {
       ids: adAccountIds,
       dateFrom,
       dateTo,
-      select:
-        'ad_account_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages',
     });
-
-    return rows.map((row) => ({
-      day: row.day,
-      currency_code: row.currency_code,
-      spend: row.spend ?? 0,
-      reach: row.reach ?? 0,
-      impressions: row.impressions ?? 0,
-      clicks: row.clicks ?? 0,
-      inline_link_clicks: row.inline_link_clicks ?? 0,
-      leads: row.leads ?? 0,
-      messages: row.messages ?? 0,
-    }));
   }
 
   if (query.scope === 'campaign') {
@@ -1138,8 +1157,6 @@ function resolveTitle(input: {
   context: FilterContext;
   adAccountIds: string[];
 }): { title: string; subtitle: string; scopeLabel: string } {
-  const scopeLabel = input.query.scope.replace('_', ' ');
-
   if (input.query.scope === 'business') {
     return {
       title: input.context.business.business_name,

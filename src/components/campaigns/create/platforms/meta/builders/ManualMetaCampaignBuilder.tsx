@@ -83,8 +83,6 @@ export default function ManualMetaCampaignBuilder({ platformData, adAccountId, o
                         <MetaCampaignFlowPreview
                             campaign={form.values.campaign.campaignName ? form : null}
                             adSets={form.values.adSets}
-                            budget={form.values.budget}
-                            creatives={form.values.adSets.flatMap(adSet => adSet.creatives)}
                         />
                     </div>
                 </Modal>

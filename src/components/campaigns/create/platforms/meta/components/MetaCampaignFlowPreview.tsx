@@ -7,15 +7,11 @@ import "@xyflow/react/dist/style.css";
 interface MetaCampaignFlowPreviewProps {
     campaign: any; // should be the form object or null
     adSets: any[];
-    budget?: { amount: number; type: string };
-    creatives?: any; // not used, as creatives are inside adSets
 }
 
 export default function MetaCampaignFlowPreview({
     campaign,
     adSets,
-    budget,
-    creatives,
 }: MetaCampaignFlowPreviewProps) {
     // Animate budget distribution
     const [budgetProgress, setBudgetProgress] = useState(0);

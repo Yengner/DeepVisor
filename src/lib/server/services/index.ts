@@ -1,6 +1,0 @@
-export * from './dashboard.service'
-export * from './platforms/types'
-export * from './platforms/meta/types'
-export * from './platforms/meta/utils'
-export * from './platforms/meta/ad_accounts/fetch'
-export * from './platforms/meta/page/fetch'

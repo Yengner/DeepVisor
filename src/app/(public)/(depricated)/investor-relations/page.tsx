@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { FaEnvelope, FaPhoneAlt } from 'react-icons/fa';
 import { FiGlobe, FiCpu, FiLayers, FiTrendingUp, FiTarget, FiBarChart2 } from 'react-icons/fi';
 import { motion } from 'framer-motion';

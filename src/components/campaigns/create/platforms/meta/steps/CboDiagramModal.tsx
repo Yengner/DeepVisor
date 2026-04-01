@@ -1,7 +1,6 @@
 import { Modal, Text, Group, ThemeIcon, Stack, SegmentedControl } from '@mantine/core';
 import { IconHierarchy3 } from '@tabler/icons-react';
 import { useState } from 'react';
-import React from 'react';
 import {
     ReactFlow,
     Background,

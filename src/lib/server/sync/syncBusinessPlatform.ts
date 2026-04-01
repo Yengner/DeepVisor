@@ -120,9 +120,52 @@ async function listBusinessPlatformIntegrations(
   return Array.from(latestByPlatformId.values());
 }
 
+async function getBusinessPlatformIntegration(input: {
+  businessId: string;
+  platformId?: string;
+  integrationId?: string;
+}): Promise<SyncableBusinessIntegration | null> {
+  const supabase = createAdminClient();
+
+  if (input.integrationId) {
+    const { data, error } = await supabase
+      .from('platform_integrations')
+      .select('*, platforms ( key )')
+      .eq('business_id', input.businessId)
+      .eq('id', input.integrationId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data ? toSyncableIntegration(data as SyncIntegrationRow) : null;
+  }
+
+  if (!input.platformId) {
+    throw new Error('Missing platform id or integration id for sync');
+  }
+
+  const { data, error } = await supabase
+    .from('platform_integrations')
+    .select('*, platforms ( key )')
+    .eq('business_id', input.businessId)
+    .eq('platform_id', input.platformId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ? toSyncableIntegration(data as SyncIntegrationRow) : null;
+}
+
 export async function syncBusinessPlatform(input: {
   businessId: string;
-  platformId: string;
+  platformId?: string;
+  integrationId?: string;
   trigger: SyncTrigger;
   backfillDays?: number;
 }): Promise<BusinessPlatformSyncSummary> {
@@ -130,8 +173,11 @@ export async function syncBusinessPlatform(input: {
   const backfillDays = resolveBackfillDays(input.trigger, input.backfillDays);
   const supabase = createAdminClient();
 
-  const integrations = await listBusinessPlatformIntegrations(input.businessId);
-  const integration = integrations.find((item) => item.platformId === input.platformId);
+  const integration = await getBusinessPlatformIntegration({
+    businessId: input.businessId,
+    platformId: input.platformId,
+    integrationId: input.integrationId,
+  });
 
   if (!integration) {
     throw new Error('Connected platform integration not found for business');
@@ -160,7 +206,8 @@ export async function syncBusinessPlatform(input: {
             return syncMetaBusinessPlatform({
               supabase,
               businessId: input.businessId,
-              platformId: input.platformId,
+              platformId: integration.platformId,
+              platformIntegrationId: integration.id,
               accessToken,
               backfillDays,
               syncedAt: startedAt,
@@ -178,7 +225,7 @@ export async function syncBusinessPlatform(input: {
         .from('ad_accounts')
         .select('id')
         .eq('business_id', input.businessId)
-        .eq('platform_id', input.platformId)
+        .eq('platform_id', integration.platformId)
         .eq('external_account_id', primaryAdAccountSelection.externalAccountId)
         .maybeSingle();
 
@@ -206,7 +253,7 @@ export async function syncBusinessPlatform(input: {
 
     return {
       businessId: input.businessId,
-      platformId: input.platformId,
+      platformId: integration.platformId,
       integrationId: integration.id,
       platformKey: integration.platformKey,
       trigger: input.trigger,

@@ -8,7 +8,7 @@ import {
     Tooltip, ActionIcon, Modal, Timeline, Progress, Paper, Grid
 } from '@mantine/core';
 import {
-    IconRefresh, IconPlayerPlay, IconClock, IconEye, IconAlertTriangle, IconCheck, IconX
+    IconRefresh, IconPlayerPlay, IconClock, IconEye, IconAlertTriangle, IconCheck
 } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 

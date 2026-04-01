@@ -3,34 +3,26 @@ import { createServerClient } from '@/lib/server/supabase/server';
 import {
   getAdAccountTopCampaigns,
   getAdAccountData,
-  getBusinessAdAccountsRollup,
   getPlatformDetails,
-  hasMeaningfulMetrics,
 } from '@/lib/server/data';
 import {
+  buildDashboardPayload,
   normalizeCampaignSnapshot,
-  resolveDashboardState,
 } from '@/lib/server/dashboard';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
-import type {
-  DashboardCampaignSnapshotItem,
-  DashboardPayload,
-} from './types';
+import type { DashboardCampaignSnapshotItem } from './types';
 
 export default async function MainDashboardPage() {
   const supabase = await createServerClient();
   const { user, businessId } = await getRequiredAppContext();
   const { selectedPlatformId, selectedAdAccountId } = await resolveCurrentSelection(businessId);
 
-  const [businessRollup, businessProfileResult] = await Promise.all([
-    getBusinessAdAccountsRollup(businessId),
-    supabase
-      .from('business_profiles')
-      .select('business_name')
-      .eq('id', businessId)
-      .maybeSingle(),
-  ]);
+  const businessProfileResult = await supabase
+    .from('business_profiles')
+    .select('business_name')
+    .eq('id', businessId)
+    .maybeSingle();
 
   const businessName =
     businessProfileResult.data?.business_name ||
@@ -48,10 +40,6 @@ export default async function MainDashboardPage() {
       ? await getAdAccountData(selectedAdAccountId, selectedPlatformId, businessId)
       : null;
 
-  const adAccountHasMetrics = adAccount
-    ? hasMeaningfulMetrics(adAccount.aggregated_metrics)
-    : false;
-
   let campaignSnapshot: DashboardCampaignSnapshotItem[] = [];
   if (adAccount?.id && platformConnected) {
     try {
@@ -63,33 +51,14 @@ export default async function MainDashboardPage() {
     }
   }
 
-  const state = resolveDashboardState({
-    selectedPlatformId,
-    platformConnected,
+  const payload = buildDashboardPayload({
+    businessName,
+    selectedPlatformIntegrationId: selectedPlatformId,
     selectedAdAccountId,
-    adAccountPresent: Boolean(adAccount),
-    adAccountHasMetrics,
-  });
-
-  const payload: DashboardPayload = {
-    state,
-    business: {
-      id: businessId,
-      name: businessName,
-    },
-    selection: {
-      selectedPlatformIntegrationId: selectedPlatformId,
-      selectedAdAccountId,
-    },
     platform,
     adAccount,
-    businessRollup,
-    trend: {
-      defaultWindow: '30',
-      points: adAccount?.time_increment_metrics['30'] ?? [],
-    },
     campaignSnapshot,
-  };
+  });
 
   return <DashboardClient payload={payload} />;
 }

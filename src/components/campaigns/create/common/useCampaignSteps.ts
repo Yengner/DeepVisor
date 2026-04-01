@@ -30,7 +30,7 @@ export function useCampaignSteps(
   }, [active]);
 
   // Generic field validation helper (can be used by any platform)
-  const validateFormFields = useCallback((fields: string[]): boolean => {
+  const validateFormFields = useCallback((_fields: string[]): boolean => {
     let isValid = true;
     const errors: Record<string, boolean> = {};
 

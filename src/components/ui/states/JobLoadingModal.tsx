@@ -7,7 +7,7 @@ export default function JobLoadingModal({
     jobId, opened, onClose, onDone
 }: { jobId: string; opened: boolean; onClose: () => void; onDone?: () => void }) {
 
-    const { job, events, loading } = useJobProgress(jobId);
+    const { job, events } = useJobProgress(jobId);
     const pct = job?.percent ?? 0;
     const done = job?.status === "done";
     const error = job?.status === "error";

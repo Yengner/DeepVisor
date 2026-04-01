@@ -59,6 +59,8 @@ export interface MetaAdAccountSnapshot {
   externalAccountId: string;
   name: string | null;
   status: string | null;
+  currencyCode: string | null;
+  timezone: string | null;
   aggregatedMetrics: Json | null;
   timeIncrementMetrics: Json | null;
 }

@@ -3,9 +3,10 @@ import 'server-only';
 import { asNumber, asRecord, asString } from '@/lib/shared';
 import type { Json } from '@/lib/shared/types/supabase';
 import { fetchMetaAdAccountSnapshots } from '@/lib/server/integrations/adapters/meta';
-import { fetchMetaCollection, getBackfillDateRange } from './client';
+import { fetchMetaCollection, fetchMetaObject, getBackfillDateRange } from './client';
 import type {
   MetaAdAccountPerformanceSeed,
+  MetaAdCreativeSeed,
   MetaActionMetric,
   MetaAdPerformanceSeed,
   MetaAdSeed,
@@ -49,6 +50,20 @@ type MetaAdNode = {
   updated_time?: string;
 };
 
+type MetaAdCreativeNode = {
+  id?: string;
+  name?: string;
+  object_type?: string;
+  call_to_action_type?: string;
+  image_hash?: string;
+  image_url?: string;
+  thumbnail_url?: string;
+  object_story_id?: string;
+  object_story_spec?: unknown;
+  asset_feed_spec?: unknown;
+  instagram_actor_id?: string;
+};
+
 type MetaInsightRow = {
   campaign_id?: string;
   adset_id?: string;
@@ -75,6 +90,47 @@ function normalizeMetaStatus(value: unknown): string | null {
   return normalized.length > 0 ? normalized.toLowerCase() : null;
 }
 
+function firstNonEmptyString(...values: unknown[]): string | null {
+  for (const value of values) {
+    const normalized = asString(value).trim();
+    if (normalized.length > 0) {
+      return normalized;
+    }
+  }
+
+  return null;
+}
+
+function extractTextAsset(value: unknown): string | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  for (const item of value) {
+    const record = asRecord(item);
+    const text = firstNonEmptyString(record.text, record.name, record.value);
+    if (text) {
+      return text;
+    }
+  }
+
+  return null;
+}
+
+function extractUrl(value: unknown): string | null {
+  if (typeof value === 'string') {
+    return firstNonEmptyString(value);
+  }
+
+  const record = asRecord(value);
+  return firstNonEmptyString(record.link, record.url, asRecord(record.value).link);
+}
+
+function extractCtaType(value: unknown): string | null {
+  const record = asRecord(value);
+  return firstNonEmptyString(record.type, record.call_to_action_type);
+}
+
 function extractActionMetric(
   actions: MetaActionMetric[] | undefined,
   actionTypes: string[]
@@ -94,6 +150,101 @@ function extractActionMetric(
   }
 
   return total;
+}
+
+function chunkStrings(values: string[], size: number): string[][] {
+  if (values.length === 0) {
+    return [];
+  }
+
+  const chunks: string[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+function normalizeMetaAdCreativeSeed(creative: MetaAdCreativeNode): MetaAdCreativeSeed | null {
+  const externalId = asString(creative.id);
+  if (!externalId) {
+    return null;
+  }
+
+  const objectStorySpec = asRecord(creative.object_story_spec);
+  const linkData = asRecord(objectStorySpec.link_data);
+  const videoData = asRecord(objectStorySpec.video_data);
+  const photoData = asRecord(objectStorySpec.photo_data);
+  const templateData = asRecord(objectStorySpec.template_data);
+  const assetFeedSpec = asRecord(creative.asset_feed_spec);
+
+  const primaryText = firstNonEmptyString(
+    linkData.message,
+    videoData.message,
+    photoData.message,
+    templateData.message,
+    extractTextAsset(assetFeedSpec.bodies)
+  );
+  const headline = firstNonEmptyString(
+    linkData.name,
+    videoData.title,
+    photoData.caption,
+    templateData.name,
+    extractTextAsset(assetFeedSpec.titles)
+  );
+  const description = firstNonEmptyString(
+    linkData.description,
+    templateData.description,
+    videoData.description,
+    extractTextAsset(assetFeedSpec.descriptions)
+  );
+  const linkUrl = firstNonEmptyString(
+    extractUrl(linkData.link),
+    extractUrl(templateData.link),
+    extractUrl(asRecord(linkData.call_to_action).value),
+    extractUrl(asRecord(videoData.call_to_action).value),
+    extractUrl(Array.isArray(assetFeedSpec.link_urls) ? assetFeedSpec.link_urls[0] : null)
+  );
+  const videoId = firstNonEmptyString(videoData.video_id);
+  const pageId = firstNonEmptyString(objectStorySpec.page_id);
+  const instagramActorId = firstNonEmptyString(
+    creative.instagram_actor_id,
+    objectStorySpec.instagram_actor_id
+  );
+  const ctaType = firstNonEmptyString(
+    creative.call_to_action_type,
+    extractCtaType(linkData.call_to_action),
+    extractCtaType(videoData.call_to_action)
+  );
+  const creativeType = firstNonEmptyString(
+    creative.object_type,
+    Array.isArray(linkData.child_attachments) && linkData.child_attachments.length > 1
+      ? 'carousel'
+      : null,
+    videoId ? 'video' : null,
+    creative.image_url || creative.image_hash ? 'image' : null
+  );
+
+  return {
+    externalId,
+    name: firstNonEmptyString(creative.name),
+    creativeType,
+    ctaType,
+    primaryText,
+    headline,
+    description,
+    linkUrl,
+    imageUrl: firstNonEmptyString(creative.image_url, photoData.url),
+    imageHash: firstNonEmptyString(creative.image_hash),
+    thumbnailUrl: firstNonEmptyString(creative.thumbnail_url),
+    videoId,
+    pageId,
+    instagramActorId,
+    objectStoryId: firstNonEmptyString(creative.object_story_id),
+    objectStorySpec: toJson(creative.object_story_spec),
+    assetFeedSpec: toJson(creative.asset_feed_spec),
+    raw: toJson(creative),
+  } satisfies MetaAdCreativeSeed;
 }
 
 function normalizeInsightMetrics(row: MetaInsightRow) {
@@ -299,6 +450,79 @@ export async function fetchMetaAdSeeds(input: {
       } satisfies MetaAdSeed;
     })
     .filter((ad): ad is MetaAdSeed => ad !== null);
+}
+
+export async function fetchMetaAdCreativeSeeds(input: {
+  accessToken: string;
+  adAccountExternalId: string;
+  creativeExternalIds?: string[];
+}): Promise<MetaAdCreativeSeed[]> {
+  const fields = [
+    'id',
+    'name',
+    'object_type',
+    'call_to_action_type',
+    'image_hash',
+    'image_url',
+    'thumbnail_url',
+    'object_story_id',
+    'object_story_spec',
+    'asset_feed_spec',
+    'instagram_actor_id',
+  ].join(',');
+
+  const scopedCreativeIds = Array.from(
+    new Set(
+      (input.creativeExternalIds ?? [])
+        .map((creativeId) => asString(creativeId).trim())
+        .filter((creativeId) => creativeId.length > 0)
+    )
+  );
+
+  if (scopedCreativeIds.length > 0) {
+    const creatives: MetaAdCreativeNode[] = [];
+
+    for (const creativeIdsChunk of chunkStrings(scopedCreativeIds, 10)) {
+      const chunkResults = await Promise.all(
+        creativeIdsChunk.map(async (creativeId) => {
+          try {
+            return await fetchMetaObject<MetaAdCreativeNode>({
+              path: creativeId,
+              accessToken: input.accessToken,
+              params: {
+                fields,
+              },
+            });
+          } catch (error) {
+            console.warn(
+              `Skipping Meta creative ${creativeId} for ad account ${input.adAccountExternalId}:`,
+              error
+            );
+            return null;
+          }
+        })
+      );
+
+      creatives.push(...chunkResults.filter((creative): creative is MetaAdCreativeNode => creative !== null));
+    }
+
+    return creatives
+      .map(normalizeMetaAdCreativeSeed)
+      .filter((creative): creative is MetaAdCreativeSeed => creative !== null);
+  }
+
+  const creatives = await fetchMetaCollection<MetaAdCreativeNode>({
+    path: `${input.adAccountExternalId}/adcreatives`,
+    accessToken: input.accessToken,
+    params: {
+      fields,
+      limit: 200,
+    },
+  });
+
+  return creatives
+    .map(normalizeMetaAdCreativeSeed)
+    .filter((creative): creative is MetaAdCreativeSeed => creative !== null);
 }
 
 export async function fetchMetaCampaignPerformanceSeeds(input: {
