@@ -1,9 +1,19 @@
 import Topbar from '@/components/layout/topBar/TopBar';
+import AiAssistantDrawer from '@/components/layout/AiAssistantDrawer';
 import Sidebar from '@/components/layout/LeftSidebar';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
+import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
+import { buildGlobalAiAssistantPayload } from '@/lib/server/agency';
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { user, businessId } = await getRequiredAppContext();
+  const selection = await resolveCurrentSelection(businessId);
+  const assistantPayload = await buildGlobalAiAssistantPayload({
+    businessId,
+    defaultPlatformIntegrationId: selection.selectedPlatformId,
+    defaultAdAccountId: selection.selectedAdAccountId,
+  });
+
   return (
     <div className="h-screen flex flex-col">
       <header className="w-full h-16 bg-white border-b border-gray-300 z-50 flex-shrink-0">
@@ -17,6 +27,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {children}
         </main>
       </div>
+
+      <AiAssistantDrawer payload={assistantPayload} />
     </div>
   );
 }

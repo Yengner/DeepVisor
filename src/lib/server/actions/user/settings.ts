@@ -1,4 +1,4 @@
-import { AdAccountWithMetrics } from "../../services";
+import type { AdAccountWithMetrics } from "../../services/platforms/meta/types";
 import { createSupabaseClient } from "../../supabase/server";
 
 /**

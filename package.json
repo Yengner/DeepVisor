@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
-    "types:supabase": "npx supabase gen types typescript --linked > src/lib/shared/types/supabase.ts"
+    "types:supabase": "npx supabase gen types typescript --linked --schema public,ai > src/lib/shared/types/supabase.ts"
   },
   "dependencies": {
     "@babel/runtime": "^7.27.0",

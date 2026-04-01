@@ -13,25 +13,72 @@ import type {
 } from '../types';
 
 type AssessmentClient = SupabaseClient<Database>;
-type AdAccountAssessmentInsert =
-  Database['public']['Tables']['ad_account_assessments']['Insert'];
-type BusinessAssessmentInsert =
-  Database['public']['Tables']['business_assessments']['Insert'];
+type AssessmentInsert = Database['ai']['Tables']['business_assessments']['Insert'];
 
-function mapAdAccountAssessment(row: AdAccountAssessmentRow): AdAccountAssessment {
+const AD_ACCOUNT_SCOPE_PREFIX = 'ad_account:';
+
+type StoredAdAccountDigestPayload = {
+  type: 'ad_account_assessment';
+  version: number;
+  platformIntegrationId: string;
+  adAccountId: string;
+  state: AdAccountAssessment['state'];
+  historyDays: number;
+  hasDelivery: boolean;
+  hasConversionSignal: boolean;
+  trackingConfidence: AdAccountAssessment['trackingConfidence'];
+  maturityScore: number;
+  digest: AdAccountDigest;
+};
+
+function buildAdAccountScope(platformIntegrationId: string, adAccountId: string): string {
+  return `${AD_ACCOUNT_SCOPE_PREFIX}${platformIntegrationId}:${adAccountId}`;
+}
+
+function parseAdAccountScope(scope: string): { platformIntegrationId: string; adAccountId: string } | null {
+  if (!scope.startsWith(AD_ACCOUNT_SCOPE_PREFIX)) {
+    return null;
+  }
+
+  const [, platformIntegrationId = '', adAccountId = ''] = scope.split(':');
+  if (!platformIntegrationId || !adAccountId) {
+    return null;
+  }
+
+  return { platformIntegrationId, adAccountId };
+}
+
+function mapAdAccountAssessment(row: AdAccountAssessmentRow): AdAccountAssessment | null {
+  const scope = parseAdAccountScope(row.scope);
+  const digestPayload = asRecord(row.digest_json);
+  const assessment = asRecord(row.assessment_json) as unknown as AdAccountAssessmentSummary;
+  const digest = asRecord(digestPayload.digest) as unknown as AdAccountDigest;
+
+  if (!scope) {
+    return null;
+  }
+
   return {
     id: row.id,
     businessId: row.business_id,
-    platformIntegrationId: row.platform_integration_id,
-    adAccountId: row.ad_account_id,
-    state: row.state as AdAccountAssessment['state'],
-    historyDays: row.history_days,
-    hasDelivery: row.has_delivery,
-    hasConversionSignal: row.has_conversion_signal,
-    trackingConfidence: row.tracking_confidence as AdAccountAssessment['trackingConfidence'],
-    maturityScore: Number(row.maturity_score ?? 0),
-    digest: asRecord(row.digest_json) as unknown as AdAccountDigest,
-    assessment: asRecord(row.assessment_json) as unknown as AdAccountAssessmentSummary,
+    platformIntegrationId:
+      typeof digestPayload.platformIntegrationId === 'string'
+        ? digestPayload.platformIntegrationId
+        : scope.platformIntegrationId,
+    adAccountId:
+      typeof digestPayload.adAccountId === 'string'
+        ? digestPayload.adAccountId
+        : scope.adAccountId,
+    state: (digestPayload.state ?? 'learning') as AdAccountAssessment['state'],
+    historyDays:
+      typeof digestPayload.historyDays === 'number' ? digestPayload.historyDays : 0,
+    hasDelivery: digestPayload.hasDelivery === true,
+    hasConversionSignal: digestPayload.hasConversionSignal === true,
+    trackingConfidence:
+      (digestPayload.trackingConfidence ?? 'low') as AdAccountAssessment['trackingConfidence'],
+    maturityScore: Number(digestPayload.maturityScore ?? 0),
+    digest,
+    assessment,
     createdAt: row.created_at,
   };
 }
@@ -64,23 +111,29 @@ export async function insertAdAccountAssessment(
     createdAt: string;
   }
 ): Promise<AdAccountAssessment> {
-  const payload: AdAccountAssessmentInsert = {
+  const payload: AssessmentInsert = {
     business_id: input.businessId,
-    platform_integration_id: input.platformIntegrationId,
-    ad_account_id: input.adAccountId,
-    state: input.state,
-    history_days: input.historyDays,
-    has_delivery: input.hasDelivery,
-    has_conversion_signal: input.hasConversionSignal,
-    tracking_confidence: input.trackingConfidence,
-    maturity_score: input.maturityScore,
-    digest_json: input.digest as unknown as AdAccountAssessmentInsert['digest_json'],
-    assessment_json: input.assessment as unknown as AdAccountAssessmentInsert['assessment_json'],
+    scope: buildAdAccountScope(input.platformIntegrationId, input.adAccountId),
+    digest_json: {
+      type: 'ad_account_assessment',
+      version: 1,
+      platformIntegrationId: input.platformIntegrationId,
+      adAccountId: input.adAccountId,
+      state: input.state,
+      historyDays: input.historyDays,
+      hasDelivery: input.hasDelivery,
+      hasConversionSignal: input.hasConversionSignal,
+      trackingConfidence: input.trackingConfidence,
+      maturityScore: input.maturityScore,
+      digest: input.digest,
+    } satisfies StoredAdAccountDigestPayload as unknown as AssessmentInsert['digest_json'],
+    assessment_json: input.assessment as unknown as AssessmentInsert['assessment_json'],
     created_at: input.createdAt,
   };
 
   const { data, error } = await supabase
-    .from('ad_account_assessments')
+    .schema('ai')
+    .from('business_assessments')
     .insert(payload)
     .select('*')
     .single();
@@ -89,7 +142,12 @@ export async function insertAdAccountAssessment(
     throw error ?? new Error('Failed to insert ad account assessment');
   }
 
-  return mapAdAccountAssessment(data);
+  const mapped = mapAdAccountAssessment(data);
+  if (!mapped) {
+    throw new Error('Failed to map inserted ad account assessment');
+  }
+
+  return mapped;
 }
 
 export async function getLatestAdAccountAssessment(
@@ -100,27 +158,58 @@ export async function getLatestAdAccountAssessment(
     adAccountId?: string | null;
   }
 ): Promise<AdAccountAssessment | null> {
-  let query = supabase
-    .from('ad_account_assessments')
+  if (input.platformIntegrationId && input.adAccountId) {
+    const { data, error } = await supabase
+      .schema('ai')
+      .from('business_assessments')
+      .select('*')
+      .eq('business_id', input.businessId)
+      .eq('scope', buildAdAccountScope(input.platformIntegrationId, input.adAccountId))
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data ? mapAdAccountAssessment(data) : null;
+  }
+
+  const { data, error } = await supabase
+    .schema('ai')
+    .from('business_assessments')
     .select('*')
     .eq('business_id', input.businessId)
+    .like('scope', `${AD_ACCOUNT_SCOPE_PREFIX}%`)
     .order('created_at', { ascending: false })
-    .limit(1);
+    .limit(500);
 
-  if (input.platformIntegrationId) {
-    query = query.eq('platform_integration_id', input.platformIntegrationId);
-  }
-
-  if (input.adAccountId) {
-    query = query.eq('ad_account_id', input.adAccountId);
-  }
-
-  const { data, error } = await query.maybeSingle();
   if (error) {
     throw error;
   }
 
-  return data ? mapAdAccountAssessment(data) : null;
+  for (const row of data ?? []) {
+    const mapped = mapAdAccountAssessment(row);
+    if (!mapped) {
+      continue;
+    }
+
+    if (
+      input.platformIntegrationId &&
+      mapped.platformIntegrationId !== input.platformIntegrationId
+    ) {
+      continue;
+    }
+
+    if (input.adAccountId && mapped.adAccountId !== input.adAccountId) {
+      continue;
+    }
+
+    return mapped;
+  }
+
+  return null;
 }
 
 export async function listLatestAdAccountAssessmentsForBusiness(
@@ -128,11 +217,13 @@ export async function listLatestAdAccountAssessmentsForBusiness(
   businessId: string
 ): Promise<AdAccountAssessment[]> {
   const { data, error } = await supabase
-    .from('ad_account_assessments')
+    .schema('ai')
+    .from('business_assessments')
     .select('*')
     .eq('business_id', businessId)
+    .like('scope', `${AD_ACCOUNT_SCOPE_PREFIX}%`)
     .order('created_at', { ascending: false })
-    .limit(100);
+    .limit(500);
 
   if (error) {
     throw error;
@@ -140,11 +231,12 @@ export async function listLatestAdAccountAssessmentsForBusiness(
 
   const latestByAdAccountId = new Map<string, AdAccountAssessment>();
   for (const row of (data ?? []) as AdAccountAssessmentRow[]) {
-    if (latestByAdAccountId.has(row.ad_account_id)) {
+    const mapped = mapAdAccountAssessment(row);
+    if (!mapped || latestByAdAccountId.has(mapped.adAccountId)) {
       continue;
     }
 
-    latestByAdAccountId.set(row.ad_account_id, mapAdAccountAssessment(row));
+    latestByAdAccountId.set(mapped.adAccountId, mapped);
   }
 
   return Array.from(latestByAdAccountId.values());
@@ -160,15 +252,16 @@ export async function insertBusinessAssessment(
     createdAt: string;
   }
 ): Promise<BusinessAssessment> {
-  const payload: BusinessAssessmentInsert = {
+  const payload: AssessmentInsert = {
     business_id: input.businessId,
     scope: input.scope,
-    digest_json: input.digest as unknown as BusinessAssessmentInsert['digest_json'],
-    assessment_json: input.assessment as unknown as BusinessAssessmentInsert['assessment_json'],
+    digest_json: input.digest as unknown as AssessmentInsert['digest_json'],
+    assessment_json: input.assessment as unknown as AssessmentInsert['assessment_json'],
     created_at: input.createdAt,
   };
 
   const { data, error } = await supabase
+    .schema('ai')
     .from('business_assessments')
     .insert(payload)
     .select('*')
@@ -186,6 +279,7 @@ export async function getLatestBusinessAssessment(
   businessId: string
 ): Promise<BusinessAssessment | null> {
   const { data, error } = await supabase
+    .schema('ai')
     .from('business_assessments')
     .select('*')
     .eq('business_id', businessId)

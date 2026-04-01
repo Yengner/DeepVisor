@@ -53,8 +53,6 @@ export default function CreativeAssetsStep({
     const uploadedFiles = useMemo(() => creative.uploadedFiles || [], [creative.uploadedFiles]);
 
     const [mediaModalOpened, setMediaModalOpened] = useState(false);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [selectedCreative, setSelectedCreative] = useState<SelectedCreative | null>(null);
 
     // Use memoized uploadedFiles
     const { filePreview, handleFilesChange } = useFilePreview(uploadedFiles);
@@ -63,7 +61,6 @@ export default function CreativeAssetsStep({
         previews,
         loading: loadingPreview,
         error: previewError,
-        hasLoaded: previewLoaded // eslint-disable-line @typescript-eslint/no-unused-vars
     } = useCreativePreview({
         platformId: platformData.id,
         creativeId: creative.existingCreativeIds?.[0],
@@ -80,14 +77,12 @@ export default function CreativeAssetsStep({
             form.setFieldValue(`adSets.${idx}.creatives.0.selectedCreativeName`, '');
             form.setFieldValue(`adSets.${idx}.creatives.0.selectedCreativeThumbnail`, '');
             form.setFieldValue(`adSets.${idx}.creatives.0.existingCreatives`, []);
-            setSelectedCreative(null);
             return;
         }
         form.setFieldValue(`adSets.${idx}.creatives.0.existingCreativeIds`, [creativeObj.id]);
         form.setFieldValue(`adSets.${idx}.creatives.0.selectedCreativeName`, creativeObj.name);
         form.setFieldValue(`adSets.${idx}.creatives.0.selectedCreativeThumbnail`, creativeObj.thumbnail_url || '');
         form.setFieldValue(`adSets.${idx}.creatives.0.existingCreatives`, [creativeObj.id]);
-        setSelectedCreative(creativeObj);
     };
 
     const showCustomTextFields = creative.contentSource === 'upload' ||

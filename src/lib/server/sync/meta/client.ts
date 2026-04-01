@@ -34,6 +34,30 @@ async function parseMetaError(response: Response): Promise<string> {
   return body.error?.message || `Meta request failed with status ${response.status}`;
 }
 
+export async function fetchMetaObject<T>(input: {
+  path: string;
+  accessToken: string;
+  params?: Record<string, string | number | boolean | undefined>;
+}): Promise<T> {
+  const url = new URL(`${META_GRAPH_BASE_URL}/${input.path}`);
+  url.searchParams.set('access_token', input.accessToken);
+
+  for (const [key, value] of Object.entries(input.params ?? {})) {
+    if (value === undefined) {
+      continue;
+    }
+
+    url.searchParams.set(key, String(value));
+  }
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(await parseMetaError(response));
+  }
+
+  return (await response.json()) as T;
+}
+
 export async function fetchMetaCollection<T>(input: {
   path: string;
   accessToken: string;

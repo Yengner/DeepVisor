@@ -5,10 +5,9 @@ import type {
   ReportTimeSeriesPoint,
 } from '@/lib/server/reports/types';
 
-export type AdAccountAssessmentRow =
-  Database['public']['Tables']['ad_account_assessments']['Row'];
 export type BusinessAssessmentRow =
-  Database['public']['Tables']['business_assessments']['Row'];
+  Database['ai']['Tables']['business_assessments']['Row'];
+export type AdAccountAssessmentRow = BusinessAssessmentRow;
 
 export type BusinessAgencyPlanningScope =
   | 'business'
@@ -258,5 +257,25 @@ export interface BusinessAgencyWorkspace {
   overview: BusinessAgencyOverview;
   latestBusinessAssessment: BusinessAssessment | null;
   latestAccountAssessments: AdAccountAssessment[];
+  latestSelectedAssessment: AdAccountAssessment | null;
+}
+
+export type GlobalAiAssistantState =
+  | 'no_platform_connected'
+  | 'no_ad_account_selected'
+  | 'needs_assessment'
+  | 'ready';
+
+export interface GlobalAiAssistantPayload {
+  businessId: string;
+  businessName: string;
+  state: GlobalAiAssistantState;
+  selectionScope: BusinessAgencyPlanningScope;
+  selectedPlatformIntegrationId: string | null;
+  selectedPlatformLabel: string | null;
+  selectedAdAccountId: string | null;
+  selectedAdAccountName: string | null;
+  selectedAdAccountExternalId: string | null;
+  latestBusinessAssessment: BusinessAssessment | null;
   latestSelectedAssessment: AdAccountAssessment | null;
 }

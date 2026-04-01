@@ -12,9 +12,10 @@ export async function syncMetaAdAccounts(input: {
   syncedAt: string;
   primaryExternalAccountId: string;
 }) {
-  const snapshots = (await fetchMetaAdAccountSnapshots(input.accessToken)).filter(
-    (snapshot) => snapshot.externalAccountId === input.primaryExternalAccountId
-  );
+  const snapshots = await fetchMetaAdAccountSnapshots(input.accessToken, {
+    externalAccountId: input.primaryExternalAccountId,
+    includeMetrics: true,
+  });
 
   if (snapshots.length === 0) {
     throw new Error('Selected Meta ad account is no longer accessible for this integration');
@@ -28,8 +29,8 @@ export async function syncMetaAdAccounts(input: {
       externalAccountId: snapshot.externalAccountId,
       name: snapshot.name,
       status: snapshot.status,
-      currencyCode: null,
-      timezone: null,
+      currencyCode: snapshot.currencyCode,
+      timezone: snapshot.timezone,
       aggregatedMetrics: snapshot.aggregatedMetrics,
       timeIncrementMetrics: snapshot.timeIncrementMetrics,
       syncedAt: input.syncedAt,

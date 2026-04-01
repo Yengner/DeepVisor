@@ -37,6 +37,27 @@ export interface MetaAdSeed {
   raw: Json | null;
 }
 
+export interface MetaAdCreativeSeed {
+  externalId: string;
+  name: string | null;
+  creativeType: string | null;
+  ctaType: string | null;
+  primaryText: string | null;
+  headline: string | null;
+  description: string | null;
+  linkUrl: string | null;
+  imageUrl: string | null;
+  imageHash: string | null;
+  thumbnailUrl: string | null;
+  videoId: string | null;
+  pageId: string | null;
+  instagramActorId: string | null;
+  objectStoryId: string | null;
+  objectStorySpec: Json | null;
+  assetFeedSpec: Json | null;
+  raw: Json | null;
+}
+
 export interface MetaCampaignPerformanceSeed {
   campaignExternalId: string;
   day: string;

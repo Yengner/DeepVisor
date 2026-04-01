@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { asNumber, asRecord, asString, formatRetryDelay } from '@/lib/shared';
+import { asNumber, asRecord, asString } from '@/lib/shared';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import type { Database, Json } from '@/lib/shared/types/supabase';
 import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integrations';
@@ -88,7 +88,15 @@ function parseRateLimitState(details: Record<string, unknown>): ManualSyncRateLi
 }
 
 function formatCooldownMessage(retryAfterMs: number): string {
-  return `Sync cooling down. ${formatRetryDelay(retryAfterMs)}`;
+  const totalSeconds = Math.max(1, Math.ceil(retryAfterMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  if (minutes > 0) {
+    return `Sync cooling down. Try again in ${minutes}m ${seconds}s.`;
+  }
+
+  return `Sync cooling down. Try again in ${seconds}s.`;
 }
 
 async function listLatestBusinessSyncTargets(input: {

@@ -41,7 +41,7 @@ interface UseFacebookPagesReturn {
 export function useFacebookPages(
   setFieldValue: (fieldName: string, value: any) => void,
   shouldFetch: boolean = false,
-  adAccountId: string
+  _adAccountId: string
 ): UseFacebookPagesReturn {
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
   const [loadingPages, setLoadingPages] = useState<boolean>(false);

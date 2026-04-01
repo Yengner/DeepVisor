@@ -7,8 +7,6 @@ import { Badge, Button, Card, Container, Section } from "@/components/marketing"
 const SUPPORT_FORM_URL =
     "https://docs.google.com/forms/d/e/1FAIpQLSdxmbkyvBibl1imDI5SNooRLFlPhEEwqq-yJ-H23MJESZSbpw/viewform?usp=dialog";
 
-const logos = ["Northwind Labs", "Helios Group", "Vector Studios", "Signalworks", "Apex Commerce", "Juniper Health"];
-
 const features = [
     {
         title: "Meta-first foundation",

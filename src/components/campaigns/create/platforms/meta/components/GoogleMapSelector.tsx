@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, Autocomplete } from '@react-google-maps/api';
 import { TextInput, Slider, Stack, Text, Button, Group } from '@mantine/core';
 import { IconSearch, IconMapPin } from '@tabler/icons-react';

@@ -13,6 +13,7 @@ type AdsetDimInsert = Database['public']['Tables']['adset_dims']['Insert'];
 export interface UpsertAdsetDimInput {
   adAccountId: string;
   campaignExternalId: string;
+  campaignId: string | null;
   externalId: string;
   name: string | null;
   optimizationGoal: string | null;
@@ -91,6 +92,7 @@ export async function upsertAdsetDims(
     const baseRow = {
       ad_account_id: input.adAccountId,
       campaign_external_id: input.campaignExternalId,
+      campaign_id: input.campaignId,
       external_id: input.externalId,
       name: input.name,
       optimization_goal: input.optimizationGoal,

@@ -433,11 +433,7 @@ export async function resolveIntegrationAccessToken(
   return tokenOrSecretId;
 }
 
-export function getPrimaryAdAccountSelection(details: Json | null | undefined): {
-  externalAccountId: string | null;
-  name: string | null;
-  selectedAt: string | null;
-} {
+export function getPrimaryAdAccountSelection(details: Json | null | undefined): { externalAccountId: string | null; name: string | null; selectedAt: string | null;} {
   const record = asRecord(details);
 
   return {
@@ -504,7 +500,9 @@ export async function listMetaAccessibleAdAccounts(
     throw new Error('Missing access token');
   }
 
-  const snapshots = await fetchMetaAdAccountSnapshots(accessToken);
+  const snapshots = await fetchMetaAdAccountSnapshots(accessToken, {
+    includeMetrics: false,
+  });
   return snapshots.map((snapshot) => ({
     externalAccountId: snapshot.externalAccountId,
     name: snapshot.name,
@@ -611,7 +609,9 @@ export async function syncMetaAdAccountsSnapshot(
   }
 ): Promise<number> {
   const now = new Date().toISOString();
-  const snapshots = await fetchMetaAdAccountSnapshots(input.accessToken);
+  const snapshots = await fetchMetaAdAccountSnapshots(input.accessToken, {
+    includeMetrics: true,
+  });
 
   if (snapshots.length === 0) {
     return 0;

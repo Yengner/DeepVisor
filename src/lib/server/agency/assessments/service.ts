@@ -3,6 +3,10 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 import OpenAI from 'openai';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  parseDailyMetricsRowsFromTimeIncrementMetrics,
+  type AdAccountDailyMetricsRow,
+} from '@/lib/server/repositories/ad_accounts/normalizers';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { asNumber } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
@@ -51,17 +55,7 @@ type AdAccountRow = Pick<
   | 'last_synced'
 >;
 
-type AdAccountDailyRow = Pick<
-  Database['public']['Tables']['ad_accounts_performance_daily']['Row'],
-  | 'day'
-  | 'spend'
-  | 'reach'
-  | 'impressions'
-  | 'clicks'
-  | 'inline_link_clicks'
-  | 'leads'
-  | 'messages'
->;
+type AdAccountDailyRow = AdAccountDailyMetricsRow;
 
 const ASSESSMENT_VERSION = 1;
 
@@ -662,19 +656,23 @@ async function getAdAccountRow(
 
 async function listAdAccountDailyRows(
   supabase: AssessmentClient,
+  businessId: string,
   adAccountId: string
 ): Promise<AdAccountDailyRow[]> {
   const { data, error } = await supabase
-    .from('ad_accounts_performance_daily')
-    .select('day, spend, reach, impressions, clicks, inline_link_clicks, leads, messages')
-    .eq('ad_account_id', adAccountId)
-    .order('day', { ascending: true });
+    .from('ad_accounts')
+    .select('currency_code, time_increment_metrics')
+    .eq('business_id', businessId)
+    .eq('id', adAccountId)
+    .single();
 
-  if (error) {
-    throw error;
+  if (error || !data) {
+    throw error ?? new Error('Ad account daily metrics not found');
   }
 
-  return (data ?? []) as AdAccountDailyRow[];
+  return parseDailyMetricsRowsFromTimeIncrementMetrics(data.time_increment_metrics, {
+    currencyCode: data.currency_code,
+  });
 }
 
 function shouldGenerateAiAssessment(input: {
@@ -710,7 +708,7 @@ async function buildAdAccountDigest(input: {
   const [integration, adAccount, dailyRows] = await Promise.all([
     getIntegrationRow(input.supabase, input.businessId, input.platformIntegrationId),
     getAdAccountRow(input.supabase, input.businessId, input.adAccountId),
-    listAdAccountDailyRows(input.supabase, input.adAccountId),
+    listAdAccountDailyRows(input.supabase, input.businessId, input.adAccountId),
   ]);
 
   const platform = getPlatformRecord(integration.platforms);

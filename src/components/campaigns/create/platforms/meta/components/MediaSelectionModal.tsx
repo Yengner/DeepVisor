@@ -65,7 +65,6 @@ export default function MediaSelectionModal({
         previews,
         loading: loadingPreview,
         error: previewError,
-        hasLoaded: previewLoaded // eslint-disable-line @typescript-eslint/no-unused-vars
     } = useCreativePreview({
         platformId,
         creativeId: selectedId,

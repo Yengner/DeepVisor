@@ -67,6 +67,8 @@ type PlatformListProps = {
   platforms: Platform[];
 };
 
+type AccountSelectionMode = 'select' | 'testing_sync';
+
 function formatDate(value: string | null): string {
   if (!value) return 'Never';
   const date = new Date(value);
@@ -105,8 +107,49 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms }) => {
   const [selectedAccountExternalId, setSelectedAccountExternalId] = useState<string | null>(null);
   const [loadingAccountOptions, setLoadingAccountOptions] = useState(false);
   const [submittingAccountSelection, setSubmittingAccountSelection] = useState(false);
+  const [accountSelectionMode, setAccountSelectionMode] = useState<AccountSelectionMode>('select');
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const loadMetaAccountOptions = async (integrationId: string, preferredExternalAccountId?: string | null) => {
+    setAccountSelectionIntegrationId(integrationId);
+    setLoadingAccountOptions(true);
+    openAccountSelection();
+
+    try {
+      const response = await fetch(`/api/integrations/meta/ad-accounts?integrationId=${integrationId}`);
+      const body = await response.json().catch(() => ({}));
+
+      if (!response.ok || !body?.success) {
+        throw new Error(body?.error?.userMessage || 'Failed to load Meta ad accounts');
+      }
+
+      const options = Array.isArray(body.data?.accounts)
+        ? body.data.accounts.map((account: { externalAccountId: string; name: string | null }) => ({
+            value: account.externalAccountId,
+            label: account.name || account.externalAccountId,
+          }))
+        : [];
+
+      const serverSelectedExternalId =
+        typeof body.data?.primaryAdAccountExternalId === 'string'
+          ? body.data.primaryAdAccountExternalId
+          : null;
+
+      setAccountOptions(options);
+      setSelectedAccountExternalId(
+        preferredExternalAccountId ??
+          serverSelectedExternalId ??
+          options[0]?.value ??
+          null
+      );
+    } catch (error) {
+      closeAccountSelection();
+      toast.error(error instanceof Error ? error.message : 'Failed to load Meta ad accounts');
+    } finally {
+      setLoadingAccountOptions(false);
+    }
+  };
 
   useEffect(() => {
     const integration = searchParams.get('integration');
@@ -117,37 +160,8 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms }) => {
     if (!integration || !status) return;
 
     if (requiresAccountSelection && integration === 'meta' && integrationId) {
-      setAccountSelectionIntegrationId(integrationId);
-      openAccountSelection();
-      setLoadingAccountOptions(true);
-
-      void fetch(`/api/integrations/meta/ad-accounts?integrationId=${integrationId}`)
-        .then(async (response) => {
-          const body = await response.json().catch(() => ({}));
-          if (!response.ok || !body?.success) {
-            throw new Error(body?.error?.userMessage || 'Failed to load Meta ad accounts');
-          }
-
-          const options = Array.isArray(body.data?.accounts)
-            ? body.data.accounts.map((account: { externalAccountId: string; name: string | null }) => ({
-                value: account.externalAccountId,
-                label: account.name || account.externalAccountId,
-              }))
-            : [];
-
-          setAccountOptions(options);
-          setSelectedAccountExternalId(
-            typeof body.data?.primaryAdAccountExternalId === 'string'
-              ? body.data.primaryAdAccountExternalId
-              : options[0]?.value ?? null
-          );
-        })
-        .catch((error) => {
-          toast.error(error instanceof Error ? error.message : 'Failed to load Meta ad accounts');
-        })
-        .finally(() => {
-          setLoadingAccountOptions(false);
-        });
+      setAccountSelectionMode('select');
+      void loadMetaAccountOptions(integrationId);
 
       return;
     }
@@ -170,7 +184,11 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms }) => {
     setSubmittingAccountSelection(true);
 
     try {
-      const response = await fetch('/api/integrations/meta/select-ad-account', {
+      const endpoint =
+        accountSelectionMode === 'testing_sync'
+          ? '/api/sync/meta/test-ad-account'
+          : '/api/integrations/meta/select-ad-account';
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -183,18 +201,43 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms }) => {
       const body = await response.json().catch(() => ({}));
 
       if (!response.ok || !body?.success) {
-        throw new Error(body?.error?.userMessage || 'Failed to select Meta ad account');
+        throw new Error(
+          body?.error?.userMessage ||
+            (accountSelectionMode === 'testing_sync'
+              ? 'Failed to run testing sync'
+              : 'Failed to select Meta ad account')
+        );
       }
 
-      toast.success('Meta ad account selected and synced.');
+      toast.success(
+        accountSelectionMode === 'testing_sync'
+          ? 'Testing sync completed for the selected Meta ad account.'
+          : 'Meta ad account selected and synced.'
+      );
       closeAccountSelection();
       router.replace('/integration');
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to select Meta ad account');
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : accountSelectionMode === 'testing_sync'
+            ? 'Failed to run testing sync'
+            : 'Failed to select Meta ad account'
+      );
     } finally {
       setSubmittingAccountSelection(false);
     }
+  };
+
+  const handleOpenTestingSync = async () => {
+    if (!metaPlatform?.integrationId) {
+      toast.error('No Meta integration found.');
+      return;
+    }
+
+    setAccountSelectionMode('testing_sync');
+    await loadMetaAccountOptions(metaPlatform.integrationId);
   };
 
   const metaPlatform = platforms.find((platform) => platform.platformKey === 'meta') || platforms[0];
@@ -303,8 +346,9 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms }) => {
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            For V1, each Meta integration uses one primary ad account. Choose the account DeepVisor
-            should sync, assess, and plan against for this integration.
+            {accountSelectionMode === 'testing_sync'
+              ? 'Choose a Meta ad account and run a targeted sync for testing. This switches the active ad account for the current integration so you can inspect how the app reacts to a different dataset.'
+              : 'For V1, each Meta integration uses one primary ad account. Choose the account DeepVisor should sync, assess, and plan against for this integration.'}
           </Text>
           {loadingAccountOptions ? (
             <Group justify="center" py="md">
@@ -337,7 +381,7 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms }) => {
               loading={submittingAccountSelection}
               disabled={!selectedAccountExternalId || loadingAccountOptions}
             >
-              Select and sync
+              {accountSelectionMode === 'testing_sync' ? 'Testing Sync' : 'Select and sync'}
             </Button>
           </Group>
         </Stack>
@@ -524,6 +568,15 @@ const PlatformList: React.FC<PlatformListProps> = ({ platforms }) => {
                                 onClick={handleRefreshConnections}
                               >
                                 Sync Data
+                              </Button>
+
+                              <Button
+                                variant="light"
+                                color="orange"
+                                onClick={handleOpenTestingSync}
+                                disabled={!metaPlatform.integrationId}
+                              >
+                                Testing Sync
                               </Button>
 
                               <Menu shadow="md">

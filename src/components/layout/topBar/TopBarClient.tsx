@@ -138,7 +138,6 @@ export default function TopBarClient({
 
                 {/* Platform dropdown */}
                 <PlatformAdAccountDropdownClient
-                    userInfo={userInfo}
                     platforms={platforms}
                     adAccounts={adAccounts}
                     initialPlatformId={initialPlatformId}

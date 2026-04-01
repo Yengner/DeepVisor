@@ -1,27 +1,34 @@
 import { createServerClient as createSupabaseClient } from '../../supabase/server'
-import { getLoggedInUser } from "../user";
+import { getRequiredAppContext } from '@/lib/server/actions/app/context';
+import {
+    getBusinessIntegrationById,
+    resolveIntegrationAccessToken,
+} from '@/lib/server/integrations/service';
 
 
 export async function getAccessToken(platformId: string): Promise<string> {
     try {
         const supabase = await createSupabaseClient();
-        const userId = await getLoggedInUser().then((user: { id: string }) => user?.id);
+        const { businessId } = await getRequiredAppContext();
+        const integration = await getBusinessIntegrationById(supabase, {
+            businessId,
+            integrationId: platformId,
+        });
 
-        const { data: integration, error: integrationError } = await supabase
-            .from("platform_integrations")
-            .select("access_token")
-            .eq("id", platformId)
-            .eq("user_id", userId)
-            .eq("platform_name", "meta")
-            .single();
-
-        if (integrationError || !integration?.access_token) {
+        if (!integration || integration.platformKey !== 'meta' || !integration.isIntegrated) {
             throw new Error(
                 "We couldn't access your Meta account. Please reconnect your account."
             );
         }
 
-        return integration.access_token;
+        const accessToken = await resolveIntegrationAccessToken(supabase, integration);
+        if (!accessToken) {
+            throw new Error(
+                "We couldn't access your Meta account. Please reconnect your account."
+            );
+        }
+
+        return accessToken;
     } catch (err) {
         console.error("Error getting Meta access token:", err);
         throw new Error(

@@ -1,4 +1,4 @@
-import React, { forwardRef, type HTMLAttributes } from "react";
+import { forwardRef, type HTMLAttributes } from "react";
 import { type HandleProps } from "@xyflow/react";
 
 import { cn } from "@/lib/shared/utils";

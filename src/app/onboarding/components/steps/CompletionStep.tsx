@@ -10,7 +10,7 @@ type CompletionStepProps = {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function CompletionStep({ onComplete, userData }: CompletionStepProps) {
+export default function CompletionStep({ onComplete, userData: _userData }: CompletionStepProps) {
   return (
     <Stack gap="xl" py={16} align="center">
       <ThemeIcon size={80} radius="xl" color="green">

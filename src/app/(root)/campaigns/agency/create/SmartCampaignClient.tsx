@@ -63,7 +63,6 @@ export default function SmartCampaignClient({
     const [loading, setLoading] = useState(false);
     const [jobId, setJobId] = useState<string | null>(null);
     const [showLoadingModal, setShowLoadingModal] = useState(false);
-    const [draftId, setDraftId] = useState<string | null>(null);
 
     // Calculate total campaign cost
     const days = Number(form.values.timeframe);
@@ -97,7 +96,6 @@ export default function SmartCampaignClient({
             const data = await res.json();
             if (!res.ok || !data?.jobId) throw new Error(data?.error || 'Draft init failed');
             setJobId(data.jobId);
-            setDraftId(data.draftId);
             setShowLoadingModal(true);
 
         } catch (error) {

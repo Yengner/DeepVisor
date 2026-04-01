@@ -1,6 +1,10 @@
 import type { Json } from '@/lib/shared/types/supabase';
 import { fetchMetaAdAccounts } from '@/lib/server/services/platforms/meta/ad_accounts/fetch';
 import type {
+  AdAccountDetails,
+  AdAccountWithMetrics,
+} from '@/lib/server/services/platforms/meta/types';
+import type {
   MetaAdAccountSnapshot,
   MetaExchangeCodeInput,
   MetaOAuthBuildInput,
@@ -91,21 +95,43 @@ function normalizeMetrics(value: unknown): Json | null {
   return value as Json;
 }
 
-export async function fetchMetaAdAccountSnapshots(accessToken: string): Promise<MetaAdAccountSnapshot[]> {
-  const raw = await fetchMetaAdAccounts(true, accessToken);
+function isAdAccountWithMetrics(
+  value: AdAccountWithMetrics | AdAccountDetails
+): value is AdAccountWithMetrics {
+  return 'details' in value;
+}
+
+export async function fetchMetaAdAccountSnapshots(
+  accessToken: string,
+  options: {
+    externalAccountId?: string;
+    includeMetrics?: boolean;
+  } = {}
+): Promise<MetaAdAccountSnapshot[]> {
+  const raw = await fetchMetaAdAccounts(
+    options.includeMetrics ?? false,
+    accessToken,
+    options.externalAccountId
+  );
   const accounts = Array.isArray(raw) ? raw : [raw];
 
   return accounts
     .map((account) => {
-      const details = (account as { details?: { id?: unknown; name?: unknown; account_status?: unknown } }).details;
+      const details = isAdAccountWithMetrics(account) ? account.details : account;
       if (!details || typeof details.id !== 'string') return null;
 
       return {
         externalAccountId: details.id,
         name: typeof details.name === 'string' ? details.name : null,
         status: normalizeMetaStatus(details.account_status),
-        aggregatedMetrics: normalizeMetrics((account as { maximumMetrics?: unknown }).maximumMetrics),
-        timeIncrementMetrics: normalizeMetrics((account as { incrementMetrics?: unknown }).incrementMetrics),
+        currencyCode: typeof details.currency === 'string' ? details.currency : null,
+        timezone: typeof details.timezone_name === 'string' ? details.timezone_name : null,
+        aggregatedMetrics: isAdAccountWithMetrics(account)
+          ? normalizeMetrics(account.maximumMetrics)
+          : null,
+        timeIncrementMetrics: isAdAccountWithMetrics(account)
+          ? normalizeMetrics(account.incrementMetrics)
+          : null,
       } satisfies MetaAdAccountSnapshot;
     })
     .filter((row): row is MetaAdAccountSnapshot => row !== null);

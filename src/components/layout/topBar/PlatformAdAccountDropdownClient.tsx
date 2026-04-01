@@ -8,7 +8,6 @@ import { getPlatformIcon } from '@/components/utils/utils';
 import { setSelection } from './setSelection';
 
 interface PlatformAdAccountDropdownClientProps {
-  userInfo: any;
   platforms: Array<{ id: string; platform_name: string }>;
   adAccounts: Array<{
     id: string; 
@@ -21,7 +20,6 @@ interface PlatformAdAccountDropdownClientProps {
 }
 
 export default function PlatformAdAccountDropdownClient({
-  userInfo,
   platforms,
   adAccounts,
   initialPlatformId,

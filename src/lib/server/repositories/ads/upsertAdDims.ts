@@ -13,6 +13,8 @@ type AdDimInsert = Database['public']['Tables']['ad_dims']['Insert'];
 export interface UpsertAdDimInput {
   adAccountId: string;
   adsetExternalId: string;
+  adsetId: string | null;
+  campaignId: string | null;
   externalId: string;
   name: string | null;
   creativeId: string | null;
@@ -91,6 +93,8 @@ export async function upsertAdDims(
     const baseRow = {
       ad_account_id: input.adAccountId,
       adset_external_id: input.adsetExternalId,
+      adset_id: input.adsetId,
+      campaign_id: input.campaignId,
       external_id: input.externalId,
       name: input.name,
       creative_id: input.creativeId,

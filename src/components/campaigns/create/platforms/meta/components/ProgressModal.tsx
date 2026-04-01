@@ -28,16 +28,6 @@ interface ProgressModalProps {
     edges: Edge[];
 }
 
-function getNodeColor(status: string) {
-    switch (status) {
-        case "loading": return "#facc15";
-        case "completed": return "#22c55e";
-        case "failed": return "#ef4444";
-        default: return "#e0e7ef";
-    }
-}
-
-
 export function ProgressModal({ jobId, opened, onClose, nodes: propNodes, edges: propEdges }: ProgressModalProps) {
     const [progress, setProgress] = useState<ProgressEntry[]>([]);
     const supabase = createClient();
@@ -151,4 +141,3 @@ export function ProgressModal({ jobId, opened, onClose, nodes: propNodes, edges:
         </Modal>
     );
 }
-
