@@ -1,364 +1,373 @@
-import { Activity, BellRing, ChartLine, Radar, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  Activity,
+  CalendarDays,
+  Database,
+  FileText,
+  Layers,
+  Radar,
+  ShieldCheck,
+  Sparkles,
+  Target,
+} from "lucide-react";
 import CTA from "./components/CTA";
 import Hero from "./components/Hero";
 import IntegrationsSection from "./components/IntegrationsSection";
 import { Badge, Button, Card, Container, Section } from "@/components/marketing";
 
 const SUPPORT_FORM_URL =
-    "https://docs.google.com/forms/d/e/1FAIpQLSdxmbkyvBibl1imDI5SNooRLFlPhEEwqq-yJ-H23MJESZSbpw/viewform?usp=dialog";
+  "https://docs.google.com/forms/d/e/1FAIpQLSdxmbkyvBibl1imDI5SNooRLFlPhEEwqq-yJ-H23MJESZSbpw/viewform?usp=dialog";
 
-const features = [
-    {
-        title: "Meta-first foundation",
-        description: "Start on Meta now while DeepVisor builds the shared data and automation layer for every major channel on the roadmap.",
-        icon: Radar,
-    },
-    {
-        title: "Guardrails that catch issues",
-        description: "Detect spend drift, CPA spikes, and tracking gaps before performance slips.",
-        icon: ShieldCheck,
-    },
-    {
-        title: "Draft-first automation",
-        description: "AI drafts campaigns and optimizations for review, with approvals built in.",
-        icon: Sparkles,
-    },
-    {
-        title: "Executive-ready reporting",
-        description: "A single summary view that keeps leadership aligned without slide decks.",
-        icon: ChartLine,
-    },
-    {
-        title: "Weekly clarity",
-        description: "Weekly reports highlight what changed and what to do next.",
-        icon: Activity,
-    },
-    {
-        title: "Real-time alerts",
-        description: "Alert feed surfaces urgent changes with context, not noise.",
-        icon: BellRing,
-    },
+const productSurfaces = [
+  {
+    title: "Dashboard",
+    description: "A daily account read with spend, outcomes, strongest campaigns, weak spots, and the next thing to review.",
+    icon: Activity,
+    meta: "Today view",
+  },
+  {
+    title: "Calendar",
+    description: "DeepVisor turns recommendations into queued work so owners can approve, modify, delete, or schedule changes.",
+    icon: CalendarDays,
+    meta: "Week + month",
+  },
+  {
+    title: "Reports",
+    description: "Owner-ready reporting that combines platform, campaign, ad set, timeline, what worked, what failed, and recommendations.",
+    icon: FileText,
+    meta: "Decision brief",
+  },
+  {
+    title: "Campaigns",
+    description: "A fuller table view for scanning campaign health without losing the important context behind each metric.",
+    icon: Layers,
+    meta: "Performance table",
+  },
 ];
 
-
-const outcomes = [
-    { label: "Hours saved weekly", value: "6–10", note: "Fewer dashboards and auto summaries" },
-    { label: "Guardrail coverage", value: "90%+", note: "Spend, CPA, and tracking health" },
-    { label: "Faster prioritization", value: "Clear", note: "Less noise, clearer actions" },
+const intelligenceAnswers = [
+  "Which platform or ad account is strongest right now?",
+  "Which campaign and ad set are carrying the best result signal?",
+  "What changed during the selected timeline?",
+  "What worked, what did not work, and why?",
+  "What should be approved, modified, paused, or watched next?",
 ];
 
-const steps = [
-    {
-        title: "Connect your channels",
-        copy: "Securely connect Meta first. Google Ads, Amazon Ads, TikTok Ads, Microsoft Advertising, Snapchat Ads, LinkedIn Ads, and Pinterest Ads follow on the rollout plan.",
-        tag: "Day 1",
-    },
-    {
-        title: "Set guardrails and goals",
-        copy: "Define CPA, budget, and pacing thresholds. DeepVisor keeps performance within your boundaries.",
-        tag: "Week 1",
-    },
-    {
-        title: "Approve the automation",
-        copy: "Review AI-generated optimizations before they go live. Human oversight stays on by default.",
-        tag: "Week 2+",
-    },
+const systemSteps = [
+  {
+    title: "Connect the account",
+    copy: "Meta is the current foundation. The product UI already supports the shape for Google Ads and TikTok as one selected account per platform.",
+    icon: Radar,
+  },
+  {
+    title: "Build account memory",
+    copy: "DeepVisor syncs account structure and performance history so future reads are based on what has actually happened.",
+    icon: Database,
+  },
+  {
+    title: "Classify and explain",
+    copy: "The system identifies whether the account is new, weak-history, or mature, then explains the right recommendation style for that context.",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Queue the work",
+    copy: "Recommendations become visible calendar work instead of vague advice. The owner can review before anything moves forward.",
+    icon: Sparkles,
+  },
 ];
 
+const reportHighlights = [
+  { label: "Strongest account", value: "Meta · My Business", note: "Best cost per result and cleanest tracking this period." },
+  { label: "Strongest campaign", value: "Local Lead Machine", note: "96 leads at $25.83 with stable conversion quality." },
+  { label: "Needs attention", value: "Broad Prospecting", note: "CTR is softening and creative rotation is recommended." },
+  { label: "Next move", value: "Approve 3 queued items", note: "Budget hold, creative refresh, and weak ad set review." },
+];
 
 const useCases = [
-    {
-        title: "Multi-location brands",
-        description: "See performance across regions without drowning in ad account noise.",
-        bullets: ["Location rollups", "Region guardrails", "Unified scorecards"],
-    },
-    {
-        title: "Performance agencies",
-        description: "Monitor client health at scale with consistent reporting and alerting.",
-        bullets: ["Client dashboards", "Approval workflows", "Signal-based alerts"],
-    },
-    {
-        title: "DTC growth teams",
-        description: "Track creative fatigue, budget shifts, and ROAS in one place.",
-        bullets: ["Creative insights", "Spend drift alerts", "A/B test tracking"],
-    },
-    {
-        title: "Lead-gen operators",
-        description: "Tie campaigns to pipeline outcomes and guardrail CPA changes.",
-        bullets: ["CPA tracking", "Lead quality tags", "Rapid adjustments"],
-    },
-    {
-        title: "Founder-led marketing",
-        description: "Make fast decisions without hiring an analyst.",
-        bullets: ["Simple summaries", "Clear priorities", "Weekly report"],
-    },
-    {
-        title: "Enterprise pilots",
-        description: "Run controlled experiments with approvals and audit trails.",
-        bullets: ["Approval logs", "Change history", "Role-based access"],
-    },
+  {
+    title: "Business owners",
+    description: "Know what is happening in the ad account without decoding every ad platform screen.",
+    bullets: ["Plain-language reports", "Calendar queue", "Strong and weak spots"],
+  },
+  {
+    title: "Founder-led marketing",
+    description: "Move faster with a clear daily read and fewer manual spreadsheet checks.",
+    bullets: ["Daily account pulse", "Simple recommendations", "Setup guidance"],
+  },
+  {
+    title: "Lead-gen operators",
+    description: "Track campaigns, ad sets, CPA movement, and lead volume in one operating surface.",
+    bullets: ["Cost per result", "Timeline context", "Approval workflow"],
+  },
+  {
+    title: "Agencies",
+    description: "Give clients a cleaner view of what is being watched, reported, and queued next.",
+    bullets: ["Client-friendly summaries", "Queue visibility", "Campaign comparison"],
+  },
 ];
 
-
-
 export default function HomePage() {
-    return (
-        <>
-            <Hero />
-            <IntegrationsSection />
-            {/* <SocialProof /> */}
-            <FeatureGrid />
-            <OutcomesSection />
-            <HowItWorks />
-            <UseCases />
-            <SupportSection />
-            <CTA />
-        </>
-    );
+  return (
+    <>
+      <Hero />
+      <ProductSystem />
+      <IntegrationsSection />
+      <IntelligenceLoop />
+      <ReportPreview />
+      <HowItWorks />
+      <UseCases />
+      <SupportSection />
+      <CTA />
+    </>
+  );
 }
 
-// const SocialProof = () => {
-//     return (
-//         <Section tone="light" spacing="tight" className="border-b border-border">
-//             <Container className="flex flex-col gap-6">
-//                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-//                     <div>
-//                         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-//                             Trusted by teams that run real spend
-//                         </p>
-//                         <h2 className="text-2xl font-semibold text-foreground">Supporters across growth, agency, and enterprise pilots</h2>
-//                     </div>
-//                     <Badge>Support cohort · 2026</Badge>
-//                 </div>
-//                 <div className="grid grid-cols-2 gap-4 text-sm font-semibold uppercase tracking-[0.2em] text-foreground/60 sm:grid-cols-3 lg:grid-cols-6">
-//                     {logos.map((logo) => (
-//                         <div key={logo} className="rounded-2xl border border-border bg-white px-4 py-3 text-center">
-//                             {logo}
-//                         </div>
-//                     ))}
-//                 </div>
-//             </Container>
-//         </Section>
-//     );
-// };
+const ProductSystem = () => {
+  return (
+    <Section tone="light" id="product-system" className="border-b border-border py-12 sm:py-section-sm md:py-section">
+      <Container>
+        <div className="grid gap-8 lg:grid-cols-[0.86fr_1.14fr] lg:items-end">
+          <div className="space-y-4">
+            <Badge variant="accent" className="w-fit">
+              Product system
+            </Badge>
+            <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
+              One place to understand, plan, and report on ad performance.
+            </h2>
+            <p className="text-sm leading-7 text-slate-600 sm:text-base">
+              DeepVisor is not meant to be another analytics wall. The app is built around the few surfaces a business owner actually needs: a dashboard for now, a calendar for next, reports for explanation, and campaign tables for deeper inspection.
+            </p>
+          </div>
 
-const FeatureGrid = () => {
-    return (
-        <Section tone="gradient" className="py-12 sm:py-section-sm md:py-section">
-            <Container>
-                <div className="flex flex-col gap-2 text-center sm:gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                        Platform capabilities
-                    </p>
-                    <h2 className="text-balance text-3xl font-semibold text-foreground sm:text-4xl">
-                        Enterprise clarity without operational chaos
-                    </h2>
-                    <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base">
-                        A modern operating layer for ad teams: clean data, visible risk, and automation that respects approvals.
-                    </p>
-                </div>
-
-                <div className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 sm:mt-12 sm:grid sm:gap-6 sm:overflow-visible sm:pb-0 sm:grid-cols-2 lg:grid-cols-3">
-                    {features.map((feature) => {
-                        const Icon = feature.icon;
-                        return (
-                            <Card key={feature.title} className="group min-w-[84%] snap-start border-border bg-white/80 p-5 shadow-card transition hover:-translate-y-1 sm:min-w-0 sm:p-6">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-signal/10 text-signal">
-                                    <Icon className="h-6 w-6" aria-hidden="true" />
-                                </div>
-                                <h3 className="mt-5 text-xl font-semibold text-foreground">{feature.title}</h3>
-                                <p className="mt-3 text-sm text-muted-foreground">{feature.description}</p>
-                            </Card>
-                        );
-                    })}
-                </div>
-            </Container>
-        </Section>
-    );
+          <div className="grid gap-4 sm:grid-cols-2">
+            {productSurfaces.map((surface) => {
+              const Icon = surface.icon;
+              return (
+                <Card key={surface.title} className="border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-card">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                    </div>
+                    <span className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      {surface.meta}
+                    </span>
+                  </div>
+                  <h3 className="mt-5 text-xl font-semibold text-slate-950">{surface.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">{surface.description}</p>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </Container>
+    </Section>
+  );
 };
 
-const OutcomesSection = () => {
-    return (
-        <Section tone="light" id="outcomes" className="py-12 sm:py-section-sm md:py-section">
-            <Container>
-                <div className="grid gap-8 sm:gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-                    <div className="space-y-5">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                            Outcomes that leadership understands
-                        </p>
-                        <h2 className="text-balance text-3xl font-semibold text-foreground sm:text-4xl">
-                            Get to clarity fast, then protect it with guardrails.
-                        </h2>
-                        <p className="text-sm text-muted-foreground sm:text-base">
-                            DeepVisor prioritizes signal over noise. Every week, the system highlights what changed, what it means, and what to do next — before spend slips or tracking breaks.
-                        </p>
-                        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:pb-0">
-                            {outcomes.map((outcome) => (
-                                <Card key={outcome.label} className="min-w-[78%] snap-start border-border bg-white p-4 sm:min-w-0 sm:p-5">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{outcome.label}</p>
-                                    <p className="mt-3 text-3xl font-semibold text-foreground">{outcome.value}</p>
-                                    <p className="mt-2 text-xs text-muted-foreground">{outcome.note}</p>
-                                </Card>
-                            ))}
-                        </div>
-                    </div>
+const IntelligenceLoop = () => {
+  return (
+    <Section tone="muted" id="intelligence" className="border-b border-border py-12 sm:py-section-sm md:py-section">
+      <Container>
+        <div className="grid gap-8 lg:grid-cols-[1fr_0.95fr] lg:items-center">
+          <div className="space-y-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              Account intelligence
+            </p>
+            <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
+              DeepVisor should answer the questions business owners keep asking.
+            </h2>
+            <p className="text-sm leading-7 text-slate-600 sm:text-base">
+              The backend direction is simple: every selected ad account becomes a long-lived intelligence object. As more syncs happen, DeepVisor should preserve memory, improve context, and make recommendations easier to trust.
+            </p>
 
-                    <Card className="border-border bg-white p-5 sm:p-6">
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Signal digest</p>
-                            <Badge variant="accent">Low chaos</Badge>
-                        </div>
-                        <div className="mt-5 space-y-4 text-sm">
-                            {[
-                                { title: "Spend drift detected", detail: "Paused auto-suggested reallocations for 2 ad sets." },
-                                { title: "Tracking stabilized", detail: "Event coverage back to 98% after pixel repair." },
-                                { title: "Creative fatigue fading", detail: "3 refreshed assets now outperforming by 14%." },
-                            ].map((item) => (
-                                <div key={item.title} className="rounded-2xl border border-border bg-cloud/80 p-4">
-                                    <p className="font-semibold text-foreground">{item.title}</p>
-                                    <p className="mt-2 text-xs text-muted-foreground">{item.detail}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
+            <div className="grid gap-3">
+              {intelligenceAnswers.map((answer) => (
+                <div key={answer} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <span className="mt-1 h-2.5 w-2.5 rounded-full bg-blue-500" />
+                  <p className="text-sm font-semibold text-slate-800">{answer}</p>
                 </div>
-            </Container>
-        </Section>
-    );
+              ))}
+            </div>
+          </div>
+
+          <Card className="border-slate-200 bg-white p-5 shadow-card sm:p-6">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Maturity model</p>
+                <h3 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-slate-950">Recommendations change with the account.</h3>
+              </div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                <Target className="h-6 w-6" aria-hidden="true" />
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {[
+                { title: "New account", detail: "Focus on setup, tracking confidence, controlled experiments, and clean first tests." },
+                { title: "Weak-history account", detail: "Tighten inputs, improve signal quality, and avoid scaling until the pattern is stable." },
+                { title: "Mature account", detail: "Scale winners, refresh tired creative, reuse proven audiences, and protect efficiency." },
+              ].map((item) => (
+                <div key={item.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="font-semibold text-slate-950">{item.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{item.detail}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </Container>
+    </Section>
+  );
+};
+
+const ReportPreview = () => {
+  return (
+    <Section tone="light" id="outcomes" className="border-b border-border py-12 sm:py-section-sm md:py-section">
+      <Container>
+        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div className="space-y-4">
+            <Badge variant="accent" className="w-fit">
+              Reports that explain
+            </Badge>
+            <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
+              Reports should combine the story, not split it into random sections.
+            </h2>
+            <p className="text-sm leading-7 text-slate-600 sm:text-base">
+              A useful report should make the account obvious: where performance is strongest, what changed over time, which campaign or ad set deserves attention, and what DeepVisor recommends next.
+            </p>
+            <Button asChild variant="soft">
+              <a href="#how-it-works">See how the flow works</a>
+            </Button>
+          </div>
+
+          <Card className="border-slate-200 bg-white p-0 shadow-card">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Weekly report</p>
+                <h3 className="mt-1 text-xl font-semibold text-slate-950">April 4 - April 10</h3>
+              </div>
+              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                Ready for owner review
+              </span>
+            </div>
+
+            <div className="grid gap-0 md:grid-cols-2">
+              {reportHighlights.map((item) => (
+                <div key={item.label} className="border-b border-slate-200 p-5 odd:md:border-r md:[&:nth-last-child(-n+2)]:border-b-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
+                  <p className="mt-2 text-lg font-semibold text-slate-950">{item.value}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{item.note}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </Container>
+    </Section>
+  );
 };
 
 const HowItWorks = () => {
-    return (
-        <Section tone="dark" id="how-it-works" className="py-12 sm:py-section-sm md:py-section">
-            <Container>
-                <div className="grid gap-8 sm:gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-                    <div className="space-y-4 sm:space-y-5">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">How it works</p>
-                        <h2 className="text-balance text-3xl font-semibold text-white sm:text-4xl">
-                            A guided flow from connection to confident action.
-                        </h2>
-                        <p className="text-sm text-white/70 sm:text-base">
-                            DeepVisor starts with trust: we ingest data safely, define guardrails, and then unlock draft-first automation with approvals.
-                        </p>
-                        <div className="space-y-4">
-                            {steps.map((step, index) => (
-                                <div key={step.title} className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5">
-                                    <div className="flex items-start gap-4">
-                                        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-sm font-semibold text-white sm:h-11 sm:w-11">
-                                            0{index + 1}
-                                        </span>
-                                        <div className="space-y-2">
-                                            <h3 className="text-lg font-semibold text-white">{step.title}</h3>
-                                            <p className="text-sm text-white/70">{step.copy}</p>
-                                            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">
-                                                {step.tag}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+  return (
+    <Section tone="dark" id="how-it-works" className="overflow-hidden py-12 sm:py-section-sm md:py-section">
+      <div className="pointer-events-none absolute inset-0 bg-soft-grid opacity-[0.08] [background-size:72px_72px]" aria-hidden="true" />
+      <Container className="relative">
+        <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
+          <div className="space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">How it works</p>
+            <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
+              From connected ad account to queued decisions.
+            </h2>
+            <p className="text-sm leading-7 text-white/70 sm:text-base">
+              DeepVisor should keep the path clear: connect, sync, analyze, recommend, and keep improving as the account changes.
+            </p>
+          </div>
 
-                    <Card variant="glass" padding="lg" className="relative p-5 sm:p-8">
-                        <div className="absolute inset-0 bg-sheen opacity-50" aria-hidden="true" />
-                        <div className="relative space-y-5 sm:space-y-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-xs uppercase tracking-[0.2em] text-white/50">Product mock</p>
-                                    <p className="text-lg font-semibold text-white">Execution cockpit</p>
-                                </div>
-                                <Badge variant="success">Live preview</Badge>
-                            </div>
-                            <div className="grid gap-3">
-                                {[
-                                    { title: "Performance guardrails", value: "Stable", tone: "text-emerald-200" },
-                                    { title: "Automation drafts", value: "3 pending", tone: "text-amber-200" },
-                                    { title: "Tracking health", value: "98% clean", tone: "text-sky-200" },
-                                ].map((item) => (
-                                    <div key={item.title} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                                        <p className="text-sm text-white/70">{item.title}</p>
-                                        <p className={`text-sm font-semibold ${item.tone}`}>{item.value}</p>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                <p className="text-xs uppercase tracking-[0.2em] text-white/50">Campaign pacing</p>
-                                <div className="mt-4 h-2 w-full rounded-full bg-white/10">
-                                    <div className="h-full w-[72%] rounded-full bg-gradient-to-r from-emerald-300/70 via-sky-300/70 to-amber-300/70" />
-                                </div>
-                                <p className="mt-3 text-xs text-white/60">Across 18 active campaigns</p>
-                            </div>
-                        </div>
-                    </Card>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {systemSteps.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <div key={step.title} className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-white">
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                    </div>
+                    <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
+                      0{index + 1}
+                    </span>
+                  </div>
+                  <h3 className="mt-5 text-lg font-semibold text-white">{step.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-white/65">{step.copy}</p>
                 </div>
-            </Container>
-        </Section>
-    );
+              );
+            })}
+          </div>
+        </div>
+      </Container>
+    </Section>
+  );
 };
 
 const UseCases = () => {
-    return (
-        <Section tone="light" id="use-cases" className="py-12 sm:py-section-sm md:py-section">
-            <Container>
-                <div className="flex flex-col gap-2 text-center sm:gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Use cases</p>
-                    <h2 className="text-balance text-3xl font-semibold text-foreground sm:text-4xl">
-                        Built for teams who need fast answers and calm execution.
-                    </h2>
-                    <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base">
-                        Whether you&apos;re an agency or a founder-led team, DeepVisor keeps performance visible without the noise.
-                    </p>
-                </div>
+  return (
+    <Section tone="light" id="use-cases" className="border-b border-border py-12 sm:py-section-sm md:py-section">
+      <Container>
+        <div className="flex flex-col gap-3 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Who it helps</p>
+          <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
+            Built for people who need ad answers, not another noisy tool.
+          </h2>
+          <p className="mx-auto max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+            The interface should be calm enough for business owners and useful enough for operators who need the underlying detail.
+          </p>
+        </div>
 
-                <div className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 sm:mt-12 md:grid md:grid-cols-2 md:gap-6 md:overflow-visible md:pb-0 lg:grid-cols-3">
-                    {useCases.map((useCase) => (
-                        <Card key={useCase.title} className="min-w-[84%] snap-start border-border bg-white p-5 sm:p-6 md:min-w-0">
-                            <h3 className="text-lg font-semibold text-foreground">{useCase.title}</h3>
-                            <p className="mt-2 text-sm text-muted-foreground">{useCase.description}</p>
-                            <div className="mt-4 space-y-2 text-xs text-muted-foreground">
-                                {useCase.bullets.map((bullet) => (
-                                    <div key={bullet} className="flex items-center gap-2">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-signal" />
-                                        <span>{bullet}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-                    ))}
-                </div>
-            </Container>
-        </Section>
-    );
+        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {useCases.map((useCase) => (
+            <Card key={useCase.title} className="border-slate-200 bg-white p-5 shadow-sm">
+              <h3 className="text-lg font-semibold text-slate-950">{useCase.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{useCase.description}</p>
+              <div className="mt-5 space-y-2">
+                {useCase.bullets.map((bullet) => (
+                  <div key={bullet} className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                    <span>{bullet}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ))}
+        </div>
+      </Container>
+    </Section>
+  );
 };
 
 const SupportSection = () => {
-    return (
-        <Section tone="gradient" id="support" className="py-12 sm:py-section-sm md:py-section">
-            <Container>
-                <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center sm:gap-5">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                        Support DeepVisor
-                    </p>
-                    <h2 className="text-balance text-3xl font-semibold text-foreground sm:text-4xl">
-                        Share your perspective or interest in supporting the build.
-                    </h2>
-                    <p className="text-sm text-muted-foreground sm:text-base">
-                        We&apos;re gathering feedback from business owners, operators, and investors. If you want to support, advise, or
-                        explore a pilot, we&apos;d love to learn from you.
-                    </p>
-                    <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-                        <Button asChild size="lg" variant="primary">
-                            <a href={SUPPORT_FORM_URL} target="_blank" rel="noreferrer">
-                                Submit support form
-                            </a>
-                        </Button>
-                        <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                            3–5 minutes · no pressure
-                        </span>
-                    </div>
-                </div>
-            </Container>
-        </Section>
-    );
+  return (
+    <Section tone="muted" id="support" className="border-b border-border py-12 sm:py-section-sm md:py-section">
+      <Container>
+        <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
+          <Badge variant="accent" className="w-fit">
+            Early access
+          </Badge>
+          <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
+            Help shape the account intelligence product business owners actually need.
+          </h2>
+          <p className="text-sm leading-7 text-slate-600 sm:text-base">
+            We&apos;re gathering feedback from owners, operators, agencies, and investors. If you run ads and want cleaner decisions, share what would make DeepVisor valuable for you.
+          </p>
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button asChild size="lg" variant="primary">
+              <a href={SUPPORT_FORM_URL} target="_blank" rel="noreferrer">
+                Submit support form
+              </a>
+            </Button>
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              3-5 minutes · product feedback welcome
+            </span>
+          </div>
+        </div>
+      </Container>
+    </Section>
+  );
 };

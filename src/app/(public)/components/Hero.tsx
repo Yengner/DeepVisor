@@ -2,144 +2,174 @@ import type { FC } from "react";
 import Link from "next/link";
 import { Badge, Button, Card, Container, Section } from "@/components/marketing";
 
-const metrics = [
-    {
-        label: "Current build",
-        value: "Meta",
-        note: "Foundation channel for launch",
-    },
-    {
-        label: "Expansion plan",
-        value: "7 planned",
-        note: "Google Ads, Amazon Ads, TikTok Ads + more",
-    },
-    {
-        label: "Auto insights",
-        value: "Draft-first",
-        note: "AI-drafted, human-verified insights",
-    },
+const heroMetrics = [
+  {
+    label: "Account memory",
+    value: "Always building",
+    note: "DeepVisor remembers what has worked and what has failed.",
+  },
+  {
+    label: "Decision surface",
+    value: "Dashboard + Calendar",
+    note: "Know what matters now and what is queued next.",
+  },
+  {
+    label: "Reports",
+    value: "Owner-ready",
+    note: "Clear wins, weak spots, timelines, and recommendations.",
+  },
 ];
 
+const queueItems = [
+  { time: "9:00 AM", title: "Approve retargeting budget hold", tone: "bg-blue-500" },
+  { time: "11:30 AM", title: "Refresh broad prospecting creative", tone: "bg-amber-500" },
+  { time: "2:00 PM", title: "Review weak ad set recommendation", tone: "bg-rose-500" },
+];
 
 const Hero: FC = () => {
-    return (
-        <Section tone="dark" className="overflow-hidden py-12 sm:py-section-sm md:py-section" id="platform" aria-labelledby="hero-title">
-            <div className="pointer-events-none absolute inset-0 bg-mesh-glow opacity-80" aria-hidden="true" />
-            <div
-                className="pointer-events-none absolute inset-0 bg-soft-grid opacity-[0.15] [background-size:80px_80px]"
-                aria-hidden="true"
-            />
-            <div className="pointer-events-none absolute -left-32 top-[-10rem] h-96 w-96 rounded-full bg-signal/20 blur-3xl motion-safe:animate-glow-pulse" aria-hidden="true" />
-            <div className="pointer-events-none absolute right-[-8rem] top-[-6rem] h-80 w-80 rounded-full bg-aurora/20 blur-3xl motion-safe:animate-glow-pulse" aria-hidden="true" />
+  return (
+    <Section
+      tone="light"
+      className="overflow-hidden border-b border-border bg-[#f7f9fc] py-10 sm:py-14 md:py-16"
+      id="platform"
+      aria-labelledby="hero-title"
+    >
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(37,99,235,0.10),transparent_30%),radial-gradient(circle_at_86%_10%,rgba(52,168,83,0.10),transparent_22%),linear-gradient(180deg,#ffffff_0%,#f7f9fc_72%)]"
+        aria-hidden="true"
+      />
+      <div className="pointer-events-none absolute left-8 top-24 hidden h-40 w-40 rounded-full border border-blue-200/70 md:block" aria-hidden="true" />
+      <div className="pointer-events-none absolute right-10 top-28 hidden h-28 w-28 rounded-full border border-emerald-200/80 md:block" aria-hidden="true" />
 
-            <Container className="relative">
-                <div className="grid items-center gap-8 sm:gap-12 lg:grid-cols-[1.1fr_0.9fr]">
-                    <div className="space-y-6 sm:space-y-8">
-                        <Badge
-                            variant="dark"
-                            className="w-fit motion-safe:animate-fade-up"
-                            style={{ animationDelay: "60ms" }}
-                        >
-                            Supporters · 2026
-                        </Badge>
+      <Container className="relative">
+        <div className="grid items-center gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+          <div className="space-y-6">
+            <Badge variant="accent" className="w-fit">
+              Account intelligence system
+            </Badge>
 
-                        <div className="space-y-4 sm:space-y-5">
-                            <h1
-                                id="hero-title"
-                                className="text-balance text-4xl font-semibold leading-tight motion-safe:animate-fade-up sm:text-5xl lg:text-6xl"
-                                style={{ animationDelay: "120ms" }}
-                            >
-                                DeepVisor:
-                                <span className="block bg-gradient-to-r from-signal/80 via-amber-200 to-orange-400 bg-clip-text text-transparent">
-                                    AI-Powered Ad Performance & Automation
-                                </span>
-                            </h1>
+            <div className="space-y-4">
+              <h1
+                id="hero-title"
+                className="max-w-4xl text-balance text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-slate-950 sm:text-5xl lg:text-6xl"
+              >
+                Understand your ad account without living in ad dashboards.
+              </h1>
+              <p className="max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
+                DeepVisor connects to your ad accounts, studies the history, explains what is strong or weak, and turns the next best moves into a simple dashboard, calendar queue, and reports.
+              </p>
+            </div>
 
-                            <p
-                                className="max-w-xl text-base text-white/70 motion-safe:animate-fade-up sm:text-lg"
-                                style={{ animationDelay: "180ms" }}
-                            >
-                                Start with a Meta-first control layer, then expand toward a unified ads operating system built for modern growth teams.
-                            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <Button asChild size="lg" variant="primary">
+                <Link href="#support">Request early access</Link>
+              </Button>
+              <Button asChild size="lg" variant="soft">
+                <Link href="#product-system">See the product flow</Link>
+              </Button>
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Meta today · Google and TikTok ready for UI preview
+              </span>
+            </div>
 
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-4 motion-safe:animate-fade-up" style={{ animationDelay: "240ms" }}>
-                            <Button asChild size="lg" variant="primary">
-                                <Link href="#support">Share support</Link>
-                            </Button>
-                            <Button asChild size="lg" variant="outline">
-                                <Link href="#how-it-works">See how it works</Link>
-                            </Button>
-                            <span className="text-xs uppercase tracking-[0.2em] text-white/50">
-                                3–5 minute form · No pressure
-                            </span>
-                        </div>
-
-                        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 motion-safe:animate-fade-up sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:pb-0" style={{ animationDelay: "300ms" }}>
-                            {metrics.map((metric) => (
-                                <div key={metric.label} className="min-w-[78%] snap-start rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/70 sm:min-w-0">
-                                    <p className="uppercase tracking-[0.2em] text-white/40">{metric.label}</p>
-                                    <p className="mt-2 text-lg font-semibold text-white">{metric.value}</p>
-                                    <p className="text-[11px] text-white/50">{metric.note}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="relative motion-safe:animate-fade-up" style={{ animationDelay: "180ms" }}>
-                        <div className="pointer-events-none absolute inset-0 rounded-[32px] bg-gradient-to-tr from-signal/20 via-white/5 to-white/0 blur-2xl" aria-hidden="true" />
-                        <Card variant="glass" padding="lg" className="relative p-5 sm:p-8">
-                            <div className="flex items-start justify-between gap-4 sm:gap-6 border-b border-white/10 pb-4 sm:pb-5">
-                                <div>
-                                    <p className="text-xs uppercase tracking-[0.22em] text-white/50"> Unified performance board
-                                    </p>
-                                    <p className="mt-2 text-lg font-semibold text-white">Weekly clarity report</p>
-                                </div>
-                                <div className="rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold text-emerald-200">
-                                    Guardrails green
-                                </div>
-                            </div>
-
-                            <div className="mt-5 space-y-3 text-sm text-white/70 sm:mt-6 sm:space-y-4">
-                                {[
-                                    { title: "Spend drift", detail: "3 ad sets flagged · paused suggestions ready", tone: "text-amber-200" },
-                                    { title: "Tracking health", detail: "Event coverage stable · 2 warnings resolved", tone: "text-emerald-200" },
-                                    { title: "Creative fatigue", detail: "Top 5 assets refreshed · new draft queued", tone: "text-sky-200" },
-                                ].map((item) => (
-                                    <div key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-3.5 sm:p-4">
-                                        <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-white/50">
-                                            <span>{item.title}</span>
-                                            <span className={item.tone}>Active</span>
-                                        </div>
-                                        <p className="mt-2 text-sm font-semibold text-white">{item.detail}</p>
-                                        <div className="mt-3 h-1.5 w-full rounded-full bg-white/10">
-                                            <div className="h-full w-[70%] rounded-full bg-gradient-to-r from-emerald-300/70 via-sky-300/70 to-amber-300/70" />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="mt-5 grid gap-3 sm:mt-6 sm:grid-cols-2">
-                                {[
-                                    { label: "Operator focus", value: "High", accent: "from-emerald-300/70 to-sky-200/70" },
-                                    { label: "Risk exposure", value: "Low", accent: "from-amber-300/70 to-orange-400/70" },
-                                ].map((stat) => (
-                                    <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/5 p-3.5 sm:p-4">
-                                        <p className="text-xs uppercase tracking-[0.2em] text-white/50">{stat.label}</p>
-                                        <p className="mt-2 text-xl font-semibold text-white sm:text-2xl">{stat.value}</p>
-                                        <div className="mt-3 h-2 w-full rounded-full bg-white/10">
-                                            <div className={`h-full w-[65%] rounded-full bg-gradient-to-r ${stat.accent}`} />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-                    </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {heroMetrics.map((metric) => (
+                <div key={metric.label} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">{metric.label}</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-950">{metric.value}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">{metric.note}</p>
                 </div>
-            </Container>
-        </Section>
-    );
+              ))}
+            </div>
+          </div>
+
+          <Card className="border-slate-200 bg-white p-0 shadow-card-strong">
+            <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 sm:px-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">DeepVisor dashboard</p>
+                  <p className="mt-1 text-lg font-semibold text-slate-950">My Business · Meta account</p>
+                </div>
+                <div className="flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                  <span className="h-2 w-2 rounded-full bg-blue-500" />
+                  Synced 12 min ago
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-0 lg:grid-cols-[0.72fr_1fr]">
+              <div className="border-b border-slate-200 p-4 lg:border-b-0 lg:border-r sm:p-5">
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Spend", value: "$7.4k", delta: "+9%" },
+                    { label: "Leads", value: "248", delta: "+16%" },
+                    { label: "Messages", value: "173", delta: "+15%" },
+                    { label: "Weak spots", value: "3", delta: "Review" },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{item.label}</p>
+                      <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-slate-950">{item.value}</p>
+                      <p className="mt-1 text-xs font-semibold text-emerald-700">{item.delta}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">DeepVisor read</p>
+                    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">
+                      Actionable
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm font-semibold text-slate-950">
+                    Retargeting is strong, broad prospecting is softening, and one ad set needs creative rotation.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 sm:p-5">
+                <div className="rounded-2xl border border-slate-200 bg-white">
+                  <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Calendar queue</p>
+                      <p className="text-sm font-semibold text-slate-950">Today&apos;s planned work</p>
+                    </div>
+                    <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">
+                      Week
+                    </span>
+                  </div>
+                  <div className="space-y-2 p-3">
+                    {queueItems.map((item) => (
+                      <div key={item.title} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <span className={`mt-1 h-2.5 w-2.5 rounded-full ${item.tone}`} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-slate-500">{item.time}</p>
+                          <p className="truncate text-sm font-semibold text-slate-950">{item.title}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Strongest campaign</p>
+                    <p className="mt-2 text-sm font-semibold text-slate-950">Local Lead Machine</p>
+                    <p className="mt-1 text-xs text-slate-500">$25.83 per lead</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Next report</p>
+                    <p className="mt-2 text-sm font-semibold text-slate-950">Weekly brief ready</p>
+                    <p className="mt-1 text-xs text-slate-500">Wins, misses, timeline</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </Container>
+    </Section>
+  );
 };
 
 export default Hero;

@@ -17,7 +17,7 @@ type Platform = {
 
 const metaPlatform: Platform = {
     name: "Meta",
-    status: "Active Build",
+    status: "Active Sync",
     icon: SiMeta,
     iconClassName: "text-[#4da3ff]",
     iconSurfaceClassName: "border-white/10 bg-white/10",
@@ -179,11 +179,10 @@ const IntegrationsSection: FC = () => {
                         Platform integrations
                     </Badge>
                     <h2 className="mt-4 text-balance text-3xl font-semibold text-slate-950 sm:text-4xl">
-                        Meta first. Unified advertising across every major channel next.
+                        Keep the selected ad account clear across every platform.
                     </h2>
                     <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-                        DeepVisor is building on Meta now, with Google Ads, Amazon Ads, TikTok Ads, Microsoft Advertising,
-                        Snapchat Ads, LinkedIn Ads, and Pinterest Ads planned next.
+                        Meta is the active foundation today. The product is shaped so Google Ads, TikTok Ads, and future channels can each expose one primary ad account for focused dashboard, calendar, campaign, and report views.
                     </p>
                 </div>
 
@@ -222,7 +221,7 @@ const IntegrationsSection: FC = () => {
                 </div>
 
                 <p className="mt-6 text-center text-sm text-slate-500">
-                    DeepVisor is becoming one operating layer across the ad platforms modern businesses use.
+                    DeepVisor is becoming one account intelligence layer across the ad platforms modern businesses use.
                 </p>
             </Container>
 

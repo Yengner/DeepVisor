@@ -16,7 +16,7 @@ const Footer: FC = () => {
                         </span>
                     </div>
                     <p className="max-w-xs text-white/60">
-                        Enterprise-grade signal for ad teams that want clarity, guardrails, and calm execution.
+                        Account intelligence for business owners who need clear ad performance decisions.
                     </p>
                     <p className="text-[11px] text-white/40">
                         © {new Date().getFullYear()} DeepVisor. All rights reserved.
@@ -24,8 +24,8 @@ const Footer: FC = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">
-                    <Link href="#platform" className="transition hover:text-white">
-                        Platform
+                    <Link href="#product-system" className="transition hover:text-white">
+                        Product
                     </Link>
                     <Link href="#use-cases" className="transition hover:text-white">
                         Use cases
