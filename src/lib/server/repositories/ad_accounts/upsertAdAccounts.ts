@@ -1,4 +1,3 @@
-import type { Json } from '@/lib/shared/types/supabase';
 import type { Database } from '@/lib/shared/types/supabase';
 import { chunkArray, dedupeBy, type RepositoryClient } from '../utils';
 
@@ -13,9 +12,6 @@ export interface UpsertAdAccountInput {
   status: string | null;
   currencyCode: string | null;
   timezone: string | null;
-  aggregatedMetrics: Json | null;
-  timeIncrementMetrics: Json | null;
-  syncedAt: string;
 }
 
 export interface UpsertAdAccountsResult {
@@ -52,6 +48,8 @@ export async function upsertAdAccounts(
   supabase: RepositoryClient,
   inputs: UpsertAdAccountInput[]
 ): Promise<UpsertAdAccountsResult> {
+  // `ad_accounts` is intentionally metadata-only. Historical performance lives in
+  // dedicated sync state/jobs and normalized fact tables, not on the account row.
   const normalizedInputs = dedupeBy(
     inputs.filter((input) => input.externalAccountId.trim().length > 0),
     (input) => input.externalAccountId
@@ -75,6 +73,7 @@ export async function upsertAdAccounts(
   const existingByExternalId = new Map(
     existingRows.map((row) => [row.external_account_id, row] satisfies [string, AdAccountRow])
   );
+  const now = new Date().toISOString();
 
   const rowsToUpdate: AdAccountInsert[] = [];
   const rowsToInsert: AdAccountInsert[] = [];
@@ -88,10 +87,7 @@ export async function upsertAdAccounts(
       status: input.status,
       currency_code: input.currencyCode,
       timezone: input.timezone,
-      aggregated_metrics: input.aggregatedMetrics,
-      time_increment_metrics: input.timeIncrementMetrics,
-      last_synced: input.syncedAt,
-      updated_at: input.syncedAt,
+      updated_at: now,
     } satisfies AdAccountInsert;
 
     const existing = existingByExternalId.get(input.externalAccountId);
@@ -105,7 +101,7 @@ export async function upsertAdAccounts(
 
     rowsToInsert.push({
       ...baseRow,
-      created_at: input.syncedAt,
+      created_at: now,
     });
   }
 

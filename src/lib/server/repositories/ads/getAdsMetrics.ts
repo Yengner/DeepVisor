@@ -1,11 +1,9 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
+import { formatDisplayDate } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
 import { asRecord, asString } from '@/lib/shared/utils/format';
 import { derivePerformanceMetrics } from '../campaigns/normalizers';
 import { chunkArray } from '../utils';
-
-const formatDate = (d?: string | null) =>
-  d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 
 type SupabaseClient = Awaited<ReturnType<typeof createSupabaseClient>>;
 
@@ -15,9 +13,8 @@ type AdDimRow = Pick<
 >;
 
 type AdPerformanceRow = Pick<
-  Database['public']['Tables']['ads_performance_daily']['Row'],
+  Database['public']['Tables']['ad_performance_summary']['Row'],
   | 'ad_id'
-  | 'day'
   | 'spend'
   | 'reach'
   | 'impressions'
@@ -25,6 +22,8 @@ type AdPerformanceRow = Pick<
   | 'inline_link_clicks'
   | 'leads'
   | 'messages'
+  | 'first_day'
+  | 'last_day'
 >;
 
 type AdsetLookupRow = Pick<
@@ -101,8 +100,10 @@ async function listAdPerformanceRows(input: {
 
   for (const adIdsChunk of chunkArray(input.adIds, 200)) {
     const { data, error } = await input.supabase
-      .from('ads_performance_daily')
-      .select('ad_id, day, spend, reach, impressions, clicks, inline_link_clicks, leads, messages')
+      .from('ad_performance_summary')
+      .select(
+        'ad_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, first_day, last_day'
+      )
       .in('ad_id', adIdsChunk);
 
     if (error) {
@@ -225,8 +226,14 @@ export async function getAdsLifetimeIncludingZeros(
     totals.linkClicks += row.inline_link_clicks ?? 0;
     totals.leads += row.leads ?? 0;
     totals.messages += row.messages ?? 0;
-    totals.firstDay = totals.firstDay === null || row.day < totals.firstDay ? row.day : totals.firstDay;
-    totals.lastDay = totals.lastDay === null || row.day > totals.lastDay ? row.day : totals.lastDay;
+
+    if (row.first_day && (!totals.firstDay || row.first_day < totals.firstDay)) {
+      totals.firstDay = row.first_day;
+    }
+
+    if (row.last_day && (!totals.lastDay || row.last_day > totals.lastDay)) {
+      totals.lastDay = row.last_day;
+    }
   }
 
   const adsetLookupByExternalId = await listAdsetLookups({
@@ -285,8 +292,8 @@ export async function getAdsLifetimeIncludingZeros(
         cpc: totals.clicks > 0 ? metrics.cpc.toFixed(2) : null,
         cpl: totals.leads > 0 ? (spend / totals.leads).toFixed(2) : null,
         frequency: totals.reach > 0 ? metrics.frequency.toFixed(2) : null,
-        start_date: formatDate(totals.firstDay || ad.created_time),
-        end_date: formatDate(totals.lastDay),
+        start_date: formatDisplayDate(totals.firstDay || ad.created_time),
+        end_date: formatDisplayDate(totals.lastDay),
         platform_name: vendor,
         raw_data: ad.raw,
         ad_format: deriveAdFormat(ad.raw),

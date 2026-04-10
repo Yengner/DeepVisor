@@ -1,0 +1,187 @@
+.heroCard {
+  position: relative;
+  overflow: hidden;
+}
+
+.heroGlowLeft,
+.heroGlowRight {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.heroGlowLeft {
+  top: -72px;
+  left: -64px;
+  width: 220px;
+  height: 220px;
+  background: var(--platform-accent-soft-strong);
+}
+
+.heroGlowRight {
+  right: -52px;
+  bottom: -96px;
+  width: 260px;
+  height: 260px;
+  background: var(--platform-accent-soft);
+}
+
+.heroContent,
+.heroSidebar {
+  position: relative;
+  z-index: 1;
+}
+
+.heroSidebar {
+  background: transparent;
+  border-color: transparent;
+}
+
+.statusRow {
+  background: #fff;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.statusRow:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.summaryCard {
+  position: relative;
+  min-height: 132px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+.summaryAccent {
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+}
+
+.guideCard {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 20px 46px rgba(15, 23, 42, 0.06);
+}
+
+.stepCard {
+  height: 100%;
+  background: rgba(248, 250, 252, 0.88);
+  border-color: rgba(15, 23, 42, 0.07);
+}
+
+.channelCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.channelCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 28px 56px rgba(15, 23, 42, 0.10);
+}
+
+.channelVisual {
+  position: relative;
+  overflow: hidden;
+  min-height: 232px;
+  padding: 20px 20px 28px;
+}
+
+.channelGlow {
+  position: absolute;
+  left: 20px;
+  bottom: 18px;
+  width: 132px;
+  height: 132px;
+  border-radius: 999px;
+  opacity: 0.75;
+}
+
+.channelArtworkWrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+}
+
+.platformArtwork {
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 16px 28px rgba(15, 23, 42, 0.14));
+}
+
+.metricCard {
+  height: 100%;
+  background: rgba(248, 250, 252, 0.72);
+  border-color: rgba(15, 23, 42, 0.07);
+}
+
+.copyPanel {
+  min-height: 108px;
+  border-width: 1px;
+}
+
+.detailHero {
+  background: rgba(255, 255, 255, 0.98);
+}
+
+@media (max-width: 62em) {
+  .heroCard {
+    padding: 24px;
+  }
+
+  .channelVisual {
+    min-height: 208px;
+  }
+}
+
+@media (max-width: 48em) {
+  .heroGlowLeft,
+  .heroGlowRight {
+    display: none;
+  }
+
+  .heroSidebar {
+    margin-top: 4px;
+  }
+
+  .channelCard:hover,
+  .statusRow:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .channelVisual {
+    min-height: 196px;
+    padding: 18px 18px 24px;
+  }
+
+  .channelGlow {
+    width: 104px;
+    height: 104px;
+  }
+
+  .platformArtwork {
+    max-width: 96px;
+    max-height: 96px;
+  }
+}

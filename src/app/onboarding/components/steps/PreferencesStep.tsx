@@ -4,7 +4,7 @@ import { updateBusinessProfileData } from '@/lib/server/actions/business/onboard
 import { Button, Text, Title, Stack, Group, MultiSelect, Checkbox, Card, SimpleGrid, Divider } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconSettings, IconChartBar, IconBell } from '@tabler/icons-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 
 type PreferencesStepProps = {
@@ -23,22 +23,6 @@ export default function PreferencesStep({
   updateUserData
 }: PreferencesStepProps) {
   const [submitting, setSubmitting] = useState(false);
-  const formInitialized = useRef(false);
-
-  // Log what we're initializing with
-  /* eslint-disable */
-  useEffect(() => {
-    console.log("PreferencesStep initial userData:", {
-      adGoals: userData.adGoals,
-      preferredPlatforms: userData.preferredPlatforms,
-      emailNotifications: userData.emailNotifications,
-      weeklyReports: userData.weeklyReports,
-      performanceAlerts: userData.performanceAlerts
-    });
-    formInitialized.current = true;
-  }, []);
-
-  /* eslint-enable */
 
   const form = useForm({
     initialValues: {
@@ -49,28 +33,20 @@ export default function PreferencesStep({
       performanceAlerts: userData.performanceAlerts !== false,
     },
     onValuesChange: (values) => {
-      // Only update after form is initialized to prevent wipes
-      if (formInitialized.current) {
-        console.log("Updating user data in PreferencesStep:", values);
-        updateUserData({
-          ...userData,
-          adGoals: values.adGoals,
-          preferredPlatforms: values.preferredPlatforms,
-          emailNotifications: values.emailNotifications,
-          weeklyReports: values.weeklyReports,
-          performanceAlerts: values.performanceAlerts
-        });
-      }
+      updateUserData({
+        ...userData,
+        adGoals: values.adGoals,
+        preferredPlatforms: values.preferredPlatforms,
+        emailNotifications: values.emailNotifications,
+        weeklyReports: values.weeklyReports,
+        performanceAlerts: values.performanceAlerts
+      });
     }
   });
 
   const handleSubmit = async (values: typeof form.values) => {
     setSubmitting(true);
     try {
-      // Log what we're about to send
-      console.log("Submitting preferences:", values);
-
-      // Update parent state
       updateUserData({
         ...userData,
         adGoals: values.adGoals,
@@ -80,7 +56,6 @@ export default function PreferencesStep({
         performanceAlerts: values.performanceAlerts
       });
 
-      // Save directly to database for additional safety
       const saveRes = await updateBusinessProfileData({
         adGoals: values.adGoals,
         preferredPlatforms: values.preferredPlatforms,

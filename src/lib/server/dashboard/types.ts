@@ -58,6 +58,7 @@ export interface DashboardViewContext {
 export interface DashboardCampaignSnapshotItem {
   campaignId: string;
   campaignName: string;
+  objective: string | null;
   status: string;
   spend: number;
   clicks: number;
@@ -66,16 +67,21 @@ export interface DashboardCampaignSnapshotItem {
   conversion: number;
   conversionRate: number;
   costPerResult: number;
+  ctr: number;
 }
 
 export interface DashboardCampaignPreviewItem {
   campaignId: string;
   campaignName: string;
+  objective: string | null;
   status: string;
   spend: number;
   primaryOutcomeMetric: DashboardOutcomeMetric;
   primaryOutcomeLabel: string;
   primaryOutcomeValue: number;
+  conversionRate: number;
+  costPerResult: number;
+  ctr: number;
 }
 
 export interface DashboardPayload {

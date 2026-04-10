@@ -1,0 +1,119 @@
+.pageShell {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  box-sizing: border-box;
+  padding-top: 6px;
+  padding-left: 6px;
+}
+
+.tableSurface {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.97);
+}
+
+.feedback {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--platform-border);
+}
+
+.tabs {
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.tableHeader {
+  flex: 0 0 auto;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid var(--platform-border);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.titleBlock {
+  min-width: 0;
+}
+
+.title {
+  color: var(--platform-text-strong);
+  letter-spacing: -0.035em;
+}
+
+.actionGroup {
+  justify-content: flex-end;
+}
+
+.layerSummary {
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.filterBar {
+  padding: 10px;
+  border: 1px solid var(--platform-border);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.82);
+}
+
+.searchInput {
+  flex: 1 1 320px;
+  min-width: 220px;
+}
+
+.filterSelect {
+  width: 164px;
+}
+
+.tableBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.tablePanel {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tablePanelInner {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px 12px 18px;
+}
+
+@media (max-width: 760px) {
+  .pageShell {
+    height: auto;
+    min-height: calc(100dvh - 0.75rem);
+  }
+
+  .tableSurface {
+    min-height: calc(100dvh - 0.75rem);
+  }
+
+  .tableHeader {
+    padding: 14px;
+  }
+
+  .actionGroup,
+  .layerSummary {
+    justify-content: flex-start;
+  }
+
+  .filterSelect {
+    width: 100%;
+  }
+}

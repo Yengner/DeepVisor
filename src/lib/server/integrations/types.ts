@@ -1,4 +1,3 @@
-import type { Json } from '@/lib/shared/types/supabase';
 import type {
   IntegrationCallbackStatus,
   IntegrationReturnTo,
@@ -61,8 +60,6 @@ export interface MetaAdAccountSnapshot {
   status: string | null;
   currencyCode: string | null;
   timezone: string | null;
-  aggregatedMetrics: Json | null;
-  timeIncrementMetrics: Json | null;
 }
 
 export interface MetaOAuthBuildInput {

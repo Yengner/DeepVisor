@@ -1,6 +1,5 @@
 export interface UserData {
   businessName: string;
-  businessType: string;
   industry: string;
   monthlyBudget: string;
   website: string;

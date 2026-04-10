@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { asRecord, asString } from '@/lib/shared';
+import { asRecord, asString, uniqueStrings } from '@/lib/shared';
 import type { Database, Json } from '@/lib/shared/types/supabase';
 import { upsertCreativeFeatureSnapshots } from '@/lib/server/repositories/ai/upsertCreativeFeatureSnapshots';
 import { upsertAdCreatives } from '@/lib/server/repositories/ad_creatives/upsertAdCreatives';
@@ -22,20 +22,6 @@ type CreativeAssociation = {
 function trimString(value: unknown): string | null {
   const normalized = asString(value).trim();
   return normalized.length > 0 ? normalized : null;
-}
-
-function uniqueStrings(values: Array<string | null | undefined>): string[] {
-  const seen = new Set<string>();
-
-  for (const value of values) {
-    if (!value) {
-      continue;
-    }
-
-    seen.add(value);
-  }
-
-  return Array.from(seen.values());
 }
 
 function pickSingleValue(values: Set<string>): string | null {

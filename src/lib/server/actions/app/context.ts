@@ -5,6 +5,8 @@ import { requireBusinessContextOrRedirect } from '@/lib/server/actions/business/
 type RequiredAppContext = {
   user: Awaited<ReturnType<typeof getLoggedInUserOrRedirect>>;
   organizationId: string;
+  organizationName: string;
+  organizationType: 'agency' | 'business';
   businessId: string;
   role: 'owner' | 'admin' | 'member';
   onboarding: {

@@ -33,7 +33,7 @@ const FALLBACK_PLATFORMS: PlatformRow[] = [
       full_description: 'Sync Meta campaigns, ad sets, ads, and performance metrics into DeepVisor.',
       strengths: 'Largest social reach, robust audience targeting, fast creative iteration.',
       weaknesses: 'Privacy-driven attribution shifts can reduce signal quality in some funnels.',
-      image_url: '/images/platforms/meta.png',
+      image_url: '/images/platforms/logo/meta.png',
     },
   },
   {
@@ -45,7 +45,7 @@ const FALLBACK_PLATFORMS: PlatformRow[] = [
       full_description: 'Connect Google Ads to centralize spend, conversion, and campaign reporting.',
       strengths: 'High-intent traffic and strong conversion capture across search inventory.',
       weaknesses: 'Competitive auctions can increase CPC in saturated markets.',
-      image_url: '/images/platforms/google.png',
+      image_url: '/images/platforms/logo/google.png',
     },
   },
   {
@@ -57,7 +57,7 @@ const FALLBACK_PLATFORMS: PlatformRow[] = [
       full_description: 'Integrate TikTok Ads to compare creative velocity and social performance.',
       strengths: 'Strong engagement and discovery behavior for visual-first campaigns.',
       weaknesses: 'Creative refresh cadence is typically higher to sustain performance.',
-      image_url: '/images/platforms/tiktok.png',
+      image_url: '/images/platforms/logo/tiktok.png',
     },
   },
 ];

@@ -117,7 +117,7 @@ export async function upsertAdAccountPerformanceDaily(
     const mergedRows = Array.from(mergedRowsByDay.values()).sort((left, right) =>
       left.day.localeCompare(right.day)
     );
-    const latestSyncedAt =
+    const latestUpdatedAt =
       rows
         .filter((row) => row.ad_account_id === adAccountId)
         .reduce(
@@ -127,22 +127,19 @@ export async function upsertAdAccountPerformanceDaily(
               : current,
           rows[0]?.updated_at ?? new Date().toISOString()
         ) ?? new Date().toISOString();
-    const nextAggregatedMetrics =
-      existing.aggregated_metrics ??
-      (aggregateDailyMetricsRows(mergedRows) as unknown as Json);
 
     const { error } = await supabase
       .from('ad_accounts')
       .update({
         time_increment_metrics:
           buildTimeIncrementMetricsFromDailyRows(mergedRows) as unknown as Json,
-        aggregated_metrics: nextAggregatedMetrics,
+        aggregated_metrics:
+          aggregateDailyMetricsRows(mergedRows) as unknown as Json,
         currency_code:
           [...accountRows].reverse().find((row) => row.currency_code)?.currency_code ??
           existing.currency_code ??
           null,
-        last_synced: latestSyncedAt,
-        updated_at: latestSyncedAt,
+        updated_at: latestUpdatedAt,
       })
       .eq('id', adAccountId);
 

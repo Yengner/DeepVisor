@@ -2,6 +2,7 @@ import 'server-only';
 
 const META_GRAPH_VERSION = 'v23.0';
 const META_GRAPH_BASE_URL = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
+const META_MAX_LOOKBACK_MONTHS = 37;
 
 type MetaCollectionResponse<T> = {
   data?: T[];
@@ -13,17 +14,43 @@ type MetaCollectionResponse<T> = {
   };
 };
 
-export function getBackfillDateRange(days: number): { since: string; until: string } {
-  const today = new Date();
-  const until = today.toISOString().slice(0, 10);
+function startOfUtcDay(date: Date): Date {
+  const copy = new Date(date);
+  copy.setUTCHours(0, 0, 0, 0);
+  return copy;
+}
 
-  const sinceDate = new Date(today);
-  sinceDate.setUTCDate(sinceDate.getUTCDate() - Math.max(days - 1, 0));
+export function resolveMetaBackfillWindow(days: number): {
+  since: string;
+  until: string;
+  backfillDays: number;
+} {
+  const untilDate = startOfUtcDay(new Date());
+  const requestedSinceDate = startOfUtcDay(new Date(untilDate));
+  requestedSinceDate.setUTCDate(requestedSinceDate.getUTCDate() - Math.max(days - 1, 0));
+
+  const earliestAllowedSinceDate = startOfUtcDay(new Date(untilDate));
+  earliestAllowedSinceDate.setUTCMonth(
+    earliestAllowedSinceDate.getUTCMonth() - META_MAX_LOOKBACK_MONTHS
+  );
+
+  const sinceDate =
+    requestedSinceDate < earliestAllowedSinceDate
+      ? earliestAllowedSinceDate
+      : requestedSinceDate;
+  const backfillDays =
+    Math.floor((untilDate.getTime() - sinceDate.getTime()) / 86_400_000) + 1;
 
   return {
     since: sinceDate.toISOString().slice(0, 10),
-    until,
+    until: untilDate.toISOString().slice(0, 10),
+    backfillDays,
   };
+}
+
+export function getBackfillDateRange(days: number): { since: string; until: string } {
+  const { since, until } = resolveMetaBackfillWindow(days);
+  return { since, until };
 }
 
 async function parseMetaError(response: Response): Promise<string> {

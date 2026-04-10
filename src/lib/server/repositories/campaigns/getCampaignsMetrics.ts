@@ -1,7 +1,5 @@
+import { formatDisplayDate } from '@/lib/shared';
 import { getCampaignSummaries } from './getCampaignSummaries';
-
-const formatDate = (d?: string | null) =>
-  d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 
 export type CampaignLifetimeRow = {
   id: string;
@@ -55,8 +53,8 @@ export async function getCampaignLifetimeIncludingZeros(
     cpc: campaign.clicks > 0 ? campaign.cpc.toFixed(2) : null,
     cpl: campaign.leads > 0 ? (campaign.spend / campaign.leads).toFixed(2) : null,
     frequency: campaign.reach > 0 ? campaign.frequency.toFixed(2) : null,
-    start_date: formatDate(campaign.startDay),
-    end_date: formatDate(campaign.endDay),
+    start_date: formatDisplayDate(campaign.startDay),
+    end_date: formatDisplayDate(campaign.endDay),
     platform_name: vendor,
   }));
 }

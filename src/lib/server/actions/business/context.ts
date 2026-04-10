@@ -2,13 +2,30 @@
 
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/server/supabase/server';
+import type { Database } from '@/lib/shared/types/supabase';
+
 type BusinessRole = 'owner' | 'admin' | 'member';
 type OrganizationRole = BusinessRole | 'viewer';
+type OrganizationType = Database['public']['Enums']['organization_type'];
 
 type BusinessOnboarding = {
   id: string;
   onboarding_completed: boolean;
   onboarding_step: number;
+};
+
+type OrganizationRow = Pick<
+  Database['public']['Tables']['organizations']['Row'],
+  'id' | 'name' | 'type'
+>;
+
+export type OrganizationBusinessContext = {
+  organizationId: string;
+  organizationName: string;
+  organizationType: OrganizationType;
+  businessId: string;
+  role: BusinessRole;
+  onboarding: BusinessOnboarding;
 };
 
 function normalizeOrganizationRole(role: string | null | undefined): BusinessRole {
@@ -18,46 +35,36 @@ function normalizeOrganizationRole(role: string | null | undefined): BusinessRol
   return 'member';
 }
 
-async function createDefaultBusinessContext(userId: string): Promise<{
+async function createDefaultBusinessContext(): Promise<{
   organizationId: string;
+  organizationName: string;
+  organizationType: OrganizationType;
   role: BusinessRole;
   business: BusinessOnboarding;
 }> {
   const supabase = await createServerClient();
+  const defaultBusinessName = 'My Business';
 
-  const { data: organization, error: organizationError } = await supabase
-    .from('organizations')
-    .insert({
-      name: 'My Business',
-      type: 'business',
-      primary_language: 'en',
-      branding: {},
-      is_active: true,
-    })
-    .select('id')
-    .single();
+  // Organization creation and owner assignment live in one RPC so the database
+  // owns the invariant that every new workspace has an owner membership.
+  const { data: organizationId, error: organizationError } = await supabase
+    .rpc('create_organization_with_owner', {
+      org_name: defaultBusinessName,
+      org_type: 'business',
+      org_primary_language: 'en',
+    });
 
-  if (organizationError || !organization) {
+  if (organizationError || !organizationId) {
     throw new Error(organizationError?.message || 'Failed to create organization');
   }
 
-  const { error: membershipError } = await supabase
-    .from('organization_memberships')
-    .insert({
-      organization_id: organization.id,
-      user_id: userId,
-      role: 'owner',
-    });
-
-  if (membershipError) {
-    throw new Error(membershipError.message || 'Failed to create organization membership');
-  }
+  const organization = await getOrganizationById(organizationId);
 
   const { data: business, error: businessError } = await supabase
     .from('business_profiles')
     .insert({
       organization_id: organization.id,
-      business_name: 'My Business',
+      business_name: organization.name,
       onboarding_step: 0,
       onboarding_completed: false,
     })
@@ -70,15 +77,33 @@ async function createDefaultBusinessContext(userId: string): Promise<{
 
   return {
     organizationId: organization.id,
+    organizationName: defaultBusinessName,
+    organizationType: 'business',
     role: 'owner',
     business,
   };
 }
 
-async function ensureBusinessProfileForOrganization(organizationId: string): Promise<BusinessOnboarding> {
+async function getOrganizationById(organizationId: string): Promise<OrganizationRow> {
   const supabase = await createServerClient();
 
-  const { data: business, error: businessError } = await supabase
+  const { data: organization, error } = await supabase
+    .from('organizations')
+    .select('id, name, type')
+    .eq('id', organizationId)
+    .single();
+
+  if (error || !organization) {
+    throw new Error(error?.message || 'Failed to load organization');
+  }
+
+  return organization;
+}
+
+async function getPrimaryBusinessProfileForOrganization(organizationId: string): Promise<BusinessOnboarding | null> {
+  const supabase = await createServerClient();
+
+  const { data: business, error } = await supabase
     .from('business_profiles')
     .select('id, onboarding_completed, onboarding_step')
     .eq('organization_id', organizationId)
@@ -86,19 +111,37 @@ async function ensureBusinessProfileForOrganization(organizationId: string): Pro
     .limit(1)
     .maybeSingle();
 
-  if (businessError) {
-    throw new Error(businessError.message);
+  if (error) {
+    throw new Error(error.message);
   }
 
-  if (business) {
-    return business;
+  return business;
+}
+
+async function ensureBusinessProfileForOrganization(
+  organization: OrganizationRow
+): Promise<BusinessOnboarding> {
+  const existingBusiness = await getPrimaryBusinessProfileForOrganization(organization.id);
+
+  if (existingBusiness) {
+    return existingBusiness;
   }
 
+  if (organization.type !== 'business') {
+    throw new Error(
+      'Agency organizations do not get an automatic business profile. A business must be selected explicitly.'
+    );
+  }
+
+  const supabase = await createServerClient();
+
+  // Business organizations have a single primary business profile. We create it on demand
+  // so new owners can complete onboarding before any deeper account setup begins.
   const { data: createdBusiness, error: createError } = await supabase
     .from('business_profiles')
     .insert({
-      organization_id: organizationId,
-      business_name: 'My Business',
+      organization_id: organization.id,
+      business_name: organization.name,
       onboarding_step: 0,
       onboarding_completed: false,
     })
@@ -112,7 +155,9 @@ async function ensureBusinessProfileForOrganization(organizationId: string): Pro
   return createdBusiness;
 }
 
-export async function getOrCreateOrganizationBusinessContext(userId: string) {
+export async function getOrCreateOrganizationBusinessContext(
+  userId: string
+): Promise<OrganizationBusinessContext> {
   const supabase = await createServerClient();
 
   const { data: membership, error: membershipError } = await supabase
@@ -127,20 +172,25 @@ export async function getOrCreateOrganizationBusinessContext(userId: string) {
   }
 
   if (!membership?.organization_id) {
-    const created = await createDefaultBusinessContext(userId);
+    const created = await createDefaultBusinessContext();
 
     return {
       organizationId: created.organizationId,
+      organizationName: created.organizationName,
+      organizationType: created.organizationType,
       businessId: created.business.id,
       role: created.role,
       onboarding: created.business,
     };
   }
 
-  const business = await ensureBusinessProfileForOrganization(membership.organization_id);
+  const organization = await getOrganizationById(membership.organization_id);
+  const business = await ensureBusinessProfileForOrganization(organization);
 
   return {
-    organizationId: membership.organization_id,
+    organizationId: organization.id,
+    organizationName: organization.name,
+    organizationType: organization.type,
     businessId: business.id,
     role: normalizeOrganizationRole(membership.role as OrganizationRole),
     onboarding: business,
@@ -162,6 +212,9 @@ export async function requireBusinessContextOrRedirect(
     return context;
   } catch (error) {
     console.error('Failed to resolve business context:', error);
+    if (error instanceof Error && error.message.includes('Agency organizations do not get an automatic business profile')) {
+      redirect('/onboarding');
+    }
     redirect('/login');
   }
 }

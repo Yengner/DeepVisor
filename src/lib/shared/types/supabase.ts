@@ -377,6 +377,296 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_intelligence_profiles: {
+        Row: {
+          active_days_count: number
+          ad_account_id: string
+          ads_count: number
+          adsets_count: number
+          best_ad_id: string | null
+          best_adset_id: string | null
+          best_campaign_id: string | null
+          best_historical_objective: string | null
+          best_recent_objective: string | null
+          business_id: string
+          campaigns_count: number
+          created_at: string
+          data_sufficiency_score: number | null
+          first_activity_date: string | null
+          generated_at: string
+          id: string
+          maturity_classification: string
+          primary_objective: string | null
+          recommendation_readiness: boolean
+          summary: Json
+          total_clicks: number
+          total_impressions: number
+          total_leads: number
+          total_spend: number
+          updated_at: string
+        }
+        Insert: {
+          active_days_count?: number
+          ad_account_id: string
+          ads_count?: number
+          adsets_count?: number
+          best_ad_id?: string | null
+          best_adset_id?: string | null
+          best_campaign_id?: string | null
+          best_historical_objective?: string | null
+          best_recent_objective?: string | null
+          business_id: string
+          campaigns_count?: number
+          created_at?: string
+          data_sufficiency_score?: number | null
+          first_activity_date?: string | null
+          generated_at?: string
+          id?: string
+          maturity_classification: string
+          primary_objective?: string | null
+          recommendation_readiness?: boolean
+          summary?: Json
+          total_clicks?: number
+          total_impressions?: number
+          total_leads?: number
+          total_spend?: number
+          updated_at?: string
+        }
+        Update: {
+          active_days_count?: number
+          ad_account_id?: string
+          ads_count?: number
+          adsets_count?: number
+          best_ad_id?: string | null
+          best_adset_id?: string | null
+          best_campaign_id?: string | null
+          best_historical_objective?: string | null
+          best_recent_objective?: string | null
+          business_id?: string
+          campaigns_count?: number
+          created_at?: string
+          data_sufficiency_score?: number | null
+          first_activity_date?: string | null
+          generated_at?: string
+          id?: string
+          maturity_classification?: string
+          primary_objective?: string | null
+          recommendation_readiness?: boolean
+          summary?: Json
+          total_clicks?: number
+          total_impressions?: number
+          total_leads?: number
+          total_spend?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_intelligence_profiles_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: true
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_intelligence_profiles_best_ad_id_fkey"
+            columns: ["best_ad_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_intelligence_profiles_best_adset_id_fkey"
+            columns: ["best_adset_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_intelligence_profiles_best_campaign_id_fkey"
+            columns: ["best_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_intelligence_profiles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      account_sync_jobs: {
+        Row: {
+          actual_end_date: string | null
+          actual_start_date: string | null
+          ad_account_id: string
+          ads_synced: number
+          adsets_synced: number
+          business_id: string
+          campaigns_synced: number
+          created_at: string
+          creatives_synced: number
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          metadata: Json
+          performance_rows_synced: number
+          platform_integration_id: string
+          requested_end_date: string | null
+          requested_start_date: string | null
+          started_at: string | null
+          status: string
+          sync_type: string
+          updated_at: string
+        }
+        Insert: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          ad_account_id: string
+          ads_synced?: number
+          adsets_synced?: number
+          business_id: string
+          campaigns_synced?: number
+          created_at?: string
+          creatives_synced?: number
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          performance_rows_synced?: number
+          platform_integration_id: string
+          requested_end_date?: string | null
+          requested_start_date?: string | null
+          started_at?: string | null
+          status?: string
+          sync_type: string
+          updated_at?: string
+        }
+        Update: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          ad_account_id?: string
+          ads_synced?: number
+          adsets_synced?: number
+          business_id?: string
+          campaigns_synced?: number
+          created_at?: string
+          creatives_synced?: number
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          performance_rows_synced?: number
+          platform_integration_id?: string
+          requested_end_date?: string | null
+          requested_start_date?: string | null
+          started_at?: string | null
+          status?: string
+          sync_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_sync_jobs_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_sync_jobs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_sync_jobs_platform_integration_id_fkey"
+            columns: ["platform_integration_id"]
+            isOneToOne: false
+            referencedRelation: "platform_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_account_sync_state: {
+        Row: {
+          ad_account_id: string
+          created_at: string
+          dimensions_synced_at: string | null
+          first_activity_date: string | null
+          first_full_sync_at: string | null
+          first_full_sync_completed: boolean
+          has_meaningful_history: boolean
+          historical_data_available: boolean
+          id: string
+          insights_synced_through: string | null
+          last_failed_sync_job_id: string | null
+          last_incremental_sync_at: string | null
+          last_successful_sync_job_id: string | null
+          latest_activity_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          created_at?: string
+          dimensions_synced_at?: string | null
+          first_activity_date?: string | null
+          first_full_sync_at?: string | null
+          first_full_sync_completed?: boolean
+          has_meaningful_history?: boolean
+          historical_data_available?: boolean
+          id?: string
+          insights_synced_through?: string | null
+          last_failed_sync_job_id?: string | null
+          last_incremental_sync_at?: string | null
+          last_successful_sync_job_id?: string | null
+          latest_activity_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          created_at?: string
+          dimensions_synced_at?: string | null
+          first_activity_date?: string | null
+          first_full_sync_at?: string | null
+          first_full_sync_completed?: boolean
+          has_meaningful_history?: boolean
+          historical_data_available?: boolean
+          id?: string
+          insights_synced_through?: string | null
+          last_failed_sync_job_id?: string | null
+          last_incremental_sync_at?: string | null
+          last_successful_sync_job_id?: string | null
+          latest_activity_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_account_sync_state_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: true
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_account_sync_state_last_failed_sync_job_id_fkey"
+            columns: ["last_failed_sync_job_id"]
+            isOneToOne: false
+            referencedRelation: "account_sync_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_account_sync_state_last_successful_sync_job_id_fkey"
+            columns: ["last_successful_sync_job_id"]
+            isOneToOne: false
+            referencedRelation: "account_sync_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_accounts: {
         Row: {
           aggregated_metrics: Json | null
@@ -616,6 +906,116 @@ export type Database = {
           },
         ]
       }
+      ad_performance_summary: {
+        Row: {
+          ad_account_id: string
+          ad_id: string
+          adset_id: string | null
+          calls: number
+          campaign_id: string | null
+          clicks: number
+          cost_per_result: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string
+          ctr: number | null
+          first_day: string | null
+          frequency: number | null
+          history_status: string
+          impressions: number
+          inline_link_clicks: number
+          last_day: string | null
+          leads: number
+          messages: number
+          reach: number
+          spend: number
+          summary_source: string
+          synced_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          ad_id: string
+          adset_id?: string | null
+          calls?: number
+          campaign_id?: string | null
+          clicks?: number
+          cost_per_result?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          first_day?: string | null
+          frequency?: number | null
+          history_status?: string
+          impressions?: number
+          inline_link_clicks?: number
+          last_day?: string | null
+          leads?: number
+          messages?: number
+          reach?: number
+          spend?: number
+          summary_source?: string
+          synced_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          ad_id?: string
+          adset_id?: string | null
+          calls?: number
+          campaign_id?: string | null
+          clicks?: number
+          cost_per_result?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          first_day?: string | null
+          frequency?: number | null
+          history_status?: string
+          impressions?: number
+          inline_link_clicks?: number
+          last_day?: string | null
+          leads?: number
+          messages?: number
+          reach?: number
+          spend?: number
+          summary_source?: string
+          synced_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_performance_summary_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_performance_summary_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_performance_summary_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_performance_summary_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ads_performance_daily: {
         Row: {
           ad_id: string
@@ -737,6 +1137,106 @@ export type Database = {
           },
           {
             foreignKeyName: "adset_dims_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      adset_performance_summary: {
+        Row: {
+          ad_account_id: string
+          adset_id: string
+          calls: number
+          campaign_id: string | null
+          clicks: number
+          cost_per_result: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string
+          ctr: number | null
+          first_day: string | null
+          frequency: number | null
+          history_status: string
+          impressions: number
+          inline_link_clicks: number
+          last_day: string | null
+          leads: number
+          messages: number
+          reach: number
+          spend: number
+          summary_source: string
+          synced_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          adset_id: string
+          calls?: number
+          campaign_id?: string | null
+          clicks?: number
+          cost_per_result?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          first_day?: string | null
+          frequency?: number | null
+          history_status?: string
+          impressions?: number
+          inline_link_clicks?: number
+          last_day?: string | null
+          leads?: number
+          messages?: number
+          reach?: number
+          spend?: number
+          summary_source?: string
+          synced_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          adset_id?: string
+          calls?: number
+          campaign_id?: string | null
+          clicks?: number
+          cost_per_result?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          first_day?: string | null
+          frequency?: number | null
+          history_status?: string
+          impressions?: number
+          inline_link_clicks?: number
+          last_day?: string | null
+          leads?: number
+          messages?: number
+          reach?: number
+          spend?: number
+          summary_source?: string
+          synced_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adset_performance_summary_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adset_performance_summary_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adset_performance_summary_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaign_dims"
@@ -1030,6 +1530,96 @@ export type Database = {
             columns: ["updated_by_user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_performance_summary: {
+        Row: {
+          ad_account_id: string
+          calls: number
+          campaign_id: string
+          clicks: number
+          cost_per_result: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string
+          ctr: number | null
+          first_day: string | null
+          frequency: number | null
+          history_status: string
+          impressions: number
+          inline_link_clicks: number
+          last_day: string | null
+          leads: number
+          messages: number
+          reach: number
+          spend: number
+          summary_source: string
+          synced_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          calls?: number
+          campaign_id: string
+          clicks?: number
+          cost_per_result?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          first_day?: string | null
+          frequency?: number | null
+          history_status?: string
+          impressions?: number
+          inline_link_clicks?: number
+          last_day?: string | null
+          leads?: number
+          messages?: number
+          reach?: number
+          spend?: number
+          summary_source?: string
+          synced_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          calls?: number
+          campaign_id?: string
+          clicks?: number
+          cost_per_result?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          first_day?: string | null
+          frequency?: number | null
+          history_status?: string
+          impressions?: number
+          inline_link_clicks?: number
+          last_day?: string | null
+          leads?: number
+          messages?: number
+          reach?: number
+          spend?: number
+          summary_source?: string
+          synced_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_performance_summary_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_performance_summary_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaign_dims"
             referencedColumns: ["id"]
           },
         ]

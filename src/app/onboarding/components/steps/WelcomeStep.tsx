@@ -15,9 +15,9 @@ export default function WelcomeStep({ onNext }: WelcomeStepProps) {
   return (
     <Stack gap="xl" py={16}>
       <div>
-        <Title order={2} ta="center">Let&apos;s get your account set up</Title>
+        <Title order={2} ta="center">Let&apos;s set up your business workspace</Title>
         <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto">
-          A short, guided setup so we can personalize your dashboard and automation.
+          We&apos;ll create a clean business setup, connect one primary ad account, and prepare your dashboard around that account.
         </Text>
       </div>
 
@@ -29,7 +29,7 @@ export default function WelcomeStep({ onNext }: WelcomeStepProps) {
             </ThemeIcon>
             <div>
               <Text fw={600}>Connect platforms</Text>
-              <Text c="dimmed" size="sm">Meta first, more later</Text>
+              <Text c="dimmed" size="sm">Choose one primary ad account</Text>
             </div>
           </Group>
         </Paper>
@@ -40,7 +40,7 @@ export default function WelcomeStep({ onNext }: WelcomeStepProps) {
             </ThemeIcon>
             <div>
               <Text fw={600}>Business profile</Text>
-              <Text c="dimmed" size="sm">Tell us about your team</Text>
+              <Text c="dimmed" size="sm">Set your business details</Text>
             </div>
           </Group>
         </Paper>

@@ -23,6 +23,20 @@ type CampaignPerformanceRow = Pick<
   | 'messages'
 >;
 
+type CampaignPerformanceSummaryRow = Pick<
+  Database['public']['Tables']['campaign_performance_summary']['Row'],
+  | 'campaign_id'
+  | 'spend'
+  | 'reach'
+  | 'impressions'
+  | 'clicks'
+  | 'inline_link_clicks'
+  | 'leads'
+  | 'messages'
+  | 'first_day'
+  | 'last_day'
+>;
+
 export interface CampaignSummary {
   adAccountId: string;
   campaignId: string;
@@ -132,6 +146,30 @@ async function listCampaignPerformanceRows(input: {
   return rows;
 }
 
+async function listCampaignPerformanceSummaries(input: {
+  supabase: SupabaseClient;
+  campaignIds: string[];
+}): Promise<CampaignPerformanceSummaryRow[]> {
+  const rows: CampaignPerformanceSummaryRow[] = [];
+
+  for (const campaignIdsChunk of chunkArray(input.campaignIds, 200)) {
+    const { data, error } = await input.supabase
+      .from('campaign_performance_summary')
+      .select(
+        'campaign_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, first_day, last_day'
+      )
+      .in('campaign_id', campaignIdsChunk);
+
+    if (error) {
+      throw error;
+    }
+
+    rows.push(...((data ?? []) as CampaignPerformanceSummaryRow[]));
+  }
+
+  return rows;
+}
+
 export async function getCampaignSummaries(input: {
   adAccountIds: string[];
   campaignExternalIds?: string[];
@@ -156,21 +194,6 @@ export async function getCampaignSummaries(input: {
     return [];
   }
 
-  const performanceRows = await listCampaignPerformanceRows({
-    supabase,
-    campaignIds: campaignDims.map((campaign) => campaign.id),
-    sinceDay:
-      typeof input.windowDays === 'number'
-        ? resolveWindowStartDate(input.windowDays)
-        : input.windowDays === undefined
-          ? resolveWindowStartDate(DEFAULT_WINDOW_DAYS)
-          : undefined,
-  });
-
-  if (performanceRows.length === 0 && !input.includeEmpty) {
-    return [];
-  }
-
   const campaignDimById = new Map(
     campaignDims.map((campaign) => [campaign.id, campaign] satisfies [string, CampaignDimRow])
   );
@@ -192,22 +215,64 @@ export async function getCampaignSummaries(input: {
     ])
   );
 
-  for (const row of performanceRows) {
-    const totals = totalsByCampaignId.get(row.campaign_id);
-    if (!totals) {
-      continue;
+  if (input.windowDays === null) {
+    const summaryRows = await listCampaignPerformanceSummaries({
+      supabase,
+      campaignIds: campaignDims.map((campaign) => campaign.id),
+    });
+
+    if (summaryRows.length === 0 && !input.includeEmpty) {
+      return [];
     }
 
-    totals.spend += row.spend ?? 0;
-    totals.reach += row.reach ?? 0;
-    totals.impressions += row.impressions ?? 0;
-    totals.clicks += row.clicks ?? 0;
-    totals.linkClicks += row.inline_link_clicks ?? 0;
-    totals.leads += row.leads ?? 0;
-    totals.messages += row.messages ?? 0;
-    totals.firstDay = totals.firstDay === null || row.day < totals.firstDay ? row.day : totals.firstDay;
-    totals.lastDay = totals.lastDay === null || row.day > totals.lastDay ? row.day : totals.lastDay;
-    totals.rowCount += 1;
+    for (const row of summaryRows) {
+      const totals = totalsByCampaignId.get(row.campaign_id);
+      if (!totals) {
+        continue;
+      }
+
+      totals.spend = row.spend ?? 0;
+      totals.reach = row.reach ?? 0;
+      totals.impressions = row.impressions ?? 0;
+      totals.clicks = row.clicks ?? 0;
+      totals.linkClicks = row.inline_link_clicks ?? 0;
+      totals.leads = row.leads ?? 0;
+      totals.messages = row.messages ?? 0;
+      totals.firstDay = row.first_day ?? null;
+      totals.lastDay = row.last_day ?? null;
+      totals.rowCount = 1;
+    }
+  } else {
+    const performanceRows = await listCampaignPerformanceRows({
+      supabase,
+      campaignIds: campaignDims.map((campaign) => campaign.id),
+      sinceDay:
+        typeof input.windowDays === 'number'
+          ? resolveWindowStartDate(input.windowDays)
+          : resolveWindowStartDate(DEFAULT_WINDOW_DAYS),
+    });
+
+    if (performanceRows.length === 0 && !input.includeEmpty) {
+      return [];
+    }
+
+    for (const row of performanceRows) {
+      const totals = totalsByCampaignId.get(row.campaign_id);
+      if (!totals) {
+        continue;
+      }
+
+      totals.spend += row.spend ?? 0;
+      totals.reach += row.reach ?? 0;
+      totals.impressions += row.impressions ?? 0;
+      totals.clicks += row.clicks ?? 0;
+      totals.linkClicks += row.inline_link_clicks ?? 0;
+      totals.leads += row.leads ?? 0;
+      totals.messages += row.messages ?? 0;
+      totals.firstDay = totals.firstDay === null || row.day < totals.firstDay ? row.day : totals.firstDay;
+      totals.lastDay = totals.lastDay === null || row.day > totals.lastDay ? row.day : totals.lastDay;
+      totals.rowCount += 1;
+    }
   }
 
   const summaries = Array.from(totalsByCampaignId.entries())

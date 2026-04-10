@@ -1,8 +1,16 @@
 import 'server-only';
 
+import {
+  aggregateDailyMetricsRows,
+  hasMeaningfulPerformance,
+  type AdAccountDailyMetricsRow,
+} from '@/lib/server/repositories/ad_accounts/normalizers';
 import { upsertAdAccountPerformanceDaily } from '@/lib/server/repositories/ad_accounts/upsertAdAccountPerformanceDaily';
+import { upsertAdPerformanceSummary } from '@/lib/server/repositories/ads/upsertAdPerformanceSummary';
 import { upsertAdPerformanceDaily } from '@/lib/server/repositories/ads/upsertAdPerformanceDaily';
+import { upsertAdsetPerformanceSummary } from '@/lib/server/repositories/adsets/upsertAdsetPerformanceSummary';
 import { upsertAdsetPerformanceDaily } from '@/lib/server/repositories/adsets/upsertAdsetPerformanceDaily';
+import { upsertCampaignPerformanceSummary } from '@/lib/server/repositories/campaigns/upsertCampaignPerformanceSummary';
 import { upsertCampaignPerformanceDaily } from '@/lib/server/repositories/campaigns/upsertCampaignPerformanceDaily';
 import type { Database } from '@/lib/shared/types/supabase';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
@@ -18,6 +26,17 @@ type CampaignDimRow = Database['public']['Tables']['campaign_dims']['Row'];
 type AdsetDimRow = Database['public']['Tables']['adset_dims']['Row'];
 type AdDimRow = Database['public']['Tables']['ad_dims']['Row'];
 
+function hasDeliverySignal(row: AdAccountDailyMetricsRow): boolean {
+  return (
+    row.spend > 0 ||
+    row.impressions > 0 ||
+    row.clicks > 0 ||
+    row.inline_link_clicks > 0 ||
+    row.leads > 0 ||
+    row.messages > 0
+  );
+}
+
 export async function syncMetaPerformance(input: {
   supabase: RepositoryClient;
   adAccounts: AdAccountRow[];
@@ -32,6 +51,12 @@ export async function syncMetaPerformance(input: {
   const campaignPerformanceInputs: Parameters<typeof upsertCampaignPerformanceDaily>[1] = [];
   const adsetPerformanceInputs: Parameters<typeof upsertAdsetPerformanceDaily>[1] = [];
   const adPerformanceInputs: Parameters<typeof upsertAdPerformanceDaily>[1] = [];
+  let adAccountPerformanceRows = 0;
+  let historicalDataAvailable = false;
+  let hasMeaningfulHistory = false;
+  let firstActivityDate: string | null = null;
+  let latestActivityDate: string | null = null;
+  let insightsSyncedThrough: string | null = null;
 
   for (const adAccount of input.adAccounts) {
     const [adAccountRows, campaignRows, adsetRows, adRows] = await Promise.all([
@@ -56,6 +81,50 @@ export async function syncMetaPerformance(input: {
         backfillDays: input.backfillDays,
       }),
     ]);
+
+    if (adAccountRows.length > 0) {
+      historicalDataAvailable = true;
+      adAccountPerformanceRows += adAccountRows.length;
+
+      const normalizedRows = adAccountRows
+        .map(
+          (row) =>
+            ({
+              day: row.day,
+              currency_code: row.currencyCode ?? adAccount.currency_code,
+              spend: row.spend,
+              reach: row.reach,
+              impressions: row.impressions,
+              clicks: row.clicks,
+              inline_link_clicks: row.inlineLinkClicks,
+              leads: row.leads,
+              messages: row.messages,
+            }) satisfies AdAccountDailyMetricsRow
+        )
+        .sort((left, right) => left.day.localeCompare(right.day));
+      const activeRows = normalizedRows.filter(hasDeliverySignal);
+      const summary = aggregateDailyMetricsRows(normalizedRows);
+
+      if (hasMeaningfulPerformance(summary)) {
+        hasMeaningfulHistory = true;
+      }
+
+      const firstDay = activeRows[0]?.day ?? null;
+      const lastDay = activeRows[activeRows.length - 1]?.day ?? null;
+      const lastObservedDay = normalizedRows[normalizedRows.length - 1]?.day ?? null;
+
+      if (firstDay && (!firstActivityDate || firstDay < firstActivityDate)) {
+        firstActivityDate = firstDay;
+      }
+
+      if (lastDay && (!latestActivityDate || lastDay > latestActivityDate)) {
+        latestActivityDate = lastDay;
+      }
+
+      if (lastObservedDay && (!insightsSyncedThrough || lastObservedDay > insightsSyncedThrough)) {
+        insightsSyncedThrough = lastObservedDay;
+      }
+    }
 
     for (const row of adAccountRows) {
       adAccountPerformanceInputs.push({
@@ -159,17 +228,44 @@ export async function syncMetaPerformance(input: {
     }
   }
 
-  const [adAccountPerformance, campaignPerformance, adsetPerformance, adPerformance] = await Promise.all([
-    upsertAdAccountPerformanceDaily(input.supabase, adAccountPerformanceInputs),
-    upsertCampaignPerformanceDaily(input.supabase, campaignPerformanceInputs),
-    upsertAdsetPerformanceDaily(input.supabase, adsetPerformanceInputs),
-    upsertAdPerformanceDaily(input.supabase, adPerformanceInputs),
-  ]);
+  const [adAccountPerformance, campaignPerformance, adsetPerformance, adPerformance] =
+    await Promise.all([
+      upsertAdAccountPerformanceDaily(input.supabase, adAccountPerformanceInputs),
+      upsertCampaignPerformanceDaily(input.supabase, campaignPerformanceInputs),
+      upsertAdsetPerformanceDaily(input.supabase, adsetPerformanceInputs),
+      upsertAdPerformanceDaily(input.supabase, adPerformanceInputs),
+    ]);
+
+  // Refresh summary rows from stored daily facts so lifetime table reads stay accurate
+  // after both initial backfills and later incremental syncs.
+  const [campaignPerformanceSummary, adsetPerformanceSummary, adPerformanceSummary] =
+    await Promise.all([
+      upsertCampaignPerformanceSummary(input.supabase, {
+        campaigns: Array.from(input.campaignsByExternalId.values()),
+        syncedAt: input.syncedAt,
+      }),
+      upsertAdsetPerformanceSummary(input.supabase, {
+        adsets: Array.from(input.adsetsByExternalId.values()),
+        syncedAt: input.syncedAt,
+      }),
+      upsertAdPerformanceSummary(input.supabase, {
+        ads: Array.from(input.adsByExternalId.values()),
+        syncedAt: input.syncedAt,
+      }),
+    ]);
 
   return {
-    adAccountPerformanceRows: adAccountPerformance.count,
+    adAccountPerformanceRows: adAccountPerformance.count || adAccountPerformanceRows,
     campaignPerformanceRows: campaignPerformance.count,
     adsetPerformanceRows: adsetPerformance.count,
     adPerformanceRows: adPerformance.count,
+    campaignPerformanceSummaries: campaignPerformanceSummary.count,
+    adsetPerformanceSummaries: adsetPerformanceSummary.count,
+    adPerformanceSummaries: adPerformanceSummary.count,
+    historicalDataAvailable,
+    hasMeaningfulHistory,
+    firstActivityDate,
+    latestActivityDate,
+    insightsSyncedThrough,
   };
 }

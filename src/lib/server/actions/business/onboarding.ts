@@ -5,9 +5,15 @@ import { ok, fail, type ApiResponse, ErrorCode } from '@/lib/shared';
 import { getErrorMessage } from '@/lib/shared/utils/guards';
 import { requireUserId } from '@/lib/server/actions/user/session';
 import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
+import type { Database } from '@/lib/shared/types/supabase';
+
+type OrganizationType = Database['public']['Enums']['organization_type'];
 
 type ActiveBusinessContext = {
   userId: string;
+  organizationId: string;
+  organizationName: string;
+  organizationType: OrganizationType;
   businessId: string;
 };
 
@@ -15,10 +21,19 @@ async function requireActiveBusinessContextOrFail(): Promise<ApiResponse<ActiveB
   try {
     const userId = await requireUserId();
     const context = await getOrCreateOrganizationBusinessContext(userId);
-    return ok({ userId, businessId: context.businessId });
+    return ok({
+      userId,
+      organizationId: context.organizationId,
+      organizationName: context.organizationName,
+      organizationType: context.organizationType,
+      businessId: context.businessId,
+    });
   } catch (error) {
-    return fail(getErrorMessage(error), ErrorCode.UNAUTHORIZED, {
-      userMessage: 'Please sign in again.',
+    const message = getErrorMessage(error);
+    return fail(message, ErrorCode.UNAUTHORIZED, {
+      userMessage: message.includes('Agency organizations do not get an automatic business profile')
+        ? 'Agency workspaces are not supported in this onboarding flow yet.'
+        : 'Please sign in again.',
     });
   }
 }
@@ -42,6 +57,9 @@ export type OnboardingInitial = {
   step: number;
   completed: boolean;
   businessId: string;
+  organizationId: string;
+  organizationName: string;
+  organizationType: OrganizationType;
   connectedPlatformKeys: string[];
   businessData: {
     businessName: string;
@@ -60,7 +78,7 @@ export async function getOnboardingInitial(): Promise<ApiResponse<OnboardingInit
   const contextRes = await requireActiveBusinessContextOrFail();
   if (!contextRes.success) return contextRes;
 
-  const { businessId } = contextRes.data;
+  const { businessId, organizationId, organizationName, organizationType } = contextRes.data;
 
   const [{ data: bp, error: profileError }, { data: integrations, error: integrationsError }] = await Promise.all([
     supabase
@@ -107,6 +125,9 @@ export async function getOnboardingInitial(): Promise<ApiResponse<OnboardingInit
     step: bp.onboarding_step ?? 0,
     completed: bp.onboarding_completed ?? false,
     businessId: bp.id,
+    organizationId,
+    organizationName,
+    organizationType,
     connectedPlatformKeys,
     businessData: {
       businessName: bp.business_name ?? '',
@@ -135,7 +156,7 @@ export async function updateBusinessProfileData(input: {
     const contextRes = await requireActiveBusinessContextOrFail();
     if (!contextRes.success) return contextRes;
 
-    const { businessId } = contextRes.data;
+    const { businessId, organizationId, organizationType } = contextRes.data;
 
     const updateData = cleanUndefined({
       business_name: input.businessName,
@@ -155,6 +176,20 @@ export async function updateBusinessProfileData(input: {
 
     if (error) {
       return fail(getErrorMessage(error), ErrorCode.DATABASE_ERROR);
+    }
+
+    if (input.businessName && organizationType === 'business') {
+      const { error: organizationError } = await supabase
+        .from('organizations')
+        .update({
+          name: input.businessName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', organizationId);
+
+      if (organizationError) {
+        return fail(getErrorMessage(organizationError), ErrorCode.DATABASE_ERROR);
+      }
     }
 
     return ok(null);

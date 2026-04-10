@@ -25,9 +25,11 @@ interface CampaignTableProps {
   campaigns: FormattedCampaign[];
   selectedCampaignId?: string;
   onSelectCampaign: (campaignId: string) => void;
+  onOpenCampaign?: (campaignId: string) => void;
   onToggleCampaign: (campaignId: string, newStatus: boolean) => void;
   onDeleteCampaign: (campaignId: string) => void;
   platformColor?: string;
+  fillHeight?: boolean;
 }
 
 const BG = 'var(--mantine-color-body)';
@@ -40,9 +42,11 @@ export default function CampaignTable({
   campaigns,
   selectedCampaignId,
   onSelectCampaign,
+  onOpenCampaign,
   onToggleCampaign,
   onDeleteCampaign,
   platformColor = 'dark',
+  fillHeight = false,
 }: CampaignTableProps) {
   const fmt$ = (n?: number) => `$${Number(n || 0).toFixed(2)}`;
 
@@ -51,13 +55,14 @@ export default function CampaignTable({
   const rowH = 48;
   const rows = campaigns.length;
   const tableHeight = Math.min(rows, maxRowsBeforeScroll) * rowH + headerH + 8;
+  const scrollHeight = fillHeight ? '100%' : rows > maxRowsBeforeScroll ? tableHeight : undefined;
 
   return (
     <ScrollArea
-      h={rows > maxRowsBeforeScroll ? tableHeight : undefined}
+      h={scrollHeight}
       type="always"
-      style={{ borderRadius: 8 }}
-      offsetScrollbars="x"
+      style={{ borderRadius: 8, height: fillHeight ? '100%' : undefined }}
+      offsetScrollbars
     >
       <Table
         highlightOnHover
@@ -65,7 +70,7 @@ export default function CampaignTable({
         verticalSpacing="sm"
         horizontalSpacing="md"
         withColumnBorders={false}
-        style={{ minWidth: 1200, tableLayout: 'auto' }}
+        style={{ minWidth: 1200, tableLayout: 'auto', marginBottom: fillHeight ? 18 : undefined }}
       >
         <Table.Thead>
           <Table.Tr>
@@ -123,6 +128,7 @@ export default function CampaignTable({
                   key={campaign.id}
                   style={{ background: rowBg, cursor: 'pointer' }}
                   onClick={() => onSelectCampaign(campaign.id)}
+                  onDoubleClick={() => onOpenCampaign?.(campaign.id)}
                 >
                   <Table.Td>
                     {selected && (
@@ -173,7 +179,12 @@ export default function CampaignTable({
                   </Table.Td>
 
                   <Table.Td>
-                    <Group gap="xs" wrap="nowrap" onClick={(event) => event.stopPropagation()}>
+                    <Group
+                      gap="xs"
+                      wrap="nowrap"
+                      onClick={(event) => event.stopPropagation()}
+                      onDoubleClick={(event) => event.stopPropagation()}
+                    >
                       <Switch
                         checked={campaign.delivery}
                         onChange={(event) => onToggleCampaign(campaign.id, event.currentTarget.checked)}
@@ -240,6 +251,7 @@ export default function CampaignTable({
                       boxShadow: `inset 1px 0 0 ${BORDER}`,
                     }}
                     onClick={(event) => event.stopPropagation()}
+                    onDoubleClick={(event) => event.stopPropagation()}
                   >
                     <Menu position="bottom-end" withArrow offset={4}>
                       <Menu.Target>

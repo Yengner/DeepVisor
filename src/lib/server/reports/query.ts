@@ -1,3 +1,4 @@
+import { getTrailingUtcDateRange } from '@/lib/shared';
 import type {
   ReportCompareMode,
   ReportGroupBy,
@@ -21,25 +22,8 @@ function isIsoDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function getToday(): Date {
-  const date = new Date();
-  date.setUTCHours(0, 0, 0, 0);
-  return date;
-}
-
 function getDefaultDateRange() {
-  const dateTo = getToday();
-  const dateFrom = new Date(dateTo);
-  dateFrom.setUTCDate(dateFrom.getUTCDate() - 29);
-
-  return {
-    dateFrom: toIsoDate(dateFrom),
-    dateTo: toIsoDate(dateTo),
-  };
+  return getTrailingUtcDateRange(30);
 }
 
 function resolveDefaultGroupBy(dateFrom: string, dateTo: string): ReportGroupBy {
