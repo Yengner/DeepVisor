@@ -3,10 +3,10 @@ import type { FC } from "react";
 import { Button, Container } from "@/components/marketing";
 
 const navItems = [
-    { label: "Platform", href: "#platform" },
-    { label: "Outcomes", href: "#outcomes" },
-    { label: "Use cases", href: "#use-cases" },
-    { label: "How it works", href: "#how-it-works" },
+    { label: "Product", href: "#product-system" },
+    { label: "Intelligence", href: "#intelligence" },
+    { label: "Reports", href: "#outcomes" },
+    { label: "Integrations", href: "#integrations" },
     { label: "Support", href: "#support" },
 ];
 
@@ -39,7 +39,7 @@ const Header: FC = () => {
                         Contact
                     </Link>
                     <Button asChild size="sm" variant="primary">
-                        <Link href="#support">Support</Link>
+                        <Link href="#support">Early access</Link>
                     </Button>
                 </div>
             </Container>
