@@ -1,0 +1,95 @@
+.page {
+  width: 100%;
+}
+
+.shell {
+  min-width: 0;
+}
+
+.topBar,
+.panel,
+.metricCard {
+  background: rgba(255, 255, 255, 0.97);
+}
+
+.topBar {
+  border-color: var(--platform-border);
+}
+
+.title {
+  color: var(--platform-text-strong);
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.metricCard {
+  height: 100%;
+}
+
+.metricValue {
+  color: #0f172a;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.deltaPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.deltaPositive {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.deltaNegative {
+  color: #c2410c;
+  background: rgba(249, 115, 22, 0.13);
+}
+
+.deltaNeutral {
+  color: #64748b;
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.sectionHeader {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.88);
+}
+
+.softPanel {
+  background: rgba(248, 250, 252, 0.78);
+}
+
+.insightCard {
+  padding: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.campaignRow,
+.actionRow,
+.reportRow,
+.healthRow {
+  padding: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.74);
+}
+
+.calendarPanel {
+  overflow: hidden;
+}
+
+@media (max-width: 760px) {
+  .title {
+    font-size: 1.55rem;
+  }
+}

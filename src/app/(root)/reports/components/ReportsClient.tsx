@@ -7,12 +7,9 @@ import '@mantine/dates/styles.css';
 import { LineChart } from '@mantine/charts';
 import {
   Badge,
-  Box,
   Button,
   Card,
-  Collapse,
   Container,
-  Divider,
   Drawer,
   Grid,
   Group,
@@ -28,8 +25,6 @@ import {
   IconArrowDownRight,
   IconArrowUpRight,
   IconBulb,
-  IconChevronDown,
-  IconChevronUp,
   IconProgressCheck,
   IconTimeline,
   IconTrendingDown,
@@ -49,6 +44,7 @@ import type {
 import PerformanceTable from './cards/PerformanceTable';
 import ReportsHeader from './layout/ReportsHeader';
 import ReportsSidebar from './layout/ReportsSidebar';
+import classes from './ReportsClient.module.css';
 
 interface ReportsClientProps {
   payload: ReportPayload;
@@ -365,26 +361,54 @@ function deriveInsight(payload: ReportPayload): ReportInsight {
   };
 }
 
-function SignalCard({
-  label,
+function KpiCard({ kpi }: { kpi: ReportKpi }) {
+  const deltaClass =
+    kpi.deltaPercent == null
+      ? classes.deltaNeutral
+      : kpi.deltaPercent >= 0
+        ? classes.deltaPositive
+        : classes.deltaNegative;
+  const DeltaIcon =
+    kpi.deltaPercent == null ? IconTimeline : kpi.deltaPercent >= 0 ? IconArrowUpRight : IconArrowDownRight;
+
+  return (
+    <Paper withBorder radius="xl" p="md" className={classes.kpiCard}>
+      <Stack gap="xs">
+        <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+          {kpi.label}
+        </Text>
+        <Text fw={900} size="1.75rem" className={classes.kpiValue}>
+          {kpi.formattedValue}
+        </Text>
+        <span className={`${classes.deltaPill} ${deltaClass}`}>
+          <DeltaIcon size={13} />
+          {formatSignedPercent(kpi.deltaPercent)}
+        </span>
+      </Stack>
+    </Paper>
+  );
+}
+
+function InsightBlock({
+  title,
   detail,
   icon,
   color,
 }: {
-  label: string;
+  title: string;
   detail: string;
   icon: ReactNode;
   color: string;
 }) {
   return (
-    <Paper withBorder radius="md" p="md">
+    <Paper withBorder radius="lg" p="md" className={classes.insightBlock}>
       <Group align="flex-start" gap="sm" wrap="nowrap">
         <ThemeIcon variant="light" color={color} radius="md" size="lg">
           {icon}
         </ThemeIcon>
         <div>
-          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-            {label}
+          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+            {title}
           </Text>
           <Text size="sm" mt={6}>
             {detail}
@@ -395,26 +419,23 @@ function SignalCard({
   );
 }
 
-function InsightList({
+function InsightChecklist({
   title,
-  tone,
   items,
+  tone,
 }: {
   title: string;
-  tone: 'good' | 'warning' | 'neutral';
   items: string[];
+  tone: 'good' | 'warning' | 'neutral';
 }) {
-  const icon =
-    tone === 'good' ? <IconArrowUpRight size={18} /> : tone === 'warning' ? <IconTrendingDown size={18} /> : <IconBulb size={18} />;
   const color = tone === 'good' ? 'teal' : tone === 'warning' ? 'orange' : 'blue';
 
   return (
-    <Paper withBorder radius="md" p="md">
-      <Group gap="sm" mb="sm">
-        <ThemeIcon variant="light" color={color} radius="md">
-          {icon}
-        </ThemeIcon>
-        <Text fw={700}>{title}</Text>
+    <Stack gap="xs">
+      <Group gap="xs">
+        <Badge color={color} variant="light" radius="sm">
+          {title}
+        </Badge>
       </Group>
       <Stack gap="sm">
         {items.length > 0 ? (
@@ -429,6 +450,67 @@ function InsightList({
           </Text>
         )}
       </Stack>
+    </Stack>
+  );
+}
+
+function MoverList({
+  title,
+  subtitle,
+  rows,
+  tone,
+  currencyCode,
+}: {
+  title: string;
+  subtitle: string;
+  rows: ReportBreakdownRow[];
+  tone: 'good' | 'warning';
+  currencyCode: string | null;
+}) {
+  const color = tone === 'good' ? 'teal' : 'orange';
+
+  return (
+    <Paper withBorder radius="xl" p="md" className={classes.reportCard}>
+      <Group gap="sm" mb="md" className={classes.cardHeader}>
+        <ThemeIcon variant="light" color={color} radius="md">
+          {tone === 'good' ? <IconArrowUpRight size={18} /> : <IconTrendingDown size={18} />}
+        </ThemeIcon>
+        <div>
+          <Text fw={800}>{title}</Text>
+          <Text size="sm" c="dimmed">
+            {subtitle}
+          </Text>
+        </div>
+      </Group>
+      <Stack gap="sm">
+        {rows.length > 0 ? (
+          rows.map((row) => (
+            <div key={row.id} className={classes.moverRow}>
+              <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <Text fw={800} lineClamp={1}>
+                    {row.name}
+                  </Text>
+                  <Text size="sm" c="dimmed" mt={4}>
+                    {tone === 'good'
+                      ? formatEntityPerformance(row, currencyCode)
+                      : row.conversion > 0
+                        ? `${formatCurrency(row.costPerResult, currencyCode, 2)} cost per result · ${row.ctr.toFixed(2)}% CTR`
+                        : `${formatCurrency(row.spend, currencyCode, 2)} spent without a recorded result`}
+                  </Text>
+                </div>
+                <Badge color={color} variant="light" radius="sm">
+                  {getEntityLabel(row.level)}
+                </Badge>
+              </Group>
+            </div>
+          ))
+        ) : (
+          <Text size="sm" c="dimmed">
+            No entity breakdown is available for the current filters.
+          </Text>
+        )}
+      </Stack>
     </Paper>
   );
 }
@@ -439,7 +521,6 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [filtersOpened, setFiltersOpened] = useState(false);
-  const [detailsOpened, setDetailsOpened] = useState(false);
 
   const currentSearchString = searchParams?.toString() ?? '';
 
@@ -506,10 +587,8 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
   );
 
   const hasTrendData = storyData.length > 0;
-  const hasBreakdownData = payload.breakdown.rows.length > 0;
-
   return (
-    <Container size="xl" py="md">
+    <Container fluid px={6} py={0} className={`${classes.page} reports-page-shell`}>
       <Drawer
         opened={filtersOpened}
         onClose={() => setFiltersOpened(false)}
@@ -527,7 +606,7 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
         />
       </Drawer>
 
-      <Stack gap="lg">
+      <Stack gap="md" className={classes.shell}>
         <ReportsHeader
           payload={payload}
           exportLinks={exportLinks}
@@ -549,345 +628,201 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
           </Card>
         )}
 
-        <Card withBorder radius="lg" p="xl">
-          <Grid gutter="lg" align="stretch">
-            <Grid.Col span={{ base: 12, xl: 7 }}>
-              <Stack gap="sm">
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+          {payload.kpis.map((kpi) => (
+            <KpiCard key={kpi.key} kpi={kpi} />
+          ))}
+        </SimpleGrid>
+
+        <Grid gutter="md" align="stretch">
+          <Grid.Col span={{ base: 12, xl: 8 }}>
+            <Card withBorder radius="xl" p="lg" h="100%" className={classes.reportCard}>
+              <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.cardHeader}>
                 <div>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                    Brief
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                    Timeline
                   </Text>
-                  <Text fw={800} size="xl" mt={4}>
-                    What matters right now
+                  <Text fw={900} size="xl" mt={4}>
+                    Performance over time
+                  </Text>
+                  <Text size="sm" c="dimmed" mt={4}>
+                    Spend, results, and clicks in the selected reporting window.
                   </Text>
                 </div>
-                <Text size="lg" lh={1.6}>
+                <Group gap="xs" wrap="wrap">
+                  <Badge variant="light" color="gray" radius="sm">
+                    Grouped by {payload.query.groupBy}
+                  </Badge>
+                  <Badge variant="light" color={payload.query.compareMode === 'previous_period' ? 'teal' : 'gray'} radius="sm">
+                    {payload.query.compareMode === 'previous_period' ? 'Previous period on' : 'No comparison'}
+                  </Badge>
+                </Group>
+              </Group>
+
+              <div className={classes.chartWrap}>
+                {hasTrendData ? (
+                  <LineChart
+                    h={340}
+                    data={storyData}
+                    dataKey="label"
+                    series={[
+                      { name: 'Spend', color: 'blue.6' },
+                      { name: 'Results', color: 'teal.6' },
+                      { name: 'Clicks', color: 'orange.6' },
+                    ]}
+                    curveType="linear"
+                    withLegend
+                    valueFormatter={(value) => value.toLocaleString()}
+                  />
+                ) : (
+                  <Stack justify="center" align="center" h={340} gap="xs">
+                    <Text fw={800}>No time-series trend available yet</Text>
+                    <Text size="sm" c="dimmed" ta="center" maw={360}>
+                      Breakdown data is still shown below, so you can still see which entities are carrying the report.
+                    </Text>
+                  </Stack>
+                )}
+              </div>
+
+              <Paper withBorder radius="lg" p="md" className={classes.insightBlock}>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                  Report read
+                </Text>
+                <Text size="sm" mt={6}>
                   {insight.summary}
                 </Text>
-                {isDemo ? (
-                  <Paper withBorder radius="md" p="md">
-                    <Text size="sm" c="dimmed">
-                      This preview is driven by the same inputs this page expects from live data:
-                      platform, ad account, campaign, ad set, ad, daily spend, impressions,
-                      clicks, CTR, CPC, cost per result, and time-series rollups.
+              </Paper>
+            </Card>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, xl: 4 }}>
+            <Card withBorder radius="xl" p="lg" h="100%" className={classes.reportCard}>
+              <Stack gap="md" h="100%">
+                <Group justify="space-between" align="flex-start" gap="md" className={classes.cardHeader}>
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                      DeepVisor read
                     </Text>
-                    <Group gap="xs" mt="sm" wrap="wrap">
-                      {[
-                        'Platform',
-                        'Ad account',
-                        'Campaign',
-                        'Ad set',
-                        'Ad',
-                        'Spend',
-                        'Impressions',
-                        'Clicks',
-                        'CTR',
-                        'CPC',
-                        'Cost / Result',
-                        'Timeline',
-                      ].map((item) => (
-                        <Badge key={item} variant="light" color="blue" radius="sm">
-                          {item}
-                        </Badge>
-                      ))}
-                    </Group>
+                    <Text fw={900} size="xl" mt={4}>
+                      What matters right now
+                    </Text>
+                  </div>
+                  <ThemeIcon color="blue" variant="light" radius="md">
+                    <IconBulb size={18} />
+                  </ThemeIcon>
+                </Group>
+
+                <Stack gap="sm">
+                  <InsightBlock
+                    title={insight.strongestLabel}
+                    detail={insight.strongestDetail}
+                    icon={<IconTrendingUp size={18} />}
+                    color="teal"
+                  />
+                  <InsightBlock
+                    title={insight.weakestLabel}
+                    detail={insight.weakestDetail}
+                    icon={<IconAlertTriangle size={18} />}
+                    color="orange"
+                  />
+                  <InsightBlock
+                    title={insight.momentumLabel}
+                    detail={insight.momentumDetail}
+                    icon={<IconTimeline size={18} />}
+                    color="blue"
+                  />
+                  <InsightBlock
+                    title={insight.recommendationLabel}
+                    detail={insight.recommendationDetail}
+                    icon={<IconBulb size={18} />}
+                    color="grape"
+                  />
+                </Stack>
+
+                <Paper withBorder radius="lg" p="md" className={classes.insightBlock}>
+                  <SimpleGrid cols={{ base: 1, md: 3, xl: 1 }} spacing="md">
+                    <InsightChecklist title="Working" tone="good" items={insight.worked} />
+                    <InsightChecklist title="Watch" tone="warning" items={insight.watch} />
+                    <InsightChecklist title="Next move" tone="neutral" items={insight.nextMoves} />
+                  </SimpleGrid>
+                </Paper>
+
+                {isDemo ? (
+                  <Paper withBorder radius="lg" p="md" className={classes.insightBlock}>
+                    <Text size="sm" c="dimmed">
+                      This preview uses the same inputs this page expects from live data: platform,
+                      ad account, campaign, ad set, ad, daily spend, impressions, clicks, CTR, CPC,
+                      cost per result, and time-series rollups.
+                    </Text>
                   </Paper>
                 ) : null}
-                <Group gap="xs" wrap="wrap">
-                  {visibleFilterSummary.map((item) => (
-                    <Badge key={`${item.label}:${item.value}`} variant="light" color="gray" radius="sm">
-                      {item.label}: {item.value}
-                    </Badge>
-                  ))}
-                </Group>
-              </Stack>
-            </Grid.Col>
 
-            <Grid.Col span={{ base: 12, xl: 5 }}>
-              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                <SignalCard
-                  label={insight.strongestLabel}
-                  detail={insight.strongestDetail}
-                  icon={<IconTrendingUp size={18} />}
-                  color="teal"
-                />
-                <SignalCard
-                  label={insight.weakestLabel}
-                  detail={insight.weakestDetail}
-                  icon={<IconAlertTriangle size={18} />}
-                  color="orange"
-                />
-                <SignalCard
-                  label={insight.momentumLabel}
-                  detail={insight.momentumDetail}
-                  icon={<IconTimeline size={18} />}
+                <Button
+                  component={Link}
+                  href="/calendar"
+                  radius="xl"
+                  variant="light"
                   color="blue"
-                />
-                <SignalCard
-                  label={insight.recommendationLabel}
-                  detail={insight.recommendationDetail}
-                  icon={<IconBulb size={18} />}
-                  color="grape"
-                />
-              </SimpleGrid>
-            </Grid.Col>
-          </Grid>
-        </Card>
+                  leftSection={<IconProgressCheck size={16} />}
+                  mt="auto"
+                >
+                  Open Calendar Queue
+                </Button>
+              </Stack>
+            </Card>
+          </Grid.Col>
+        </Grid>
 
-        <Card withBorder radius="lg" p="xl">
-          <Stack gap="lg">
-            <Group justify="space-between" align="flex-start" gap="md">
+        <Grid gutter="md" align="stretch">
+          <Grid.Col span={{ base: 12, xl: 6 }}>
+            <MoverList
+              title="Carrying the report"
+              subtitle="Highest-performing entities in the current scope"
+              rows={strongestRows}
+              tone="good"
+              currencyCode={payload.meta.currencyCode}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, xl: 6 }}>
+            <MoverList
+              title="Slowing things down"
+              subtitle="Weak spots that need review before more budget is committed"
+              rows={weakestRows}
+              tone="warning"
+              currencyCode={payload.meta.currencyCode}
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Card withBorder radius="xl" p="lg" className={`${classes.reportCard} ${classes.tableCard}`}>
+          <Stack gap="md">
+            <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.cardHeader}>
               <div>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                  Story
+                <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                  Performance table
                 </Text>
-                <Text fw={800} size="xl" mt={4}>
-                  What changed across the period
+                <Text fw={900} size="xl" mt={4}>
+                  {payload.breakdown.title}
                 </Text>
-                <Text size="sm" c="dimmed" mt={6}>
-                  The timeline, strongest movers, and weak spots live in one place so the story is easy to read.
+                <Text size="sm" c="dimmed" mt={4}>
+                  Full row-level view for campaigns, ad sets, or ads in the current filters.
                 </Text>
               </div>
-              <Button
-                variant="subtle"
-                color="gray"
-                rightSection={detailsOpened ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
-                onClick={() => setDetailsOpened((current) => !current)}
-              >
-                {detailsOpened ? 'Hide full breakdown' : 'View full breakdown'}
-              </Button>
+              <Group gap="xs" wrap="wrap">
+                {visibleFilterSummary.map((item) => (
+                  <Badge key={`${item.label}:${item.value}`} variant="light" color="gray" radius="sm">
+                    {item.label}: {item.value}
+                  </Badge>
+                ))}
+              </Group>
             </Group>
 
-            <Grid gutter="lg" align="stretch">
-              <Grid.Col span={{ base: 12, xl: 8 }}>
-                <Paper withBorder radius="md" p="md" h="100%">
-                  <Group justify="space-between" mb="sm">
-                    <div>
-                      <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                        Timeline
-                      </Text>
-                      <Text fw={700}>Performance over time</Text>
-                    </div>
-                    <Badge variant="light" color="gray" radius="sm">
-                      {payload.query.groupBy}
-                    </Badge>
-                  </Group>
-
-                  {hasTrendData ? (
-                    <LineChart
-                      h={340}
-                      data={storyData}
-                      dataKey="label"
-                      series={[
-                        { name: 'Spend', color: 'blue.6' },
-                        { name: 'Results', color: 'teal.6' },
-                        { name: 'Clicks', color: 'orange.6' },
-                      ]}
-                      curveType="linear"
-                      withLegend
-                      valueFormatter={(value) => value.toLocaleString()}
-                    />
-                  ) : (
-                    <Stack justify="center" align="center" h={340} gap="xs">
-                      <Text fw={700}>No time-series trend available yet</Text>
-                      <Text size="sm" c="dimmed" ta="center" maw={360}>
-                        Breakdown data is still shown below, so you can still see which entities are carrying the report.
-                      </Text>
-                    </Stack>
-                  )}
-                </Paper>
-              </Grid.Col>
-
-              <Grid.Col span={{ base: 12, xl: 4 }}>
-                <Stack gap="sm" h="100%">
-                  <Paper withBorder radius="md" p="md">
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                      Strongest mover
-                    </Text>
-                    <Text fw={700} mt={6}>
-                      {strongestRows[0]?.name ?? 'No entity data yet'}
-                    </Text>
-                    <Text size="sm" c="dimmed" mt={6}>
-                      {strongestRows[0]
-                        ? formatEntityPerformance(strongestRows[0], payload.meta.currencyCode)
-                        : 'Once entities accumulate spend and results, the top mover will show here.'}
-                    </Text>
-                  </Paper>
-
-                  <Paper withBorder radius="md" p="md">
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                      Weakest mover
-                    </Text>
-                    <Text fw={700} mt={6}>
-                      {weakestRows[0]?.name ?? 'No entity data yet'}
-                    </Text>
-                    <Text size="sm" c="dimmed" mt={6}>
-                      {weakestRows[0]
-                        ? weakestRows[0].conversion > 0
-                          ? `${formatCurrency(
-                              weakestRows[0].costPerResult,
-                              payload.meta.currencyCode,
-                              2
-                            )} cost per result and ${weakestRows[0].ctr.toFixed(2)}% CTR`
-                          : `${formatCurrency(
-                              weakestRows[0].spend,
-                              payload.meta.currencyCode,
-                              2
-                            )} spent without a recorded result`
-                        : 'The weakest mover appears here once the breakdown fills in.'}
-                    </Text>
-                  </Paper>
-
-                  <Paper withBorder radius="md" p="md">
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                      Comparison read
-                    </Text>
-                    <Text fw={700} mt={6}>
-                      {payload.query.compareMode === 'previous_period' ? 'Comparison is on' : 'Single-range view'}
-                    </Text>
-                    <Text size="sm" c="dimmed" mt={6}>
-                      {payload.query.compareMode === 'previous_period'
-                        ? `${insight.momentumDetail}`
-                        : 'Turn on previous-period comparison to see what improved or weakened.'}
-                    </Text>
-                  </Paper>
-                </Stack>
-              </Grid.Col>
-            </Grid>
-
-            <Divider />
-
-            <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
-              <Paper withBorder radius="md" p="md">
-                <Group gap="sm" mb="sm">
-                  <ThemeIcon variant="light" color="teal" radius="md">
-                    <IconArrowUpRight size={18} />
-                  </ThemeIcon>
-                  <div>
-                    <Text fw={700}>Carrying the report</Text>
-                    <Text size="sm" c="dimmed">
-                      Highest-performing entities in the current scope
-                    </Text>
-                  </div>
-                </Group>
-                <Stack gap="sm">
-                  {hasBreakdownData ? (
-                    strongestRows.map((row) => (
-                      <Paper key={row.id} withBorder radius="md" p="sm">
-                        <Group justify="space-between" align="flex-start" gap="md">
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <Text fw={700} lineClamp={1}>
-                              {row.name}
-                            </Text>
-                            <Text size="sm" c="dimmed" mt={4}>
-                              {formatEntityPerformance(row, payload.meta.currencyCode)}
-                            </Text>
-                          </div>
-                          <Badge color="teal" variant="light" radius="sm">
-                            {getEntityLabel(row.level)}
-                          </Badge>
-                        </Group>
-                      </Paper>
-                    ))
-                  ) : (
-                    <Text size="sm" c="dimmed">
-                      No entity breakdown is available for the current filters.
-                    </Text>
-                  )}
-                </Stack>
-              </Paper>
-
-              <Paper withBorder radius="md" p="md">
-                <Group gap="sm" mb="sm">
-                  <ThemeIcon variant="light" color="orange" radius="md">
-                    <IconArrowDownRight size={18} />
-                  </ThemeIcon>
-                  <div>
-                    <Text fw={700}>Slowing things down</Text>
-                    <Text size="sm" c="dimmed">
-                      Weak spots that need review before more budget is committed
-                    </Text>
-                  </div>
-                </Group>
-                <Stack gap="sm">
-                  {hasBreakdownData ? (
-                    weakestRows.map((row) => (
-                      <Paper key={row.id} withBorder radius="md" p="sm">
-                        <Group justify="space-between" align="flex-start" gap="md">
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <Text fw={700} lineClamp={1}>
-                              {row.name}
-                            </Text>
-                            <Text size="sm" c="dimmed" mt={4}>
-                              {row.conversion > 0
-                                ? `${formatCurrency(
-                                    row.costPerResult,
-                                    payload.meta.currencyCode,
-                                    2
-                                  )} cost per result · ${row.ctr.toFixed(2)}% CTR`
-                                : `${formatCurrency(
-                                    row.spend,
-                                    payload.meta.currencyCode,
-                                    2
-                                  )} spent without a recorded result`}
-                            </Text>
-                          </div>
-                          <Badge color="orange" variant="light" radius="sm">
-                            {getEntityLabel(row.level)}
-                          </Badge>
-                        </Group>
-                      </Paper>
-                    ))
-                  ) : (
-                    <Text size="sm" c="dimmed">
-                      No weak entity signal is available for the current filters.
-                    </Text>
-                  )}
-                </Stack>
-              </Paper>
-            </SimpleGrid>
-
-            <Collapse in={detailsOpened}>
-              <Box pt="sm">
-                <PerformanceTable
-                  title={payload.breakdown.title}
-                  rows={payload.breakdown.rows}
-                  currencyCode={payload.meta.currencyCode}
-                />
-              </Box>
-            </Collapse>
-          </Stack>
-        </Card>
-
-        <Card withBorder radius="lg" p="xl">
-          <Stack gap="lg">
-            <Group justify="space-between" align="flex-start" gap="md">
-              <div>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                  Action
-                </Text>
-                <Text fw={800} size="xl" mt={4}>
-                  What to keep, what to watch, and what to do next
-                </Text>
-              </div>
-
-              <Button
-                component={Link}
-                href="/calendar"
-                radius="xl"
-                variant="light"
-                color="blue"
-                leftSection={<IconProgressCheck size={16} />}
-              >
-                Open Calendar Queue
-              </Button>
-            </Group>
-
-            <SimpleGrid cols={{ base: 1, xl: 3 }} spacing="md">
-              <InsightList title="What is working" tone="good" items={insight.worked} />
-              <InsightList title="What to watch" tone="warning" items={insight.watch} />
-              <InsightList title="Recommended next move" tone="neutral" items={insight.nextMoves} />
-            </SimpleGrid>
+            <PerformanceTable
+              title={payload.breakdown.title}
+              rows={payload.breakdown.rows}
+              currencyCode={payload.meta.currencyCode}
+              hideTitle
+            />
           </Stack>
         </Card>
       </Stack>

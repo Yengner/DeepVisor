@@ -7,6 +7,7 @@ interface PerformanceTableProps {
   title: string;
   rows: ReportBreakdownRow[];
   currencyCode: string | null;
+  hideTitle?: boolean;
 }
 
 function formatCurrency(value: number, currencyCode: string | null) {
@@ -54,12 +55,15 @@ export default function PerformanceTable({
   title,
   rows,
   currencyCode,
+  hideTitle = false,
 }: PerformanceTableProps) {
   return (
     <Card withBorder p="md" radius="lg">
-      <Text fw={700} size="lg" mb="md">
-        {title}
-      </Text>
+      {hideTitle ? null : (
+        <Text fw={700} size="lg" mb="md">
+          {title}
+        </Text>
+      )}
 
       <Table.ScrollContainer minWidth={1100}>
         <Table striped highlightOnHover withTableBorder withColumnBorders>
