@@ -2,8 +2,8 @@
   height: 100%;
   min-height: 0;
   box-sizing: border-box;
-  padding-top: 6px;
-  padding-left: 6px;
+  padding-top: 3px;
+  padding-left: 3px;
   overflow: hidden;
 }
 
@@ -17,7 +17,7 @@
   grid-template-columns: minmax(220px, 256px) minmax(0, 1fr);
   align-items: stretch;
   flex: 1;
-  gap: 16px;
+  gap: 10px;
   min-height: 0;
   overflow: hidden;
 }
@@ -25,7 +25,7 @@
 .sidebar {
   min-width: 0;
   min-height: 0;
-  padding-top: 10px;
+  padding-top: 4px;
   overflow: auto;
 }
 
@@ -279,13 +279,13 @@
 
 .weekTimeColumn {
   position: relative;
-  height: var(--agency-week-grid-height);
+  height: var(--calendar-week-grid-height);
   border-right: 1px solid rgba(226, 232, 240, 0.96);
   background: rgba(255, 255, 255, 0.98);
 }
 
 .weekTimeLabel {
-  height: var(--agency-hour-row-height);
+  height: var(--calendar-hour-row-height);
   padding-right: 10px;
   text-align: right;
   font-size: 11px;
@@ -296,16 +296,16 @@
 
 .weekDayColumn {
   position: relative;
-  height: var(--agency-week-grid-height);
+  height: var(--calendar-week-grid-height);
   border-right: 1px solid rgba(226, 232, 240, 0.96);
   background-color: rgba(255, 255, 255, 0.98);
   background-image:
     repeating-linear-gradient(
       to bottom,
       transparent 0,
-      transparent calc(var(--agency-hour-row-height) - 1px),
-      rgba(226, 232, 240, 0.94) calc(var(--agency-hour-row-height) - 1px),
-      rgba(226, 232, 240, 0.94) var(--agency-hour-row-height)
+      transparent calc(var(--calendar-hour-row-height) - 1px),
+      rgba(226, 232, 240, 0.94) calc(var(--calendar-hour-row-height) - 1px),
+      rgba(226, 232, 240, 0.94) var(--calendar-hour-row-height)
     );
 }
 

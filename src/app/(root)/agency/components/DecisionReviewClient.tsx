@@ -14,10 +14,10 @@ export default function DecisionReviewClient() {
           The old optimizer decision flow has been retired from the business-only product.
         </Text>
         <Text c="dimmed">
-          Review and approve recommendations from the main AI Agency workspace instead.
+          Review and approve recommendations from the main Calendar workspace instead.
         </Text>
         <Group>
-          <Button onClick={() => router.push('/agency')}>Go to AI Agency</Button>
+          <Button onClick={() => router.push('/calendar')}>Go to Calendar</Button>
         </Group>
       </Stack>
     </Card>

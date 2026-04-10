@@ -12,11 +12,11 @@ import {
 import {
   IconHome2,
   IconChartBar,
+  IconCalendarMonth,
   IconPuzzle,
   IconPresentation,
   IconSettings,
   IconLogout,
-  IconRobot
 } from '@tabler/icons-react';
 import { handleSignOut } from '@/lib/server/actions/user/auth';
 
@@ -27,7 +27,7 @@ const Sidebar = () => {
 
   const menuItems = [
     { name: 'Home', icon: IconHome2, route: '/dashboard' },
-    { name: 'Agency', icon: IconRobot, route: '/agency' },
+    { name: 'Calendar', icon: IconCalendarMonth, route: '/calendar' },
     { name: 'Campaigns', icon: IconPresentation, route: '/campaigns' },
     { name: 'Reports', icon: IconChartBar, route: '/reports' },
     { name: 'Integration', icon: IconPuzzle, route: '/integration' },

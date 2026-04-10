@@ -133,8 +133,8 @@ function buildAssistantReply(
     normalized.includes('problem')
   ) {
     return topRisk
-      ? `${topRisk} Start with this: ${nextStep ?? 'review the account in Agency for the next concrete step.'}`
-      : `The main priority is to review the account state, currently marked ${formatStateLabel(assessment.state)}. ${nextStep ?? 'Open Agency for the detailed breakdown.'}`;
+      ? `${topRisk} Start with this: ${nextStep ?? 'review the account in Calendar for the next concrete step.'}`
+      : `The main priority is to review the account state, currently marked ${formatStateLabel(assessment.state)}. ${nextStep ?? 'Open Calendar for the detailed breakdown.'}`;
   }
 
   if (
@@ -145,7 +145,7 @@ function buildAssistantReply(
   ) {
     return topStrength
       ? `${topStrength} The account is currently classified as ${formatStateLabel(assessment.state)} with ${assessment.trackingConfidence} tracking confidence.`
-      : `The account is currently classified as ${formatStateLabel(assessment.state)}. Open Agency if you want the full strengths breakdown.`;
+      : `The account is currently classified as ${formatStateLabel(assessment.state)}. Open Calendar if you want the full strengths breakdown.`;
   }
 
   if (
@@ -337,11 +337,11 @@ export default function AiAssistantDrawer({ payload }: AiAssistantDrawerProps) {
             </Button>
             <Button
               component={Link}
-              href="/agency"
+              href="/calendar"
               variant="default"
               leftSection={<IconArrowUpRight size={16} />}
             >
-              Open agency
+              Open calendar
             </Button>
           </SimpleGrid>
 

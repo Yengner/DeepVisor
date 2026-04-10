@@ -114,7 +114,7 @@ export default function SmartCampaignClient({
                     onClose={() => setShowLoadingModal(false)}
                     onDone={async () => {
                         setShowLoadingModal(false);
-                        router.push('/agency');
+                        router.push('/calendar');
                     }}
                 />
             )}

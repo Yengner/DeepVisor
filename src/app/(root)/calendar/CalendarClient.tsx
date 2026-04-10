@@ -37,7 +37,7 @@ import {
   type AgencyQueueSource as QueueSource,
   type AgencyQueueStatus as QueueStatus,
 } from '@/lib/shared';
-import classes from './AgencyClient.module.css';
+import classes from './CalendarClient.module.css';
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MINI_WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -339,7 +339,7 @@ function MiniCalendar({
   );
 }
 
-export default function AgencyClient({ workspace }: { workspace: BusinessAgencyWorkspace }) {
+export default function CalendarClient({ workspace }: { workspace: BusinessAgencyWorkspace }) {
   const router = useRouter();
   const [queueItems, setQueueItems] = useState<QueueItem[]>(() =>
     buildAgencyQueuePreviewItems(workspace.selectedAdAccountName)
@@ -530,16 +530,16 @@ export default function AgencyClient({ workspace }: { workspace: BusinessAgencyW
   }
 
   const weekGridStyle = {
-    '--agency-hour-row-height': `${WEEK_HOUR_HEIGHT}px`,
-    '--agency-week-grid-height': `${(WEEK_VIEW_END_HOUR - WEEK_VIEW_START_HOUR) * WEEK_HOUR_HEIGHT}px`,
+    '--calendar-hour-row-height': `${WEEK_HOUR_HEIGHT}px`,
+    '--calendar-week-grid-height': `${(WEEK_VIEW_END_HOUR - WEEK_VIEW_START_HOUR) * WEEK_HOUR_HEIGHT}px`,
   } as CSSProperties;
 
   return (
     <Container
       fluid
-      px={{ base: 'sm', md: 'md' }}
+      px={6}
       py={0}
-      className={`${classes.pageShell} agency-page-shell`}
+      className={`${classes.pageShell} calendar-page-shell`}
     >
       <Stack gap="md" className={classes.pageStack}>
         {selectionRequiredPlatforms.length > 0 ? (
@@ -722,7 +722,7 @@ export default function AgencyClient({ workspace }: { workspace: BusinessAgencyW
           <div className={classes.calendarToolbar}>
             <div>
               <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                Agency calendar
+                Calendar
               </Text>
               <Title order={2} mt={4}>
                 {calendarRangeLabel}

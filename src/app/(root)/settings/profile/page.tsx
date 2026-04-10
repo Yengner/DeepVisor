@@ -418,13 +418,13 @@ export default async function ProfilePage() {
                   </Button>
                   <Button
                     component="a"
-                    href="/agency"
+                    href="/calendar"
                     radius="xl"
                     variant="default"
                     className="app-platform-page-action-secondary"
                     size="xs"
                   >
-                    Open agency
+                    Open calendar
                   </Button>
                 </Group>
               </Stack>
@@ -753,22 +753,22 @@ export default async function ProfilePage() {
                 <ThemeIcon variant="light" color="orange" radius="md">
                   <IconPlug size={16} />
                 </ThemeIcon>
-                <Text fw={700}>Agency</Text>
+                <Text fw={700}>Calendar</Text>
               </Group>
               <Text size="sm" c="dimmed">
-                Use Agency when DeepVisor has queued work ready for approval, scheduling, or
+                Use Calendar when DeepVisor has queued work ready for approval, scheduling, or
                 revision.
               </Text>
               <Button
                 component="a"
-                href="/agency"
+                href="/calendar"
                 size="xs"
                 radius="xl"
                 variant="light"
                 color="orange"
                 mt="md"
               >
-                Open agency
+                Open calendar
               </Button>
             </Paper>
           </SimpleGrid>
