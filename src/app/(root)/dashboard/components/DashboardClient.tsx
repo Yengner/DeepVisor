@@ -24,6 +24,7 @@ import {
   IconAlertCircle,
   IconArrowDownRight,
   IconArrowUpRight,
+  IconBulb,
   IconCalendarMonth,
   IconCalendarWeek,
   IconChartBar,
@@ -31,9 +32,11 @@ import {
   IconChevronRight,
   IconClock,
   IconCurrencyDollar,
+  IconFileAnalytics,
   IconLink,
   IconMessageCircle,
   IconRefresh,
+  IconSparkles,
   IconTargetArrow,
   IconUsers,
 } from '@tabler/icons-react';
@@ -53,8 +56,10 @@ import type {
   DashboardPayload,
   DashboardState,
   DashboardSummaryCard,
+  DashboardTrendSeries,
   DashboardWindow,
 } from '../types';
+import classes from './DashboardClient.module.css';
 
 type DashboardClientProps = {
   payload: DashboardPayload;
@@ -65,6 +70,152 @@ const numberFormatter = new Intl.NumberFormat('en-US', {
 });
 
 const CALENDAR_WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+const STATIC_SUMMARY_BY_WINDOW: Record<DashboardWindow, DashboardSummaryCard[]> = {
+  '7d': [
+    { key: 'spend', label: 'Spend', value: 1840, previousValue: 1620, changePercent: 13.6 },
+    { key: 'leads', label: 'Leads', value: 63, previousValue: 48, changePercent: 31.3 },
+    { key: 'messages', label: 'Messages', value: 41, previousValue: 45, changePercent: -8.9 },
+    { key: 'link_clicks', label: 'Link clicks', value: 982, previousValue: 864, changePercent: 13.7 },
+  ],
+  '30d': [
+    { key: 'spend', label: 'Spend', value: 7420, previousValue: 6810, changePercent: 9 },
+    { key: 'leads', label: 'Leads', value: 248, previousValue: 214, changePercent: 15.9 },
+    { key: 'messages', label: 'Messages', value: 173, previousValue: 151, changePercent: 14.6 },
+    { key: 'link_clicks', label: 'Link clicks', value: 4210, previousValue: 3824, changePercent: 10.1 },
+  ],
+};
+
+const STATIC_TREND_BY_WINDOW: Record<DashboardWindow, DashboardTrendSeries> = {
+  '7d': {
+    outcomeMetric: 'leads',
+    outcomeLabel: 'Leads',
+    points: [
+      { label: 'Apr 4', spend: 210, outcome: 7 },
+      { label: 'Apr 5', spend: 240, outcome: 9 },
+      { label: 'Apr 6', spend: 230, outcome: 8 },
+      { label: 'Apr 7', spend: 275, outcome: 11 },
+      { label: 'Apr 8', spend: 285, outcome: 10 },
+      { label: 'Apr 9', spend: 300, outcome: 12 },
+      { label: 'Apr 10', spend: 300, outcome: 6 },
+    ],
+  },
+  '30d': {
+    outcomeMetric: 'leads',
+    outcomeLabel: 'Leads',
+    points: [
+      { label: 'Mar 11', spend: 1420, outcome: 39 },
+      { label: 'Mar 18', spend: 1600, outcome: 48 },
+      { label: 'Mar 25', spend: 1710, outcome: 55 },
+      { label: 'Apr 1', spend: 1850, outcome: 63 },
+      { label: 'Apr 8', spend: 1840, outcome: 43 },
+    ],
+  },
+};
+
+const STATIC_CAMPAIGN_PREVIEW: DashboardCampaignPreviewItem[] = [
+  {
+    campaignId: 'demo-local-lead-machine',
+    campaignName: 'Local Lead Machine - Search + Social',
+    objective: 'LEADS',
+    status: 'active',
+    spend: 2480,
+    primaryOutcomeMetric: 'leads',
+    primaryOutcomeLabel: 'Leads',
+    primaryOutcomeValue: 96,
+    conversionRate: 0.071,
+    costPerResult: 25.83,
+    ctr: 2.94,
+  },
+  {
+    campaignId: 'demo-retargeting-trust',
+    campaignName: 'Retargeting - Trust Builders',
+    objective: 'MESSAGES',
+    status: 'active',
+    spend: 1180,
+    primaryOutcomeMetric: 'messages',
+    primaryOutcomeLabel: 'Messages',
+    primaryOutcomeValue: 58,
+    conversionRate: 0.052,
+    costPerResult: 20.34,
+    ctr: 3.42,
+  },
+  {
+    campaignId: 'demo-spring-offer',
+    campaignName: 'Spring Offer - Broad Prospecting',
+    objective: 'TRAFFIC',
+    status: 'active',
+    spend: 2190,
+    primaryOutcomeMetric: 'clicks',
+    primaryOutcomeLabel: 'Clicks',
+    primaryOutcomeValue: 1420,
+    conversionRate: 0.014,
+    costPerResult: 86.12,
+    ctr: 1.18,
+  },
+  {
+    campaignId: 'demo-old-creative',
+    campaignName: 'Legacy Creative Test - Static Images',
+    objective: 'LEADS',
+    status: 'paused',
+    spend: 860,
+    primaryOutcomeMetric: 'leads',
+    primaryOutcomeLabel: 'Leads',
+    primaryOutcomeValue: 9,
+    conversionRate: 0.008,
+    costPerResult: 95.56,
+    ctr: 0.74,
+  },
+];
+
+const STATIC_REPORT_DIGEST = [
+  {
+    title: 'Weekly performance brief',
+    detail: 'Lead volume is up 31% while broad prospecting is starting to soften.',
+    href: '/reports?demo=1&compare=previous_period',
+    badge: 'Ready',
+  },
+  {
+    title: 'Campaign comparison',
+    detail: 'Local Lead Machine is beating Spring Offer on cost per result by 70%.',
+    href: '/reports?demo=1&scope=campaign',
+    badge: 'Compare',
+  },
+  {
+    title: 'Creative fatigue watch',
+    detail: 'Legacy static images are below the account CTR average and should be replaced.',
+    href: '/reports?demo=1',
+    badge: 'Watch',
+  },
+];
+
+const STATIC_OPERATING_ACTIONS = [
+  {
+    title: 'Approve retargeting budget hold',
+    detail: 'Keep spend stable until the message campaign confirms another 3-day signal.',
+    tone: 'blue' as DashboardAlert['tone'],
+    owner: 'Calendar',
+  },
+  {
+    title: 'Refresh broad prospecting creative',
+    detail: 'CTR is below target and cost per result is drifting higher than the account average.',
+    tone: 'yellow' as DashboardAlert['tone'],
+    owner: 'Campaigns',
+  },
+  {
+    title: 'Promote lead machine learning',
+    detail: 'Use the strongest campaign as the baseline for next week’s report recommendation.',
+    tone: 'teal' as DashboardAlert['tone'],
+    owner: 'Reports',
+  },
+];
+
+const STATIC_PLATFORM_HEALTH = [
+  { label: 'Meta account', value: 'Connected', color: 'green' },
+  { label: 'Google Ads', value: 'Preview data', color: 'blue' },
+  { label: 'TikTok Ads', value: 'Needs auth', color: 'yellow' },
+  { label: 'Next sync', value: 'Tonight 12:30 AM', color: 'gray' },
+];
 
 function startOfCalendarDay(date: Date): Date {
   const next = new Date(date);
@@ -691,17 +842,24 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
   } | null>(null);
 
   const stateMeta = stateContent(payload.state);
-  const summaryCards = payload.summaryByWindow[activeWindow];
-  const trend = payload.trendByWindow[activeWindow];
+  const liveSummaryCards = payload.summaryByWindow[activeWindow];
+  const hasLiveSummarySignal = liveSummaryCards.some(
+    (card) => card.value > 0 || card.previousValue !== null
+  );
+  const summaryCards = hasLiveSummarySignal ? liveSummaryCards : STATIC_SUMMARY_BY_WINDOW[activeWindow];
+  const liveTrend = payload.trendByWindow[activeWindow];
+  const trend = liveTrend.points.length > 0 ? liveTrend : STATIC_TREND_BY_WINDOW[activeWindow];
+  const campaignPreview =
+    payload.campaignPreview.length > 0 ? payload.campaignPreview : STATIC_CAMPAIGN_PREVIEW;
   const primaryOutcomeCard = pickPrimaryOutcomeCard(summaryCards);
   const spendCard = summaryCards.find((card) => card.key === 'spend') ?? summaryCards[0];
   const strongestCampaign = useMemo(
-    () => pickStrongestCampaign(payload.campaignPreview),
-    [payload.campaignPreview]
+    () => pickStrongestCampaign(campaignPreview),
+    [campaignPreview]
   );
   const watchCampaign = useMemo(
-    () => pickWatchCampaign(payload.campaignPreview, strongestCampaign?.campaignId ?? null),
-    [payload.campaignPreview, strongestCampaign]
+    () => pickWatchCampaign(campaignPreview, strongestCampaign?.campaignId ?? null),
+    [campaignPreview, strongestCampaign]
   );
   const readFirstItems = useMemo(
     () =>
@@ -723,8 +881,13 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     strongestCampaign,
     stateMeta,
   });
+  const operatingBrief =
+    payload.state === 'ready'
+      ? brief
+      : `Static operating preview: the selected account view will look like this once live data is available. ${brief}`;
   const trendData = trend.points.map((point) => ({
     label: point.label,
+    Spend: Number(point.spend.toFixed(2)),
     [trend.outcomeLabel]: point.outcome,
   }));
   const agencyPreviewItems = useMemo(
@@ -864,120 +1027,75 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
   }
 
   return (
-    <Container size="xl" py={{ base: 'md', md: 'xl' }}>
-      <Stack gap="lg">
-        <Card
-          withBorder
-          radius="lg"
-          p={{ base: 'lg', md: 'xl' }}
-          className="app-platform-page-hero"
-        >
-          <Group justify="space-between" align="flex-start" gap="xl" wrap="wrap">
-            <Stack gap="sm" maw={700}>
+    <Container fluid px={6} py={0} className={`${classes.page} dashboard-page-shell`}>
+      <Stack gap="md" className={classes.shell}>
+        <Card withBorder radius="xl" p={{ base: 'md', md: 'lg' }} className={classes.topBar}>
+          <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
+            <div>
               <Group gap="xs" wrap="wrap">
                 <Badge variant="light" className="app-platform-page-badge">
                   Dashboard
                 </Badge>
                 <Badge color={statusColor(payload.viewContext.platformStatus)} variant="light">
-                  {payload.viewContext.platformName ?? 'No platform selected'}
-                </Badge>
-                <Badge color="cyan" variant="outline">
-                  {payload.viewContext.adAccountName ?? 'No ad account selected'}
-                </Badge>
-              </Group>
-
-              <div>
-                <Text size="sm" fw={600} className="app-platform-page-kicker">
-                  {payload.viewContext.businessName}
-                </Text>
-                <Title order={2} mt={4} className="app-platform-page-title">
-                  Daily operating view for one account
-                </Title>
-                <Text size="md" maw={620} mt="xs" className="app-platform-page-copy">
-                  Keep the dashboard narrow: current account context, performance movement,
-                  visible campaign leaders, and the next obvious place to go.
-                </Text>
-              </div>
-
-              <Group gap="xs" wrap="wrap">
-                <Badge color={statusColor(payload.viewContext.platformStatus)} variant="outline">
-                  Platform {formatStatusLabel(payload.viewContext.platformStatus)}
+                  {payload.viewContext.platformName ?? 'Demo platform'}
                 </Badge>
                 <Badge color={statusColor(payload.viewContext.adAccountStatus)} variant="outline">
-                  Account {formatStatusLabel(payload.viewContext.adAccountStatus)}
+                  {payload.viewContext.adAccountName ?? 'DeepVisor Demo Account'}
                 </Badge>
-                <Badge color="gray" variant="outline">
-                  {formatRelativeSync(payload.viewContext.lastSyncedAt)}
-                </Badge>
+                {!hasLiveSummarySignal || payload.campaignPreview.length === 0 ? (
+                  <Badge color="cyan" variant="outline">
+                    Static preview data
+                  </Badge>
+                ) : null}
               </Group>
-            </Stack>
+              <Title order={2} mt="xs" className={classes.title}>
+                Account intelligence dashboard
+              </Title>
+              <Text size="sm" c="dimmed" mt={4} maw={760}>
+                {operatingBrief}
+              </Text>
+            </div>
 
-            <Paper
-              radius="lg"
-              p="md"
-              className="app-platform-page-hero-panel"
-              style={{ minWidth: 320 }}
-            >
-              <Stack gap="sm">
-                <Group justify="space-between" align="center">
-                  <Group gap={8}>
-                    <ThemeIcon variant="light" color="blue" radius="xl">
-                      <IconClock size={16} />
-                    </ThemeIcon>
-                    <div>
-                      <Text size="xs" tt="uppercase" fw={700} className="app-platform-page-subtle">
-                        Last synced
-                      </Text>
-                      <Text size="sm" className="app-platform-page-title">
-                        {formatDateTime(payload.viewContext.lastSyncedAt)}
-                      </Text>
-                    </div>
-                  </Group>
-                  <SegmentedControl
-                    size="sm"
-                    radius="xl"
-                    value={activeWindow}
-                    onChange={(value) => setActiveWindow(value as DashboardWindow)}
-                    data={payload.windowOptions.map((window) => ({
-                      label: window === '7d' ? '7D' : '30D',
-                      value: window,
-                    }))}
-                  />
-                </Group>
-
-                <Group gap="sm" wrap="wrap">
-                  <Button
-                    onClick={handleRefresh}
-                    leftSection={<IconRefresh size={16} />}
-                    loading={refreshing}
-                    disabled={!payload.viewContext.canRefresh}
-                    variant="filled"
-                    radius="xl"
-                    className="app-platform-page-action-primary"
-                  >
-                    Refresh data
-                  </Button>
-                  <Button
-                    component={Link}
-                    href="/reports"
-                    variant="default"
-                    radius="xl"
-                    className="app-platform-page-action-secondary"
-                  >
-                    Open reports
-                  </Button>
-                  <Button
-                    component={Link}
-                    href="/calendar"
-                    variant="default"
-                    radius="xl"
-                    className="app-platform-page-action-secondary"
-                  >
-                    Open calendar
-                  </Button>
-                </Group>
-              </Stack>
-            </Paper>
+            <Group gap="sm" wrap="wrap">
+              <SegmentedControl
+                size="sm"
+                radius="xl"
+                value={activeWindow}
+                onChange={(value) => setActiveWindow(value as DashboardWindow)}
+                data={payload.windowOptions.map((window) => ({
+                  label: window === '7d' ? '7D' : '30D',
+                  value: window,
+                }))}
+              />
+              <Button
+                onClick={handleRefresh}
+                leftSection={<IconRefresh size={16} />}
+                loading={refreshing}
+                disabled={!payload.viewContext.canRefresh}
+                radius="xl"
+                className="app-platform-page-action-primary"
+              >
+                Refresh
+              </Button>
+              <Button
+                component={Link}
+                href="/reports"
+                radius="xl"
+                variant="default"
+                className="app-platform-page-action-secondary"
+              >
+                Reports
+              </Button>
+              <Button
+                component={Link}
+                href="/calendar"
+                radius="xl"
+                variant="default"
+                className="app-platform-page-action-secondary"
+              >
+                Calendar
+              </Button>
+            </Group>
           </Group>
         </Card>
 
@@ -1023,166 +1141,144 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
           </Alert>
         ) : null}
 
-        <Card withBorder radius="lg" p="xl">
-          <Grid gutter="lg" align="stretch">
-            <Grid.Col span={{ base: 12, xl: 7 }}>
-              <Stack gap="sm">
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+          {summaryCards.map((card) => {
+            const comparison = comparisonText(card, activeWindow);
+            const Icon = cardIcon(card.key);
+            const deltaClass =
+              card.changePercent == null
+                ? classes.deltaNeutral
+                : card.changePercent >= 0
+                  ? classes.deltaPositive
+                  : classes.deltaNegative;
+
+            return (
+              <Paper key={card.key} withBorder radius="xl" p="md" className={classes.metricCard}>
+                <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                      {card.label}
+                    </Text>
+                    <Text fw={900} size="1.75rem" mt={8} className={classes.metricValue}>
+                      {formatCardValue(card, payload.viewContext.currencyCode)}
+                    </Text>
+                  </div>
+                  <ThemeIcon variant="light" color="blue" radius="md">
+                    <Icon size={18} />
+                  </ThemeIcon>
+                </Group>
+                <span className={`${classes.deltaPill} ${deltaClass}`}>
+                  {card.changePercent == null ? (
+                    <IconClock size={13} />
+                  ) : card.changePercent >= 0 ? (
+                    <IconArrowUpRight size={13} />
+                  ) : (
+                    <IconArrowDownRight size={13} />
+                  )}
+                  {comparison.label}
+                </span>
+              </Paper>
+            );
+          })}
+        </SimpleGrid>
+
+        <Grid gutter="md" align="stretch">
+          <Grid.Col span={{ base: 12, xl: 8 }}>
+            <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
+              <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.sectionHeader}>
                 <div>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                    Snapshot
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                    Performance
                   </Text>
-                  <Text fw={800} size="xl" mt={4}>
-                    What matters right now
+                  <Title order={3}>{trend.outcomeLabel} and spend trend</Title>
+                  <Text size="sm" c="dimmed" mt={4}>
+                    Fast account pulse for {windowLabel(activeWindow)}.
                   </Text>
                 </div>
-                <Text size="lg" lh={1.6}>
-                  {brief}
-                </Text>
                 <Group gap="xs" wrap="wrap">
                   <Badge variant="light" color="gray" radius="sm">
-                    Viewing {windowLabel(activeWindow)}
+                    {windowLabel(activeWindow)}
                   </Badge>
                   <Badge variant="light" color="gray" radius="sm">
                     {formatRelativeSync(payload.viewContext.lastSyncedAt)}
                   </Badge>
-                  <Badge
-                    variant="light"
-                    color={statusColor(payload.viewContext.adAccountStatus)}
-                    radius="sm"
-                  >
-                    {formatStatusLabel(payload.viewContext.adAccountStatus)}
-                  </Badge>
                 </Group>
-              </Stack>
-            </Grid.Col>
+              </Group>
 
-            <Grid.Col span={{ base: 12, xl: 5 }}>
-              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                <DashboardSignalCard
-                  label="Spend"
-                  value={formatCardValue(spendCard, payload.viewContext.currencyCode)}
-                  detail={comparisonText(spendCard, activeWindow).label}
-                  color="blue"
-                  icon={IconCurrencyDollar}
-                />
-                <DashboardSignalCard
-                  label={primaryOutcomeCard.label}
-                  value={formatCardValue(primaryOutcomeCard, payload.viewContext.currencyCode)}
-                  detail={comparisonText(primaryOutcomeCard, activeWindow).label}
-                  color="teal"
-                  icon={cardIcon(primaryOutcomeCard.key)}
-                />
-                <DashboardSignalCard
-                  label="Strongest campaign"
-                  value={strongestCampaign ? strongestCampaign.campaignName : 'No campaign signal yet'}
-                  detail={
-                    strongestCampaign
-                      ? campaignMetricSummary(strongestCampaign, payload.viewContext.currencyCode)
-                      : 'Campaign-level signal appears here as soon as the current account has campaign data.'
-                  }
-                  color="grape"
-                  icon={IconChartBar}
-                />
-                <DashboardSignalCard
-                  label="Attention now"
-                  value={
-                    payload.alerts[0]?.title ||
-                    watchCampaign?.campaignName ||
-                    'No urgent issues'
-                  }
-                  detail={
-                    payload.alerts[0]?.description ||
-                    (watchCampaign
-                      ? `${watchCampaign.campaignName} is the softest spot in the visible campaign set.`
-                      : 'The account looks stable enough to stay focused on the main trend and campaign list.')
-                  }
-                  color={payload.alerts[0] ? alertToneColor(payload.alerts[0].tone) : 'orange'}
-                  icon={payload.alerts[0] ? IconAlertCircle : IconTargetArrow}
-                />
-              </SimpleGrid>
-            </Grid.Col>
-          </Grid>
-        </Card>
-
-        <Card withBorder radius="lg" p="xl">
-          <Grid gutter="lg" align="stretch">
-            <Grid.Col span={{ base: 12, xl: 8 }}>
-              <Paper withBorder radius="md" p="md" h="100%">
-                <Group justify="space-between" align="flex-start" mb="sm">
-                  <div>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                      Trend
-                    </Text>
-                    <Text fw={700}>{trend.outcomeLabel} over time</Text>
-                  </div>
-                  <Badge variant="light" color="gray" radius="sm">
-                    {windowLabel(activeWindow)}
-                  </Badge>
-                </Group>
-
-                {trendData.length > 0 ? (
+              {trendData.length > 0 ? (
+                <div className={classes.softPanel}>
                   <LineChart
                     h={320}
                     data={trendData}
                     dataKey="label"
-                    series={[{ name: trend.outcomeLabel, color: 'blue.6' }]}
+                    series={[
+                      { name: trend.outcomeLabel, color: 'blue.6' },
+                      { name: 'Spend', color: 'teal.6' },
+                    ]}
                     curveType="linear"
-                    withLegend={false}
+                    withLegend
                     valueFormatter={(value) => value.toLocaleString()}
                   />
-                ) : (
-                  <Stack justify="center" align="center" h={320} gap="xs">
-                    <Text fw={700}>No trend data yet</Text>
-                    <Text size="sm" c="dimmed" ta="center" maw={360}>
-                      Once the selected account has recent synced metrics, this trend becomes the
-                      quickest way to see whether performance is strengthening or flattening out.
-                    </Text>
-                  </Stack>
-                )}
-              </Paper>
-            </Grid.Col>
-
-            <Grid.Col span={{ base: 12, xl: 4 }}>
-              <Stack gap="sm" h="100%">
-                <Paper withBorder radius="md" p="md">
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                    Read first
+                </div>
+              ) : (
+                <Stack justify="center" align="center" h={320} gap="xs">
+                  <Text fw={700}>No trend data yet</Text>
+                  <Text size="sm" c="dimmed" ta="center" maw={360}>
+                    Once the selected account has recent synced metrics, this trend becomes the
+                    quickest way to see whether performance is strengthening or flattening out.
                   </Text>
-                  <Stack gap="sm" mt="sm">
-                    {readFirstItems.map((item) => (
-                      <Paper key={item.title} withBorder radius="md" p="sm">
-                        <Group gap="xs" align="flex-start" wrap="nowrap">
-                          <ThemeIcon
-                            variant="light"
-                            color={alertToneColor(item.tone)}
-                            radius="md"
-                            size="md"
-                          >
-                            {item.tone === 'red' ? (
-                              <IconArrowDownRight size={14} />
-                            ) : (
-                              <IconArrowUpRight size={14} />
-                            )}
-                          </ThemeIcon>
-                          <div>
-                            <Text fw={700} size="sm">
-                              {item.title}
-                            </Text>
-                            <Text size="sm" c="dimmed" mt={4}>
-                              {item.detail}
-                            </Text>
-                          </div>
-                        </Group>
-                      </Paper>
-                    ))}
-                  </Stack>
-                </Paper>
+                </Stack>
+              )}
+            </Card>
+          </Grid.Col>
 
-                <Paper withBorder radius="md" p="md">
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+          <Grid.Col span={{ base: 12, xl: 4 }}>
+            <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
+              <Stack gap="sm" h="100%">
+                <Group justify="space-between" align="flex-start" className={classes.sectionHeader}>
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                      DeepVisor read
+                    </Text>
+                    <Title order={3}>What needs attention</Title>
+                  </div>
+                  <ThemeIcon color="blue" variant="light" radius="md">
+                    <IconSparkles size={18} />
+                  </ThemeIcon>
+                </Group>
+
+                {readFirstItems.map((item) => (
+                  <div key={item.title} className={classes.insightCard}>
+                    <Group gap="sm" align="flex-start" wrap="nowrap">
+                      <ThemeIcon
+                        variant="light"
+                        color={alertToneColor(item.tone)}
+                        radius="md"
+                        size="md"
+                      >
+                        {item.tone === 'red' ? (
+                          <IconArrowDownRight size={14} />
+                        ) : (
+                          <IconArrowUpRight size={14} />
+                        )}
+                      </ThemeIcon>
+                      <div>
+                        <Text fw={800} size="sm">
+                          {item.title}
+                        </Text>
+                        <Text size="sm" c="dimmed" mt={4}>
+                          {item.detail}
+                        </Text>
+                      </div>
+                    </Group>
+                  </div>
+                ))}
+
+                <div className={classes.insightCard}>
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
                     Data status
                   </Text>
-                  <Text fw={700} mt={6}>
+                  <Text fw={800} mt={6}>
                     {formatRelativeSync(payload.viewContext.lastSyncedAt)}
                   </Text>
                   <Text size="sm" c="dimmed" mt={6}>
@@ -1194,126 +1290,121 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                       {payload.viewContext.platformError}
                     </Text>
                   ) : null}
-                </Paper>
+                </div>
               </Stack>
-            </Grid.Col>
-          </Grid>
-        </Card>
+            </Card>
+          </Grid.Col>
+        </Grid>
 
-        <Grid gutter="lg" align="stretch">
+        <Grid gutter="md" align="stretch">
           <Grid.Col span={{ base: 12, xl: 7 }}>
-            <Card withBorder radius="lg" p="xl" h="100%">
-              <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
+            <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
+              <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.sectionHeader}>
                 <div>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                    Campaigns
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                    Campaign movers
                   </Text>
-                  <Title order={3}>Visible campaign movers</Title>
+                  <Title order={3}>Strong, soft, and worth scanning</Title>
                   <Text size="sm" c="dimmed" mt={4}>
-                    Keep this tight. The dashboard shows only the few campaigns worth scanning
-                    before you jump into Reports for a deeper explanation.
+                    Real campaign data appears here first. Static examples keep the dashboard useful during setup.
                   </Text>
                 </div>
-                <Badge color="gray" variant="light" size="lg">
-                  {payload.campaignPreview.length} shown
-                </Badge>
+                <Group gap="xs" wrap="wrap">
+                  <Badge color="gray" variant="light" radius="sm">
+                    {campaignPreview.length} shown
+                  </Badge>
+                  {payload.campaignPreview.length === 0 ? (
+                    <Badge color="cyan" variant="outline" radius="sm">
+                      Static examples
+                    </Badge>
+                  ) : null}
+                </Group>
               </Group>
 
               <Stack gap="sm">
-                {payload.campaignPreview.length > 0 ? (
-                  payload.campaignPreview.map((campaign) => (
-                    <Paper key={campaign.campaignId} withBorder radius="md" p="md">
-                      <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
-                        <div style={{ flex: 1, minWidth: 240 }}>
-                          <Group gap="xs" mb={6} wrap="wrap">
-                            <Badge color={statusColor(campaign.status)} variant="light">
-                              {formatStatusLabel(campaign.status)}
+                {campaignPreview.map((campaign) => (
+                  <div key={campaign.campaignId} className={classes.campaignRow}>
+                    <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
+                      <div style={{ flex: 1, minWidth: 240 }}>
+                        <Group gap="xs" mb={6} wrap="wrap">
+                          <Badge color={statusColor(campaign.status)} variant="light">
+                            {formatStatusLabel(campaign.status)}
+                          </Badge>
+                          {campaign.objective ? (
+                            <Badge color="gray" variant="outline">
+                              {campaign.objective}
                             </Badge>
-                            {campaign.objective ? (
-                              <Badge color="gray" variant="outline">
-                                {campaign.objective}
-                              </Badge>
-                            ) : null}
-                            {campaign.campaignId === strongestCampaign?.campaignId ? (
-                              <Badge color="teal" variant="light">
-                                Strongest visible
-                              </Badge>
-                            ) : null}
-                            {campaign.campaignId === watchCampaign?.campaignId ? (
-                              <Badge color="orange" variant="light">
-                                Watch
-                              </Badge>
-                            ) : null}
-                          </Group>
-                          <Text fw={700}>{campaign.campaignName}</Text>
-                          <Text size="sm" c="dimmed" mt={6}>
-                            {campaignMetricSummary(campaign, payload.viewContext.currencyCode)}
+                          ) : null}
+                          {campaign.campaignId === strongestCampaign?.campaignId ? (
+                            <Badge color="teal" variant="light">
+                              Strongest
+                            </Badge>
+                          ) : null}
+                          {campaign.campaignId === watchCampaign?.campaignId ? (
+                            <Badge color="orange" variant="light">
+                              Watch
+                            </Badge>
+                          ) : null}
+                        </Group>
+                        <Text fw={800}>{campaign.campaignName}</Text>
+                        <Text size="sm" c="dimmed" mt={6}>
+                          {campaignMetricSummary(campaign, payload.viewContext.currencyCode)}
+                        </Text>
+                      </div>
+
+                      <Group gap="xl" wrap="wrap">
+                        <div>
+                          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                            Spend
+                          </Text>
+                          <Text fw={800}>
+                            {formatCurrency(campaign.spend, payload.viewContext.currencyCode)}
                           </Text>
                         </div>
-
-                        <Group gap="xl" wrap="wrap">
-                          <div>
-                            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                              Spend
-                            </Text>
-                            <Text fw={700}>
-                              {formatCurrency(campaign.spend, payload.viewContext.currencyCode)}
-                            </Text>
-                          </div>
-                          <div>
-                            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                              {campaign.primaryOutcomeLabel}
-                            </Text>
-                            <Text fw={700}>{formatNumber(campaign.primaryOutcomeValue)}</Text>
-                          </div>
-                          <div>
-                            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                              Support
-                            </Text>
-                            <Text fw={700}>
-                              {campaign.primaryOutcomeMetric !== 'clicks' &&
-                              campaign.primaryOutcomeValue > 0
-                                ? formatCurrency(
-                                    campaign.costPerResult,
-                                    payload.viewContext.currencyCode,
-                                    2
-                                  )
-                                : `${campaign.ctr.toFixed(2)}%`}
-                            </Text>
-                          </div>
-                        </Group>
+                        <div>
+                          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                            {campaign.primaryOutcomeLabel}
+                          </Text>
+                          <Text fw={800}>{formatNumber(campaign.primaryOutcomeValue)}</Text>
+                        </div>
+                        <div>
+                          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                            Support
+                          </Text>
+                          <Text fw={800}>
+                            {campaign.primaryOutcomeMetric !== 'clicks' &&
+                            campaign.primaryOutcomeValue > 0
+                              ? formatCurrency(
+                                  campaign.costPerResult,
+                                  payload.viewContext.currencyCode,
+                                  2
+                                )
+                              : `${campaign.ctr.toFixed(2)}%`}
+                          </Text>
+                        </div>
                       </Group>
-                    </Paper>
-                  ))
-                ) : (
-                  <Paper withBorder radius="md" p="lg">
-                    <Text fw={700}>Campaign-level data is not ready yet</Text>
-                    <Text size="sm" c="dimmed" mt={6}>
-                      Once campaign performance is available for this account, the dashboard will
-                      surface the strongest visible campaign and the one that needs the most review.
-                    </Text>
-                  </Paper>
-                )}
+                    </Group>
+                  </div>
+                ))}
               </Stack>
             </Card>
           </Grid.Col>
 
           <Grid.Col span={{ base: 12, xl: 5 }}>
-            <Card withBorder radius="lg" p="xl" h="100%">
-              <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
+            <Card withBorder radius="xl" p="lg" h="100%" className={`${classes.panel} ${classes.calendarPanel}`}>
+              <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.sectionHeader}>
                 <div>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
                     Calendar preview
                   </Text>
                   <Title order={3} mt={4}>
-                    Compact planning calendar
+                    Queue this week
                   </Title>
                   <Text size="sm" c="dimmed" mt={4}>
-                    Small look at the same queue shape DeepVisor wants to move into Calendar for the
-                    current account context.
+                    Quick look at what DeepVisor wants to approve, modify, or schedule.
                   </Text>
                 </div>
-                <Badge color="gray" variant="light" size="lg">
+                <Badge color="gray" variant="light" radius="sm">
                   {agencyPreviewCounts.total} queued
                 </Badge>
               </Group>
@@ -1345,7 +1436,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                 </Paper>
               </SimpleGrid>
 
-              <Paper withBorder radius="md" p="md">
+              <Paper withBorder radius="lg" p="md">
                 <Group justify="space-between" align="center" mb="md" wrap="wrap" gap="sm">
                   <SegmentedControl
                     size="xs"
@@ -1449,6 +1540,114 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                   </Button>
                 </Group>
               </Group>
+            </Card>
+          </Grid.Col>
+        </Grid>
+
+        <Grid gutter="md" align="stretch">
+          <Grid.Col span={{ base: 12, xl: 4 }}>
+            <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
+              <Group justify="space-between" align="flex-start" className={classes.sectionHeader}>
+                <div>
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                    Recommended actions
+                  </Text>
+                  <Title order={3}>Next best moves</Title>
+                </div>
+                <ThemeIcon color="yellow" variant="light" radius="md">
+                  <IconBulb size={18} />
+                </ThemeIcon>
+              </Group>
+              <Stack gap="sm">
+                {STATIC_OPERATING_ACTIONS.map((action) => (
+                  <div key={action.title} className={classes.actionRow}>
+                    <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                      <div>
+                        <Text fw={800}>{action.title}</Text>
+                        <Text size="sm" c="dimmed" mt={4}>
+                          {action.detail}
+                        </Text>
+                      </div>
+                      <Badge color={alertToneColor(action.tone)} variant="light" radius="sm">
+                        {action.owner}
+                      </Badge>
+                    </Group>
+                  </div>
+                ))}
+              </Stack>
+            </Card>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, xl: 4 }}>
+            <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
+              <Group justify="space-between" align="flex-start" className={classes.sectionHeader}>
+                <div>
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                    Reports
+                  </Text>
+                  <Title order={3}>Briefs worth opening</Title>
+                </div>
+                <ThemeIcon color="blue" variant="light" radius="md">
+                  <IconFileAnalytics size={18} />
+                </ThemeIcon>
+              </Group>
+              <Stack gap="sm">
+                {STATIC_REPORT_DIGEST.map((report) => (
+                  <Link key={report.title} href={report.href} style={{ color: 'inherit', textDecoration: 'none' }}>
+                    <div className={classes.reportRow}>
+                      <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
+                        <div>
+                          <Text fw={800}>{report.title}</Text>
+                          <Text size="sm" c="dimmed" mt={4}>
+                            {report.detail}
+                          </Text>
+                        </div>
+                        <Badge color="blue" variant="light" radius="sm">
+                          {report.badge}
+                        </Badge>
+                      </Group>
+                    </div>
+                  </Link>
+                ))}
+              </Stack>
+            </Card>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, xl: 4 }}>
+            <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
+              <Group justify="space-between" align="flex-start" className={classes.sectionHeader}>
+                <div>
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                    Data health
+                  </Text>
+                  <Title order={3}>Platform readiness</Title>
+                </div>
+                <ThemeIcon color="green" variant="light" radius="md">
+                  <IconTargetArrow size={18} />
+                </ThemeIcon>
+              </Group>
+              <Stack gap="sm">
+                {STATIC_PLATFORM_HEALTH.map((item) => (
+                  <div key={item.label} className={classes.healthRow}>
+                    <Group justify="space-between" align="center" gap="md">
+                      <Text fw={800}>{item.label}</Text>
+                      <Badge color={item.color} variant="light" radius="sm">
+                        {item.value}
+                      </Badge>
+                    </Group>
+                  </div>
+                ))}
+              </Stack>
+              <Button
+                component={Link}
+                href="/integration"
+                radius="xl"
+                variant="default"
+                mt="md"
+                className="app-platform-page-action-secondary"
+              >
+                Manage integrations
+              </Button>
             </Card>
           </Grid.Col>
         </Grid>

@@ -21,6 +21,7 @@ import {
   IconRefresh,
 } from '@tabler/icons-react';
 import type { ReportPayload } from '@/lib/server/reports/types';
+import classes from '../ReportsClient.module.css';
 
 interface ReportsHeaderProps {
   payload: ReportPayload;
@@ -114,9 +115,9 @@ export default function ReportsHeader({
   ];
 
   return (
-    <Card p="xl" radius="lg" withBorder className="app-platform-page-hero">
-      <Stack gap="lg">
-        <Group justify="space-between" align="flex-start" gap="md">
+    <Card p={{ base: 'md', md: 'lg' }} radius="xl" withBorder className={classes.headerCard}>
+      <Stack gap="md">
+        <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
           <div>
             <Group gap="xs" align="center" wrap="wrap">
               <Badge color="gray" variant="light" size="md">
@@ -140,7 +141,7 @@ export default function ReportsHeader({
                   : 'Single range'}
               </Badge>
             </Group>
-            <Text fw={800} size="2rem" mt="xs" className="app-platform-page-title">
+            <Text fw={900} size="1.65rem" mt="xs" className={classes.headerTitle}>
               {payload.meta.title}
             </Text>
             <Text size="sm" mt={4} className="app-platform-page-subtle">
@@ -192,7 +193,7 @@ export default function ReportsHeader({
           </Group>
         </Group>
 
-        <Group align="flex-end" gap="md" wrap="wrap">
+        <Group align="flex-end" gap="sm" wrap="wrap" className={classes.controlBar}>
           <Group gap="xs" wrap="wrap">
             {presets.map((preset) => (
               <Button
@@ -232,7 +233,7 @@ export default function ReportsHeader({
             radius="md"
             size="sm"
             placeholder="Select date range"
-            style={{ minWidth: 280 }}
+            style={{ minWidth: 260 }}
           />
 
           <Select
