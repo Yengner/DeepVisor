@@ -727,10 +727,10 @@ export default async function SettingsPage() {
                 </Paper>
                 <Paper withBorder radius="md" p="sm">
                   <Text fw={700} size="sm">
-                    Agency
+                    Calendar
                   </Text>
                   <Text size="sm" c="dimmed" mt={4}>
-                    Use Agency when you want to approve or manage the queued work DeepVisor wants
+                    Use Calendar when you want to approve or manage the queued work DeepVisor wants
                     to execute next.
                   </Text>
                 </Paper>
@@ -838,7 +838,7 @@ export default async function SettingsPage() {
               <Paper withBorder radius="md" p="md">
                 <Text fw={700}>No platform integrations yet</Text>
                 <Text size="sm" c="dimmed" mt={6}>
-                  Connect Meta first so Dashboard, Reports, and Agency have a real account to work
+                  Connect Meta first so Dashboard, Reports, and Calendar have a real account to work
                   from.
                 </Text>
               </Paper>

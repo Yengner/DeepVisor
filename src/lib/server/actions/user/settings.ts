@@ -23,13 +23,13 @@ const STATIC_NOTIFICATIONS: NotificationFeedItem[] = [
         link: '/reports',
     },
     {
-        id: 'notification-agency-review',
+        id: 'notification-calendar-review',
         title: 'Queued work needs review',
-        message: 'DeepVisor prepared new agency work for approval based on the latest account activity.',
+        message: 'DeepVisor prepared new calendar work for approval based on the latest account activity.',
         created_at: '2026-04-07T16:40:00.000Z',
         read: false,
-        type: 'agency',
-        link: '/agency',
+        type: 'calendar',
+        link: '/calendar',
     },
     {
         id: 'notification-sync-complete',

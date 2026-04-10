@@ -12,7 +12,7 @@ export function EmptyCampaignState({ type, platformName }: EmptyCampaignStatePro
         platform: {
             icon: <IconPlug size={30} />,
             title: 'No Ad Platform Connected',
-            description: 'Connect an ad platform to sync data and unlock campaigns, reports, and your AI agency workspace.',
+            description: 'Connect an ad platform to sync data and unlock campaigns, reports, and your calendar queue.',
             buttonText: 'Connect a Platform',
             buttonLink: '/integration',
         },

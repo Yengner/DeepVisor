@@ -146,8 +146,8 @@ function NoticesPanel({
 
         {showAgencyLink ? (
           <Group justify="flex-end">
-            <Button component="a" href="/agency#deepvisor-notices" size="xs" radius="xl" variant="light" color="yellow">
-              Open agency board
+            <Button component="a" href="/calendar" size="xs" radius="xl" variant="light" color="yellow">
+              Open calendar
             </Button>
           </Group>
         ) : null}

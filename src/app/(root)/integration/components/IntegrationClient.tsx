@@ -409,7 +409,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                     <Text size="md" c="dimmed" mt="sm" maw={680}>
                       Pick the platform, choose the one ad account DeepVisor should watch, and see
                       which channels are live, preview-only, or need attention before reports,
-                      dashboard, and agency work depend on them.
+                      dashboard, and calendar work depend on them.
                     </Text>
                   </div>
 
@@ -579,7 +579,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                     2. Choose one primary ad account
                   </Text>
                   <Text size="sm" c="dimmed" mt={6}>
-                    Each platform syncs one clean account into Dashboard, Reports, Agency, and the
+                    Each platform syncs one clean account into Dashboard, Reports, Calendar, and the
                     assistant so the workspace stays focused.
                   </Text>
                 </Paper>

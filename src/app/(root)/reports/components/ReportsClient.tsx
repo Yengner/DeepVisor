@@ -342,7 +342,7 @@ function deriveInsight(payload: ReportPayload): ReportInsight {
   const nextMoves = [
     recommendationDetail,
     strongestRow && weakestRow && strongestRow.id !== weakestRow.id
-      ? `Compare ${strongestRow.name} and ${weakestRow.name} before approving the next queue items in Agency.`
+      ? `Compare ${strongestRow.name} and ${weakestRow.name} before approving the next queue items in Calendar.`
       : null,
     payload.query.compareMode === 'none'
       ? 'Turn on previous-period comparison when you want a clearer trend read.'
@@ -873,13 +873,13 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
 
               <Button
                 component={Link}
-                href="/agency"
+                href="/calendar"
                 radius="xl"
                 variant="light"
                 color="blue"
                 leftSection={<IconProgressCheck size={16} />}
               >
-                Open Agency Queue
+                Open Calendar Queue
               </Button>
             </Group>
 

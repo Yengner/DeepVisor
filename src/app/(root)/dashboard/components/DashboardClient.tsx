@@ -968,12 +968,12 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                   </Button>
                   <Button
                     component={Link}
-                    href="/agency"
+                    href="/calendar"
                     variant="default"
                     radius="xl"
                     className="app-platform-page-action-secondary"
                   >
-                    Open agency
+                    Open calendar
                   </Button>
                 </Group>
               </Stack>
@@ -1303,13 +1303,13 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
               <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
                 <div>
                   <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                    Agency preview
+                    Calendar preview
                   </Text>
                   <Title order={3} mt={4}>
                     Compact planning calendar
                   </Title>
                   <Text size="sm" c="dimmed" mt={4}>
-                    Small look at the same queue shape DeepVisor wants to move into Agency for the
+                    Small look at the same queue shape DeepVisor wants to move into Calendar for the
                     current account context.
                   </Text>
                 </div>
@@ -1380,7 +1380,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                       color="gray"
                       radius="xl"
                       onClick={() => shiftAgencyPreview(-1)}
-                      aria-label="Previous agency preview period"
+                      aria-label="Previous calendar preview period"
                     >
                       <IconChevronLeft size={16} />
                     </ActionIcon>
@@ -1392,7 +1392,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                       color="gray"
                       radius="xl"
                       onClick={() => shiftAgencyPreview(1)}
-                      aria-label="Next agency preview period"
+                      aria-label="Next calendar preview period"
                     >
                       <IconChevronRight size={16} />
                     </ActionIcon>
@@ -1417,17 +1417,17 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
 
               <Group justify="space-between" align="center" mt="md" gap="sm" wrap="wrap">
                 <Text size="sm" c="dimmed" maw={260}>
-                  Open the full Agency view to approve, modify, or schedule what is queued here.
+                  Open the full Calendar view to approve, modify, or schedule what is queued here.
                 </Text>
                 <Group gap="sm" wrap="wrap">
                   <Button
                     component={Link}
-                    href="/agency"
+                    href="/calendar"
                     radius="xl"
                     rightSection={<IconArrowUpRight size={14} />}
                     className="app-platform-page-action-primary"
                   >
-                    Open agency
+                    Open calendar
                   </Button>
                   <Button
                     component={Link}
