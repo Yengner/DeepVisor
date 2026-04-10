@@ -36,6 +36,50 @@ export function formatStripeTimestamp(unixTimestamp: number | null | undefined) 
   };
 }
 
+export function toIsoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+export function getUtcToday(): Date {
+  const date = new Date();
+  date.setUTCHours(0, 0, 0, 0);
+  return date;
+}
+
+export function getTrailingUtcDateRange(days: number): {
+  dateFrom: string;
+  dateTo: string;
+} {
+  const safeDays = Math.max(1, Math.floor(days));
+  const dateTo = getUtcToday();
+  const dateFrom = new Date(dateTo);
+  dateFrom.setUTCDate(dateFrom.getUTCDate() - (safeDays - 1));
+
+  return {
+    dateFrom: toIsoDate(dateFrom),
+    dateTo: toIsoDate(dateTo),
+  };
+}
+
+export function parseTimestampMs(value: string | null | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function formatDisplayDate(value?: string | null): string {
+  return value
+    ? new Date(value).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : '';
+}
+
 /**
  * Returns a human-readable relative time string
  */

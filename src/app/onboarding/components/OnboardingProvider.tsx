@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   Container,
   Stepper,
@@ -15,8 +15,8 @@ import {
   Paper,
   Progress,
   ThemeIcon,
-  LoadingOverlay,
 } from '@mantine/core';
+import BlockingTaskScreen from '@/components/ui/states/BlockingTaskScreen';
 import WelcomeStep from './steps/WelcomeStep';
 import toast from 'react-hot-toast';
 import ConnectAccountsStep from './steps/ConnectAccountsStep';
@@ -31,6 +31,9 @@ export type OnboardingInitial = {
   step: number;
   completed: boolean;
   businessId: string | null;
+  organizationId: string | null;
+  organizationName: string;
+  organizationType: 'agency' | 'business';
   connectedPlatformKeys: string[];
   businessData: {
     businessName: string;
@@ -65,7 +68,6 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
 
   const [userData, setUserData] = useState<UserData>(() => ({
     businessName: initial.businessData.businessName ?? '',
-    businessType: '',
     industry: initial.businessData.industry ?? '',
     monthlyBudget: initial.businessData.monthlyBudget ?? '',
     website: initial.businessData.website ?? '',
@@ -81,7 +83,6 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
   }));
 
   const router = useRouter();
-  const searchParams = useSearchParams();
   const canPersist = Boolean(initial.businessId);
 
   useEffect(() => {
@@ -135,34 +136,6 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
     void persistProgress(prevStepIndex, false);
   };
 
-  /* eslint-disable react-hooks/exhaustive-deps */
-  useEffect(() => {
-    const integration = searchParams.get('integration');
-    const status = searchParams.get('status');
-
-    if (!integration || !status) return;
-
-    if (status === 'connected') {
-      setUserData((prev) => {
-        if (prev.connectedPlatforms.includes(integration)) return prev;
-        return {
-          ...prev,
-          connectedPlatforms: [...prev.connectedPlatforms, integration],
-        };
-      });
-
-      toast.success(`Successfully connected ${integration}.`);
-      if (active === 1) {
-        void nextStep();
-      }
-    } else if (status === 'error') {
-      toast.error(`Failed to connect ${integration}. Please try again.`);
-    }
-
-    router.replace('/onboarding');
-  }, [searchParams, active, router]);
-  /* eslint-enable react-hooks/exhaustive-deps */
-
   const handleUpdateUserData = (data: Partial<typeof userData>) => {
     setUserData((prev) => ({ ...prev, ...data }));
     setIsAutosaving(true);
@@ -184,14 +157,18 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
 
   return (
     <Container size="lg" className="py-10 relative">
-      <LoadingOverlay visible={loading} />
+      <BlockingTaskScreen
+        opened={loading}
+        title="Finishing your workspace"
+        description="We are saving your setup and preparing your dashboard so you land in a ready-to-use business view."
+      />
 
       <Stack gap="lg" className="mb-8">
         <Group justify="apart" align="flex-start">
           <div>
             <Title order={1} className="text-3xl mb-2">Welcome to DeepVisor</Title>
             <Text c="dimmed" size="lg">
-              Let&apos;s set up your account with a few quick steps.
+              Finish your business workspace setup so we can sync one primary ad account and tailor your dashboard.
             </Text>
           </div>
           <Stack gap={4} align="flex-end">

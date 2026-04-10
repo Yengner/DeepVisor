@@ -72,6 +72,7 @@ export function normalizeCampaignSnapshot(value: unknown): DashboardCampaignSnap
         campaignId: asString(campaign.campaign_id) || asString(campaign.id),
         campaignName:
           asString(campaign.campaign_name) || asString(campaign.name) || 'Unnamed campaign',
+        objective: asString(campaign.objective) || null,
         status: asString(campaign.status) || 'unknown',
         spend,
         clicks,
@@ -80,6 +81,7 @@ export function normalizeCampaignSnapshot(value: unknown): DashboardCampaignSnap
         conversion,
         conversionRate,
         costPerResult,
+        ctr: asNumber(campaign.ctr),
       };
     })
     .filter((campaign) => Boolean(campaign.campaignId))

@@ -1,7 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { asRecord } from '@/lib/shared';
+import { asRecord, toSupportedIntegrationPlatform } from '@/lib/shared';
 import { generateState } from '@/lib/shared/utils/guards';
 import type { Database, Json } from '@/lib/shared/types/supabase';
+import { upsertAdAccounts } from '@/lib/server/repositories/ad_accounts/upsertAdAccounts';
 import type {
   IntegrationDetails,
   IntegrationPlatform,
@@ -39,6 +40,12 @@ type PlatformIntegrationStorageRow = {
 };
 
 const ALLOWED_RETURN_TO: ReadonlySet<string> = new Set(['/onboarding', '/integration']);
+
+export function parseSupportedIntegrationPlatform(
+  platform: string
+): SupportedIntegrationPlatform | null {
+  return toSupportedIntegrationPlatform(platform);
+}
 
 export function sanitizeReturnTo(value: string | null): IntegrationReturnTo {
   if (value && ALLOWED_RETURN_TO.has(value)) {
@@ -500,9 +507,7 @@ export async function listMetaAccessibleAdAccounts(
     throw new Error('Missing access token');
   }
 
-  const snapshots = await fetchMetaAdAccountSnapshots(accessToken, {
-    includeMetrics: false,
-  });
+  const snapshots = await fetchMetaAdAccountSnapshots(accessToken);
   return snapshots.map((snapshot) => ({
     externalAccountId: snapshot.externalAccountId,
     name: snapshot.name,
@@ -608,34 +613,24 @@ export async function syncMetaAdAccountsSnapshot(
     accessToken: string;
   }
 ): Promise<number> {
-  const now = new Date().toISOString();
-  const snapshots = await fetchMetaAdAccountSnapshots(input.accessToken, {
-    includeMetrics: true,
-  });
+  const snapshots = await fetchMetaAdAccountSnapshots(input.accessToken);
 
   if (snapshots.length === 0) {
     return 0;
   }
 
-  const rows = snapshots.map((snapshot) => ({
-    business_id: input.businessId,
-    platform_id: input.platformId,
-    external_account_id: snapshot.externalAccountId,
+  // Deprecated path kept metadata-only so discovery does not imply a completed sync.
+  const result = await upsertAdAccounts(supabase, snapshots.map((snapshot) => ({
+    businessId: input.businessId,
+    platformId: input.platformId,
+    externalAccountId: snapshot.externalAccountId,
     name: snapshot.name,
     status: snapshot.status,
-    aggregated_metrics: snapshot.aggregatedMetrics,
-    time_increment_metrics: snapshot.timeIncrementMetrics,
-    last_synced: now,
-    updated_at: now,
-    created_at: now,
-  }));
+    currencyCode: snapshot.currencyCode,
+    timezone: snapshot.timezone,
+  })));
 
-  const { error } = await supabase
-    .from('ad_accounts')
-    .upsert(rows, { onConflict: 'business_id,platform_id,external_account_id' });
-
-  if (error) throw error;
-  return rows.length;
+  return result.count;
 }
 
 async function patchIntegrationDetails(

@@ -42,11 +42,11 @@ function toDailyPoint(point: AdAccountTimeIncrementPoint): DailyAccountPoint | n
 
   return {
     date,
-    spend: point.spend ?? 0,
-    leads: point.leads ?? 0,
-    messages: point.messages ?? 0,
-    clicks: point.clicks ?? 0,
-    linkClicks: point.link_clicks ?? 0,
+    spend: point.spend,
+    leads: point.leads,
+    messages: point.messages,
+    clicks: point.clicks,
+    linkClicks: point.link_clicks,
   };
 }
 
@@ -330,6 +330,7 @@ function buildCampaignPreview(
   return campaigns.slice(0, 3).map((campaign) => ({
     campaignId: campaign.campaignId,
     campaignName: campaign.campaignName,
+    objective: campaign.objective,
     status: campaign.status,
     spend: campaign.spend,
     primaryOutcomeMetric,
@@ -340,6 +341,9 @@ function buildCampaignPreview(
         : primaryOutcomeMetric === 'clicks'
           ? campaign.clicks
           : campaign.leads,
+    conversionRate: campaign.conversionRate,
+    costPerResult: campaign.costPerResult,
+    ctr: campaign.ctr,
   }));
 }
 

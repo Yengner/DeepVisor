@@ -7,15 +7,10 @@ import {
   buildIntegrationResultPath,
   createOAuthState,
   getBaseUrl,
+  parseSupportedIntegrationPlatform,
   resolvePlatformByKey,
   sanitizeReturnTo,
 } from '@/lib/server/integrations/service';
-import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integrations';
-
-function toSupportedPlatform(platform: string): SupportedIntegrationPlatform | null {
-  if (platform === 'meta') return 'meta';
-  return null;
-}
 
 function buildErrorRedirect(requestUrl: string, returnTo: '/onboarding' | '/integration') {
   const baseUrl = getBaseUrl(requestUrl);
@@ -29,8 +24,7 @@ export async function GET(
 ) {
   const { platform } = await context.params;
   const returnTo = sanitizeReturnTo(request.nextUrl.searchParams.get('returnTo'));
-  const platformKey = toSupportedPlatform(platform);
-  console.log('Initiating integration for platform:', platformKey, 'with returnTo:', returnTo);
+  const platformKey = parseSupportedIntegrationPlatform(platform);
   if (!platformKey) {
     return buildErrorRedirect(request.url, returnTo);
   }

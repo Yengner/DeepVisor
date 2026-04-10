@@ -3,10 +3,13 @@ import { createServerClient } from '@/lib/server/supabase/server';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import {
   getBusinessIntegrationById,
+  getPrimaryAdAccountSelection,
   listMetaAccessibleAdAccounts,
-  setPrimaryMetaAdAccount,
 } from '@/lib/server/integrations/service';
-import { syncBusinessPlatform } from '@/lib/server/sync';
+import {
+  applyAppSelectionCookies,
+  syncSelectedMetaAdAccount,
+} from '@/lib/server/integrations/metaSelection';
 import { ErrorCode, fail, ok } from '@/lib/shared';
 
 export async function POST(request: NextRequest) {
@@ -42,8 +45,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const accounts = await listMetaAccessibleAdAccounts(supabase, integration);
-    const selectedAccount = accounts.find((account) => account.externalAccountId === externalAccountId);
+    let selectedAccount:
+      | {
+          externalAccountId: string;
+          name: string | null;
+        }
+      | null = null;
+
+    try {
+      const accounts = await listMetaAccessibleAdAccounts(supabase, integration);
+      const matchedAccessibleAccount = accounts.find(
+        (account) => account.externalAccountId === externalAccountId
+      );
+
+      if (matchedAccessibleAccount) {
+        selectedAccount = {
+          externalAccountId: matchedAccessibleAccount.externalAccountId,
+          name: matchedAccessibleAccount.name,
+        };
+      }
+    } catch (error) {
+      console.warn('Meta accessible account lookup failed during selection, falling back to saved account state:', error);
+    }
+
+    if (!selectedAccount) {
+      const { data: savedAccount, error: savedAccountError } = await supabase
+        .from('ad_accounts')
+        .select('external_account_id, name')
+        .eq('business_id', businessId)
+        .eq('platform_id', integration.platformId)
+        .eq('external_account_id', externalAccountId)
+        .maybeSingle();
+
+      if (savedAccountError) {
+        throw savedAccountError;
+      }
+
+      if (savedAccount?.external_account_id) {
+        selectedAccount = {
+          externalAccountId: savedAccount.external_account_id,
+          name: savedAccount.name,
+        };
+      }
+    }
+
+    if (!selectedAccount) {
+      const primarySelection = getPrimaryAdAccountSelection(integration.integrationDetails);
+      if (primarySelection.externalAccountId === externalAccountId) {
+        selectedAccount = {
+          externalAccountId,
+          name: primarySelection.name,
+        };
+      }
+    }
 
     if (!selectedAccount) {
       return NextResponse.json(
@@ -54,55 +108,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await setPrimaryMetaAdAccount(supabase, {
+    const result = await syncSelectedMetaAdAccount({
+      supabase,
+      businessId,
       integrationId,
+      platformId: integration.platformId,
       externalAccountId: selectedAccount.externalAccountId,
       name: selectedAccount.name,
-    });
-
-    await syncBusinessPlatform({
-      businessId,
-      platformId: integration.platformId,
       trigger: 'integration',
     });
 
-    const { data: syncedAccount, error: syncedAccountError } = await supabase
-      .from('ad_accounts')
-      .select('id')
-      .eq('business_id', businessId)
-      .eq('platform_id', integration.platformId)
-      .eq('external_account_id', selectedAccount.externalAccountId)
-      .maybeSingle();
-
-    if (syncedAccountError) {
-      throw syncedAccountError;
-    }
-
     const response = NextResponse.json(
       ok({
-        integrationId,
-        adAccountId: syncedAccount?.id ?? null,
-        externalAccountId: selectedAccount.externalAccountId,
+        integrationId: result.integrationId,
+        adAccountId: result.adAccountId,
+        externalAccountId: result.externalAccountId,
       })
     );
-
-    response.cookies.set('platform_integration_id', integrationId, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30,
+    applyAppSelectionCookies(response, {
+      platformIntegrationId: result.integrationId,
+      adAccountId: result.adAccountId,
     });
-
-    if (syncedAccount?.id) {
-      response.cookies.set('ad_account_row_id', syncedAccount.id, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 30,
-      });
-    }
 
     return response;
   } catch (error) {

@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import {
   ActionIcon,
   Badge,
-  Box,
   Button,
   Card,
   Group,
@@ -15,7 +14,12 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { IconFileSpreadsheet, IconFileTypePdf, IconRefresh } from '@tabler/icons-react';
+import {
+  IconAdjustmentsHorizontal,
+  IconFileSpreadsheet,
+  IconFileTypePdf,
+  IconRefresh,
+} from '@tabler/icons-react';
 import type { ReportPayload } from '@/lib/server/reports/types';
 
 interface ReportsHeaderProps {
@@ -25,6 +29,9 @@ interface ReportsHeaderProps {
     csv: string;
   };
   onUpdate: (mutate: (params: URLSearchParams) => void) => void;
+  onOpenFilters: () => void;
+  activeFilterCount: number;
+  isDemo?: boolean;
   isPending?: boolean;
 }
 
@@ -84,6 +91,9 @@ export default function ReportsHeader({
   payload,
   exportLinks,
   onUpdate,
+  onOpenFilters,
+  activeFilterCount,
+  isDemo = false,
   isPending = false,
 }: ReportsHeaderProps) {
   const rangeValue = useMemo(
@@ -104,56 +114,57 @@ export default function ReportsHeader({
   ];
 
   return (
-    <Card
-      p="xl"
-      radius="lg"
-      withBorder
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        background: 'linear-gradient(120deg, #0f172a 0%, #111827 50%, #0ea5e9 130%)',
-        borderColor: 'rgba(255,255,255,0.08)',
-      }}
-    >
-      <Box
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background:
-            'radial-gradient(circle at 10% 20%, rgba(14,165,233,0.2), transparent 34%), radial-gradient(circle at 80% 0%, rgba(14,165,233,0.18), transparent 28%)',
-        }}
-      />
-
-      <Stack gap="lg" pos="relative">
-        <Group justify="space-between" align="flex-start">
-          <Box>
-            <Group gap="xs" align="center">
-              <Badge color="indigo" variant="light" size="md">
+    <Card p="xl" radius="lg" withBorder className="app-platform-page-hero">
+      <Stack gap="lg">
+        <Group justify="space-between" align="flex-start" gap="md">
+          <div>
+            <Group gap="xs" align="center" wrap="wrap">
+              <Badge color="gray" variant="light" size="md">
                 {payload.meta.businessName}
               </Badge>
-              <Badge color="cyan" variant="light" size="md">
+              <Badge color="blue" variant="light" size="md">
                 {payload.meta.scopeLabel}
               </Badge>
-              <Badge color="green" variant="light" size="md">
-                {payload.query.compareMode === 'previous_period' ? 'Compared' : 'Live'}
+              {isDemo ? (
+                <Badge color="cyan" variant="outline" size="md">
+                  Demo data
+                </Badge>
+              ) : null}
+              <Badge
+                color={payload.query.compareMode === 'previous_period' ? 'teal' : 'gray'}
+                variant="light"
+                size="md"
+              >
+                {payload.query.compareMode === 'previous_period'
+                  ? 'Comparing previous period'
+                  : 'Single range'}
               </Badge>
             </Group>
-            <Text fw={800} size="2rem" c="white" mt="xs">
+            <Text fw={800} size="2rem" mt="xs" className="app-platform-page-title">
               {payload.meta.title}
             </Text>
-            <Text size="sm" c="gray.2">
-              {payload.meta.subtitle}
+            <Text size="sm" mt={4} className="app-platform-page-subtle">
+              Generated {new Date(payload.meta.generatedAt).toLocaleString()}
             </Text>
-          </Box>
+          </div>
 
-          <Group gap="sm">
+          <Group gap="sm" wrap="wrap">
+            <Button
+              leftSection={<IconAdjustmentsHorizontal size={16} />}
+              radius="xl"
+              variant="default"
+              className="app-platform-page-action-secondary"
+              onClick={onOpenFilters}
+            >
+              Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            </Button>
             <Button
               component="a"
               href={exportLinks.pdf}
               leftSection={<IconFileTypePdf size={16} />}
               radius="xl"
-              variant="white"
-              color="dark"
+              variant="filled"
+              className="app-platform-page-action-primary"
             >
               Export PDF
             </Button>
@@ -162,8 +173,8 @@ export default function ReportsHeader({
               href={exportLinks.csv}
               leftSection={<IconFileSpreadsheet size={16} />}
               radius="xl"
-              variant="light"
-              color="gray"
+              variant="default"
+              className="app-platform-page-action-secondary"
             >
               Export CSV
             </Button>
@@ -171,8 +182,8 @@ export default function ReportsHeader({
               <ActionIcon
                 size="lg"
                 radius="xl"
-                variant="light"
-                color="gray"
+                variant="default"
+                className="app-platform-page-action-icon"
                 onClick={() => onUpdate(() => undefined)}
               >
                 <IconRefresh size={18} />
@@ -181,15 +192,15 @@ export default function ReportsHeader({
           </Group>
         </Group>
 
-        <Group align="flex-end" gap="md">
-          <Group gap="xs">
+        <Group align="flex-end" gap="md" wrap="wrap">
+          <Group gap="xs" wrap="wrap">
             {presets.map((preset) => (
               <Button
                 key={preset.value}
                 radius="xl"
                 size="xs"
-                variant="white"
-                color="dark"
+                variant="light"
+                color="gray"
                 onClick={() => {
                   const range = presetRange(preset.value);
                   onUpdate((params) => {
@@ -257,7 +268,7 @@ export default function ReportsHeader({
                 );
               });
             }}
-            color="cyan"
+            color="blue"
             size="md"
           />
         </Group>

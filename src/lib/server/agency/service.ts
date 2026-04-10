@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { getTrailingUtcDateRange, uniqueStrings } from '@/lib/shared';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { buildReportPayload } from '@/lib/server/repositories/reports/buildReportPayload';
 import type { ReportQueryInput } from '@/lib/server/reports/types';
@@ -55,22 +56,6 @@ type WorkspaceSelectionInput = {
   defaultPlatformIntegrationId?: string | null;
   defaultAdAccountId?: string | null;
 };
-
-function getDefaultDateRange() {
-  const dateTo = new Date();
-  dateTo.setUTCHours(0, 0, 0, 0);
-  const dateFrom = new Date(dateTo);
-  dateFrom.setUTCDate(dateFrom.getUTCDate() - 29);
-
-  return {
-    dateFrom: dateFrom.toISOString().slice(0, 10),
-    dateTo: dateTo.toISOString().slice(0, 10),
-  };
-}
-
-function uniqueStrings(values: Array<string | null | undefined>): string[] {
-  return Array.from(new Set(values.filter((value): value is string => Boolean(value))));
-}
 
 function getPlatformLabel(value: PlatformIntegrationRow['platforms'], fallback: string) {
   const record = Array.isArray(value) ? value[0] : value;
@@ -309,7 +294,7 @@ function buildReportQuery(input: {
   businessId: string;
   selection: BusinessAgencySelection;
 }): ReportQueryInput {
-  const { dateFrom, dateTo } = getDefaultDateRange();
+  const { dateFrom, dateTo } = getTrailingUtcDateRange(30);
 
   return {
     businessId: input.businessId,

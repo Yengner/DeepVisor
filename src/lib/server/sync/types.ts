@@ -1,6 +1,7 @@
 import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integrations';
 
 export type SyncTrigger = 'integration' | 'manual_refresh' | 'cron';
+export const FULL_HISTORY_BACKFILL_DAYS = 10_000;
 
 export interface BusinessPlatformSyncCounts {
   adAccounts: number;
@@ -13,6 +14,9 @@ export interface BusinessPlatformSyncCounts {
   campaignPerformanceRows: number;
   adsetPerformanceRows: number;
   adPerformanceRows: number;
+  campaignPerformanceSummaries: number;
+  adsetPerformanceSummaries: number;
+  adPerformanceSummaries: number;
 }
 
 export interface BusinessPlatformSyncSummary {

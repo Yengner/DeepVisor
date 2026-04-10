@@ -42,11 +42,12 @@ const Sidebar = () => {
     router.push('/login');
   };
 
-  const sidebarBg = "#ffffff";
-  const activeColor = "#1c7ed6";
-  const hoverColor = "#e7f5ff";
-  const iconInactiveColor = "#5c7cfa";
-  const textColor = "#22223b";
+  const sidebarBg = 'var(--platform-sidebar-bg)';
+  const activeColor = 'var(--platform-accent)';
+  const hoverColor = 'var(--platform-accent-soft)';
+  const iconInactiveColor = 'var(--platform-nav-icon)';
+  const textColor = 'var(--platform-text-strong)';
+  const dividerColor = 'var(--platform-border)';
 
   return (
     <div
@@ -55,7 +56,8 @@ const Sidebar = () => {
       className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 border-r border-gray-200 transition-all duration-500 ${isExpanded ? 'w-52' : 'w-16'}`}
       style={{
         backgroundColor: sidebarBg,
-        boxShadow: '0 1px 6px rgba(0,0,0,0.08)'
+        borderRightColor: 'var(--platform-border)',
+        boxShadow: 'var(--platform-sidebar-shadow)'
       }}
     >
       <div className="h-full flex flex-col justify-between py-8">
@@ -69,12 +71,12 @@ const Sidebar = () => {
                 leftSection={
                   <ThemeIcon
                     size={32}
-                    variant={pathname === item.route ? "filled" : "light"}
-                    color={pathname === item.route ? activeColor : iconInactiveColor}
+                    variant="filled"
                     style={{
-                      backgroundColor: pathname === item.route ? activeColor : 'transparent',
+                      backgroundColor: pathname === item.route ? activeColor : hoverColor,
+                      color: pathname === item.route ? '#ffffff' : iconInactiveColor,
                       minWidth: 32,
-                      minHeight: 32
+                      minHeight: 32,
                     }}
                   >
                     <item.icon size={21} stroke={1.5} color={pathname === item.route ? "#ffffff" : undefined} />
@@ -83,7 +85,6 @@ const Sidebar = () => {
                 active={pathname === item.route}
                 onClick={() => handleNavigation(item.route)}
                 variant={pathname === item.route ? "filled" : "light"}
-                color={activeColor}
                 styles={() => ({
                   root: {
                     '&[dataActive]': {
@@ -112,16 +113,16 @@ const Sidebar = () => {
               >
                 <NavLink
                   leftSection={
-                    <ThemeIcon
-                      size={32}
-                      variant={pathname === item.route ? "filled" : "light"}
-                      color={pathname === item.route ? activeColor : iconInactiveColor}
-                      style={{
-                        backgroundColor: pathname === item.route ? activeColor : 'transparent',
-                        minWidth: 32,
-                        minHeight: 32
-                      }}
-                    >
+                  <ThemeIcon
+                    size={32}
+                    variant="filled"
+                    style={{
+                      backgroundColor: pathname === item.route ? activeColor : hoverColor,
+                      color: pathname === item.route ? '#ffffff' : iconInactiveColor,
+                      minWidth: 32,
+                      minHeight: 32,
+                    }}
+                  >
                       <item.icon size={21} stroke={1.5} color={pathname === item.route ? "#ffffff" : undefined} />
                     </ThemeIcon>
                   }
@@ -148,7 +149,7 @@ const Sidebar = () => {
 
         {/* Bottom Section: Settings & Logout */}
         <Stack gap={10} mb={10}>
-          <Divider my="sm" color="#d0ebff" />
+          <Divider my="sm" color={dividerColor} />
 
           {isExpanded ? (
             <>

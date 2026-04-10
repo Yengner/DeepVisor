@@ -1,6 +1,12 @@
 import 'server-only';
 
-import { asNumber, asRecord, asString } from '@/lib/shared';
+import {
+  asNumber,
+  asRecord,
+  asString,
+  parseTimestampMs,
+  toSupportedIntegrationPlatform,
+} from '@/lib/shared';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import type { Database, Json } from '@/lib/shared/types/supabase';
 import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integrations';
@@ -41,19 +47,6 @@ export type ManualRefreshResult =
 
 function isSyncEligibleStatus(status: string): boolean {
   return status === 'connected' || status === 'error' || status === 'needs_reauth';
-}
-
-function toPlatformKey(value: string | null | undefined): SupportedIntegrationPlatform | null {
-  return value === 'meta' ? 'meta' : null;
-}
-
-function parseIsoTimestamp(value: string | null): number | null {
-  if (!value) {
-    return null;
-  }
-
-  const parsed = new Date(value).getTime();
-  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function decayLoad(load: number, elapsedMs: number): number {
@@ -122,7 +115,7 @@ async function listLatestBusinessSyncTargets(input: {
     }
 
     const platform = Array.isArray(row.platforms) ? row.platforms[0] : row.platforms;
-    const platformKey = toPlatformKey(platform?.key);
+    const platformKey = toSupportedIntegrationPlatform(platform?.key);
     if (!platformKey) {
       continue;
     }
@@ -148,7 +141,7 @@ function resolveBlockedState(integrations: IntegrationRow[]): ManualRefreshBlock
   for (const integration of integrations) {
     const details = asRecord(integration.integration_details);
     const state = parseRateLimitState(details);
-    const blockedUntil = parseIsoTimestamp(state.nextAllowedAt);
+    const blockedUntil = parseTimestampMs(state.nextAllowedAt);
 
     if (blockedUntil !== null && blockedUntil > nowMs) {
       nextAllowedAtMs = nextAllowedAtMs === null ? blockedUntil : Math.max(nextAllowedAtMs, blockedUntil);
@@ -179,7 +172,7 @@ async function persistRateLimitState(input: {
   for (const integration of input.integrations) {
     const integrationDetails = asRecord(integration.integration_details);
     const currentState = parseRateLimitState(integrationDetails);
-    const lastRequestedAtMs = parseIsoTimestamp(currentState.lastRequestedAt);
+    const lastRequestedAtMs = parseTimestampMs(currentState.lastRequestedAt);
     const decayedLoad =
       lastRequestedAtMs === null
         ? 0

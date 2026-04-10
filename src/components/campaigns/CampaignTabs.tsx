@@ -178,13 +178,12 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
       )}
       {activeTab === 'adsets' && selectedCampaignId && (
         <AdSetTable
-          campaignId={selectedCampaignId}
           onSelectAdSet={setSelectedAdSetId}
           selectedAdSetId={selectedAdSetId}
         />
       )}
       {activeTab === 'ads' && selectedAdSetId && (
-        <AdsTable adsetId={selectedAdSetId} />
+        <AdsTable />
       )}
     </div>
   );

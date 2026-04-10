@@ -3,6 +3,7 @@ import type { AdAccountData } from '../types';
 import { toSupportedVendor } from '../platforms/normalizers';
 import {
   parseAggregatedMetrics,
+  parseDailyMetricsRowsFromTimeIncrementMetrics,
   parseTimeIncrementMetrics,
 } from './normalizers';
 
@@ -74,6 +75,14 @@ export async function getAdAccountData(
   }
 
   const platformVendor = toSupportedVendor(platform?.key);
+  const aggregatedMetrics = parseAggregatedMetrics(adAccount.aggregated_metrics);
+  const timeIncrementMetrics = parseTimeIncrementMetrics(adAccount.time_increment_metrics);
+  const dailyMetrics = parseDailyMetricsRowsFromTimeIncrementMetrics(
+    adAccount.time_increment_metrics,
+    {
+      currencyCode: adAccount.currency_code,
+    }
+  );
 
   return {
     id: adAccount.id,
@@ -90,8 +99,10 @@ export async function getAdAccountData(
     created_at: adAccount.created_at,
     updated_at: adAccount.updated_at,
     last_synced: adAccount.last_synced,
-    aggregated_metrics: parseAggregatedMetrics(adAccount.aggregated_metrics),
-    time_increment_metrics: parseTimeIncrementMetrics(adAccount.time_increment_metrics),
+    aggregated_metrics: aggregatedMetrics,
+    time_increment_metrics: timeIncrementMetrics,
+    performance_summary: aggregatedMetrics,
+    daily_metrics: dailyMetrics,
 
     // Compatibility alias.
     platform_name: platformVendor,

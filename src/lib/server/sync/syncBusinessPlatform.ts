@@ -13,9 +13,13 @@ import {
   resolveIntegrationAccessToken,
   type BusinessIntegration,
 } from '@/lib/server/integrations/service';
+import { toSupportedIntegrationPlatform } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
 import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integrations';
 import { syncMetaBusinessPlatform } from './meta/syncMetaBusinessPlatform';
+import {
+  FULL_HISTORY_BACKFILL_DAYS,
+} from './types';
 import type {
   BusinessPlatformSyncSummary,
   SyncConnectedBusinessPlatformsResult,
@@ -46,7 +50,7 @@ function resolveBackfillDays(trigger: SyncTrigger, override?: number): number {
 
   switch (trigger) {
     case 'integration':
-      return 90;
+      return FULL_HISTORY_BACKFILL_DAYS;
     case 'manual_refresh':
       return 30;
     case 'cron':
@@ -60,15 +64,9 @@ function toAssessmentTrigger(trigger: SyncTrigger): 'integration' | 'sync' {
   return trigger === 'integration' ? 'integration' : 'sync';
 }
 
-function toPlatformKey(
-  value: string | null | undefined
-): SupportedIntegrationPlatform | null {
-  return value === 'meta' ? 'meta' : null;
-}
-
 function toSyncableIntegration(row: SyncIntegrationRow): SyncableBusinessIntegration | null {
   const platform = Array.isArray(row.platforms) ? row.platforms[0] : row.platforms;
-  const platformKey = toPlatformKey(platform?.key);
+  const platformKey = toSupportedIntegrationPlatform(platform?.key);
 
   if (!platformKey) {
     return null;
@@ -211,6 +209,7 @@ export async function syncBusinessPlatform(input: {
               accessToken,
               backfillDays,
               syncedAt: startedAt,
+              trigger: input.trigger,
               primaryExternalAccountId: primaryAdAccountSelection.externalAccountId,
             });
           })()
@@ -299,7 +298,7 @@ export async function syncConnectedBusinessPlatforms(input: {
     try {
       const summary = await syncBusinessPlatform({
         businessId: input.businessId,
-        platformId: integration.platformId,
+        integrationId: integration.id,
         trigger: input.trigger,
         backfillDays: input.backfillDays,
       });

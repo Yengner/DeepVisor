@@ -24,7 +24,7 @@ export async function getBusinessAdAccountsRollup(
 
   const { data, error } = await supabase
     .from('ad_accounts')
-    .select('id, platform_id, external_account_id, name, status, last_synced, aggregated_metrics')
+    .select('id, platform_id, external_account_id, name, status, aggregated_metrics, last_synced')
     .eq('business_id', businessId);
 
   if (error) {
@@ -55,6 +55,7 @@ export async function getBusinessAdAccountsRollup(
       status: row.status,
       last_synced: row.last_synced,
       aggregated_metrics: metrics,
+      performance_summary: metrics,
     };
   });
 

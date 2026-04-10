@@ -31,6 +31,7 @@ import {
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import DeepVisorNotices from '@/components/agency/DeepVisorNotices';
 import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -96,6 +97,12 @@ export default function TopBarClient({
 
     const fullName = userInfo?.full_name || 'User';
     const userInitials = fullName.split(' ').map((name: string) => name[0]).join('').toUpperCase();
+    const accentColor = 'var(--platform-accent)';
+    const accentStrong = 'var(--platform-accent-strong)';
+    const accentSoft = 'var(--platform-accent-soft)';
+    const accentSoftStrong = 'var(--platform-accent-soft-strong)';
+    const borderColor = 'var(--platform-border)';
+    const textStrong = 'var(--platform-text-strong)';
 
     // Mark all notifications as read
     const markAllRead = () => {
@@ -118,8 +125,11 @@ export default function TopBarClient({
 
     return (
         <div
-            className="w-full h-16 bg-white px-10 border-b border-gray-300 flex items-center justify-between z-50 shadow-sm"
-            style={{ minHeight: 30 }}
+            className="w-full h-16 px-10 flex items-center justify-between z-50"
+            style={{
+                minHeight: 30,
+                background: 'transparent'
+            }}
         >
             {/* Left Section */}
             <div className="flex items-center space-x-6">
@@ -131,7 +141,7 @@ export default function TopBarClient({
                         width={32}
                         height={32}
                     />
-                    <Text fw={700} size="xl" className="text-gray-700">
+                    <Text fw={700} size="xl" style={{ color: textStrong }}>
                         DeepVisor
                     </Text>
                 </div>
@@ -156,6 +166,11 @@ export default function TopBarClient({
                             size="sm"
                             radius="md"
                             fw={600}
+                            style={{
+                                backgroundColor: accentSoft,
+                                color: accentStrong,
+                                border: `1px solid ${borderColor}`,
+                            }}
                         >
                             Create New
                         </Button>
@@ -196,17 +211,26 @@ export default function TopBarClient({
                         },
                         input: {
                             height: rem(24),
-                            fontSize: rem(15)
+                            fontSize: rem(15),
+                            borderColor,
+                            backgroundColor: 'rgba(255,255,255,0.72)',
                         }
                     })}
                     className="text-base hidden md:block"
                 />
 
+                <DeepVisorNotices variant="popover" showAgencyLink />
+
                 {/* Notifications */}
                 <Menu shadow="md" width={140} position="bottom-end">
                     <Menu.Target>
                         <Indicator disabled={notificationCount === 0} label={notificationCount} size={18}>
-                            <ActionIcon size="xl" radius="xl" variant="subtle">
+                            <ActionIcon
+                                size="xl"
+                                radius="xl"
+                                variant="subtle"
+                                style={{ color: accentStrong, backgroundColor: accentSoft }}
+                            >
                                 <IconBell size={24} />
                             </ActionIcon>
                         </Indicator>
@@ -256,7 +280,7 @@ export default function TopBarClient({
                 </Menu>
 
                 {/* Divider */}
-                <Divider orientation="vertical" className="h-16" />
+                <Divider orientation="vertical" className="h-16" color={borderColor} />
 
                 {/* User menu */}
                 <Menu shadow="md" width={220} position="bottom-end">
@@ -267,11 +291,16 @@ export default function TopBarClient({
                                     color="blue"
                                     radius="xl"
                                     size={45}
+                                    style={{
+                                        backgroundColor: accentSoftStrong,
+                                        color: accentStrong,
+                                        border: `1px solid ${borderColor}`,
+                                    }}
                                 >
                                     {userInitials}
                                 </Avatar>
                                 <div className="hidden md:block">
-                                    <Text size="sm" fw={600} lineClamp={1}>
+                                    <Text size="sm" fw={600} lineClamp={1} style={{ color: textStrong }}>
                                         {fullName}
                                     </Text>
                                     <Text c="dimmed" size="sm" lineClamp={1}>

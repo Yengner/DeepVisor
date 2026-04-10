@@ -1,10 +1,10 @@
 'use client';
 
 import { updateBusinessProfileData } from '@/lib/server/actions/business/onboarding';
-import { Button, Text, Title, Stack, Group, Select, TextInput, Textarea, Card, SimpleGrid } from '@mantine/core';
+import { Button, Text, Title, Stack, Group, Select, TextInput, Textarea, Card } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconBuilding } from '@tabler/icons-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 
 type BusinessProfileStepProps = {
@@ -23,28 +23,10 @@ export default function BusinessProfileStep({
   updateUserData
 }: BusinessProfileStepProps) {
   const [submitting, setSubmitting] = useState(false);
-  const formInitialized = useRef(false);
-
-  // Log what we're initializing with
-
-  /* eslint-disable */
-  useEffect(() => {
-    console.log("BusinessProfileStep initial userData:", {
-      businessName: userData.businessName,
-      businessType: userData.businessType,
-      industry: userData.industry,
-      website: userData.website,
-      description: userData.description,
-      monthlyBudget: userData.monthlyBudget
-    });
-    formInitialized.current = true;
-  }, []);
-  /* eslint-enable */
 
   const form = useForm({
     initialValues: {
       businessName: userData.businessName || '',
-      businessType: userData.businessType || '',
       industry: userData.industry || '',
       website: userData.website || '',
       description: userData.description || '',
@@ -52,44 +34,32 @@ export default function BusinessProfileStep({
     },
     validate: {
       businessName: (value) => !value ? 'Business name is required' : null,
-      businessType: (value) => !value ? 'Business type is required' : null,
       industry: (value) => !value ? 'Industry is required' : null,
     },
     onValuesChange: (values) => {
-      // Only update after form is initialized to prevent wipes
-      if (formInitialized.current) {
-        console.log("Updating user data in BusinessProfileStep:", values);
-        updateUserData({
-          ...userData,
-          businessName: values.businessName,
-          businessType: values.businessType,
-          industry: values.industry,
-          website: values.website,
-          description: values.description,
-          monthlyBudget: values.monthlyBudget
-        });
-      }
+      updateUserData({
+        ...userData,
+        businessName: values.businessName,
+        industry: values.industry,
+        website: values.website,
+        description: values.description,
+        monthlyBudget: values.monthlyBudget
+      });
     }
   });
 
   const handleSubmit = async (values: typeof form.values) => {
     setSubmitting(true);
     try {
-      // Log what we're about to send
-      console.log("Submitting business profile:", values);
-
-      // Update parent state
       updateUserData({
         ...userData,
         businessName: values.businessName,
-        businessType: values.businessType,
         industry: values.industry,
         website: values.website,
         description: values.description,
         monthlyBudget: values.monthlyBudget
       });
 
-      // Save directly to database for additional safety
       const saveRes = await updateBusinessProfileData({
         businessName: values.businessName,
         industry: values.industry,
@@ -117,7 +87,7 @@ export default function BusinessProfileStep({
       <div>
         <Title order={2} ta="center">Business Profile</Title>
         <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto mb-6">
-          A few details help us tailor insights and recommendations.
+          Add the core details for your business organization. We use this to label your workspace and tailor reporting.
         </Text>
       </div>
 
@@ -127,48 +97,31 @@ export default function BusinessProfileStep({
             <TextInput
               label="Business Name"
               placeholder="Your business name"
-              description="This appears on reports and dashboards."
+              description="This becomes the name of your business workspace."
               required
               leftSection={<IconBuilding size={16} />}
               {...form.getInputProps('businessName')}
             />
 
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-              <Select
-                label="Business Type"
-                placeholder="Select business type"
-                description="Helps us tailor benchmarks and recommendations."
-                required
-                data={[
-                  { value: 'ecommerce', label: 'Ecommerce' },
-                  { value: 'service', label: 'Service-based' },
-                  { value: 'local', label: 'Local Business' },
-                  { value: 'saas', label: 'SaaS / Software' },
-                  { value: 'other', label: 'Other' },
-                ]}
-                {...form.getInputProps('businessType')}
-              />
-
-              <Select
-                label="Industry"
-                placeholder="Select industry"
-                description="Used for reporting baselines."
-                required
-                data={[
-                  { value: 'retail', label: 'Retail' },
-                  { value: 'technology', label: 'Technology' },
-                  { value: 'healthcare', label: 'Healthcare' },
-                  { value: 'finance', label: 'Finance' },
-                  { value: 'education', label: 'Education' },
-                  { value: 'food', label: 'Food & Restaurant' },
-                  { value: 'travel', label: 'Travel' },
-                  { value: 'entertainment', label: 'Entertainment' },
-                  { value: 'fashion', label: 'Fashion' },
-                  { value: 'other', label: 'Other' },
-                ]}
-                {...form.getInputProps('industry')}
-              />
-            </SimpleGrid>
+            <Select
+              label="Industry"
+              placeholder="Select industry"
+              description="Used for reporting baselines."
+              required
+              data={[
+                { value: 'retail', label: 'Retail' },
+                { value: 'technology', label: 'Technology' },
+                { value: 'healthcare', label: 'Healthcare' },
+                { value: 'finance', label: 'Finance' },
+                { value: 'education', label: 'Education' },
+                { value: 'food', label: 'Food & Restaurant' },
+                { value: 'travel', label: 'Travel' },
+                { value: 'entertainment', label: 'Entertainment' },
+                { value: 'fashion', label: 'Fashion' },
+                { value: 'other', label: 'Other' },
+              ]}
+              {...form.getInputProps('industry')}
+            />
 
             <TextInput
               label="Website"

@@ -3,6 +3,7 @@ import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { requireUserId } from '@/lib/server/actions/user/session';
 import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
+import { buildDemoReportPayload } from '@/lib/server/reports/demo';
 import { parseReportQueryInput } from '@/lib/server/reports/query';
 import { buildReportPdfPayload } from '@/lib/server/repositories/reports/buildReportPdfPayload';
 import { ReportPdfDocument } from '@/lib/server/reports/pdf/ReportPdfDocument';
@@ -16,6 +17,10 @@ function toFileName(value: string): string {
     .replace(/^-+|-+$/g, '') || 'report';
 }
 
+function isTruthySearchParam(value: string | null): boolean {
+  return value === '1' || value === 'true' || value === 'yes';
+}
+
 export async function GET(request: NextRequest) {
   try {
     const userId = await requireUserId();
@@ -24,7 +29,9 @@ export async function GET(request: NextRequest) {
       context.businessId,
       Object.fromEntries(request.nextUrl.searchParams.entries())
     );
-    const payload = await buildReportPdfPayload(query);
+    const payload = isTruthySearchParam(request.nextUrl.searchParams.get('demo'))
+      ? buildDemoReportPayload(query, context.organizationName)
+      : await buildReportPdfPayload(query);
     const document = React.createElement(
       ReportPdfDocument,
       { payload }
