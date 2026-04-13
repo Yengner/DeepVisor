@@ -18,7 +18,7 @@ import {
   IconSettings,
   IconLogout,
 } from '@tabler/icons-react';
-import { handleSignOut } from '@/lib/server/actions/user/auth';
+import { clientHandleSignOut } from '@/lib/client';
 
 const Sidebar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -38,8 +38,7 @@ const Sidebar = () => {
   };
 
   const handleLogout = async () => {
-    await handleSignOut();
-    router.push('/login');
+    await clientHandleSignOut();
   };
 
   const sidebarBg = 'var(--platform-sidebar-bg)';

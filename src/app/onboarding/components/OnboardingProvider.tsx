@@ -19,13 +19,12 @@ import {
 import BlockingTaskScreen from '@/components/ui/states/BlockingTaskScreen';
 import WelcomeStep from './steps/WelcomeStep';
 import toast from 'react-hot-toast';
-import ConnectAccountsStep from './steps/ConnectAccountsStep';
 import PreferencesStep from './steps/PreferencesStep';
 import BusinessProfileStep from './steps/BusinessProfileStep';
 import CompletionStep from './steps/CompletionStep';
 import { updateOnboardingProgress } from '@/lib/server/actions/business/onboarding';
 import { UserData } from './types';
-import { IconCheck, IconDeviceAnalytics, IconPlug, IconSettings, IconCircleCheck, IconClock } from '@tabler/icons-react';
+import { IconCheck, IconDeviceAnalytics, IconSettings, IconCircleCheck, IconClock } from '@tabler/icons-react';
 
 export type OnboardingInitial = {
   step: number;
@@ -52,8 +51,8 @@ type OnboardingProviderProps = {
 };
 
 export default function OnboardingProvider({ initial }: OnboardingProviderProps) {
-  const stepLabels = ['Welcome', 'Connect', 'Business', 'Preferences'];
-  const stepDescription = ['Get started', 'Link platforms', 'About your business', 'Customize your experience'];
+  const stepLabels = ['Welcome', 'Business', 'Intelligence'];
+  const stepDescription = ['What we need', 'Business context', 'Goals and signals'];
   const totalSteps = stepLabels.length;
   const clampStep = (step: number) => Math.min(Math.max(step, 0), totalSteps);
 
@@ -121,7 +120,7 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
       setLoading(true);
       const saved = await persistProgress(totalSteps, true);
       setLoading(false);
-      if (saved) router.push('/dashboard');
+      if (saved) router.push('/integration');
       return;
     }
 
@@ -159,16 +158,19 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
     <Container size="lg" className="py-10 relative">
       <BlockingTaskScreen
         opened={loading}
-        title="Finishing your workspace"
-        description="We are saving your setup and preparing your dashboard so you land in a ready-to-use business view."
+        title="Finishing onboarding"
+        description="We are saving your setup and taking you to Integrations so you can connect a platform there."
       />
 
       <Stack gap="lg" className="mb-8">
         <Group justify="apart" align="flex-start">
           <div>
-            <Title order={1} className="text-3xl mb-2">Welcome to DeepVisor</Title>
+            <Badge variant="light" color="blue" mb="sm">
+              Required setup
+            </Badge>
+            <Title order={1} className="text-3xl mb-2">Set up your account intelligence profile</Title>
             <Text c="dimmed" size="lg">
-              Finish your business workspace setup so we can sync one primary ad account and tailor your dashboard.
+              Answer the core questions first. Platform connection happens after onboarding in Integrations.
             </Text>
           </div>
           <Stack gap={4} align="flex-end">
@@ -258,19 +260,6 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
               <Stepper.Step
                 label={stepLabels[1]}
                 description={stepDescription[1]}
-                icon={<IconPlug size={16} />}
-              >
-                <ConnectAccountsStep
-                  onNext={nextStep}
-                  onPrev={prevStep}
-                  userData={userData}
-                  updateUserData={handleUpdateUserData}
-                />
-              </Stepper.Step>
-
-              <Stepper.Step
-                label={stepLabels[2]}
-                description={stepDescription[2]}
                 icon={<IconDeviceAnalytics size={16} />}
               >
                 <BusinessProfileStep
@@ -282,8 +271,8 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
               </Stepper.Step>
 
               <Stepper.Step
-                label={stepLabels[3]}
-                description={stepDescription[3]}
+                label={stepLabels[2]}
+                description={stepDescription[2]}
                 icon={<IconSettings size={16} />}
               >
                 <PreferencesStep

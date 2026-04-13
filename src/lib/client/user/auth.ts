@@ -1,6 +1,9 @@
 import { ApiResponse, ok } from "@/lib/shared";
 import { createClient } from "../supabase/browser";
 import { fromSupabaseAuthError } from "@/lib/server/supabase/authError";
+import toast from "react-hot-toast";
+
+export const POST_AUTH_TOAST_KEY = 'deepvisor:post-auth-toast';
 
 /**
  * Handles user sign out
@@ -19,11 +22,23 @@ export async function clientHandleSignOut(): Promise<ApiResponse<null>> {
         // (await cookieStore).set('ad_account_id', '', { path: '/', maxAge: 0 });
 
         if (error) {
-            return fromSupabaseAuthError(error);
+            const response = fromSupabaseAuthError(error);
+            toast.error(response.success ? 'Failed to log out.' : response.error.userMessage);
+            return response;
+        }
+
+        if (typeof window !== 'undefined') {
+            window.sessionStorage.setItem(POST_AUTH_TOAST_KEY, JSON.stringify({
+                type: 'success',
+                message: 'Logged out successfully.',
+            }));
+            window.location.reload();
         }
 
         return ok(null);
     } catch (e: unknown) {
-        return fromSupabaseAuthError(e);
+        const response = fromSupabaseAuthError(e);
+        toast.error(response.success ? 'Failed to log out.' : response.error.userMessage);
+        return response;
     }
 }
