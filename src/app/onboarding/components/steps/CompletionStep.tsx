@@ -18,9 +18,9 @@ export default function CompletionStep({ onComplete, userData: _userData }: Comp
       </ThemeIcon>
 
       <div>
-        <Title order={2} ta="center">You&apos;re all set</Title>
+        <Title order={2} ta="center">Your intelligence profile is ready</Title>
         <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto">
-          Your DeepVisor account is configured. Here&apos;s what you can do next.
+          Your business context is saved. Next, connect your ad platform from Integrations so DeepVisor can start syncing live account data.
         </Text>
       </div>
 
@@ -34,10 +34,10 @@ export default function CompletionStep({ onComplete, userData: _userData }: Comp
             </ThemeIcon>
           }
         >
-          <List.Item>View performance across connected platforms</List.Item>
-          <List.Item>Monitor guardrails and key KPIs</List.Item>
-          <List.Item>Review AI recommendations with confidence</List.Item>
-          <List.Item>Set up reports and alerting</List.Item>
+          <List.Item>Open Integrations to connect Meta or another ad platform</List.Item>
+          <List.Item>Select the primary ad account you want DeepVisor to analyze first</List.Item>
+          <List.Item>Return to the dashboard once sync is ready for live campaign intelligence</List.Item>
+          <List.Item>Use reports and the calendar queue after data is connected and available</List.Item>
         </List>
       </Card>
 
@@ -47,7 +47,7 @@ export default function CompletionStep({ onComplete, userData: _userData }: Comp
           rightSection={<IconArrowRight size={18} />}
           onClick={onComplete}
         >
-          Go to Dashboard
+          Go to integrations
         </Button>
       </Group>
     </Stack>

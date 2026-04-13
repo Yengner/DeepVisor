@@ -40,9 +40,9 @@ export default function ConnectAccountsStep({
       {({ connectMeta, connecting }) => (
         <Stack gap="xl" py={16}>
           <div>
-            <Title order={2} ta="center">Connect your Meta account</Title>
+            <Title order={2} ta="center">Connect Meta now, or do it later</Title>
             <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto">
-              Link Meta Business Manager to import campaigns, ad sets, and performance data automatically.
+              DeepVisor can start with the business context you already provided. Connect Meta when you want live campaigns, ad sets, ads, and performance history to power the dashboard.
             </Text>
           </div>
 
@@ -55,8 +55,7 @@ export default function ConnectAccountsStep({
           </div>
 
           <Text c="dimmed" size="sm" ta="center" mt="md">
-            By connecting your Meta account, you allow DeepVisor to access your ad data for analysis and optimization.
-            You can revoke access at any time from your Meta Business settings.
+            Connecting is recommended, but not required to finish setup. You can connect or change the selected ad account later from Integrations.
           </Text>
 
           <Group justify="apart" mt="xl">
@@ -64,11 +63,11 @@ export default function ConnectAccountsStep({
               Back
             </Button>
             <Group>
-              <Button variant="subtle" onClick={onNext}>
-                Skip for now
+              <Button variant="default" onClick={onNext}>
+                Skip integration for now
               </Button>
-              <Button onClick={onNext}>
-                Continue
+              <Button onClick={connectMeta} loading={connecting}>
+                Connect Meta
               </Button>
             </Group>
           </Group>

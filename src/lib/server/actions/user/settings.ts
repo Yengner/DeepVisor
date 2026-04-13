@@ -1,49 +1,9 @@
+import { STATIC_NOTIFICATION_FEED, type NotificationFeedItem } from '@/lib/shared';
 import type { AdAccountDetails } from "../../services/platforms/meta/types";
 import { createSupabaseClient } from "../../supabase/server";
 
-type NotificationFeedItem = {
-    id: string;
-    user_id?: string;
-    title: string;
-    message: string;
-    created_at: string;
-    read: boolean;
-    type: string;
-    link?: string | null;
-};
-
-const STATIC_NOTIFICATIONS: NotificationFeedItem[] = [
-    {
-        id: 'notification-performance-brief',
-        title: 'Performance brief ready',
-        message: 'Your latest report summary is ready with updated winners, weak points, and recommendations.',
-        created_at: '2026-04-08T09:15:00.000Z',
-        read: false,
-        type: 'report',
-        link: '/reports',
-    },
-    {
-        id: 'notification-calendar-review',
-        title: 'Queued work needs review',
-        message: 'DeepVisor prepared new calendar work for approval based on the latest account activity.',
-        created_at: '2026-04-07T16:40:00.000Z',
-        read: false,
-        type: 'calendar',
-        link: '/calendar',
-    },
-    {
-        id: 'notification-sync-complete',
-        title: 'Meta sync completed',
-        message: 'Your connected ad account finished syncing and is ready for dashboard and report analysis.',
-        created_at: '2026-04-07T11:05:00.000Z',
-        read: true,
-        type: 'sync',
-        link: '/integration',
-    },
-];
-
 function getStaticNotifications(userId: string, limit: number): NotificationFeedItem[] {
-    return STATIC_NOTIFICATIONS.slice(0, limit).map((notification) => ({
+    return STATIC_NOTIFICATION_FEED.slice(0, limit).map((notification) => ({
         ...notification,
         user_id: userId,
     }));

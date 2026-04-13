@@ -32,6 +32,10 @@ export default function PreferencesStep({
       weeklyReports: userData.weeklyReports !== false,
       performanceAlerts: userData.performanceAlerts !== false,
     },
+    validate: {
+      adGoals: (value) => value.length === 0 ? 'Choose at least one business goal' : null,
+      preferredPlatforms: (value) => value.length === 0 ? 'Choose at least one platform you use or plan to use' : null,
+    },
     onValuesChange: (values) => {
       updateUserData({
         ...userData,
@@ -78,9 +82,9 @@ export default function PreferencesStep({
   return (
     <Stack gap="xl" py={16}>
       <div>
-        <Title order={2} ta="center">Customize Your Experience</Title>
+        <Title order={2} ta="center">Define what DeepVisor should optimize for</Title>
         <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto mb-6">
-          Tell us what outcomes and alerts matter most so we can prioritize the right insights.
+          Platform metrics are only useful when we know the business goal. These answers help shape reports, calendar recommendations, and future account intelligence.
         </Text>
       </div>
 
@@ -89,20 +93,23 @@ export default function PreferencesStep({
           <Card withBorder p="lg" radius="md">
             <Group mb="sm">
               <IconChartBar />
-              <Title order={4}>Advertising Goals</Title>
+              <Title order={4}>Primary business outcomes</Title>
             </Group>
             <Text size="sm" c="dimmed" mb="md">
-              Pick the outcomes you care about most. You can change this anytime.
+              Pick the outcomes that should make a recommendation feel useful. You can change this later.
             </Text>
             <MultiSelect
-              label="Primary goals"
+              label="What should ads help you do?"
               placeholder="Select all that apply"
               description="Choose outcomes we should prioritize."
+              required
               data={[
                 { value: 'brand_awareness', label: 'Brand Awareness' },
                 { value: 'lead_generation', label: 'Lead Generation' },
                 { value: 'website_traffic', label: 'Website Traffic' },
                 { value: 'conversions', label: 'Conversions & Sales' },
+                { value: 'bookings', label: 'Bookings / Appointments' },
+                { value: 'phone_calls', label: 'Phone Calls' },
                 { value: 'app_installs', label: 'App Installs' },
                 { value: 'engagement', label: 'Social Engagement' },
               ]}
@@ -113,23 +120,24 @@ export default function PreferencesStep({
           <Card withBorder p="lg" radius="md">
             <Group mb="sm">
               <IconSettings />
-              <Title order={4}>Platform Preferences</Title>
+              <Title order={4}>Ad platforms</Title>
             </Group>
             <Text size="sm" c="dimmed" mb="md">
-              We&apos;ll use this to prioritize channel insights and future integrations.
+              Tell us where you currently advertise or where you expect to advertise next.
             </Text>
             <MultiSelect
-              label="Preferred platforms"
+              label="Platforms to include in your intelligence profile"
               placeholder="Select all that apply"
-              description="We will highlight insights for these channels."
+              description="Integration is optional. This only sets product context."
+              required
               data={[
-                { value: 'facebook', label: 'Facebook' },
-                { value: 'instagram', label: 'Instagram' },
-                { value: 'google', label: 'Google Ads' },
-                { value: 'tiktok', label: 'TikTok' },
-                { value: 'linkedin', label: 'LinkedIn' },
-                { value: 'twitter', label: 'Twitter' },
-                { value: 'youtube', label: 'YouTube' },
+                { value: 'meta', label: 'Meta / Facebook / Instagram' },
+                { value: 'google', label: 'Google Ads / YouTube' },
+                { value: 'tiktok', label: 'TikTok Ads' },
+                { value: 'linkedin', label: 'LinkedIn Ads' },
+                { value: 'microsoft', label: 'Microsoft Advertising' },
+                { value: 'amazon', label: 'Amazon Ads' },
+                { value: 'not_running_ads_yet', label: 'Not running ads yet' },
               ]}
               {...form.getInputProps('preferredPlatforms')}
             />
@@ -141,7 +149,7 @@ export default function PreferencesStep({
               <Title order={4}>Notifications</Title>
             </Group>
             <Text size="sm" c="dimmed" mb="md">
-              Choose what we should notify you about. Default settings are recommended.
+              These are local setup preferences for now. A dedicated notification settings table should store them later.
             </Text>
             <SimpleGrid cols={1} spacing="sm">
               <Checkbox

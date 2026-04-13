@@ -1,6 +1,7 @@
 'use client';
 
 import { clientHandleSignOut } from '@/lib/client';
+import { STATIC_NOTIFICATION_PREVIEW, type NotificationFeedItem } from '@/lib/shared';
 import {
     Group,
     TextInput,
@@ -35,41 +36,12 @@ import DeepVisorNotices from '@/components/agency/DeepVisorNotices';
 import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-interface Notification {
-    id: string;
-    title: string;
-    message: string;
-    created_at: string;
-    read: boolean;
-    type: string;
-    link?: string;
-}
-
-const STATIC_NOTIFICATIONS: Notification[] = [
-    {
-        id: 'notification-coming-soon',
-        title: 'Notifications',
-        message: 'Live notifications are not enabled yet. This is placeholder data for now.',
-        created_at: 'Just now',
-        read: false,
-        type: 'system',
-    },
-    {
-        id: 'integration-hint',
-        title: 'Integrations',
-        message: 'Connect your first ad platform to receive sync and account alerts later.',
-        created_at: 'Today',
-        read: true,
-        type: 'hint',
-        link: '/integration',
-    },
-];
 
 interface TopBarClientProps {
     userInfo: any;
     platforms?: any[];
     adAccounts?: any[];
-    notifications?: Notification[];
+    notifications?: NotificationFeedItem[];
     initialPlatformId?: string | null;
     initialAccountId?: string | null;
 }
@@ -85,8 +57,8 @@ export default function TopBarClient({
 }: TopBarClientProps) {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
-    const [userNotifications, setUserNotifications] = useState<Notification[]>(
-        notifications.length > 0 ? notifications : STATIC_NOTIFICATIONS
+    const [userNotifications, setUserNotifications] = useState<NotificationFeedItem[]>(
+        notifications.length > 0 ? notifications : STATIC_NOTIFICATION_PREVIEW
     );
     const [notificationCount, setNotificationCount] = useState(0);
 
@@ -103,6 +75,28 @@ export default function TopBarClient({
     const accentSoftStrong = 'var(--platform-accent-soft-strong)';
     const borderColor = 'var(--platform-border)';
     const textStrong = 'var(--platform-text-strong)';
+    const notificationDropdownWidth = 380;
+
+    const formatNotificationTime = (value: string) => {
+        const date = new Date(value);
+        const deltaMs = Date.now() - date.getTime();
+
+        if (!Number.isFinite(deltaMs)) {
+            return value;
+        }
+
+        const hours = Math.round(deltaMs / (60 * 60 * 1000));
+        if (hours < 1) {
+            return 'Within the last hour';
+        }
+
+        if (hours < 24) {
+            return `${hours}h ago`;
+        }
+
+        const days = Math.round(hours / 24);
+        return `${days}d ago`;
+    };
 
     // Mark all notifications as read
     const markAllRead = () => {
@@ -111,7 +105,7 @@ export default function TopBarClient({
         );
     };
 
-    const handleNotificationClick = (notification: Notification) => {
+    const handleNotificationClick = (notification: NotificationFeedItem) => {
         if (!notification.read) {
             setUserNotifications(prev =>
                 prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
@@ -222,7 +216,7 @@ export default function TopBarClient({
                 <DeepVisorNotices variant="popover" showAgencyLink />
 
                 {/* Notifications */}
-                <Menu shadow="md" width={140} position="bottom-end">
+                <Menu shadow="md" width={notificationDropdownWidth} position="bottom-end">
                     <Menu.Target>
                         <Indicator disabled={notificationCount === 0} label={notificationCount} size={18}>
                             <ActionIcon
@@ -236,7 +230,13 @@ export default function TopBarClient({
                         </Indicator>
                     </Menu.Target>
 
-                    <Menu.Dropdown>
+                    <Menu.Dropdown
+                        style={{
+                            width: `min(92vw, ${notificationDropdownWidth}px)`,
+                            maxHeight: 'min(72vh, 440px)',
+                            overflow: 'hidden',
+                        }}
+                    >
                         <div className="flex justify-between items-center px-3 py-2">
                             <Text fw={600}>Notifications</Text>
                             {notificationCount > 0 && (
@@ -249,21 +249,36 @@ export default function TopBarClient({
 
                         {userNotifications.length > 0 ? (
                             <>
-                                {userNotifications.map((notification) => (
-                                    <Menu.Item
-                                        key={notification.id}
-                                        className={notification.read ? 'opacity-70' : ''}
-                                        onClick={() => handleNotificationClick(notification)}
-                                    >
-                                        <div>
-                                            <Group justify="apart" mb={4}>
-                                                <Text size="md" fw={600}>{notification.title}</Text>
-                                                <Text size="sm" c="dimmed">{notification.created_at}</Text>
-                                            </Group>
-                                            <Text size="sm" c="dimmed">{notification.message}</Text>
-                                        </div>
-                                    </Menu.Item>
-                                ))}
+                                <Box
+                                    px="xs"
+                                    pb="xs"
+                                    style={{
+                                        maxHeight: 'min(54vh, 320px)',
+                                        overflowY: 'auto',
+                                    }}
+                                >
+                                    {userNotifications.map((notification) => (
+                                        <Menu.Item
+                                            key={notification.id}
+                                            className={notification.read ? 'opacity-70' : ''}
+                                            onClick={() => handleNotificationClick(notification)}
+                                        >
+                                            <div style={{ width: '100%' }}>
+                                                <Group justify="apart" align="flex-start" mb={4} gap="sm" wrap="nowrap">
+                                                    <Text size="sm" fw={600} lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
+                                                        {notification.title}
+                                                    </Text>
+                                                    <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>
+                                                        {formatNotificationTime(notification.created_at)}
+                                                    </Text>
+                                                </Group>
+                                                <Text size="sm" c="dimmed" lineClamp={2}>
+                                                    {notification.message}
+                                                </Text>
+                                            </div>
+                                        </Menu.Item>
+                                    ))}
+                                </Box>
                                 <Menu.Divider />
                                 <Menu.Item ta="center">
                                     <Text size="sm" component="a" href="/notifications" c="blue">

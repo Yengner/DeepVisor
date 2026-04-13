@@ -204,8 +204,8 @@ function normalizeAgencySelection(input: {
     null;
   const defaultPlatformId =
     (input.defaultPlatformIntegrationId &&
-    platformById.has(input.defaultPlatformIntegrationId) &&
-    (platformById.get(input.defaultPlatformIntegrationId)?.primaryAdAccountId ?? null)
+      platformById.has(input.defaultPlatformIntegrationId) &&
+      (platformById.get(input.defaultPlatformIntegrationId)?.primaryAdAccountId ?? null)
       ? input.defaultPlatformIntegrationId
       : null) ??
     defaultAccount?.platformIntegrationId ??
@@ -428,6 +428,8 @@ export async function runBusinessAgencyAssessment(input: {
     adAccounts,
   });
 
+  console.log(selection);
+
   if (selection.adAccountIds.length === 0) {
     throw new Error('Select and sync a Meta ad account before running assessment');
   }
@@ -479,9 +481,9 @@ export async function buildGlobalAiAssistantPayload(input: {
 
   const [latestBusinessAssessment, latestAccountAssessments] = platforms.length
     ? await Promise.all([
-        getLatestBusinessAssessmentRecord(supabase, input.businessId),
-        listLatestAdAccountAssessmentsForBusiness(supabase, input.businessId),
-      ])
+      getLatestBusinessAssessmentRecord(supabase, input.businessId),
+      listLatestAdAccountAssessmentsForBusiness(supabase, input.businessId),
+    ])
     : [null, []];
 
   const latestSelectedAssessment = selectLatestAssessmentForSelection(

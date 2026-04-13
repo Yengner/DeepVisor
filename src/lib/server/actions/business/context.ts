@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect } from 'next/navigation';
+import { redirect, unstable_rethrow } from 'next/navigation';
 import { createServerClient } from '@/lib/server/supabase/server';
 import type { Database } from '@/lib/shared/types/supabase';
 
@@ -201,16 +201,18 @@ export async function requireBusinessContextOrRedirect(
   userId: string,
   options?: { requireOnboardingCompleted?: boolean }
 ) {
+  const requireOnboardingCompleted = options?.requireOnboardingCompleted ?? true;
+
   try {
     const context = await getOrCreateOrganizationBusinessContext(userId);
-    const requireOnboardingCompleted = options?.requireOnboardingCompleted ?? true;
 
     if (requireOnboardingCompleted && !context.onboarding.onboarding_completed) {
-      redirect(`/onboarding?step=${context.onboarding.onboarding_step ?? 0}`);
+      redirect(`/onboarding`);
     }
 
     return context;
   } catch (error) {
+    unstable_rethrow(error);
     console.error('Failed to resolve business context:', error);
     if (error instanceof Error && error.message.includes('Agency organizations do not get an automatic business profile')) {
       redirect('/onboarding');

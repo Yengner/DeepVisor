@@ -35,6 +35,8 @@ export default function BusinessProfileStep({
     validate: {
       businessName: (value) => !value ? 'Business name is required' : null,
       industry: (value) => !value ? 'Industry is required' : null,
+      description: (value) => !value ? 'A short business context is required' : null,
+      monthlyBudget: (value) => !value ? 'Monthly ad budget is required' : null,
     },
     onValuesChange: (values) => {
       updateUserData({
@@ -85,9 +87,9 @@ export default function BusinessProfileStep({
   return (
     <Stack gap="xl" py={16}>
       <div>
-        <Title order={2} ta="center">Business Profile</Title>
+        <Title order={2} ta="center">Tell us what this business is</Title>
         <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto mb-6">
-          Add the core details for your business organization. We use this to label your workspace and tailor reporting.
+          This gives DeepVisor enough owner context to judge whether recommendations fit the actual business, not just the ad account metrics.
         </Text>
       </div>
 
@@ -95,7 +97,7 @@ export default function BusinessProfileStep({
         <Card withBorder p="lg" radius="md">
           <Stack gap="md">
             <TextInput
-              label="Business Name"
+              label="Business name"
               placeholder="Your business name"
               description="This becomes the name of your business workspace."
               required
@@ -106,18 +108,18 @@ export default function BusinessProfileStep({
             <Select
               label="Industry"
               placeholder="Select industry"
-              description="Used for reporting baselines."
+              description="Used for reporting baselines and recommendation context."
               required
               data={[
-                { value: 'retail', label: 'Retail' },
-                { value: 'technology', label: 'Technology' },
-                { value: 'healthcare', label: 'Healthcare' },
-                { value: 'finance', label: 'Finance' },
+                { value: 'local_services', label: 'Local services' },
+                { value: 'home_services', label: 'Home services' },
+                { value: 'health_wellness', label: 'Health & wellness' },
+                { value: 'professional_services', label: 'Professional services' },
+                { value: 'ecommerce', label: 'Ecommerce / retail' },
+                { value: 'restaurant_food', label: 'Restaurant / food' },
                 { value: 'education', label: 'Education' },
-                { value: 'food', label: 'Food & Restaurant' },
-                { value: 'travel', label: 'Travel' },
-                { value: 'entertainment', label: 'Entertainment' },
-                { value: 'fashion', label: 'Fashion' },
+                { value: 'real_estate', label: 'Real estate' },
+                { value: 'saas_technology', label: 'SaaS / technology' },
                 { value: 'other', label: 'Other' },
               ]}
               {...form.getInputProps('industry')}
@@ -131,18 +133,21 @@ export default function BusinessProfileStep({
             />
 
             <Textarea
-              label="Business Description"
-              placeholder="Tell us briefly about your business"
-              description="Optional. Helps us personalize insights."
-              minRows={3}
+              label="What do you sell and who are you trying to reach?"
+              placeholder="Example: We sell HVAC repair and installation to homeowners within 30 miles of Miami. Most valuable leads are emergency repair calls and replacement quotes."
+              description="This is the most important non-platform input for recommendations."
+              minRows={4}
+              required
               {...form.getInputProps('description')}
             />
 
             <Select
-              label="Monthly Ad Budget"
+              label="Monthly ad budget"
               placeholder="Select budget range"
               description="Used for pacing suggestions and guardrails."
+              required
               data={[
+                { value: 'not_sure', label: 'Not sure yet' },
                 { value: 'under_1000', label: 'Under $1,000' },
                 { value: '1000_5000', label: '$1,000 - $5,000' },
                 { value: '5000_10000', label: '$5,000 - $10,000' },

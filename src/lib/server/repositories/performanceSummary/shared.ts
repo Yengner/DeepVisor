@@ -1,7 +1,19 @@
 import { derivePerformanceMetrics } from '../campaigns/normalizers';
 
-export const PERFORMANCE_SUMMARY_SOURCE = 'daily_rollup';
-export const PERFORMANCE_SUMMARY_HISTORY_STATUS = 'full';
+export type PerformanceSummarySource =
+  | 'lifetime_snapshot'
+  | 'aggregated_daily'
+  | 'mixed';
+
+export type PerformanceSummaryHistoryStatus =
+  | 'not_started'
+  | 'partial'
+  | 'complete';
+
+// These summary rows are rebuilt from stored daily facts, so they represent
+// an aggregated daily rollup that is complete at the time of the sync.
+export const PERFORMANCE_SUMMARY_SOURCE: PerformanceSummarySource = 'aggregated_daily';
+export const PERFORMANCE_SUMMARY_HISTORY_STATUS: PerformanceSummaryHistoryStatus = 'complete';
 
 export interface PerformanceSummaryDailyRow {
   day: string;
