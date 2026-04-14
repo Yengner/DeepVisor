@@ -41,6 +41,12 @@ export type SyncSelectedMetaAdAccountResult = {
 
 // Routes should update one primary ad account, then run the real sync flow once.
 // Keeping that sequence here avoids duplicated route logic and keeps cookies consistent.
+/**
+ * Promotes the selected Meta ad account to primary, runs the recent-first sync, and queues backfill when needed.
+ *
+ * @param input - Business, integration, and selected account context for the sync kickoff.
+ * @returns The selected integration/account identifiers, sync coverage, and sync timing metadata.
+ */
 export async function syncSelectedMetaAdAccount(
   input: SyncSelectedMetaAdAccountInput
 ): Promise<SyncSelectedMetaAdAccountResult> {
@@ -106,6 +112,13 @@ export async function syncSelectedMetaAdAccount(
   };
 }
 
+/**
+ * Persists the app's current integration and ad-account selection into response cookies.
+ *
+ * @param response - Outgoing response that should carry the selection cookies.
+ * @param input - Selected platform integration id and ad-account row id, or `null` to clear them.
+ * @returns Nothing. The response is mutated in place.
+ */
 export function applyAppSelectionCookies(
   response: NextResponse,
   input: {

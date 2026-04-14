@@ -21,6 +21,15 @@ import {
 import { discoverMetaAdAccounts } from '@/lib/server/sync/meta/discoverMetaAdAccounts';
 import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integrations';
 
+/**
+ * Redirects the OAuth callback back into the app with a normalized integration result state.
+ *
+ * @param requestUrl - The absolute callback URL received from the provider.
+ * @param returnTo - The in-app surface that initiated the OAuth flow.
+ * @param platform - The supported integration platform being resolved.
+ * @param status - Whether the callback completed successfully or failed.
+ * @returns A redirect response to the integration result URL inside the app.
+ */
 function redirectWithStatus(
   requestUrl: string,
   returnTo: '/onboarding' | '/integration',
@@ -32,6 +41,12 @@ function redirectWithStatus(
   return NextResponse.redirect(new URL(path, baseUrl));
 }
 
+/**
+ * Redirects the user into the post-connect account-selection flow for Meta.
+ *
+ * @param input - Redirect context including the selected return surface, integration id, and optional account hints.
+ * @returns A redirect response to the integration page with account-selection query params applied.
+ */
 function redirectWithAccountSelection(input: {
   requestUrl: string;
   returnTo: '/onboarding' | '/integration';
@@ -54,6 +69,17 @@ function redirectWithAccountSelection(input: {
   return NextResponse.redirect(url);
 }
 
+/**
+ * Completes an OAuth callback for a supported advertising platform.
+ *
+ * The handler validates the callback payload, exchanges the provider code for a token,
+ * creates or updates the platform integration record, discovers accessible Meta ad
+ * accounts, and finally redirects the user into either the success or account-selection flow.
+ *
+ * @param request - The Next.js request carrying the provider callback query params.
+ * @param context - Route params containing the platform segment from the callback URL.
+ * @returns A redirect response back into the app for either the happy path or an error state.
+ */
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ platform: string }> }
@@ -104,7 +130,7 @@ export async function GET(
       code,
       redirectUri: redirectUri.toString(),
     });
-
+    
     await validateMetaAccessToken(token.access_token);
     integrationId = await upsertPlatformIntegration(supabase, {
       businessId: businessContext.businessId,
@@ -134,7 +160,7 @@ export async function GET(
       supabase,
       businessId: businessContext.businessId,
       platformId: integrationPlatform.id,
-      accessToken: token.access_token,
+      snapshots: accessibleAccounts,
     });
 
     if (accessibleAccounts.length > 1) {

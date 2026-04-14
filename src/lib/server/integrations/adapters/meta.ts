@@ -29,6 +29,13 @@ export function buildMetaOAuthUrl(input: MetaOAuthBuildInput): URL {
   return oauthUrl;
 }
 
+/**
+ * Exchanges a Meta OAuth authorization code for an access token payload.
+ *
+ * @param input - The provider authorization code plus the exact redirect URI used for the flow.
+ * @returns The normalized Meta OAuth token response.
+ * @throws When Meta rejects the exchange or does not return an access token.
+ */
 export async function exchangeMetaCodeForToken(input: MetaExchangeCodeInput): Promise<MetaOAuthToken> {
   const appId = requireEnv('META_APP_ID');
   const appSecret = requireEnv('META_APP_SECRET');
@@ -40,6 +47,7 @@ export async function exchangeMetaCodeForToken(input: MetaExchangeCodeInput): Pr
   tokenUrl.searchParams.set('code', input.code);
 
   const response = await fetch(tokenUrl);
+
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
     const message = typeof errorBody?.error?.message === 'string'
@@ -56,6 +64,13 @@ export async function exchangeMetaCodeForToken(input: MetaExchangeCodeInput): Pr
   return data;
 }
 
+/**
+ * Verifies that a Meta access token can still successfully call the Graph API.
+ *
+ * @param accessToken - Meta access token returned from the OAuth exchange.
+ * @returns A resolved promise when the token is valid.
+ * @throws When Meta reports that the token is invalid or unusable.
+ */
 export async function validateMetaAccessToken(accessToken: string): Promise<void> {
   const url = new URL('https://graph.facebook.com/me');
   url.searchParams.set('fields', 'id');
@@ -86,6 +101,13 @@ function normalizeMetaStatus(status: string | number | null | undefined | unknow
   }
 }
 
+/**
+ * Fetches the Meta ad accounts accessible to the current token and normalizes them for app storage.
+ *
+ * @param accessToken - Meta access token used to read accessible ad accounts.
+ * @param options - Optional account filter used when the caller wants a single external account.
+ * @returns A normalized list of ad account snapshots suitable for integration setup and discovery.
+ */
 export async function fetchMetaAdAccountSnapshots(
   accessToken: string,
   options: {

@@ -9,6 +9,8 @@ import { cookies } from 'next/headers'
  * It is intended to be used in server components and server actions.
  * 
  * Note: Do not call this function from client components or browser code, as it relies on server-only APIs.
+ *
+ * @returns A Supabase server client bound to the current request cookie store.
  */
 export async function createServerClient() {
   const cookieStore = await cookies()

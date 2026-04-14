@@ -4,7 +4,6 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import {
   getBusinessIntegrationById,
   getPrimaryAdAccountSelection,
-  listMetaAccessibleAdAccounts,
 } from '@/lib/server/integrations/service';
 import { ErrorCode, fail, ok } from '@/lib/shared';
 
@@ -38,21 +37,6 @@ export async function GET(request: NextRequest) {
     }
 
     const primary = getPrimaryAdAccountSelection(integration.integrationDetails);
-    let accessibleAccounts: Array<{
-      externalAccountId: string;
-      name: string | null;
-      status: string | null;
-    }> = [];
-    let accessibleAccountsError: string | null = null;
-
-    try {
-      accessibleAccounts = await listMetaAccessibleAdAccounts(supabase, integration);
-    } catch (error) {
-      accessibleAccountsError =
-        error instanceof Error ? error.message : 'Failed to load Meta ad accounts';
-      console.warn('Meta ad account discovery failed, falling back to saved accounts:', error);
-    }
-
     const { data: savedAccounts, error: savedAccountsError } = await supabase
       .from('ad_accounts')
       .select('external_account_id, name, status')
@@ -68,10 +52,6 @@ export async function GET(request: NextRequest) {
       string,
       { externalAccountId: string; name: string | null; status: string | null }
     >();
-
-    for (const account of accessibleAccounts) {
-      accountsByExternalId.set(account.externalAccountId, account);
-    }
 
     for (const account of savedAccounts ?? []) {
       if (!account.external_account_id || accountsByExternalId.has(account.external_account_id)) {
@@ -94,10 +74,6 @@ export async function GET(request: NextRequest) {
     }
 
     const accounts = Array.from(accountsByExternalId.values());
-
-    if (accounts.length === 0 && accessibleAccountsError) {
-      throw new Error(accessibleAccountsError);
-    }
 
     return NextResponse.json(
       ok({

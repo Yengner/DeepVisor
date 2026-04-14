@@ -41,12 +41,24 @@ type PlatformIntegrationStorageRow = {
 
 const ALLOWED_RETURN_TO: ReadonlySet<string> = new Set(['/onboarding', '/integration']);
 
+/**
+ * Narrows a route segment down to a supported integration platform key.
+ *
+ * @param platform - Raw platform segment from a route or query string.
+ * @returns A supported platform key when recognized, otherwise `null`.
+ */
 export function parseSupportedIntegrationPlatform(
   platform: string
 ): SupportedIntegrationPlatform | null {
   return toSupportedIntegrationPlatform(platform);
 }
 
+/**
+ * Sanitizes the `returnTo` query param so redirects can only land on approved app surfaces.
+ *
+ * @param value - Raw `returnTo` value from a request.
+ * @returns A safe integration return target, defaulting to `/integration`.
+ */
 export function sanitizeReturnTo(value: string | null): IntegrationReturnTo {
   if (value && ALLOWED_RETURN_TO.has(value)) {
     return value as IntegrationReturnTo;
@@ -54,6 +66,14 @@ export function sanitizeReturnTo(value: string | null): IntegrationReturnTo {
   return '/integration';
 }
 
+/**
+ * Builds the in-app redirect path used after an integration connect attempt completes.
+ *
+ * @param returnTo - The app surface that initiated the connect flow.
+ * @param platform - The platform being connected.
+ * @param status - Whether the result should be treated as success or error.
+ * @returns A relative path with normalized integration status query params.
+ */
 export function buildIntegrationResultPath(
   returnTo: IntegrationReturnTo,
   platform: SupportedIntegrationPlatform,
@@ -65,10 +85,26 @@ export function buildIntegrationResultPath(
   return `${url.pathname}${url.search}`;
 }
 
+/**
+ * Resolves the absolute base URL used when the app needs to build callback or redirect URLs.
+ *
+ * @param requestUrl - The current request URL as received by Next.js.
+ * @returns The configured public base URL when available, otherwise the request origin.
+ */
 export function getBaseUrl(requestUrl: string): string {
   return process.env.NEXT_PUBLIC_BASE_URL || new URL(requestUrl).origin;
 }
 
+/**
+ * Extracts the stored access-token reference from integration details.
+ *
+ * In Vault-backed rows this is the secret id, but the helper stays tolerant of either
+ * `access_token` or `access_token_secret_id` keys so older shapes can still be parsed.
+ *
+ * @param details - Raw integration details JSON from storage.
+ * @param fallback - Optional fallback token reference from the row-level access token column.
+ * @returns The stored token reference when present, otherwise `null`.
+ */
 export function extractAccessToken(details: Json | null | undefined, fallback?: string | null): string | null {
   const tokenObject = asRecord(details);
   const token =
@@ -80,6 +116,12 @@ export function extractAccessToken(details: Json | null | undefined, fallback?: 
   return null;
 }
 
+/**
+ * Removes token-bearing fields from integration details before writing them back to JSON storage.
+ *
+ * @param details - Raw integration details that may still contain token material.
+ * @returns A copy of the details object without access or refresh token fields.
+ */
 function stripTokens(details: Json | Record<string, unknown> | null | undefined): IntegrationDetails {
   const {
     access_token: _a,
@@ -91,6 +133,13 @@ function stripTokens(details: Json | Record<string, unknown> | null | undefined)
   return rest as IntegrationDetails;
 }
 
+/**
+ * Merges a shallow patch into integration details while tolerating `null` or malformed input.
+ *
+ * @param details - Existing integration details JSON.
+ * @param patch - Fields that should override the current details.
+ * @returns A merged integration-details object.
+ */
 function mergeDetails(
   details: Json | Record<string, unknown> | null | undefined,
   patch: Record<string, unknown>
@@ -101,6 +150,12 @@ function mergeDetails(
   };
 }
 
+/**
+ * Removes raw token values from an integration-details payload before it is persisted.
+ *
+ * @param details - Integration-details object that may include raw OAuth token fields.
+ * @returns A sanitized copy safe to store in `integration_details`.
+ */
 function sanitizeIntegrationDetails(details: Record<string, any>): Record<string, any> {
   const copy = { ...details };
 
@@ -112,6 +167,15 @@ function sanitizeIntegrationDetails(details: Record<string, any>): Record<string
   return copy;
 }
 
+/**
+ * Upserts a token value into Vault and returns the resulting secret id.
+ *
+ * @param supabase - Server Supabase client used to call the Vault RPC.
+ * @param value - Raw secret value that should be stored.
+ * @param name - Stable Vault name used for the secret record.
+ * @param description - Optional human-readable description for operators.
+ * @returns The secret id returned by the Vault RPC.
+ */
 async function upsertSecret(
   supabase: AppSupabaseClient,
   value: string,
@@ -130,6 +194,13 @@ async function upsertSecret(
   return data as string;
 }
 
+/**
+ * Loads the platform record backing a supported integration key.
+ *
+ * @param supabase - Server Supabase client used to query platform metadata.
+ * @param platformKey - Supported platform identifier such as `meta`.
+ * @returns The matching platform row normalized for integration workflows, or `null` when missing.
+ */
 export async function resolvePlatformByKey(
   supabase: AppSupabaseClient,
   platformKey: SupportedIntegrationPlatform
@@ -150,6 +221,13 @@ export async function resolvePlatformByKey(
   };
 }
 
+/**
+ * Creates and stores an OAuth state token for a pending integration handshake.
+ *
+ * @param supabase - Server Supabase client used to insert the OAuth state row.
+ * @param input - User, business, and platform context that the state should be bound to.
+ * @returns The generated opaque state token that should be sent to the provider.
+ */
 export async function createOAuthState(
   supabase: AppSupabaseClient,
   input: { userId: string; businessId: string; platformId: string }
@@ -169,6 +247,13 @@ export async function createOAuthState(
   return state;
 }
 
+/**
+ * Consumes a stored OAuth state token and validates that it still belongs to the user/platform pair.
+ *
+ * @param supabase - Server Supabase client used to load and delete the state record.
+ * @param input - The state token and identity fields expected for this callback.
+ * @returns The consumed OAuth state record, or `null` when it is missing or expired.
+ */
 export async function consumeOAuthState(
   supabase: AppSupabaseClient,
   input: { state: string; userId: string; platformId: string }
@@ -193,7 +278,16 @@ export async function consumeOAuthState(
   return data;
 }
 
-
+/**
+ * Creates or updates the single integration row for a business/platform pair.
+ *
+ * The function persists token secrets into Vault, merges sanitized integration details,
+ * and returns the active integration id that downstream sync flows should use.
+ *
+ * @param supabase - Server Supabase client used for Vault RPCs and row updates.
+ * @param input - Business, platform, user, status, and token metadata for the integration.
+ * @returns The id of the created or updated `platform_integrations` row.
+ */
 export async function upsertPlatformIntegration(
   supabase: AppSupabaseClient,
   input: UpsertIntegrationInput
@@ -329,6 +423,16 @@ export async function upsertPlatformIntegration(
   return data.id;
 }
 
+/**
+ * Soft-disconnects an integration without deleting its row or non-sensitive metadata.
+ *
+ * The function clears Vault secret ids and token expiry fields, marks the integration as
+ * disconnected, and strips any token-bearing fields from the stored details payload.
+ *
+ * @param supabase - Server Supabase client used to load and update the integration row.
+ * @param input - Business-scoped integration identifier to disconnect.
+ * @returns A promise that resolves once the integration has been marked disconnected.
+ */
 export async function softDisconnectIntegration(
   supabase: AppSupabaseClient,
   input: { integrationId: string; businessId: string }
@@ -391,6 +495,13 @@ export type RefreshBusinessAdAccountsResult = {
   syncedAccountCount: number;
 };
 
+/**
+ * Lists every integration for a business and normalizes each row for app-layer consumption.
+ *
+ * @param supabase - Server Supabase client used to query the integration rows.
+ * @param businessId - Business whose platform integrations should be listed.
+ * @returns An array of normalized business-integration records.
+ */
 export async function listBusinessIntegrations(
   supabase: AppSupabaseClient,
   businessId: string
@@ -419,27 +530,42 @@ export async function listBusinessIntegrations(
   });
 }
 
+/**
+ * Resolves the live access token for an integration by reading the stored Vault secret.
+ *
+ * @param supabase - Server Supabase client used to call the Vault token RPC.
+ * @param integration - Normalized integration record containing the token secret reference.
+ * @returns The decrypted access token, or `null` when no token reference is stored.
+ * @throws When the Vault lookup RPC fails.
+ */
 export async function resolveIntegrationAccessToken(
   supabase: AppSupabaseClient,
   integration: BusinessIntegration
 ): Promise<string | null> {
-  const tokenOrSecretId = extractAccessToken(integration.integrationDetails, integration.accessToken);
-  if (!tokenOrSecretId) {
+  const secretId = extractAccessToken(integration.integrationDetails, integration.accessToken);
+  if (!secretId) {
     return null;
   }
 
-  const { data, error } = await (supabase as any).rpc('get_platform_token', {
-    secret_id: tokenOrSecretId,
+  const { data: accessToken, error } = await (supabase as any).rpc('get_platform_token', {
+    secret_id: secretId,
   });
 
-  if (!error && typeof data === 'string' && data.length > 0) {
-    return data;
+  if (error) {
+    throw error;
   }
 
-  // Fallback for legacy rows where raw token may still exist.
-  return tokenOrSecretId;
+  return typeof accessToken === 'string' && accessToken.length > 0
+    ? accessToken
+    : null;
 }
 
+/**
+ * Reads the current primary ad-account selection from integration details.
+ *
+ * @param details - Raw integration details JSON stored on the integration row.
+ * @returns The selected external account id, display name, and selection timestamp when available.
+ */
 export function getPrimaryAdAccountSelection(details: Json | null | undefined): { externalAccountId: string | null; name: string | null; selectedAt: string | null;} {
   const record = asRecord(details);
 
@@ -459,6 +585,13 @@ export function getPrimaryAdAccountSelection(details: Json | null | undefined): 
   };
 }
 
+/**
+ * Loads one integration row for the active business and normalizes it for app workflows.
+ *
+ * @param supabase - Server Supabase client used to query the integration row.
+ * @param input - Business id plus the target integration id.
+ * @returns The normalized business integration, or `null` when the row does not exist.
+ */
 export async function getBusinessIntegrationById(
   supabase: AppSupabaseClient,
   input: { businessId: string; integrationId: string }
@@ -494,6 +627,13 @@ export async function getBusinessIntegrationById(
   };
 }
 
+/**
+ * Lists the Meta ad accounts currently accessible for an existing integration.
+ *
+ * @param supabase - Server Supabase client used to resolve the live access token.
+ * @param integration - Normalized business integration record for the selected platform.
+ * @returns A normalized list of accessible Meta ad account options.
+ */
 export async function listMetaAccessibleAdAccounts(
   supabase: AppSupabaseClient,
   integration: BusinessIntegration
@@ -515,6 +655,13 @@ export async function listMetaAccessibleAdAccounts(
   }));
 }
 
+/**
+ * Stores the user's chosen primary Meta ad account on the integration record.
+ *
+ * @param supabase - Server Supabase client used to patch integration details.
+ * @param input - Integration id plus the selected external ad account metadata.
+ * @returns A promise that resolves once the integration details have been updated.
+ */
 export async function setPrimaryMetaAdAccount(
   supabase: AppSupabaseClient,
   input: {
@@ -541,6 +688,12 @@ export async function setPrimaryMetaAdAccount(
 /**
  * @deprecated Prefer `syncConnectedBusinessPlatforms` / `syncBusinessPlatform`
  * from `@/lib/server/sync` for business-platform sync orchestration.
+ *
+ * Refreshes accessible Meta ad accounts for one business and records per-integration health.
+ *
+ * @param supabase - Server Supabase client used for integration lookups and updates.
+ * @param input - Business id plus an optional platform filter.
+ * @returns Aggregate counts describing how many integrations refreshed or failed.
  */
 export async function refreshBusinessAdAccounts(
   supabase: AppSupabaseClient,
@@ -604,6 +757,12 @@ export async function refreshBusinessAdAccounts(
 
 /**
  * @deprecated Prefer `syncBusinessPlatform` from `@/lib/server/sync`.
+ *
+ * Syncs only the metadata snapshot of Meta ad accounts for an integration.
+ *
+ * @param supabase - Server Supabase client used to upsert ad-account rows.
+ * @param input - Business/platform context plus the Meta access token to read from.
+ * @returns The number of ad-account rows written during the snapshot sync.
  */
 export async function syncMetaAdAccountsSnapshot(
   supabase: AppSupabaseClient,
@@ -633,6 +792,15 @@ export async function syncMetaAdAccountsSnapshot(
   return result.count;
 }
 
+/**
+ * Applies a detail patch and optional row patch to an existing integration record.
+ *
+ * @param supabase - Server Supabase client used to read and update the integration row.
+ * @param integrationId - The integration record to patch.
+ * @param detailPatch - Fields to merge into the JSON `integration_details` payload.
+ * @param rowPatch - Optional top-level row fields to update alongside the JSON payload.
+ * @returns A promise that resolves once the patch has been written.
+ */
 async function patchIntegrationDetails(
   supabase: AppSupabaseClient,
   integrationId: string,
@@ -661,6 +829,13 @@ async function patchIntegrationDetails(
   if (error) throw error;
 }
 
+/**
+ * Marks an integration as healthy by forwarding to the synced-state updater.
+ *
+ * @param supabase - Server Supabase client used to patch the integration row.
+ * @param integrationId - The integration record that should be marked healthy.
+ * @returns A promise that resolves once the integration has been marked synced.
+ */
 export async function markIntegrationHealthy(
   supabase: AppSupabaseClient,
   integrationId: string
@@ -668,6 +843,13 @@ export async function markIntegrationHealthy(
   await markIntegrationSynced(supabase, integrationId);
 }
 
+/**
+ * Marks an integration as successfully synced and clears any prior error state.
+ *
+ * @param supabase - Server Supabase client used to patch the integration row.
+ * @param integrationId - The integration record that completed a successful sync.
+ * @returns A promise that resolves once the synced state has been persisted.
+ */
 export async function markIntegrationSynced(
   supabase: AppSupabaseClient,
   integrationId: string
@@ -691,6 +873,14 @@ export async function markIntegrationSynced(
   );
 }
 
+/**
+ * Marks an integration as failed and stores the latest error message for operator visibility.
+ *
+ * @param supabase - Server Supabase client used to patch the integration row.
+ * @param integrationId - The integration record that encountered an error.
+ * @param message - Human-readable error detail to persist on the integration.
+ * @returns A promise that resolves once the error state has been written.
+ */
 export async function markIntegrationError(
   supabase: AppSupabaseClient,
   integrationId: string,
