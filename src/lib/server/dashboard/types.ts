@@ -2,6 +2,8 @@ import type {
   AdAccountData,
   PlatformDetails,
 } from '@/lib/server/data/types';
+import type { ReviveCampaignOpportunity } from '@/lib/shared/types/campaignDrafts';
+import type { SyncCoverage } from '@/lib/shared/types/integrations';
 
 export type DashboardState =
   | 'no_platform_selected'
@@ -97,6 +99,8 @@ export interface DashboardPayload {
   summaryByWindow: Record<DashboardWindow, DashboardSummaryCard[]>;
   trendByWindow: Record<DashboardWindow, DashboardTrendSeries>;
   campaignPreview: DashboardCampaignPreviewItem[];
+  syncCoverage: SyncCoverage | null;
+  reviveOpportunity: ReviveCampaignOpportunity | null;
   platform: PlatformDetails | null;
   adAccount: AdAccountData | null;
 }

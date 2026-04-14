@@ -1,10 +1,13 @@
 import DashboardClient from './components/DashboardClient';
+import { createAdminClient } from '@/lib/server/supabase/admin';
 import { createServerClient } from '@/lib/server/supabase/server';
 import {
   getAdAccountTopCampaigns,
   getAdAccountData,
   getPlatformDetails,
 } from '@/lib/server/data';
+import { getReviveCampaignOpportunity } from '@/lib/server/campaigns/revive';
+import { getAdAccountSyncCoverage } from '@/lib/server/repositories/ad_accounts/syncState';
 import {
   buildDashboardPayload,
   normalizeCampaignSnapshot,
@@ -15,6 +18,7 @@ import type { DashboardCampaignSnapshotItem } from './types';
 
 export default async function MainDashboardPage() {
   const supabase = await createServerClient();
+  const adminSupabase = createAdminClient();
   const { user, businessId } = await getRequiredAppContext();
   const { selectedPlatformId, selectedAdAccountId } = await resolveCurrentSelection(businessId);
 
@@ -41,11 +45,22 @@ export default async function MainDashboardPage() {
       : null;
 
   let campaignSnapshot: DashboardCampaignSnapshotItem[] = [];
-  if (adAccount?.id && platformConnected) {
+  let syncCoverage = null;
+  let reviveOpportunity = null;
+  if (adAccount?.id && platformConnected && selectedPlatformId) {
     try {
-      campaignSnapshot = normalizeCampaignSnapshot(
-        await getAdAccountTopCampaigns(adAccount.id)
-      );
+      const [campaigns, coverage, revive] = await Promise.all([
+        getAdAccountTopCampaigns(adAccount.id),
+        getAdAccountSyncCoverage(adminSupabase, adAccount.id),
+        getReviveCampaignOpportunity(adminSupabase, {
+          businessId,
+          platformIntegrationId: selectedPlatformId,
+          adAccountId: adAccount.id,
+        }),
+      ]);
+      campaignSnapshot = normalizeCampaignSnapshot(campaigns);
+      syncCoverage = coverage;
+      reviveOpportunity = revive;
     } catch (error) {
       console.error('Failed to fetch dashboard campaign snapshot:', error);
     }
@@ -58,6 +73,8 @@ export default async function MainDashboardPage() {
     platform,
     adAccount,
     campaignSnapshot,
+    syncCoverage,
+    reviveOpportunity,
   });
 
   return <DashboardClient payload={payload} />;

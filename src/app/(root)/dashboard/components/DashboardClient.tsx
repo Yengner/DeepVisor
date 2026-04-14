@@ -42,7 +42,8 @@ import {
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import ReviveCampaignPrompt from '@/components/campaigns/ReviveCampaignPrompt';
 import {
   buildAgencyQueuePreviewItems,
   compareAgencyQueuePreviewItems,
@@ -840,6 +841,8 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+  const [reviveModalOpened, setReviveModalOpened] = useState(false);
+  const [revivePromptDismissed, setRevivePromptDismissed] = useState(false);
 
   const stateMeta = stateContent(payload.state);
   const liveSummaryCards = payload.summaryByWindow[activeWindow];
@@ -926,6 +929,40 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     () => startOfCalendarMonth(agencyPreviewCursor),
     [agencyPreviewCursor]
   );
+  const reviveDismissKey = payload.reviveOpportunity
+    ? `revive-prompt:${payload.reviveOpportunity.adAccountId}:${payload.reviveOpportunity.sourceAssessmentDigestHash}`
+    : null;
+  const syncCoverage = payload.syncCoverage;
+
+  useEffect(() => {
+    if (!payload.reviveOpportunity || !reviveDismissKey) {
+      setReviveModalOpened(false);
+      setRevivePromptDismissed(false);
+      return;
+    }
+
+    try {
+      const isDismissed = window.localStorage.getItem(reviveDismissKey) === '1';
+      setRevivePromptDismissed(isDismissed);
+      setReviveModalOpened(!isDismissed);
+    } catch {
+      setRevivePromptDismissed(false);
+      setReviveModalOpened(true);
+    }
+  }, [payload.reviveOpportunity, reviveDismissKey]);
+
+  const dismissReviveModal = () => {
+    if (reviveDismissKey) {
+      try {
+        window.localStorage.setItem(reviveDismissKey, '1');
+      } catch {
+        // Ignore localStorage failures and keep the session moving.
+      }
+    }
+
+    setRevivePromptDismissed(true);
+    setReviveModalOpened(false);
+  };
   const agencyPreviewMonthGridStart = useMemo(
     () => startOfCalendarWeek(agencyPreviewMonthStart),
     [agencyPreviewMonthStart]
@@ -1107,6 +1144,38 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
           >
             {refreshFeedback.message}
           </Alert>
+        ) : null}
+
+        {syncCoverage?.historicalAnalysisPending ? (
+          <Alert
+            color={syncCoverage.backfillStatus === 'failed' ? 'red' : 'blue'}
+            radius="lg"
+            icon={<IconSparkles size={16} />}
+            title={
+              syncCoverage.backfillStatus === 'failed'
+                ? 'Full Meta history backfill needs attention'
+                : 'Recent data is ready while full history continues'
+            }
+          >
+            <Text size="sm">
+              {syncCoverage.coverageStartDate && syncCoverage.coverageEndDate
+                ? `Dashboard cards are using synced data from ${syncCoverage.coverageStartDate} through ${syncCoverage.coverageEndDate}.`
+                : 'The recent seed sync is available now and the full account history is still processing.'}
+            </Text>
+            <Text size="sm" mt="sm">
+              {syncCoverage.backfillStatus === 'failed'
+                ? 'Retry the background backfill job before treating historical reads as complete lifetime context.'
+                : 'DeepVisor will keep expanding the history window in the background before it promotes lifetime guidance as complete.'}
+            </Text>
+          </Alert>
+        ) : null}
+
+        {payload.reviveOpportunity && !revivePromptDismissed ? (
+          <ReviveCampaignPrompt
+            opportunity={payload.reviveOpportunity}
+            variant="card"
+            onDismiss={dismissReviveModal}
+          />
         ) : null}
 
         {payload.state !== 'ready' ? (
@@ -1652,6 +1721,15 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
           </Grid.Col>
         </Grid>
       </Stack>
+
+      {payload.reviveOpportunity && !revivePromptDismissed ? (
+        <ReviveCampaignPrompt
+          opportunity={payload.reviveOpportunity}
+          variant="modal"
+          opened={reviveModalOpened}
+          onDismiss={dismissReviveModal}
+        />
+      ) : null}
     </Container>
   );
 }

@@ -1,3 +1,4 @@
+import type { SyncCoverage } from '@/lib/shared/types/integrations';
 import type { Database, Json } from '@/lib/shared/types/supabase';
 import { chunkArray, type RepositoryClient } from '../utils';
 
@@ -17,6 +18,11 @@ type HistoricalJobType =
   | 'incremental'
   | 'manual_refresh'
   | 'backfill';
+
+type HistoricalJobStatusForCoverage = Extract<
+  HistoricalJobStatus,
+  'queued' | 'running' | 'completed' | 'failed'
+>;
 
 function todayIso(): string {
   return new Date().toISOString();
@@ -93,6 +99,23 @@ async function selectHistoricalSyncJobs(
   }
 
   return rows;
+}
+
+async function selectHistoricalSyncJobById(
+  supabase: RepositoryClient,
+  jobId: string
+): Promise<AccountSyncJobRow | null> {
+  const { data, error } = await supabase
+    .from('account_sync_jobs')
+    .select('*')
+    .eq('id', jobId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as AccountSyncJobRow | null) ?? null;
 }
 
 export async function ensureAdAccountSyncStates(
@@ -199,6 +222,135 @@ export async function enqueueInitialHistoricalSyncJobs(
   return new Map(
     jobs.map((job) => [job.ad_account_id, job] satisfies [string, AccountSyncJobRow])
   );
+}
+
+export async function enqueueBackfillSyncJob(
+  supabase: RepositoryClient,
+  input: {
+    businessId: string;
+    platformIntegrationId: string;
+    adAccountId: string;
+    requestedStartDate: string;
+    requestedEndDate: string;
+    metadata?: Json;
+  }
+): Promise<AccountSyncJobRow> {
+  const existingJobs = await selectHistoricalSyncJobs(supabase, {
+    adAccountIds: [input.adAccountId],
+    syncType: 'backfill',
+    statuses: ['queued', 'running'],
+  });
+  const existing = existingJobs[0] ?? null;
+  if (existing) {
+    return existing;
+  }
+
+  const { data, error } = await supabase
+    .from('account_sync_jobs')
+    .insert({
+      business_id: input.businessId,
+      platform_integration_id: input.platformIntegrationId,
+      ad_account_id: input.adAccountId,
+      status: 'queued',
+      sync_type: 'backfill',
+      requested_start_date: input.requestedStartDate,
+      requested_end_date: input.requestedEndDate,
+      metadata: input.metadata ?? {},
+    })
+    .select('*')
+    .single();
+
+  if (error || !data) {
+    throw error ?? new Error('Failed to enqueue backfill sync job');
+  }
+
+  return data as AccountSyncJobRow;
+}
+
+export async function listPendingBackfillSyncJobs(
+  supabase: RepositoryClient,
+  limit: number = 1
+): Promise<AccountSyncJobRow[]> {
+  const { data, error } = await supabase
+    .from('account_sync_jobs')
+    .select('*')
+    .eq('sync_type', 'backfill')
+    .in('status', ['running', 'queued'])
+    .order('created_at', { ascending: true })
+    .limit(Math.max(1, limit * 4));
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as AccountSyncJobRow[])
+    .sort((left, right) => {
+      if (left.status === right.status) {
+        return left.created_at.localeCompare(right.created_at);
+      }
+
+      return left.status === 'running' ? -1 : 1;
+    })
+    .slice(0, Math.max(1, limit));
+}
+
+export async function getLatestBackfillSyncJob(
+  supabase: RepositoryClient,
+  adAccountId: string
+): Promise<AccountSyncJobRow | null> {
+  const jobs = await selectHistoricalSyncJobs(supabase, {
+    adAccountIds: [adAccountId],
+    syncType: 'backfill',
+    statuses: ['queued', 'running', 'completed', 'failed'],
+  });
+
+  return jobs[0] ?? null;
+}
+
+export async function getAdAccountSyncCoverage(
+  supabase: RepositoryClient,
+  adAccountId: string
+): Promise<SyncCoverage | null> {
+  const syncStateRows = await selectAdAccountSyncStates(supabase, [adAccountId]);
+  const syncState = syncStateRows[0] ?? null;
+
+  if (!syncState) {
+    return null;
+  }
+
+  const [latestBackfillJob, lastSuccessfulJob] = await Promise.all([
+    getLatestBackfillSyncJob(supabase, adAccountId),
+    syncState.last_successful_sync_job_id
+      ? selectHistoricalSyncJobById(supabase, syncState.last_successful_sync_job_id)
+      : Promise.resolve(null),
+  ]);
+
+  const fullHistoryCompleted = syncState.first_full_sync_completed === true;
+  const coverageStartDate = fullHistoryCompleted
+    ? syncState.first_activity_date ??
+      lastSuccessfulJob?.actual_start_date ??
+      lastSuccessfulJob?.requested_start_date ??
+      null
+    : lastSuccessfulJob?.actual_start_date ??
+      lastSuccessfulJob?.requested_start_date ??
+      null;
+  const coverageEndDate =
+    syncState.insights_synced_through ??
+    syncState.latest_activity_date ??
+    lastSuccessfulJob?.actual_end_date ??
+    lastSuccessfulJob?.requested_end_date ??
+    null;
+  const backfillStatus = (latestBackfillJob?.status ?? null) as HistoricalJobStatusForCoverage | null;
+
+  return {
+    syncMode: 'seed_recent',
+    coverageStartDate,
+    coverageEndDate,
+    backfillJobId: latestBackfillJob?.id ?? null,
+    backfillStatus,
+    historicalAnalysisPending:
+      !fullHistoryCompleted || backfillStatus === 'queued' || backfillStatus === 'running',
+  };
 }
 
 export async function beginHistoricalSyncJob(
@@ -352,7 +504,7 @@ export async function markAdAccountHistoricalSyncSucceeded(
     firstActivityDate: string | null;
     latestActivityDate: string | null;
     insightsSyncedThrough: string | null;
-    isInitialHistoricalSync: boolean;
+    completesFullHistory: boolean;
   }
 ): Promise<void> {
   const syncStatePatch: Database['public']['Tables']['ad_account_sync_state']['Update'] = {
@@ -366,7 +518,7 @@ export async function markAdAccountHistoricalSyncSucceeded(
     updated_at: input.syncedAt,
   };
 
-  if (input.isInitialHistoricalSync) {
+  if (input.completesFullHistory) {
     syncStatePatch.first_full_sync_completed = true;
     syncStatePatch.first_full_sync_at = input.syncedAt;
   } else {

@@ -15,6 +15,7 @@ import {
 import { IconAlertCircle, IconCheck, IconLock } from '@tabler/icons-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
+import type { SyncCoverage } from '@/lib/shared/types/integrations';
 import BlockingTaskScreen from '@/components/ui/states/BlockingTaskScreen';
 
 type MetaIntegrationFlowProps = {
@@ -49,6 +50,7 @@ type MetaSelectResponse = {
     integrationId?: string;
     adAccountId?: string | null;
     externalAccountId?: string;
+    syncCoverage?: SyncCoverage | null;
   };
   error?: {
     userMessage?: string;
@@ -84,6 +86,7 @@ export default function MetaIntegrationFlow({
   const router = useRouter();
   const searchParams = useSearchParams();
   const handledSearchKey = useRef<string | null>(null);
+  const selectionRequestInFlight = useRef(false);
   const [connecting, setConnecting] = useState(false);
   const [accountSelectionOpened, setAccountSelectionOpened] = useState(false);
   const [accountSelectionRequired, setAccountSelectionRequired] = useState(false);
@@ -101,6 +104,7 @@ export default function MetaIntegrationFlow({
   const syncingOpened = submittingAccountSelection || (loadingAccountOptions && autoSyncRequested);
 
   const resetFlow = () => {
+    selectionRequestInFlight.current = false;
     setAccountSelectionOpened(false);
     setAccountSelectionRequired(false);
     setAccountSelectionIntegrationId(null);
@@ -119,6 +123,11 @@ export default function MetaIntegrationFlow({
     if (refreshAfterSuccess) {
       router.refresh();
     }
+  };
+
+  const finishFlowWithSuccess = async () => {
+    toast.success('Meta connected. Recent data is ready while full history backfills.');
+    await finishFlow(onConnected);
   };
 
   const loadMetaAccountOptions = async (input: {
@@ -182,10 +191,16 @@ export default function MetaIntegrationFlow({
     const integrationId = input?.integrationId ?? accountSelectionIntegrationId;
     const externalAccountId = input?.externalAccountId ?? selectedAccountExternalId;
 
-    if (!integrationId || !externalAccountId || submittingAccountSelection) {
+    if (
+      !integrationId ||
+      !externalAccountId ||
+      submittingAccountSelection ||
+      selectionRequestInFlight.current
+    ) {
       return;
     }
 
+    selectionRequestInFlight.current = true;
     setSubmittingAccountSelection(true);
     setSyncingTitle('Syncing your primary ad account');
     setSyncingDescription(
@@ -210,14 +225,20 @@ export default function MetaIntegrationFlow({
       }
 
       resetFlow();
-      toast.success('Meta connected and synced.');
-      await finishFlow(onConnected);
+      const backfillStatus = body.data?.syncCoverage?.backfillStatus;
+      if (backfillStatus === 'queued' || backfillStatus === 'running') {
+        toast.success('Recent 90 days synced. Full history is backfilling in the background.');
+      }
+
+      await finishFlowWithSuccess();
     } catch (error) {
       setSubmittingAccountSelection(false);
       setAutoSyncRequested(false);
       toast.error(
         error instanceof Error ? error.message : 'Failed to select Meta ad account'
       );
+    } finally {
+      selectionRequestInFlight.current = false;
     }
   };
 

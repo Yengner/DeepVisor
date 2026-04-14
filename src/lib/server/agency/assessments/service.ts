@@ -179,6 +179,43 @@ function computeMaturityScore(input: {
   return Math.round(historyScore + spendScore + conversionScore + campaignScore);
 }
 
+function computeDaysSinceLastActivity(lastDay: string | null): number | null {
+  if (!lastDay) {
+    return null;
+  }
+
+  const lastActivityDate = new Date(`${lastDay}T00:00:00.000Z`);
+  if (Number.isNaN(lastActivityDate.getTime())) {
+    return null;
+  }
+
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  return Math.max(
+    0,
+    Math.floor((today.getTime() - lastActivityDate.getTime()) / 86_400_000)
+  );
+}
+
+function computeStaleSeverity(
+  daysSinceLastActivity: number | null
+): AdAccountDigest['staleSeverity'] {
+  if (daysSinceLastActivity == null || daysSinceLastActivity <= 30) {
+    return null;
+  }
+
+  if (daysSinceLastActivity > 120) {
+    return 'critical';
+  }
+
+  if (daysSinceLastActivity > 60) {
+    return 'stale';
+  }
+
+  return 'watch';
+}
+
 function classifyAdAccountState(input: {
   totalCampaigns: number;
   lifetime: AssessmentWindowMetrics;
@@ -187,6 +224,7 @@ function classifyAdAccountState(input: {
   historyDays: number;
   maturityScore: number;
   trackingConfidence: TrackingConfidence;
+  daysSinceLastActivity: number | null;
 }): AdAccountAssessmentState {
   const hasAnyDelivery = input.lifetime.impressions > 0 || input.lifetime.spend > 0;
 
@@ -198,7 +236,7 @@ function classifyAdAccountState(input: {
     return 'launch_ready';
   }
 
-  if (input.last30d.spend <= 0 && input.last90d.spend > 0) {
+  if (input.daysSinceLastActivity != null && input.daysSinceLastActivity > 30) {
     return 'stale';
   }
 
@@ -333,7 +371,9 @@ function buildObjectiveMix(campaigns: CampaignSummary[]): AdAccountDigest['objec
 }
 
 function buildAdAccountDigestHash(value: Omit<AdAccountDigest, 'digestHash'>): string {
-  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
+  const { generatedAt: _generatedAt, daysSinceLastActivity: _daysSinceLastActivity, ...stableValue } =
+    value;
+  return createHash('sha256').update(JSON.stringify(stableValue)).digest('hex');
 }
 
 function buildDeterministicAccountSummary(input: {
@@ -742,6 +782,8 @@ async function buildAdAccountDigest(input: {
   const last90d = summarizeDailyWindow(dailyRows, { sinceDay: startDateFromDays(90) });
   const last30d = summarizeDailyWindow(dailyRows, { sinceDay: startDateFromDays(30) });
   const last7d = summarizeDailyWindow(dailyRows, { sinceDay: startDateFromDays(7) });
+  const daysSinceLastActivity = computeDaysSinceLastActivity(lastDay);
+  const staleSeverity = computeStaleSeverity(daysSinceLastActivity);
 
   const campaignsForComparison = campaigns30d.some((item) => item.spend > 0 || item.conversion > 0)
     ? campaigns30d
@@ -777,6 +819,7 @@ async function buildAdAccountDigest(input: {
     historyDays,
     maturityScore,
     trackingConfidence,
+    daysSinceLastActivity,
   });
 
   const digestWithoutHash = {
@@ -794,6 +837,8 @@ async function buildAdAccountDigest(input: {
       lastDay,
       historyDays,
     },
+    daysSinceLastActivity,
+    staleSeverity,
     spendLevel: computeSpendLevel(last30d.spend),
     recentActivity: {
       hasDeliveryLast7d: last7d.spend > 0 || last7d.impressions > 0,

@@ -1,11 +1,19 @@
 import CustomCampaignFlow from '@/components/campaigns/create/flows/manual/ManualCampaignFlow';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
+import { getCampaignDraftById, readCampaignDraftPayload } from '@/lib/server/campaigns/drafts';
 import { getAdAccountData, getPlatformDetails } from '@/lib/server/data';
+import { createServerClient } from '@/lib/server/supabase/server';
 
-export default async function CreateCampaignPage() {
+export default async function CreateCampaignPage({
+    searchParams,
+}: {
+    searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
 
     const { businessId } = await getRequiredAppContext();
+    const params = searchParams ? await searchParams : {};
+    const requestedDraftId = typeof params?.draft === 'string' ? params.draft : null;
 
     const { selectedPlatformId: platformIntegrationId, selectedAdAccountId: adAccountDBId } = await resolveCurrentSelection(businessId);
 
@@ -32,6 +40,16 @@ export default async function CreateCampaignPage() {
         );
     }
 
+    const supabase = await createServerClient();
+    const draftRow = requestedDraftId
+        ? await getCampaignDraftById(supabase, {
+            businessId,
+            draftId: requestedDraftId,
+        })
+        : null;
+    const draftPayload = readCampaignDraftPayload(draftRow);
+    const manualDraft = draftPayload?.mode === 'manual' ? draftPayload.form : null;
+
 
     return (
         <CustomCampaignFlow
@@ -40,6 +58,7 @@ export default async function CreateCampaignPage() {
                 platform_name: platformData.vendor,
             }}
             adAccountId={adAccountData.external_account_id}
+            draft={manualDraft}
         />
     );
 }

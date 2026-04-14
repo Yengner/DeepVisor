@@ -1,3 +1,6 @@
+import type { ReviveCampaignOpportunity } from '@/lib/shared/types/campaignDrafts';
+import type { SyncCoverage } from '@/lib/shared/types/integrations';
+
 export type ReportScope = 'business' | 'platform' | 'ad_account' | 'campaign' | 'adset' | 'ad';
 
 export type ReportGroupBy = 'day' | 'week' | 'month';
@@ -102,6 +105,8 @@ export interface ReportPayload {
     scopeLabel: string;
     currencyCode: string | null;
     generatedAt: string;
+    syncCoverage?: SyncCoverage | null;
+    reviveOpportunity?: ReviveCampaignOpportunity | null;
   };
   summary: ReportMetricTotals;
   kpis: ReportKpi[];

@@ -104,14 +104,65 @@
   padding: 20px 20px 28px;
 }
 
-.channelGlow {
+.channelStatusBadge {
+  margin-left: 6px;
+}
+
+.channelArtworkStage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 136px;
+}
+
+.channelGlowPrimary,
+.channelGlowSecondary,
+.channelArtworkShadow {
   position: absolute;
-  left: 20px;
-  bottom: 18px;
-  width: 132px;
-  height: 132px;
+  pointer-events: none;
+}
+
+.channelGlowPrimary,
+.channelGlowSecondary {
   border-radius: 999px;
-  opacity: 0.75;
+  z-index: 0;
+}
+
+.channelGlowPrimary {
+  width: 156px;
+  height: 156px;
+  left: 50%;
+  top: 50%;
+  opacity: 0.94;
+  filter: blur(16px);
+  transform: translate(-56%, -54%);
+}
+
+.channelGlowSecondary {
+  width: 104px;
+  height: 104px;
+  left: 50%;
+  top: 50%;
+  opacity: 0.72;
+  filter: blur(22px);
+  transform: translate(-6%, -18%);
+}
+
+.channelArtworkShadow {
+  left: 50%;
+  bottom: 10px;
+  width: 138px;
+  height: 34px;
+  z-index: 0;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(15, 23, 42, 0.18) 0%,
+    rgba(15, 23, 42, 0.06) 38%,
+    rgba(15, 23, 42, 0) 74%
+  );
+  filter: blur(8px);
 }
 
 .channelArtworkWrap {
@@ -126,7 +177,7 @@
 .platformArtwork {
   display: block;
   object-fit: contain;
-  filter: drop-shadow(0 16px 28px rgba(15, 23, 42, 0.14));
+  filter: drop-shadow(0 20px 30px rgba(15, 23, 42, 0.18));
 }
 
 .metricCard {
@@ -175,9 +226,27 @@
     padding: 18px 18px 24px;
   }
 
-  .channelGlow {
-    width: 104px;
-    height: 104px;
+  .channelStatusBadge {
+    margin-left: 4px;
+  }
+
+  .channelArtworkStage {
+    min-height: 120px;
+  }
+
+  .channelGlowPrimary {
+    width: 132px;
+    height: 132px;
+  }
+
+  .channelGlowSecondary {
+    width: 92px;
+    height: 92px;
+  }
+
+  .channelArtworkShadow {
+    width: 116px;
+    height: 28px;
   }
 
   .platformArtwork {

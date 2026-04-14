@@ -4,7 +4,7 @@ import '@mantine/charts/styles.css';
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
 
-import { LineChart } from '@mantine/charts';
+import { BarChart, LineChart } from '@mantine/charts';
 import {
   Badge,
   Button,
@@ -15,16 +15,15 @@ import {
   Group,
   Loader,
   Paper,
+  Progress,
   SimpleGrid,
   Stack,
   Text,
   ThemeIcon,
 } from '@mantine/core';
 import {
-  IconAlertTriangle,
   IconArrowDownRight,
   IconArrowUpRight,
-  IconBulb,
   IconProgressCheck,
   IconTimeline,
   IconTrendingDown,
@@ -32,8 +31,8 @@ import {
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useMemo, useState, useTransition } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
+import ReviveCampaignPrompt from '@/components/campaigns/ReviveCampaignPrompt';
 import type {
   ReportBreakdownRow,
   ReportFilterOptions,
@@ -51,6 +50,44 @@ interface ReportsClientProps {
   filterOptions: ReportFilterOptions;
   isDemo?: boolean;
 }
+
+const staticAudienceMix = [
+  { audience: 'Retargeting', Share: 34 },
+  { audience: 'Lookalike', Share: 27 },
+  { audience: 'Interest stack', Share: 23 },
+  { audience: 'Broad prospecting', Share: 16 },
+];
+
+const staticChannelSignals = [
+  {
+    label: 'Instagram Reels',
+    score: 86,
+    note: 'Lowest projected cost per lead',
+    share: '32% of expected results',
+    color: 'grape',
+  },
+  {
+    label: 'Facebook Feed',
+    score: 79,
+    note: 'Most stable reach volume',
+    share: '29% of expected results',
+    color: 'blue',
+  },
+  {
+    label: 'Instagram Stories',
+    score: 73,
+    note: 'Strong click-through rate',
+    share: '24% of expected results',
+    color: 'pink',
+  },
+  {
+    label: 'Messenger',
+    score: 61,
+    note: 'Best reply quality',
+    share: '15% of expected results',
+    color: 'teal',
+  },
+] as const;
 
 type ReportInsight = {
   summary: string;
@@ -389,71 +426,6 @@ function KpiCard({ kpi }: { kpi: ReportKpi }) {
   );
 }
 
-function InsightBlock({
-  title,
-  detail,
-  icon,
-  color,
-}: {
-  title: string;
-  detail: string;
-  icon: ReactNode;
-  color: string;
-}) {
-  return (
-    <Paper withBorder radius="lg" p="md" className={classes.insightBlock}>
-      <Group align="flex-start" gap="sm" wrap="nowrap">
-        <ThemeIcon variant="light" color={color} radius="md" size="lg">
-          {icon}
-        </ThemeIcon>
-        <div>
-          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-            {title}
-          </Text>
-          <Text size="sm" mt={6}>
-            {detail}
-          </Text>
-        </div>
-      </Group>
-    </Paper>
-  );
-}
-
-function InsightChecklist({
-  title,
-  items,
-  tone,
-}: {
-  title: string;
-  items: string[];
-  tone: 'good' | 'warning' | 'neutral';
-}) {
-  const color = tone === 'good' ? 'teal' : tone === 'warning' ? 'orange' : 'blue';
-
-  return (
-    <Stack gap="xs">
-      <Group gap="xs">
-        <Badge color={color} variant="light" radius="sm">
-          {title}
-        </Badge>
-      </Group>
-      <Stack gap="sm">
-        {items.length > 0 ? (
-          items.map((item) => (
-            <Text key={item} size="sm" c="dimmed">
-              {item}
-            </Text>
-          ))
-        ) : (
-          <Text size="sm" c="dimmed">
-            No strong signal yet for this view.
-          </Text>
-        )}
-      </Stack>
-    </Stack>
-  );
-}
-
 function MoverList({
   title,
   subtitle,
@@ -515,12 +487,47 @@ function MoverList({
   );
 }
 
+function StaticSignalRow({
+  label,
+  note,
+  share,
+  score,
+  color,
+}: {
+  label: string;
+  note: string;
+  share: string;
+  score: number;
+  color: string;
+}) {
+  return (
+    <div className={classes.signalRow}>
+      <Group justify="space-between" gap="md" wrap="nowrap">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Text fw={800} lineClamp={1}>
+            {label}
+          </Text>
+          <Text size="sm" c="dimmed" mt={4} lineClamp={1}>
+            {note}
+          </Text>
+        </div>
+        <Text size="xs" fw={800} c="dimmed">
+          {share}
+        </Text>
+      </Group>
+      <Progress value={score} color={color} radius="xl" size="sm" mt="sm" />
+    </div>
+  );
+}
+
 export function ReportsClient({ payload, filterOptions, isDemo = false }: ReportsClientProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [filtersOpened, setFiltersOpened] = useState(false);
+  const [reviveModalOpened, setReviveModalOpened] = useState(false);
+  const [revivePromptDismissed, setRevivePromptDismissed] = useState(false);
 
   const currentSearchString = searchParams?.toString() ?? '';
 
@@ -585,8 +592,42 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
       }),
     [payload.export.filterSummary]
   );
+  const reviveDismissKey = payload.meta.reviveOpportunity
+    ? `revive-prompt:${payload.meta.reviveOpportunity.adAccountId}:${payload.meta.reviveOpportunity.sourceAssessmentDigestHash}`
+    : null;
 
   const hasTrendData = storyData.length > 0;
+
+  useEffect(() => {
+    if (!payload.meta.reviveOpportunity || !reviveDismissKey) {
+      setReviveModalOpened(false);
+      setRevivePromptDismissed(false);
+      return;
+    }
+
+    try {
+      const isDismissed = window.localStorage.getItem(reviveDismissKey) === '1';
+      setRevivePromptDismissed(isDismissed);
+      setReviveModalOpened(!isDismissed);
+    } catch {
+      setRevivePromptDismissed(false);
+      setReviveModalOpened(true);
+    }
+  }, [payload.meta.reviveOpportunity, reviveDismissKey]);
+
+  const dismissReviveModal = () => {
+    if (reviveDismissKey) {
+      try {
+        window.localStorage.setItem(reviveDismissKey, '1');
+      } catch {
+        // Ignore localStorage failures and keep the reports view responsive.
+      }
+    }
+
+    setRevivePromptDismissed(true);
+    setReviveModalOpened(false);
+  };
+
   return (
     <Container fluid px={6} py={0} className={`${classes.page} reports-page-shell`}>
       <Drawer
@@ -616,6 +657,38 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
           isDemo={isDemo}
           isPending={isPending}
         />
+
+        {payload.meta.syncCoverage?.historicalAnalysisPending ? (
+          <Paper
+            radius="xl"
+            p="md"
+            bg="rgba(59,130,246,0.08)"
+            style={{ border: '1px solid rgba(59,130,246,0.16)' }}
+          >
+            <Group justify="space-between" align="flex-start" gap="md">
+              <div>
+                <Text fw={800}>Recent coverage is ready while full history backfills</Text>
+                <Text size="sm" c="dimmed" mt={4}>
+                  {payload.meta.syncCoverage.coverageStartDate &&
+                  payload.meta.syncCoverage.coverageEndDate
+                    ? `This report currently reflects synced data from ${payload.meta.syncCoverage.coverageStartDate} through ${payload.meta.syncCoverage.coverageEndDate}.`
+                    : 'DeepVisor is still expanding the history window for this selected ad account.'}
+                </Text>
+              </div>
+              <Badge color="blue" variant="light">
+                {payload.meta.syncCoverage.backfillStatus ?? 'pending'}
+              </Badge>
+            </Group>
+          </Paper>
+        ) : null}
+
+        {payload.meta.reviveOpportunity && !revivePromptDismissed ? (
+          <ReviveCampaignPrompt
+            opportunity={payload.meta.reviveOpportunity}
+            variant="card"
+            onDismiss={dismissReviveModal}
+          />
+        ) : null}
 
         {isPending && (
           <Card withBorder radius="lg" p="sm">
@@ -701,58 +774,83 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
                 <Group justify="space-between" align="flex-start" gap="md" className={classes.cardHeader}>
                   <div>
                     <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                      DeepVisor read
+                      Static breakdown
                     </Text>
                     <Text fw={900} size="xl" mt={4}>
-                      What matters right now
+                      Audience and channel mix
+                    </Text>
+                    <Text size="sm" c="dimmed" mt={4}>
+                      Placeholder segmentation until live audience and placement reporting is wired in.
                     </Text>
                   </div>
-                  <ThemeIcon color="blue" variant="light" radius="md">
-                    <IconBulb size={18} />
-                  </ThemeIcon>
+                  <Badge color="violet" variant="light" radius="sm">
+                    Static preview
+                  </Badge>
                 </Group>
 
-                <Stack gap="sm">
-                  <InsightBlock
-                    title={insight.strongestLabel}
-                    detail={insight.strongestDetail}
-                    icon={<IconTrendingUp size={18} />}
-                    color="teal"
-                  />
-                  <InsightBlock
-                    title={insight.weakestLabel}
-                    detail={insight.weakestDetail}
-                    icon={<IconAlertTriangle size={18} />}
-                    color="orange"
-                  />
-                  <InsightBlock
-                    title={insight.momentumLabel}
-                    detail={insight.momentumDetail}
-                    icon={<IconTimeline size={18} />}
-                    color="blue"
-                  />
-                  <InsightBlock
-                    title={insight.recommendationLabel}
-                    detail={insight.recommendationDetail}
-                    icon={<IconBulb size={18} />}
-                    color="grape"
-                  />
-                </Stack>
+                <Paper withBorder radius="lg" p="md" className={classes.insightBlock}>
+                  <Group gap="sm" mb="md" wrap="nowrap">
+                    <ThemeIcon color="blue" variant="light" radius="md">
+                      <IconTimeline size={18} />
+                    </ThemeIcon>
+                    <div>
+                      <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                        Audience type
+                      </Text>
+                      <Text fw={800}>Projected audience share</Text>
+                    </div>
+                  </Group>
+                  <div className={classes.miniChartWrap}>
+                    <BarChart
+                      h={220}
+                      data={staticAudienceMix}
+                      dataKey="audience"
+                      series={[{ name: 'Share', color: 'blue.6' }]}
+                      tickLine="y"
+                      withLegend={false}
+                      valueFormatter={(value) => `${value}%`}
+                    />
+                  </div>
+                </Paper>
 
                 <Paper withBorder radius="lg" p="md" className={classes.insightBlock}>
-                  <SimpleGrid cols={{ base: 1, md: 3, xl: 1 }} spacing="md">
-                    <InsightChecklist title="Working" tone="good" items={insight.worked} />
-                    <InsightChecklist title="Watch" tone="warning" items={insight.watch} />
-                    <InsightChecklist title="Next move" tone="neutral" items={insight.nextMoves} />
-                  </SimpleGrid>
+                  <Group gap="sm" mb="md" wrap="nowrap">
+                    <ThemeIcon color="teal" variant="light" radius="md">
+                      <IconTrendingUp size={18} />
+                    </ThemeIcon>
+                    <div>
+                      <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                        Social signal
+                      </Text>
+                      <Text fw={800}>What social surfaces look strongest</Text>
+                    </div>
+                  </Group>
+                  <Stack gap="sm">
+                    {staticChannelSignals.map((signal) => (
+                      <StaticSignalRow
+                        key={signal.label}
+                        label={signal.label}
+                        note={signal.note}
+                        share={signal.share}
+                        score={signal.score}
+                        color={signal.color}
+                      />
+                    ))}
+                  </Stack>
+                </Paper>
+
+                <Paper withBorder radius="lg" p="md" className={classes.insightBlock}>
+                  <Text size="sm" c="dimmed">
+                    Narrative reads like “What matters right now?” now live in the Ask DeepVisor quick prompts so
+                    reports can stay focused on charts and tables.
+                  </Text>
                 </Paper>
 
                 {isDemo ? (
                   <Paper withBorder radius="lg" p="md" className={classes.insightBlock}>
                     <Text size="sm" c="dimmed">
-                      This preview uses the same inputs this page expects from live data: platform,
-                      ad account, campaign, ad set, ad, daily spend, impressions, clicks, CTR, CPC,
-                      cost per result, and time-series rollups.
+                      This preview uses static audience and placement examples for now. The live version will swap in
+                      real segment and channel performance once those rollups are connected.
                     </Text>
                   </Paper>
                 ) : null}
@@ -826,6 +924,15 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
           </Stack>
         </Card>
       </Stack>
+
+      {payload.meta.reviveOpportunity && !revivePromptDismissed ? (
+        <ReviveCampaignPrompt
+          opportunity={payload.meta.reviveOpportunity}
+          variant="modal"
+          opened={reviveModalOpened}
+          onDismiss={dismissReviveModal}
+        />
+      ) : null}
     </Container>
   );
 }

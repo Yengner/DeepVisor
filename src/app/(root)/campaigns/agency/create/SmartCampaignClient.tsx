@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { SmartCampaignDraftForm } from '@/lib/shared/types/campaignDrafts';
 import {
     Container, Card, Title, Text, Button, Group, Loader, Select, TextInput, NumberInput, Stack, Divider, Box, Grid, Paper
 } from '@mantine/core';
@@ -36,21 +37,22 @@ export default function SmartCampaignClient({
     platformName,
     platformId,
     adAccountId,
-}: { userId: string, platformName: string; platformId: string; adAccountId: string }) {
+    draft,
+}: { userId: string, platformName: string; platformId: string; adAccountId: string; draft?: SmartCampaignDraftForm | null }) {
     const router = useRouter();
     const form = useForm({
         initialValues: {
-            budgetType: 'daily',
-            budget: 32,
-            objective: 'OUTCOME_LEADS',
-            destinationType: 'ON_AD',
-            timeframe: '30',
-            creatives: '',
+            budgetType: draft?.budgetType ?? 'daily',
+            budget: draft?.budget ?? 32,
+            objective: draft?.objective ?? 'OUTCOME_LEADS',
+            destinationType: draft?.destinationType ?? 'ON_AD',
+            timeframe: draft?.timeframe ?? '30',
+            creatives: draft?.creatives ?? '',
             // Optional user-editables:
-            link: 'https://fb.me/',
-            message: '',
-            imageHash: '',
-            formId: ''
+            link: draft?.link ?? 'https://fb.me/',
+            message: draft?.message ?? '',
+            imageHash: draft?.imageHash ?? '',
+            formId: draft?.formId ?? ''
         },
         validate: {
             budget: v => (v && Number(v) > 0 ? null : 'Budget must be greater than 0'),

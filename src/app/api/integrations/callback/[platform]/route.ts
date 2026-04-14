@@ -19,8 +19,6 @@ import {
   upsertPlatformIntegration,
 } from '@/lib/server/integrations/service';
 import { discoverMetaAdAccounts } from '@/lib/server/sync/meta/discoverMetaAdAccounts';
-import { resolveMetaBackfillWindow } from '@/lib/server/sync/meta/client';
-import { FULL_HISTORY_BACKFILL_DAYS } from '@/lib/server/sync/types';
 import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integrations';
 
 function redirectWithStatus(
@@ -130,18 +128,13 @@ export async function GET(
       throw new Error('No accessible Meta ad accounts were found for this integration');
     }
 
-    const { since, until } = resolveMetaBackfillWindow(FULL_HISTORY_BACKFILL_DAYS);
-
     // Run discovery for every successful Meta callback so both the multi-account
     // and single-account paths start from the same registered account state.
     await discoverMetaAdAccounts({
       supabase,
       businessId: businessContext.businessId,
       platformId: integrationPlatform.id,
-      platformIntegrationId: integrationId,
       accessToken: token.access_token,
-      requestedStartDate: since,
-      requestedEndDate: until,
     });
 
     if (accessibleAccounts.length > 1) {

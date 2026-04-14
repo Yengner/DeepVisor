@@ -8,8 +8,8 @@ import {
   markAdAccountHistoricalSyncSucceeded,
 } from '@/lib/server/repositories/ad_accounts/syncState';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
-import { FULL_HISTORY_BACKFILL_DAYS } from '../types';
-import type { SyncTrigger } from '../types';
+import { FULL_HISTORY_BACKFILL_DAYS, RECENT_SEED_SYNC_DAYS } from '../types';
+import type { PlatformSyncMode, SyncTrigger } from '../types';
 import { resolveMetaBackfillWindow } from './client';
 import { syncMetaAdCreatives } from './syncMetaAdCreatives';
 import { syncMetaAds } from './syncMetaAds';
@@ -20,13 +20,37 @@ import { syncMetaPerformance } from './syncMetaPerformance';
 
 function resolveHistoricalJobType(input: {
   trigger: SyncTrigger;
-  isInitialHistoricalSync: boolean;
-}): 'initial_historical' | 'incremental' | 'manual_refresh' {
-  if (input.isInitialHistoricalSync) {
-    return 'initial_historical';
+  syncMode: PlatformSyncMode;
+}): 'incremental' | 'manual_refresh' | 'backfill' {
+  if (input.syncMode === 'full_backfill') {
+    return 'backfill';
   }
 
   return input.trigger === 'manual_refresh' ? 'manual_refresh' : 'incremental';
+}
+
+function resolvePerformanceWindow(input: {
+  syncMode: PlatformSyncMode;
+  backfillDays: number;
+}): { since: string; until: string; backfillDays: number } {
+  if (input.syncMode === 'seed_recent') {
+    return resolveMetaBackfillWindow(Math.min(input.backfillDays, RECENT_SEED_SYNC_DAYS));
+  }
+
+  if (input.syncMode === 'full_backfill') {
+    return resolveMetaBackfillWindow(FULL_HISTORY_BACKFILL_DAYS);
+  }
+
+  return resolveMetaBackfillWindow(input.backfillDays);
+}
+
+async function runMetaSyncStage<T>(label: string, operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unexpected Meta sync error';
+    throw new Error(`Meta ${label} sync failed: ${message}`);
+  }
 }
 
 export async function syncMetaBusinessPlatform(input: {
@@ -39,20 +63,18 @@ export async function syncMetaBusinessPlatform(input: {
   syncedAt: string;
   trigger: SyncTrigger;
   primaryExternalAccountId: string;
+  syncMode: PlatformSyncMode;
 }) {
-  const discoveryWindow = resolveMetaBackfillWindow(FULL_HISTORY_BACKFILL_DAYS);
-
-  // Step 01: discovery/registration only. This records accessible accounts and queues
-  // historical jobs, but it does not count as a successful sync.
-  const discoveredAccounts = await discoverMetaAdAccounts({
-    supabase: input.supabase,
-    businessId: input.businessId,
-    platformId: input.platformId,
-    platformIntegrationId: input.platformIntegrationId,
-    accessToken: input.accessToken,
-    requestedStartDate: discoveryWindow.since,
-    requestedEndDate: discoveryWindow.until,
-  });
+  // Step 01: discovery/registration only. This records accessible accounts and sync state,
+  // but it does not count as a successful sync.
+  const discoveredAccounts = await runMetaSyncStage('discovery', () =>
+    discoverMetaAdAccounts({
+      supabase: input.supabase,
+      businessId: input.businessId,
+      platformId: input.platformId,
+      accessToken: input.accessToken,
+    })
+  );
 
   const primaryAdAccount =
     discoveredAccounts.byExternalAccountId.get(input.primaryExternalAccountId) ?? null;
@@ -61,24 +83,21 @@ export async function syncMetaBusinessPlatform(input: {
     throw new Error('Selected Meta ad account is no longer accessible to this integration');
   }
 
-  const syncStates = await ensureAdAccountSyncStates(input.supabase, [primaryAdAccount]);
-  const primarySyncState = syncStates.get(primaryAdAccount.id);
-  const isInitialHistoricalSync = !primarySyncState?.first_full_sync_completed;
-  // The first real ad-account sync should pull the widest practical time window so
-  // account intelligence starts from the full available history, not a short sample.
-  const historicalWindow = resolveMetaBackfillWindow(
-    isInitialHistoricalSync ? FULL_HISTORY_BACKFILL_DAYS : input.backfillDays
-  );
-  const historicalBackfillDays = historicalWindow.backfillDays;
+  await ensureAdAccountSyncStates(input.supabase, [primaryAdAccount]);
+  const performanceWindow = resolvePerformanceWindow({
+    syncMode: input.syncMode,
+    backfillDays: input.backfillDays,
+  });
+  const completesFullHistory = input.syncMode === 'full_backfill';
   const job = await beginHistoricalSyncJob(input.supabase, {
     businessId: input.businessId,
     platformIntegrationId: input.platformIntegrationId,
     adAccountId: primaryAdAccount.id,
-    requestedStartDate: historicalWindow.since,
-    requestedEndDate: historicalWindow.until,
+    requestedStartDate: performanceWindow.since,
+    requestedEndDate: performanceWindow.until,
     syncType: resolveHistoricalJobType({
       trigger: input.trigger,
-      isInitialHistoricalSync,
+      syncMode: input.syncMode,
     }),
   });
 
@@ -86,52 +105,62 @@ export async function syncMetaBusinessPlatform(input: {
     // Step 02: full historical sync for the selected primary account only.
     const historicalScope = [primaryAdAccount];
 
-    const campaigns = await syncMetaCampaigns({
-      supabase: input.supabase,
-      adAccounts: historicalScope,
-      accessToken: input.accessToken,
-      syncedAt: input.syncedAt,
-    });
+    const campaigns = await runMetaSyncStage('campaigns', () =>
+      syncMetaCampaigns({
+        supabase: input.supabase,
+        adAccounts: historicalScope,
+        accessToken: input.accessToken,
+        syncedAt: input.syncedAt,
+      })
+    );
 
-    const adsets = await syncMetaAdsets({
-      supabase: input.supabase,
-      adAccounts: historicalScope,
-      campaignsByExternalId: campaigns.byExternalId,
-      accessToken: input.accessToken,
-      syncedAt: input.syncedAt,
-    });
+    const adsets = await runMetaSyncStage('ad set', () =>
+      syncMetaAdsets({
+        supabase: input.supabase,
+        adAccounts: historicalScope,
+        campaignsByExternalId: campaigns.byExternalId,
+        accessToken: input.accessToken,
+        syncedAt: input.syncedAt,
+      })
+    );
 
-    const ads = await syncMetaAds({
-      supabase: input.supabase,
-      adAccounts: historicalScope,
-      campaignsByExternalId: campaigns.byExternalId,
-      adsetsByExternalId: adsets.byExternalId,
-      accessToken: input.accessToken,
-      syncedAt: input.syncedAt,
-    });
+    const ads = await runMetaSyncStage('ad', () =>
+      syncMetaAds({
+        supabase: input.supabase,
+        adAccounts: historicalScope,
+        campaignsByExternalId: campaigns.byExternalId,
+        adsetsByExternalId: adsets.byExternalId,
+        accessToken: input.accessToken,
+        syncedAt: input.syncedAt,
+      })
+    );
 
-    const creatives = await syncMetaAdCreatives({
-      supabase: input.supabase,
-      businessId: input.businessId,
-      platformIntegrationId: input.platformIntegrationId,
-      adAccounts: historicalScope,
-      ads: ads.rows,
-      adsetsByExternalId: adsets.byExternalId,
-      campaignsByExternalId: campaigns.byExternalId,
-      accessToken: input.accessToken,
-      syncedAt: input.syncedAt,
-    });
+    const creatives = await runMetaSyncStage('creative', () =>
+      syncMetaAdCreatives({
+        supabase: input.supabase,
+        businessId: input.businessId,
+        platformIntegrationId: input.platformIntegrationId,
+        adAccounts: historicalScope,
+        ads: ads.rows,
+        adsetsByExternalId: adsets.byExternalId,
+        campaignsByExternalId: campaigns.byExternalId,
+        accessToken: input.accessToken,
+        syncedAt: input.syncedAt,
+      })
+    );
 
-    const performance = await syncMetaPerformance({
-      supabase: input.supabase,
-      adAccounts: historicalScope,
-      campaignsByExternalId: campaigns.byExternalId,
-      adsetsByExternalId: adsets.byExternalId,
-      adsByExternalId: ads.byExternalId,
-      accessToken: input.accessToken,
-      backfillDays: historicalBackfillDays,
-      syncedAt: input.syncedAt,
-    });
+    const performance = await runMetaSyncStage('performance', () =>
+      syncMetaPerformance({
+        supabase: input.supabase,
+        adAccounts: historicalScope,
+        campaignsByExternalId: campaigns.byExternalId,
+        adsetsByExternalId: adsets.byExternalId,
+        adsByExternalId: ads.byExternalId,
+        accessToken: input.accessToken,
+        backfillDays: performanceWindow.backfillDays,
+        syncedAt: input.syncedAt,
+      })
+    );
     const completedAt = new Date().toISOString();
 
     await Promise.all([
@@ -158,11 +187,14 @@ export async function syncMetaBusinessPlatform(input: {
         firstActivityDate: performance.firstActivityDate,
         latestActivityDate: performance.latestActivityDate,
         insightsSyncedThrough: performance.insightsSyncedThrough,
-        isInitialHistoricalSync,
+        completesFullHistory,
       }),
     ]);
 
     return {
+      syncMode: input.syncMode,
+      coverageStartDate: performanceWindow.since,
+      coverageEndDate: performance.insightsSyncedThrough ?? performanceWindow.until,
       adAccounts: discoveredAccounts.count,
       campaignDims: campaigns.count,
       adsetDims: adsets.count,

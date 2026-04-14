@@ -1,6 +1,7 @@
 'use client';
 
 import { Badge, Button, Container, Group, Paper, Stack, Stepper as MantineStepper, Title, Text, Modal } from '@mantine/core';
+import type { ManualCampaignDraftForm } from '@/lib/shared/types/campaignDrafts';
 import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react';
 import { useObjectiveMapping } from '../hooks/useObjectiveMapping';
 import { useCampaignSteps } from '../../../common/useCampaignSteps';
@@ -22,6 +23,7 @@ interface MetaCampaignBuilderProps {
         platform_name: string;
     }
     adAccountId: string;
+    draft?: ManualCampaignDraftForm | null;
     onBack: () => void;
 }
 
@@ -31,8 +33,8 @@ interface MetaCampaignBuilderProps {
  * @returns 
  */
 
-export default function ManualMetaCampaignBuilder({ platformData, adAccountId, onBack }: MetaCampaignBuilderProps) {
-    const form = useMetaCampaignForm(platformData.id, adAccountId, false);
+export default function ManualMetaCampaignBuilder({ platformData, adAccountId, draft, onBack }: MetaCampaignBuilderProps) {
+    const form = useMetaCampaignForm(platformData.id, adAccountId, false, draft ?? null);
     const { handleDestinationChange } = useObjectiveMapping(form);
     const { active, setActive, nextStep, prevStep } = useCampaignSteps(form, 4);
 

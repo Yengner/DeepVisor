@@ -643,12 +643,9 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                           borderBottom: `1px solid ${palette.border}`,
                         }}
                       >
-                        <div
-                          className={styles.channelGlow}
-                          style={{ backgroundColor: palette.accentSoft }}
-                        />
                         <Group justify="space-between" align="flex-start" mb="xl">
                           <Badge
+                            className={styles.channelStatusBadge}
                             color={getStatusColor(platform.status)}
                             variant={isConnected(platform.status) ? 'light' : 'outline'}
                             leftSection={
@@ -672,10 +669,21 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                           </ThemeIcon>
                         </Group>
 
-                        <div className={styles.channelArtworkWrap}>
-                          {artwork ? (
-                            <ChannelArtwork platform={platform} size={112} />
-                          ) : null}
+                        <div className={styles.channelArtworkStage}>
+                          <div
+                            className={styles.channelGlowPrimary}
+                            style={{ backgroundColor: palette.accentSoft }}
+                          />
+                          <div
+                            className={styles.channelGlowSecondary}
+                            style={{ backgroundColor: palette.accentSoft }}
+                          />
+                          <div className={styles.channelArtworkShadow} />
+                          <div className={styles.channelArtworkWrap}>
+                            {artwork ? (
+                              <ChannelArtwork platform={platform} size={112} />
+                            ) : null}
+                          </div>
                         </div>
                       </Card.Section>
 

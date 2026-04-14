@@ -37,6 +37,15 @@ function hasDeliverySignal(row: AdAccountDailyMetricsRow): boolean {
   );
 }
 
+async function runPerformanceFetchStage<T>(label: string, operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unexpected Meta performance fetch error';
+    throw new Error(`Meta ${label} performance fetch failed: ${message}`);
+  }
+}
+
 export async function syncMetaPerformance(input: {
   supabase: RepositoryClient;
   adAccounts: AdAccountRow[];
@@ -59,28 +68,34 @@ export async function syncMetaPerformance(input: {
   let insightsSyncedThrough: string | null = null;
 
   for (const adAccount of input.adAccounts) {
-    const [adAccountRows, campaignRows, adsetRows, adRows] = await Promise.all([
+    const adAccountRows = await runPerformanceFetchStage('account', () =>
       fetchMetaAdAccountPerformanceSeeds({
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
         backfillDays: input.backfillDays,
-      }),
+      })
+    );
+    const campaignRows = await runPerformanceFetchStage('campaign', () =>
       fetchMetaCampaignPerformanceSeeds({
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
         backfillDays: input.backfillDays,
-      }),
+      })
+    );
+    const adsetRows = await runPerformanceFetchStage('ad set', () =>
       fetchMetaAdsetPerformanceSeeds({
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
         backfillDays: input.backfillDays,
-      }),
+      })
+    );
+    const adRows = await runPerformanceFetchStage('ad', () =>
       fetchMetaAdPerformanceSeeds({
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
         backfillDays: input.backfillDays,
-      }),
-    ]);
+      })
+    );
 
     if (adAccountRows.length > 0) {
       historicalDataAvailable = true;

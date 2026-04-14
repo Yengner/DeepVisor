@@ -74,6 +74,10 @@
   min-height: 360px;
 }
 
+.miniChartWrap {
+  min-height: 220px;
+}
+
 .insightPanel {
   height: 100%;
   background: rgba(248, 250, 252, 0.78);
@@ -87,6 +91,13 @@
 }
 
 .moverRow {
+  padding: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.72);
+}
+
+.signalRow {
   padding: 12px;
   border: 1px solid rgba(226, 232, 240, 0.92);
   border-radius: 16px;
