@@ -99,9 +99,9 @@ const useCases = [
     bullets: ["Cost per result", "Timeline context", "Approval workflow"],
   },
   {
-    title: "Agencies",
-    description: "Give clients a cleaner view of what is being watched, reported, and queued next.",
-    bullets: ["Client-friendly summaries", "Queue visibility", "Campaign comparison"],
+    title: "Ecommerce businesses",
+    description: "See what products, creatives, and campaigns are driving performance without checking every ad platform screen.",
+    bullets: ["ROAS trends", "Creative insights", "Account visibility"],
   },
 ];
 

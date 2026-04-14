@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { fetchMetaAdAccountSnapshots } from '@/lib/server/integrations/adapters/meta';
 import {
   beginHistoricalSyncJob,
   completeHistoricalSyncJob,
@@ -8,6 +9,7 @@ import {
   markAdAccountHistoricalSyncSucceeded,
 } from '@/lib/server/repositories/ad_accounts/syncState';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
+import type { Database } from '@/lib/shared/types/supabase';
 import { FULL_HISTORY_BACKFILL_DAYS, RECENT_SEED_SYNC_DAYS } from '../types';
 import type { PlatformSyncMode, SyncTrigger } from '../types';
 import { resolveMetaBackfillWindow } from './client';
@@ -17,6 +19,8 @@ import { syncMetaAdsets } from './syncMetaAdsets';
 import { syncMetaCampaigns } from './syncMetaCampaigns';
 import { discoverMetaAdAccounts } from './discoverMetaAdAccounts';
 import { syncMetaPerformance } from './syncMetaPerformance';
+
+type AdAccountRow = Database['public']['Tables']['ad_accounts']['Row'];
 
 function resolveHistoricalJobType(input: {
   trigger: SyncTrigger;
@@ -53,6 +57,104 @@ async function runMetaSyncStage<T>(label: string, operation: () => Promise<T>): 
   }
 }
 
+async function getSavedPrimaryAdAccount(input: {
+  supabase: RepositoryClient;
+  businessId: string;
+  platformId: string;
+  primaryExternalAccountId: string;
+}): Promise<AdAccountRow | null> {
+  const { data, error } = await input.supabase
+    .from('ad_accounts')
+    .select('*')
+    .eq('business_id', input.businessId)
+    .eq('platform_id', input.platformId)
+    .eq('external_account_id', input.primaryExternalAccountId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as AdAccountRow | null) ?? null;
+}
+
+async function refreshSelectedAdAccount(input: {
+  supabase: RepositoryClient;
+  businessId: string;
+  platformId: string;
+  accessToken: string;
+  primaryExternalAccountId: string;
+}): Promise<{ primaryAdAccount: AdAccountRow; discoveredCount: number }> {
+  const snapshots = await fetchMetaAdAccountSnapshots(input.accessToken, {
+    externalAccountId: input.primaryExternalAccountId,
+  });
+
+  if (snapshots.length === 0) {
+    throw new Error('Selected Meta ad account is no longer accessible to this integration');
+  }
+
+  const discoveredAccounts = await discoverMetaAdAccounts({
+    supabase: input.supabase,
+    businessId: input.businessId,
+    platformId: input.platformId,
+    snapshots,
+  });
+
+  const primaryAdAccount =
+    discoveredAccounts.byExternalAccountId.get(input.primaryExternalAccountId) ?? null;
+
+  if (!primaryAdAccount) {
+    throw new Error('Selected Meta ad account is no longer accessible to this integration');
+  }
+
+  return {
+    primaryAdAccount,
+    discoveredCount: discoveredAccounts.count,
+  };
+}
+
+async function resolvePrimaryAdAccountForSync(input: {
+  supabase: RepositoryClient;
+  businessId: string;
+  platformId: string;
+  accessToken: string;
+  primaryExternalAccountId: string;
+  syncMode: PlatformSyncMode;
+}): Promise<{
+  primaryAdAccount: AdAccountRow;
+  discoveredCount: number;
+  syncStateEnsured: boolean;
+}> {
+  const savedPrimaryAdAccount = await getSavedPrimaryAdAccount({
+    supabase: input.supabase,
+    businessId: input.businessId,
+    platformId: input.platformId,
+    primaryExternalAccountId: input.primaryExternalAccountId,
+  });
+
+  if (savedPrimaryAdAccount && input.syncMode === 'seed_recent') {
+    return {
+      primaryAdAccount: savedPrimaryAdAccount,
+      discoveredCount: 1,
+      syncStateEnsured: false,
+    };
+  }
+
+  const refreshed = await refreshSelectedAdAccount({
+    supabase: input.supabase,
+    businessId: input.businessId,
+    platformId: input.platformId,
+    accessToken: input.accessToken,
+    primaryExternalAccountId: input.primaryExternalAccountId,
+  });
+
+  return {
+    primaryAdAccount: refreshed.primaryAdAccount,
+    discoveredCount: refreshed.discoveredCount,
+    syncStateEnsured: true,
+  };
+}
+
 export async function syncMetaBusinessPlatform(input: {
   supabase: RepositoryClient;
   businessId: string;
@@ -65,25 +167,23 @@ export async function syncMetaBusinessPlatform(input: {
   primaryExternalAccountId: string;
   syncMode: PlatformSyncMode;
 }) {
-  // Step 01: discovery/registration only. This records accessible accounts and sync state,
-  // but it does not count as a successful sync.
-  const discoveredAccounts = await runMetaSyncStage('discovery', () =>
-    discoverMetaAdAccounts({
+  const resolvedPrimaryAccount = await runMetaSyncStage('selected account resolution', () =>
+    resolvePrimaryAdAccountForSync({
       supabase: input.supabase,
       businessId: input.businessId,
       platformId: input.platformId,
       accessToken: input.accessToken,
+      primaryExternalAccountId: input.primaryExternalAccountId,
+      syncMode: input.syncMode,
     })
   );
 
-  const primaryAdAccount =
-    discoveredAccounts.byExternalAccountId.get(input.primaryExternalAccountId) ?? null;
+  const { primaryAdAccount, discoveredCount, syncStateEnsured } = resolvedPrimaryAccount;
 
-  if (!primaryAdAccount) {
-    throw new Error('Selected Meta ad account is no longer accessible to this integration');
+  if (!syncStateEnsured) {
+    await ensureAdAccountSyncStates(input.supabase, [primaryAdAccount]);
   }
 
-  await ensureAdAccountSyncStates(input.supabase, [primaryAdAccount]);
   const performanceWindow = resolvePerformanceWindow({
     syncMode: input.syncMode,
     backfillDays: input.backfillDays,
@@ -195,7 +295,7 @@ export async function syncMetaBusinessPlatform(input: {
       syncMode: input.syncMode,
       coverageStartDate: performanceWindow.since,
       coverageEndDate: performance.insightsSyncedThrough ?? performanceWindow.until,
-      adAccounts: discoveredAccounts.count,
+      adAccounts: discoveredCount,
       campaignDims: campaigns.count,
       adsetDims: adsets.count,
       adDims: ads.count,
