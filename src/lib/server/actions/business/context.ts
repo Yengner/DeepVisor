@@ -155,6 +155,13 @@ async function ensureBusinessProfileForOrganization(
   return createdBusiness;
 }
 
+/**
+ * Loads the user's primary organization/business context, creating a default business
+ * workspace when the user has not been assigned one yet.
+ *
+ * @param userId - The authenticated user whose workspace context should be resolved.
+ * @returns The normalized organization + business context used throughout the app.
+ */
 export async function getOrCreateOrganizationBusinessContext(
   userId: string
 ): Promise<OrganizationBusinessContext> {

@@ -37,7 +37,19 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import MetaIntegrationFlow from '@/components/integrations/MetaIntegrationFlow';
 import { getPlatformIcon } from '@/components/utils/utils';
-import { formatRetryDelay } from '@/lib/shared';
+import {
+  formatDateTime,
+  formatRelativeTime,
+  formatRetryDelay,
+  getIntegrationAvailabilityCopy,
+  getIntegrationPlatformImage,
+  getIntegrationPlatformPalette,
+  getIntegrationStatusColor,
+  getIntegrationStatusLabel,
+  integrationNeedsAttention,
+  isIntegrationConnected,
+  sortIntegrationPlatforms,
+} from '@/lib/shared';
 import type { IntegrationStatus } from '@/lib/shared/types/integrations';
 import styles from './IntegrationClient.module.css';
 
@@ -63,175 +75,9 @@ type PlatformListProps = {
   platforms: Platform[];
 };
 
-type PlatformPalette = {
-  accent: string;
-  accentSoft: string;
-  accentSurface: string;
-  border: string;
-  text: string;
-};
-
-const PLATFORM_IMAGE_BY_KEY: Record<string, string> = {
-  meta: '/images/platforms/logo/meta.png',
-  google: '/images/platforms/logo/google.png',
-  tiktok: '/images/platforms/logo/tiktok.png',
-};
-
-const PLATFORM_PALETTE_BY_KEY: Record<string, PlatformPalette> = {
-  meta: {
-    accent: '#1877f2',
-    accentSoft: 'rgba(24, 119, 242, 0.12)',
-    accentSurface: 'rgba(24, 119, 242, 0.10)',
-    border: 'rgba(24, 119, 242, 0.2)',
-    text: '#154273',
-  },
-  google: {
-    accent: '#34a853',
-    accentSoft: 'rgba(52, 168, 83, 0.12)',
-    accentSurface: 'rgba(52, 168, 83, 0.10)',
-    border: 'rgba(52, 168, 83, 0.18)',
-    text: '#24503a',
-  },
-  tiktok: {
-    accent: '#fe2c55',
-    accentSoft: 'rgba(254, 44, 85, 0.12)',
-    accentSurface: 'rgba(254, 44, 85, 0.10)',
-    border: 'rgba(254, 44, 85, 0.18)',
-    text: '#5a2134',
-  },
-  default: {
-    accent: '#2563eb',
-    accentSoft: 'rgba(37, 99, 235, 0.12)',
-    accentSurface: 'rgba(37, 99, 235, 0.10)',
-    border: 'rgba(37, 99, 235, 0.18)',
-    text: '#173868',
-  },
-};
-
-function formatDateTime(value: string | null): string {
-  if (!value) {
-    return 'Not available';
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
-function formatRelativeTime(value: string | null): string {
-  if (!value) {
-    return 'Not synced yet';
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  const deltaMs = Date.now() - date.getTime();
-  if (!Number.isFinite(deltaMs) || deltaMs < 0) {
-    return 'Recently updated';
-  }
-
-  const minutes = Math.round(deltaMs / (60 * 1000));
-  if (minutes < 60) {
-    return minutes <= 1 ? 'Just now' : `${minutes}m ago`;
-  }
-
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) {
-    return `${hours}h ago`;
-  }
-
-  const days = Math.round(hours / 24);
-  return `${days}d ago`;
-}
-
-function isConnected(status: IntegrationStatus): boolean {
-  return status === 'connected';
-}
-
-function needsAttention(status: IntegrationStatus): boolean {
-  return status === 'error' || status === 'needs_reauth';
-}
-
-function getStatusColor(status: IntegrationStatus): 'green' | 'gray' | 'red' | 'yellow' {
-  if (status === 'connected') return 'green';
-  if (status === 'needs_reauth') return 'yellow';
-  if (status === 'error') return 'red';
-  return 'gray';
-}
-
-function getStatusLabel(status: IntegrationStatus): string {
-  if (status === 'connected') return 'Connected';
-  if (status === 'needs_reauth') return 'Reconnect needed';
-  if (status === 'error') return 'Issue detected';
-  return 'Not connected';
-}
-
-function getPlatformPalette(platformKey: string): PlatformPalette {
-  return PLATFORM_PALETTE_BY_KEY[platformKey] ?? PLATFORM_PALETTE_BY_KEY.default;
-}
-
-function getPlatformImage(platform: Platform): string | null {
-  return PLATFORM_IMAGE_BY_KEY[platform.platformKey] ?? platform.imageUrl ?? null;
-}
-
-function sortPlatforms(platforms: Platform[]): Platform[] {
-  const order = ['meta', 'google', 'tiktok'];
-
-  return [...platforms].sort((left, right) => {
-    const leftConnected = isConnected(left.status) ? 1 : 0;
-    const rightConnected = isConnected(right.status) ? 1 : 0;
-
-    if (leftConnected !== rightConnected) {
-      return rightConnected - leftConnected;
-    }
-
-    const leftAttention = needsAttention(left.status) ? 1 : 0;
-    const rightAttention = needsAttention(right.status) ? 1 : 0;
-    if (leftAttention !== rightAttention) {
-      return rightAttention - leftAttention;
-    }
-
-    const leftOrder = order.indexOf(left.platformKey);
-    const rightOrder = order.indexOf(right.platformKey);
-    const safeLeft = leftOrder === -1 ? Number.MAX_SAFE_INTEGER : leftOrder;
-    const safeRight = rightOrder === -1 ? Number.MAX_SAFE_INTEGER : rightOrder;
-
-    if (safeLeft !== safeRight) {
-      return safeLeft - safeRight;
-    }
-
-    return left.platformName.localeCompare(right.platformName);
-  });
-}
-
-function getAvailabilityCopy(platform: Platform): string {
-  if (isConnected(platform.status)) {
-    return platform.lastSyncedAt
-      ? `Last synced ${formatRelativeTime(platform.lastSyncedAt)}`
-      : 'Connected and waiting for first sync';
-  }
-
-  if (platform.platformKey === 'meta') {
-    return platform.status === 'error' || platform.status === 'needs_reauth'
-      ? 'Reconnect Meta to restore syncing.'
-      : 'Available to connect now.';
-  }
-
-  return 'Preview channel for future integrations.';
-}
-
+/**
+ * Shared summary card used in the integrations page hero for workspace-level counts and status.
+ */
 function SummaryCard({
   label,
   title,
@@ -259,6 +105,9 @@ function SummaryCard({
   );
 }
 
+/**
+ * Renders either branded platform artwork or a platform icon fallback when no image is available.
+ */
 function ChannelArtwork({
   platform,
   size = 120,
@@ -266,7 +115,7 @@ function ChannelArtwork({
   platform: Platform;
   size?: number;
 }) {
-  const src = getPlatformImage(platform);
+  const src = getIntegrationPlatformImage(platform.platformKey, platform.imageUrl);
 
   if (!src) {
     return (
@@ -274,7 +123,7 @@ function ChannelArtwork({
         size={size}
         radius="xl"
         variant="light"
-        color={getStatusColor(platform.status)}
+        color={getIntegrationStatusColor(platform.status)}
       >
         {getPlatformIcon(platform.platformKey, Math.round(size * 0.48), 1.5)}
       </ThemeIcon>
@@ -299,9 +148,9 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
-  const sortedPlatforms = sortPlatforms(platforms);
-  const connectedPlatforms = sortedPlatforms.filter((platform) => isConnected(platform.status));
-  const attentionPlatforms = sortedPlatforms.filter((platform) => needsAttention(platform.status));
+  const sortedPlatforms = sortIntegrationPlatforms(platforms);
+  const connectedPlatforms = sortedPlatforms.filter((platform) => isIntegrationConnected(platform.status));
+  const attentionPlatforms = sortedPlatforms.filter((platform) => integrationNeedsAttention(platform.status));
   const latestSyncedPlatform = [...connectedPlatforms]
     .filter((platform) => platform.lastSyncedAt)
     .sort((left, right) => {
@@ -459,7 +308,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                       }
                       detail={
                         latestSyncedPlatform
-                          ? formatRelativeTime(latestSyncedPlatform.lastSyncedAt)
+                          ? formatRelativeTime(latestSyncedPlatform.lastSyncedAt, { emptyLabel: 'Not synced yet' })
                           : 'Connect a platform to start pulling data.'
                       }
                       accent="#10b981"
@@ -492,7 +341,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
 
                   <Stack gap="sm" mt="lg">
                     {sortedPlatforms.map((platform) => {
-                      const palette = getPlatformPalette(platform.platformKey);
+                      const palette = getIntegrationPlatformPalette(platform.platformKey);
 
                       return (
                         <Paper
@@ -521,17 +370,17 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                   {platform.platformName}
                                 </Text>
                                 <Text size="xs" c="dimmed" lineClamp={1}>
-                                  {getAvailabilityCopy(platform)}
+                                  {getIntegrationAvailabilityCopy(platform)}
                                 </Text>
                               </div>
                             </Group>
 
                             <Badge
                               size="sm"
-                              color={getStatusColor(platform.status)}
-                              variant={isConnected(platform.status) ? 'light' : 'outline'}
+                              color={getIntegrationStatusColor(platform.status)}
+                              variant={isIntegrationConnected(platform.status) ? 'light' : 'outline'}
                             >
-                              {getStatusLabel(platform.status)}
+                              {getIntegrationStatusLabel(platform.status)}
                             </Badge>
                           </Group>
                         </Paper>
@@ -620,11 +469,11 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
 
               <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }} spacing="lg">
                 {sortedPlatforms.map((platform) => {
-                  const palette = getPlatformPalette(platform.platformKey);
-                  const artwork = getPlatformImage(platform);
-                  const disconnected = !isConnected(platform.status);
+                  const palette = getIntegrationPlatformPalette(platform.platformKey);
+                  const artwork = getIntegrationPlatformImage(platform.platformKey, platform.imageUrl);
+                  const disconnected = !isIntegrationConnected(platform.status);
                   const canConnectNow = platform.platformKey === 'meta' && disconnected;
-                  const canManageLive = Boolean(platform.integrationId) && isConnected(platform.status);
+                  const canManageLive = Boolean(platform.integrationId) && isIntegrationConnected(platform.status);
                   const platformError = platform.lastError;
                   const disconnecting = disconnectingPlatformId === platform.id;
 
@@ -646,17 +495,17 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                         <Group justify="space-between" align="flex-start" mb="xl">
                           <Badge
                             className={styles.channelStatusBadge}
-                            color={getStatusColor(platform.status)}
-                            variant={isConnected(platform.status) ? 'light' : 'outline'}
+                            color={getIntegrationStatusColor(platform.status)}
+                            variant={isIntegrationConnected(platform.status) ? 'light' : 'outline'}
                             leftSection={
-                              isConnected(platform.status) ? (
+                              isIntegrationConnected(platform.status) ? (
                                 <IconCheck size={12} />
-                              ) : needsAttention(platform.status) ? (
+                              ) : integrationNeedsAttention(platform.status) ? (
                                 <IconAlertTriangle size={12} />
                               ) : undefined
                             }
                           >
-                            {getStatusLabel(platform.status)}
+                            {getIntegrationStatusLabel(platform.status)}
                           </Badge>
 
                           <ThemeIcon
@@ -710,7 +559,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                               Sync state
                             </Text>
                             <Text fw={700} mt={4}>
-                              {formatRelativeTime(platform.lastSyncedAt)}
+                              {formatRelativeTime(platform.lastSyncedAt, { emptyLabel: 'Not synced yet' })}
                             </Text>
                           </Paper>
                           <Paper withBorder radius="lg" p="sm" className={styles.metricCard}>
@@ -769,7 +618,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                 onClick={connectMeta}
                                 loading={connecting}
                               >
-                                {needsAttention(platform.status) ? 'Reconnect Meta' : 'Connect Meta'}
+                                {integrationNeedsAttention(platform.status) ? 'Reconnect Meta' : 'Connect Meta'}
                               </Button>
                             ) : (
                               <Button
@@ -831,9 +680,9 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
             >
               {selectedPlatform ? (
                 (() => {
-                  const palette = getPlatformPalette(selectedPlatform.platformKey);
+                  const palette = getIntegrationPlatformPalette(selectedPlatform.platformKey);
                   const disconnecting = disconnectingPlatformId === selectedPlatform.id;
-                  const connected = isConnected(selectedPlatform.status);
+                  const connected = isIntegrationConnected(selectedPlatform.status);
                   const canConnectNow = selectedPlatform.platformKey === 'meta' && !connected;
 
                   return (
@@ -857,10 +706,10 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                   {selectedPlatform.platformName}
                                 </Text>
                                 <Badge
-                                  color={getStatusColor(selectedPlatform.status)}
+                                  color={getIntegrationStatusColor(selectedPlatform.status)}
                                   variant={connected ? 'light' : 'outline'}
                                 >
-                                  {getStatusLabel(selectedPlatform.status)}
+                                  {getIntegrationStatusLabel(selectedPlatform.status)}
                                 </Badge>
                               </Group>
                               <Text size="sm" maw={460}>
@@ -901,7 +750,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                             Current status
                           </Text>
                           <Text fw={700} mt={4}>
-                            {getStatusLabel(selectedPlatform.status)}
+                            {getIntegrationStatusLabel(selectedPlatform.status)}
                           </Text>
                         </Paper>
 
@@ -928,7 +777,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                             Channel readiness
                           </Text>
                           <Text fw={700} mt={4}>
-                            {getAvailabilityCopy(selectedPlatform)}
+                            {getIntegrationAvailabilityCopy(selectedPlatform)}
                           </Text>
                         </Paper>
                       </SimpleGrid>
@@ -994,7 +843,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                               onClick={connectMeta}
                               loading={connecting}
                             >
-                              {needsAttention(selectedPlatform.status) ? 'Reconnect Meta' : 'Connect Meta'}
+                              {integrationNeedsAttention(selectedPlatform.status) ? 'Reconnect Meta' : 'Connect Meta'}
                             </Button>
                           ) : (
                             <Button
@@ -1013,7 +862,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                             <IconClock size={16} />
                           </ThemeIcon>
                           <Text size="sm" c="dimmed">
-                            {getAvailabilityCopy(selectedPlatform)}
+                            {getIntegrationAvailabilityCopy(selectedPlatform)}
                           </Text>
                         </Group>
                       </Group>

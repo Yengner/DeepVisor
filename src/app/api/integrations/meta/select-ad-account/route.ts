@@ -4,7 +4,6 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import {
   getBusinessIntegrationById,
   getPrimaryAdAccountSelection,
-  listMetaAccessibleAdAccounts,
 } from '@/lib/server/integrations/service';
 import {
   applyAppSelectionCookies,
@@ -12,6 +11,12 @@ import {
 } from '@/lib/server/integrations/metaSelection';
 import { ErrorCode, fail, ok } from '@/lib/shared';
 
+/**
+ * Maps low-level sync or provider errors to a user-facing message suitable for the account-selection UI.
+ *
+ * @param message - Raw error message captured during account selection or first sync.
+ * @returns A sanitized message that is safer and more actionable for end users.
+ */
 function getSelectionUserMessage(message: string): string {
   const normalized = message.toLowerCase();
 
@@ -29,6 +34,16 @@ function getSelectionUserMessage(message: string): string {
   return message;
 }
 
+/**
+ * Selects a primary Meta ad account for an integration and kicks off the initial sync workflow.
+ *
+ * The route validates the submitted integration/account pair against already-discovered server
+ * state, promotes that account to the integration's primary selection, syncs it, and updates the
+ * app-selection cookies used by the UI.
+ *
+ * @param request - Next.js request containing the selected integration id and external account id.
+ * @returns A JSON response with the selected account, sync coverage, and updated selection cookies.
+ */
 export async function POST(request: NextRequest) {
   try {
     const { businessId } = await getRequiredAppContext();
@@ -69,41 +84,23 @@ export async function POST(request: NextRequest) {
         }
       | null = null;
 
-    try {
-      const accounts = await listMetaAccessibleAdAccounts(supabase, integration);
-      const matchedAccessibleAccount = accounts.find(
-        (account) => account.externalAccountId === externalAccountId
-      );
+    const { data: savedAccount, error: savedAccountError } = await supabase
+      .from('ad_accounts')
+      .select('external_account_id, name')
+      .eq('business_id', businessId)
+      .eq('platform_id', integration.platformId)
+      .eq('external_account_id', externalAccountId)
+      .maybeSingle();
 
-      if (matchedAccessibleAccount) {
-        selectedAccount = {
-          externalAccountId: matchedAccessibleAccount.externalAccountId,
-          name: matchedAccessibleAccount.name,
-        };
-      }
-    } catch (error) {
-      console.warn('Meta accessible account lookup failed during selection, falling back to saved account state:', error);
+    if (savedAccountError) {
+      throw savedAccountError;
     }
 
-    if (!selectedAccount) {
-      const { data: savedAccount, error: savedAccountError } = await supabase
-        .from('ad_accounts')
-        .select('external_account_id, name')
-        .eq('business_id', businessId)
-        .eq('platform_id', integration.platformId)
-        .eq('external_account_id', externalAccountId)
-        .maybeSingle();
-
-      if (savedAccountError) {
-        throw savedAccountError;
-      }
-
-      if (savedAccount?.external_account_id) {
-        selectedAccount = {
-          externalAccountId: savedAccount.external_account_id,
-          name: savedAccount.name,
-        };
-      }
+    if (savedAccount?.external_account_id) {
+      selectedAccount = {
+        externalAccountId: savedAccount.external_account_id,
+        name: savedAccount.name,
+      };
     }
 
     if (!selectedAccount) {

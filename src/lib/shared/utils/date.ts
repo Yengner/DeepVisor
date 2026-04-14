@@ -1,6 +1,8 @@
 /**
  * Converts Unix timestamps from Stripe API to JavaScript Date objects and formatted strings
- * @param unixTimestamp - Unix timestamp in seconds
+ *
+ * @param unixTimestamp - Unix timestamp in seconds.
+ * @returns A bundle of formatted date variants, or `null` when the input is missing.
  */
 export function formatStripeTimestamp(unixTimestamp: number | null | undefined) {
   if (!unixTimestamp) return null;
@@ -36,16 +38,33 @@ export function formatStripeTimestamp(unixTimestamp: number | null | undefined) 
   };
 }
 
+/**
+ * Formats a Date as `YYYY-MM-DD`, which is the format used by reporting filters and rollups.
+ *
+ * @param date - JavaScript Date to serialize.
+ * @returns An ISO-style day string without the time portion.
+ */
 export function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/**
+ * Returns the current day normalized to midnight UTC to avoid local timezone drift in queries.
+ *
+ * @returns A Date representing "today" at `00:00:00` UTC.
+ */
 export function getUtcToday(): Date {
   const date = new Date();
   date.setUTCHours(0, 0, 0, 0);
   return date;
 }
 
+/**
+ * Builds an inclusive trailing UTC date range ending today.
+ *
+ * @param days - Number of days to include in the window. Values below 1 are clamped to 1.
+ * @returns An object containing `dateFrom` and `dateTo` in `YYYY-MM-DD` format.
+ */
 export function getTrailingUtcDateRange(days: number): {
   dateFrom: string;
   dateTo: string;
@@ -61,6 +80,12 @@ export function getTrailingUtcDateRange(days: number): {
   };
 }
 
+/**
+ * Parses a timestamp-like string into milliseconds, returning `null` when parsing fails.
+ *
+ * @param value - ISO timestamp or date-like string to parse.
+ * @returns The Unix timestamp in milliseconds, or `null` when the value is empty or invalid.
+ */
 export function parseTimestampMs(value: string | null | undefined): number | null {
   if (!value) {
     return null;
@@ -70,6 +95,12 @@ export function parseTimestampMs(value: string | null | undefined): number | nul
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/**
+ * Formats a stored date string for compact UI display such as tables, labels, and chips.
+ *
+ * @param value - Optional date string to render.
+ * @returns A short display date like `Apr 14, 2026`, or an empty string when missing.
+ */
 export function formatDisplayDate(value?: string | null): string {
   return value
     ? new Date(value).toLocaleDateString('en-US', {
@@ -78,6 +109,102 @@ export function formatDisplayDate(value?: string | null): string {
         year: 'numeric',
       })
     : '';
+}
+
+/**
+ * Formats a timestamp with both date and time for metadata and detail views.
+ *
+ * @param value - Timestamp string to render.
+ * @returns A human-readable datetime string, or a fallback label when missing.
+ */
+export function formatDateTime(value: string | null): string {
+  if (!value) {
+    return 'Not available';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+/**
+ * Allows each surface to customize fallback labels while reusing the same relative-time logic.
+ *
+ * @property emptyLabel - Label returned when the input is missing.
+ * @property invalidLabel - Optional override used when parsing fails.
+ * @property futureLabel - Label returned when the timestamp is in the future.
+ * @property justNowLabel - Label returned for near-zero age values.
+ */
+export interface RelativeTimeFormatOptions {
+  emptyLabel?: string;
+  invalidLabel?: string;
+  futureLabel?: string;
+  justNowLabel?: string;
+}
+
+/**
+ * Converts a timestamp into compact relative copy like `12m ago`, `4h ago`, or `3d ago`.
+ *
+ * @param value - Date or date-like string to format.
+ * @param options - Optional label overrides for empty, invalid, future, or near-zero values.
+ * @returns A short relative-time label suitable for dashboards and cards.
+ */
+export function formatRelativeTime(
+  value: string | Date | null | undefined,
+  options: RelativeTimeFormatOptions = {}
+): string {
+  const {
+    emptyLabel = 'Not available',
+    invalidLabel,
+    futureLabel = 'Recently updated',
+    justNowLabel = 'Just now',
+  } = options;
+
+  if (!value) {
+    return emptyLabel;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  const timestamp = date.getTime();
+
+  if (!Number.isFinite(timestamp)) {
+    if (invalidLabel) {
+      return invalidLabel;
+    }
+
+    return typeof value === 'string' ? value : emptyLabel;
+  }
+
+  const deltaMs = Date.now() - timestamp;
+  if (!Number.isFinite(deltaMs) || deltaMs < 0) {
+    return futureLabel;
+  }
+
+  const minutes = Math.round(deltaMs / (60 * 1000));
+  if (minutes < 1) {
+    return justNowLabel;
+  }
+
+  if (minutes < 60) {
+    return minutes <= 1 ? justNowLabel : `${minutes}m ago`;
+  }
+
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+
+  const days = Math.round(hours / 24);
+  return `${days}d ago`;
 }
 
 /**
