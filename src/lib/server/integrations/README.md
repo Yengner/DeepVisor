@@ -321,7 +321,7 @@ Main file:
 
 Stage order:
 
-1. `discoverMetaAdAccounts()`
+1. resolve the selected primary ad account context
 2. `ensureAdAccountSyncStates()`
 3. `beginHistoricalSyncJob()`
 4. `syncMetaCampaigns()`
@@ -334,17 +334,19 @@ Stage order:
 
 What happens:
 
-1. Re-discovers accessible Meta ad accounts with the live token.
-2. Confirms that the selected primary external account still exists.
-3. Ensures sync-state rows exist for that account.
-4. Opens or advances the historical sync job row.
-5. Syncs campaign, ad set, ad, creative, and performance data for the selected account only.
-6. Marks the job completed and updates sync coverage metadata.
-7. On failure, marks the job failed.
+1. Resolves the selected primary ad account before syncing.
+2. For `seed_recent`, it reuses the already-registered `ad_accounts` row and skips a broad Meta rediscovery.
+3. For later sync modes, it validates only the selected account against Meta and refreshes that account's metadata when needed.
+4. Ensures sync-state rows exist for that account.
+5. Opens or advances the historical sync job row.
+6. Syncs campaign, ad set, ad, creative, and performance data for the selected account only.
+7. Marks the job completed and updates sync coverage metadata.
+8. On failure, marks the job failed.
 
 Important current behavior:
 
-- Discovery runs again inside the sync to validate the selected account is still accessible.
+- The initial seed sync no longer re-discovers all accessible Meta accounts.
+- Later sync modes validate only the selected account instead of refetching the entire accessible account list.
 - Only the selected primary account enters dimension/performance sync.
 - Seed sync and full backfill use the same core path with different `syncMode` and date windows.
 
