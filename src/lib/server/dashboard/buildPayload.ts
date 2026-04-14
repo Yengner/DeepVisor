@@ -354,6 +354,8 @@ export function buildDashboardPayload(input: {
   platform: PlatformDetails | null;
   adAccount: AdAccountData | null;
   campaignSnapshot: DashboardCampaignSnapshotItem[];
+  syncCoverage: DashboardPayload['syncCoverage'];
+  reviveOpportunity: DashboardPayload['reviveOpportunity'];
 }): DashboardPayload {
   const platformConnected = Boolean(input.platform && input.platform.status === 'connected');
   const adAccountHasMetrics = input.adAccount
@@ -401,6 +403,8 @@ export function buildDashboardPayload(input: {
       '30d': buildTrendSeries(dailyPoints, '30d', primaryOutcomeMetric),
     },
     campaignPreview: buildCampaignPreview(input.campaignSnapshot, primaryOutcomeMetric),
+    syncCoverage: input.syncCoverage,
+    reviveOpportunity: input.reviveOpportunity,
     platform: input.platform,
     adAccount: input.adAccount,
   };

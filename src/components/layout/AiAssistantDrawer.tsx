@@ -40,7 +40,7 @@ type ThreadMessage = {
 };
 
 const quickPrompts = [
-  'Summarize this account',
+  'What matters right now?',
   'What should I fix first?',
   'What looks strong right now?',
   'What should I watch this week?',
@@ -125,6 +125,17 @@ function buildAssistantReply(
   const nextStep = assessment.assessment.nextSteps[0];
   const bestCampaign = digest.topCampaigns[0];
   const last30d = digest.weightedAverages.last30d;
+
+  if (normalized.includes('matter')) {
+    return [
+      summary,
+      topStrength ? `Strongest signal: ${topStrength}` : null,
+      topRisk ? `Biggest watchout: ${topRisk}` : null,
+      nextStep ? `Next move: ${nextStep}` : null,
+    ]
+      .filter((item): item is string => Boolean(item))
+      .join(' ');
+  }
 
   if (
     normalized.includes('fix') ||

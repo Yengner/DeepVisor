@@ -1,8 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { NextResponse } from 'next/server';
+import {
+  enqueueBackfillSyncJob,
+  getAdAccountSyncCoverage,
+} from '@/lib/server/repositories/ad_accounts/syncState';
 import type { Database } from '@/lib/shared/types/supabase';
 import { syncBusinessPlatform } from '@/lib/server/sync';
 import type { SyncTrigger } from '@/lib/server/sync/types';
+import { FULL_HISTORY_BACKFILL_DAYS, RECENT_SEED_SYNC_DAYS } from '@/lib/server/sync/types';
+import { resolveMetaBackfillWindow } from '@/lib/server/sync/meta/client';
+import type { SyncCoverage } from '@/lib/shared/types/integrations';
 import { setPrimaryMetaAdAccount } from './service';
 
 type AppSupabaseClient = SupabaseClient<Database>;
@@ -26,6 +33,7 @@ export type SyncSelectedMetaAdAccountResult = {
   externalAccountId: string;
   adAccountId: string | null;
   adAccountName: string | null;
+  syncCoverage: SyncCoverage | null;
   counts: Awaited<ReturnType<typeof syncBusinessPlatform>>['counts'];
   startedAt: string;
   completedAt: string;
@@ -46,7 +54,9 @@ export async function syncSelectedMetaAdAccount(
     businessId: input.businessId,
     integrationId: input.integrationId,
     trigger: input.trigger,
-    backfillDays: input.backfillDays,
+    backfillDays: input.backfillDays ?? RECENT_SEED_SYNC_DAYS,
+    syncMode: 'seed_recent',
+    primaryExternalAccountId: input.externalAccountId,
   });
 
   const { data: syncedAccount, error: syncedAccountError } = await input.supabase
@@ -61,12 +71,35 @@ export async function syncSelectedMetaAdAccount(
     throw syncedAccountError;
   }
 
+  let syncCoverage: SyncCoverage | null = null;
+
+  if (syncedAccount?.id) {
+    syncCoverage = await getAdAccountSyncCoverage(input.supabase, syncedAccount.id);
+
+    if (!syncCoverage || syncCoverage.historicalAnalysisPending) {
+      const fullHistoryWindow = resolveMetaBackfillWindow(FULL_HISTORY_BACKFILL_DAYS);
+      await enqueueBackfillSyncJob(input.supabase, {
+        businessId: input.businessId,
+        platformIntegrationId: input.integrationId,
+        adAccountId: syncedAccount.id,
+        requestedStartDate: fullHistoryWindow.since,
+        requestedEndDate: fullHistoryWindow.until,
+        metadata: {
+          externalAccountId: input.externalAccountId,
+          queuedFrom: 'meta_selection',
+        },
+      });
+      syncCoverage = await getAdAccountSyncCoverage(input.supabase, syncedAccount.id);
+    }
+  }
+
   return {
     integrationId: input.integrationId,
     platformId: input.platformId,
     externalAccountId: input.externalAccountId,
     adAccountId: syncedAccount?.id ?? null,
     adAccountName: syncedAccount?.name ?? input.name,
+    syncCoverage,
     counts: summary.counts,
     startedAt: summary.startedAt,
     completedAt: summary.completedAt,

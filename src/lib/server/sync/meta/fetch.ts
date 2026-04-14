@@ -77,6 +77,15 @@ type MetaInsightRow = {
   actions?: MetaActionMetric[];
 };
 
+type MetaInsightLevel = 'account' | 'campaign' | 'adset' | 'ad';
+
+const META_INSIGHTS_WINDOW_DAYS_BY_LEVEL: Record<MetaInsightLevel, number> = {
+  account: 180,
+  campaign: 90,
+  adset: 60,
+  ad: 30,
+};
+
 function toJson(value: unknown): Json | null {
   if (value == null) {
     return null;
@@ -163,6 +172,69 @@ function chunkStrings(values: string[], size: number): string[][] {
   }
 
   return chunks;
+}
+
+function addUtcDays(value: string, days: number): string {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function buildDateWindows(input: {
+  since: string;
+  until: string;
+  windowDays: number;
+}): Array<{ since: string; until: string }> {
+  const windows: Array<{ since: string; until: string }> = [];
+  let cursor = input.since;
+
+  while (cursor <= input.until) {
+    const candidateEnd = addUtcDays(cursor, Math.max(input.windowDays - 1, 0));
+    const until = candidateEnd < input.until ? candidateEnd : input.until;
+
+    windows.push({
+      since: cursor,
+      until,
+    });
+
+    cursor = addUtcDays(until, 1);
+  }
+
+  return windows;
+}
+
+async function fetchMetaInsightsRows(input: {
+  accessToken: string;
+  adAccountExternalId: string;
+  backfillDays: number;
+  level: MetaInsightLevel;
+  fields: string[];
+}): Promise<MetaInsightRow[]> {
+  const range = getBackfillDateRange(input.backfillDays);
+  const windows = buildDateWindows({
+    since: range.since,
+    until: range.until,
+    windowDays: META_INSIGHTS_WINDOW_DAYS_BY_LEVEL[input.level],
+  });
+  const rows: MetaInsightRow[] = [];
+
+  for (const window of windows) {
+    const insights = await fetchMetaCollection<MetaInsightRow>({
+      path: `${input.adAccountExternalId}/insights`,
+      accessToken: input.accessToken,
+      params: {
+        level: input.level,
+        time_increment: '1',
+        time_range: JSON.stringify(window),
+        fields: input.fields.join(','),
+        limit: 500,
+      },
+    });
+
+    rows.push(...insights);
+  }
+
+  return rows;
 }
 
 function normalizeMetaAdCreativeSeed(creative: MetaAdCreativeNode): MetaAdCreativeSeed | null {
@@ -280,24 +352,20 @@ export async function fetchMetaAdAccountPerformanceSeeds(input: {
   adAccountExternalId: string;
   backfillDays: number;
 }): Promise<MetaAdAccountPerformanceSeed[]> {
-  const insights = await fetchMetaCollection<MetaInsightRow>({
-    path: `${input.adAccountExternalId}/insights`,
+  const insights = await fetchMetaInsightsRows({
     accessToken: input.accessToken,
-    params: {
-      level: 'account',
-      time_increment: '1',
-      time_range: JSON.stringify(getBackfillDateRange(input.backfillDays)),
-      fields: [
-        'date_start',
-        'account_currency',
-        'spend',
-        'reach',
-        'impressions',
-        'clicks',
-        'actions',
-      ].join(','),
-      limit: 500,
-    },
+    adAccountExternalId: input.adAccountExternalId,
+    backfillDays: input.backfillDays,
+    level: 'account',
+    fields: [
+      'date_start',
+      'account_currency',
+      'spend',
+      'reach',
+      'impressions',
+      'clicks',
+      'actions',
+    ],
   });
 
   return insights
@@ -530,25 +598,21 @@ export async function fetchMetaCampaignPerformanceSeeds(input: {
   adAccountExternalId: string;
   backfillDays: number;
 }): Promise<MetaCampaignPerformanceSeed[]> {
-  const insights = await fetchMetaCollection<MetaInsightRow>({
-    path: `${input.adAccountExternalId}/insights`,
+  const insights = await fetchMetaInsightsRows({
     accessToken: input.accessToken,
-    params: {
-      level: 'campaign',
-      time_increment: '1',
-      time_range: JSON.stringify(getBackfillDateRange(input.backfillDays)),
-      fields: [
-        'campaign_id',
-        'date_start',
-        'account_currency',
-        'spend',
-        'reach',
-        'impressions',
-        'clicks',
-        'actions',
-      ].join(','),
-      limit: 500,
-    },
+    adAccountExternalId: input.adAccountExternalId,
+    backfillDays: input.backfillDays,
+    level: 'campaign',
+    fields: [
+      'campaign_id',
+      'date_start',
+      'account_currency',
+      'spend',
+      'reach',
+      'impressions',
+      'clicks',
+      'actions',
+    ],
   });
 
   return insights
@@ -573,25 +637,21 @@ export async function fetchMetaAdsetPerformanceSeeds(input: {
   adAccountExternalId: string;
   backfillDays: number;
 }): Promise<MetaAdsetPerformanceSeed[]> {
-  const insights = await fetchMetaCollection<MetaInsightRow>({
-    path: `${input.adAccountExternalId}/insights`,
+  const insights = await fetchMetaInsightsRows({
     accessToken: input.accessToken,
-    params: {
-      level: 'adset',
-      time_increment: '1',
-      time_range: JSON.stringify(getBackfillDateRange(input.backfillDays)),
-      fields: [
-        'adset_id',
-        'date_start',
-        'account_currency',
-        'spend',
-        'reach',
-        'impressions',
-        'clicks',
-        'actions',
-      ].join(','),
-      limit: 500,
-    },
+    adAccountExternalId: input.adAccountExternalId,
+    backfillDays: input.backfillDays,
+    level: 'adset',
+    fields: [
+      'adset_id',
+      'date_start',
+      'account_currency',
+      'spend',
+      'reach',
+      'impressions',
+      'clicks',
+      'actions',
+    ],
   });
 
   return insights
@@ -616,25 +676,21 @@ export async function fetchMetaAdPerformanceSeeds(input: {
   adAccountExternalId: string;
   backfillDays: number;
 }): Promise<MetaAdPerformanceSeed[]> {
-  const insights = await fetchMetaCollection<MetaInsightRow>({
-    path: `${input.adAccountExternalId}/insights`,
+  const insights = await fetchMetaInsightsRows({
     accessToken: input.accessToken,
-    params: {
-      level: 'ad',
-      time_increment: '1',
-      time_range: JSON.stringify(getBackfillDateRange(input.backfillDays)),
-      fields: [
-        'ad_id',
-        'date_start',
-        'account_currency',
-        'spend',
-        'reach',
-        'impressions',
-        'clicks',
-        'actions',
-      ].join(','),
-      limit: 500,
-    },
+    adAccountExternalId: input.adAccountExternalId,
+    backfillDays: input.backfillDays,
+    level: 'ad',
+    fields: [
+      'ad_id',
+      'date_start',
+      'account_currency',
+      'spend',
+      'reach',
+      'impressions',
+      'clicks',
+      'actions',
+    ],
   });
 
   return insights

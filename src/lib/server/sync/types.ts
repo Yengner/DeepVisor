@@ -2,6 +2,8 @@ import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integratio
 
 export type SyncTrigger = 'integration' | 'manual_refresh' | 'cron';
 export const FULL_HISTORY_BACKFILL_DAYS = 10_000;
+export const RECENT_SEED_SYNC_DAYS = 90;
+export type PlatformSyncMode = 'default' | 'seed_recent' | 'full_backfill';
 
 export interface BusinessPlatformSyncCounts {
   adAccounts: number;
@@ -25,9 +27,12 @@ export interface BusinessPlatformSyncSummary {
   integrationId: string;
   platformKey: SupportedIntegrationPlatform;
   trigger: SyncTrigger;
+  syncMode: PlatformSyncMode;
   backfillDays: number;
   startedAt: string;
   completedAt: string;
+  coverageStartDate: string | null;
+  coverageEndDate: string | null;
   counts: BusinessPlatformSyncCounts;
 }
 

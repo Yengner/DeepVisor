@@ -12,6 +12,23 @@ import {
 } from '@/lib/server/integrations/metaSelection';
 import { ErrorCode, fail, ok } from '@/lib/shared';
 
+function getSelectionUserMessage(message: string): string {
+  const normalized = message.toLowerCase();
+
+  if (
+    normalized.includes('service temporarily unavailable') ||
+    normalized.includes('temporarily unavailable')
+  ) {
+    return 'Meta is temporarily unavailable while we sync this account. Wait a minute and try again.';
+  }
+
+  if (normalized.includes('rate limit')) {
+    return 'Meta rate-limited the first sync. Wait a minute and retry.';
+  }
+
+  return message;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { businessId } = await getRequiredAppContext();
@@ -123,6 +140,7 @@ export async function POST(request: NextRequest) {
         integrationId: result.integrationId,
         adAccountId: result.adAccountId,
         externalAccountId: result.externalAccountId,
+        syncCoverage: result.syncCoverage,
       })
     );
     applyAppSelectionCookies(response, {
@@ -132,10 +150,17 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
+    console.error('Failed to select Meta ad account:', error);
+    const message =
+      error instanceof Error ? error.message : 'Failed to select Meta ad account';
+
     return NextResponse.json(
       fail(
-        error instanceof Error ? error.message : 'Failed to select Meta ad account',
-        ErrorCode.UNKNOWN_ERROR
+        message,
+        ErrorCode.UNKNOWN_ERROR,
+        {
+          userMessage: getSelectionUserMessage(message),
+        }
       ),
       { status: 500 }
     );

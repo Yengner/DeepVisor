@@ -77,24 +77,28 @@ export default async function IntegrationPage() {
         .eq('business_id', businessId),
     ]);
 
+  const platformRows = (platforms ?? []) as PlatformRow[];
+
   if (platformError) {
     console.error('Error fetching platforms:', platformError.message);
-    return <div>Failed to load platforms</div>;
   }
   if (integrationError) {
     console.error('Error fetching platform integrations in integration page:', integrationError.message);
     return <div>Failed to load integrations</div>;
   }
 
-  const platformRows = (platforms ?? []) as PlatformRow[];
-  const availablePlatforms = platformRows.length > 0 ? platformRows : FALLBACK_PLATFORMS;
+  const availablePlatforms = FALLBACK_PLATFORMS;
+  const livePlatformByKey = new Map<string, PlatformRow>(
+    platformRows.map((platform) => [platform.key, platform])
+  );
 
   const integrationByPlatformId = new Map<string, PlatformIntegrationRow>(
     ((integrations ?? []) as unknown as PlatformIntegrationRow[]).map((integration) => [integration.platform_id, integration])
   );
 
   const platformsWithIntegration = availablePlatforms.map((platform) => {
-    const integration = integrationByPlatformId.get(platform.id);
+    const livePlatform = livePlatformByKey.get(platform.key);
+    const integration = livePlatform ? integrationByPlatformId.get(livePlatform.id) : null;
     const apiInfo = asRecord(platform.api_info);
     const integrationDetails = asRecord(integration?.integration_details);
     const status = toIntegrationStatus(integration?.status ?? integrationDetails.status);

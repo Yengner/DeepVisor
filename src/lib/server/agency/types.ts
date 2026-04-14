@@ -125,6 +125,8 @@ export interface AdAccountDigest {
     lastDay: string | null;
     historyDays: number;
   };
+  daysSinceLastActivity: number | null;
+  staleSeverity: 'watch' | 'stale' | 'critical' | null;
   spendLevel: 'none' | 'low' | 'medium' | 'high';
   recentActivity: {
     hasDeliveryLast7d: boolean;

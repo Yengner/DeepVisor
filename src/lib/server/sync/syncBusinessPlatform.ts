@@ -19,6 +19,7 @@ import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integratio
 import { syncMetaBusinessPlatform } from './meta/syncMetaBusinessPlatform';
 import {
   FULL_HISTORY_BACKFILL_DAYS,
+  type PlatformSyncMode,
 } from './types';
 import type {
   BusinessPlatformSyncSummary,
@@ -166,9 +167,12 @@ export async function syncBusinessPlatform(input: {
   integrationId?: string;
   trigger: SyncTrigger;
   backfillDays?: number;
+  syncMode?: PlatformSyncMode;
+  primaryExternalAccountId?: string | null;
 }): Promise<BusinessPlatformSyncSummary> {
   const startedAt = new Date().toISOString();
   const backfillDays = resolveBackfillDays(input.trigger, input.backfillDays);
+  const syncMode = input.syncMode ?? 'default';
   const supabase = createAdminClient();
 
   const integration = await getBusinessPlatformIntegration({
@@ -192,12 +196,14 @@ export async function syncBusinessPlatform(input: {
   }
 
   const primaryAdAccountSelection = getPrimaryAdAccountSelection(integration.integrationDetails);
+  const primaryExternalAccountId =
+    input.primaryExternalAccountId ?? primaryAdAccountSelection.externalAccountId;
 
   try {
-    const counts =
+    const syncResult =
       integration.platformKey === 'meta'
         ? await (() => {
-            if (!primaryAdAccountSelection.externalAccountId) {
+            if (!primaryExternalAccountId) {
               throw new Error('Select a Meta ad account before syncing this integration');
             }
 
@@ -210,22 +216,23 @@ export async function syncBusinessPlatform(input: {
               backfillDays,
               syncedAt: startedAt,
               trigger: input.trigger,
-              primaryExternalAccountId: primaryAdAccountSelection.externalAccountId,
+              primaryExternalAccountId,
+              syncMode,
             });
           })()
         : null;
 
-    if (!counts) {
+    if (!syncResult) {
       throw new Error(`Unsupported sync platform: ${integration.platformKey}`);
     }
 
-    if (integration.platformKey === 'meta' && primaryAdAccountSelection.externalAccountId) {
+    if (integration.platformKey === 'meta' && primaryExternalAccountId) {
       const { data: syncedAccount, error: syncedAccountError } = await supabase
         .from('ad_accounts')
         .select('id')
         .eq('business_id', input.businessId)
         .eq('platform_id', integration.platformId)
-        .eq('external_account_id', primaryAdAccountSelection.externalAccountId)
+        .eq('external_account_id', primaryExternalAccountId)
         .maybeSingle();
 
       if (syncedAccountError) {
@@ -256,10 +263,27 @@ export async function syncBusinessPlatform(input: {
       integrationId: integration.id,
       platformKey: integration.platformKey,
       trigger: input.trigger,
+      syncMode,
       backfillDays,
       startedAt,
       completedAt: new Date().toISOString(),
-      counts,
+      coverageStartDate: syncResult.coverageStartDate,
+      coverageEndDate: syncResult.coverageEndDate,
+      counts: {
+        adAccounts: syncResult.adAccounts,
+        campaignDims: syncResult.campaignDims,
+        adsetDims: syncResult.adsetDims,
+        adDims: syncResult.adDims,
+        adCreatives: syncResult.adCreatives,
+        creativeFeatureSnapshots: syncResult.creativeFeatureSnapshots,
+        adAccountPerformanceRows: syncResult.adAccountPerformanceRows,
+        campaignPerformanceRows: syncResult.campaignPerformanceRows,
+        adsetPerformanceRows: syncResult.adsetPerformanceRows,
+        adPerformanceRows: syncResult.adPerformanceRows,
+        campaignPerformanceSummaries: syncResult.campaignPerformanceSummaries,
+        adsetPerformanceSummaries: syncResult.adsetPerformanceSummaries,
+        adPerformanceSummaries: syncResult.adPerformanceSummaries,
+      },
     };
   } catch (error) {
     await markIntegrationError(
