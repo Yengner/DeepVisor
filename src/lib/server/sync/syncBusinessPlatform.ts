@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/server/supabase/admin';
 import {
   runBusinessAssessment,
   runMetaAdAccountAssessment,
-} from '@/lib/server/agency';
+} from '@/lib/server/intelligence';
 import { toIntegrationStatus } from '@/lib/server/integrations/normalizers';
 import {
   getPrimaryAdAccountSelection,

@@ -45,11 +45,11 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import ReviveCampaignPrompt from '@/components/campaigns/ReviveCampaignPrompt';
 import {
-  buildAgencyQueuePreviewItems,
-  compareAgencyQueuePreviewItems,
+  buildCalendarQueuePreviewItems,
+  compareCalendarQueuePreviewItems,
   formatRetryDelay,
-  type AgencyQueuePreviewItem,
-  type AgencyQueueStatus,
+  type CalendarQueuePreviewItem,
+  type CalendarQueueStatus,
 } from '@/lib/shared';
 import type {
   DashboardAlert,
@@ -273,7 +273,7 @@ function formatCalendarWeekLabel(days: Date[]): string {
   return `${start.toLocaleDateString('en-US', { month: 'short' })} ${start.getDate()}-${end.toLocaleDateString('en-US', { month: 'short' })} ${end.getDate()}`;
 }
 
-function agencyQueueStatusColor(status: AgencyQueueStatus): string {
+function calendarQueueStatusColor(status: CalendarQueueStatus): string {
   switch (status) {
     case 'approved':
       return 'green';
@@ -667,13 +667,13 @@ function DashboardSignalCard({
   );
 }
 
-function AgencyWeekPreview({
+function CalendarWeekPreview({
   days,
   itemsByDay,
   todayKey,
 }: {
   days: Date[];
-  itemsByDay: Map<string, AgencyQueuePreviewItem[]>;
+  itemsByDay: Map<string, CalendarQueuePreviewItem[]>;
   todayKey: string;
 }) {
   return (
@@ -723,7 +723,7 @@ function AgencyWeekPreview({
                     p={6}
                     style={{
                       background: '#fff',
-                      borderColor: `var(--mantine-color-${agencyQueueStatusColor(item.status)}-2)`,
+                      borderColor: `var(--mantine-color-${calendarQueueStatusColor(item.status)}-2)`,
                     }}
                   >
                     <Text size="xs" fw={700} lineClamp={2}>
@@ -753,7 +753,7 @@ function AgencyWeekPreview({
   );
 }
 
-function AgencyMonthPreview({
+function CalendarMonthPreview({
   monthStart,
   days,
   itemsByDay,
@@ -761,7 +761,7 @@ function AgencyMonthPreview({
 }: {
   monthStart: Date;
   days: Date[];
-  itemsByDay: Map<string, AgencyQueuePreviewItem[]>;
+  itemsByDay: Map<string, CalendarQueuePreviewItem[]>;
   todayKey: string;
 }) {
   return (
@@ -832,8 +832,8 @@ function AgencyMonthPreview({
 export default function DashboardClient({ payload }: DashboardClientProps) {
   const router = useRouter();
   const [activeWindow, setActiveWindow] = useState<DashboardWindow>(payload.activeWindow);
-  const [agencyPreviewView, setAgencyPreviewView] = useState<'weekly' | 'monthly'>('weekly');
-  const [agencyPreviewCursor, setAgencyPreviewCursor] = useState(() =>
+  const [calendarPreviewView, setCalendarPreviewView] = useState<'weekly' | 'monthly'>('weekly');
+  const [calendarPreviewCursor, setCalendarPreviewCursor] = useState(() =>
     startOfCalendarDay(new Date())
   );
   const [refreshing, setRefreshing] = useState(false);
@@ -893,41 +893,41 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     Spend: Number(point.spend.toFixed(2)),
     [trend.outcomeLabel]: point.outcome,
   }));
-  const agencyPreviewItems = useMemo(
+  const calendarPreviewItems = useMemo(
     () =>
-      buildAgencyQueuePreviewItems(
+      buildCalendarQueuePreviewItems(
         payload.viewContext.adAccountName ?? payload.viewContext.platformName
-      ).sort(compareAgencyQueuePreviewItems),
+      ).sort(compareCalendarQueuePreviewItems),
     [payload.viewContext.adAccountName, payload.viewContext.platformName]
   );
-  const agencyPreviewCounts = useMemo(
+  const calendarPreviewCounts = useMemo(
     () => ({
-      total: agencyPreviewItems.length,
-      ready: agencyPreviewItems.filter((item) => item.status === 'ready').length,
-      approved: agencyPreviewItems.filter((item) => item.status === 'approved').length,
-      draft: agencyPreviewItems.filter((item) => item.status === 'draft').length,
+      total: calendarPreviewItems.length,
+      ready: calendarPreviewItems.filter((item) => item.status === 'ready').length,
+      approved: calendarPreviewItems.filter((item) => item.status === 'approved').length,
+      draft: calendarPreviewItems.filter((item) => item.status === 'draft').length,
     }),
-    [agencyPreviewItems]
+    [calendarPreviewItems]
   );
-  const agencyPreviewTodayKey = useMemo(
+  const calendarPreviewTodayKey = useMemo(
     () => toCalendarIsoDay(new Date()),
     []
   );
-  const agencyPreviewWeekStart = useMemo(
-    () => startOfCalendarWeek(agencyPreviewCursor),
-    [agencyPreviewCursor]
+  const calendarPreviewWeekStart = useMemo(
+    () => startOfCalendarWeek(calendarPreviewCursor),
+    [calendarPreviewCursor]
   );
-  const agencyPreviewWeekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, index) => addCalendarDays(agencyPreviewWeekStart, index)),
-    [agencyPreviewWeekStart]
+  const calendarPreviewWeekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, index) => addCalendarDays(calendarPreviewWeekStart, index)),
+    [calendarPreviewWeekStart]
   );
-  const agencyPreviewWeekKeys = useMemo(
-    () => agencyPreviewWeekDays.map((day) => toCalendarIsoDay(day)),
-    [agencyPreviewWeekDays]
+  const calendarPreviewWeekKeys = useMemo(
+    () => calendarPreviewWeekDays.map((day) => toCalendarIsoDay(day)),
+    [calendarPreviewWeekDays]
   );
-  const agencyPreviewMonthStart = useMemo(
-    () => startOfCalendarMonth(agencyPreviewCursor),
-    [agencyPreviewCursor]
+  const calendarPreviewMonthStart = useMemo(
+    () => startOfCalendarMonth(calendarPreviewCursor),
+    [calendarPreviewCursor]
   );
   const reviveDismissKey = payload.reviveOpportunity
     ? `revive-prompt:${payload.reviveOpportunity.adAccountId}:${payload.reviveOpportunity.sourceAssessmentDigestHash}`
@@ -963,24 +963,24 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     setRevivePromptDismissed(true);
     setReviveModalOpened(false);
   };
-  const agencyPreviewMonthGridStart = useMemo(
-    () => startOfCalendarWeek(agencyPreviewMonthStart),
-    [agencyPreviewMonthStart]
+  const calendarPreviewMonthGridStart = useMemo(
+    () => startOfCalendarWeek(calendarPreviewMonthStart),
+    [calendarPreviewMonthStart]
   );
-  const agencyPreviewMonthDays = useMemo(
-    () => Array.from({ length: 35 }, (_, index) => addCalendarDays(agencyPreviewMonthGridStart, index)),
-    [agencyPreviewMonthGridStart]
+  const calendarPreviewMonthDays = useMemo(
+    () => Array.from({ length: 35 }, (_, index) => addCalendarDays(calendarPreviewMonthGridStart, index)),
+    [calendarPreviewMonthGridStart]
   );
-  const agencyPreviewMonthKeys = useMemo(
-    () => agencyPreviewMonthDays.map((day) => toCalendarIsoDay(day)),
-    [agencyPreviewMonthDays]
+  const calendarPreviewMonthKeys = useMemo(
+    () => calendarPreviewMonthDays.map((day) => toCalendarIsoDay(day)),
+    [calendarPreviewMonthDays]
   );
-  const agencyPreviewWeekItemsByDay = useMemo(() => {
-    const grouped = new Map<string, AgencyQueuePreviewItem[]>(
-      agencyPreviewWeekKeys.map((day) => [day, []])
+  const calendarPreviewWeekItemsByDay = useMemo(() => {
+    const grouped = new Map<string, CalendarQueuePreviewItem[]>(
+      calendarPreviewWeekKeys.map((day) => [day, []])
     );
 
-    agencyPreviewItems.forEach((item) => {
+    calendarPreviewItems.forEach((item) => {
       const bucket = grouped.get(item.day);
 
       if (bucket) {
@@ -988,15 +988,15 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
       }
     });
 
-    grouped.forEach((items) => items.sort(compareAgencyQueuePreviewItems));
+    grouped.forEach((items) => items.sort(compareCalendarQueuePreviewItems));
     return grouped;
-  }, [agencyPreviewItems, agencyPreviewWeekKeys]);
-  const agencyPreviewMonthItemsByDay = useMemo(() => {
-    const grouped = new Map<string, AgencyQueuePreviewItem[]>(
-      agencyPreviewMonthKeys.map((day) => [day, []])
+  }, [calendarPreviewItems, calendarPreviewWeekKeys]);
+  const calendarPreviewMonthItemsByDay = useMemo(() => {
+    const grouped = new Map<string, CalendarQueuePreviewItem[]>(
+      calendarPreviewMonthKeys.map((day) => [day, []])
     );
 
-    agencyPreviewItems.forEach((item) => {
+    calendarPreviewItems.forEach((item) => {
       const bucket = grouped.get(item.day);
 
       if (bucket) {
@@ -1004,15 +1004,15 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
       }
     });
 
-    grouped.forEach((items) => items.sort(compareAgencyQueuePreviewItems));
+    grouped.forEach((items) => items.sort(compareCalendarQueuePreviewItems));
     return grouped;
-  }, [agencyPreviewItems, agencyPreviewMonthKeys]);
-  const agencyPreviewLabel = useMemo(
+  }, [calendarPreviewItems, calendarPreviewMonthKeys]);
+  const calendarPreviewLabel = useMemo(
     () =>
-      agencyPreviewView === 'weekly'
-        ? formatCalendarWeekLabel(agencyPreviewWeekDays)
-        : formatCalendarMonthLabel(agencyPreviewMonthStart),
-    [agencyPreviewMonthStart, agencyPreviewView, agencyPreviewWeekDays]
+      calendarPreviewView === 'weekly'
+        ? formatCalendarWeekLabel(calendarPreviewWeekDays)
+        : formatCalendarMonthLabel(calendarPreviewMonthStart),
+    [calendarPreviewMonthStart, calendarPreviewView, calendarPreviewWeekDays]
   );
 
   async function handleRefresh() {
@@ -1055,9 +1055,9 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     }
   }
 
-  function shiftAgencyPreview(direction: -1 | 1) {
-    setAgencyPreviewCursor((current) =>
-      agencyPreviewView === 'weekly'
+  function shiftCalendarPreview(direction: -1 | 1) {
+    setCalendarPreviewCursor((current) =>
+      calendarPreviewView === 'weekly'
         ? addCalendarDays(current, direction * 7)
         : addCalendarMonths(current, direction)
     );
@@ -1474,7 +1474,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                   </Text>
                 </div>
                 <Badge color="gray" variant="light" radius="sm">
-                  {agencyPreviewCounts.total} queued
+                  {calendarPreviewCounts.total} queued
                 </Badge>
               </Group>
 
@@ -1484,7 +1484,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                     Needs approval
                   </Text>
                   <Text fw={800} mt={4}>
-                    {agencyPreviewCounts.ready}
+                    {calendarPreviewCounts.ready}
                   </Text>
                 </Paper>
                 <Paper withBorder radius="md" p="sm">
@@ -1492,7 +1492,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                     Drafts
                   </Text>
                   <Text fw={800} mt={4}>
-                    {agencyPreviewCounts.draft}
+                    {calendarPreviewCounts.draft}
                   </Text>
                 </Paper>
                 <Paper withBorder radius="md" p="sm">
@@ -1500,7 +1500,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                     Approved
                   </Text>
                   <Text fw={800} mt={4}>
-                    {agencyPreviewCounts.approved}
+                    {calendarPreviewCounts.approved}
                   </Text>
                 </Paper>
               </SimpleGrid>
@@ -1510,8 +1510,8 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                   <SegmentedControl
                     size="xs"
                     radius="xl"
-                    value={agencyPreviewView}
-                    onChange={(value) => setAgencyPreviewView(value as 'weekly' | 'monthly')}
+                    value={calendarPreviewView}
+                    onChange={(value) => setCalendarPreviewView(value as 'weekly' | 'monthly')}
                     data={[
                       {
                         label: (
@@ -1539,19 +1539,19 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                       variant="light"
                       color="gray"
                       radius="xl"
-                      onClick={() => shiftAgencyPreview(-1)}
+                      onClick={() => shiftCalendarPreview(-1)}
                       aria-label="Previous calendar preview period"
                     >
                       <IconChevronLeft size={16} />
                     </ActionIcon>
                     <Text size="sm" fw={700} miw={132} ta="center">
-                      {agencyPreviewLabel}
+                      {calendarPreviewLabel}
                     </Text>
                     <ActionIcon
                       variant="light"
                       color="gray"
                       radius="xl"
-                      onClick={() => shiftAgencyPreview(1)}
+                      onClick={() => shiftCalendarPreview(1)}
                       aria-label="Next calendar preview period"
                     >
                       <IconChevronRight size={16} />
@@ -1559,18 +1559,18 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                   </Group>
                 </Group>
 
-                {agencyPreviewView === 'weekly' ? (
-                  <AgencyWeekPreview
-                    days={agencyPreviewWeekDays}
-                    itemsByDay={agencyPreviewWeekItemsByDay}
-                    todayKey={agencyPreviewTodayKey}
+                {calendarPreviewView === 'weekly' ? (
+                  <CalendarWeekPreview
+                    days={calendarPreviewWeekDays}
+                    itemsByDay={calendarPreviewWeekItemsByDay}
+                    todayKey={calendarPreviewTodayKey}
                   />
                 ) : (
-                  <AgencyMonthPreview
-                    monthStart={agencyPreviewMonthStart}
-                    days={agencyPreviewMonthDays}
-                    itemsByDay={agencyPreviewMonthItemsByDay}
-                    todayKey={agencyPreviewTodayKey}
+                  <CalendarMonthPreview
+                    monthStart={calendarPreviewMonthStart}
+                    days={calendarPreviewMonthDays}
+                    itemsByDay={calendarPreviewMonthItemsByDay}
+                    todayKey={calendarPreviewTodayKey}
                   />
                 )}
               </Paper>

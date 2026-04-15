@@ -9,7 +9,7 @@ export type BusinessAssessmentRow =
   Database['ai']['Tables']['business_assessments']['Row'];
 export type AdAccountAssessmentRow = BusinessAssessmentRow;
 
-export type BusinessAgencyPlanningScope =
+export type BusinessIntelligencePlanningScope =
   | 'business'
   | 'integration'
   | 'selected_integrations';
@@ -31,7 +31,7 @@ export type AssessmentTrigger =
   | 'manual'
   | 'material_change';
 
-export interface AgencyTopCampaign {
+export interface IntelligenceTopCampaign {
   id: string;
   name: string;
   status: string;
@@ -41,15 +41,15 @@ export interface AgencyTopCampaign {
   costPerResult: number;
 }
 
-export interface BusinessAgencyOverview {
+export interface BusinessIntelligenceOverview {
   scopeLabel: string;
   summary: ReportMetricTotals;
   kpis: ReportKpi[];
   series: ReportTimeSeriesPoint[];
-  topCampaigns: AgencyTopCampaign[];
+  topCampaigns: IntelligenceTopCampaign[];
 }
 
-export interface BusinessAgencyPlatformSummary {
+export interface BusinessIntelligencePlatformSummary {
   id: string;
   platformId: string;
   label: string;
@@ -61,7 +61,7 @@ export interface BusinessAgencyPlatformSummary {
   selectionRequired: boolean;
 }
 
-export interface BusinessAgencyAdAccountSummary {
+export interface BusinessIntelligenceAdAccountSummary {
   id: string;
   name: string | null;
   status: string | null;
@@ -72,8 +72,8 @@ export interface BusinessAgencyAdAccountSummary {
   platformLabel: string;
 }
 
-export interface BusinessAgencySelection {
-  scope: BusinessAgencyPlanningScope;
+export interface BusinessIntelligenceSelection {
+  scope: BusinessIntelligencePlanningScope;
   scopeLabel: string;
   platformIntegrationId: string | null;
   platformIntegrationIds: string[];
@@ -247,16 +247,16 @@ export interface BusinessAssessment {
   createdAt: string;
 }
 
-export interface BusinessAgencyWorkspace {
+export interface BusinessIntelligenceWorkspace {
   businessId: string;
   businessName: string;
-  platforms: BusinessAgencyPlatformSummary[];
-  selection: BusinessAgencySelection;
+  platforms: BusinessIntelligencePlatformSummary[];
+  selection: BusinessIntelligenceSelection;
   selectedPlatformIntegrationId: string | null;
   selectedAdAccountId: string | null;
   selectedAdAccountName: string | null;
-  adAccounts: BusinessAgencyAdAccountSummary[];
-  overview: BusinessAgencyOverview;
+  adAccounts: BusinessIntelligenceAdAccountSummary[];
+  overview: BusinessIntelligenceOverview;
   latestBusinessAssessment: BusinessAssessment | null;
   latestAccountAssessments: AdAccountAssessment[];
   latestSelectedAssessment: AdAccountAssessment | null;
@@ -272,7 +272,7 @@ export interface GlobalAiAssistantPayload {
   businessId: string;
   businessName: string;
   state: GlobalAiAssistantState;
-  selectionScope: BusinessAgencyPlanningScope;
+  selectionScope: BusinessIntelligencePlanningScope;
   selectedPlatformIntegrationId: string | null;
   selectedPlatformLabel: string | null;
   selectedAdAccountId: string | null;

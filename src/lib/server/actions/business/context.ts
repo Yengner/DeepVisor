@@ -129,7 +129,7 @@ async function ensureBusinessProfileForOrganization(
 
   if (organization.type !== 'business') {
     throw new Error(
-      'Agency organizations do not get an automatic business profile. A business must be selected explicitly.'
+      'Partner organizations do not get an automatic business profile. A business must be selected explicitly.'
     );
   }
 
@@ -221,7 +221,7 @@ export async function requireBusinessContextOrRedirect(
   } catch (error) {
     unstable_rethrow(error);
     console.error('Failed to resolve business context:', error);
-    if (error instanceof Error && error.message.includes('Agency organizations do not get an automatic business profile')) {
+    if (error instanceof Error && error.message.includes('Partner organizations do not get an automatic business profile')) {
       redirect('/onboarding');
     }
     redirect('/login');

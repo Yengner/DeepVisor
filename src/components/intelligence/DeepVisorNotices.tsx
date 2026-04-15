@@ -67,7 +67,7 @@ const noticeWindowOptions: Array<{ label: string; value: NoticeWindow }> = [
 type DeepVisorNoticesProps = {
   anchorId?: string;
   notices?: NoticeItem[];
-  showAgencyLink?: boolean;
+  showCalendarLink?: boolean;
   variant?: 'inline' | 'popover';
 };
 
@@ -76,13 +76,13 @@ function NoticesPanel({
   notices,
   onClose,
   onWindowChange,
-  showAgencyLink,
+  showCalendarLink,
 }: {
   noticeWindow: NoticeWindow;
   notices: NoticeItem[];
   onClose: () => void;
   onWindowChange: (value: NoticeWindow) => void;
-  showAgencyLink: boolean;
+  showCalendarLink: boolean;
 }) {
   return (
     <Paper withBorder radius="xl" p="md" w="100%" bg="white">
@@ -144,7 +144,7 @@ function NoticesPanel({
           )}
         </Stack>
 
-        {showAgencyLink ? (
+        {showCalendarLink ? (
           <Group justify="flex-end">
             <Button component="a" href="/calendar" size="xs" radius="xl" variant="light" color="yellow">
               Open calendar
@@ -159,7 +159,7 @@ function NoticesPanel({
 export default function DeepVisorNotices({
   anchorId,
   notices = DEEPVISOR_STATIC_NOTICES,
-  showAgencyLink = false,
+  showCalendarLink = false,
   variant = 'inline',
 }: DeepVisorNoticesProps) {
   const panelWidth = 520;
@@ -203,7 +203,7 @@ export default function DeepVisorNotices({
             notices={visibleNotices}
             onClose={() => setOpened(false)}
             onWindowChange={setNoticeWindow}
-            showAgencyLink={showAgencyLink}
+            showCalendarLink={showCalendarLink}
           />
         </Popover.Dropdown>
       </Popover>
@@ -220,7 +220,7 @@ export default function DeepVisorNotices({
             notices={visibleNotices}
             onClose={() => setOpened(false)}
             onWindowChange={setNoticeWindow}
-            showAgencyLink={showAgencyLink}
+            showCalendarLink={showCalendarLink}
           />
         </div>
       </Collapse>

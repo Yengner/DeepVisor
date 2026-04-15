@@ -109,7 +109,9 @@ export async function updateUserConnectedAccounts(
  * @param userId The ID of the user to get subscription tier for
  * @return Subscription tier and limits
 */
-export type SubscriptionTier = 'tier1' | 'tier2' | 'tier3' | 'agency' | 'free';
+const LEGACY_MANAGED_SERVICE_TIER = 'agency';
+
+export type SubscriptionTier = 'tier1' | 'tier2' | 'tier3' | 'managed_service' | 'free';
 
 export interface TierLimits {
     maxAdAccounts: number;
@@ -134,7 +136,15 @@ export async function getUserSubscriptionTier(userId: string): Promise<Subscript
             return 'free';
         }
 
-        return data.plan_tier as SubscriptionTier;
+        if (data.plan_tier === LEGACY_MANAGED_SERVICE_TIER) {
+            return 'managed_service';
+        }
+
+        if (data.plan_tier === 'tier1' || data.plan_tier === 'tier2' || data.plan_tier === 'tier3') {
+            return data.plan_tier;
+        }
+
+        return 'free';
     } catch (error) {
         console.error('Error fetching user subscription tier:', error);
         return 'free'; // Default to free tier on error
@@ -161,7 +171,7 @@ export async function getTierLimits(tier: SubscriptionTier): Promise<TierLimits>
                 allowMultipleAccounts: true
             };
         case 'tier3':
-        case 'agency':
+        case 'managed_service':
             return {
                 maxAdAccounts: 999,
                 maxPlatforms: ['meta', 'google', 'tiktok', 'linkedin', 'pinterest', 'twitter'],

@@ -1,7 +1,7 @@
-export type AgencyQueueStatus = 'draft' | 'ready' | 'approved';
-export type AgencyQueueSource = 'manual' | 'agent' | 'automatic';
+export type CalendarQueueStatus = 'draft' | 'ready' | 'approved';
+export type CalendarQueueSource = 'manual' | 'agent' | 'automatic';
 
-export type AgencyQueuePreviewItem = {
+export type CalendarQueuePreviewItem = {
   id: string;
   title: string;
   description: string;
@@ -9,11 +9,11 @@ export type AgencyQueuePreviewItem = {
   time: string;
   durationMinutes: number;
   channel: string;
-  status: AgencyQueueStatus;
-  source: AgencyQueueSource;
+  status: CalendarQueueStatus;
+  source: CalendarQueueSource;
 };
 
-type AgencyQueueSeedTemplate = Omit<AgencyQueuePreviewItem, 'id' | 'day'>;
+type CalendarQueueSeedTemplate = Omit<CalendarQueuePreviewItem, 'id' | 'day'>;
 
 function toIsoDay(date: Date): string {
   const next = new Date(date);
@@ -34,7 +34,7 @@ function startOfMonth(date: Date): Date {
   return next;
 }
 
-function parseAgencyQueueTimeToMinutes(value: string): number {
+function parseCalendarQueueTimeToMinutes(value: string): number {
   const match = value.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
 
   if (!match) {
@@ -47,21 +47,21 @@ function parseAgencyQueueTimeToMinutes(value: string): number {
   return (suffix === 'PM' ? hours + 12 : hours) * 60 + minutes;
 }
 
-export function compareAgencyQueuePreviewItems(
-  left: AgencyQueuePreviewItem,
-  right: AgencyQueuePreviewItem
+export function compareCalendarQueuePreviewItems(
+  left: CalendarQueuePreviewItem,
+  right: CalendarQueuePreviewItem
 ): number {
   if (left.day !== right.day) {
     return left.day.localeCompare(right.day);
   }
 
-  return parseAgencyQueueTimeToMinutes(left.time) - parseAgencyQueueTimeToMinutes(right.time);
+  return parseCalendarQueueTimeToMinutes(left.time) - parseCalendarQueueTimeToMinutes(right.time);
 }
 
-export function buildAgencyQueuePreviewItems(
+export function buildCalendarQueuePreviewItems(
   selectedAdAccountName: string | null,
   referenceDate: Date = new Date()
-): AgencyQueuePreviewItem[] {
+): CalendarQueuePreviewItem[] {
   const monthStart = startOfMonth(referenceDate);
   const monthLength = new Date(
     monthStart.getFullYear(),
@@ -69,7 +69,7 @@ export function buildAgencyQueuePreviewItems(
     0
   ).getDate();
   const accountName = selectedAdAccountName || 'selected ad account';
-  const recurringPrimaryByWeekday: Record<number, AgencyQueueSeedTemplate[]> = {
+  const recurringPrimaryByWeekday: Record<number, CalendarQueueSeedTemplate[]> = {
     0: [
       {
         title: 'Weekend pacing check',
@@ -338,7 +338,7 @@ export function buildAgencyQueuePreviewItems(
     ],
   };
 
-  const recurringSecondaryByWeekday: Partial<Record<number, AgencyQueueSeedTemplate[]>> = {
+  const recurringSecondaryByWeekday: Partial<Record<number, CalendarQueueSeedTemplate[]>> = {
     1: [
       {
         title: 'Approve retargeting headline swap',
@@ -443,7 +443,7 @@ export function buildAgencyQueuePreviewItems(
 
   const specialBusyDays: Array<{
     dayOffset: number;
-    items: AgencyQueueSeedTemplate[];
+    items: CalendarQueueSeedTemplate[];
   }> = [
     {
       dayOffset: 7,
@@ -611,10 +611,10 @@ export function buildAgencyQueuePreviewItems(
     },
   ];
 
-  const items: AgencyQueuePreviewItem[] = [];
+  const items: CalendarQueuePreviewItem[] = [];
   let itemCounter = 1;
 
-  function pushTemplate(dayOffset: number, template: AgencyQueueSeedTemplate) {
+  function pushTemplate(dayOffset: number, template: CalendarQueueSeedTemplate) {
     const day = addDays(monthStart, dayOffset);
 
     items.push({
@@ -644,5 +644,5 @@ export function buildAgencyQueuePreviewItems(
       group.items.forEach((template) => pushTemplate(group.dayOffset, template));
     });
 
-  return items.sort(compareAgencyQueuePreviewItems);
+  return items.sort(compareCalendarQueuePreviewItems);
 }

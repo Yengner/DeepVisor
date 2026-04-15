@@ -2,10 +2,10 @@ import CalendarClient from './CalendarClient';
 import { EmptyCampaignState } from '@/components/campaigns/EmptyStates';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
-import { buildBusinessAgencyWorkspace } from '@/lib/server/agency';
-import type { BusinessAgencyPlanningScope } from '@/lib/server/agency';
+import { buildBusinessIntelligenceWorkspace } from '@/lib/server/intelligence';
+import type { BusinessIntelligencePlanningScope } from '@/lib/server/intelligence';
 
-function parseScope(value: string | string[] | undefined): BusinessAgencyPlanningScope | undefined {
+function parseScope(value: string | string[] | undefined): BusinessIntelligencePlanningScope | undefined {
     const raw = Array.isArray(value) ? value[0] : value;
     if (
         raw === 'business' ||
@@ -39,7 +39,7 @@ export default async function CalendarPage({
     const { selectedPlatformId, selectedAdAccountId } = await resolveCurrentSelection(businessId);
     const params = await searchParams;
 
-    const workspace = await buildBusinessAgencyWorkspace(
+    const workspace = await buildBusinessIntelligenceWorkspace(
       businessId,
       {
         scope: parseScope(params.scope),

@@ -3,7 +3,7 @@ import AiAssistantDrawer from '@/components/layout/AiAssistantDrawer';
 import Sidebar from '@/components/layout/LeftSidebar';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
-import { buildGlobalAiAssistantPayload } from '@/lib/server/agency';
+import { buildGlobalAiAssistantPayload } from '@/lib/server/intelligence';
 import { getPlatformDetails } from '@/lib/server/data';
 
 function resolvePlatformTheme(value: string | null | undefined): 'default' | 'meta' | 'google' | 'tiktok' {

@@ -94,7 +94,7 @@ export default function SmartCampaignClient({
                     formId: values.formId,
                 }),
             });
-            // router.push('/campaigns/agency/status');
+            // router.push('/campaigns/intelligence/status');
             const data = await res.json();
             if (!res.ok || !data?.jobId) throw new Error(data?.error || 'Draft init failed');
             setJobId(data.jobId);

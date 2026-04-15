@@ -25,6 +25,9 @@ import CompletionStep from './steps/CompletionStep';
 import { updateOnboardingProgress } from '@/lib/server/actions/business/onboarding';
 import { UserData } from './types';
 import { IconCheck, IconDeviceAnalytics, IconSettings, IconCircleCheck, IconClock } from '@tabler/icons-react';
+import type { Database } from '@/lib/shared/types/supabase';
+
+type OrganizationType = Database['public']['Enums']['organization_type'];
 
 export type OnboardingInitial = {
   step: number;
@@ -32,7 +35,7 @@ export type OnboardingInitial = {
   businessId: string | null;
   organizationId: string | null;
   organizationName: string;
-  organizationType: 'agency' | 'business';
+  organizationType: OrganizationType;
   connectedPlatformKeys: string[];
   businessData: {
     businessName: string;

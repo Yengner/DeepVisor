@@ -32,7 +32,7 @@ import {
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import DeepVisorNotices from '@/components/agency/DeepVisorNotices';
+import DeepVisorNotices from '@/components/intelligence/DeepVisorNotices';
 import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -213,7 +213,7 @@ export default function TopBarClient({
                     className="text-base hidden md:block"
                 />
 
-                <DeepVisorNotices variant="popover" showAgencyLink />
+                <DeepVisorNotices variant="popover" showCalendarLink />
 
                 {/* Notifications */}
                 <Menu shadow="md" width={notificationDropdownWidth} position="bottom-end">

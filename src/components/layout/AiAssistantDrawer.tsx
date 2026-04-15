@@ -27,7 +27,7 @@ import {
   IconSend,
   IconSparkles,
 } from '@tabler/icons-react';
-import type { GlobalAiAssistantPayload } from '@/lib/server/agency';
+import type { GlobalAiAssistantPayload } from '@/lib/server/intelligence';
 
 type AiAssistantDrawerProps = {
   payload: GlobalAiAssistantPayload;
@@ -232,7 +232,7 @@ export default function AiAssistantDrawer({ payload }: AiAssistantDrawerProps) {
     setFeedback(null);
 
     try {
-      const response = await fetch('/api/agency/assess', {
+      const response = await fetch('/api/intelligence/assess', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

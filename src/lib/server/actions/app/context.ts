@@ -1,12 +1,15 @@
 import { cache } from 'react';
 import { getLoggedInUserOrRedirect } from '@/lib/server/actions/user/account';
 import { requireBusinessContextOrRedirect } from '@/lib/server/actions/business/context';
+import type { Database } from '@/lib/shared/types/supabase';
+
+type OrganizationType = Database['public']['Enums']['organization_type'];
 
 type RequiredAppContext = {
   user: Awaited<ReturnType<typeof getLoggedInUserOrRedirect>>;
   organizationId: string;
   organizationName: string;
-  organizationType: 'agency' | 'business';
+  organizationType: OrganizationType;
   businessId: string;
   role: 'owner' | 'admin' | 'member';
   onboarding: {

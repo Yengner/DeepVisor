@@ -30,12 +30,12 @@ import {
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import type { BusinessAgencyWorkspace } from '@/lib/server/agency';
+import type { BusinessIntelligenceWorkspace } from '@/lib/server/intelligence';
 import {
-  buildAgencyQueuePreviewItems,
-  type AgencyQueuePreviewItem as QueueItem,
-  type AgencyQueueSource as QueueSource,
-  type AgencyQueueStatus as QueueStatus,
+  buildCalendarQueuePreviewItems,
+  type CalendarQueuePreviewItem as QueueItem,
+  type CalendarQueueSource as QueueSource,
+  type CalendarQueueStatus as QueueStatus,
 } from '@/lib/shared';
 import classes from './CalendarClient.module.css';
 
@@ -339,10 +339,10 @@ function MiniCalendar({
   );
 }
 
-export default function CalendarClient({ workspace }: { workspace: BusinessAgencyWorkspace }) {
+export default function CalendarClient({ workspace }: { workspace: BusinessIntelligenceWorkspace }) {
   const router = useRouter();
   const [queueItems, setQueueItems] = useState<QueueItem[]>(() =>
-    buildAgencyQueuePreviewItems(workspace.selectedAdAccountName)
+    buildCalendarQueuePreviewItems(workspace.selectedAdAccountName)
   );
   const [planView, setPlanView] = useState<'weekly' | 'monthly'>('weekly');
   const [calendarCursor, setCalendarCursor] = useState<Date>(() => startOfDay(new Date()));

@@ -1,5 +1,5 @@
 export * from './collections'
-export * from './agencyQueue'
+export * from './calendarQueue'
 export * from './date'
 export * from './format'
 export * from './guards'

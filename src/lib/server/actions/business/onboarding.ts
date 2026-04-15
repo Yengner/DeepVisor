@@ -31,8 +31,8 @@ async function requireActiveBusinessContextOrFail(): Promise<ApiResponse<ActiveB
   } catch (error) {
     const message = getErrorMessage(error);
     return fail(message, ErrorCode.UNAUTHORIZED, {
-      userMessage: message.includes('Agency organizations do not get an automatic business profile')
-        ? 'Agency workspaces are not supported in this onboarding flow yet.'
+      userMessage: message.includes('Partner organizations do not get an automatic business profile')
+        ? 'Partner workspaces are not supported in this onboarding flow yet.'
         : 'Please sign in again.',
     });
   }

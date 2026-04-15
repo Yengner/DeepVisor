@@ -201,7 +201,7 @@ export default function PreparationClient({
       setPhaseStatus('history', 'complete', 'Campaign, ad set, ad, creative, and performance history are ready for account review.');
 
       setPhaseStatus('assessment', 'running');
-      const assessmentResponse = await fetch('/api/agency/assess', {
+      const assessmentResponse = await fetch('/api/intelligence/assess', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scope: 'business' }),

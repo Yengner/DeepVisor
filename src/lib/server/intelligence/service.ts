@@ -6,14 +6,14 @@ import { buildReportPayload } from '@/lib/server/repositories/reports/buildRepor
 import type { ReportQueryInput } from '@/lib/server/reports/types';
 import type {
   AdAccountAssessment,
-  AgencyTopCampaign,
-  BusinessAgencyAdAccountSummary,
-  BusinessAgencyOverview,
-  BusinessAgencyPlanningScope,
-  BusinessAgencyPlatformSummary,
-  BusinessAgencySelection,
-  BusinessAgencyWorkspace,
+  BusinessIntelligenceAdAccountSummary,
+  BusinessIntelligenceOverview,
+  BusinessIntelligencePlanningScope,
+  BusinessIntelligencePlatformSummary,
+  BusinessIntelligenceSelection,
+  BusinessIntelligenceWorkspace,
   GlobalAiAssistantPayload,
+  IntelligenceTopCampaign,
 } from './types';
 import {
   getLatestBusinessAssessment as getLatestBusinessAssessmentRecord,
@@ -50,7 +50,7 @@ type AdAccountRow = {
 };
 
 type WorkspaceSelectionInput = {
-  scope?: BusinessAgencyPlanningScope | null;
+  scope?: BusinessIntelligencePlanningScope | null;
   platformIntegrationId?: string | null;
   platformIntegrationIds?: string[];
   defaultPlatformIntegrationId?: string | null;
@@ -69,8 +69,8 @@ function getPrimaryExternalAccountId(details: Record<string, unknown> | null | u
 }
 
 function formatScopeLabel(
-  scope: BusinessAgencyPlanningScope,
-  platforms: BusinessAgencyPlatformSummary[],
+  scope: BusinessIntelligencePlanningScope,
+  platforms: BusinessIntelligencePlatformSummary[],
   platformIntegrationId: string | null,
   platformIntegrationIds: string[]
 ): string {
@@ -90,8 +90,8 @@ async function loadBusinessHeader(
   businessId: string
 ): Promise<{
   businessName: string;
-  platforms: BusinessAgencyPlatformSummary[];
-  adAccounts: BusinessAgencyAdAccountSummary[];
+  platforms: BusinessIntelligencePlatformSummary[];
+  adAccounts: BusinessIntelligenceAdAccountSummary[];
 }> {
   const [{ data: business }, { data: integrations, error: integrationsError }, { data: adAccounts, error: adAccountsError }] =
     await Promise.all([
@@ -128,8 +128,8 @@ async function loadBusinessHeader(
     accountsByPlatformId.set(account.platform_id, current);
   }
 
-  const mappedPlatforms: BusinessAgencyPlatformSummary[] = [];
-  const mappedAdAccounts: BusinessAgencyAdAccountSummary[] = [];
+  const mappedPlatforms: BusinessIntelligencePlatformSummary[] = [];
+  const mappedAdAccounts: BusinessIntelligenceAdAccountSummary[] = [];
 
   for (const integration of (integrations ?? []) as PlatformIntegrationRow[]) {
     const candidates = accountsByPlatformId.get(integration.platform_id) ?? [];
@@ -176,15 +176,15 @@ async function loadBusinessHeader(
   };
 }
 
-function normalizeAgencySelection(input: {
-  scope?: BusinessAgencyPlanningScope | null;
+function normalizeIntelligenceSelection(input: {
+  scope?: BusinessIntelligencePlanningScope | null;
   platformIntegrationId?: string | null;
   platformIntegrationIds?: string[];
   defaultPlatformIntegrationId?: string | null;
   defaultAdAccountId?: string | null;
-  platforms: BusinessAgencyPlatformSummary[];
-  adAccounts: BusinessAgencyAdAccountSummary[];
-}): BusinessAgencySelection {
+  platforms: BusinessIntelligencePlatformSummary[];
+  adAccounts: BusinessIntelligenceAdAccountSummary[];
+}): BusinessIntelligenceSelection {
   if (input.adAccounts.length === 0) {
     return {
       scope: 'business',
@@ -220,7 +220,7 @@ function normalizeAgencySelection(input: {
     const platform = platformIntegrationId ? platformById.get(platformIntegrationId) ?? null : null;
 
     if (!platform?.primaryAdAccountId) {
-      return normalizeAgencySelection({
+      return normalizeIntelligenceSelection({
         ...input,
         scope: 'business',
       });
@@ -249,7 +249,7 @@ function normalizeAgencySelection(input: {
           : [];
 
     if (platformIntegrationIds.length <= 1) {
-      return normalizeAgencySelection({
+      return normalizeIntelligenceSelection({
         ...input,
         scope: 'integration',
         platformIntegrationId: platformIntegrationIds[0] ?? defaultPlatformId,
@@ -292,7 +292,7 @@ function normalizeAgencySelection(input: {
 
 function buildReportQuery(input: {
   businessId: string;
-  selection: BusinessAgencySelection;
+  selection: BusinessIntelligenceSelection;
 }): ReportQueryInput {
   const { dateFrom, dateTo } = getTrailingUtcDateRange(30);
 
@@ -312,10 +312,10 @@ function buildReportQuery(input: {
   };
 }
 
-async function loadAgencyOverview(input: {
+async function loadIntelligenceOverview(input: {
   businessId: string;
-  selection: BusinessAgencySelection;
-}): Promise<BusinessAgencyOverview> {
+  selection: BusinessIntelligenceSelection;
+}): Promise<BusinessIntelligenceOverview> {
   const payload = await buildReportPayload(
     buildReportQuery({
       businessId: input.businessId,
@@ -323,7 +323,7 @@ async function loadAgencyOverview(input: {
     })
   );
 
-  const topCampaigns: AgencyTopCampaign[] = payload.breakdown.rows.slice(0, 5).map((row) => ({
+  const topCampaigns: IntelligenceTopCampaign[] = payload.breakdown.rows.slice(0, 5).map((row) => ({
     id: row.id,
     name: row.name,
     status: row.status ?? 'UNKNOWN',
@@ -343,7 +343,7 @@ async function loadAgencyOverview(input: {
 }
 
 function selectLatestAssessmentForSelection(
-  selection: BusinessAgencySelection,
+  selection: BusinessIntelligenceSelection,
   assessments: AdAccountAssessment[]
 ): AdAccountAssessment | null {
   const filtered = assessments.filter((assessment) =>
@@ -364,13 +364,13 @@ function selectLatestAssessmentForSelection(
   )[0] ?? null;
 }
 
-export async function buildBusinessAgencyWorkspace(
+export async function buildBusinessIntelligenceWorkspace(
   businessId: string,
   input?: WorkspaceSelectionInput
-): Promise<BusinessAgencyWorkspace> {
+): Promise<BusinessIntelligenceWorkspace> {
   const supabase = await createServerClient();
   const { businessName, platforms, adAccounts } = await loadBusinessHeader(supabase, businessId);
-  const selection = normalizeAgencySelection({
+  const selection = normalizeIntelligenceSelection({
     scope: input?.scope,
     platformIntegrationId: input?.platformIntegrationId,
     platformIntegrationIds: input?.platformIntegrationIds,
@@ -381,7 +381,7 @@ export async function buildBusinessAgencyWorkspace(
   });
 
   const [overview, latestBusinessAssessment, latestAccountAssessments] = await Promise.all([
-    loadAgencyOverview({
+    loadIntelligenceOverview({
       businessId,
       selection,
     }),
@@ -408,9 +408,9 @@ export async function buildBusinessAgencyWorkspace(
   };
 }
 
-export async function runBusinessAgencyAssessment(input: {
+export async function runBusinessIntelligenceAssessment(input: {
   businessId: string;
-  scope: BusinessAgencyPlanningScope;
+  scope: BusinessIntelligencePlanningScope;
   platformIntegrationId?: string | null;
   platformIntegrationIds?: string[];
   defaultAdAccountId?: string | null;
@@ -418,7 +418,7 @@ export async function runBusinessAgencyAssessment(input: {
 }) {
   const supabase = await createServerClient();
   const { platforms, adAccounts } = await loadBusinessHeader(supabase, input.businessId);
-  const selection = normalizeAgencySelection({
+  const selection = normalizeIntelligenceSelection({
     scope: input.scope,
     platformIntegrationId: input.platformIntegrationId,
     platformIntegrationIds: input.platformIntegrationIds,
@@ -470,7 +470,7 @@ export async function buildGlobalAiAssistantPayload(input: {
 }): Promise<GlobalAiAssistantPayload> {
   const supabase = await createServerClient();
   const { businessName, platforms, adAccounts } = await loadBusinessHeader(supabase, input.businessId);
-  const selection = normalizeAgencySelection({
+  const selection = normalizeIntelligenceSelection({
     scope: 'integration',
     platformIntegrationId: input.defaultPlatformIntegrationId,
     defaultPlatformIntegrationId: input.defaultPlatformIntegrationId,

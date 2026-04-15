@@ -18,7 +18,7 @@ export default async function OnboardingPage() {
               {res.error.userMessage || 'We could not load your onboarding workspace.'}
             </Text>
             <Text c="dimmed">
-              DeepVisor currently takes new users through the business-owner path first. Agency workspace onboarding
+              DeepVisor currently takes new users through the business-owner path first. Partner workspace onboarding
               can be added later without changing the organization model underneath it.
             </Text>
             <Button component={Link} href="/login" variant="light">

@@ -1,14 +1,13 @@
 import { z } from 'zod';
 
-export const BusinessAgencyPlanningScopeSchema = z.enum([
+export const BusinessIntelligencePlanningScopeSchema = z.enum([
   'business',
   'integration',
   'selected_integrations',
 ]);
 
-export const RunAgencyAssessmentRequestSchema = z.object({
-  scope: BusinessAgencyPlanningScopeSchema.default('business'),
+export const RunIntelligenceAssessmentRequestSchema = z.object({
+  scope: BusinessIntelligencePlanningScopeSchema.default('business'),
   platformIntegrationId: z.string().min(1).nullable().optional(),
   platformIntegrationIds: z.array(z.string().min(1)).default([]),
 });
-

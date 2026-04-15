@@ -11,7 +11,7 @@ import type {
   SmartCampaignDraftForm,
 } from '@/lib/shared/types/campaignDrafts';
 import type { Database } from '@/lib/shared/types/supabase';
-import { getLatestAdAccountAssessment } from '@/lib/server/agency/repositories/assessments';
+import { getLatestAdAccountAssessment } from '@/lib/server/intelligence/repositories/assessments';
 import { getAdAccountSyncCoverage } from '@/lib/server/repositories/ad_accounts/syncState';
 import { createCampaignDraft } from './drafts';
 
@@ -533,7 +533,7 @@ export async function createReviveCampaignDraft(
 
   const href =
     recommendation.destination === 'smart'
-      ? `/campaigns/agency/create?draft=${draft.id}`
+      ? `/campaigns/intelligence/create?draft=${draft.id}`
       : `/campaigns/create?draft=${draft.id}`;
 
   return {

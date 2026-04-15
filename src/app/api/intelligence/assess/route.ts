@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
-import { runBusinessAgencyAssessment } from '@/lib/server/agency';
-import { RunAgencyAssessmentRequestSchema } from '@/lib/server/agency/schemas';
+import { runBusinessIntelligenceAssessment } from '@/lib/server/intelligence';
+import { RunIntelligenceAssessmentRequestSchema } from '@/lib/server/intelligence/schemas';
 import { ErrorCode, fail, ok } from '@/lib/shared';
 
 export async function POST(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const { businessId } = await getRequiredAppContext();
     const selection = await resolveCurrentSelection(businessId);
     const body = await request.json().catch(() => ({}));
-    const parsed = RunAgencyAssessmentRequestSchema.safeParse(body);
+    const parsed = RunIntelligenceAssessmentRequestSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await runBusinessAgencyAssessment({
+    const result = await runBusinessIntelligenceAssessment({
       businessId,
       scope: parsed.data.scope,
       platformIntegrationId: parsed.data.platformIntegrationId ?? null,

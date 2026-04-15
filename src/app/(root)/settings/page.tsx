@@ -175,14 +175,17 @@ function formatPlanTier(value: string): string {
       return 'Growth';
     case 'tier3':
       return 'Scale';
-    case 'agency':
-      return 'Agency';
+    case 'managed_service':
+      return 'Managed Service';
     default:
       return 'Free';
   }
 }
 
 function formatOrgType(value: string): string {
+  if (value !== 'business') {
+    return 'Partner';
+  }
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 

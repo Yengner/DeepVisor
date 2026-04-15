@@ -52,7 +52,7 @@ Useful scripts:
 - Root marketing and app routes: [src/app](/Users/yb/dev/deepVisor/src/app)
 - Meta integration and sync flow: [src/lib/server/integrations/README.md](/Users/yb/dev/deepVisor/src/lib/server/integrations/README.md)
 - Sync orchestration: [src/lib/server/sync](/Users/yb/dev/deepVisor/src/lib/server/sync)
-- Assessments and account intelligence: [src/lib/server/agency](/Users/yb/dev/deepVisor/src/lib/server/agency)
+- Assessments and account intelligence: [src/lib/server/intelligence](/Users/yb/dev/deepVisor/src/lib/server/intelligence)
 - Typed database schema: [src/lib/shared/types/supabase.ts](/Users/yb/dev/deepVisor/src/lib/shared/types/supabase.ts)
 
 ## Product Direction
