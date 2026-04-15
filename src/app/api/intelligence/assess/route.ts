@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
-import { runBusinessIntelligenceAssessment } from '@/lib/server/intelligence';
+import { runRateLimitedBusinessIntelligenceAssessment } from '@/lib/server/intelligence/assessmentRateLimit';
 import { RunIntelligenceAssessmentRequestSchema } from '@/lib/server/intelligence/schemas';
 import { ErrorCode, fail, ok } from '@/lib/shared';
 
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await runBusinessIntelligenceAssessment({
+    const result = await runRateLimitedBusinessIntelligenceAssessment({
       businessId,
       scope: parsed.data.scope,
       platformIntegrationId: parsed.data.platformIntegrationId ?? null,
@@ -30,7 +30,25 @@ export async function POST(request: NextRequest) {
       defaultPlatformIntegrationId: selection.selectedPlatformId,
     });
 
-    return NextResponse.json(ok(result));
+    if (!result.allowed) {
+      return NextResponse.json(
+        fail('Assessment cooling down', ErrorCode.RATE_LIMITED, {
+          userMessage: result.message,
+          details: {
+            retryAfterMs: result.retryAfterMs,
+            nextAllowedAt: result.nextAllowedAt,
+          },
+        }),
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil(result.retryAfterMs / 1000)),
+          },
+        }
+      );
+    }
+
+    return NextResponse.json(ok(result.result));
   } catch (error) {
     console.log('Assessment failed:', error);
     const message = error instanceof Error ? error.message : 'Failed to run assessment';

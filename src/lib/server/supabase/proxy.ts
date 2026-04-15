@@ -3,6 +3,18 @@ import 'server-only'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const PUBLIC_ROUTES = new Set([
+    '/privacy-policy',
+]);
+
+function normalizePathname(pathname: string): string {
+    if (pathname.length > 1 && pathname.endsWith('/')) {
+        return pathname.slice(0, -1);
+    }
+
+    return pathname;
+}
+
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
         request,
@@ -39,11 +51,13 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    const isLoginPage = request.nextUrl.pathname.startsWith('/login');
-    const isSignUpPage = request.nextUrl.pathname.startsWith('/sign-up');
+    const pathname = normalizePathname(request.nextUrl.pathname);
+    const isLoginPage = pathname.startsWith('/login');
+    const isSignUpPage = pathname.startsWith('/sign-up');
+    const isPublicRoute = PUBLIC_ROUTES.has(pathname);
 
     // Handle unauthenticated user trying to access protected routes
-    if (!user && !isLoginPage && !isSignUpPage) {
+    if (!user && !isLoginPage && !isSignUpPage && !isPublicRoute) {
         const url = request.nextUrl.clone();
         url.pathname = '/login';
         return NextResponse.redirect(url);
