@@ -1,4 +1,12 @@
-import type { SyncCoverage } from '@/lib/shared/types/integrations';
+import { asRecord } from '@/lib/shared';
+import type {
+  AccountSyncJobStatus,
+  FirstSyncJobStatus,
+  FirstSyncStage,
+  FirstSyncStatusCounts,
+  HistoricalSyncType,
+  SyncCoverage,
+} from '@/lib/shared/types/integrations';
 import type { Database, Json } from '@/lib/shared/types/supabase';
 import { chunkArray, type RepositoryClient } from '../utils';
 
@@ -6,26 +14,150 @@ type AdAccountRow = Database['public']['Tables']['ad_accounts']['Row'];
 type AdAccountSyncStateRow = Database['public']['Tables']['ad_account_sync_state']['Row'];
 type AdAccountSyncStateInsert = Database['public']['Tables']['ad_account_sync_state']['Insert'];
 type AccountSyncJobRow = Database['public']['Tables']['account_sync_jobs']['Row'];
+type AccountSyncJobInsert = Database['public']['Tables']['account_sync_jobs']['Insert'];
 
-type HistoricalJobStatus =
-  | 'queued'
-  | 'running'
-  | 'completed'
-  | 'partial'
-  | 'failed';
-type HistoricalJobType =
-  | 'initial_historical'
-  | 'incremental'
-  | 'manual_refresh'
-  | 'backfill';
+type HistoricalJobStatus = 'queued' | 'running' | 'completed' | 'partial' | 'failed';
 
-type HistoricalJobStatusForCoverage = Extract<
-  HistoricalJobStatus,
-  'queued' | 'running' | 'completed' | 'failed'
->;
+type HistoricalSyncProgress = {
+  stage: FirstSyncStage | null;
+  message: string | null;
+  windowSince: string | null;
+  windowUntil: string | null;
+  windowsCompleted: number;
+  coverageStartDate: string | null;
+  coverageEndDate: string | null;
+  counts: FirstSyncStatusCounts;
+  updatedAt: string | null;
+};
+
+type HistoricalSyncJobMetadata = {
+  externalAccountId?: string | null;
+  queuedFrom?: string | null;
+  progress?: Partial<HistoricalSyncProgress>;
+};
+
+const DEFAULT_PROGRESS_COUNTS: FirstSyncStatusCounts = {
+  campaignsSynced: 0,
+  adsetsSynced: 0,
+  adsSynced: 0,
+  creativesSynced: 0,
+  performanceRowsSynced: 0,
+};
+
+const FIRST_SYNC_STAGES = new Set<FirstSyncStage>([
+  'resolving_account',
+  'syncing_campaigns',
+  'syncing_adsets',
+  'syncing_ads',
+  'syncing_creatives',
+  'syncing_performance_windows',
+  'finalizing_summaries',
+  'running_assessments',
+  'completed',
+]);
 
 function todayIso(): string {
   return new Date().toISOString();
+}
+
+function asNullableString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function asNonNegativeInteger(value: unknown, fallback: number = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? Math.floor(value)
+    : fallback;
+}
+
+function isHistoricalSyncType(value: unknown): value is HistoricalSyncType {
+  return (
+    value === 'initial_historical' ||
+    value === 'incremental' ||
+    value === 'manual_refresh' ||
+    value === 'backfill'
+  );
+}
+
+function isAccountSyncJobStatus(value: unknown): value is AccountSyncJobStatus {
+  return value === 'queued' || value === 'running' || value === 'completed' || value === 'failed';
+}
+
+function parseHistoricalSyncJobMetadata(value: Json | null | undefined): HistoricalSyncJobMetadata {
+  const metadata = asRecord(value);
+  const progress = asRecord(metadata.progress);
+  const countsRecord = asRecord(progress.counts);
+  const stage = FIRST_SYNC_STAGES.has(progress.stage as FirstSyncStage)
+    ? (progress.stage as FirstSyncStage)
+    : null;
+
+  return {
+    externalAccountId: asNullableString(metadata.externalAccountId),
+    queuedFrom: asNullableString(metadata.queuedFrom),
+    progress: {
+      stage,
+      message: asNullableString(progress.message),
+      windowSince: asNullableString(progress.windowSince),
+      windowUntil: asNullableString(progress.windowUntil),
+      windowsCompleted: asNonNegativeInteger(progress.windowsCompleted),
+      coverageStartDate: asNullableString(progress.coverageStartDate),
+      coverageEndDate: asNullableString(progress.coverageEndDate),
+      counts: {
+        campaignsSynced: asNonNegativeInteger(countsRecord.campaignsSynced),
+        adsetsSynced: asNonNegativeInteger(countsRecord.adsetsSynced),
+        adsSynced: asNonNegativeInteger(countsRecord.adsSynced),
+        creativesSynced: asNonNegativeInteger(countsRecord.creativesSynced),
+        performanceRowsSynced: asNonNegativeInteger(countsRecord.performanceRowsSynced),
+      },
+      updatedAt: asNullableString(progress.updatedAt),
+    },
+  };
+}
+
+function serializeHistoricalSyncJobMetadata(
+  metadata: HistoricalSyncJobMetadata
+): Database['public']['Tables']['account_sync_jobs']['Update']['metadata'] {
+  return {
+    ...(metadata.externalAccountId ? { externalAccountId: metadata.externalAccountId } : {}),
+    ...(metadata.queuedFrom ? { queuedFrom: metadata.queuedFrom } : {}),
+    ...(metadata.progress
+      ? {
+          progress: {
+            ...(metadata.progress.stage ? { stage: metadata.progress.stage } : {}),
+            ...(metadata.progress.message ? { message: metadata.progress.message } : {}),
+            ...(metadata.progress.windowSince ? { windowSince: metadata.progress.windowSince } : {}),
+            ...(metadata.progress.windowUntil ? { windowUntil: metadata.progress.windowUntil } : {}),
+            windowsCompleted: metadata.progress.windowsCompleted ?? 0,
+            ...(metadata.progress.coverageStartDate
+              ? { coverageStartDate: metadata.progress.coverageStartDate }
+              : {}),
+            ...(metadata.progress.coverageEndDate
+              ? { coverageEndDate: metadata.progress.coverageEndDate }
+              : {}),
+            counts: metadata.progress.counts ?? DEFAULT_PROGRESS_COUNTS,
+            ...(metadata.progress.updatedAt ? { updatedAt: metadata.progress.updatedAt } : {}),
+          },
+        }
+      : {}),
+  } as Json;
+}
+
+function resolveCountsFromJob(
+  job: AccountSyncJobRow,
+  metadata: HistoricalSyncJobMetadata
+): FirstSyncStatusCounts {
+  const metadataCounts = metadata.progress?.counts ?? DEFAULT_PROGRESS_COUNTS;
+
+  return {
+    campaignsSynced: Math.max(job.campaigns_synced ?? 0, metadataCounts.campaignsSynced),
+    adsetsSynced: Math.max(job.adsets_synced ?? 0, metadataCounts.adsetsSynced),
+    adsSynced: Math.max(job.ads_synced ?? 0, metadataCounts.adsSynced),
+    creativesSynced: Math.max(job.creatives_synced ?? 0, metadataCounts.creativesSynced),
+    performanceRowsSynced: Math.max(
+      job.performance_rows_synced ?? 0,
+      metadataCounts.performanceRowsSynced
+    ),
+  };
 }
 
 export function resolveRequestedSyncWindow(backfillDays: number): {
@@ -69,7 +201,7 @@ async function selectHistoricalSyncJobs(
   supabase: RepositoryClient,
   input: {
     adAccountIds: string[];
-    syncType?: HistoricalJobType;
+    syncTypes?: HistoricalSyncType[];
     statuses?: HistoricalJobStatus[];
   }
 ): Promise<AccountSyncJobRow[]> {
@@ -81,8 +213,8 @@ async function selectHistoricalSyncJobs(
       .select('*')
       .in('ad_account_id', adAccountIdsChunk);
 
-    if (input.syncType) {
-      query = query.eq('sync_type', input.syncType);
+    if (input.syncTypes && input.syncTypes.length > 0) {
+      query = query.in('sync_type', input.syncTypes);
     }
 
     if (input.statuses && input.statuses.length > 0) {
@@ -116,6 +248,13 @@ async function selectHistoricalSyncJobById(
   }
 
   return (data as AccountSyncJobRow | null) ?? null;
+}
+
+export async function getAccountSyncJobById(
+  supabase: RepositoryClient,
+  jobId: string
+): Promise<AccountSyncJobRow | null> {
+  return selectHistoricalSyncJobById(supabase, jobId);
 }
 
 export async function ensureAdAccountSyncStates(
@@ -167,61 +306,59 @@ export async function ensureAdAccountSyncStates(
   );
 }
 
-export async function enqueueInitialHistoricalSyncJobs(
+export async function createOrReuseFirstSyncJob(
   supabase: RepositoryClient,
   input: {
     businessId: string;
     platformIntegrationId: string;
-    adAccounts: AdAccountRow[];
+    adAccountId: string;
     requestedStartDate: string;
     requestedEndDate: string;
+    metadata?: Json;
   }
-): Promise<Map<string, AccountSyncJobRow>> {
-  const syncStates = await ensureAdAccountSyncStates(supabase, input.adAccounts);
+): Promise<AccountSyncJobRow> {
   const existingJobs = await selectHistoricalSyncJobs(supabase, {
-    adAccountIds: input.adAccounts.map((account) => account.id),
-    syncType: 'initial_historical',
+    adAccountIds: [input.adAccountId],
+    syncTypes: ['initial_historical'],
     statuses: ['queued', 'running'],
   });
-  const jobsByAdAccountId = new Map(
-    existingJobs.map((job) => [job.ad_account_id, job] satisfies [string, AccountSyncJobRow])
-  );
-  const rowsToInsert = input.adAccounts
-    .filter((account) => {
-      const syncState = syncStates.get(account.id);
-      return !syncState?.first_full_sync_completed && !jobsByAdAccountId.has(account.id);
-    })
-    .map((account) => ({
-      business_id: input.businessId,
+  const existing = existingJobs[0] ?? null;
+
+  if (existing) {
+    return existing;
+  }
+
+  const metadata = parseHistoricalSyncJobMetadata(input.metadata);
+  metadata.progress = {
+    ...(metadata.progress ?? {}),
+    message: metadata.progress?.message ?? 'Queued for first history sync.',
+    windowsCompleted: metadata.progress?.windowsCompleted ?? 0,
+    counts: metadata.progress?.counts ?? DEFAULT_PROGRESS_COUNTS,
+    updatedAt: todayIso(),
+  };
+
+  const rowToInsert: AccountSyncJobInsert = {
+    business_id: input.businessId,
       platform_integration_id: input.platformIntegrationId,
-      ad_account_id: account.id,
+      ad_account_id: input.adAccountId,
       status: 'queued',
       sync_type: 'initial_historical',
       requested_start_date: input.requestedStartDate,
       requested_end_date: input.requestedEndDate,
-      metadata: {
-        externalAccountId: account.external_account_id,
-        discoveredAt: todayIso(),
-      } satisfies Json,
-    }));
+      metadata: serializeHistoricalSyncJobMetadata(metadata),
+  };
 
-  for (const chunk of chunkArray(rowsToInsert, 200)) {
-    const { error } = await supabase.from('account_sync_jobs').insert(chunk);
+  const { data, error } = await supabase
+    .from('account_sync_jobs')
+    .insert(rowToInsert)
+    .select('*')
+    .single();
 
-    if (error) {
-      throw error;
-    }
+  if (error || !data) {
+    throw error ?? new Error('Failed to enqueue first history sync job');
   }
 
-  const jobs = await selectHistoricalSyncJobs(supabase, {
-    adAccountIds: input.adAccounts.map((account) => account.id),
-    syncType: 'initial_historical',
-    statuses: ['queued', 'running'],
-  });
-
-  return new Map(
-    jobs.map((job) => [job.ad_account_id, job] satisfies [string, AccountSyncJobRow])
-  );
+  return data as AccountSyncJobRow;
 }
 
 export async function enqueueBackfillSyncJob(
@@ -237,7 +374,7 @@ export async function enqueueBackfillSyncJob(
 ): Promise<AccountSyncJobRow> {
   const existingJobs = await selectHistoricalSyncJobs(supabase, {
     adAccountIds: [input.adAccountId],
-    syncType: 'backfill',
+    syncTypes: ['backfill'],
     statuses: ['queued', 'running'],
   });
   const existing = existingJobs[0] ?? null;
@@ -267,40 +404,146 @@ export async function enqueueBackfillSyncJob(
   return data as AccountSyncJobRow;
 }
 
-export async function listPendingBackfillSyncJobs(
+export async function claimHistoricalSyncJob(
   supabase: RepositoryClient,
-  limit: number = 1
-): Promise<AccountSyncJobRow[]> {
-  const { data, error } = await supabase
-    .from('account_sync_jobs')
-    .select('*')
-    .eq('sync_type', 'backfill')
-    .in('status', ['running', 'queued'])
-    .order('created_at', { ascending: true })
-    .limit(Math.max(1, limit * 4));
+  input?: {
+    jobId?: string | null;
+    syncTypes?: HistoricalSyncType[] | null;
+  }
+): Promise<AccountSyncJobRow | null> {
+  const { data, error } = await (supabase as any).rpc('claim_account_sync_job', {
+    target_job_id: input?.jobId ?? null,
+    allowed_sync_types: input?.syncTypes ?? null,
+  });
 
   if (error) {
     throw error;
   }
 
-  return ((data ?? []) as AccountSyncJobRow[])
-    .sort((left, right) => {
-      if (left.status === right.status) {
-        return left.created_at.localeCompare(right.created_at);
-      }
-
-      return left.status === 'running' ? -1 : 1;
-    })
-    .slice(0, Math.max(1, limit));
+  const row = Array.isArray(data) ? data[0] ?? null : data ?? null;
+  return (row as AccountSyncJobRow | null) ?? null;
 }
 
-export async function getLatestBackfillSyncJob(
+function mergeProgressCounts(
+  current: FirstSyncStatusCounts,
+  patch?: Partial<FirstSyncStatusCounts>
+): FirstSyncStatusCounts {
+  if (!patch) {
+    return current;
+  }
+
+  return {
+    campaignsSynced: patch.campaignsSynced ?? current.campaignsSynced,
+    adsetsSynced: patch.adsetsSynced ?? current.adsetsSynced,
+    adsSynced: patch.adsSynced ?? current.adsSynced,
+    creativesSynced: patch.creativesSynced ?? current.creativesSynced,
+    performanceRowsSynced: patch.performanceRowsSynced ?? current.performanceRowsSynced,
+  };
+}
+
+export async function updateHistoricalSyncJobProgress(
+  supabase: RepositoryClient,
+  input: {
+    jobId: string;
+    stage?: FirstSyncStage | null;
+    message?: string | null;
+    windowSince?: string | null;
+    windowUntil?: string | null;
+    windowsCompleted?: number;
+    coverageStartDate?: string | null;
+    coverageEndDate?: string | null;
+    counts?: Partial<FirstSyncStatusCounts>;
+    actualStartDate?: string | null;
+    actualEndDate?: string | null;
+    updatedAt?: string;
+  }
+): Promise<AccountSyncJobRow> {
+  const existing = await selectHistoricalSyncJobById(supabase, input.jobId);
+
+  if (!existing) {
+    throw new Error('Historical sync job not found');
+  }
+
+  const updatedAt = input.updatedAt ?? todayIso();
+  const metadata = parseHistoricalSyncJobMetadata(existing.metadata);
+  const currentProgress = metadata.progress ?? {
+    stage: null,
+    message: null,
+    windowSince: null,
+    windowUntil: null,
+    windowsCompleted: 0,
+    coverageStartDate: null,
+    coverageEndDate: null,
+    counts: DEFAULT_PROGRESS_COUNTS,
+    updatedAt: null,
+  };
+  const mergedCounts = mergeProgressCounts(
+    resolveCountsFromJob(existing, metadata),
+    input.counts
+  );
+
+  metadata.progress = {
+    stage:
+      input.stage !== undefined ? input.stage : currentProgress.stage ?? null,
+    message:
+      input.message !== undefined ? input.message : currentProgress.message ?? null,
+    windowSince:
+      input.windowSince !== undefined
+        ? input.windowSince
+        : currentProgress.windowSince ?? null,
+    windowUntil:
+      input.windowUntil !== undefined
+        ? input.windowUntil
+        : currentProgress.windowUntil ?? null,
+    windowsCompleted:
+      input.windowsCompleted !== undefined
+        ? input.windowsCompleted
+        : currentProgress.windowsCompleted ?? 0,
+    coverageStartDate:
+      input.coverageStartDate !== undefined
+        ? input.coverageStartDate
+        : currentProgress.coverageStartDate ?? null,
+    coverageEndDate:
+      input.coverageEndDate !== undefined
+        ? input.coverageEndDate
+        : currentProgress.coverageEndDate ?? null,
+    counts: mergedCounts,
+    updatedAt,
+  };
+
+  const { data, error } = await supabase
+    .from('account_sync_jobs')
+    .update({
+      campaigns_synced: mergedCounts.campaignsSynced,
+      adsets_synced: mergedCounts.adsetsSynced,
+      ads_synced: mergedCounts.adsSynced,
+      creatives_synced: mergedCounts.creativesSynced,
+      performance_rows_synced: mergedCounts.performanceRowsSynced,
+      actual_start_date:
+        input.actualStartDate !== undefined ? input.actualStartDate : existing.actual_start_date,
+      actual_end_date:
+        input.actualEndDate !== undefined ? input.actualEndDate : existing.actual_end_date,
+      metadata: serializeHistoricalSyncJobMetadata(metadata),
+      updated_at: updatedAt,
+    })
+    .eq('id', input.jobId)
+    .select('*')
+    .single();
+
+  if (error || !data) {
+    throw error ?? new Error('Failed to update historical sync job progress');
+  }
+
+  return data as AccountSyncJobRow;
+}
+
+async function getLatestCoverageJob(
   supabase: RepositoryClient,
   adAccountId: string
 ): Promise<AccountSyncJobRow | null> {
   const jobs = await selectHistoricalSyncJobs(supabase, {
     adAccountIds: [adAccountId],
-    syncType: 'backfill',
+    syncTypes: ['initial_historical', 'backfill'],
     statuses: ['queued', 'running', 'completed', 'failed'],
   });
 
@@ -318,8 +561,8 @@ export async function getAdAccountSyncCoverage(
     return null;
   }
 
-  const [latestBackfillJob, lastSuccessfulJob] = await Promise.all([
-    getLatestBackfillSyncJob(supabase, adAccountId),
+  const [latestCoverageJob, lastSuccessfulJob] = await Promise.all([
+    getLatestCoverageJob(supabase, adAccountId),
     syncState.last_successful_sync_job_id
       ? selectHistoricalSyncJobById(supabase, syncState.last_successful_sync_job_id)
       : Promise.resolve(null),
@@ -340,16 +583,70 @@ export async function getAdAccountSyncCoverage(
     lastSuccessfulJob?.actual_end_date ??
     lastSuccessfulJob?.requested_end_date ??
     null;
-  const backfillStatus = (latestBackfillJob?.status ?? null) as HistoricalJobStatusForCoverage | null;
+  const activeJobStatus = isAccountSyncJobStatus(latestCoverageJob?.status)
+    ? latestCoverageJob!.status
+    : null;
+  const activeJobSyncType = isHistoricalSyncType(latestCoverageJob?.sync_type)
+    ? latestCoverageJob!.sync_type
+    : null;
+  const shouldExposeLatestJob =
+    activeJobStatus === 'queued' || activeJobStatus === 'running' || activeJobStatus === 'failed';
+  const historicalRepairPending =
+    activeJobSyncType === 'backfill' &&
+    (activeJobStatus === 'queued' || activeJobStatus === 'running' || activeJobStatus === 'failed');
 
   return {
-    syncMode: 'seed_recent',
+    syncMode: fullHistoryCompleted ? 'incremental' : 'first_sync',
     coverageStartDate,
     coverageEndDate,
-    backfillJobId: latestBackfillJob?.id ?? null,
-    backfillStatus,
-    historicalAnalysisPending:
-      !fullHistoryCompleted || backfillStatus === 'queued' || backfillStatus === 'running',
+    firstFullSyncCompleted: fullHistoryCompleted,
+    activeJobId: shouldExposeLatestJob ? latestCoverageJob?.id ?? null : null,
+    activeJobStatus: shouldExposeLatestJob ? activeJobStatus : null,
+    activeJobSyncType: shouldExposeLatestJob ? activeJobSyncType : null,
+    historicalAnalysisPending: !fullHistoryCompleted || historicalRepairPending,
+  };
+}
+
+export function buildFirstSyncJobStatus(
+  job: AccountSyncJobRow,
+  syncCoverage: SyncCoverage | null
+): FirstSyncJobStatus {
+  const metadata = parseHistoricalSyncJobMetadata(job.metadata);
+  const progress = metadata.progress;
+  const counts = resolveCountsFromJob(job, metadata);
+  const stage =
+    job.status === 'completed'
+      ? 'completed'
+      : progress?.stage ?? null;
+
+  return {
+    jobId: job.id,
+    adAccountId: job.ad_account_id,
+    integrationId: job.platform_integration_id,
+    status: isAccountSyncJobStatus(job.status) ? job.status : 'queued',
+    stage,
+    message:
+      job.status === 'completed'
+        ? progress?.message ?? 'First history sync completed.'
+        : progress?.message ?? null,
+    windowSince: progress?.windowSince ?? null,
+    windowUntil: progress?.windowUntil ?? null,
+    windowsCompleted: progress?.windowsCompleted ?? 0,
+    coverageStartDate:
+      progress?.coverageStartDate ??
+      syncCoverage?.coverageStartDate ??
+      job.actual_start_date ??
+      null,
+    coverageEndDate:
+      progress?.coverageEndDate ??
+      syncCoverage?.coverageEndDate ??
+      job.actual_end_date ??
+      null,
+    firstFullSyncCompleted: syncCoverage?.firstFullSyncCompleted ?? job.status === 'completed',
+    counts,
+    startedAt: job.started_at,
+    finishedAt: job.finished_at,
+    errorMessage: job.error_message,
   };
 }
 
@@ -361,13 +658,13 @@ export async function beginHistoricalSyncJob(
     adAccountId: string;
     requestedStartDate: string;
     requestedEndDate: string;
-    syncType?: HistoricalJobType;
+    syncType?: HistoricalSyncType;
   }
 ): Promise<AccountSyncJobRow> {
-  const syncType = input.syncType ?? 'initial_historical';
+  const syncType = input.syncType ?? 'incremental';
   const existingJobs = await selectHistoricalSyncJobs(supabase, {
     adAccountIds: [input.adAccountId],
-    syncType,
+    syncTypes: [syncType],
     statuses: ['queued', 'running'],
   });
   const existing = existingJobs[0] ?? null;
@@ -432,11 +729,34 @@ export async function completeHistoricalSyncJob(
     adsSynced: number;
     creativesSynced: number;
     performanceRowsSynced: number;
+    message?: string | null;
   }
 ): Promise<void> {
+  const existing = await selectHistoricalSyncJobById(supabase, input.jobId);
+  if (!existing) {
+    throw new Error('Historical sync job not found');
+  }
+
+  const metadata = parseHistoricalSyncJobMetadata(existing.metadata);
+  metadata.progress = {
+    ...(metadata.progress ?? {}),
+    stage: 'completed',
+    message: input.message ?? metadata.progress?.message ?? 'Historical sync completed.',
+    coverageStartDate: input.actualStartDate,
+    coverageEndDate: input.actualEndDate,
+    counts: {
+      campaignsSynced: input.campaignsSynced,
+      adsetsSynced: input.adsetsSynced,
+      adsSynced: input.adsSynced,
+      creativesSynced: input.creativesSynced,
+      performanceRowsSynced: input.performanceRowsSynced,
+    },
+    updatedAt: input.finishedAt,
+  };
+
   const { error } = await supabase
-      .from('account_sync_jobs')
-      .update({
+    .from('account_sync_jobs')
+    .update({
       status: 'completed',
       finished_at: input.finishedAt,
       actual_start_date: input.actualStartDate,
@@ -447,6 +767,7 @@ export async function completeHistoricalSyncJob(
       creatives_synced: input.creativesSynced,
       performance_rows_synced: input.performanceRowsSynced,
       error_message: null,
+      metadata: serializeHistoricalSyncJobMetadata(metadata),
       updated_at: input.finishedAt,
     })
     .eq('id', input.jobId);
@@ -465,6 +786,14 @@ export async function failHistoricalSyncJob(
     errorMessage: string;
   }
 ): Promise<void> {
+  const existing = await selectHistoricalSyncJobById(supabase, input.jobId);
+  const metadata = existing ? parseHistoricalSyncJobMetadata(existing.metadata) : null;
+
+  if (metadata?.progress) {
+    metadata.progress.message = input.errorMessage;
+    metadata.progress.updatedAt = input.failedAt;
+  }
+
   const [{ error: jobError }, { error: syncStateError }] = await Promise.all([
     supabase
       .from('account_sync_jobs')
@@ -472,6 +801,7 @@ export async function failHistoricalSyncJob(
         status: 'failed',
         finished_at: input.failedAt,
         error_message: input.errorMessage,
+        ...(metadata ? { metadata: serializeHistoricalSyncJobMetadata(metadata) } : {}),
         updated_at: input.failedAt,
       })
       .eq('id', input.jobId),
@@ -525,7 +855,6 @@ export async function markAdAccountHistoricalSyncSucceeded(
     syncStatePatch.last_incremental_sync_at = input.syncedAt;
   }
 
-  // `last_synced` is reserved for completed historical sync, never discovery/registration.
   const [{ error: adAccountError }, { error: syncStateError }] = await Promise.all([
     supabase
       .from('ad_accounts')

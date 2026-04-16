@@ -19,6 +19,7 @@ import {
   fetchMetaAdPerformanceSeeds,
   fetchMetaAdsetPerformanceSeeds,
   fetchMetaCampaignPerformanceSeeds,
+  type MetaDateRange,
 } from './fetch';
 
 type AdAccountRow = Database['public']['Tables']['ad_accounts']['Row'];
@@ -46,6 +47,36 @@ async function runPerformanceFetchStage<T>(label: string, operation: () => Promi
   }
 }
 
+export async function refreshMetaPerformanceSummaries(input: {
+  supabase: RepositoryClient;
+  campaignsByExternalId: Map<string, CampaignDimRow>;
+  adsetsByExternalId: Map<string, AdsetDimRow>;
+  adsByExternalId: Map<string, AdDimRow>;
+  syncedAt: string;
+}) {
+  const [campaignPerformanceSummary, adsetPerformanceSummary, adPerformanceSummary] =
+    await Promise.all([
+      upsertCampaignPerformanceSummary(input.supabase, {
+        campaigns: Array.from(input.campaignsByExternalId.values()),
+        syncedAt: input.syncedAt,
+      }),
+      upsertAdsetPerformanceSummary(input.supabase, {
+        adsets: Array.from(input.adsetsByExternalId.values()),
+        syncedAt: input.syncedAt,
+      }),
+      upsertAdPerformanceSummary(input.supabase, {
+        ads: Array.from(input.adsByExternalId.values()),
+        syncedAt: input.syncedAt,
+      }),
+    ]);
+
+  return {
+    campaignPerformanceSummaries: campaignPerformanceSummary.count,
+    adsetPerformanceSummaries: adsetPerformanceSummary.count,
+    adPerformanceSummaries: adPerformanceSummary.count,
+  };
+}
+
 export async function syncMetaPerformance(input: {
   supabase: RepositoryClient;
   adAccounts: AdAccountRow[];
@@ -53,7 +84,9 @@ export async function syncMetaPerformance(input: {
   adsetsByExternalId: Map<string, AdsetDimRow>;
   adsByExternalId: Map<string, AdDimRow>;
   accessToken: string;
-  backfillDays: number;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
+  refreshSummaries?: boolean;
   syncedAt: string;
 }) {
   const adAccountPerformanceInputs: Parameters<typeof upsertAdAccountPerformanceDaily>[1] = [];
@@ -73,6 +106,7 @@ export async function syncMetaPerformance(input: {
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
         backfillDays: input.backfillDays,
+        dateRange: input.dateRange,
       })
     );
     const campaignRows = await runPerformanceFetchStage('campaign', () =>
@@ -80,6 +114,7 @@ export async function syncMetaPerformance(input: {
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
         backfillDays: input.backfillDays,
+        dateRange: input.dateRange,
       })
     );
     const adsetRows = await runPerformanceFetchStage('ad set', () =>
@@ -87,6 +122,7 @@ export async function syncMetaPerformance(input: {
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
         backfillDays: input.backfillDays,
+        dateRange: input.dateRange,
       })
     );
     const adRows = await runPerformanceFetchStage('ad', () =>
@@ -94,6 +130,7 @@ export async function syncMetaPerformance(input: {
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
         backfillDays: input.backfillDays,
+        dateRange: input.dateRange,
       })
     );
 
@@ -251,32 +288,29 @@ export async function syncMetaPerformance(input: {
       upsertAdPerformanceDaily(input.supabase, adPerformanceInputs),
     ]);
 
-  // Refresh summary rows from stored daily facts so lifetime table reads stay accurate
-  // after both initial backfills and later incremental syncs.
-  const [campaignPerformanceSummary, adsetPerformanceSummary, adPerformanceSummary] =
-    await Promise.all([
-      upsertCampaignPerformanceSummary(input.supabase, {
-        campaigns: Array.from(input.campaignsByExternalId.values()),
-        syncedAt: input.syncedAt,
-      }),
-      upsertAdsetPerformanceSummary(input.supabase, {
-        adsets: Array.from(input.adsetsByExternalId.values()),
-        syncedAt: input.syncedAt,
-      }),
-      upsertAdPerformanceSummary(input.supabase, {
-        ads: Array.from(input.adsByExternalId.values()),
-        syncedAt: input.syncedAt,
-      }),
-    ]);
+  const summaryCounts =
+    input.refreshSummaries === false
+      ? {
+          campaignPerformanceSummaries: 0,
+          adsetPerformanceSummaries: 0,
+          adPerformanceSummaries: 0,
+        }
+      : await refreshMetaPerformanceSummaries({
+          supabase: input.supabase,
+          campaignsByExternalId: input.campaignsByExternalId,
+          adsetsByExternalId: input.adsetsByExternalId,
+          adsByExternalId: input.adsByExternalId,
+          syncedAt: input.syncedAt,
+        });
 
   return {
     adAccountPerformanceRows: adAccountPerformance.count || adAccountPerformanceRows,
     campaignPerformanceRows: campaignPerformance.count,
     adsetPerformanceRows: adsetPerformance.count,
     adPerformanceRows: adPerformance.count,
-    campaignPerformanceSummaries: campaignPerformanceSummary.count,
-    adsetPerformanceSummaries: adsetPerformanceSummary.count,
-    adPerformanceSummaries: adPerformanceSummary.count,
+    campaignPerformanceSummaries: summaryCounts.campaignPerformanceSummaries,
+    adsetPerformanceSummaries: summaryCounts.adsetPerformanceSummaries,
+    adPerformanceSummaries: summaryCounts.adPerformanceSummaries,
     historicalDataAvailable,
     hasMeaningfulHistory,
     firstActivityDate,

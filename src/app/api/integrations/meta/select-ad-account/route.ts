@@ -3,7 +3,6 @@ import { createServerClient } from '@/lib/server/supabase/server';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import {
   getBusinessIntegrationById,
-  getPrimaryAdAccountSelection,
 } from '@/lib/server/integrations/service';
 import {
   applyAppSelectionCookies,
@@ -77,13 +76,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let selectedAccount:
-      | {
-          externalAccountId: string;
-          name: string | null;
-        }
-      | null = null;
-
     const { data: savedAccount, error: savedAccountError } = await supabase
       .from('ad_accounts')
       .select('external_account_id, name')
@@ -96,24 +88,7 @@ export async function POST(request: NextRequest) {
       throw savedAccountError;
     }
 
-    if (savedAccount?.external_account_id) {
-      selectedAccount = {
-        externalAccountId: savedAccount.external_account_id,
-        name: savedAccount.name,
-      };
-    }
-
-    if (!selectedAccount) {
-      const primarySelection = getPrimaryAdAccountSelection(integration.integrationDetails);
-      if (primarySelection.externalAccountId === externalAccountId) {
-        selectedAccount = {
-          externalAccountId,
-          name: primarySelection.name,
-        };
-      }
-    }
-
-    if (!selectedAccount) {
+    if (!savedAccount?.external_account_id) {
       return NextResponse.json(
         fail('Selected Meta ad account is not available', ErrorCode.VALIDATION_ERROR, {
           userMessage: 'Choose a valid Meta ad account for this integration.',
@@ -127,8 +102,8 @@ export async function POST(request: NextRequest) {
       businessId,
       integrationId,
       platformId: integration.platformId,
-      externalAccountId: selectedAccount.externalAccountId,
-      name: selectedAccount.name,
+      externalAccountId: savedAccount.external_account_id,
+      name: savedAccount.name,
       trigger: 'integration',
     });
 
@@ -138,6 +113,7 @@ export async function POST(request: NextRequest) {
         adAccountId: result.adAccountId,
         externalAccountId: result.externalAccountId,
         syncCoverage: result.syncCoverage,
+        firstSyncJob: result.firstSyncJob,
       })
     );
     applyAppSelectionCookies(response, {

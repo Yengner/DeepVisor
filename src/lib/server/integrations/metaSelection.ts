@@ -1,7 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { NextResponse } from 'next/server';
 import {
-  enqueueBackfillSyncJob,
+  buildFirstSyncJobStatus,
+  createOrReuseFirstSyncJob,
   getAdAccountSyncCoverage,
 } from '@/lib/server/repositories/ad_accounts/syncState';
 import type { Database } from '@/lib/shared/types/supabase';
@@ -9,7 +10,7 @@ import { syncBusinessPlatform } from '@/lib/server/sync';
 import type { SyncTrigger } from '@/lib/server/sync/types';
 import { FULL_HISTORY_BACKFILL_DAYS, RECENT_SEED_SYNC_DAYS } from '@/lib/server/sync/types';
 import { resolveMetaBackfillWindow } from '@/lib/server/sync/meta/client';
-import type { SyncCoverage } from '@/lib/shared/types/integrations';
+import type { FirstSyncJobStatus, SyncCoverage } from '@/lib/shared/types/integrations';
 import { setPrimaryMetaAdAccount } from './service';
 
 type AppSupabaseClient = SupabaseClient<Database>;
@@ -34,18 +35,21 @@ export type SyncSelectedMetaAdAccountResult = {
   adAccountId: string | null;
   adAccountName: string | null;
   syncCoverage: SyncCoverage | null;
-  counts: Awaited<ReturnType<typeof syncBusinessPlatform>>['counts'];
-  startedAt: string;
-  completedAt: string;
+  firstSyncJob: FirstSyncJobStatus | null;
+  counts: Awaited<ReturnType<typeof syncBusinessPlatform>>['counts'] | null;
+  startedAt: string | null;
+  completedAt: string | null;
 };
 
-// Routes should update one primary ad account, then run the real sync flow once.
+// Routes should update one primary ad account, then either queue the durable first-history sync
+// or run the lightweight follow-up sync for already-initialized accounts.
 // Keeping that sequence here avoids duplicated route logic and keeps cookies consistent.
 /**
- * Promotes the selected Meta ad account to primary, runs the recent-first sync, and queues backfill when needed.
+ * Promotes the selected Meta ad account to primary and starts the correct sync path for it.
  *
  * @param input - Business, integration, and selected account context for the sync kickoff.
- * @returns The selected integration/account identifiers, sync coverage, and sync timing metadata.
+ * @returns The selected integration/account identifiers, sync coverage, optional first-sync job,
+ * and any inline sync timing metadata for already-initialized accounts.
  */
 export async function syncSelectedMetaAdAccount(
   input: SyncSelectedMetaAdAccountInput
@@ -56,18 +60,11 @@ export async function syncSelectedMetaAdAccount(
     name: input.name,
   });
 
-  const summary = await syncBusinessPlatform({
-    businessId: input.businessId,
-    integrationId: input.integrationId,
-    trigger: input.trigger,
-    backfillDays: input.backfillDays ?? RECENT_SEED_SYNC_DAYS,
-    syncMode: 'seed_recent',
-    primaryExternalAccountId: input.externalAccountId,
-  });
-
   const { data: syncedAccount, error: syncedAccountError } = await input.supabase
     .from('ad_accounts')
-    .select('id, name')
+    .select(
+      'id, name, ad_account_sync_state ( first_full_sync_completed, first_activity_date, latest_activity_date, insights_synced_through )'
+    )
     .eq('business_id', input.businessId)
     .eq('platform_id', input.platformId)
     .eq('external_account_id', input.externalAccountId)
@@ -77,14 +74,19 @@ export async function syncSelectedMetaAdAccount(
     throw syncedAccountError;
   }
 
+  const syncState = Array.isArray(syncedAccount?.ad_account_sync_state)
+    ? syncedAccount.ad_account_sync_state[0] ?? null
+    : syncedAccount?.ad_account_sync_state ?? null;
   let syncCoverage: SyncCoverage | null = null;
+  let firstSyncJob: FirstSyncJobStatus | null = null;
+  let counts: Awaited<ReturnType<typeof syncBusinessPlatform>>['counts'] | null = null;
+  let startedAt: string | null = null;
+  let completedAt: string | null = null;
 
   if (syncedAccount?.id) {
-    syncCoverage = await getAdAccountSyncCoverage(input.supabase, syncedAccount.id);
-
-    if (!syncCoverage || syncCoverage.historicalAnalysisPending) {
+    if (!syncState?.first_full_sync_completed) {
       const fullHistoryWindow = resolveMetaBackfillWindow(FULL_HISTORY_BACKFILL_DAYS);
-      await enqueueBackfillSyncJob(input.supabase, {
+      const job = await createOrReuseFirstSyncJob(input.supabase, {
         businessId: input.businessId,
         platformIntegrationId: input.integrationId,
         adAccountId: syncedAccount.id,
@@ -96,6 +98,20 @@ export async function syncSelectedMetaAdAccount(
         },
       });
       syncCoverage = await getAdAccountSyncCoverage(input.supabase, syncedAccount.id);
+      firstSyncJob = buildFirstSyncJobStatus(job, syncCoverage);
+    } else {
+      const summary = await syncBusinessPlatform({
+        businessId: input.businessId,
+        integrationId: input.integrationId,
+        trigger: input.trigger,
+        backfillDays: input.backfillDays ?? RECENT_SEED_SYNC_DAYS,
+        syncMode: 'seed_recent',
+        primaryExternalAccountId: input.externalAccountId,
+      });
+      syncCoverage = await getAdAccountSyncCoverage(input.supabase, syncedAccount.id);
+      counts = summary.counts;
+      startedAt = summary.startedAt;
+      completedAt = summary.completedAt;
     }
   }
 
@@ -106,9 +122,10 @@ export async function syncSelectedMetaAdAccount(
     adAccountId: syncedAccount?.id ?? null,
     adAccountName: syncedAccount?.name ?? input.name,
     syncCoverage,
-    counts: summary.counts,
-    startedAt: summary.startedAt,
-    completedAt: summary.completedAt,
+    firstSyncJob,
+    counts,
+    startedAt,
+    completedAt,
   };
 }
 

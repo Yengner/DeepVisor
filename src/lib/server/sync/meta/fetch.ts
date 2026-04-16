@@ -78,6 +78,10 @@ type MetaInsightRow = {
 };
 
 type MetaInsightLevel = 'account' | 'campaign' | 'adset' | 'ad';
+export type MetaDateRange = {
+  since: string;
+  until: string;
+};
 
 const META_INSIGHTS_WINDOW_DAYS_BY_LEVEL: Record<MetaInsightLevel, number> = {
   account: 180,
@@ -206,11 +210,12 @@ function buildDateWindows(input: {
 async function fetchMetaInsightsRows(input: {
   accessToken: string;
   adAccountExternalId: string;
-  backfillDays: number;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
   level: MetaInsightLevel;
   fields: string[];
 }): Promise<MetaInsightRow[]> {
-  const range = getBackfillDateRange(input.backfillDays);
+  const range = input.dateRange ?? getBackfillDateRange(input.backfillDays ?? 30);
   const windows = buildDateWindows({
     since: range.since,
     until: range.until,
@@ -350,12 +355,14 @@ export { fetchMetaAdAccountSnapshots };
 export async function fetchMetaAdAccountPerformanceSeeds(input: {
   accessToken: string;
   adAccountExternalId: string;
-  backfillDays: number;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
 }): Promise<MetaAdAccountPerformanceSeed[]> {
   const insights = await fetchMetaInsightsRows({
     accessToken: input.accessToken,
     adAccountExternalId: input.adAccountExternalId,
     backfillDays: input.backfillDays,
+    dateRange: input.dateRange,
     level: 'account',
     fields: [
       'date_start',
@@ -596,12 +603,14 @@ export async function fetchMetaAdCreativeSeeds(input: {
 export async function fetchMetaCampaignPerformanceSeeds(input: {
   accessToken: string;
   adAccountExternalId: string;
-  backfillDays: number;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
 }): Promise<MetaCampaignPerformanceSeed[]> {
   const insights = await fetchMetaInsightsRows({
     accessToken: input.accessToken,
     adAccountExternalId: input.adAccountExternalId,
     backfillDays: input.backfillDays,
+    dateRange: input.dateRange,
     level: 'campaign',
     fields: [
       'campaign_id',
@@ -635,12 +644,14 @@ export async function fetchMetaCampaignPerformanceSeeds(input: {
 export async function fetchMetaAdsetPerformanceSeeds(input: {
   accessToken: string;
   adAccountExternalId: string;
-  backfillDays: number;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
 }): Promise<MetaAdsetPerformanceSeed[]> {
   const insights = await fetchMetaInsightsRows({
     accessToken: input.accessToken,
     adAccountExternalId: input.adAccountExternalId,
     backfillDays: input.backfillDays,
+    dateRange: input.dateRange,
     level: 'adset',
     fields: [
       'adset_id',
@@ -674,12 +685,14 @@ export async function fetchMetaAdsetPerformanceSeeds(input: {
 export async function fetchMetaAdPerformanceSeeds(input: {
   accessToken: string;
   adAccountExternalId: string;
-  backfillDays: number;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
 }): Promise<MetaAdPerformanceSeed[]> {
   const insights = await fetchMetaInsightsRows({
     accessToken: input.accessToken,
     adAccountExternalId: input.adAccountExternalId,
     backfillDays: input.backfillDays,
+    dateRange: input.dateRange,
     level: 'ad',
     fields: [
       'ad_id',

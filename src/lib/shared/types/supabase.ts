@@ -2020,6 +2020,38 @@ export type Database = {
         Args: { p_ad_account_id: string }
         Returns: boolean
       }
+      claim_account_sync_job: {
+        Args: { allowed_sync_types?: string[]; target_job_id?: string }
+        Returns: {
+          actual_end_date: string | null
+          actual_start_date: string | null
+          ad_account_id: string
+          ads_synced: number
+          adsets_synced: number
+          business_id: string
+          campaigns_synced: number
+          created_at: string
+          creatives_synced: number
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          metadata: Json
+          performance_rows_synced: number
+          platform_integration_id: string
+          requested_end_date: string | null
+          requested_start_date: string | null
+          started_at: string | null
+          status: string
+          sync_type: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "account_sync_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       create_organization_with_owner: {
         Args: {
           org_name: string

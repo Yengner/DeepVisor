@@ -667,7 +667,7 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
           >
             <Group justify="space-between" align="flex-start" gap="md">
               <div>
-                <Text fw={800}>Recent coverage is ready while full history backfills</Text>
+                <Text fw={800}>Recent coverage is ready while full history sync continues</Text>
                 <Text size="sm" c="dimmed" mt={4}>
                   {payload.meta.syncCoverage.coverageStartDate &&
                   payload.meta.syncCoverage.coverageEndDate
@@ -676,7 +676,7 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
                 </Text>
               </div>
               <Badge color="blue" variant="light">
-                {payload.meta.syncCoverage.backfillStatus ?? 'pending'}
+                {payload.meta.syncCoverage.activeJobStatus ?? 'pending'}
               </Badge>
             </Group>
           </Paper>

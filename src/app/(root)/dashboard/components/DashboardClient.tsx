@@ -1148,23 +1148,23 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
 
         {syncCoverage?.historicalAnalysisPending ? (
           <Alert
-            color={syncCoverage.backfillStatus === 'failed' ? 'red' : 'blue'}
+            color={syncCoverage.activeJobStatus === 'failed' ? 'red' : 'blue'}
             radius="lg"
             icon={<IconSparkles size={16} />}
             title={
-              syncCoverage.backfillStatus === 'failed'
-                ? 'Full Meta history backfill needs attention'
+              syncCoverage.activeJobStatus === 'failed'
+                ? 'Meta history sync needs attention'
                 : 'Recent data is ready while full history continues'
             }
           >
             <Text size="sm">
               {syncCoverage.coverageStartDate && syncCoverage.coverageEndDate
                 ? `Dashboard cards are using synced data from ${syncCoverage.coverageStartDate} through ${syncCoverage.coverageEndDate}.`
-                : 'The recent seed sync is available now and the full account history is still processing.'}
+                : 'DeepVisor is still filling the first historical sync for this account.'}
             </Text>
             <Text size="sm" mt="sm">
-              {syncCoverage.backfillStatus === 'failed'
-                ? 'Retry the background backfill job before treating historical reads as complete lifetime context.'
+              {syncCoverage.activeJobStatus === 'failed'
+                ? 'Retry the background sync job before treating historical reads as complete lifetime context.'
                 : 'DeepVisor will keep expanding the history window in the background before it promotes lifetime guidance as complete.'}
             </Text>
           </Alert>

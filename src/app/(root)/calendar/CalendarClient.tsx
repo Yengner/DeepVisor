@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import type { CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties, DragEvent as ReactDragEvent } from 'react';
 import {
   ActionIcon,
   Alert,
@@ -43,8 +43,10 @@ const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MINI_WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const WEEK_VIEW_START_HOUR = 0;
 const WEEK_VIEW_END_HOUR = 24;
-const WEEK_HOUR_HEIGHT = 72;
+const WEEK_HOUR_HEIGHT = 56;
 const MONTH_VIEW_VISIBLE_ITEM_COUNT = 4;
+const DRAG_SNAP_MINUTES = 15;
+const INITIAL_WEEK_SCROLL_HOUR = 13;
 
 function toIsoDay(date: Date): string {
   const next = new Date(date);
@@ -140,6 +142,31 @@ function parseTimeToMinutes(value: string): number {
   return (suffix === 'PM' ? hours + 12 : hours) * 60 + minutes;
 }
 
+function formatMinutesAsTime(totalMinutes: number): string {
+  const normalized = Math.max(0, Math.min(totalMinutes, WEEK_VIEW_END_HOUR * 60 - DRAG_SNAP_MINUTES));
+  const hours = Math.floor(normalized / 60);
+  const minutes = normalized % 60;
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  const normalizedHours = hours % 12 === 0 ? 12 : hours % 12;
+
+  return `${normalizedHours}:${String(minutes).padStart(2, '0')} ${suffix}`;
+}
+
+function resolveDropStartMinutes(input: {
+  rawMinutes: number;
+  durationMinutes: number;
+}): number {
+  const startMinutes = WEEK_VIEW_START_HOUR * 60;
+  const latestStartMinutes = Math.max(
+    startMinutes,
+    WEEK_VIEW_END_HOUR * 60 - Math.max(input.durationMinutes, 30)
+  );
+  const snapped =
+    Math.round(input.rawMinutes / DRAG_SNAP_MINUTES) * DRAG_SNAP_MINUTES;
+
+  return Math.max(startMinutes, Math.min(snapped, latestStartMinutes));
+}
+
 function compareQueueItems(left: QueueItem, right: QueueItem): number {
   if (left.day !== right.day) {
     return left.day.localeCompare(right.day);
@@ -211,13 +238,46 @@ function weekEventStyle(item: QueueItem): CSSProperties {
   const start = Math.max(rawStart, gridStartMinutes);
   const end = Math.min(Math.max(rawEnd, start + 30), gridEndMinutes);
   const top = ((start - gridStartMinutes) / 60) * WEEK_HOUR_HEIGHT;
-  const height = Math.max(((end - start) / 60) * WEEK_HOUR_HEIGHT, 54);
+  const height = Math.max(((end - start) / 60) * WEEK_HOUR_HEIGHT, 48);
 
   return {
     top,
     height,
   };
 }
+
+type WeekEventDensity = 'tight' | 'compact' | 'full';
+
+function resolveWeekEventDensity(item: QueueItem): WeekEventDensity {
+  const height = Number(weekEventStyle(item).height ?? 0);
+
+  if (height <= 52) {
+    return 'tight';
+  }
+
+  if (height <= 66) {
+    return 'compact';
+  }
+
+  return 'full';
+}
+
+function weekEventDensityClassName(density: WeekEventDensity): string {
+  switch (density) {
+    case 'tight':
+      return classes.weekEventTight;
+    case 'compact':
+      return classes.weekEventCompact;
+    default:
+      return classes.weekEventFull;
+  }
+}
+
+type CalendarDropTarget = {
+  day: string;
+  startMinutes: number | null;
+  view: 'weekly' | 'monthly';
+};
 
 function formatEventDateTime(item: QueueItem): string {
   const date = new Date(`${item.day}T00:00:00`);
@@ -233,6 +293,24 @@ function formatEventDateTime(item: QueueItem): string {
     month: 'long',
     day: 'numeric',
   })} · ${start.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })} - ${end.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })}`;
+}
+
+function formatEventTimeRange(item: QueueItem): string {
+  const date = new Date(`${item.day}T00:00:00`);
+  const startMinutes = parseTimeToMinutes(item.time);
+  const start = new Date(date);
+  start.setHours(Math.floor(startMinutes / 60), startMinutes % 60, 0, 0);
+
+  const end = new Date(start);
+  end.setMinutes(end.getMinutes() + item.durationMinutes);
+
+  return `${start.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
   })} - ${end.toLocaleTimeString('en-US', {
@@ -341,12 +419,15 @@ function MiniCalendar({
 
 export default function CalendarClient({ workspace }: { workspace: BusinessIntelligenceWorkspace }) {
   const router = useRouter();
+  const weekScrollerRef = useRef<HTMLDivElement | null>(null);
   const [queueItems, setQueueItems] = useState<QueueItem[]>(() =>
     buildCalendarQueuePreviewItems(workspace.selectedAdAccountName)
   );
   const [planView, setPlanView] = useState<'weekly' | 'monthly'>('weekly');
   const [calendarCursor, setCalendarCursor] = useState<Date>(() => startOfDay(new Date()));
   const [selectedCalendarItemId, setSelectedCalendarItemId] = useState<string | null>(null);
+  const [draggedQueueItemId, setDraggedQueueItemId] = useState<string | null>(null);
+  const [dragTarget, setDragTarget] = useState<CalendarDropTarget | null>(null);
 
   const selectionRequiredPlatforms = workspace.platforms.filter((platform) => platform.selectionRequired);
   const selectedAccountSummary =
@@ -420,6 +501,10 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
     () => queueItems.find((item) => item.id === selectedCalendarItemId) ?? null,
     [queueItems, selectedCalendarItemId]
   );
+  const draggedQueueItem = useMemo(
+    () => queueItems.find((item) => item.id === draggedQueueItemId) ?? null,
+    [queueItems, draggedQueueItemId]
+  );
 
   const selectedVisibleCalendarItem =
     selectedCalendarItem && visibleCalendarDayKeySet.has(selectedCalendarItem.day)
@@ -455,6 +540,29 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
     [weekDayKeys, weekItemsByDay]
   );
 
+  useEffect(() => {
+    if (planView !== 'weekly') {
+      return;
+    }
+
+    const scroller = weekScrollerRef.current;
+    if (!scroller) {
+      return;
+    }
+
+    const targetScrollTop = Math.max(
+      0,
+      (INITIAL_WEEK_SCROLL_HOUR - WEEK_VIEW_START_HOUR) * WEEK_HOUR_HEIGHT -
+        scroller.clientHeight / 2 +
+        WEEK_HOUR_HEIGHT / 2
+    );
+
+    scroller.scrollTo({
+      top: targetScrollTop,
+      behavior: 'auto',
+    });
+  }, [planView]);
+
   function updateQueueItem(id: string, updater: (item: QueueItem) => QueueItem | null) {
     setQueueItems((current) =>
       current.flatMap((item) => {
@@ -486,6 +594,45 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
     setSelectedCalendarItemId((current) => (current === id ? null : current));
     updateQueueItem(id, () => null);
     toast.success('Queue item removed');
+  }
+
+  function moveQueueItem(input: {
+    id: string;
+    day: string;
+    startMinutes: number | null;
+  }) {
+    let nextCursorDay: string | null = null;
+    let movedItemTitle: string | null = null;
+
+    setQueueItems((current) =>
+      current.map((item) => {
+        if (item.id !== input.id) {
+          return item;
+        }
+
+        const nextTime =
+          input.startMinutes === null ? item.time : formatMinutesAsTime(input.startMinutes);
+
+        if (item.day === input.day && item.time === nextTime) {
+          return item;
+        }
+
+        nextCursorDay = input.day;
+        movedItemTitle = item.title;
+
+        return {
+          ...item,
+          day: input.day,
+          time: nextTime,
+        };
+      })
+    );
+
+    if (nextCursorDay) {
+      setCalendarCursor(startOfDay(new Date(`${nextCursorDay}T00:00:00`)));
+      setSelectedCalendarItemId(input.id);
+      toast.success(movedItemTitle ? `Rescheduled ${movedItemTitle}` : 'Queue item rescheduled');
+    }
   }
 
   function handleAddQueueItem(title?: string) {
@@ -527,6 +674,104 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
 
   function handleSelectCalendarDay(day: Date) {
     setCalendarCursor(startOfDay(day));
+  }
+
+  function handleDragStart(event: ReactDragEvent<HTMLElement>, itemId: string) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', itemId);
+    setDraggedQueueItemId(itemId);
+    setSelectedCalendarItemId(itemId);
+  }
+
+  function handleDragEnd() {
+    setDraggedQueueItemId(null);
+    setDragTarget(null);
+  }
+
+  function resolveWeekColumnStartMinutes(
+    event: ReactDragEvent<HTMLDivElement>,
+    durationMinutes: number
+  ): number {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const relativeY = Math.max(0, Math.min(event.clientY - bounds.top, bounds.height));
+    const minutesInView = (WEEK_VIEW_END_HOUR - WEEK_VIEW_START_HOUR) * 60;
+    const rawMinutes = WEEK_VIEW_START_HOUR * 60 + (relativeY / bounds.height) * minutesInView;
+
+    return resolveDropStartMinutes({
+      rawMinutes,
+      durationMinutes,
+    });
+  }
+
+  function handleWeekColumnDragOver(
+    event: ReactDragEvent<HTMLDivElement>,
+    day: string
+  ) {
+    if (!draggedQueueItem) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setDragTarget({
+      day,
+      startMinutes: resolveWeekColumnStartMinutes(event, draggedQueueItem.durationMinutes),
+      view: 'weekly',
+    });
+  }
+
+  function handleWeekColumnDrop(
+    event: ReactDragEvent<HTMLDivElement>,
+    day: string
+  ) {
+    if (!draggedQueueItemId || !draggedQueueItem) {
+      return;
+    }
+
+    event.preventDefault();
+    const startMinutes = resolveWeekColumnStartMinutes(event, draggedQueueItem.durationMinutes);
+    moveQueueItem({
+      id: draggedQueueItemId,
+      day,
+      startMinutes,
+    });
+    setDraggedQueueItemId(null);
+    setDragTarget(null);
+  }
+
+  function handleMonthCellDragOver(
+    event: ReactDragEvent<HTMLDivElement>,
+    day: string
+  ) {
+    if (!draggedQueueItemId) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setDragTarget({
+      day,
+      startMinutes: null,
+      view: 'monthly',
+    });
+  }
+
+  function handleMonthCellDrop(
+    event: ReactDragEvent<HTMLDivElement>,
+    day: string
+  ) {
+    if (!draggedQueueItemId) {
+      return;
+    }
+
+    event.preventDefault();
+    moveQueueItem({
+      id: draggedQueueItemId,
+      day,
+      startMinutes: null,
+    });
+    setDraggedQueueItemId(null);
+    setDragTarget(null);
   }
 
   const weekGridStyle = {
@@ -719,93 +964,62 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
           </aside>
 
           <section className={classes.calendarShell}>
-          <div className={classes.calendarToolbar}>
-            <div>
-              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                Calendar
-              </Text>
-              <Title order={2} mt={4}>
-                {calendarRangeLabel}
-              </Title>
-              <Group gap="xs" mt="sm" wrap="wrap">
-                <Badge color="gray" variant="light">
-                  {workspace.selection.scopeLabel}
-                </Badge>
-                <Badge color="blue" variant="light">
-                  {selectedAccountSummary}
-                </Badge>
-                <Badge color="gray" variant="light">
-                  {visibleCalendarItemCount} scheduled
-                </Badge>
-                <Badge color="gray" variant="light">
-                  {queueCounts.ready} awaiting approval
-                </Badge>
-              </Group>
-              <div className={classes.calendarLegend}>
-                <span className={classes.legendItem}>
-                  <span className={[classes.legendDot, classes.sourceManual].join(' ')} />
-                  User made
-                </span>
-                <span className={classes.legendItem}>
-                  <span className={[classes.legendDot, classes.sourceAgent].join(' ')} />
-                  AI agent made
-                </span>
-                <span className={classes.legendItem}>
-                  <span className={[classes.legendDot, classes.sourceAutomatic].join(' ')} />
-                  Automatic
-                </span>
+            <div className={classes.calendarToolbar}>
+              <div className={classes.calendarToolbarPrimary}>
+                <Button variant="default" radius="xl" onClick={() => setCalendarCursor(today)}>
+                  Today
+                </Button>
+                <ActionIcon
+                  variant="default"
+                  radius="xl"
+                  size="lg"
+                  aria-label="Previous range"
+                  onClick={() => shiftCalendar(-1)}
+                >
+                  <IconChevronLeft size={16} />
+                </ActionIcon>
+                <ActionIcon
+                  variant="default"
+                  radius="xl"
+                  size="lg"
+                  aria-label="Next range"
+                  onClick={() => shiftCalendar(1)}
+                >
+                  <IconChevronRight size={16} />
+                </ActionIcon>
+                <Text className={classes.calendarRangeTitle} fw={800}>
+                  {calendarRangeLabel}
+                </Text>
               </div>
-            </div>
 
-            <Group gap="sm" wrap="wrap" justify="flex-end">
-              <Button variant="default" radius="xl" onClick={() => setCalendarCursor(today)}>
-                Today
-              </Button>
-              <ActionIcon
-                variant="default"
-                radius="xl"
-                size="lg"
-                aria-label="Previous range"
-                onClick={() => shiftCalendar(-1)}
-              >
-                <IconChevronLeft size={16} />
-              </ActionIcon>
-              <ActionIcon
-                variant="default"
-                radius="xl"
-                size="lg"
-                aria-label="Next range"
-                onClick={() => shiftCalendar(1)}
-              >
-                <IconChevronRight size={16} />
-              </ActionIcon>
-              <SegmentedControl
-                value={planView}
-                onChange={(value) => setPlanView(value as 'weekly' | 'monthly')}
-                radius="xl"
-                data={[
-                  {
-                    label: (
-                      <Group gap={6} wrap="nowrap">
-                        <IconCalendarWeek size={14} />
-                        <span>Week</span>
-                      </Group>
-                    ),
-                    value: 'weekly',
-                  },
-                  {
-                    label: (
-                      <Group gap={6} wrap="nowrap">
-                        <IconCalendarMonth size={14} />
-                        <span>Month</span>
-                      </Group>
-                    ),
-                    value: 'monthly',
-                  },
-                ]}
-              />
-            </Group>
-          </div>
+              <Group gap="sm" wrap="nowrap" justify="flex-end">
+                <SegmentedControl
+                  value={planView}
+                  onChange={(value) => setPlanView(value as 'weekly' | 'monthly')}
+                  radius="xl"
+                  data={[
+                    {
+                      label: (
+                        <Group gap={6} wrap="nowrap">
+                          <IconCalendarWeek size={14} />
+                          <span>Week</span>
+                        </Group>
+                      ),
+                      value: 'weekly',
+                    },
+                    {
+                      label: (
+                        <Group gap={6} wrap="nowrap">
+                          <IconCalendarMonth size={14} />
+                          <span>Month</span>
+                        </Group>
+                      ),
+                      value: 'monthly',
+                    },
+                  ]}
+                />
+              </Group>
+            </div>
 
           {planView === 'weekly' ? (
             <div className={classes.weekShell} style={weekGridStyle}>
@@ -854,7 +1068,7 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
                 })}
               </div>
 
-              <div className={classes.weekScroller}>
+              <div className={classes.weekScroller} ref={weekScrollerRef}>
                 <div className={classes.weekBody}>
                   <div className={classes.weekTimeColumn}>
                     {Array.from(
@@ -871,40 +1085,83 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
                     const dayKey = toIsoDay(day);
                     const items = weekItemsByDay.get(dayKey) ?? [];
                     const isToday = isSameDay(day, today);
+                    const isDropTarget =
+                      dragTarget?.view === 'weekly' && dragTarget.day === dayKey;
 
                     return (
                       <div
                         key={dayKey}
-                        className={[classes.weekDayColumn, isToday ? classes.weekDayColumnToday : '']
+                        className={[
+                          classes.weekDayColumn,
+                          isToday ? classes.weekDayColumnToday : '',
+                          isDropTarget ? classes.weekDayColumnDropTarget : '',
+                        ]
                           .filter(Boolean)
                           .join(' ')}
+                        onDragOver={(event) => handleWeekColumnDragOver(event, dayKey)}
+                        onDrop={(event) => handleWeekColumnDrop(event, dayKey)}
                       >
-                        {items.map((item) => (
-                          <button
-                            key={item.id}
-                            type="button"
-                            className={[
-                              classes.weekEvent,
-                              queueEventClassName(item.source, selectedCalendarItemId === item.id),
-                            ]
-                              .filter(Boolean)
-                              .join(' ')}
-                            style={weekEventStyle(item)}
-                            onClick={() => setSelectedCalendarItemId(item.id)}
-                            title={`${item.title} · ${item.time}`}
-                          >
-                            <span className={classes.eventTopRow}>
-                              <span
-                                className={[classes.eventSourceDot, queueSourceClassName(item.source)]
+                        {isDropTarget && draggedQueueItem && dragTarget.startMinutes !== null ? (
+                          (() => {
+                            const previewItem = {
+                              ...draggedQueueItem,
+                              day: dragTarget.day,
+                              time: formatMinutesAsTime(dragTarget.startMinutes),
+                            };
+                            const previewDensity = resolveWeekEventDensity(previewItem);
+
+                            return (
+                              <div
+                                className={[
+                                  classes.weekDropPreview,
+                                  queueEventClassName(
+                                    draggedQueueItem.source,
+                                    false
+                                  ),
+                                  weekEventDensityClassName(previewDensity),
+                                ]
                                   .filter(Boolean)
                                   .join(' ')}
-                              />
-                              <span className={classes.eventTime}>{item.time}</span>
-                            </span>
-                            <span className={classes.eventTitle}>{item.title}</span>
-                            <span className={classes.eventMeta}>{item.channel}</span>
-                          </button>
-                        ))}
+                                style={weekEventStyle(previewItem)}
+                              >
+                                <span className={classes.eventTitle}>{draggedQueueItem.title}</span>
+                                <span className={classes.eventTime}>
+                                  {formatEventTimeRange(previewItem)}
+                                </span>
+                                <span className={classes.eventMeta}>Drop to reschedule</span>
+                              </div>
+                            );
+                          })()
+                        ) : null}
+
+                        {items.map((item) => {
+                          const density = resolveWeekEventDensity(item);
+
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className={[
+                                classes.weekEvent,
+                                queueEventClassName(item.source, selectedCalendarItemId === item.id),
+                                weekEventDensityClassName(density),
+                                draggedQueueItemId === item.id ? classes.draggingEvent : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' ')}
+                              style={weekEventStyle(item)}
+                              onClick={() => setSelectedCalendarItemId(item.id)}
+                              title={`${item.title} · ${item.time}`}
+                              draggable
+                              onDragStart={(event) => handleDragStart(event, item.id)}
+                              onDragEnd={handleDragEnd}
+                            >
+                              <span className={classes.eventTitle}>{item.title}</span>
+                              <span className={classes.eventTime}>{formatEventTimeRange(item)}</span>
+                              <span className={classes.eventMeta}>{item.channel}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     );
                   })}
@@ -937,6 +1194,8 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
                   const isToday = isSameDay(day, today);
                   const isOutside = !isSameMonth(day, monthStart);
                   const isSelected = isSameDay(day, calendarCursor);
+                  const isDropTarget =
+                    dragTarget?.view === 'monthly' && dragTarget.day === dayKey;
 
                   return (
                     <div
@@ -946,9 +1205,12 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
                         isOutside ? classes.monthDayOutside : '',
                         isToday ? classes.monthDayToday : '',
                         isSelected ? classes.monthDaySelected : '',
+                        isDropTarget ? classes.monthDayDropTarget : '',
                       ]
                         .filter(Boolean)
                         .join(' ')}
+                      onDragOver={(event) => handleMonthCellDragOver(event, dayKey)}
+                      onDrop={(event) => handleMonthCellDrop(event, dayKey)}
                     >
                       <div className={classes.monthDayHeader}>
                         <span
@@ -972,18 +1234,18 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
                             type="button"
                             className={[
                               classes.monthEvent,
+                              queueSourceClassName(item.source),
                               selectedCalendarItemId === item.id ? classes.selectedMonthEvent : '',
+                              draggedQueueItemId === item.id ? classes.draggingEvent : '',
                             ]
                               .filter(Boolean)
                               .join(' ')}
                             onClick={() => setSelectedCalendarItemId(item.id)}
                             title={`${item.time} · ${item.title} · ${queueSourceLabel(item.source)}`}
+                            draggable
+                            onDragStart={(event) => handleDragStart(event, item.id)}
+                            onDragEnd={handleDragEnd}
                           >
-                            <span
-                              className={[classes.monthEventDot, queueSourceClassName(item.source)]
-                                .filter(Boolean)
-                                .join(' ')}
-                            />
                             <span className={classes.monthEventText}>
                               <span className={classes.monthEventTime}>{item.time}</span>
                               <span className={classes.monthEventLabel}>{item.title}</span>

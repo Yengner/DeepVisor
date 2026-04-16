@@ -15,8 +15,9 @@ import {
 import { IconAlertCircle, IconCheck, IconLock } from '@tabler/icons-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
-import type { SyncCoverage } from '@/lib/shared/types/integrations';
+import type { FirstSyncJobStatus, SyncCoverage } from '@/lib/shared/types/integrations';
 import BlockingTaskScreen from '@/components/ui/states/BlockingTaskScreen';
+import { trackMetaFirstSyncJob } from './metaFirstSyncTracking';
 
 type MetaIntegrationFlowProps = {
   returnTo: '/onboarding' | '/integration';
@@ -51,6 +52,7 @@ type MetaSelectResponse = {
     adAccountId?: string | null;
     externalAccountId?: string;
     syncCoverage?: SyncCoverage | null;
+    firstSyncJob?: FirstSyncJobStatus | null;
   };
   error?: {
     userMessage?: string;
@@ -126,7 +128,7 @@ export default function MetaIntegrationFlow({
   };
 
   const finishFlowWithSuccess = async () => {
-    toast.success('Meta connected. Recent data is ready while full history backfills.');
+    toast.success('Meta connected successfully.');
     await finishFlow(onConnected);
   };
 
@@ -224,10 +226,30 @@ export default function MetaIntegrationFlow({
         throw new Error(body?.error?.userMessage || 'Failed to select Meta ad account');
       }
 
+      const firstSyncJob = body.data?.firstSyncJob ?? null;
       resetFlow();
-      const backfillStatus = body.data?.syncCoverage?.backfillStatus;
-      if (backfillStatus === 'queued' || backfillStatus === 'running') {
-        toast.success('Recent 90 days synced. Full history is backfilling in the background.');
+
+      if (firstSyncJob && body.data?.integrationId && body.data?.adAccountId && body.data.externalAccountId) {
+        trackMetaFirstSyncJob({
+          jobId: firstSyncJob.jobId,
+          integrationId: body.data.integrationId,
+          adAccountId: body.data.adAccountId,
+          externalAccountId: body.data.externalAccountId,
+          adAccountName: accountOptions.find(
+            (option) => option.value === body.data?.externalAccountId
+          )?.label ?? null,
+          job: firstSyncJob,
+        });
+        toast.success('Meta connected. Full history sync started in the background.');
+        await finishFlow(onConnected);
+        return;
+      }
+
+      if (
+        body.data?.syncCoverage?.activeJobStatus === 'queued' ||
+        body.data?.syncCoverage?.activeJobStatus === 'running'
+      ) {
+        toast.success('Recent data is ready while a larger historical sync continues.');
       }
 
       await finishFlowWithSuccess();
@@ -385,7 +407,8 @@ export default function MetaIntegrationFlow({
               <IconAlertCircle size={16} />
             </ThemeIcon>
             <Text size="xs" c="dimmed">
-              We only continue once one account is selected and the first sync finishes.
+              We only continue once one account is selected. Full history sync can keep running in
+              the background after that.
             </Text>
           </Group>
 

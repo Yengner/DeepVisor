@@ -58,7 +58,14 @@ export async function POST(request: NextRequest) {
       typeof body.limit === 'number' && Number.isFinite(body.limit) && body.limit > 0
         ? Math.min(Math.floor(body.limit), 5)
         : 1;
-    const result = await processMetaBackfillJobs(limit);
+    const jobId =
+      typeof body.jobId === 'string' && body.jobId.trim().length > 0
+        ? body.jobId.trim()
+        : null;
+    const result = await processMetaBackfillJobs({
+      limit,
+      targetJobId: jobId,
+    });
 
     return NextResponse.json({
       success: true,

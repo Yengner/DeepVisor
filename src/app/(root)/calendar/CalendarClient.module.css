@@ -171,35 +171,31 @@
 
 .calendarToolbar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px 24px;
+  padding: 12px 18px;
   border-bottom: 1px solid rgba(226, 232, 240, 0.96);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.92) 100%);
 }
 
-.calendarLegend {
+.calendarToolbarPrimary {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px 14px;
-  margin-top: 12px;
-}
-
-.legendItem {
-  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
+  gap: 10px;
+  min-width: 0;
 }
 
-.legendDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
+.calendarRangeTitle {
+  min-width: 0;
+  margin-left: 6px;
+  overflow: hidden;
+  font-size: clamp(1.35rem, 1rem + 1vw, 2rem);
+  line-height: 1.05;
+  color: #0f172a;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .weekShell {
@@ -269,6 +265,7 @@
   flex: 1;
   overflow: auto;
   background: rgba(255, 255, 255, 0.98);
+  scroll-behavior: smooth;
 }
 
 .weekBody {
@@ -291,7 +288,7 @@
   font-size: 11px;
   font-weight: 600;
   color: #64748b;
-  transform: translateY(-8px);
+  transform: translateY(-6px);
 }
 
 .weekDayColumn {
@@ -313,35 +310,70 @@
   background-color: var(--platform-accent-soft);
 }
 
+.weekDayColumnDropTarget {
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
 .weekEvent {
   position: absolute;
   left: 6px;
   right: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 2px;
   border: 1px solid transparent;
-  border-radius: 16px;
-  padding: 10px 12px;
+  border-radius: 12px;
+  padding: 7px 9px;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+  box-shadow: none;
   font: inherit;
   overflow: hidden;
+  box-sizing: border-box;
   transition:
-    transform 120ms ease,
-    box-shadow 120ms ease,
+    filter 120ms ease,
     border-color 120ms ease;
+  cursor: grab;
+}
+
+.weekEventFull {
+  padding: 7px 9px;
+}
+
+.weekEventCompact {
+  padding: 6px 8px;
+}
+
+.weekEventTight {
+  padding: 5px 7px;
 }
 
 .weekEvent:hover,
 .monthEvent:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.12);
+  transform: none;
+  box-shadow: none;
 }
 
 .selectedEvent {
-  box-shadow:
-    0 14px 26px rgba(15, 23, 42, 0.14),
-    0 0 0 2px var(--platform-accent-soft-strong);
-  border-color: var(--platform-border-strong);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.95);
+}
+
+.draggingEvent {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+
+.weekDropPreview {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  border-style: dashed;
+  pointer-events: none;
+  opacity: 0.82;
+  z-index: 0;
 }
 
 .sourceManual {
@@ -357,69 +389,79 @@
 }
 
 .eventManual {
-  background: #dbeafe;
-  border-color: #93c5fd;
-  color: #1e3a8a;
+  background: #4f7fe9;
+  border-color: #4f7fe9;
+  color: #fff;
 }
 
 .eventAgent {
-  background: #ffedd5;
-  border-color: #fdba74;
-  color: #9a3412;
+  background: #de7a2d;
+  border-color: #de7a2d;
+  color: #fff;
 }
 
 .eventAutomatic {
-  background: #dcfce7;
-  border-color: #86efac;
-  color: #166534;
-}
-
-.eventTopRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.eventSourceDot {
-  flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
+  background: #49a36f;
+  border-color: #49a36f;
+  color: #fff;
 }
 
 .eventTime {
   display: block;
+  max-width: 100%;
   min-width: 0;
   overflow: hidden;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.01em;
   white-space: nowrap;
   text-overflow: ellipsis;
+  color: rgba(255, 255, 255, 0.96);
 }
 
 .eventTitle {
   display: -webkit-box;
-  margin-top: 6px;
+  max-width: 100%;
   overflow: hidden;
   font-size: 12.5px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.25;
+  text-overflow: ellipsis;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
 }
 
 .eventMeta {
   display: block;
-  margin-top: 6px;
+  max-width: 100%;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   overflow: hidden;
-  opacity: 0.88;
   white-space: nowrap;
   text-overflow: ellipsis;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.weekEventCompact .eventMeta {
+  display: none;
+}
+
+.weekEventTight .eventMeta {
+  display: none;
+}
+
+.weekEventCompact .eventTitle,
+.weekEventTight .eventTitle {
+  font-size: 12px;
+  -webkit-line-clamp: 1;
+}
+
+.weekEventTight .eventTime {
+  font-size: 10.5px;
+}
+
+.weekEventTight .eventTitle {
+  line-height: 1.15;
 }
 
 .monthShell {
@@ -484,6 +526,10 @@
   box-shadow: inset 0 0 0 2px var(--platform-border-strong);
 }
 
+.monthDayDropTarget {
+  background: rgba(59, 130, 246, 0.1);
+}
+
 .monthDayHeader {
   display: flex;
   align-items: center;
@@ -531,26 +577,27 @@
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 6px;
   min-height: 22px;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid transparent;
-  padding: 2px 4px;
+  padding: 2px 6px;
   text-align: left;
   cursor: pointer;
-  background: transparent;
   box-shadow: none;
   font: inherit;
+  color: #fff;
+  overflow: hidden;
   transition:
     background-color 120ms ease,
     border-color 120ms ease;
+  cursor: grab;
 }
 
 .monthEventTime {
   flex: 0 0 auto;
   font-size: 10px;
-  font-weight: 700;
-  color: #64748b;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .monthEventLabel {
@@ -560,20 +607,14 @@
   font-weight: 600;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: #0f172a;
-}
-
-.monthEventDot {
-  flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
+  color: inherit;
 }
 
 .monthEventText {
   display: flex;
   align-items: center;
   gap: 4px;
+  width: 100%;
   min-width: 0;
   overflow: hidden;
 }
@@ -581,12 +622,12 @@
 .monthEvent:hover {
   transform: none;
   box-shadow: none;
-  background: rgba(148, 163, 184, 0.12);
+  filter: brightness(0.98);
 }
 
 .selectedMonthEvent {
-  background: var(--platform-accent-soft);
-  border-color: var(--platform-border-strong);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.92);
 }
 
 .monthOverflow {
@@ -696,6 +737,11 @@
 
   .calendarToolbar {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .calendarToolbarPrimary {
+    width: 100%;
   }
 
   .eventModalInner {
@@ -706,6 +752,15 @@
 @media (max-width: 640px) {
   .calendarToolbar {
     padding: 16px;
+  }
+
+  .calendarToolbarPrimary {
+    flex-wrap: wrap;
+  }
+
+  .calendarRangeTitle {
+    width: 100%;
+    margin-left: 0;
   }
 
   .topStats {
