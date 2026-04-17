@@ -2,8 +2,10 @@ import type {
   AdAccountData,
   PlatformDetails,
 } from '@/lib/server/data/types';
+import type { AdAccountSignalView } from '@/lib/server/intelligence';
 import type { ReviveCampaignOpportunity } from '@/lib/shared/types/campaignDrafts';
 import type { SyncCoverage } from '@/lib/shared/types/integrations';
+import type { CalendarQueuePreviewItem } from '@/lib/shared';
 
 export type DashboardState =
   | 'no_platform_selected'
@@ -86,6 +88,16 @@ export interface DashboardCampaignPreviewItem {
   ctr: number;
 }
 
+export interface DashboardAttentionSignal {
+  id: string;
+  signalType: AdAccountSignalView['signalType'];
+  severity: AdAccountSignalView['severity'];
+  title: string;
+  reason: string;
+  actionLabel: string | null;
+  actionHref: string | null;
+}
+
 export interface DashboardPayload {
   state: DashboardState;
   selection: {
@@ -99,6 +111,8 @@ export interface DashboardPayload {
   summaryByWindow: Record<DashboardWindow, DashboardSummaryCard[]>;
   trendByWindow: Record<DashboardWindow, DashboardTrendSeries>;
   campaignPreview: DashboardCampaignPreviewItem[];
+  intelligenceSignals: DashboardAttentionSignal[];
+  calendarQueuePreview: CalendarQueuePreviewItem[];
   syncCoverage: SyncCoverage | null;
   reviveOpportunity: ReviveCampaignOpportunity | null;
   platform: PlatformDetails | null;

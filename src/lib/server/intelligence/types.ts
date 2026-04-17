@@ -24,12 +24,46 @@ export type AdAccountAssessmentState =
   | 'misconfigured';
 
 export type TrackingConfidence = 'low' | 'medium' | 'high';
+export type DigestTrendDirection = 'up' | 'down' | 'flat' | 'unknown';
+export type DigestRiskLevel = 'low' | 'medium' | 'high';
+export type TestingVelocityLabel = 'none' | 'low' | 'healthy';
 
 export type AssessmentTrigger =
   | 'integration'
   | 'sync'
   | 'manual'
   | 'material_change';
+
+export type AdAccountSignalType =
+  | 'dormant_account'
+  | 'revive_best_historic_winner'
+  | 'efficiency_deterioration'
+  | 'no_recent_testing'
+  | 'weak_tracking';
+
+export type AdAccountSignalSeverity = 'info' | 'warning' | 'critical';
+export type AdAccountSignalStatus = 'active' | 'accepted' | 'dismissed' | 'resolved';
+export type CalendarQueueSourceType = 'signal' | 'ai' | 'manual' | 'system';
+export type CalendarQueueItemType =
+  | 'revive_campaign'
+  | 'refresh_creative'
+  | 'investigate_efficiency'
+  | 'launch_test'
+  | 'fix_tracking'
+  | 'review_report';
+export type CalendarQueueWorkflowKind =
+  | 'revive_workflow'
+  | 'efficiency_workflow'
+  | 'tracking_workflow'
+  | 'testing_workflow';
+export type CalendarQueuePriority = 'low' | 'medium' | 'high' | 'critical';
+export type CalendarQueueStatus =
+  | 'ready'
+  | 'approved'
+  | 'scheduled'
+  | 'in_progress'
+  | 'completed'
+  | 'dismissed';
 
 export interface IntelligenceTopCampaign {
   id: string;
@@ -110,6 +144,40 @@ export interface AssessmentBreakdownItem {
   performanceIndex: number;
 }
 
+export interface DigestTrendSnapshot {
+  direction: DigestTrendDirection;
+  deltaAbsolute: number;
+  deltaPercent: number | null;
+  currentValue: number;
+  previousValue: number;
+}
+
+export interface DigestWindowWinner {
+  label: string;
+  startDay: string | null;
+  endDay: string | null;
+  spend: number;
+  conversion: number;
+  costPerResult: number;
+  ctr: number;
+  reason: string;
+}
+
+export interface DigestTestingVelocity {
+  label: TestingVelocityLabel;
+  newCampaigns30d: number;
+  newAdsets30d: number;
+  activeTests30d: number;
+  lastLaunchDay: string | null;
+}
+
+export interface DigestCreativeFatigueRisk {
+  level: DigestRiskLevel;
+  score: number;
+  reasons: string[];
+  supportingCampaignIds: string[];
+}
+
 export interface AdAccountDigest {
   businessId: string;
   platformIntegrationId: string;
@@ -120,6 +188,8 @@ export interface AdAccountDigest {
   assessmentVersion: number;
   generatedAt: string;
   lastSyncedAt: string | null;
+  coverageStartDate: string | null;
+  coverageEndDate: string | null;
   historyWindowAvailable: {
     firstDay: string | null;
     lastDay: string | null;
@@ -150,6 +220,11 @@ export interface AdAccountDigest {
     shareOfSpend: number;
     campaigns: number;
   }>;
+  topObjectives: Array<{
+    objective: string;
+    shareOfSpend: number;
+    campaigns: number;
+  }>;
   conversionSignalQuality: {
     conversions30d: number;
     clicks30d: number;
@@ -159,6 +234,12 @@ export interface AdAccountDigest {
   };
   trackingConfidence: TrackingConfidence;
   creativeFreshness: 'fresh' | 'mixed' | 'stale';
+  spendTrend: DigestTrendSnapshot;
+  resultTrend: DigestTrendSnapshot;
+  bestWindow30d: DigestWindowWinner | null;
+  bestWindow90d: DigestWindowWinner | null;
+  testingVelocity: DigestTestingVelocity;
+  creativeFatigueRisk: DigestCreativeFatigueRisk;
   accountMaturity: {
     score: number;
     label: AdAccountAssessmentState;
@@ -174,6 +255,114 @@ export interface AdAccountDigest {
   topAdSets: AssessmentBreakdownItem[];
   bottomAdSets: AssessmentBreakdownItem[];
   digestHash: string;
+}
+
+export interface AdAccountSignalRecommendedAction {
+  type: CalendarQueueItemType;
+  label: string;
+  destination: 'campaign_draft' | 'dashboard' | 'calendar' | 'reports' | 'settings';
+  href: string | null;
+  draftSource?: 'historic_clone' | 'fresh_relaunch' | 'manual_defaults' | null;
+  queueSuggested: boolean;
+  payload?: Record<string, unknown>;
+}
+
+export interface AdAccountSignalEvidence {
+  coverageStartDate: string | null;
+  coverageEndDate: string | null;
+  daysSinceLastActivity: number | null;
+  trackingConfidence: TrackingConfidence;
+  spendTrend: DigestTrendSnapshot;
+  resultTrend: DigestTrendSnapshot;
+  bestWindow30d: DigestWindowWinner | null;
+  bestWindow90d: DigestWindowWinner | null;
+  testingVelocity: DigestTestingVelocity;
+  creativeFatigueRisk: DigestCreativeFatigueRisk;
+  topCampaignIds: string[];
+  topObjective: string | null;
+  [key: string]: unknown;
+}
+
+export interface AdAccountSignalDraft {
+  businessId: string;
+  platformIntegrationId: string;
+  adAccountId: string;
+  sourceAssessmentId: string | null;
+  sourceDigestHash: string;
+  signalType: AdAccountSignalType;
+  severity: AdAccountSignalSeverity;
+  title: string;
+  reason: string;
+  evidence: AdAccountSignalEvidence;
+  recommendedAction: AdAccountSignalRecommendedAction;
+}
+
+export interface AdAccountSignal extends AdAccountSignalDraft {
+  id: string;
+  status: AdAccountSignalStatus;
+  firstDetectedAt: string;
+  lastDetectedAt: string;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdAccountSignalView {
+  id: string;
+  signalType: AdAccountSignalType;
+  severity: AdAccountSignalSeverity;
+  title: string;
+  reason: string;
+  actionLabel: string | null;
+  actionHref: string | null;
+}
+
+export interface CalendarQueueItemDraft {
+  businessId: string;
+  platformIntegrationId: string;
+  adAccountId: string;
+  sourceSignalId: string | null;
+  sourceType: CalendarQueueSourceType;
+  itemType: CalendarQueueItemType;
+  priority: CalendarQueuePriority;
+  title: string;
+  description: string | null;
+  destinationHref: string | null;
+  scheduledFor?: string | null;
+  dueDate?: string | null;
+  parentQueueItemId?: string | null;
+  workflowKey?: CalendarQueueWorkflowKind | null;
+  materializedFromBlueprintKey?: string | null;
+  childBlueprints?: CalendarQueueChildBlueprint[];
+  payload: Record<string, unknown>;
+}
+
+export interface CalendarQueueItem extends CalendarQueueItemDraft {
+  id: string;
+  status: CalendarQueueStatus;
+  campaignDraftId: string | null;
+  createdByUserId: string | null;
+  updatedByUserId: string | null;
+  completedAt: string | null;
+  dismissedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CalendarQueueChildBlueprint {
+  key: string;
+  itemType: CalendarQueueItemType;
+  priority: CalendarQueuePriority;
+  title: string;
+  description: string | null;
+  destinationHref: string | null;
+  payload: Record<string, unknown>;
+}
+
+export interface MetaAccountIntelligenceArtifacts {
+  assessment: AdAccountAssessment;
+  signals: AdAccountSignal[];
+  queueItems: CalendarQueueItem[];
 }
 
 export interface AdAccountAssessmentSummary {

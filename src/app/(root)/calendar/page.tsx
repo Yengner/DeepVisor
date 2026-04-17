@@ -2,7 +2,11 @@ import CalendarClient from './CalendarClient';
 import { EmptyCampaignState } from '@/components/campaigns/EmptyStates';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
-import { buildBusinessIntelligenceWorkspace } from '@/lib/server/intelligence';
+import { createAdminClient } from '@/lib/server/supabase/admin';
+import {
+  buildBusinessIntelligenceWorkspace,
+  getMetaAccountIntelligenceReadModel,
+} from '@/lib/server/intelligence';
 import type { BusinessIntelligencePlanningScope } from '@/lib/server/intelligence';
 
 function parseScope(value: string | string[] | undefined): BusinessIntelligencePlanningScope | undefined {
@@ -52,6 +56,14 @@ export default async function CalendarPage({
         defaultAdAccountId: selectedAdAccountId,
       }
     );
+    const adminSupabase = createAdminClient();
+    const intelligence =
+      workspace.selectedAdAccountId
+        ? await getMetaAccountIntelligenceReadModel(adminSupabase, {
+            businessId,
+            adAccountId: workspace.selectedAdAccountId,
+          })
+        : { signals: [], queueItems: [] };
 
     if (workspace.platforms.length === 0) {
         return <EmptyCampaignState type="platform" />;
@@ -66,5 +78,10 @@ export default async function CalendarPage({
         );
     }
 
-    return <CalendarClient workspace={workspace} />;
+    return (
+      <CalendarClient
+        workspace={workspace}
+        initialQueueItems={intelligence.queueItems}
+      />
+    );
 }

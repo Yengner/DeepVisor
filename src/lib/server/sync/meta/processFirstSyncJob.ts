@@ -8,7 +8,11 @@ import {
 } from '@/lib/server/repositories/ad_accounts/syncState';
 import { refreshMetaPerformanceSummaries, syncMetaPerformance } from '@/lib/server/sync/meta/syncMetaPerformance';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
-import { runBusinessAssessment, runMetaAdAccountAssessment } from '@/lib/server/intelligence';
+import {
+  runBusinessAssessment,
+  runMetaAdAccountAssessment,
+  syncMetaAccountIntelligenceArtifacts,
+} from '@/lib/server/intelligence';
 import type { Database } from '@/lib/shared/types/supabase';
 import { FULL_HISTORY_BACKFILL_DAYS } from '../types';
 import { resolveMetaBackfillWindow } from './client';
@@ -401,12 +405,16 @@ export async function processMetaFirstSyncJob(input: {
   });
 
   try {
-    await runMetaAdAccountAssessment({
+    const adAccountAssessment = await runMetaAdAccountAssessment({
       supabase: input.supabase,
       businessId: input.job.business_id,
       platformIntegrationId: input.job.platform_integration_id,
       adAccountId: adAccount.id,
       trigger: 'integration',
+    });
+    await syncMetaAccountIntelligenceArtifacts({
+      supabase: input.supabase,
+      assessment: adAccountAssessment,
     });
     await runBusinessAssessment({
       supabase: input.supabase,

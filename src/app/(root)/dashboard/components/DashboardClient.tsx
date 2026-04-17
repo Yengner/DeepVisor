@@ -52,6 +52,7 @@ import {
   type CalendarQueueStatus,
 } from '@/lib/shared';
 import type {
+  DashboardAttentionSignal,
   DashboardAlert,
   DashboardCampaignPreviewItem,
   DashboardPayload,
@@ -574,7 +575,12 @@ function buildReadFirstItems(input: {
   watchCampaign: DashboardCampaignPreviewItem | null;
   primaryOutcomeCard: DashboardSummaryCard;
   spendCard: DashboardSummaryCard;
-}): Array<{ title: string; detail: string; tone: DashboardAlert['tone'] }> {
+}): Array<{
+  title: string;
+  detail: string;
+  tone: DashboardAlert['tone'];
+  childTitles?: string[];
+}> {
   if (input.payload.state !== 'ready') {
     return [
       {
@@ -583,6 +589,35 @@ function buildReadFirstItems(input: {
         tone: 'blue',
       },
     ];
+  }
+
+  const workflowItems = input.payload.calendarQueuePreview.filter(
+    (item) => item.isParent || (item.childBlueprints?.length ?? 0) > 0 || (item.children?.length ?? 0) > 0
+  );
+
+  if (workflowItems.length > 0) {
+    return workflowItems.slice(0, 3).map((item) => ({
+      title: item.title,
+      detail: item.description,
+      tone:
+        item.status === 'draft'
+          ? 'blue'
+          : item.status === 'approved'
+            ? 'teal'
+            : 'yellow',
+      childTitles:
+        (item.children?.length ?? 0) > 0
+          ? item.children?.slice(0, 4).map((child) => child.title)
+          : item.childBlueprints?.slice(0, 4).map((child) => child.title),
+    }));
+  }
+
+  if (input.payload.intelligenceSignals.length > 0) {
+    return input.payload.intelligenceSignals.slice(0, 3).map((signal) => ({
+      title: signal.title,
+      detail: signal.reason,
+      tone: signalSeverityTone(signal.severity),
+    }));
   }
 
   if (input.payload.alerts.length > 0) {
@@ -630,6 +665,19 @@ function buildReadFirstItems(input: {
   }
 
   return items.slice(0, 3);
+}
+
+function signalSeverityTone(
+  severity: DashboardAttentionSignal['severity']
+): DashboardAlert['tone'] {
+  switch (severity) {
+    case 'critical':
+      return 'red';
+    case 'warning':
+      return 'yellow';
+    default:
+      return 'blue';
+  }
 }
 
 function DashboardSignalCard({
@@ -894,11 +942,25 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     [trend.outcomeLabel]: point.outcome,
   }));
   const calendarPreviewItems = useMemo(
-    () =>
-      buildCalendarQueuePreviewItems(
+    () => {
+      if (payload.calendarQueuePreview.length > 0) {
+        return [...payload.calendarQueuePreview].sort(compareCalendarQueuePreviewItems);
+      }
+
+      if (payload.state === 'ready') {
+        return [];
+      }
+
+      return buildCalendarQueuePreviewItems(
         payload.viewContext.adAccountName ?? payload.viewContext.platformName
-      ).sort(compareCalendarQueuePreviewItems),
-    [payload.viewContext.adAccountName, payload.viewContext.platformName]
+      ).sort(compareCalendarQueuePreviewItems);
+    },
+    [
+      payload.calendarQueuePreview,
+      payload.state,
+      payload.viewContext.adAccountName,
+      payload.viewContext.platformName,
+    ]
   );
   const calendarPreviewCounts = useMemo(
     () => ({
@@ -1338,6 +1400,15 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                         <Text size="sm" c="dimmed" mt={4}>
                           {item.detail}
                         </Text>
+                        {item.childTitles && item.childTitles.length > 0 ? (
+                          <Stack gap={4} mt="xs">
+                            {item.childTitles.map((childTitle) => (
+                              <Text key={childTitle} size="xs" c="dimmed">
+                                {`\u2022 ${childTitle}`}
+                              </Text>
+                            ))}
+                          </Stack>
+                        ) : null}
                       </div>
                     </Group>
                   </div>
@@ -1577,7 +1648,9 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
 
               <Group justify="space-between" align="center" mt="md" gap="sm" wrap="wrap">
                 <Text size="sm" c="dimmed" maw={260}>
-                  Open the full Calendar view to approve, modify, or schedule what is queued here.
+                  {payload.calendarQueuePreview.length > 0
+                    ? 'This preview is reading directly from your saved queue items.'
+                    : 'Open the full Calendar view to approve, modify, or schedule what is queued here.'}
                 </Text>
                 <Group gap="sm" wrap="wrap">
                   <Button

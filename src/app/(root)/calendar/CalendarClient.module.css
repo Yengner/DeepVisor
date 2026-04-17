@@ -209,6 +209,8 @@
   display: grid;
   grid-template-columns: 64px repeat(7, minmax(136px, 1fr));
   min-width: 1016px;
+  box-sizing: border-box;
+  padding-right: var(--calendar-scrollbar-width, 0px);
   border-bottom: 1px solid rgba(226, 232, 240, 0.96);
   background: rgba(255, 255, 255, 0.98);
 }
@@ -266,6 +268,7 @@
   overflow: auto;
   background: rgba(255, 255, 255, 0.98);
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
 .weekBody {

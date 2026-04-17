@@ -14,6 +14,77 @@ export type Database = {
   }
   ai: {
     Tables: {
+      ad_account_signals: {
+        Row: {
+          ad_account_id: string
+          business_id: string
+          created_at: string
+          evidence_json: Json
+          first_detected_at: string
+          id: string
+          last_detected_at: string
+          platform_integration_id: string
+          reason: string
+          recommended_action_json: Json
+          resolved_at: string | null
+          severity: string
+          signal_type: string
+          source_assessment_id: string | null
+          source_digest_hash: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          business_id: string
+          created_at?: string
+          evidence_json?: Json
+          first_detected_at?: string
+          id?: string
+          last_detected_at?: string
+          platform_integration_id: string
+          reason: string
+          recommended_action_json?: Json
+          resolved_at?: string | null
+          severity: string
+          signal_type: string
+          source_assessment_id?: string | null
+          source_digest_hash: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          business_id?: string
+          created_at?: string
+          evidence_json?: Json
+          first_detected_at?: string
+          id?: string
+          last_detected_at?: string
+          platform_integration_id?: string
+          reason?: string
+          recommended_action_json?: Json
+          resolved_at?: string | null
+          severity?: string
+          signal_type?: string
+          source_assessment_id?: string | null
+          source_digest_hash?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_account_signals_source_assessment_id_fkey"
+            columns: ["source_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "business_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_observations: {
         Row: {
           ad_account_id: string | null
@@ -1397,6 +1468,143 @@ export type Database = {
           },
         ]
       }
+      calendar_queue_items: {
+        Row: {
+          ad_account_id: string
+          business_id: string
+          campaign_draft_id: string | null
+          child_blueprints_json: Json
+          completed_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          destination_href: string | null
+          dismissed_at: string | null
+          due_date: string | null
+          id: string
+          item_type: string
+          materialized_from_blueprint_key: string | null
+          parent_queue_item_id: string | null
+          payload_json: Json
+          platform_integration_id: string
+          priority: string
+          scheduled_for: string | null
+          source_signal_id: string | null
+          source_type: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by_user_id: string | null
+          workflow_key: string | null
+        }
+        Insert: {
+          ad_account_id: string
+          business_id: string
+          campaign_draft_id?: string | null
+          child_blueprints_json?: Json
+          completed_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          destination_href?: string | null
+          dismissed_at?: string | null
+          due_date?: string | null
+          id?: string
+          item_type: string
+          materialized_from_blueprint_key?: string | null
+          parent_queue_item_id?: string | null
+          payload_json?: Json
+          platform_integration_id: string
+          priority?: string
+          scheduled_for?: string | null
+          source_signal_id?: string | null
+          source_type?: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+          workflow_key?: string | null
+        }
+        Update: {
+          ad_account_id?: string
+          business_id?: string
+          campaign_draft_id?: string | null
+          child_blueprints_json?: Json
+          completed_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          destination_href?: string | null
+          dismissed_at?: string | null
+          due_date?: string | null
+          id?: string
+          item_type?: string
+          materialized_from_blueprint_key?: string | null
+          parent_queue_item_id?: string | null
+          payload_json?: Json
+          platform_integration_id?: string
+          priority?: string
+          scheduled_for?: string | null
+          source_signal_id?: string | null
+          source_type?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+          workflow_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_queue_items_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_queue_items_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_queue_items_campaign_draft_id_fkey"
+            columns: ["campaign_draft_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_queue_items_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_queue_items_parent_queue_item_id_fkey"
+            columns: ["parent_queue_item_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_queue_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_queue_items_platform_integration_id_fkey"
+            columns: ["platform_integration_id"]
+            isOneToOne: false
+            referencedRelation: "platform_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_queue_items_updated_by_user_id_fkey"
+            columns: ["updated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_dims: {
         Row: {
           ad_account_id: string
@@ -2016,6 +2224,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_calendar_queue_workflow: {
+        Args: { p_queue_item_id: string; p_user_id?: string | null }
+        Returns: {
+          ad_account_id: string
+          business_id: string
+          campaign_draft_id: string | null
+          child_blueprints_json: Json
+          completed_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          destination_href: string | null
+          dismissed_at: string | null
+          due_date: string | null
+          id: string
+          item_type: string
+          materialized_from_blueprint_key: string | null
+          parent_queue_item_id: string | null
+          payload_json: Json
+          platform_integration_id: string
+          priority: string
+          scheduled_for: string | null
+          source_signal_id: string | null
+          source_type: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by_user_id: string | null
+          workflow_key: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "calendar_queue_items"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       can_access_account: {
         Args: { p_ad_account_id: string }
         Returns: boolean

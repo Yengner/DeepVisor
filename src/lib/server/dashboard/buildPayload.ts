@@ -354,6 +354,8 @@ export function buildDashboardPayload(input: {
   platform: PlatformDetails | null;
   adAccount: AdAccountData | null;
   campaignSnapshot: DashboardCampaignSnapshotItem[];
+  intelligenceSignals: DashboardPayload['intelligenceSignals'];
+  calendarQueuePreview: DashboardPayload['calendarQueuePreview'];
   syncCoverage: DashboardPayload['syncCoverage'];
   reviveOpportunity: DashboardPayload['reviveOpportunity'];
 }): DashboardPayload {
@@ -403,6 +405,8 @@ export function buildDashboardPayload(input: {
       '30d': buildTrendSeries(dailyPoints, '30d', primaryOutcomeMetric),
     },
     campaignPreview: buildCampaignPreview(input.campaignSnapshot, primaryOutcomeMetric),
+    intelligenceSignals: input.intelligenceSignals,
+    calendarQueuePreview: input.calendarQueuePreview,
     syncCoverage: input.syncCoverage,
     reviveOpportunity: input.reviveOpportunity,
     platform: input.platform,

@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/server/supabase/admin';
 import {
   runBusinessAssessment,
   runMetaAdAccountAssessment,
+  syncMetaAccountIntelligenceArtifacts,
 } from '@/lib/server/intelligence';
 import { toIntegrationStatus } from '@/lib/server/integrations/normalizers';
 import {
@@ -292,12 +293,16 @@ export async function syncBusinessPlatform(input: {
       }
 
       if (syncedAccount?.id) {
-        await runMetaAdAccountAssessment({
+        const adAccountAssessment = await runMetaAdAccountAssessment({
           supabase,
           businessId: input.businessId,
           platformIntegrationId: integration.id,
           adAccountId: syncedAccount.id,
           trigger: toAssessmentTrigger(input.trigger),
+        });
+        await syncMetaAccountIntelligenceArtifacts({
+          supabase,
+          assessment: adAccountAssessment,
         });
         await runBusinessAssessment({
           supabase,

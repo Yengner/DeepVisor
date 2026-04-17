@@ -26,6 +26,8 @@ const META_DEFAULT_BID_STRATEGY = 'LOWEST_COST_WITHOUT_CAP';
 const META_DEFAULT_BUYING_TYPE = 'AUCTION';
 const META_DEFAULT_BILLING_EVENT = 'IMPRESSIONS';
 const META_DEFAULT_CTA = 'LEARN_MORE';
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type BusinessProfileSeed = Pick<
   Database['public']['Tables']['business_profiles']['Row'],
@@ -65,6 +67,10 @@ function formatGoalLabel(value: string): string {
     .replace(/^OUTCOME_/, '')
     .replace(/_/g, ' ')
     .toLowerCase();
+}
+
+function looksLikeUuid(value: string | null): boolean {
+  return typeof value === 'string' && UUID_PATTERN.test(value);
 }
 
 function mapMonthlyBudgetCap(value: string | null): number | null {
@@ -272,17 +278,23 @@ async function loadBusinessProfile(
 
 async function loadCampaignSeed(
   supabase: CampaignsClient,
+  adAccountId: string,
   campaignId: string | null
 ): Promise<CampaignSeedRow | null> {
   if (!campaignId) {
     return null;
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('campaign_dims')
     .select('id, name, objective, raw')
-    .eq('id', campaignId)
-    .maybeSingle();
+    .eq('ad_account_id', adAccountId);
+
+  query = looksLikeUuid(campaignId)
+    ? query.eq('id', campaignId)
+    : query.eq('external_id', campaignId);
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     throw error;
@@ -293,17 +305,23 @@ async function loadCampaignSeed(
 
 async function loadAdsetSeed(
   supabase: CampaignsClient,
+  adAccountId: string,
   adsetId: string | null
 ): Promise<AdsetSeedRow | null> {
   if (!adsetId) {
     return null;
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('adset_dims')
     .select('id, name, optimization_goal, raw')
-    .eq('id', adsetId)
-    .maybeSingle();
+    .eq('ad_account_id', adAccountId);
+
+  query = looksLikeUuid(adsetId)
+    ? query.eq('id', adsetId)
+    : query.eq('external_id', adsetId);
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     throw error;
@@ -467,8 +485,8 @@ export async function getReviveCampaignOpportunity(
 
   const [businessProfile, campaignSeed, adsetSeed, creativeSeed] = await Promise.all([
     loadBusinessProfile(supabase, input.businessId),
-    loadCampaignSeed(supabase, assessment.digest.topCampaigns[0]?.id ?? null),
-    loadAdsetSeed(supabase, assessment.digest.topAdSets[0]?.id ?? null),
+    loadCampaignSeed(supabase, input.adAccountId, assessment.digest.topCampaigns[0]?.id ?? null),
+    loadAdsetSeed(supabase, input.adAccountId, assessment.digest.topAdSets[0]?.id ?? null),
     loadCreativeSeed(supabase, input.adAccountId),
   ]);
 

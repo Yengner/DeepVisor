@@ -14,6 +14,11 @@ import {
 } from '@/lib/server/dashboard';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
+import {
+  getMetaAccountIntelligenceReadModel,
+  type AdAccountSignalView,
+} from '@/lib/server/intelligence';
+import type { CalendarQueuePreviewItem } from '@/lib/shared';
 import type { DashboardCampaignSnapshotItem } from './types';
 
 export default async function MainDashboardPage() {
@@ -47,9 +52,11 @@ export default async function MainDashboardPage() {
   let campaignSnapshot: DashboardCampaignSnapshotItem[] = [];
   let syncCoverage = null;
   let reviveOpportunity = null;
+  let intelligenceSignals: AdAccountSignalView[] = [];
+  let calendarQueuePreview: CalendarQueuePreviewItem[] = [];
   if (adAccount?.id && platformConnected && selectedPlatformId) {
     try {
-      const [campaigns, coverage, revive] = await Promise.all([
+      const [campaigns, coverage, revive, intelligence] = await Promise.all([
         getAdAccountTopCampaigns(adAccount.id),
         getAdAccountSyncCoverage(adminSupabase, adAccount.id),
         getReviveCampaignOpportunity(adminSupabase, {
@@ -57,12 +64,18 @@ export default async function MainDashboardPage() {
           platformIntegrationId: selectedPlatformId,
           adAccountId: adAccount.id,
         }),
+        getMetaAccountIntelligenceReadModel(adminSupabase, {
+          businessId,
+          adAccountId: adAccount.id,
+        }),
       ]);
       campaignSnapshot = normalizeCampaignSnapshot(campaigns);
       syncCoverage = coverage;
       reviveOpportunity = revive;
+      intelligenceSignals = intelligence.signals;
+      calendarQueuePreview = intelligence.queueItems;
     } catch (error) {
-      console.error('Failed to fetch dashboard campaign snapshot:', error);
+      console.error('Failed to fetch dashboard account snapshot:', error);
     }
   }
 
@@ -73,6 +86,8 @@ export default async function MainDashboardPage() {
     platform,
     adAccount,
     campaignSnapshot,
+    intelligenceSignals,
+    calendarQueuePreview,
     syncCoverage,
     reviveOpportunity,
   });

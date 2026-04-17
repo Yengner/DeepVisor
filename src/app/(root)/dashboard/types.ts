@@ -1,4 +1,5 @@
 export type {
+  DashboardAttentionSignal,
   DashboardAlert,
   DashboardCampaignPreviewItem,
   DashboardCampaignSnapshotItem,

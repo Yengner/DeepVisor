@@ -30,6 +30,10 @@ import type {
   BusinessAssessment,
   BusinessAssessmentSummary,
   BusinessSynthesisDigest,
+  DigestCreativeFatigueRisk,
+  DigestTestingVelocity,
+  DigestTrendSnapshot,
+  DigestWindowWinner,
   TrackingConfidence,
 } from '../types';
 
@@ -56,6 +60,10 @@ type AdAccountRow = Pick<
 >;
 
 type AdAccountDailyRow = AdAccountDailyMetricsRow;
+type LaunchDimensionRow = Pick<
+  Database['public']['Tables']['campaign_dims']['Row'],
+  'id' | 'created_time' | 'status'
+>;
 
 const ASSESSMENT_VERSION = 1;
 
@@ -91,6 +99,12 @@ function startDateFromDays(windowDays: number): string {
   return date.toISOString().slice(0, 10);
 }
 
+function addUtcDays(value: string, days: number): string {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 function summarizeDailyWindow(
   rows: AdAccountDailyRow[],
   input?: { sinceDay?: string }
@@ -120,6 +134,47 @@ function summarizeDailyWindow(
   totals.frequency = totals.reach > 0 ? totals.impressions / totals.reach : 0;
 
   return totals;
+}
+
+function summarizeWindowBetween(
+  rows: AdAccountDailyRow[],
+  input: { sinceDay: string; untilDay: string }
+): AssessmentWindowMetrics {
+  return summarizeDailyWindow(
+    rows.filter((row) => row.day >= input.sinceDay && row.day <= input.untilDay)
+  );
+}
+
+function computeTrendSnapshot(input: {
+  currentValue: number;
+  previousValue: number;
+}): DigestTrendSnapshot {
+  const deltaAbsolute = Number((input.currentValue - input.previousValue).toFixed(2));
+  const deltaPercent =
+    input.previousValue > 0
+      ? Number((((input.currentValue - input.previousValue) / input.previousValue) * 100).toFixed(2))
+      : input.currentValue > 0
+        ? 100
+        : null;
+
+  let direction: DigestTrendSnapshot['direction'] = 'unknown';
+  if (input.currentValue === 0 && input.previousValue === 0) {
+    direction = 'flat';
+  } else if (Math.abs(deltaAbsolute) < 0.01) {
+    direction = 'flat';
+  } else if (deltaAbsolute > 0) {
+    direction = 'up';
+  } else if (deltaAbsolute < 0) {
+    direction = 'down';
+  }
+
+  return {
+    direction,
+    deltaAbsolute,
+    deltaPercent,
+    currentValue: Number(input.currentValue.toFixed(2)),
+    previousValue: Number(input.previousValue.toFixed(2)),
+  };
 }
 
 function computeSpendLevel(spendLast30d: number): AdAccountDigest['spendLevel'] {
@@ -368,6 +423,160 @@ function buildObjectiveMix(campaigns: CampaignSummary[]): AdAccountDigest['objec
       campaigns: value.campaigns,
     }))
     .sort((left, right) => right.spend - left.spend);
+}
+
+function buildTopObjectives(
+  objectiveMix: AdAccountDigest['objectiveMix']
+): AdAccountDigest['topObjectives'] {
+  return objectiveMix.slice(0, 3).map((item) => ({
+    objective: item.objective,
+    shareOfSpend: item.shareOfSpend,
+    campaigns: item.campaigns,
+  }));
+}
+
+function buildWindowWinner(input: {
+  rows: AdAccountDailyRow[];
+  windowDays: number;
+  label: string;
+}): DigestWindowWinner | null {
+  const firstDay = input.rows[0]?.day ?? null;
+  const lastDay = input.rows[input.rows.length - 1]?.day ?? null;
+
+  if (!firstDay || !lastDay) {
+    return null;
+  }
+
+  const candidates: Array<{
+    sinceDay: string;
+    untilDay: string;
+    metrics: AssessmentWindowMetrics;
+    score: number;
+  }> = [];
+
+  let cursorSince = firstDay;
+  while (cursorSince <= lastDay) {
+    const untilDay = addUtcDays(cursorSince, input.windowDays - 1);
+    if (untilDay > lastDay) {
+      break;
+    }
+
+    const metrics = summarizeWindowBetween(input.rows, {
+      sinceDay: cursorSince,
+      untilDay,
+    });
+
+    if (metrics.spend > 0 || metrics.conversion > 0 || metrics.clicks > 0) {
+      const efficiencyScore =
+        metrics.conversion > 0 ? 1000 / Math.max(metrics.costPerResult, 0.01) : 0;
+      const score = metrics.conversion * 100 + efficiencyScore + metrics.ctr * 5;
+
+      candidates.push({
+        sinceDay: cursorSince,
+        untilDay,
+        metrics,
+        score,
+      });
+    }
+
+    cursorSince = addUtcDays(cursorSince, 1);
+  }
+
+  const winner = candidates.sort((left, right) => right.score - left.score)[0] ?? null;
+  if (!winner) {
+    return null;
+  }
+
+  const reason =
+    winner.metrics.conversion > 0
+      ? `Best ${input.windowDays}-day stretch by conversion efficiency and result volume.`
+      : `Best ${input.windowDays}-day stretch by engagement quality when conversion signal was limited.`;
+
+  return {
+    label: input.label,
+    startDay: winner.sinceDay,
+    endDay: winner.untilDay,
+    spend: Number(winner.metrics.spend.toFixed(2)),
+    conversion: winner.metrics.conversion,
+    costPerResult: Number(winner.metrics.costPerResult.toFixed(2)),
+    ctr: Number(winner.metrics.ctr.toFixed(2)),
+    reason,
+  };
+}
+
+function buildTestingVelocity(input: {
+  campaigns: LaunchDimensionRow[];
+  adsets: LaunchDimensionRow[];
+  sinceDay: string;
+}): DigestTestingVelocity {
+  const campaignLaunches = input.campaigns.filter((item) =>
+    item.created_time ? item.created_time.slice(0, 10) >= input.sinceDay : false
+  );
+  const adsetLaunches = input.adsets.filter((item) =>
+    item.created_time ? item.created_time.slice(0, 10) >= input.sinceDay : false
+  );
+  const activeTests30d =
+    campaignLaunches.filter((item) => (item.status ?? '').toLowerCase().includes('active')).length +
+    adsetLaunches.filter((item) => (item.status ?? '').toLowerCase().includes('active')).length;
+
+  const latestLaunchDay = [...campaignLaunches, ...adsetLaunches]
+    .map((item) => item.created_time?.slice(0, 10) ?? null)
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .at(-1) ?? null;
+
+  const totalLaunches = campaignLaunches.length + adsetLaunches.length;
+  const label: DigestTestingVelocity['label'] =
+    totalLaunches === 0 ? 'none' : totalLaunches < 3 ? 'low' : 'healthy';
+
+  return {
+    label,
+    newCampaigns30d: campaignLaunches.length,
+    newAdsets30d: adsetLaunches.length,
+    activeTests30d,
+    lastLaunchDay: latestLaunchDay,
+  };
+}
+
+function buildCreativeFatigueRisk(input: {
+  creativeFreshness: AdAccountDigest['creativeFreshness'];
+  recentWindow: AssessmentWindowMetrics;
+  testingVelocity: DigestTestingVelocity;
+  topCampaigns: AssessmentBreakdownItem[];
+}): DigestCreativeFatigueRisk {
+  let score = 0;
+  const reasons: string[] = [];
+
+  if (input.creativeFreshness === 'stale') {
+    score += 45;
+    reasons.push('Creative freshness currently reads as stale.');
+  } else if (input.creativeFreshness === 'mixed') {
+    score += 20;
+    reasons.push('Creative freshness is mixed and may need rotation.');
+  }
+
+  if (input.recentWindow.frequency >= 3.5) {
+    score += 25;
+    reasons.push(`Recent frequency is elevated at ${input.recentWindow.frequency.toFixed(2)}.`);
+  }
+
+  if (input.testingVelocity.label === 'none' && input.recentWindow.spend > 0) {
+    score += 20;
+    reasons.push('No recent testing detected despite continued spend.');
+  } else if (input.testingVelocity.label === 'low' && input.recentWindow.spend > 0) {
+    score += 10;
+    reasons.push('Testing pace is low relative to recent delivery.');
+  }
+
+  const level: DigestCreativeFatigueRisk['level'] =
+    score >= 60 ? 'high' : score >= 30 ? 'medium' : 'low';
+
+  return {
+    level,
+    score,
+    reasons,
+    supportingCampaignIds: input.topCampaigns.slice(0, 3).map((campaign) => campaign.id),
+  };
 }
 
 function buildAdAccountDigestHash(value: Omit<AdAccountDigest, 'digestHash'>): string {
@@ -715,6 +924,39 @@ async function listAdAccountDailyRows(
   });
 }
 
+async function listLaunchDimensions(
+  supabase: AssessmentClient,
+  adAccountId: string
+): Promise<{
+  campaigns: LaunchDimensionRow[];
+  adsets: LaunchDimensionRow[];
+}> {
+  const [{ data: campaigns, error: campaignsError }, { data: adsets, error: adsetsError }] =
+    await Promise.all([
+      supabase
+        .from('campaign_dims')
+        .select('id, created_time, status')
+        .eq('ad_account_id', adAccountId),
+      supabase
+        .from('adset_dims')
+        .select('id, created_time, status')
+        .eq('ad_account_id', adAccountId),
+    ]);
+
+  if (campaignsError) {
+    throw campaignsError;
+  }
+
+  if (adsetsError) {
+    throw adsetsError;
+  }
+
+  return {
+    campaigns: (campaigns ?? []) as LaunchDimensionRow[],
+    adsets: (adsets ?? []) as LaunchDimensionRow[],
+  };
+}
+
 function shouldGenerateAiAssessment(input: {
   latestAssessment: AdAccountAssessment | null;
   nextDigestHash: string;
@@ -731,7 +973,7 @@ function shouldGenerateAiAssessment(input: {
   return input.latestAssessment.digest.digestHash !== input.nextDigestHash;
 }
 
-async function buildAdAccountDigest(input: {
+export async function buildMetaAccountDigest(input: {
   supabase: AssessmentClient;
   businessId: string;
   platformIntegrationId: string;
@@ -745,10 +987,11 @@ async function buildAdAccountDigest(input: {
   trackingConfidence: TrackingConfidence;
   maturityScore: number;
 }> {
-  const [integration, adAccount, dailyRows] = await Promise.all([
+  const [integration, adAccount, dailyRows, launchDimensions] = await Promise.all([
     getIntegrationRow(input.supabase, input.businessId, input.platformIntegrationId),
     getAdAccountRow(input.supabase, input.businessId, input.adAccountId),
     listAdAccountDailyRows(input.supabase, input.businessId, input.adAccountId),
+    listLaunchDimensions(input.supabase, input.adAccountId),
   ]);
 
   const platform = getPlatformRecord(integration.platforms);
@@ -782,6 +1025,10 @@ async function buildAdAccountDigest(input: {
   const last90d = summarizeDailyWindow(dailyRows, { sinceDay: startDateFromDays(90) });
   const last30d = summarizeDailyWindow(dailyRows, { sinceDay: startDateFromDays(30) });
   const last7d = summarizeDailyWindow(dailyRows, { sinceDay: startDateFromDays(7) });
+  const previous30d = summarizeWindowBetween(dailyRows, {
+    sinceDay: startDateFromDays(60),
+    untilDay: addUtcDays(startDateFromDays(30), -1),
+  });
   const daysSinceLastActivity = computeDaysSinceLastActivity(lastDay);
   const staleSeverity = computeStaleSeverity(daysSinceLastActivity);
 
@@ -821,6 +1068,45 @@ async function buildAdAccountDigest(input: {
     trackingConfidence,
     daysSinceLastActivity,
   });
+  const objectiveMix = buildObjectiveMix(lifetimeCampaigns);
+  const recentActivity = {
+    hasDeliveryLast7d: last7d.spend > 0 || last7d.impressions > 0,
+    hasDeliveryLast30d: last30d.spend > 0 || last30d.impressions > 0,
+    spendLast7d: Number(last7d.spend.toFixed(2)),
+    spendLast30d: Number(last30d.spend.toFixed(2)),
+    impressionsLast7d: last7d.impressions,
+    impressionsLast30d: last30d.impressions,
+    activeDaysLast7d: last7d.activeDays,
+    activeDaysLast30d: last30d.activeDays,
+  } satisfies AdAccountDigest['recentActivity'];
+  const creativeFreshness = computeCreativeFreshness({
+    historyDays,
+    recentActivity,
+    campaignsWithSpend30d: campaigns30d.filter((item) => item.spend > 0).length,
+  });
+  const testingVelocity = buildTestingVelocity({
+    campaigns: launchDimensions.campaigns,
+    adsets: launchDimensions.adsets,
+    sinceDay: startDateFromDays(30),
+  });
+  const spendTrend = computeTrendSnapshot({
+    currentValue: last30d.spend,
+    previousValue: previous30d.spend,
+  });
+  const resultTrend = computeTrendSnapshot({
+    currentValue: last30d.conversion,
+    previousValue: previous30d.conversion,
+  });
+  const bestWindow30d = buildWindowWinner({
+    rows: dailyRows,
+    windowDays: 30,
+    label: 'Best 30-day period',
+  });
+  const bestWindow90d = buildWindowWinner({
+    rows: dailyRows,
+    windowDays: 90,
+    label: 'Best 90-day period',
+  });
 
   const digestWithoutHash = {
     businessId: input.businessId,
@@ -832,6 +1118,8 @@ async function buildAdAccountDigest(input: {
     assessmentVersion: ASSESSMENT_VERSION,
     generatedAt: new Date().toISOString(),
     lastSyncedAt: adAccount.last_synced,
+    coverageStartDate: firstDay,
+    coverageEndDate: lastDay,
     historyWindowAvailable: {
       firstDay,
       lastDay,
@@ -840,23 +1128,15 @@ async function buildAdAccountDigest(input: {
     daysSinceLastActivity,
     staleSeverity,
     spendLevel: computeSpendLevel(last30d.spend),
-    recentActivity: {
-      hasDeliveryLast7d: last7d.spend > 0 || last7d.impressions > 0,
-      hasDeliveryLast30d: last30d.spend > 0 || last30d.impressions > 0,
-      spendLast7d: Number(last7d.spend.toFixed(2)),
-      spendLast30d: Number(last30d.spend.toFixed(2)),
-      impressionsLast7d: last7d.impressions,
-      impressionsLast30d: last30d.impressions,
-      activeDaysLast7d: last7d.activeDays,
-      activeDaysLast30d: last30d.activeDays,
-    },
+    recentActivity,
     campaignVolume: {
       totalCampaigns: lifetimeCampaigns.length,
       activeCampaigns: lifetimeCampaigns.filter((item) => (item.status ?? '').includes('active')).length,
       campaignsWithSpend30d: campaigns30d.filter((item) => item.spend > 0).length,
       campaignsWithResults30d: campaigns30d.filter((item) => item.conversion > 0).length,
     },
-    objectiveMix: buildObjectiveMix(lifetimeCampaigns),
+    objectiveMix,
+    topObjectives: buildTopObjectives(objectiveMix),
     conversionSignalQuality: {
       conversions30d: last30d.conversion,
       clicks30d: last30d.clicks,
@@ -877,19 +1157,17 @@ async function buildAdAccountDigest(input: {
               : 'none',
     },
     trackingConfidence,
-    creativeFreshness: computeCreativeFreshness({
-      historyDays,
-      recentActivity: {
-        hasDeliveryLast7d: last7d.spend > 0 || last7d.impressions > 0,
-        hasDeliveryLast30d: last30d.spend > 0 || last30d.impressions > 0,
-        spendLast7d: last7d.spend,
-        spendLast30d: last30d.spend,
-        impressionsLast7d: last7d.impressions,
-        impressionsLast30d: last30d.impressions,
-        activeDaysLast7d: last7d.activeDays,
-        activeDaysLast30d: last30d.activeDays,
-      },
-      campaignsWithSpend30d: campaigns30d.filter((item) => item.spend > 0).length,
+    creativeFreshness,
+    spendTrend,
+    resultTrend,
+    bestWindow30d,
+    bestWindow90d,
+    testingVelocity,
+    creativeFatigueRisk: buildCreativeFatigueRisk({
+      creativeFreshness,
+      recentWindow: last30d,
+      testingVelocity,
+      topCampaigns,
     }),
     accountMaturity: {
       score: maturityScore,
@@ -937,7 +1215,7 @@ export async function runMetaAdAccountAssessment(input: {
     adAccountId: input.adAccountId,
   });
 
-  const digestResult = await buildAdAccountDigest({
+  const digestResult = await buildMetaAccountDigest({
     supabase,
     businessId: input.businessId,
     platformIntegrationId: input.platformIntegrationId,

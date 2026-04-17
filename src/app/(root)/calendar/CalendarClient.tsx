@@ -47,6 +47,8 @@ const WEEK_HOUR_HEIGHT = 56;
 const MONTH_VIEW_VISIBLE_ITEM_COUNT = 4;
 const DRAG_SNAP_MINUTES = 15;
 const INITIAL_WEEK_SCROLL_HOUR = 13;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function toIsoDay(date: Date): string {
   const next = new Date(date);
@@ -173,6 +175,38 @@ function compareQueueItems(left: QueueItem, right: QueueItem): number {
   }
 
   return parseTimeToMinutes(left.time) - parseTimeToMinutes(right.time);
+}
+
+function looksLikeUuid(value: string): boolean {
+  return UUID_PATTERN.test(value);
+}
+
+function flattenQueueItems(items: QueueItem[]): QueueItem[] {
+  return items.flatMap((item) => [item, ...(item.children ?? [])]);
+}
+
+function updateQueueItemTree(
+  items: QueueItem[],
+  id: string,
+  updater: (item: QueueItem) => QueueItem | null
+): QueueItem[] {
+  return items.flatMap((item) => {
+    if (item.id === id) {
+      const next = updater(item);
+      return next ? [next] : [];
+    }
+
+    if (!item.children || item.children.length === 0) {
+      return [item];
+    }
+
+    return [
+      {
+        ...item,
+        children: updateQueueItemTree(item.children, id, updater),
+      },
+    ];
+  });
 }
 
 function queueStatusColor(status: QueueStatus): string {
@@ -417,17 +451,27 @@ function MiniCalendar({
   );
 }
 
-export default function CalendarClient({ workspace }: { workspace: BusinessIntelligenceWorkspace }) {
+export default function CalendarClient({
+  workspace,
+  initialQueueItems,
+}: {
+  workspace: BusinessIntelligenceWorkspace;
+  initialQueueItems: QueueItem[];
+}) {
   const router = useRouter();
   const weekScrollerRef = useRef<HTMLDivElement | null>(null);
   const [queueItems, setQueueItems] = useState<QueueItem[]>(() =>
-    buildCalendarQueuePreviewItems(workspace.selectedAdAccountName)
+    initialQueueItems.length > 0
+      ? initialQueueItems
+      : buildCalendarQueuePreviewItems(workspace.selectedAdAccountName)
   );
   const [planView, setPlanView] = useState<'weekly' | 'monthly'>('weekly');
   const [calendarCursor, setCalendarCursor] = useState<Date>(() => startOfDay(new Date()));
   const [selectedCalendarItemId, setSelectedCalendarItemId] = useState<string | null>(null);
   const [draggedQueueItemId, setDraggedQueueItemId] = useState<string | null>(null);
   const [dragTarget, setDragTarget] = useState<CalendarDropTarget | null>(null);
+  const [approvingItemId, setApprovingItemId] = useState<string | null>(null);
+  const [weekScrollbarWidth, setWeekScrollbarWidth] = useState(0);
 
   const selectionRequiredPlatforms = workspace.platforms.filter((platform) => platform.selectionRequired);
   const selectedAccountSummary =
@@ -456,21 +500,22 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
     () => new Set(visibleCalendarDayKeys),
     [visibleCalendarDayKeys]
   );
+  const flatQueueItems = useMemo(() => flattenQueueItems(queueItems), [queueItems]);
 
   const queueCounts = useMemo(
     () => ({
-      total: queueItems.length,
-      ready: queueItems.filter((item) => item.status === 'ready').length,
-      approved: queueItems.filter((item) => item.status === 'approved').length,
-      draft: queueItems.filter((item) => item.status === 'draft').length,
+      total: flatQueueItems.length,
+      ready: flatQueueItems.filter((item) => item.status === 'ready').length,
+      approved: flatQueueItems.filter((item) => item.status === 'approved').length,
+      draft: flatQueueItems.filter((item) => item.status === 'draft').length,
     }),
-    [queueItems]
+    [flatQueueItems]
   );
 
   const weekItemsByDay = useMemo(() => {
     const grouped = new Map<string, QueueItem[]>(weekDayKeys.map((day) => [day, []]));
 
-    queueItems.forEach((item) => {
+    flatQueueItems.forEach((item) => {
       const bucket = grouped.get(item.day);
 
       if (bucket) {
@@ -480,12 +525,12 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
 
     grouped.forEach((items) => items.sort(compareQueueItems));
     return grouped;
-  }, [queueItems, weekDayKeys]);
+  }, [flatQueueItems, weekDayKeys]);
 
   const monthItemsByDay = useMemo(() => {
     const grouped = new Map<string, QueueItem[]>(monthDayKeys.map((day) => [day, []]));
 
-    queueItems.forEach((item) => {
+    flatQueueItems.forEach((item) => {
       const bucket = grouped.get(item.day);
 
       if (bucket) {
@@ -495,15 +540,15 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
 
     grouped.forEach((items) => items.sort(compareQueueItems));
     return grouped;
-  }, [queueItems, monthDayKeys]);
+  }, [flatQueueItems, monthDayKeys]);
 
   const selectedCalendarItem = useMemo(
-    () => queueItems.find((item) => item.id === selectedCalendarItemId) ?? null,
-    [queueItems, selectedCalendarItemId]
+    () => flatQueueItems.find((item) => item.id === selectedCalendarItemId) ?? null,
+    [flatQueueItems, selectedCalendarItemId]
   );
   const draggedQueueItem = useMemo(
-    () => queueItems.find((item) => item.id === draggedQueueItemId) ?? null,
-    [queueItems, draggedQueueItemId]
+    () => flatQueueItems.find((item) => item.id === draggedQueueItemId) ?? null,
+    [flatQueueItems, draggedQueueItemId]
   );
 
   const selectedVisibleCalendarItem =
@@ -530,8 +575,8 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
   );
 
   const visibleCalendarItemCount = useMemo(
-    () => queueItems.filter((item) => visibleCalendarDayKeySet.has(item.day)).length,
-    [queueItems, visibleCalendarDayKeySet]
+    () => flatQueueItems.filter((item) => visibleCalendarDayKeySet.has(item.day)).length,
+    [flatQueueItems, visibleCalendarDayKeySet]
   );
 
   const visibleWeekItems = useMemo(
@@ -563,22 +608,70 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
     });
   }, [planView]);
 
-  function updateQueueItem(id: string, updater: (item: QueueItem) => QueueItem | null) {
-    setQueueItems((current) =>
-      current.flatMap((item) => {
-        if (item.id !== id) {
-          return [item];
-        }
+  useEffect(() => {
+    const scroller = weekScrollerRef.current;
+    if (!scroller) {
+      return;
+    }
 
-        const next = updater(item);
-        return next ? [next] : [];
-      })
-    );
+    const updateScrollbarWidth = () => {
+      setWeekScrollbarWidth(Math.max(0, scroller.offsetWidth - scroller.clientWidth));
+    };
+
+    updateScrollbarWidth();
+
+    const observer = new ResizeObserver(updateScrollbarWidth);
+    observer.observe(scroller);
+    window.addEventListener('resize', updateScrollbarWidth);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateScrollbarWidth);
+    };
+  }, [planView]);
+
+  function updateQueueItem(id: string, updater: (item: QueueItem) => QueueItem | null) {
+    setQueueItems((current) => updateQueueItemTree(current, id, updater));
   }
 
-  function handleApprove(id: string) {
-    updateQueueItem(id, (item) => ({ ...item, status: 'approved' }));
-    toast.success('Queue item approved');
+  async function handleApprove(id: string) {
+    const targetItem = flatQueueItems.find((item) => item.id === id) ?? null;
+    if (!targetItem || approvingItemId === id) {
+      return;
+    }
+
+    if (!looksLikeUuid(id)) {
+      updateQueueItem(id, (item) => ({ ...item, status: 'approved' }));
+      toast.success('Queue item approved');
+      return;
+    }
+
+    setApprovingItemId(id);
+
+    try {
+      const response = await fetch(`/api/calendar/queue/${id}/accept`, {
+        method: 'POST',
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        queueItems?: QueueItem[];
+      };
+
+      if (!response.ok || !Array.isArray(payload.queueItems)) {
+        throw new Error(payload.error ?? 'Unable to approve queue item');
+      }
+
+      setQueueItems(payload.queueItems);
+      toast.success(
+        (targetItem.childBlueprints?.length ?? 0) > 0
+          ? 'Workflow approved and nested tasks added'
+          : 'Queue item approved'
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to approve queue item');
+    } finally {
+      setApprovingItemId(null);
+    }
   }
 
   function handleModify(id: string) {
@@ -777,6 +870,7 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
   const weekGridStyle = {
     '--calendar-hour-row-height': `${WEEK_HOUR_HEIGHT}px`,
     '--calendar-week-grid-height': `${(WEEK_VIEW_END_HOUR - WEEK_VIEW_START_HOUR) * WEEK_HOUR_HEIGHT}px`,
+    '--calendar-scrollbar-width': `${weekScrollbarWidth}px`,
   } as CSSProperties;
 
   return (
@@ -904,6 +998,11 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
                         <Badge color="gray" variant="light">
                           {selectedVisibleCalendarItem.channel}
                         </Badge>
+                        {selectedVisibleCalendarItem.isParent ? (
+                          <Badge color="violet" variant="light">
+                            Workflow
+                          </Badge>
+                        ) : null}
                       </Group>
                       <Text fw={700} mt="sm">
                         {selectedVisibleCalendarItem.title}
@@ -911,6 +1010,29 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
                       <Text size="sm" c="dimmed" mt={4}>
                         {selectedVisibleCalendarItem.description}
                       </Text>
+                      {(selectedVisibleCalendarItem.children?.length ?? 0) > 0 ? (
+                        <Stack gap={4} mt="sm">
+                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                            Nested queue items
+                          </Text>
+                          {selectedVisibleCalendarItem.children?.map((child) => (
+                            <Text key={child.id} size="sm" c="dimmed">
+                              {`\u2022 ${child.title} (${queueStatusLabel(child.status)})`}
+                            </Text>
+                          ))}
+                        </Stack>
+                      ) : (selectedVisibleCalendarItem.childBlueprints?.length ?? 0) > 0 ? (
+                        <Stack gap={4} mt="sm">
+                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                            Approving this adds
+                          </Text>
+                          {selectedVisibleCalendarItem.childBlueprints?.map((child) => (
+                            <Text key={child.key} size="sm" c="dimmed">
+                              {`\u2022 ${child.title}`}
+                            </Text>
+                          ))}
+                        </Stack>
+                      ) : null}
                     </div>
 
                     <Stack gap="xs" className={classes.selectedStripActions}>
@@ -920,9 +1042,11 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
                         variant="light"
                         color="green"
                         leftSection={<IconCheck size={14} />}
+                        loading={approvingItemId === selectedVisibleCalendarItem.id}
+                        disabled={selectedVisibleCalendarItem.status === 'approved'}
                         onClick={() => handleApprove(selectedVisibleCalendarItem.id)}
                       >
-                        Approve
+                        {selectedVisibleCalendarItem.isParent ? 'Approve workflow' : 'Approve'}
                       </Button>
                       <Button
                         size="sm"
@@ -1339,11 +1463,40 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
                 <Badge color="gray" variant="light">
                   {formatSidebarDayLabel(selectedVisibleCalendarItem.day)}
                 </Badge>
+                {selectedVisibleCalendarItem.isParent ? (
+                  <Badge color="violet" variant="light">
+                    Workflow
+                  </Badge>
+                ) : null}
               </Group>
 
               <Text className={classes.eventModalDescription}>
                 {selectedVisibleCalendarItem.description}
               </Text>
+
+              {(selectedVisibleCalendarItem.children?.length ?? 0) > 0 ? (
+                <Stack gap={6} mt="lg">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                    Nested queue items
+                  </Text>
+                  {selectedVisibleCalendarItem.children?.map((child) => (
+                    <Text key={child.id} size="sm" c="dimmed">
+                      {`\u2022 ${child.title} (${queueStatusLabel(child.status)})`}
+                    </Text>
+                  ))}
+                </Stack>
+              ) : (selectedVisibleCalendarItem.childBlueprints?.length ?? 0) > 0 ? (
+                <Stack gap={6} mt="lg">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                    Approving this adds
+                  </Text>
+                  {selectedVisibleCalendarItem.childBlueprints?.map((child) => (
+                    <Text key={child.key} size="sm" c="dimmed">
+                      {`\u2022 ${child.title}`}
+                    </Text>
+                  ))}
+                </Stack>
+              ) : null}
 
               <div className={classes.eventModalMetaGrid}>
                 <div className={classes.eventModalMetaItem}>
@@ -1377,9 +1530,11 @@ export default function CalendarClient({ workspace }: { workspace: BusinessIntel
                   radius="xl"
                   color="green"
                   leftSection={<IconCheck size={16} />}
+                  loading={approvingItemId === selectedVisibleCalendarItem.id}
+                  disabled={selectedVisibleCalendarItem.status === 'approved'}
                   onClick={() => handleApprove(selectedVisibleCalendarItem.id)}
                 >
-                  Approve
+                  {selectedVisibleCalendarItem.isParent ? 'Approve workflow' : 'Approve'}
                 </Button>
                 <Button
                   radius="xl"

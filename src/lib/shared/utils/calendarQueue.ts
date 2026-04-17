@@ -1,7 +1,22 @@
 export type CalendarQueueStatus = 'draft' | 'ready' | 'approved';
 export type CalendarQueueSource = 'manual' | 'agent' | 'automatic';
+export type CalendarQueueWorkflowKind =
+  | 'revive_workflow'
+  | 'efficiency_workflow'
+  | 'tracking_workflow'
+  | 'testing_workflow';
 
-export type CalendarQueuePreviewItem = {
+export type CalendarQueueChildBlueprintPreview = {
+  key: string;
+  itemType: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description: string | null;
+  destinationHref: string | null;
+  payload: Record<string, unknown>;
+};
+
+export interface CalendarQueuePreviewItem {
   id: string;
   title: string;
   description: string;
@@ -11,7 +26,14 @@ export type CalendarQueuePreviewItem = {
   channel: string;
   status: CalendarQueueStatus;
   source: CalendarQueueSource;
-};
+  destinationHref?: string | null;
+  parentQueueItemId?: string | null;
+  workflowKey?: CalendarQueueWorkflowKind | null;
+  materializedFromBlueprintKey?: string | null;
+  childBlueprints?: CalendarQueueChildBlueprintPreview[];
+  children?: CalendarQueuePreviewItem[];
+  isParent?: boolean;
+}
 
 type CalendarQueueSeedTemplate = Omit<CalendarQueuePreviewItem, 'id' | 'day'>;
 
