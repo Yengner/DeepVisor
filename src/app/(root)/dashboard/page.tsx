@@ -12,12 +12,14 @@ import {
   buildDashboardPayload,
   normalizeCampaignSnapshot,
 } from '@/lib/server/dashboard';
+import { buildReportPayload } from '@/lib/server/repositories/reports/buildReportPayload';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import {
   getMetaAccountIntelligenceReadModel,
   type AdAccountSignalView,
 } from '@/lib/server/intelligence';
+import { getTrailingUtcDateRange } from '@/lib/shared';
 import type { CalendarQueuePreviewItem } from '@/lib/shared';
 import type { DashboardCampaignSnapshotItem } from './types';
 
@@ -54,8 +56,11 @@ export default async function MainDashboardPage() {
   let reviveOpportunity = null;
   let intelligenceSignals: AdAccountSignalView[] = [];
   let calendarQueuePreview: CalendarQueuePreviewItem[] = [];
+  let reportByWindow: Partial<Record<'7d' | '30d', Awaited<ReturnType<typeof buildReportPayload>>>> = {};
   if (adAccount?.id && platformConnected && selectedPlatformId) {
     try {
+      const last7Days = getTrailingUtcDateRange(7);
+      const last30Days = getTrailingUtcDateRange(30);
       const [campaigns, coverage, revive, intelligence] = await Promise.all([
         getAdAccountTopCampaigns(adAccount.id),
         getAdAccountSyncCoverage(adminSupabase, adAccount.id),
@@ -69,11 +74,43 @@ export default async function MainDashboardPage() {
           adAccountId: adAccount.id,
         }),
       ]);
+      const [report7d, report30d] = await Promise.all([
+        buildReportPayload({
+          businessId,
+          scope: 'ad_account',
+          platformIntegrationId: selectedPlatformId,
+          adAccountIds: [adAccount.id],
+          campaignIds: [],
+          adsetIds: [],
+          adIds: [],
+          dateFrom: last7Days.dateFrom,
+          dateTo: last7Days.dateTo,
+          groupBy: 'day',
+          compareMode: 'previous_period',
+        }),
+        buildReportPayload({
+          businessId,
+          scope: 'ad_account',
+          platformIntegrationId: selectedPlatformId,
+          adAccountIds: [adAccount.id],
+          campaignIds: [],
+          adsetIds: [],
+          adIds: [],
+          dateFrom: last30Days.dateFrom,
+          dateTo: last30Days.dateTo,
+          groupBy: 'week',
+          compareMode: 'previous_period',
+        }),
+      ]);
       campaignSnapshot = normalizeCampaignSnapshot(campaigns);
       syncCoverage = coverage;
       reviveOpportunity = revive;
       intelligenceSignals = intelligence.signals;
       calendarQueuePreview = intelligence.queueItems;
+      reportByWindow = {
+        '7d': report7d,
+        '30d': report30d,
+      };
     } catch (error) {
       console.error('Failed to fetch dashboard account snapshot:', error);
     }
@@ -90,6 +127,7 @@ export default async function MainDashboardPage() {
     calendarQueuePreview,
     syncCoverage,
     reviveOpportunity,
+    reportByWindow,
   });
 
   return <DashboardClient payload={payload} />;

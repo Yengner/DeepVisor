@@ -74,6 +74,14 @@
   min-height: 360px;
 }
 
+.supportingChartBlock {
+  background: rgba(248, 250, 252, 0.72);
+}
+
+.supportingChartWrap {
+  min-height: 220px;
+}
+
 .miniChartWrap {
   min-height: 220px;
 }
@@ -88,6 +96,15 @@
   border: 1px solid rgba(226, 232, 240, 0.92);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.82);
+}
+
+.timelineSnapshotGrid {
+  padding-bottom: 2px;
+}
+
+.timelineSnapshotCard {
+  height: 100%;
+  background: rgba(248, 250, 252, 0.72);
 }
 
 .moverRow {

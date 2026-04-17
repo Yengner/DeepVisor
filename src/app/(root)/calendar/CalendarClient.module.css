@@ -39,6 +39,10 @@
   background: rgba(255, 255, 255, 0.96);
 }
 
+.templateRow {
+  background: rgba(248, 250, 252, 0.84);
+}
+
 .topStats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

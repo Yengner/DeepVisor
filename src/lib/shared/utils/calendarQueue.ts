@@ -5,6 +5,13 @@ export type CalendarQueueWorkflowKind =
   | 'efficiency_workflow'
   | 'tracking_workflow'
   | 'testing_workflow';
+export type CalendarQueueTemplateType =
+  | 'report'
+  | 'campaign_review'
+  | 'creative_refresh'
+  | 'budget_review'
+  | 'custom';
+export type CalendarQueueTemplateRecurrence = 'weekly' | 'monthly';
 
 export type CalendarQueueChildBlueprintPreview = {
   key: string;
@@ -15,6 +22,27 @@ export type CalendarQueueChildBlueprintPreview = {
   destinationHref: string | null;
   payload: Record<string, unknown>;
 };
+
+export interface CalendarQueueTemplate {
+  id: string;
+  businessId: string;
+  platformIntegrationId: string | null;
+  adAccountId: string | null;
+  templateType: CalendarQueueTemplateType;
+  title: string;
+  description: string;
+  destinationHref: string | null;
+  recurrenceType: CalendarQueueTemplateRecurrence;
+  weekdays: number[];
+  monthlyDay: number | null;
+  timeOfDay: string;
+  durationMinutes: number;
+  startDate: string;
+  endDate: string | null;
+  status: 'active' | 'paused';
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface CalendarQueuePreviewItem {
   id: string;
@@ -33,6 +61,9 @@ export interface CalendarQueuePreviewItem {
   childBlueprints?: CalendarQueueChildBlueprintPreview[];
   children?: CalendarQueuePreviewItem[];
   isParent?: boolean;
+  isRecurring?: boolean;
+  recurringTemplateId?: string | null;
+  recurringTemplateType?: CalendarQueueTemplateType | null;
 }
 
 type CalendarQueueSeedTemplate = Omit<CalendarQueuePreviewItem, 'id' | 'day'>;
@@ -69,6 +100,25 @@ function parseCalendarQueueTimeToMinutes(value: string): number {
   return (suffix === 'PM' ? hours + 12 : hours) * 60 + minutes;
 }
 
+function formatClockTimeFromMinutes(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  const normalizedHours = hours % 12 === 0 ? 12 : hours % 12;
+
+  return `${normalizedHours}:${String(minutes).padStart(2, '0')} ${suffix}`;
+}
+
+function parseTimeOfDayToMinutes(value: string): number {
+  const match = value.trim().match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
+
+  if (!match) {
+    return parseCalendarQueueTimeToMinutes(value);
+  }
+
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
 export function compareCalendarQueuePreviewItems(
   left: CalendarQueuePreviewItem,
   right: CalendarQueuePreviewItem
@@ -78,6 +128,107 @@ export function compareCalendarQueuePreviewItems(
   }
 
   return parseCalendarQueueTimeToMinutes(left.time) - parseCalendarQueueTimeToMinutes(right.time);
+}
+
+function queueTemplateDestinationAndChannel(
+  templateType: CalendarQueueTemplateType
+): {
+  destinationHref: string | null;
+  channel: string;
+} {
+  switch (templateType) {
+    case 'report':
+      return {
+        destinationHref: '/reports?compare=previous_period',
+        channel: 'Reports',
+      };
+    case 'campaign_review':
+      return {
+        destinationHref: '/dashboard',
+        channel: 'Campaigns',
+      };
+    case 'creative_refresh':
+      return {
+        destinationHref: '/campaigns/intelligence/create',
+        channel: 'Creative',
+      };
+    case 'budget_review':
+      return {
+        destinationHref: '/dashboard',
+        channel: 'Budget',
+      };
+    default:
+      return {
+        destinationHref: '/calendar',
+        channel: 'Planning',
+      };
+  }
+}
+
+function shouldRenderTemplateOnDay(
+  template: CalendarQueueTemplate,
+  day: Date
+): boolean {
+  const dayKey = toIsoDay(day);
+  if (dayKey < template.startDate) {
+    return false;
+  }
+
+  if (template.endDate && dayKey > template.endDate) {
+    return false;
+  }
+
+  if (template.recurrenceType === 'monthly') {
+    return day.getDate() === (template.monthlyDay ?? 1);
+  }
+
+  return template.weekdays.includes(day.getDay());
+}
+
+export function buildRecurringCalendarQueuePreviewItems(
+  templates: CalendarQueueTemplate[],
+  input: {
+    rangeStart: Date;
+    rangeEnd: Date;
+  }
+): CalendarQueuePreviewItem[] {
+  const rangeStart = new Date(input.rangeStart);
+  rangeStart.setHours(0, 0, 0, 0);
+  const rangeEnd = new Date(input.rangeEnd);
+  rangeEnd.setHours(0, 0, 0, 0);
+
+  const items: CalendarQueuePreviewItem[] = [];
+
+  for (const template of templates) {
+    if (template.status !== 'active') {
+      continue;
+    }
+
+    const { destinationHref, channel } = queueTemplateDestinationAndChannel(template.templateType);
+    for (let cursor = new Date(rangeStart); cursor <= rangeEnd; cursor = addDays(cursor, 1)) {
+      if (!shouldRenderTemplateOnDay(template, cursor)) {
+        continue;
+      }
+
+      items.push({
+        id: `template:${template.id}:${toIsoDay(cursor)}`,
+        title: template.title,
+        description: template.description,
+        day: toIsoDay(cursor),
+        time: formatClockTimeFromMinutes(parseTimeOfDayToMinutes(template.timeOfDay)),
+        durationMinutes: template.durationMinutes,
+        channel,
+        status: 'approved',
+        source: 'manual',
+        destinationHref: template.destinationHref ?? destinationHref,
+        isRecurring: true,
+        recurringTemplateId: template.id,
+        recurringTemplateType: template.templateType,
+      });
+    }
+  }
+
+  return items.sort(compareCalendarQueuePreviewItems);
 }
 
 export function buildCalendarQueuePreviewItems(

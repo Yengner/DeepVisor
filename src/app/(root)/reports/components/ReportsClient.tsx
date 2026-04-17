@@ -520,6 +520,47 @@ function StaticSignalRow({
   );
 }
 
+function TimelineSnapshotCard({
+  label,
+  headline,
+  detail,
+  tone = 'neutral',
+}: {
+  label: string;
+  headline: string;
+  detail: string;
+  tone?: 'positive' | 'warning' | 'neutral';
+}) {
+  const Icon =
+    tone === 'positive'
+      ? IconArrowUpRight
+      : tone === 'warning'
+        ? IconTrendingDown
+        : IconTimeline;
+  const color = tone === 'positive' ? 'teal' : tone === 'warning' ? 'orange' : 'blue';
+
+  return (
+    <Paper withBorder radius="lg" p="md" className={classes.timelineSnapshotCard}>
+      <Group gap="sm" align="flex-start" wrap="nowrap">
+        <ThemeIcon color={color} variant="light" radius="md">
+          <Icon size={17} />
+        </ThemeIcon>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+            {label}
+          </Text>
+          <Text fw={800} mt={6}>
+            {headline}
+          </Text>
+          <Text size="sm" c="dimmed" mt={6}>
+            {detail}
+          </Text>
+        </div>
+      </Group>
+    </Paper>
+  );
+}
+
 export function ReportsClient({ payload, filterOptions, isDemo = false }: ReportsClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -566,6 +607,16 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
       })),
     [payload.series]
   );
+  const efficiencyTrendData = useMemo(
+    () =>
+      payload.series.map((point) => ({
+        label: point.label,
+        CTR: Number(point.ctr.toFixed(2)),
+        'Conversion rate': Number(point.conversionRate.toFixed(2)),
+        Frequency: Number(point.frequency.toFixed(2)),
+      })),
+    [payload.series]
+  );
 
   const insight = useMemo(() => deriveInsight(payload), [payload]);
   const activeFilterCount = useMemo(() => getActiveFilterCount(payload), [payload]);
@@ -597,6 +648,14 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
     : null;
 
   const hasTrendData = storyData.length > 0;
+  const hasEfficiencyTrendData = efficiencyTrendData.length > 0;
+  const peakResultsPoint = useMemo(
+    () => pickPeakPoint(payload.series, 'conversion'),
+    [payload.series]
+  );
+  const peakSpendPoint = useMemo(() => pickPeakPoint(payload.series, 'spend'), [payload.series]);
+  const peakCtrPoint = useMemo(() => pickPeakPoint(payload.series, 'ctr'), [payload.series]);
+  const strongestEntity = strongestRows[0] ?? null;
 
   useEffect(() => {
     if (!payload.meta.reviveOpportunity || !reviveDismissKey) {
@@ -757,6 +816,52 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
                 )}
               </div>
 
+              <Paper withBorder radius="lg" p="md" className={classes.supportingChartBlock}>
+                <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" mb="md">
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                      Quality trend
+                    </Text>
+                    <Text fw={800} mt={4}>
+                      CTR, conversion rate, and frequency over time
+                    </Text>
+                    <Text size="sm" c="dimmed" mt={4}>
+                      This makes it easier to spot fatigue, weaker traffic quality, or periods where
+                      delivery improved without simply spending more.
+                    </Text>
+                  </div>
+                  <Badge variant="light" color="gray" radius="sm">
+                    Efficiency read
+                  </Badge>
+                </Group>
+
+                <div className={classes.supportingChartWrap}>
+                  {hasEfficiencyTrendData ? (
+                    <LineChart
+                      h={220}
+                      data={efficiencyTrendData}
+                      dataKey="label"
+                      series={[
+                        { name: 'CTR', color: 'violet.6' },
+                        { name: 'Conversion rate', color: 'teal.6' },
+                        { name: 'Frequency', color: 'orange.6' },
+                      ]}
+                      curveType="linear"
+                      withLegend
+                      valueFormatter={(value) => Number(value).toFixed(2)}
+                    />
+                  ) : (
+                    <Stack justify="center" align="center" h={220} gap="xs">
+                      <Text fw={800}>No efficiency trend available yet</Text>
+                      <Text size="sm" c="dimmed" ta="center" maw={360}>
+                        Once more time-series points are available, DeepVisor will show how traffic
+                        quality changed across the selected period.
+                      </Text>
+                    </Stack>
+                  )}
+                </div>
+              </Paper>
+
               <Paper withBorder radius="lg" p="md" className={classes.insightBlock}>
                 <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
                   Report read
@@ -765,6 +870,60 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
                   {insight.summary}
                 </Text>
               </Paper>
+
+              <div className={classes.timelineSnapshotGrid}>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                  <TimelineSnapshotCard
+                    label="Peak results"
+                    headline={
+                      peakResultsPoint
+                        ? `${peakResultsPoint.conversion.toLocaleString()} results`
+                        : 'No clear peak yet'
+                    }
+                    detail={
+                      peakResultsPoint
+                        ? `${peakResultsPoint.label} delivered the strongest results window in this range.`
+                        : 'More performance points are needed before DeepVisor can identify the strongest results window.'
+                    }
+                    tone="positive"
+                  />
+                  <TimelineSnapshotCard
+                    label="Spend peak"
+                    headline={
+                      peakSpendPoint
+                        ? formatCurrency(peakSpendPoint.spend, payload.meta.currencyCode, 2)
+                        : 'No spend peak yet'
+                    }
+                    detail={
+                      peakSpendPoint
+                        ? `${peakSpendPoint.label} carried the heaviest spend load across the selected period.`
+                        : 'Spend landmarks will appear once there is enough delivery history in the selected range.'
+                    }
+                  />
+                  <TimelineSnapshotCard
+                    label="Best traffic quality"
+                    headline={
+                      peakCtrPoint ? `${peakCtrPoint.ctr.toFixed(2)}% CTR` : 'CTR not available yet'
+                    }
+                    detail={
+                      peakCtrPoint
+                        ? `${peakCtrPoint.label} combined the highest click-through rate with ${peakCtrPoint.conversionRate.toFixed(2)}% conversion rate.`
+                        : 'Traffic-quality markers will show up once DeepVisor has enough time-series points.'
+                    }
+                    tone="positive"
+                  />
+                  <TimelineSnapshotCard
+                    label="Leading entity"
+                    headline={strongestEntity?.name ?? 'No leading entity yet'}
+                    detail={
+                      strongestEntity
+                        ? `${formatEntityPerformance(strongestEntity, payload.meta.currencyCode)} in the current ${payload.meta.scopeLabel.toLowerCase()} scope.`
+                        : 'Entity leadership will appear once there is enough breakdown activity in the selected range.'
+                    }
+                    tone={strongestEntity ? 'positive' : 'neutral'}
+                  />
+                </SimpleGrid>
+              </div>
             </Card>
           </Grid.Col>
 

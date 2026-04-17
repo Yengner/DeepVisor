@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActionIcon,
   Badge,
@@ -51,6 +51,14 @@ function toIsoDate(date: Date | string): string {
 function parseLocalDate(value: string): Date {
   const [year, month, day] = value.split('-').map(Number);
   return new Date(year, (month || 1) - 1, day || 1);
+}
+
+function normalizePickerDate(value: Date | string | null): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  return typeof value === 'string' ? parseLocalDate(value) : value;
 }
 
 function presetRange(preset: string) {
@@ -104,6 +112,11 @@ export default function ReportsHeader({
     ] as [Date | null, Date | null],
     [payload.query.dateFrom, payload.query.dateTo]
   );
+  const [draftRange, setDraftRange] = useState<[Date | null, Date | null]>(rangeValue);
+
+  useEffect(() => {
+    setDraftRange(rangeValue);
+  }, [rangeValue]);
 
   const presets = [
     { value: '7d', label: '7D' },
@@ -204,6 +217,7 @@ export default function ReportsHeader({
                 color="gray"
                 onClick={() => {
                   const range = presetRange(preset.value);
+                  setDraftRange([parseLocalDate(range.dateFrom), parseLocalDate(range.dateTo)]);
                   onUpdate((params) => {
                     params.set('date_from', range.dateFrom);
                     params.set('date_to', range.dateTo);
@@ -217,9 +231,13 @@ export default function ReportsHeader({
 
           <DatePickerInput
             type="range"
-            value={rangeValue}
+            value={draftRange}
             onChange={(value) => {
-              const [start, end] = value;
+              const start = normalizePickerDate(value[0]);
+              const end = normalizePickerDate(value[1]);
+
+              setDraftRange([start, end]);
+
               if (!start || !end) {
                 return;
               }

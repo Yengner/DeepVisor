@@ -7,6 +7,7 @@ import {
   buildBusinessIntelligenceWorkspace,
   getMetaAccountIntelligenceReadModel,
 } from '@/lib/server/intelligence';
+import { listCalendarQueueTemplates } from '@/lib/server/intelligence/repositories/calendarQueueTemplates';
 import type { BusinessIntelligencePlanningScope } from '@/lib/server/intelligence';
 
 function parseScope(value: string | string[] | undefined): BusinessIntelligencePlanningScope | undefined {
@@ -64,6 +65,13 @@ export default async function CalendarPage({
             adAccountId: workspace.selectedAdAccountId,
           })
         : { signals: [], queueItems: [] };
+    const queueTemplates =
+      workspace.selectedAdAccountId
+        ? await listCalendarQueueTemplates(adminSupabase, {
+            businessId,
+            adAccountId: workspace.selectedAdAccountId,
+          })
+        : [];
 
     if (workspace.platforms.length === 0) {
         return <EmptyCampaignState type="platform" />;
@@ -82,6 +90,7 @@ export default async function CalendarPage({
       <CalendarClient
         workspace={workspace}
         initialQueueItems={intelligence.queueItems}
+        initialQueueTemplates={queueTemplates}
       />
     );
 }

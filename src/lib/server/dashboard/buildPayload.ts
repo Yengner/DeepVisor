@@ -4,6 +4,11 @@ import type {
   PlatformDetails,
 } from '@/lib/server/data/types';
 import { hasMeaningfulMetrics } from '@/lib/server/data';
+import type {
+  ReportBreakdownRow,
+  ReportMetricTotals,
+  ReportPayload,
+} from '@/lib/server/reports/types';
 import { resolveDashboardState } from './state';
 import type {
   DashboardAlert,
@@ -20,6 +25,7 @@ import type {
 type DailyAccountPoint = {
   date: string;
   spend: number;
+  results: number;
   leads: number;
   messages: number;
   clicks: number;
@@ -28,6 +34,7 @@ type DailyAccountPoint = {
 
 type WindowTotals = {
   spend: number;
+  results: number;
   leads: number;
   messages: number;
   clicks: number;
@@ -43,6 +50,7 @@ function toDailyPoint(point: AdAccountTimeIncrementPoint): DailyAccountPoint | n
   return {
     date,
     spend: point.spend,
+    results: point.leads + point.messages,
     leads: point.leads,
     messages: point.messages,
     clicks: point.clicks,
@@ -77,6 +85,7 @@ function sumWindow(points: DailyAccountPoint[]): WindowTotals {
   return points.reduce<WindowTotals>(
     (totals, point) => ({
       spend: totals.spend + point.spend,
+      results: totals.results + point.results,
       leads: totals.leads + point.leads,
       messages: totals.messages + point.messages,
       clicks: totals.clicks + point.clicks,
@@ -84,6 +93,7 @@ function sumWindow(points: DailyAccountPoint[]): WindowTotals {
     }),
     {
       spend: 0,
+      results: 0,
       leads: 0,
       messages: 0,
       clicks: 0,
@@ -92,8 +102,35 @@ function sumWindow(points: DailyAccountPoint[]): WindowTotals {
   );
 }
 
+function totalsFromReportSummary(summary: ReportMetricTotals): WindowTotals {
+  return {
+    spend: summary.spend,
+    results: summary.conversion,
+    leads: summary.leads,
+    messages: summary.messages,
+    clicks: summary.clicks,
+    linkClicks: summary.linkClicks,
+  };
+}
+
+function hasReportMetrics(report: ReportPayload | null | undefined): boolean {
+  if (!report) {
+    return false;
+  }
+
+  return (
+    report.summary.spend > 0 ||
+    report.summary.impressions > 0 ||
+    report.summary.conversion > 0 ||
+    report.series.length > 0 ||
+    report.breakdown.rows.length > 0
+  );
+}
+
 function outcomeLabel(metric: DashboardOutcomeMetric): string {
   switch (metric) {
+    case 'results':
+      return 'Results';
     case 'messages':
       return 'Messages';
     case 'clicks':
@@ -106,15 +143,29 @@ function outcomeLabel(metric: DashboardOutcomeMetric): string {
 function resolvePrimaryOutcomeMetric(points: DailyAccountPoint[]): DashboardOutcomeMetric {
   const lastThirtyDays = sumWindow(sliceTrailing(points, 30));
 
-  if (lastThirtyDays.leads > 0) {
-    return 'leads';
-  }
-
-  if (lastThirtyDays.messages > 0) {
-    return 'messages';
+  if (lastThirtyDays.results > 0) {
+    return 'results';
   }
 
   return 'clicks';
+}
+
+function resolvePrimaryOutcomeMetricFromReport(
+  report: ReportPayload | null | undefined
+): DashboardOutcomeMetric | null {
+  if (!report) {
+    return null;
+  }
+
+  if (report.summary.conversion > 0) {
+    return 'results';
+  }
+
+  if (report.summary.clicks > 0) {
+    return 'clicks';
+  }
+
+  return null;
 }
 
 function valueForMetric(
@@ -124,6 +175,8 @@ function valueForMetric(
   switch (key) {
     case 'spend':
       return totals.spend;
+    case 'results':
+      return totals.results;
     case 'messages':
       return totals.messages;
     case 'clicks':
@@ -151,8 +204,8 @@ function buildSummaryCards(points: DailyAccountPoint[], window: DashboardWindow)
 
   const cards: Array<{ key: DashboardSummaryCard['key']; label: string }> = [
     { key: 'spend', label: 'Spend' },
+    { key: 'results', label: 'Results' },
     { key: 'leads', label: 'Leads' },
-    { key: 'messages', label: 'Messages' },
     { key: 'link_clicks', label: 'Link Clicks' },
   ];
 
@@ -168,6 +221,41 @@ function buildSummaryCards(points: DailyAccountPoint[], window: DashboardWindow)
       changePercent:
         previousValue === null ? null : calculateChangePercent(currentValue, previousValue),
     };
+  });
+}
+
+function buildSummaryCardsFromTotals(input: {
+  current: WindowTotals;
+  previous: WindowTotals | null;
+}): DashboardSummaryCard[] {
+  const cards: Array<{ key: DashboardSummaryCard['key']; label: string }> = [
+    { key: 'spend', label: 'Spend' },
+    { key: 'results', label: 'Results' },
+    { key: 'leads', label: 'Leads' },
+    { key: 'link_clicks', label: 'Link Clicks' },
+  ];
+
+  return cards.map((card) => {
+    const currentValue = valueForMetric(input.current, card.key);
+    const previousValue = input.previous ? valueForMetric(input.previous, card.key) : null;
+
+    return {
+      key: card.key,
+      label: card.label,
+      value: currentValue,
+      previousValue,
+      changePercent:
+        previousValue === null ? null : calculateChangePercent(currentValue, previousValue),
+    };
+  });
+}
+
+function buildSummaryCardsFromReport(report: ReportPayload): DashboardSummaryCard[] {
+  return buildSummaryCardsFromTotals({
+    current: totalsFromReportSummary(report.summary),
+    previous: report.comparison.previousTotals
+      ? totalsFromReportSummary(report.comparison.previousTotals)
+      : null,
   });
 }
 
@@ -205,7 +293,9 @@ function buildTrendSeries(
             label: formatShortDate(point.date),
             spend: point.spend,
             outcome:
-              primaryOutcomeMetric === 'messages'
+              primaryOutcomeMetric === 'results'
+                ? point.results
+                : primaryOutcomeMetric === 'messages'
                 ? point.messages
                 : primaryOutcomeMetric === 'clicks'
                   ? point.clicks
@@ -235,7 +325,9 @@ function buildTrendSeries(
               : 'Recent',
         spend: totals.spend,
         outcome:
-          primaryOutcomeMetric === 'messages'
+          primaryOutcomeMetric === 'results'
+            ? totals.results
+            : primaryOutcomeMetric === 'messages'
             ? totals.messages
             : primaryOutcomeMetric === 'clicks'
               ? totals.clicks
@@ -245,24 +337,43 @@ function buildTrendSeries(
   };
 }
 
-function buildAlerts(
-  state: DashboardPayload['state'],
-  points: DailyAccountPoint[],
-  lastSyncedAt: string | null,
+function buildTrendSeriesFromReport(
+  report: ReportPayload,
   primaryOutcomeMetric: DashboardOutcomeMetric
-): DashboardAlert[] {
-  if (state !== 'ready') {
+): DashboardTrendSeries {
+  return {
+    outcomeMetric: primaryOutcomeMetric,
+    outcomeLabel: outcomeLabel(primaryOutcomeMetric),
+    points: report.series.map((point) => ({
+      label: point.label,
+      spend: point.spend,
+      outcome:
+        primaryOutcomeMetric === 'results'
+          ? point.conversion
+          : primaryOutcomeMetric === 'messages'
+            ? point.messages
+            : primaryOutcomeMetric === 'clicks'
+              ? point.clicks
+              : point.leads,
+    })),
+  };
+}
+
+function buildAlertsFromWindowTotals(input: {
+  state: DashboardPayload['state'];
+  current: WindowTotals;
+  previous: WindowTotals | null;
+  lastSyncedAt: string | null;
+  primaryOutcomeMetric: DashboardOutcomeMetric;
+}): DashboardAlert[] {
+  if (input.state !== 'ready') {
     return [];
   }
 
   const alerts: DashboardAlert[] = [];
-  const currentSevenDays = sumWindow(sliceTrailing(points, 7));
-  const previousSevenDaysPoints = slicePrevious(points, 7);
-  const previousSevenDays =
-    previousSevenDaysPoints.length > 0 ? sumWindow(previousSevenDaysPoints) : null;
 
-  if (lastSyncedAt) {
-    const ageMs = Date.now() - new Date(lastSyncedAt).getTime();
+  if (input.lastSyncedAt) {
+    const ageMs = Date.now() - new Date(input.lastSyncedAt).getTime();
     if (Number.isFinite(ageMs) && ageMs > 24 * 60 * 60 * 1000) {
       alerts.push({
         id: 'sync-stale',
@@ -273,7 +384,7 @@ function buildAlerts(
     }
   }
 
-  if (currentSevenDays.spend === 0) {
+  if (input.current.spend === 0) {
     alerts.push({
       id: 'no-activity',
       tone: 'blue',
@@ -282,29 +393,31 @@ function buildAlerts(
     });
   }
 
-  if (previousSevenDays) {
+  if (input.previous) {
     const outcomeKey =
-      primaryOutcomeMetric === 'messages'
-        ? 'messages'
-        : primaryOutcomeMetric === 'clicks'
-          ? 'clicks'
-          : 'leads';
-    const currentOutcome = valueForMetric(currentSevenDays, outcomeKey);
-    const previousOutcome = valueForMetric(previousSevenDays, outcomeKey);
+      input.primaryOutcomeMetric === 'results'
+        ? 'results'
+        : input.primaryOutcomeMetric === 'messages'
+          ? 'messages'
+          : input.primaryOutcomeMetric === 'clicks'
+            ? 'clicks'
+            : 'leads';
+    const currentOutcome = valueForMetric(input.current, outcomeKey);
+    const previousOutcome = valueForMetric(input.previous, outcomeKey);
 
     if (previousOutcome >= 5 && currentOutcome <= previousOutcome * 0.7) {
       alerts.push({
         id: 'outcome-drop',
         tone: 'red',
-        title: `${outcomeLabel(primaryOutcomeMetric)} are down this week`,
+        title: `${outcomeLabel(input.primaryOutcomeMetric)} are down this week`,
         description: `Your selected account is producing fewer ${outcomeLabel(
-          primaryOutcomeMetric
+          input.primaryOutcomeMetric
         ).toLowerCase()} than the previous 7-day period.`,
       });
     }
 
-    if (previousSevenDays.spend >= 100) {
-      const spendChange = calculateChangePercent(currentSevenDays.spend, previousSevenDays.spend);
+    if (input.previous.spend >= 100) {
+      const spendChange = calculateChangePercent(input.current.spend, input.previous.spend);
 
       if (spendChange !== null && Math.abs(spendChange) >= 30) {
         alerts.push({
@@ -323,6 +436,26 @@ function buildAlerts(
   return alerts.slice(0, 3);
 }
 
+function buildAlerts(
+  state: DashboardPayload['state'],
+  points: DailyAccountPoint[],
+  lastSyncedAt: string | null,
+  primaryOutcomeMetric: DashboardOutcomeMetric
+): DashboardAlert[] {
+  const currentSevenDays = sumWindow(sliceTrailing(points, 7));
+  const previousSevenDaysPoints = slicePrevious(points, 7);
+  const previousSevenDays =
+    previousSevenDaysPoints.length > 0 ? sumWindow(previousSevenDaysPoints) : null;
+
+  return buildAlertsFromWindowTotals({
+    state,
+    current: currentSevenDays,
+    previous: previousSevenDays,
+    lastSyncedAt,
+    primaryOutcomeMetric,
+  });
+}
+
 function buildCampaignPreview(
   campaigns: DashboardCampaignSnapshotItem[],
   primaryOutcomeMetric: DashboardOutcomeMetric
@@ -336,11 +469,39 @@ function buildCampaignPreview(
     primaryOutcomeMetric,
     primaryOutcomeLabel: outcomeLabel(primaryOutcomeMetric),
     primaryOutcomeValue:
-      primaryOutcomeMetric === 'messages'
+      primaryOutcomeMetric === 'results'
+        ? campaign.conversion
+        : primaryOutcomeMetric === 'messages'
         ? campaign.messages
         : primaryOutcomeMetric === 'clicks'
           ? campaign.clicks
           : campaign.leads,
+    conversionRate: campaign.conversionRate,
+    costPerResult: campaign.costPerResult,
+    ctr: campaign.ctr,
+  }));
+}
+
+function buildCampaignPreviewFromReportRows(
+  rows: ReportBreakdownRow[],
+  primaryOutcomeMetric: DashboardOutcomeMetric
+): DashboardCampaignPreviewItem[] {
+  return rows.slice(0, 3).map((campaign) => ({
+    campaignId: campaign.id,
+    campaignName: campaign.name,
+    objective: campaign.secondaryContext,
+    status: campaign.status ?? 'unknown',
+    spend: campaign.spend,
+    primaryOutcomeMetric,
+    primaryOutcomeLabel: outcomeLabel(primaryOutcomeMetric),
+    primaryOutcomeValue:
+      primaryOutcomeMetric === 'results'
+        ? campaign.conversion
+        : primaryOutcomeMetric === 'messages'
+          ? campaign.messages
+          : primaryOutcomeMetric === 'clicks'
+            ? campaign.clicks
+            : campaign.leads,
     conversionRate: campaign.conversionRate,
     costPerResult: campaign.costPerResult,
     ctr: campaign.ctr,
@@ -358,8 +519,12 @@ export function buildDashboardPayload(input: {
   calendarQueuePreview: DashboardPayload['calendarQueuePreview'];
   syncCoverage: DashboardPayload['syncCoverage'];
   reviveOpportunity: DashboardPayload['reviveOpportunity'];
+  reportByWindow?: Partial<Record<DashboardWindow, ReportPayload | null>>;
 }): DashboardPayload {
   const platformConnected = Boolean(input.platform && input.platform.status === 'connected');
+  const reportSeven = input.reportByWindow?.['7d'] ?? null;
+  const reportThirty = input.reportByWindow?.['30d'] ?? null;
+  const reportHasMetrics = hasReportMetrics(reportSeven) || hasReportMetrics(reportThirty);
   const adAccountHasMetrics = input.adAccount
     ? hasMeaningfulMetrics(input.adAccount.aggregated_metrics)
     : false;
@@ -369,11 +534,13 @@ export function buildDashboardPayload(input: {
     platformConnected,
     selectedAdAccountId: input.selectedAdAccountId,
     adAccountPresent: Boolean(input.adAccount),
-    adAccountHasMetrics,
+    adAccountHasMetrics: reportHasMetrics || adAccountHasMetrics,
   });
 
   const dailyPoints = sortDailyPoints(input.adAccount?.time_increment_metrics['1']);
-  const primaryOutcomeMetric = resolvePrimaryOutcomeMetric(dailyPoints);
+  const primaryOutcomeMetric =
+    resolvePrimaryOutcomeMetricFromReport(reportThirty ?? reportSeven) ??
+    resolvePrimaryOutcomeMetric(dailyPoints);
   const lastSyncedAt = input.adAccount?.last_synced ?? input.platform?.lastSyncedAt ?? null;
 
   return {
@@ -395,16 +562,42 @@ export function buildDashboardPayload(input: {
       platformError: input.platform?.lastError ?? null,
       canRefresh: platformConnected,
     },
-    alerts: buildAlerts(state, dailyPoints, lastSyncedAt, primaryOutcomeMetric),
+    alerts:
+      reportSeven && hasReportMetrics(reportSeven)
+        ? buildAlertsFromWindowTotals({
+            state,
+            current: totalsFromReportSummary(reportSeven.summary),
+            previous: reportSeven.comparison.previousTotals
+              ? totalsFromReportSummary(reportSeven.comparison.previousTotals)
+              : null,
+            lastSyncedAt,
+            primaryOutcomeMetric,
+          })
+        : buildAlerts(state, dailyPoints, lastSyncedAt, primaryOutcomeMetric),
     summaryByWindow: {
-      '7d': buildSummaryCards(dailyPoints, '7d'),
-      '30d': buildSummaryCards(dailyPoints, '30d'),
+      '7d':
+        reportSeven && hasReportMetrics(reportSeven)
+          ? buildSummaryCardsFromReport(reportSeven)
+          : buildSummaryCards(dailyPoints, '7d'),
+      '30d':
+        reportThirty && hasReportMetrics(reportThirty)
+          ? buildSummaryCardsFromReport(reportThirty)
+          : buildSummaryCards(dailyPoints, '30d'),
     },
     trendByWindow: {
-      '7d': buildTrendSeries(dailyPoints, '7d', primaryOutcomeMetric),
-      '30d': buildTrendSeries(dailyPoints, '30d', primaryOutcomeMetric),
+      '7d':
+        reportSeven && reportSeven.series.length > 0
+          ? buildTrendSeriesFromReport(reportSeven, primaryOutcomeMetric)
+          : buildTrendSeries(dailyPoints, '7d', primaryOutcomeMetric),
+      '30d':
+        reportThirty && reportThirty.series.length > 0
+          ? buildTrendSeriesFromReport(reportThirty, primaryOutcomeMetric)
+          : buildTrendSeries(dailyPoints, '30d', primaryOutcomeMetric),
     },
-    campaignPreview: buildCampaignPreview(input.campaignSnapshot, primaryOutcomeMetric),
+    campaignPreview:
+      reportThirty && reportThirty.breakdown.rows.length > 0
+        ? buildCampaignPreviewFromReportRows(reportThirty.breakdown.rows, primaryOutcomeMetric)
+        : buildCampaignPreview(input.campaignSnapshot, primaryOutcomeMetric),
     intelligenceSignals: input.intelligenceSignals,
     calendarQueuePreview: input.calendarQueuePreview,
     syncCoverage: input.syncCoverage,

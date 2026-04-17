@@ -84,6 +84,15 @@
   background: rgba(248, 250, 252, 0.74);
 }
 
+.queueStatCard {
+  background: rgba(248, 250, 252, 0.74);
+}
+
+.queueSidebarPanel,
+.queueHighlightRow {
+  background: rgba(248, 250, 252, 0.74);
+}
+
 .calendarPanel {
   overflow: hidden;
 }

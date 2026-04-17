@@ -10,10 +10,16 @@ import {
   Container,
   Group,
   Modal,
+  MultiSelect,
+  NumberInput,
   Paper,
+  Select,
   SegmentedControl,
   Stack,
+  Switch,
   Text,
+  TextInput,
+  Textarea,
   Title,
 } from '@mantine/core';
 import {
@@ -33,9 +39,13 @@ import toast from 'react-hot-toast';
 import type { BusinessIntelligenceWorkspace } from '@/lib/server/intelligence';
 import {
   buildCalendarQueuePreviewItems,
+  buildRecurringCalendarQueuePreviewItems,
   type CalendarQueuePreviewItem as QueueItem,
   type CalendarQueueSource as QueueSource,
   type CalendarQueueStatus as QueueStatus,
+  type CalendarQueueTemplate,
+  type CalendarQueueTemplateRecurrence,
+  type CalendarQueueTemplateType,
 } from '@/lib/shared';
 import classes from './CalendarClient.module.css';
 
@@ -313,6 +323,62 @@ type CalendarDropTarget = {
   view: 'weekly' | 'monthly';
 };
 
+type QueueTemplateFormState = {
+  templateType: CalendarQueueTemplateType;
+  title: string;
+  description: string;
+  recurrenceType: CalendarQueueTemplateRecurrence;
+  weekdays: string[];
+  monthlyDay: number;
+  timeOfDay: string;
+  durationMinutes: number;
+  startDate: string;
+  endDate: string;
+  isIndefinite: boolean;
+};
+
+const WEEKDAY_OPTIONS = [
+  { value: '0', label: 'Sunday' },
+  { value: '1', label: 'Monday' },
+  { value: '2', label: 'Tuesday' },
+  { value: '3', label: 'Wednesday' },
+  { value: '4', label: 'Thursday' },
+  { value: '5', label: 'Friday' },
+  { value: '6', label: 'Saturday' },
+];
+
+const QUEUE_TEMPLATE_TYPE_OPTIONS: Array<{
+  value: CalendarQueueTemplateType;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'report',
+    label: 'Report queue',
+    description: 'Recurring weekly or monthly reporting review.',
+  },
+  {
+    value: 'campaign_review',
+    label: 'Campaign review',
+    description: 'Repeat campaign checks, approvals, or comparisons.',
+  },
+  {
+    value: 'creative_refresh',
+    label: 'Creative refresh',
+    description: 'Keep creative swaps and refreshes on a schedule.',
+  },
+  {
+    value: 'budget_review',
+    label: 'Budget review',
+    description: 'Recurring budget pacing and reallocation review.',
+  },
+  {
+    value: 'custom',
+    label: 'Custom queue',
+    description: 'Anything business-specific that should repeat.',
+  },
+];
+
 function formatEventDateTime(item: QueueItem): string {
   const date = new Date(`${item.day}T00:00:00`);
   const startMinutes = parseTimeToMinutes(item.time);
@@ -351,6 +417,90 @@ function formatEventTimeRange(item: QueueItem): string {
     hour: 'numeric',
     minute: '2-digit',
   })}`;
+}
+
+function defaultTemplateDestination(
+  templateType: CalendarQueueTemplateType
+): string | null {
+  switch (templateType) {
+    case 'report':
+      return '/reports?compare=previous_period';
+    case 'campaign_review':
+      return '/dashboard';
+    case 'creative_refresh':
+      return '/campaigns/intelligence/create';
+    case 'budget_review':
+      return '/dashboard';
+    default:
+      return '/calendar';
+  }
+}
+
+function defaultTemplateCopy(templateType: CalendarQueueTemplateType): Pick<
+  QueueTemplateFormState,
+  'title' | 'description'
+> {
+  switch (templateType) {
+    case 'report':
+      return {
+        title: 'Weekly ads report review',
+        description: 'Review the latest performance report and queue any follow-up changes.',
+      };
+    case 'campaign_review':
+      return {
+        title: 'Campaign review queue',
+        description: 'Check campaign efficiency, compare winners, and decide what should change next.',
+      };
+    case 'creative_refresh':
+      return {
+        title: 'Creative refresh queue',
+        description: 'Review fatigue signals and rotate in fresh creative on schedule.',
+      };
+    case 'budget_review':
+      return {
+        title: 'Budget review queue',
+        description: 'Review pacing and reallocate budget across the strongest campaigns.',
+      };
+    default:
+      return {
+        title: 'Custom recurring queue',
+        description: 'Custom recurring operating queue for this business.',
+      };
+  }
+}
+
+function buildDefaultTemplateForm(today: Date): QueueTemplateFormState {
+  const defaults = defaultTemplateCopy('report');
+
+  return {
+    templateType: 'report',
+    title: defaults.title,
+    description: defaults.description,
+    recurrenceType: 'weekly',
+    weekdays: [String(today.getDay())],
+    monthlyDay: today.getDate(),
+    timeOfDay: '09:00',
+    durationMinutes: 45,
+    startDate: toIsoDay(today),
+    endDate: '',
+    isIndefinite: true,
+  };
+}
+
+function formStateFromTemplate(template: CalendarQueueTemplate): QueueTemplateFormState {
+  return {
+    templateType: template.templateType,
+    title: template.title,
+    description: template.description,
+    recurrenceType: template.recurrenceType,
+    weekdays: template.weekdays.map(String),
+    monthlyDay: template.monthlyDay ?? 1,
+    timeOfDay: template.timeOfDay.slice(0, 5),
+    durationMinutes: template.durationMinutes,
+    startDate: template.startDate,
+    endDate: template.endDate ?? '',
+    isIndefinite: !template.endDate,
+  };
 }
 
 function MiniCalendar({
@@ -454,9 +604,11 @@ function MiniCalendar({
 export default function CalendarClient({
   workspace,
   initialQueueItems,
+  initialQueueTemplates,
 }: {
   workspace: BusinessIntelligenceWorkspace;
   initialQueueItems: QueueItem[];
+  initialQueueTemplates: CalendarQueueTemplate[];
 }) {
   const router = useRouter();
   const weekScrollerRef = useRef<HTMLDivElement | null>(null);
@@ -465,6 +617,9 @@ export default function CalendarClient({
       ? initialQueueItems
       : buildCalendarQueuePreviewItems(workspace.selectedAdAccountName)
   );
+  const [queueTemplates, setQueueTemplates] = useState<CalendarQueueTemplate[]>(
+    initialQueueTemplates
+  );
   const [planView, setPlanView] = useState<'weekly' | 'monthly'>('weekly');
   const [calendarCursor, setCalendarCursor] = useState<Date>(() => startOfDay(new Date()));
   const [selectedCalendarItemId, setSelectedCalendarItemId] = useState<string | null>(null);
@@ -472,6 +627,12 @@ export default function CalendarClient({
   const [dragTarget, setDragTarget] = useState<CalendarDropTarget | null>(null);
   const [approvingItemId, setApprovingItemId] = useState<string | null>(null);
   const [weekScrollbarWidth, setWeekScrollbarWidth] = useState(0);
+  const [templateEditorOpened, setTemplateEditorOpened] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateForm, setTemplateForm] = useState<QueueTemplateFormState>(() =>
+    buildDefaultTemplateForm(startOfDay(new Date()))
+  );
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
 
   const selectionRequiredPlatforms = workspace.platforms.filter((platform) => platform.selectionRequired);
   const selectedAccountSummary =
@@ -492,6 +653,21 @@ export default function CalendarClient({
     [monthGridStart]
   );
   const monthDayKeys = useMemo(() => monthDays.map((day) => toIsoDay(day)), [monthDays]);
+  const recurringRange = useMemo(() => {
+    const candidates = [...weekDays, ...monthDays].sort((left, right) => left.getTime() - right.getTime());
+    return {
+      start: candidates[0] ?? today,
+      end: candidates[candidates.length - 1] ?? today,
+    };
+  }, [monthDays, weekDays, today]);
+  const recurringQueueItems = useMemo(
+    () =>
+      buildRecurringCalendarQueuePreviewItems(queueTemplates, {
+        rangeStart: recurringRange.start,
+        rangeEnd: recurringRange.end,
+      }),
+    [queueTemplates, recurringRange]
+  );
   const visibleCalendarDayKeys = useMemo(
     () => (planView === 'weekly' ? weekDayKeys : monthDayKeys),
     [monthDayKeys, planView, weekDayKeys]
@@ -500,7 +676,11 @@ export default function CalendarClient({
     () => new Set(visibleCalendarDayKeys),
     [visibleCalendarDayKeys]
   );
-  const flatQueueItems = useMemo(() => flattenQueueItems(queueItems), [queueItems]);
+  const flatQueueItems = useMemo(
+    () =>
+      [...flattenQueueItems(queueItems), ...recurringQueueItems].sort(compareQueueItems),
+    [queueItems, recurringQueueItems]
+  );
 
   const queueCounts = useMemo(
     () => ({
@@ -555,6 +735,15 @@ export default function CalendarClient({
     selectedCalendarItem && visibleCalendarDayKeySet.has(selectedCalendarItem.day)
       ? selectedCalendarItem
       : null;
+  const selectedRecurringTemplate = useMemo(
+    () =>
+      selectedVisibleCalendarItem?.recurringTemplateId
+        ? queueTemplates.find(
+            (template) => template.id === selectedVisibleCalendarItem.recurringTemplateId
+          ) ?? null
+        : null,
+    [queueTemplates, selectedVisibleCalendarItem]
+  );
 
   const addQueueTargets = useMemo(() => {
     if (planView === 'weekly') {
@@ -584,6 +773,108 @@ export default function CalendarClient({
       weekDayKeys.flatMap((dayKey) => (weekItemsByDay.get(dayKey) ?? []).map((item) => ({ dayKey, item }))),
     [weekDayKeys, weekItemsByDay]
   );
+
+  function openTemplateEditor(template?: CalendarQueueTemplate) {
+    if (template) {
+      setEditingTemplateId(template.id);
+      setTemplateForm(formStateFromTemplate(template));
+    } else {
+      setEditingTemplateId(null);
+      setTemplateForm(buildDefaultTemplateForm(calendarCursor));
+    }
+
+    setTemplateEditorOpened(true);
+  }
+
+  async function saveTemplate() {
+    if (!workspace.selectedAdAccountId) {
+      toast.error('Select an ad account before creating a recurring queue.');
+      return;
+    }
+
+    setSavingTemplate(true);
+
+    try {
+      const body = {
+        platformIntegrationId: workspace.selection.platformIntegrationId ?? null,
+        adAccountId: workspace.selectedAdAccountId,
+        templateType: templateForm.templateType,
+        title: templateForm.title.trim(),
+        description: templateForm.description.trim(),
+        destinationHref: defaultTemplateDestination(templateForm.templateType),
+        recurrenceType: templateForm.recurrenceType,
+        weekdays:
+          templateForm.recurrenceType === 'weekly'
+            ? templateForm.weekdays.map(Number).sort((left, right) => left - right)
+            : [],
+        monthlyDay:
+          templateForm.recurrenceType === 'monthly' ? templateForm.monthlyDay : null,
+        timeOfDay: `${templateForm.timeOfDay}:00`,
+        durationMinutes: templateForm.durationMinutes,
+        startDate: templateForm.startDate,
+        endDate: templateForm.isIndefinite ? null : templateForm.endDate || null,
+        status: 'active' as const,
+      };
+
+      const response = await fetch(
+        editingTemplateId
+          ? `/api/calendar/templates/${editingTemplateId}`
+          : '/api/calendar/templates',
+        {
+          method: editingTemplateId ? 'PATCH' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        }
+      );
+
+      const payload = (await response.json()) as {
+        error?: string;
+        template?: CalendarQueueTemplate;
+      };
+
+      if (!response.ok || !payload.template) {
+        throw new Error(payload.error ?? 'Unable to save recurring queue.');
+      }
+
+      const savedTemplate = payload.template;
+      setQueueTemplates((current) =>
+        editingTemplateId
+          ? current.map((template) =>
+              template.id === savedTemplate.id ? savedTemplate : template
+            )
+          : [savedTemplate, ...current]
+      );
+      setTemplateEditorOpened(false);
+      setEditingTemplateId(null);
+      setSelectedCalendarItemId(null);
+      toast.success(editingTemplateId ? 'Recurring queue updated' : 'Recurring queue created');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to save recurring queue.');
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
+
+  async function removeTemplate(templateId: string) {
+    try {
+      const response = await fetch(`/api/calendar/templates/${templateId}`, {
+        method: 'DELETE',
+      });
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? 'Unable to delete recurring queue.');
+      }
+
+      setQueueTemplates((current) => current.filter((template) => template.id !== templateId));
+      setSelectedCalendarItemId(null);
+      toast.success('Recurring queue removed');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to delete recurring queue.');
+    }
+  }
 
   useEffect(() => {
     if (planView !== 'weekly') {
@@ -675,6 +966,17 @@ export default function CalendarClient({
   }
 
   function handleModify(id: string) {
+    const targetItem = flatQueueItems.find((item) => item.id === id) ?? null;
+    if (targetItem?.recurringTemplateId) {
+      const template = queueTemplates.find(
+        (entry) => entry.id === targetItem.recurringTemplateId
+      );
+      if (template) {
+        openTemplateEditor(template);
+        return;
+      }
+    }
+
     updateQueueItem(id, (item) => ({
       ...item,
       status: 'draft',
@@ -684,6 +986,12 @@ export default function CalendarClient({
   }
 
   function handleDelete(id: string) {
+    const targetItem = flatQueueItems.find((item) => item.id === id) ?? null;
+    if (targetItem?.recurringTemplateId) {
+      void removeTemplate(targetItem.recurringTemplateId);
+      return;
+    }
+
     setSelectedCalendarItemId((current) => (current === id ? null : current));
     updateQueueItem(id, () => null);
     toast.success('Queue item removed');
@@ -729,30 +1037,15 @@ export default function CalendarClient({
   }
 
   function handleAddQueueItem(title?: string) {
-    const nextDay =
-      addQueueTargets[
-        Math.min(
-          queueItems.length % Math.max(addQueueTargets.length, 1),
-          Math.max(addQueueTargets.length - 1, 0)
-        )
-      ] || toIsoDay(calendarCursor);
-
-    const nextItem: QueueItem = {
-      id: `queue-${Date.now()}`,
-      title: title || 'New queued action',
-      description:
-        'New placeholder queue item. This will later be editable with real planning inputs and scheduling rules.',
-      day: nextDay,
-      time: '1:00 PM',
-      durationMinutes: 45,
-      channel: 'Planning',
-      status: 'draft',
-      source: 'manual',
-    };
-
-    setQueueItems((current) => [...current, nextItem]);
-    setSelectedCalendarItemId(nextItem.id);
-    toast.success('Added to queue');
+    const defaults = defaultTemplateCopy('custom');
+    setTemplateForm((current) => ({
+      ...buildDefaultTemplateForm(calendarCursor),
+      templateType: 'custom',
+      title: title ?? defaults.title,
+      description: defaults.description,
+    }));
+    setEditingTemplateId(null);
+    setTemplateEditorOpened(true);
   }
 
   function shiftCalendar(direction: -1 | 1) {
@@ -917,6 +1210,73 @@ export default function CalendarClient({
                 Create custom queue
               </Button>
 
+              <Paper withBorder radius="xl" p="md" className={classes.topPanel}>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                  Recurring queues
+                </Text>
+                <Text fw={700} mt={6}>
+                  Saved repeating schedules
+                </Text>
+                <Stack gap="sm" mt="md">
+                  {queueTemplates.length > 0 ? (
+                    queueTemplates.map((template) => (
+                      <Paper key={template.id} withBorder radius="md" p="sm" className={classes.templateRow}>
+                        <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <Group gap="xs" wrap="wrap" mb={6}>
+                              <Badge color="violet" variant="light" radius="sm">
+                                {template.recurrenceType === 'weekly' ? 'Weekly' : 'Monthly'}
+                              </Badge>
+                              <Badge color="gray" variant="outline" radius="sm">
+                                {QUEUE_TEMPLATE_TYPE_OPTIONS.find(
+                                  (option) => option.value === template.templateType
+                                )?.label ?? 'Queue'}
+                              </Badge>
+                            </Group>
+                            <Text fw={700} lineClamp={2}>
+                              {template.title}
+                            </Text>
+                            <Text size="sm" c="dimmed" mt={4} lineClamp={2}>
+                              {template.recurrenceType === 'weekly'
+                                ? `Repeats on ${template.weekdays
+                                    .map((weekday) => WEEKDAY_OPTIONS.find((option) => Number(option.value) === weekday)?.label?.slice(0, 3) ?? '')
+                                    .filter(Boolean)
+                                    .join(', ')} at ${template.timeOfDay.slice(0, 5)}`
+                                : `Repeats on day ${template.monthlyDay ?? 1} of each month at ${template.timeOfDay.slice(0, 5)}`}
+                            </Text>
+                          </div>
+
+                          <Group gap={4} wrap="nowrap">
+                            <ActionIcon
+                              variant="subtle"
+                              color="gray"
+                              radius="xl"
+                              aria-label={`Edit ${template.title}`}
+                              onClick={() => openTemplateEditor(template)}
+                            >
+                              <IconEdit size={15} />
+                            </ActionIcon>
+                            <ActionIcon
+                              variant="subtle"
+                              color="red"
+                              radius="xl"
+                              aria-label={`Delete ${template.title}`}
+                              onClick={() => void removeTemplate(template.id)}
+                            >
+                              <IconTrash size={15} />
+                            </ActionIcon>
+                          </Group>
+                        </Group>
+                      </Paper>
+                    ))
+                  ) : (
+                    <Text size="sm" c="dimmed">
+                      Create a weekly or monthly queue here for recurring report reviews, budget checks, creative refreshes, or any custom operating task.
+                    </Text>
+                  )}
+                </Stack>
+              </Paper>
+
               <MiniCalendar
                 monthStart={monthStart}
                 monthDays={monthDays}
@@ -998,6 +1358,11 @@ export default function CalendarClient({
                         <Badge color="gray" variant="light">
                           {selectedVisibleCalendarItem.channel}
                         </Badge>
+                        {selectedVisibleCalendarItem.isRecurring ? (
+                          <Badge color="violet" variant="light">
+                            Recurring
+                          </Badge>
+                        ) : null}
                         {selectedVisibleCalendarItem.isParent ? (
                           <Badge color="violet" variant="light">
                             Workflow
@@ -1056,7 +1421,7 @@ export default function CalendarClient({
                         leftSection={<IconEdit size={14} />}
                         onClick={() => handleModify(selectedVisibleCalendarItem.id)}
                       >
-                        Modify
+                        {selectedVisibleCalendarItem.isRecurring ? 'Edit recurring queue' : 'Modify'}
                       </Button>
                       <Button
                         size="sm"
@@ -1066,7 +1431,7 @@ export default function CalendarClient({
                         leftSection={<IconTrash size={14} />}
                         onClick={() => handleDelete(selectedVisibleCalendarItem.id)}
                       >
-                        Remove
+                        {selectedVisibleCalendarItem.isRecurring ? 'Remove recurring queue' : 'Remove'}
                       </Button>
                     </Stack>
                   </Stack>
@@ -1276,9 +1641,13 @@ export default function CalendarClient({
                               style={weekEventStyle(item)}
                               onClick={() => setSelectedCalendarItemId(item.id)}
                               title={`${item.title} · ${item.time}`}
-                              draggable
-                              onDragStart={(event) => handleDragStart(event, item.id)}
-                              onDragEnd={handleDragEnd}
+                              draggable={!item.isRecurring}
+                              onDragStart={
+                                item.isRecurring
+                                  ? undefined
+                                  : (event) => handleDragStart(event, item.id)
+                              }
+                              onDragEnd={item.isRecurring ? undefined : handleDragEnd}
                             >
                               <span className={classes.eventTitle}>{item.title}</span>
                               <span className={classes.eventTime}>{formatEventTimeRange(item)}</span>
@@ -1366,9 +1735,13 @@ export default function CalendarClient({
                               .join(' ')}
                             onClick={() => setSelectedCalendarItemId(item.id)}
                             title={`${item.time} · ${item.title} · ${queueSourceLabel(item.source)}`}
-                            draggable
-                            onDragStart={(event) => handleDragStart(event, item.id)}
-                            onDragEnd={handleDragEnd}
+                            draggable={!item.isRecurring}
+                            onDragStart={
+                              item.isRecurring
+                                ? undefined
+                                : (event) => handleDragStart(event, item.id)
+                            }
+                            onDragEnd={item.isRecurring ? undefined : handleDragEnd}
                           >
                             <span className={classes.monthEventText}>
                               <span className={classes.monthEventTime}>{item.time}</span>
@@ -1400,6 +1773,211 @@ export default function CalendarClient({
           )}
         </section>
         </div>
+        <Modal
+          opened={templateEditorOpened}
+          onClose={() => {
+            setTemplateEditorOpened(false);
+            setEditingTemplateId(null);
+          }}
+          centered
+          title={editingTemplateId ? 'Edit recurring queue' : 'Create recurring queue'}
+          radius="24px"
+        >
+          <Stack gap="md">
+            <Select
+              label="Queue type"
+              value={templateForm.templateType}
+              data={QUEUE_TEMPLATE_TYPE_OPTIONS.map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
+              onChange={(value) => {
+                if (!value) {
+                  return;
+                }
+
+                const templateType = value as CalendarQueueTemplateType;
+                const defaults = defaultTemplateCopy(templateType);
+                setTemplateForm((current) => ({
+                  ...current,
+                  templateType,
+                  title: defaults.title,
+                  description: defaults.description,
+                }));
+              }}
+            />
+
+            <TextInput
+              label="Queue title"
+              value={templateForm.title}
+              onChange={(event) =>
+                setTemplateForm((current) => ({
+                  ...current,
+                  title: event.currentTarget.value,
+                }))
+              }
+            />
+
+            <Textarea
+              label="Description"
+              minRows={3}
+              value={templateForm.description}
+              onChange={(event) =>
+                setTemplateForm((current) => ({
+                  ...current,
+                  description: event.currentTarget.value,
+                }))
+              }
+            />
+
+            <Group grow align="flex-start">
+              <Select
+                label="Repeats"
+                value={templateForm.recurrenceType}
+                data={[
+                  { value: 'weekly', label: 'Weekly' },
+                  { value: 'monthly', label: 'Monthly' },
+                ]}
+                onChange={(value) => {
+                  if (!value) {
+                    return;
+                  }
+
+                  setTemplateForm((current) => ({
+                    ...current,
+                    recurrenceType: value as CalendarQueueTemplateRecurrence,
+                  }));
+                }}
+              />
+
+              <TextInput
+                label="Time"
+                type="time"
+                value={templateForm.timeOfDay}
+                onChange={(event) =>
+                  setTemplateForm((current) => ({
+                    ...current,
+                    timeOfDay: event.currentTarget.value,
+                  }))
+                }
+              />
+            </Group>
+
+            {templateForm.recurrenceType === 'weekly' ? (
+              <MultiSelect
+                label="Days per week"
+                data={WEEKDAY_OPTIONS}
+                value={templateForm.weekdays}
+                onChange={(value) =>
+                  setTemplateForm((current) => ({
+                    ...current,
+                    weekdays: value,
+                  }))
+                }
+              />
+            ) : (
+              <NumberInput
+                label="Day of month"
+                min={1}
+                max={31}
+                value={templateForm.monthlyDay}
+                onChange={(value) =>
+                  setTemplateForm((current) => ({
+                    ...current,
+                    monthlyDay: Number(value) || 1,
+                  }))
+                }
+              />
+            )}
+
+            <Group grow align="flex-start">
+              <TextInput
+                label="Start date"
+                type="date"
+                value={templateForm.startDate}
+                onChange={(event) =>
+                  setTemplateForm((current) => ({
+                    ...current,
+                    startDate: event.currentTarget.value,
+                  }))
+                }
+              />
+
+              <NumberInput
+                label="Duration (minutes)"
+                min={15}
+                max={480}
+                step={15}
+                value={templateForm.durationMinutes}
+                onChange={(value) =>
+                  setTemplateForm((current) => ({
+                    ...current,
+                    durationMinutes: Number(value) || 45,
+                  }))
+                }
+              />
+            </Group>
+
+            <Switch
+              label="Repeat indefinitely"
+              checked={templateForm.isIndefinite}
+              onChange={(event) =>
+                setTemplateForm((current) => ({
+                  ...current,
+                  isIndefinite: event.currentTarget.checked,
+                  endDate: event.currentTarget.checked ? '' : current.endDate,
+                }))
+              }
+            />
+
+            {!templateForm.isIndefinite ? (
+              <TextInput
+                label="End date"
+                type="date"
+                value={templateForm.endDate}
+                onChange={(event) =>
+                  setTemplateForm((current) => ({
+                    ...current,
+                    endDate: event.currentTarget.value,
+                  }))
+                }
+              />
+            ) : null}
+
+            <Text size="sm" c="dimmed">
+              Recurring queues are attached to the currently selected ad account and will keep appearing in Calendar until the end date or until you remove them.
+            </Text>
+
+            <Group justify="flex-end" gap="sm">
+              <Button
+                variant="default"
+                radius="xl"
+                onClick={() => {
+                  setTemplateEditorOpened(false);
+                  setEditingTemplateId(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                radius="xl"
+                loading={savingTemplate}
+                disabled={
+                  !templateForm.title.trim() ||
+                  !templateForm.startDate ||
+                  !templateForm.timeOfDay ||
+                  (templateForm.recurrenceType === 'weekly' &&
+                    templateForm.weekdays.length === 0) ||
+                  (!templateForm.isIndefinite && !templateForm.endDate)
+                }
+                onClick={() => void saveTemplate()}
+              >
+                {editingTemplateId ? 'Save changes' : 'Create queue'}
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
+
         <Modal
           opened={Boolean(selectedVisibleCalendarItem)}
           onClose={() => setSelectedCalendarItemId(null)}
@@ -1460,6 +2038,11 @@ export default function CalendarClient({
                 <Badge color="gray" variant="light">
                   {selectedVisibleCalendarItem.channel}
                 </Badge>
+                {selectedVisibleCalendarItem.isRecurring ? (
+                  <Badge color="violet" variant="light">
+                    Recurring
+                  </Badge>
+                ) : null}
                 <Badge color="gray" variant="light">
                   {formatSidebarDayLabel(selectedVisibleCalendarItem.day)}
                 </Badge>
@@ -1543,7 +2126,7 @@ export default function CalendarClient({
                   leftSection={<IconEdit size={16} />}
                   onClick={() => handleModify(selectedVisibleCalendarItem.id)}
                 >
-                  Modify
+                  {selectedVisibleCalendarItem.isRecurring ? 'Edit recurring queue' : 'Modify'}
                 </Button>
                 <Button
                   radius="xl"
@@ -1552,7 +2135,7 @@ export default function CalendarClient({
                   leftSection={<IconTrash size={16} />}
                   onClick={() => handleDelete(selectedVisibleCalendarItem.id)}
                 >
-                  Remove
+                  {selectedVisibleCalendarItem.isRecurring ? 'Remove recurring queue' : 'Remove'}
                 </Button>
               </Group>
             </div>

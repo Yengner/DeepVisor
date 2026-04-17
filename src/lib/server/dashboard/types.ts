@@ -16,7 +16,7 @@ export type DashboardState =
 
 export type DashboardWindow = '7d' | '30d';
 
-export type DashboardOutcomeMetric = 'leads' | 'messages' | 'clicks';
+export type DashboardOutcomeMetric = 'results' | 'leads' | 'messages' | 'clicks';
 
 export type DashboardAlertTone = 'red' | 'yellow' | 'blue' | 'teal';
 
@@ -28,7 +28,7 @@ export interface DashboardAlert {
 }
 
 export interface DashboardSummaryCard {
-  key: 'spend' | 'leads' | 'messages' | 'link_clicks';
+  key: 'spend' | 'results' | 'leads' | 'messages' | 'link_clicks';
   label: string;
   value: number;
   previousValue: number | null;
