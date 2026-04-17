@@ -1,9 +1,7 @@
 import Topbar from '@/components/layout/topBar/TopBar';
-import AiAssistantDrawer from '@/components/layout/AiAssistantDrawer';
 import Sidebar from '@/components/layout/LeftSidebar';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
-import { buildGlobalAiAssistantPayload } from '@/lib/server/intelligence';
 import { getPlatformDetails } from '@/lib/server/data';
 
 function resolvePlatformTheme(value: string | null | undefined): 'default' | 'meta' | 'google' | 'tiktok' {
@@ -26,11 +24,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const selectedPlatform = selection.selectedPlatformId
     ? await getPlatformDetails(selection.selectedPlatformId, businessId)
     : null;
-  const assistantPayload = await buildGlobalAiAssistantPayload({
-    businessId,
-    defaultPlatformIntegrationId: selection.selectedPlatformId,
-    defaultAdAccountId: selection.selectedAdAccountId,
-  });
   const platformTheme = resolvePlatformTheme(selectedPlatform?.vendorKey);
 
   return (
@@ -46,8 +39,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {children}
         </main>
       </div>
-
-      <AiAssistantDrawer payload={assistantPayload} />
     </div>
   );
 }

@@ -264,6 +264,67 @@
   opacity: 0.65;
 }
 
+.eventPopoverDropdown {
+  max-width: min(360px, calc(100vw - 24px));
+  padding: 0 !important;
+  border: 1px solid rgba(226, 232, 240, 0.98);
+  border-radius: 24px !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  background: #fff;
+}
+
+.eventPopoverInner {
+  padding: 18px 18px 16px;
+  background: #fff;
+}
+
+.eventPopoverHeaderBlock {
+  min-width: 0;
+}
+
+.eventPopoverMarker {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  margin-top: 4px;
+}
+
+.eventPopoverTitle {
+  margin-top: 4px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.08;
+  color: #0f172a;
+}
+
+.eventPopoverDate {
+  margin-top: 5px;
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.eventPopoverDescription {
+  margin-top: 14px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #0f172a;
+}
+
+.eventPopoverMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.eventPopoverMetaItem {
+  padding: 12px 14px;
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.82);
+}
+
 .selectedStrip {
   background: rgba(255, 255, 255, 0.96);
 }
@@ -459,10 +520,6 @@
   background-color: var(--platform-accent-soft);
 }
 
-.weekDayColumnDropTarget {
-  background-color: rgba(59, 130, 246, 0.08);
-}
-
 .weekEvent {
   position: absolute;
   left: 6px;
@@ -484,7 +541,6 @@
   transition:
     filter 120ms ease,
     border-color 120ms ease;
-  cursor: grab;
 }
 
 .weekEventFull {
@@ -508,21 +564,6 @@
 .selectedEvent {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.92);
   border-color: rgba(255, 255, 255, 0.95);
-}
-
-.draggingEvent {
-  opacity: 0.45;
-  cursor: grabbing;
-}
-
-.weekDropPreview {
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  border-style: dashed;
-  pointer-events: none;
-  opacity: 0.82;
-  z-index: 0;
 }
 
 .sourceManual {
@@ -705,10 +746,6 @@
   box-shadow: inset 0 0 0 2px var(--platform-border-strong);
 }
 
-.monthDayDropTarget {
-  background: rgba(59, 130, 246, 0.1);
-}
-
 .monthDayHeader {
   display: flex;
   align-items: center;
@@ -769,7 +806,6 @@
   transition:
     background-color 120ms ease,
     border-color 120ms ease;
-  cursor: grab;
 }
 
 .monthEventTime {
@@ -906,10 +942,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .selectedStripActions {
-    width: 100%;
-  }
-
   .calendarShell {
     height: auto;
   }
@@ -921,10 +953,6 @@
 
   .calendarToolbarPrimary {
     width: 100%;
-  }
-
-  .eventModalInner {
-    padding: 22px;
   }
 }
 
@@ -960,7 +988,7 @@
     min-width: 920px;
   }
 
-  .eventModalMetaGrid {
+  .eventPopoverMetaGrid {
     grid-template-columns: 1fr;
   }
 }

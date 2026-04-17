@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties, DragEvent as ReactDragEvent } from 'react';
+import type { CSSProperties } from 'react';
 import {
   ActionIcon,
   Alert,
@@ -13,6 +13,7 @@ import {
   MultiSelect,
   NumberInput,
   Paper,
+  Popover,
   Select,
   SegmentedControl,
   Stack,
@@ -21,7 +22,6 @@ import {
   TextInput,
   Textarea,
   Tooltip,
-  Title,
 } from '@mantine/core';
 import {
   IconAlertCircle,
@@ -50,6 +50,11 @@ import {
   type CalendarQueueTemplateType,
 } from '@/lib/shared';
 import classes from './CalendarClient.module.css';
+
+type CalendarRenderItem = QueueItem & {
+  renderId: string;
+  originalItem: QueueItem;
+};
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MINI_WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -198,27 +203,53 @@ function formatTemplateTimeOfDay(value: string): string {
   return formatMinutesAsTime(Number(match[1]) * 60 + Number(match[2]));
 }
 
-function resolveDropStartMinutes(input: {
-  rawMinutes: number;
-  durationMinutes: number;
-}): number {
-  const startMinutes = WEEK_VIEW_START_HOUR * 60;
-  const latestStartMinutes = Math.max(
-    startMinutes,
-    WEEK_VIEW_END_HOUR * 60 - Math.max(input.durationMinutes, 30)
-  );
-  const snapped =
-    Math.round(input.rawMinutes / DRAG_SNAP_MINUTES) * DRAG_SNAP_MINUTES;
-
-  return Math.max(startMinutes, Math.min(snapped, latestStartMinutes));
-}
-
 function compareQueueItems(left: QueueItem, right: QueueItem): number {
   if (left.day !== right.day) {
     return left.day.localeCompare(right.day);
   }
 
   return parseTimeToMinutes(left.time) - parseTimeToMinutes(right.time);
+}
+
+function buildCalendarRenderItems(items: QueueItem[]): CalendarRenderItem[] {
+  return items
+    .flatMap((item) => {
+      const startMinutes = parseTimeToMinutes(item.time);
+      const start = new Date(`${item.day}T00:00:00`);
+      start.setHours(Math.floor(startMinutes / 60), startMinutes % 60, 0, 0);
+
+      const end = new Date(start);
+      end.setMinutes(end.getMinutes() + item.durationMinutes);
+
+      const segments: CalendarRenderItem[] = [];
+      let segmentStart = new Date(start);
+
+      while (segmentStart < end) {
+        const dayStart = startOfDay(segmentStart);
+        const nextDayStart = addDays(dayStart, 1);
+        const segmentEnd = end < nextDayStart ? end : nextDayStart;
+        const segmentMinutes = Math.max(
+          1,
+          Math.round((segmentEnd.getTime() - segmentStart.getTime()) / 60000)
+        );
+        const segmentStartMinutes =
+          segmentStart.getHours() * 60 + segmentStart.getMinutes();
+
+        segments.push({
+          ...item,
+          day: toIsoDay(segmentStart),
+          time: formatMinutesAsTime(segmentStartMinutes),
+          durationMinutes: segmentMinutes,
+          renderId: `${item.id}:${toIsoDay(segmentStart)}:${segmentStartMinutes}`,
+          originalItem: item,
+        });
+
+        segmentStart = new Date(segmentEnd);
+      }
+
+      return segments;
+    })
+    .sort(compareQueueItems);
 }
 
 function looksLikeUuid(value: string): boolean {
@@ -364,12 +395,6 @@ function weekEventDensityClassName(density: WeekEventDensity): string {
       return classes.weekEventFull;
   }
 }
-
-type CalendarDropTarget = {
-  day: string;
-  startMinutes: number | null;
-  view: 'weekly' | 'monthly';
-};
 
 type QueueTemplateFormState = {
   templateType: CalendarQueueTemplateType;
@@ -782,8 +807,6 @@ export default function CalendarClient({
 }) {
   const router = useRouter();
   const weekScrollerRef = useRef<HTMLDivElement | null>(null);
-  const suppressSelectionOnDragRef = useRef(false);
-  const dragSelectionReleaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [queueItems, setQueueItems] = useState<QueueItem[]>(() =>
     initialQueueItems.length > 0
       ? initialQueueItems
@@ -795,8 +818,6 @@ export default function CalendarClient({
   const [planView, setPlanView] = useState<'weekly' | 'monthly'>('weekly');
   const [calendarCursor, setCalendarCursor] = useState<Date>(() => startOfDay(new Date()));
   const [selectedCalendarItemId, setSelectedCalendarItemId] = useState<string | null>(null);
-  const [draggedQueueItemId, setDraggedQueueItemId] = useState<string | null>(null);
-  const [dragTarget, setDragTarget] = useState<CalendarDropTarget | null>(null);
   const [approvingItemId, setApprovingItemId] = useState<string | null>(null);
   const [weekScrollbarWidth, setWeekScrollbarWidth] = useState(0);
   const [templateTypePickerOpened, setTemplateTypePickerOpened] = useState(false);
@@ -856,6 +877,10 @@ export default function CalendarClient({
       [...flattenQueueItems(queueItems), ...recurringQueueItems].sort(compareQueueItems),
     [queueItems, recurringQueueItems]
   );
+  const renderedQueueItems = useMemo(
+    () => buildCalendarRenderItems(flatQueueItems),
+    [flatQueueItems]
+  );
 
   const queueCounts = useMemo(
     () => ({
@@ -868,9 +893,9 @@ export default function CalendarClient({
   );
 
   const weekItemsByDay = useMemo(() => {
-    const grouped = new Map<string, QueueItem[]>(weekDayKeys.map((day) => [day, []]));
+    const grouped = new Map<string, CalendarRenderItem[]>(weekDayKeys.map((day) => [day, []]));
 
-    flatQueueItems.forEach((item) => {
+    renderedQueueItems.forEach((item) => {
       const bucket = grouped.get(item.day);
 
       if (bucket) {
@@ -880,12 +905,12 @@ export default function CalendarClient({
 
     grouped.forEach((items) => items.sort(compareQueueItems));
     return grouped;
-  }, [flatQueueItems, weekDayKeys]);
+  }, [renderedQueueItems, weekDayKeys]);
 
   const monthItemsByDay = useMemo(() => {
-    const grouped = new Map<string, QueueItem[]>(monthDayKeys.map((day) => [day, []]));
+    const grouped = new Map<string, CalendarRenderItem[]>(monthDayKeys.map((day) => [day, []]));
 
-    flatQueueItems.forEach((item) => {
+    renderedQueueItems.forEach((item) => {
       const bucket = grouped.get(item.day);
 
       if (bucket) {
@@ -895,30 +920,8 @@ export default function CalendarClient({
 
     grouped.forEach((items) => items.sort(compareQueueItems));
     return grouped;
-  }, [flatQueueItems, monthDayKeys]);
+  }, [renderedQueueItems, monthDayKeys]);
 
-  const selectedCalendarItem = useMemo(
-    () => flatQueueItems.find((item) => item.id === selectedCalendarItemId) ?? null,
-    [flatQueueItems, selectedCalendarItemId]
-  );
-  const draggedQueueItem = useMemo(
-    () => flatQueueItems.find((item) => item.id === draggedQueueItemId) ?? null,
-    [flatQueueItems, draggedQueueItemId]
-  );
-
-  const selectedVisibleCalendarItem =
-    selectedCalendarItem && visibleCalendarDayKeySet.has(selectedCalendarItem.day)
-      ? selectedCalendarItem
-      : null;
-  const selectedRecurringTemplate = useMemo(
-    () =>
-      selectedVisibleCalendarItem?.recurringTemplateId
-        ? queueTemplates.find(
-            (template) => template.id === selectedVisibleCalendarItem.recurringTemplateId
-          ) ?? null
-        : null,
-    [queueTemplates, selectedVisibleCalendarItem]
-  );
   const selectedTemplateOption = useMemo(
     () => getQueueTemplateOption(templateForm.templateType),
     [templateForm.templateType]
@@ -943,8 +946,13 @@ export default function CalendarClient({
   );
 
   const visibleCalendarItemCount = useMemo(
-    () => flatQueueItems.filter((item) => visibleCalendarDayKeySet.has(item.day)).length,
-    [flatQueueItems, visibleCalendarDayKeySet]
+    () =>
+      new Set(
+        renderedQueueItems
+          .filter((item) => visibleCalendarDayKeySet.has(item.day))
+          .map((item) => item.id)
+      ).size,
+    [renderedQueueItems, visibleCalendarDayKeySet]
   );
 
   const visibleWeekItems = useMemo(
@@ -1147,9 +1155,6 @@ export default function CalendarClient({
 
     return () => {
       window.clearInterval(intervalId);
-      if (dragSelectionReleaseTimeoutRef.current) {
-        window.clearTimeout(dragSelectionReleaseTimeoutRef.current);
-      }
     };
   }, []);
 
@@ -1229,44 +1234,6 @@ export default function CalendarClient({
     toast.success('Queue item removed');
   }
 
-  function moveQueueItem(input: {
-    id: string;
-    day: string;
-    startMinutes: number | null;
-  }) {
-    let nextCursorDay: string | null = null;
-    let movedItemTitle: string | null = null;
-
-    setQueueItems((current) =>
-      current.map((item) => {
-        if (item.id !== input.id) {
-          return item;
-        }
-
-        const nextTime =
-          input.startMinutes === null ? item.time : formatMinutesAsTime(input.startMinutes);
-
-        if (item.day === input.day && item.time === nextTime) {
-          return item;
-        }
-
-        nextCursorDay = input.day;
-        movedItemTitle = item.title;
-
-        return {
-          ...item,
-          day: input.day,
-          time: nextTime,
-        };
-      })
-    );
-
-    if (nextCursorDay) {
-      setCalendarCursor(startOfDay(new Date(`${nextCursorDay}T00:00:00`)));
-      toast.success(movedItemTitle ? `Rescheduled ${movedItemTitle}` : 'Queue item rescheduled');
-    }
-  }
-
   function handleAddQueueItem(title?: string) {
     if (title) {
       const defaults = defaultTemplateCopy('campaign_review');
@@ -1302,119 +1269,161 @@ export default function CalendarClient({
   }
 
   function handleCalendarItemClick(itemId: string) {
-    if (suppressSelectionOnDragRef.current) {
-      return;
-    }
-
-    setSelectedCalendarItemId(itemId);
+    setSelectedCalendarItemId((current) => (current === itemId ? null : itemId));
   }
 
-  function handleDragStart(event: ReactDragEvent<HTMLElement>, itemId: string) {
-    if (dragSelectionReleaseTimeoutRef.current) {
-      window.clearTimeout(dragSelectionReleaseTimeoutRef.current);
-      dragSelectionReleaseTimeoutRef.current = null;
-    }
+  function renderCalendarItemPopoverContent(item: QueueItem) {
+    return (
+      <div className={classes.eventPopoverInner}>
+        <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+          <Group align="flex-start" gap="sm" wrap="nowrap">
+            <span
+              className={[classes.eventPopoverMarker, queueItemMarkerClassName(item)]
+                .filter(Boolean)
+                .join(' ')}
+            />
+            <div className={classes.eventPopoverHeaderBlock}>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                {queueSourceLabel(item.source)}
+              </Text>
+              <Text className={classes.eventPopoverTitle}>{item.title}</Text>
+              <Text className={classes.eventPopoverDate}>{formatEventDateTime(item)}</Text>
+            </div>
+          </Group>
 
-    suppressSelectionOnDragRef.current = true;
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', itemId);
-    setDraggedQueueItemId(itemId);
-  }
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            radius="xl"
+            size="md"
+            aria-label="Close queue details"
+            onClick={() => setSelectedCalendarItemId(null)}
+          >
+            <IconX size={18} />
+          </ActionIcon>
+        </Group>
 
-  function handleDragEnd() {
-    setDraggedQueueItemId(null);
-    setDragTarget(null);
+        <Group gap="xs" wrap="wrap" mt="md">
+          <Badge color="gray" variant="light">
+            {queueSourceLabel(item.source)}
+          </Badge>
+          <Badge color={queueStatusColor(item.status)} variant="light">
+            {queueStatusLabel(item.status)}
+          </Badge>
+          <Badge color="gray" variant="light">
+            {item.channel}
+          </Badge>
+          {item.isRecurring ? (
+            <>
+              <Badge
+                color={queueTemplateBadgeColor(item.recurringTemplateType ?? 'custom')}
+                variant="light"
+              >
+                {getQueueTemplateOption(item.recurringTemplateType ?? 'custom').label}
+              </Badge>
+              <Badge color="violet" variant="light">
+                Recurring
+              </Badge>
+            </>
+          ) : null}
+          <Badge color="gray" variant="light">
+            {formatSidebarDayLabel(item.day)}
+          </Badge>
+          {item.isParent ? (
+            <Badge color="violet" variant="light">
+              Workflow
+            </Badge>
+          ) : null}
+        </Group>
 
-    dragSelectionReleaseTimeoutRef.current = setTimeout(() => {
-      suppressSelectionOnDragRef.current = false;
-      dragSelectionReleaseTimeoutRef.current = null;
-    }, 0);
-  }
+        <Text className={classes.eventPopoverDescription}>{item.description}</Text>
 
-  function resolveWeekColumnStartMinutes(
-    event: ReactDragEvent<HTMLDivElement>,
-    durationMinutes: number
-  ): number {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const relativeY = Math.max(0, Math.min(event.clientY - bounds.top, bounds.height));
-    const minutesInView = (WEEK_VIEW_END_HOUR - WEEK_VIEW_START_HOUR) * 60;
-    const rawMinutes = WEEK_VIEW_START_HOUR * 60 + (relativeY / bounds.height) * minutesInView;
+        {(item.children?.length ?? 0) > 0 ? (
+          <Stack gap={6} mt="md">
+            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+              Nested queue items
+            </Text>
+            {item.children?.map((child) => (
+              <Text key={child.id} size="sm" c="dimmed">
+                {`\u2022 ${child.title} (${queueStatusLabel(child.status)})`}
+              </Text>
+            ))}
+          </Stack>
+        ) : (item.childBlueprints?.length ?? 0) > 0 ? (
+          <Stack gap={6} mt="md">
+            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+              Approving this adds
+            </Text>
+            {item.childBlueprints?.map((child) => (
+              <Text key={child.key} size="sm" c="dimmed">
+                {`\u2022 ${child.title}`}
+              </Text>
+            ))}
+          </Stack>
+        ) : null}
 
-    return resolveDropStartMinutes({
-      rawMinutes,
-      durationMinutes,
-    });
-  }
+        <div className={classes.eventPopoverMetaGrid}>
+          <div className={classes.eventPopoverMetaItem}>
+            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+              Time
+            </Text>
+            <Text fw={700}>{item.time}</Text>
+          </div>
+          <div className={classes.eventPopoverMetaItem}>
+            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+              Channel
+            </Text>
+            <Text fw={700}>{item.channel}</Text>
+          </div>
+          <div className={classes.eventPopoverMetaItem}>
+            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+              Status
+            </Text>
+            <Text fw={700}>{queueStatusLabel(item.status)}</Text>
+          </div>
+          <div className={classes.eventPopoverMetaItem}>
+            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+              Created by
+            </Text>
+            <Text fw={700}>{queueSourceLabel(item.source)}</Text>
+          </div>
+        </div>
 
-  function handleWeekColumnDragOver(
-    event: ReactDragEvent<HTMLDivElement>,
-    day: string
-  ) {
-    if (!draggedQueueItem) {
-      return;
-    }
-
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    setDragTarget({
-      day,
-      startMinutes: resolveWeekColumnStartMinutes(event, draggedQueueItem.durationMinutes),
-      view: 'weekly',
-    });
-  }
-
-  function handleWeekColumnDrop(
-    event: ReactDragEvent<HTMLDivElement>,
-    day: string
-  ) {
-    if (!draggedQueueItemId || !draggedQueueItem) {
-      return;
-    }
-
-    event.preventDefault();
-    const startMinutes = resolveWeekColumnStartMinutes(event, draggedQueueItem.durationMinutes);
-    moveQueueItem({
-      id: draggedQueueItemId,
-      day,
-      startMinutes,
-    });
-    setDraggedQueueItemId(null);
-    setDragTarget(null);
-  }
-
-  function handleMonthCellDragOver(
-    event: ReactDragEvent<HTMLDivElement>,
-    day: string
-  ) {
-    if (!draggedQueueItemId) {
-      return;
-    }
-
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    setDragTarget({
-      day,
-      startMinutes: null,
-      view: 'monthly',
-    });
-  }
-
-  function handleMonthCellDrop(
-    event: ReactDragEvent<HTMLDivElement>,
-    day: string
-  ) {
-    if (!draggedQueueItemId) {
-      return;
-    }
-
-    event.preventDefault();
-    moveQueueItem({
-      id: draggedQueueItemId,
-      day,
-      startMinutes: null,
-    });
-    setDraggedQueueItemId(null);
-    setDragTarget(null);
+        <Group gap="sm" wrap="wrap" mt="lg">
+          <Button
+            size="sm"
+            radius="xl"
+            color="green"
+            leftSection={<IconCheck size={15} />}
+            loading={approvingItemId === item.id}
+            disabled={item.status === 'approved'}
+            onClick={() => handleApprove(item.id)}
+          >
+            {item.isParent ? 'Approve workflow' : 'Approve'}
+          </Button>
+          <Button
+            size="sm"
+            radius="xl"
+            variant="light"
+            color="blue"
+            leftSection={<IconEdit size={15} />}
+            onClick={() => handleModify(item.id)}
+          >
+            {item.isRecurring ? 'Edit queue' : 'Modify'}
+          </Button>
+          <Button
+            size="sm"
+            radius="xl"
+            variant="light"
+            color="red"
+            leftSection={<IconTrash size={15} />}
+            onClick={() => handleDelete(item.id)}
+          >
+            {item.isRecurring ? 'Remove queue' : 'Remove'}
+          </Button>
+        </Group>
+      </div>
+    );
   }
 
   const weekGridStyle = {
@@ -1520,136 +1529,6 @@ export default function CalendarClient({
                 <Text size="sm" c="dimmed" mt="md">
                   Cursor {formatSidebarDayLabel(toIsoDay(calendarCursor))}
                 </Text>
-              </Paper>
-
-              <Paper withBorder radius="xl" p="md" className={classes.selectedStrip}>
-                {selectedVisibleCalendarItem ? (
-                  <Stack gap="sm">
-                    <div className={classes.selectedStripBody}>
-                      <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                        Selected item
-                      </Text>
-                      <Group gap="xs" wrap="wrap" mt="xs">
-                        <Badge color="gray" variant="light">
-                          {queueSourceLabel(selectedVisibleCalendarItem.source)}
-                        </Badge>
-                        <Badge
-                          color={queueStatusColor(selectedVisibleCalendarItem.status)}
-                          variant="light"
-                        >
-                          {queueStatusLabel(selectedVisibleCalendarItem.status)}
-                        </Badge>
-                        <Badge color="gray" variant="light">
-                          {formatSidebarDayLabel(selectedVisibleCalendarItem.day)}
-                        </Badge>
-                        <Badge color="gray" variant="light">
-                          {selectedVisibleCalendarItem.time}
-                        </Badge>
-                        <Badge color="gray" variant="light">
-                          {selectedVisibleCalendarItem.channel}
-                        </Badge>
-                        {selectedVisibleCalendarItem.isRecurring ? (
-                          <>
-                            <Badge
-                              color={queueTemplateBadgeColor(
-                                selectedVisibleCalendarItem.recurringTemplateType ?? 'custom'
-                              )}
-                              variant="light"
-                            >
-                              {getQueueTemplateOption(
-                                selectedVisibleCalendarItem.recurringTemplateType ?? 'custom'
-                              ).label}
-                            </Badge>
-                            <Badge color="violet" variant="light">
-                              Recurring
-                            </Badge>
-                          </>
-                        ) : null}
-                        {selectedVisibleCalendarItem.isParent ? (
-                          <Badge color="violet" variant="light">
-                            Workflow
-                          </Badge>
-                        ) : null}
-                      </Group>
-                      <Text fw={700} mt="sm">
-                        {selectedVisibleCalendarItem.title}
-                      </Text>
-                      <Text size="sm" c="dimmed" mt={4}>
-                        {selectedVisibleCalendarItem.description}
-                      </Text>
-                      {(selectedVisibleCalendarItem.children?.length ?? 0) > 0 ? (
-                        <Stack gap={4} mt="sm">
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                            Nested queue items
-                          </Text>
-                          {selectedVisibleCalendarItem.children?.map((child) => (
-                            <Text key={child.id} size="sm" c="dimmed">
-                              {`\u2022 ${child.title} (${queueStatusLabel(child.status)})`}
-                            </Text>
-                          ))}
-                        </Stack>
-                      ) : (selectedVisibleCalendarItem.childBlueprints?.length ?? 0) > 0 ? (
-                        <Stack gap={4} mt="sm">
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                            Approving this adds
-                          </Text>
-                          {selectedVisibleCalendarItem.childBlueprints?.map((child) => (
-                            <Text key={child.key} size="sm" c="dimmed">
-                              {`\u2022 ${child.title}`}
-                            </Text>
-                          ))}
-                        </Stack>
-                      ) : null}
-                    </div>
-
-                    <Stack gap="xs" className={classes.selectedStripActions}>
-                      <Button
-                        size="sm"
-                        radius="xl"
-                        variant="light"
-                        color="green"
-                        leftSection={<IconCheck size={14} />}
-                        loading={approvingItemId === selectedVisibleCalendarItem.id}
-                        disabled={selectedVisibleCalendarItem.status === 'approved'}
-                        onClick={() => handleApprove(selectedVisibleCalendarItem.id)}
-                      >
-                        {selectedVisibleCalendarItem.isParent ? 'Approve workflow' : 'Approve'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        radius="xl"
-                        variant="light"
-                        color="blue"
-                        leftSection={<IconEdit size={14} />}
-                        onClick={() => handleModify(selectedVisibleCalendarItem.id)}
-                      >
-                        {selectedVisibleCalendarItem.isRecurring ? 'Edit queue' : 'Modify'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        radius="xl"
-                        variant="light"
-                        color="red"
-                        leftSection={<IconTrash size={14} />}
-                        onClick={() => handleDelete(selectedVisibleCalendarItem.id)}
-                      >
-                        {selectedVisibleCalendarItem.isRecurring ? 'Remove queue' : 'Remove'}
-                      </Button>
-                    </Stack>
-                  </Stack>
-                ) : (
-                  <div className={classes.selectedStripBody}>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                      Selected item
-                    </Text>
-                    <Text fw={700} mt={6}>
-                      Nothing selected
-                    </Text>
-                    <Text size="sm" c="dimmed" mt={4}>
-                      Pick a calendar item to review details and approve, modify, or remove it.
-                    </Text>
-                  </div>
-                )}
               </Paper>
 
               <Paper withBorder radius="xl" p="md" className={classes.topPanel}>
@@ -1882,8 +1761,6 @@ export default function CalendarClient({
                     const dayKey = toIsoDay(day);
                     const items = weekItemsByDay.get(dayKey) ?? [];
                     const isToday = isSameDay(day, today);
-                    const isDropTarget =
-                      dragTarget?.view === 'weekly' && dragTarget.day === dayKey;
 
                     return (
                       <div
@@ -1891,43 +1768,10 @@ export default function CalendarClient({
                         className={[
                           classes.weekDayColumn,
                           isToday ? classes.weekDayColumnToday : '',
-                          isDropTarget ? classes.weekDayColumnDropTarget : '',
                         ]
                           .filter(Boolean)
                           .join(' ')}
-                        onDragOver={(event) => handleWeekColumnDragOver(event, dayKey)}
-                        onDrop={(event) => handleWeekColumnDrop(event, dayKey)}
                       >
-                              {isDropTarget && draggedQueueItem && dragTarget.startMinutes !== null ? (
-                          (() => {
-                            const previewItem = {
-                              ...draggedQueueItem,
-                              day: dragTarget.day,
-                              time: formatMinutesAsTime(dragTarget.startMinutes),
-                            };
-                            const previewDensity = resolveWeekEventDensity(previewItem);
-
-                            return (
-                              <div
-                                className={[
-                                  classes.weekDropPreview,
-                                  queueItemEventClassName(draggedQueueItem, false),
-                                  weekEventDensityClassName(previewDensity),
-                                ]
-                                  .filter(Boolean)
-                                  .join(' ')}
-                                style={weekEventStyle(previewItem)}
-                              >
-                                <span className={classes.eventTitle}>{draggedQueueItem.title}</span>
-                                <span className={classes.eventTime}>
-                                  {formatEventTimeRange(previewItem)}
-                                </span>
-                                <span className={classes.eventMeta}>Drop to reschedule</span>
-                              </div>
-                            );
-                          })()
-                              ) : null}
-
                               {currentTimeIndicator && currentTimeIndicator.dayKey === dayKey ? (
                                 <div
                                   className={classes.currentTimeLine}
@@ -1941,32 +1785,50 @@ export default function CalendarClient({
                                 const density = resolveWeekEventDensity(item);
 
                           return (
-                            <button
-                              key={item.id}
-                              type="button"
-                              className={[
-                                classes.weekEvent,
-                                queueItemEventClassName(item, selectedCalendarItemId === item.id),
-                                weekEventDensityClassName(density),
-                                draggedQueueItemId === item.id ? classes.draggingEvent : '',
-                              ]
-                                .filter(Boolean)
-                                .join(' ')}
-                              style={weekEventStyle(item)}
-                                    onClick={() => handleCalendarItemClick(item.id)}
-                              title={`${item.title} · ${item.time}`}
-                              draggable={!item.isRecurring}
-                              onDragStart={
-                                item.isRecurring
-                                  ? undefined
-                                  : (event) => handleDragStart(event, item.id)
-                              }
-                              onDragEnd={item.isRecurring ? undefined : handleDragEnd}
+                            <Popover
+                              key={item.renderId}
+                              opened={selectedCalendarItemId === item.id}
+                              onChange={(opened) => {
+                                if (!opened && selectedCalendarItemId === item.id) {
+                                  setSelectedCalendarItemId(null);
+                                }
+                              }}
+                              position="right-start"
+                              offset={10}
+                              radius="24px"
+                              shadow="md"
+                              width={360}
+                              withinPortal
                             >
-                              <span className={classes.eventTitle}>{item.title}</span>
-                              <span className={classes.eventTime}>{formatEventTimeRange(item)}</span>
-                              <span className={classes.eventMeta}>{item.channel}</span>
-                            </button>
+                              <Popover.Target>
+                                <button
+                                  type="button"
+                                  className={[
+                                    classes.weekEvent,
+                                    queueItemEventClassName(
+                                      item,
+                                      selectedCalendarItemId === item.id
+                                    ),
+                                    weekEventDensityClassName(density),
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' ')}
+                                  style={weekEventStyle(item)}
+                                  onClick={() => handleCalendarItemClick(item.id)}
+                                  title={`${item.title} · ${item.time}`}
+                                >
+                                  <span className={classes.eventTitle}>{item.title}</span>
+                                  <span className={classes.eventTime}>
+                                    {formatEventTimeRange(item)}
+                                  </span>
+                                  <span className={classes.eventMeta}>{item.channel}</span>
+                                </button>
+                              </Popover.Target>
+
+                              <Popover.Dropdown className={classes.eventPopoverDropdown}>
+                                {renderCalendarItemPopoverContent(item.originalItem)}
+                              </Popover.Dropdown>
+                            </Popover>
                           );
                         })}
                       </div>
@@ -2001,8 +1863,6 @@ export default function CalendarClient({
                   const isToday = isSameDay(day, today);
                   const isOutside = !isSameMonth(day, monthStart);
                   const isSelected = isSameDay(day, calendarCursor);
-                  const isDropTarget =
-                    dragTarget?.view === 'monthly' && dragTarget.day === dayKey;
 
                   return (
                     <div
@@ -2012,12 +1872,9 @@ export default function CalendarClient({
                         isOutside ? classes.monthDayOutside : '',
                         isToday ? classes.monthDayToday : '',
                         isSelected ? classes.monthDaySelected : '',
-                        isDropTarget ? classes.monthDayDropTarget : '',
                       ]
                         .filter(Boolean)
                         .join(' ')}
-                      onDragOver={(event) => handleMonthCellDragOver(event, dayKey)}
-                      onDrop={(event) => handleMonthCellDrop(event, dayKey)}
                     >
                       <div className={classes.monthDayHeader}>
                         <span
@@ -2036,32 +1893,47 @@ export default function CalendarClient({
 
                       <div className={classes.monthEvents}>
                         {items.slice(0, MONTH_VIEW_VISIBLE_ITEM_COUNT).map((item) => (
-                          <button
-                            key={item.id}
-                            type="button"
-                            className={[
-                              classes.monthEvent,
-                              queueItemMarkerClassName(item),
-                              selectedCalendarItemId === item.id ? classes.selectedMonthEvent : '',
-                              draggedQueueItemId === item.id ? classes.draggingEvent : '',
-                            ]
-                              .filter(Boolean)
-                              .join(' ')}
-                                  onClick={() => handleCalendarItemClick(item.id)}
-                            title={`${item.time} · ${item.title} · ${queueSourceLabel(item.source)}`}
-                            draggable={!item.isRecurring}
-                            onDragStart={
-                              item.isRecurring
-                                ? undefined
-                                : (event) => handleDragStart(event, item.id)
-                            }
-                            onDragEnd={item.isRecurring ? undefined : handleDragEnd}
+                          <Popover
+                            key={item.renderId}
+                            opened={selectedCalendarItemId === item.id}
+                            onChange={(opened) => {
+                              if (!opened && selectedCalendarItemId === item.id) {
+                                setSelectedCalendarItemId(null);
+                              }
+                            }}
+                            position="right-start"
+                            offset={10}
+                            radius="24px"
+                            shadow="md"
+                            width={360}
+                            withinPortal
                           >
-                            <span className={classes.monthEventText}>
-                              <span className={classes.monthEventTime}>{item.time}</span>
-                              <span className={classes.monthEventLabel}>{item.title}</span>
-                            </span>
-                          </button>
+                            <Popover.Target>
+                              <button
+                                type="button"
+                                className={[
+                                  classes.monthEvent,
+                                  queueItemMarkerClassName(item),
+                                  selectedCalendarItemId === item.id
+                                    ? classes.selectedMonthEvent
+                                    : '',
+                                ]
+                                  .filter(Boolean)
+                                  .join(' ')}
+                                onClick={() => handleCalendarItemClick(item.id)}
+                                title={`${item.time} · ${item.title} · ${queueSourceLabel(item.source)}`}
+                              >
+                                <span className={classes.monthEventText}>
+                                  <span className={classes.monthEventTime}>{item.time}</span>
+                                  <span className={classes.monthEventLabel}>{item.title}</span>
+                                </span>
+                              </button>
+                            </Popover.Target>
+
+                            <Popover.Dropdown className={classes.eventPopoverDropdown}>
+                              {renderCalendarItemPopoverContent(item.originalItem)}
+                            </Popover.Dropdown>
+                          </Popover>
                         ))}
 
                         {items.length > MONTH_VIEW_VISIBLE_ITEM_COUNT ? (
@@ -2347,181 +2219,6 @@ export default function CalendarClient({
           </Stack>
         </Modal>
 
-        <Modal
-          opened={Boolean(selectedVisibleCalendarItem)}
-          onClose={() => setSelectedCalendarItemId(null)}
-          centered
-          size={720}
-          radius="28px"
-          withCloseButton={false}
-          overlayProps={{ backgroundOpacity: 0.32, blur: 4 }}
-          classNames={{
-            content: classes.eventModalContent,
-            body: classes.eventModalBody,
-          }}
-        >
-          {selectedVisibleCalendarItem ? (
-            <div className={classes.eventModalInner}>
-              <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
-                <Group align="flex-start" gap="md" wrap="nowrap">
-                  <span
-                    className={[classes.eventModalMarker, queueItemMarkerClassName(selectedVisibleCalendarItem)]
-                      .filter(Boolean)
-                      .join(' ')}
-                  />
-                  <div className={classes.eventModalHeaderBlock}>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                      {queueSourceLabel(selectedVisibleCalendarItem.source)}
-                    </Text>
-                    <Title order={1} className={classes.eventModalTitle}>
-                      {selectedVisibleCalendarItem.title}
-                    </Title>
-                    <Text className={classes.eventModalDate}>
-                      {formatEventDateTime(selectedVisibleCalendarItem)}
-                    </Text>
-                  </div>
-                </Group>
-
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  radius="xl"
-                  size="lg"
-                  aria-label="Close event details"
-                  onClick={() => setSelectedCalendarItemId(null)}
-                >
-                  <IconX size={20} />
-                </ActionIcon>
-              </Group>
-
-              <Group gap="xs" wrap="wrap" mt="lg">
-                <Badge color="gray" variant="light">
-                  {queueSourceLabel(selectedVisibleCalendarItem.source)}
-                </Badge>
-                <Badge
-                  color={queueStatusColor(selectedVisibleCalendarItem.status)}
-                  variant="light"
-                >
-                  {queueStatusLabel(selectedVisibleCalendarItem.status)}
-                </Badge>
-                <Badge color="gray" variant="light">
-                  {selectedVisibleCalendarItem.channel}
-                </Badge>
-                {selectedVisibleCalendarItem.isRecurring ? (
-                  <>
-                    <Badge
-                      color={queueTemplateBadgeColor(
-                        selectedVisibleCalendarItem.recurringTemplateType ?? 'custom'
-                      )}
-                      variant="light"
-                    >
-                      {getQueueTemplateOption(
-                        selectedVisibleCalendarItem.recurringTemplateType ?? 'custom'
-                      ).label}
-                    </Badge>
-                    <Badge color="violet" variant="light">
-                      Recurring
-                    </Badge>
-                  </>
-                ) : null}
-                <Badge color="gray" variant="light">
-                  {formatSidebarDayLabel(selectedVisibleCalendarItem.day)}
-                </Badge>
-                {selectedVisibleCalendarItem.isParent ? (
-                  <Badge color="violet" variant="light">
-                    Workflow
-                  </Badge>
-                ) : null}
-              </Group>
-
-              <Text className={classes.eventModalDescription}>
-                {selectedVisibleCalendarItem.description}
-              </Text>
-
-              {(selectedVisibleCalendarItem.children?.length ?? 0) > 0 ? (
-                <Stack gap={6} mt="lg">
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                    Nested queue items
-                  </Text>
-                  {selectedVisibleCalendarItem.children?.map((child) => (
-                    <Text key={child.id} size="sm" c="dimmed">
-                      {`\u2022 ${child.title} (${queueStatusLabel(child.status)})`}
-                    </Text>
-                  ))}
-                </Stack>
-              ) : (selectedVisibleCalendarItem.childBlueprints?.length ?? 0) > 0 ? (
-                <Stack gap={6} mt="lg">
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                    Approving this adds
-                  </Text>
-                  {selectedVisibleCalendarItem.childBlueprints?.map((child) => (
-                    <Text key={child.key} size="sm" c="dimmed">
-                      {`\u2022 ${child.title}`}
-                    </Text>
-                  ))}
-                </Stack>
-              ) : null}
-
-              <div className={classes.eventModalMetaGrid}>
-                <div className={classes.eventModalMetaItem}>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                    Time
-                  </Text>
-                  <Text fw={700}>{selectedVisibleCalendarItem.time}</Text>
-                </div>
-                <div className={classes.eventModalMetaItem}>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                    Channel
-                  </Text>
-                  <Text fw={700}>{selectedVisibleCalendarItem.channel}</Text>
-                </div>
-                <div className={classes.eventModalMetaItem}>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                    Status
-                  </Text>
-                  <Text fw={700}>{queueStatusLabel(selectedVisibleCalendarItem.status)}</Text>
-                </div>
-                <div className={classes.eventModalMetaItem}>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                    Created by
-                  </Text>
-                  <Text fw={700}>{queueSourceLabel(selectedVisibleCalendarItem.source)}</Text>
-                </div>
-              </div>
-
-              <Group gap="sm" wrap="wrap" mt="xl">
-                <Button
-                  radius="xl"
-                  color="green"
-                  leftSection={<IconCheck size={16} />}
-                  loading={approvingItemId === selectedVisibleCalendarItem.id}
-                  disabled={selectedVisibleCalendarItem.status === 'approved'}
-                  onClick={() => handleApprove(selectedVisibleCalendarItem.id)}
-                >
-                  {selectedVisibleCalendarItem.isParent ? 'Approve workflow' : 'Approve'}
-                </Button>
-                <Button
-                  radius="xl"
-                  variant="light"
-                  color="blue"
-                  leftSection={<IconEdit size={16} />}
-                  onClick={() => handleModify(selectedVisibleCalendarItem.id)}
-                >
-                  {selectedVisibleCalendarItem.isRecurring ? 'Edit queue' : 'Modify'}
-                </Button>
-                <Button
-                  radius="xl"
-                  variant="light"
-                  color="red"
-                  leftSection={<IconTrash size={16} />}
-                  onClick={() => handleDelete(selectedVisibleCalendarItem.id)}
-                >
-                  {selectedVisibleCalendarItem.isRecurring ? 'Remove queue' : 'Remove'}
-                </Button>
-              </Group>
-            </div>
-          ) : null}
-        </Modal>
       </Stack>
     </Container>
   );
