@@ -20,88 +20,88 @@ const SUPPORT_FORM_URL =
 const productSurfaces = [
   {
     title: "Dashboard",
-    description: "A daily account read with spend, outcomes, strongest campaigns, weak spots, and the next thing to review.",
+    description: "A daily read on lead volume, cost per quote, strongest service campaigns, weak spots, and the next thing to review.",
     icon: Activity,
     meta: "Today view",
   },
   {
     title: "Calendar",
-    description: "DeepVisor turns recommendations into queued work so owners can approve, modify, delete, or schedule changes.",
+    description: "DeepVisor turns ad-platform work into queued actions so service owners can approve, modify, delete, or schedule it without living in Ads Manager.",
     icon: CalendarDays,
     meta: "Week + month",
   },
   {
     title: "Reports",
-    description: "Owner-ready reporting that combines platform, campaign, ad set, timeline, what worked, what failed, and recommendations.",
+    description: "Owner-ready reporting that combines leads, calls, quote-request performance, what changed, what worked, and what to do next.",
     icon: FileText,
     meta: "Decision brief",
   },
   {
     title: "Campaigns",
-    description: "A fuller table view for scanning campaign health without losing the important context behind each metric.",
+    description: "A fuller table view for scanning campaign, ad set, and ad health without losing the context behind each lead metric.",
     icon: Layers,
     meta: "Performance table",
   },
 ];
 
 const intelligenceAnswers = [
-  "Which platform or ad account is strongest right now?",
-  "Which campaign and ad set are carrying the best result signal?",
-  "What changed during the selected timeline?",
-  "What worked, what did not work, and why?",
-  "What should be approved, modified, paused, or watched next?",
+  "Which campaigns are driving the most qualified calls and quote requests right now?",
+  "Which service line, audience, or campaign is producing the best cost per lead?",
+  "What changed during the selected timeline that affected booked-job potential?",
+  "What worked, what did not work, and why is lead quality shifting?",
+  "What should be approved, modified, paused, or watched next without more platform digging?",
 ];
 
 const systemSteps = [
   {
     title: "Connect the account",
-    copy: "Meta is the current foundation. The product UI already supports the shape for Google Ads and TikTok as one selected account per platform.",
+    copy: "Meta is the current foundation. The goal is a simple operating layer for service businesses that rely on calls, forms, and quote requests.",
     icon: Radar,
   },
   {
     title: "Build account memory",
-    copy: "DeepVisor syncs account structure and performance history so future reads are based on what has actually happened.",
+    copy: "DeepVisor syncs account structure and performance history so future reads are based on what has actually produced leads, quotes, and booked jobs.",
     icon: Database,
   },
   {
     title: "Classify and explain",
-    copy: "The system identifies whether the account is new, weak-history, or mature, then explains the right recommendation style for that context.",
+    copy: "The system identifies whether the account is new, weak-history, or mature, then explains the right recommendation style for a quote-driven service business.",
     icon: ShieldCheck,
   },
   {
     title: "Queue the work",
-    copy: "Recommendations become visible calendar work instead of vague advice. The owner can review before anything moves forward.",
+    copy: "Recommendations become visible calendar work instead of vague advice. The owner can review before anything moves forward in the ad platform.",
     icon: Sparkles,
   },
 ];
 
 const reportHighlights = [
-  { label: "Strongest account", value: "Meta · My Business", note: "Best cost per result and cleanest tracking this period." },
-  { label: "Strongest campaign", value: "Local Lead Machine", note: "96 leads at $25.83 with stable conversion quality." },
-  { label: "Needs attention", value: "Broad Prospecting", note: "CTR is softening and creative rotation is recommended." },
-  { label: "Next move", value: "Approve 3 queued items", note: "Budget hold, creative refresh, and weak ad set review." },
+  { label: "Strongest service line", value: "Roof replacement leads", note: "Best quote volume and healthiest cost per lead this period." },
+  { label: "Strongest campaign", value: "High-intent quote machine", note: "Most qualified lead signal with stable booking efficiency." },
+  { label: "Needs attention", value: "Broad homeowner prospecting", note: "Traffic quality is softening and creative rotation is recommended." },
+  { label: "Next move", value: "Approve 3 queued items", note: "Tracking review, report run, and new lead-test launch." },
 ];
 
 const useCases = [
   {
-    title: "Business owners",
-    description: "Know what is happening in the ad account without decoding every ad platform screen.",
-    bullets: ["Plain-language reports", "Calendar queue", "Strong and weak spots"],
+    title: "Home services",
+    description: "Roofing, HVAC, plumbing, and similar teams that need more qualified quote requests without constant ad-platform babysitting.",
+    bullets: ["Quote-focused reporting", "Weekly action queue", "Lead-cost visibility"],
   },
   {
-    title: "Founder-led marketing",
-    description: "Move faster with a clear daily read and fewer manual spreadsheet checks.",
-    bullets: ["Daily account pulse", "Simple recommendations", "Setup guidance"],
+    title: "Dental and med spas",
+    description: "Local service businesses that depend on bookings, consultations, and a clear read on which campaigns are filling the pipeline.",
+    bullets: ["Consultation tracking", "Booked-call visibility", "Simple recommendations"],
   },
   {
-    title: "Lead-gen operators",
-    description: "Track campaigns, ad sets, CPA movement, and lead volume in one operating surface.",
-    bullets: ["Cost per result", "Timeline context", "Approval workflow"],
+    title: "Legal and professional services",
+    description: "Teams that care about lead quality, intake efficiency, and knowing which campaigns deserve more budget.",
+    bullets: ["Lead-quality context", "Timeline analysis", "Approval workflow"],
   },
   {
-    title: "Ecommerce businesses",
-    description: "See what products, creatives, and campaigns are driving performance without checking every ad platform screen.",
-    bullets: ["ROAS trends", "Creative insights", "Account visibility"],
+    title: "Founder-led local brands",
+    description: "Owners wearing too many hats who want cleaner decisions and fewer hours spent inside digital marketing tools.",
+    bullets: ["Owner-ready dashboard", "Less platform work", "Next-step queue"],
   },
 ];
 
@@ -131,10 +131,10 @@ const ProductSystem = () => {
               Product system
             </Badge>
             <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
-              One place to understand, plan, and report on ad performance.
+              One place to understand, plan, and report on lead-generation performance.
             </h2>
             <p className="text-sm leading-7 text-slate-600 sm:text-base">
-              DeepVisor is not meant to be another analytics wall. The app is built around the few surfaces a business owner actually needs: a dashboard for now, a calendar for next, reports for explanation, and campaign tables for deeper inspection.
+              DeepVisor is not meant to be another analytics wall. The app is built around the few surfaces a service business owner actually needs: a dashboard for now, a calendar for next, reports for explanation, and campaign tables for deeper inspection.
             </p>
           </div>
 
@@ -173,10 +173,10 @@ const IntelligenceLoop = () => {
               Account intelligence
             </p>
             <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
-              DeepVisor should answer the questions business owners keep asking.
+              DeepVisor should answer the questions service-business owners keep asking.
             </h2>
             <p className="text-sm leading-7 text-slate-600 sm:text-base">
-              The backend direction is simple: every selected ad account becomes a long-lived intelligence object. As more syncs happen, DeepVisor should preserve memory, improve context, and make recommendations easier to trust.
+              The backend direction is simple: every selected ad account becomes a long-lived intelligence object. As more syncs happen, DeepVisor should preserve lead history, improve context, and make quote-driven recommendations easier to trust.
             </p>
 
             <div className="grid gap-3">
@@ -203,8 +203,8 @@ const IntelligenceLoop = () => {
             <div className="mt-5 space-y-3">
               {[
                 { title: "New account", detail: "Focus on setup, tracking confidence, controlled experiments, and clean first tests." },
-                { title: "Weak-history account", detail: "Tighten inputs, improve signal quality, and avoid scaling until the pattern is stable." },
-                { title: "Mature account", detail: "Scale winners, refresh tired creative, reuse proven audiences, and protect efficiency." },
+                { title: "Weak-history account", detail: "Tighten inputs, improve lead-signal quality, and avoid scaling until quote patterns are stable." },
+                { title: "Mature account", detail: "Scale winners, refresh tired creative, reuse proven audiences, and protect cost per lead." },
               ].map((item) => (
                 <div key={item.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <p className="font-semibold text-slate-950">{item.title}</p>
@@ -229,10 +229,10 @@ const ReportPreview = () => {
               Reports that explain
             </Badge>
             <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
-              Reports should combine the story, not split it into random sections.
+              Reports should explain how lead flow is changing, not drown owners in platform clutter.
             </h2>
             <p className="text-sm leading-7 text-slate-600 sm:text-base">
-              A useful report should make the account obvious: where performance is strongest, what changed over time, which campaign or ad set deserves attention, and what DeepVisor recommends next.
+              A useful report should make the account obvious: where quote volume is strongest, what changed over time, which campaign or ad set deserves attention, and what DeepVisor recommends next.
             </p>
             <Button asChild variant="soft">
               <a href="#how-it-works">See how the flow works</a>
@@ -275,10 +275,10 @@ const HowItWorks = () => {
           <div className="space-y-4">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">How it works</p>
             <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
-              From connected ad account to queued decisions.
+              From connected ad account to queued lead-generation decisions.
             </h2>
             <p className="text-sm leading-7 text-white/70 sm:text-base">
-              DeepVisor should keep the path clear: connect, sync, analyze, recommend, and keep improving as the account changes.
+              DeepVisor should keep the path clear: connect, sync, analyze, recommend, and keep improving as the lead account changes.
             </p>
           </div>
 
@@ -314,10 +314,10 @@ const UseCases = () => {
         <div className="flex flex-col gap-3 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Who it helps</p>
           <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
-            Built for people who need ad answers, not another noisy tool.
+            Built for service businesses that need more leads, not more platform overhead.
           </h2>
           <p className="mx-auto max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-            The interface should be calm enough for business owners and useful enough for operators who need the underlying detail.
+            The interface should be calm enough for owners and useful enough for operators who still need the underlying lead and campaign detail.
           </p>
         </div>
 
@@ -351,10 +351,10 @@ const SupportSection = () => {
             Early access
           </Badge>
           <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
-            Help shape the account intelligence product business owners actually need.
+            Help shape the lead-intelligence product service businesses actually need.
           </h2>
           <p className="text-sm leading-7 text-slate-600 sm:text-base">
-            We&apos;re gathering feedback from owners, operators, agencies, and investors. If you run ads and want cleaner decisions, share what would make DeepVisor valuable for you.
+            We&apos;re gathering feedback from service-business owners and operators who run lead-generation ads. If you want more qualified quotes and less hands-on platform work, share what would make DeepVisor valuable for you.
           </p>
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg" variant="primary">

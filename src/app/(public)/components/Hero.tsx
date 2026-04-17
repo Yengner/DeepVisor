@@ -5,19 +5,19 @@ import HeroCalendarShowcase from "./HeroCalendarShowcase";
 
 const heroMetrics = [
   {
-    label: "Memory",
-    value: "Always learning",
-    note: "What worked. What failed.",
+    label: "Lead memory",
+    value: "Quotes + calls",
+    note: "What brought real demand.",
   },
   {
-    label: "Decisions",
-    value: "Dashboard + Queue",
-    note: "See what matters next.",
+    label: "Less platform work",
+    value: "Queue + approvals",
+    note: "Stay out of ad manager.",
   },
   {
     label: "Reports",
-    value: "Ready to share",
-    note: "Wins, issues, next steps.",
+    value: "Owner-ready",
+    note: "Lead wins, issues, next steps.",
   },
 ];
 
@@ -38,7 +38,7 @@ const Hero: FC = () => {
         <div className="grid items-center gap-10 lg:grid-cols-[0.82fr_1.18fr] xl:grid-cols-[0.78fr_1.22fr]">
           <div className="space-y-7">
             <Badge variant="accent" className="w-fit">
-              Account intelligence system
+              Lead intelligence for service businesses
             </Badge>
 
             <div className="space-y-5">
@@ -46,10 +46,10 @@ const Hero: FC = () => {
                 id="hero-title"
                 className="max-w-4xl text-balance text-4xl font-semibold leading-[0.98] tracking-[-0.055em] text-slate-950 sm:text-5xl lg:text-6xl xl:text-[4.25rem]"
               >
-                Understand your ad account at a glance
+                Get more qualified quotes without living inside ad platforms
               </h1>
               <p className="max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
-                DeepVisor studies account history, explains performance, and turns next steps into a clean dashboard, queue, and report flow.
+                DeepVisor studies account history, explains what is driving calls, form fills, and quote requests, and turns next steps into a clean dashboard, queue, and report flow.
               </p>
             </div>
 
@@ -61,7 +61,7 @@ const Hero: FC = () => {
                 <Link href="#product-system">See the product flow</Link>
               </Button>
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Meta today · More platforms next
+                Meta today · Built for lead-gen service accounts
               </span>
             </div>
 

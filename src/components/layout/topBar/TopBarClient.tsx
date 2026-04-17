@@ -9,7 +9,6 @@ import {
     Text,
     Menu,
     UnstyledButton,
-    Image,
     rem,
     Box,
     Divider,
@@ -129,12 +128,35 @@ export default function TopBarClient({
             <div className="flex items-center space-x-6">
                 {/* Logo */}
                 <div className="flex items-center space-x-4">
-                    <Image
-                        src="/images/logo/deepvisor.ico"
-                        alt="DeepVisor"
-                        width={32}
-                        height={32}
-                    />
+                    <Box
+                        w={36}
+                        h={36}
+                        style={{
+                            borderRadius: 12,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background:
+                                'linear-gradient(135deg, var(--platform-accent-strong) 0%, var(--platform-accent) 58%, rgba(255,255,255,0.96) 160%)',
+                            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.18), 0 10px 24px rgba(15, 23, 42, 0.12)',
+                            color: '#ffffff',
+                            position: 'relative',
+                            overflow: 'hidden',
+                        }}
+                    >
+                        <Text
+                            fw={800}
+                            size="sm"
+                            lh={1}
+                            style={{
+                                letterSpacing: '-0.04em',
+                                position: 'relative',
+                                top: '-0.5px',
+                            }}
+                        >
+                            DV
+                        </Text>
+                    </Box>
                     <Text fw={700} size="xl" style={{ color: textStrong }}>
                         DeepVisor
                     </Text>

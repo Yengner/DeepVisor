@@ -20,6 +20,7 @@ import {
   Text,
   TextInput,
   Textarea,
+  Tooltip,
   Title,
 } from '@mantine/core';
 import {
@@ -30,6 +31,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconEdit,
+  IconInfoCircle,
   IconPlus,
   IconTrash,
   IconX,
@@ -141,6 +143,29 @@ function formatHourLabel(hour: number): string {
   return `${normalized} ${suffix}`;
 }
 
+function weekTimeLabelStyle(hour: number): CSSProperties {
+  const offset = (hour - WEEK_VIEW_START_HOUR) * WEEK_HOUR_HEIGHT;
+
+  if (hour === WEEK_VIEW_START_HOUR) {
+    return {
+      top: 0,
+      transform: 'translateY(0)',
+    };
+  }
+
+  if (hour === WEEK_VIEW_END_HOUR) {
+    return {
+      top: offset,
+      transform: 'translateY(-100%)',
+    };
+  }
+
+  return {
+    top: offset,
+    transform: 'translateY(-50%)',
+  };
+}
+
 function parseTimeToMinutes(value: string): number {
   const match = value.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
 
@@ -162,6 +187,15 @@ function formatMinutesAsTime(totalMinutes: number): string {
   const normalizedHours = hours % 12 === 0 ? 12 : hours % 12;
 
   return `${normalizedHours}:${String(minutes).padStart(2, '0')} ${suffix}`;
+}
+
+function formatTemplateTimeOfDay(value: string): string {
+  const match = value.trim().match(/^(\d{2}):(\d{2})/);
+  if (!match) {
+    return value;
+  }
+
+  return formatMinutesAsTime(Number(match[1]) * 60 + Number(match[2]));
 }
 
 function resolveDropStartMinutes(input: {
@@ -263,15 +297,29 @@ function queueSourceClassName(source: QueueSource): string {
   }
 }
 
-function queueEventClassName(source: QueueSource, isSelected: boolean): string {
+function queueItemMarkerClassName(item: QueueItem): string {
+  if (item.isRecurring && item.recurringTemplateType) {
+    return queueTemplateEventClassName(item.recurringTemplateType);
+  }
+
+  return queueSourceClassName(item.source);
+}
+
+function queueItemEventClassName(item: QueueItem, isSelected: boolean): string {
   const toneClass =
-    source === 'manual'
-      ? classes.eventManual
-      : source === 'agent'
-        ? classes.eventAgent
-        : classes.eventAutomatic;
+    item.isRecurring && item.recurringTemplateType
+      ? queueTemplateEventClassName(item.recurringTemplateType)
+      : item.source === 'manual'
+        ? classes.eventManual
+        : item.source === 'agent'
+          ? classes.eventAgent
+          : classes.eventAutomatic;
 
   return [toneClass, isSelected ? classes.selectedEvent : ''].filter(Boolean).join(' ');
+}
+
+function shouldShowQueueEndTime(item: QueueItem): boolean {
+  return !(item.isRecurring && item.recurringTemplateType === 'report');
 }
 
 function weekEventStyle(item: QueueItem): CSSProperties {
@@ -351,33 +399,136 @@ const QUEUE_TEMPLATE_TYPE_OPTIONS: Array<{
   value: CalendarQueueTemplateType;
   label: string;
   description: string;
+  titleLabel: string;
+  descriptionLabel: string;
+  cadenceLabel: string;
+  timeLabel: string;
+  helperCopy: string;
+  defaultDurationMinutes: number;
+  showDuration: boolean;
 }> = [
   {
     value: 'report',
     label: 'Report queue',
-    description: 'Recurring weekly or monthly reporting review.',
+    description: 'Schedule a weekly or monthly report run and review window.',
+    titleLabel: 'Report title',
+    descriptionLabel: 'What this report should cover',
+    cadenceLabel: 'Report cadence',
+    timeLabel: 'Report start time',
+    helperCopy:
+      'DeepVisor will start generating this report at the selected time. No duration is needed for report queues.',
+    defaultDurationMinutes: 30,
+    showDuration: false,
   },
   {
     value: 'campaign_review',
     label: 'Campaign review',
     description: 'Repeat campaign checks, approvals, or comparisons.',
+    titleLabel: 'Queue title',
+    descriptionLabel: 'Review focus',
+    cadenceLabel: 'Review cadence',
+    timeLabel: 'Start time',
+    helperCopy:
+      'Use this for repeating campaign checks, approvals, comparisons, or pacing reviews.',
+    defaultDurationMinutes: 45,
+    showDuration: true,
   },
   {
     value: 'creative_refresh',
     label: 'Creative refresh',
     description: 'Keep creative swaps and refreshes on a schedule.',
+    titleLabel: 'Queue title',
+    descriptionLabel: 'Refresh brief',
+    cadenceLabel: 'Refresh cadence',
+    timeLabel: 'Start time',
+    helperCopy:
+      'Schedule recurring creative swaps, fatigue checks, and fresh asset preparation.',
+    defaultDurationMinutes: 45,
+    showDuration: true,
   },
   {
     value: 'budget_review',
     label: 'Budget review',
     description: 'Recurring budget pacing and reallocation review.',
+    titleLabel: 'Queue title',
+    descriptionLabel: 'Budget review brief',
+    cadenceLabel: 'Budget cadence',
+    timeLabel: 'Start time',
+    helperCopy:
+      'Use this for pacing checks, reallocation decisions, and budget guardrail reviews.',
+    defaultDurationMinutes: 40,
+    showDuration: true,
   },
   {
     value: 'custom',
     label: 'Custom queue',
     description: 'Anything business-specific that should repeat.',
+    titleLabel: 'Queue title',
+    descriptionLabel: 'Queue brief',
+    cadenceLabel: 'Queue cadence',
+    timeLabel: 'Start time',
+    helperCopy:
+      'Create a recurring queue for anything your business needs to review, approve, or follow up on.',
+    defaultDurationMinutes: 45,
+    showDuration: true,
   },
 ];
+
+const MAIN_QUEUE_TEMPLATE_TYPE_OPTIONS = QUEUE_TEMPLATE_TYPE_OPTIONS.filter(
+  (option) => option.value !== 'custom'
+);
+
+function getQueueTemplateOption(templateType: CalendarQueueTemplateType) {
+  return (
+    QUEUE_TEMPLATE_TYPE_OPTIONS.find((option) => option.value === templateType) ??
+    QUEUE_TEMPLATE_TYPE_OPTIONS[0]
+  );
+}
+
+function queueTemplateBadgeColor(templateType: CalendarQueueTemplateType): string {
+  switch (templateType) {
+    case 'report':
+      return 'indigo';
+    case 'campaign_review':
+      return 'teal';
+    case 'creative_refresh':
+      return 'orange';
+    case 'budget_review':
+      return 'red';
+    default:
+      return 'violet';
+  }
+}
+
+function queueTemplateCardClassName(templateType: CalendarQueueTemplateType): string {
+  switch (templateType) {
+    case 'report':
+      return classes.templateCardReport;
+    case 'campaign_review':
+      return classes.templateCardCampaignReview;
+    case 'creative_refresh':
+      return classes.templateCardCreativeRefresh;
+    case 'budget_review':
+      return classes.templateCardBudgetReview;
+    default:
+      return classes.templateCardCustom;
+  }
+}
+
+function queueTemplateEventClassName(templateType: CalendarQueueTemplateType): string {
+  switch (templateType) {
+    case 'report':
+      return classes.eventTemplateReport;
+    case 'campaign_review':
+      return classes.eventTemplateCampaignReview;
+    case 'creative_refresh':
+      return classes.eventTemplateCreativeRefresh;
+    case 'budget_review':
+      return classes.eventTemplateBudgetReview;
+    default:
+      return classes.eventTemplateCustom;
+  }
+}
 
 function formatEventDateTime(item: QueueItem): string {
   const date = new Date(`${item.day}T00:00:00`);
@@ -388,14 +539,21 @@ function formatEventDateTime(item: QueueItem): string {
   const end = new Date(start);
   end.setMinutes(end.getMinutes() + item.durationMinutes);
 
-  return `${start.toLocaleDateString('en-US', {
+  const dayLabel = start.toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
-  })} · ${start.toLocaleTimeString('en-US', {
+  });
+  const startLabel = start.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
-  })} - ${end.toLocaleTimeString('en-US', {
+  });
+
+  if (!shouldShowQueueEndTime(item)) {
+    return `${dayLabel} · ${startLabel}`;
+  }
+
+  return `${dayLabel} · ${startLabel} - ${end.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
   })}`;
@@ -409,6 +567,13 @@ function formatEventTimeRange(item: QueueItem): string {
 
   const end = new Date(start);
   end.setMinutes(end.getMinutes() + item.durationMinutes);
+
+  if (!shouldShowQueueEndTime(item)) {
+    return start.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
 
   return `${start.toLocaleTimeString('en-US', {
     hour: 'numeric',
@@ -463,7 +628,7 @@ function defaultTemplateCopy(templateType: CalendarQueueTemplateType): Pick<
       };
     default:
       return {
-        title: 'Custom recurring queue',
+        title: 'Custom queue',
         description: 'Custom recurring operating queue for this business.',
       };
   }
@@ -471,6 +636,7 @@ function defaultTemplateCopy(templateType: CalendarQueueTemplateType): Pick<
 
 function buildDefaultTemplateForm(today: Date): QueueTemplateFormState {
   const defaults = defaultTemplateCopy('report');
+  const queueOption = getQueueTemplateOption('report');
 
   return {
     templateType: 'report',
@@ -480,7 +646,7 @@ function buildDefaultTemplateForm(today: Date): QueueTemplateFormState {
     weekdays: [String(today.getDay())],
     monthlyDay: today.getDate(),
     timeOfDay: '09:00',
-    durationMinutes: 45,
+    durationMinutes: queueOption.defaultDurationMinutes,
     startDate: toIsoDay(today),
     endDate: '',
     isIndefinite: true,
@@ -501,6 +667,10 @@ function formStateFromTemplate(template: CalendarQueueTemplate): QueueTemplateFo
     endDate: template.endDate ?? '',
     isIndefinite: !template.endDate,
   };
+}
+
+function resolveTemplateDurationMinutes(form: QueueTemplateFormState): number {
+  return getQueueTemplateOption(form.templateType).showDuration ? form.durationMinutes : 30;
 }
 
 function MiniCalendar({
@@ -612,6 +782,8 @@ export default function CalendarClient({
 }) {
   const router = useRouter();
   const weekScrollerRef = useRef<HTMLDivElement | null>(null);
+  const suppressSelectionOnDragRef = useRef(false);
+  const dragSelectionReleaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [queueItems, setQueueItems] = useState<QueueItem[]>(() =>
     initialQueueItems.length > 0
       ? initialQueueItems
@@ -627,8 +799,11 @@ export default function CalendarClient({
   const [dragTarget, setDragTarget] = useState<CalendarDropTarget | null>(null);
   const [approvingItemId, setApprovingItemId] = useState<string | null>(null);
   const [weekScrollbarWidth, setWeekScrollbarWidth] = useState(0);
+  const [templateTypePickerOpened, setTemplateTypePickerOpened] = useState(false);
   const [templateEditorOpened, setTemplateEditorOpened] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [showAllQueueTemplates, setShowAllQueueTemplates] = useState(false);
+  const [currentTimestamp, setCurrentTimestamp] = useState(() => new Date());
   const [templateForm, setTemplateForm] = useState<QueueTemplateFormState>(() =>
     buildDefaultTemplateForm(startOfDay(new Date()))
   );
@@ -744,6 +919,10 @@ export default function CalendarClient({
         : null,
     [queueTemplates, selectedVisibleCalendarItem]
   );
+  const selectedTemplateOption = useMemo(
+    () => getQueueTemplateOption(templateForm.templateType),
+    [templateForm.templateType]
+  );
 
   const addQueueTargets = useMemo(() => {
     if (planView === 'weekly') {
@@ -773,6 +952,31 @@ export default function CalendarClient({
       weekDayKeys.flatMap((dayKey) => (weekItemsByDay.get(dayKey) ?? []).map((item) => ({ dayKey, item }))),
     [weekDayKeys, weekItemsByDay]
   );
+  const visibleQueueTemplates = useMemo(
+    () => (showAllQueueTemplates ? queueTemplates : queueTemplates.slice(0, 2)),
+    [queueTemplates, showAllQueueTemplates]
+  );
+  const currentTimeIndicator = useMemo(() => {
+    const now = currentTimestamp;
+    const minutes =
+      now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    const startMinutes = WEEK_VIEW_START_HOUR * 60;
+    const endMinutes = WEEK_VIEW_END_HOUR * 60;
+
+    if (minutes < startMinutes || minutes > endMinutes) {
+      return null;
+    }
+
+    const dayKey = toIsoDay(now);
+    if (!weekDayKeys.includes(dayKey)) {
+      return null;
+    }
+
+    return {
+      dayKey,
+      top: ((minutes - startMinutes) / 60) * WEEK_HOUR_HEIGHT,
+    };
+  }, [currentTimestamp, weekDayKeys]);
 
   function openTemplateEditor(template?: CalendarQueueTemplate) {
     if (template) {
@@ -786,9 +990,24 @@ export default function CalendarClient({
     setTemplateEditorOpened(true);
   }
 
+  function startTemplateCreation(templateType: CalendarQueueTemplateType) {
+    const defaults = defaultTemplateCopy(templateType);
+    const queueOption = getQueueTemplateOption(templateType);
+    setTemplateForm({
+      ...buildDefaultTemplateForm(calendarCursor),
+      templateType,
+      title: defaults.title,
+      description: defaults.description,
+      durationMinutes: queueOption.defaultDurationMinutes,
+    });
+    setEditingTemplateId(null);
+    setTemplateTypePickerOpened(false);
+    setTemplateEditorOpened(true);
+  }
+
   async function saveTemplate() {
     if (!workspace.selectedAdAccountId) {
-      toast.error('Select an ad account before creating a recurring queue.');
+      toast.error('Select an ad account before creating a queue.');
       return;
     }
 
@@ -810,7 +1029,7 @@ export default function CalendarClient({
         monthlyDay:
           templateForm.recurrenceType === 'monthly' ? templateForm.monthlyDay : null,
         timeOfDay: `${templateForm.timeOfDay}:00`,
-        durationMinutes: templateForm.durationMinutes,
+        durationMinutes: resolveTemplateDurationMinutes(templateForm),
         startDate: templateForm.startDate,
         endDate: templateForm.isIndefinite ? null : templateForm.endDate || null,
         status: 'active' as const,
@@ -835,7 +1054,7 @@ export default function CalendarClient({
       };
 
       if (!response.ok || !payload.template) {
-        throw new Error(payload.error ?? 'Unable to save recurring queue.');
+        throw new Error(payload.error ?? 'Unable to save queue.');
       }
 
       const savedTemplate = payload.template;
@@ -849,9 +1068,9 @@ export default function CalendarClient({
       setTemplateEditorOpened(false);
       setEditingTemplateId(null);
       setSelectedCalendarItemId(null);
-      toast.success(editingTemplateId ? 'Recurring queue updated' : 'Recurring queue created');
+      toast.success(editingTemplateId ? 'Queue updated' : 'Queue created');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to save recurring queue.');
+      toast.error(error instanceof Error ? error.message : 'Unable to save queue.');
     } finally {
       setSavingTemplate(false);
     }
@@ -865,14 +1084,14 @@ export default function CalendarClient({
       const payload = (await response.json()) as { error?: string };
 
       if (!response.ok) {
-        throw new Error(payload.error ?? 'Unable to delete recurring queue.');
+        throw new Error(payload.error ?? 'Unable to delete queue.');
       }
 
       setQueueTemplates((current) => current.filter((template) => template.id !== templateId));
       setSelectedCalendarItemId(null);
-      toast.success('Recurring queue removed');
+      toast.success('Queue removed');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to delete recurring queue.');
+      toast.error(error instanceof Error ? error.message : 'Unable to delete queue.');
     }
   }
 
@@ -920,6 +1139,19 @@ export default function CalendarClient({
       window.removeEventListener('resize', updateScrollbarWidth);
     };
   }, [planView]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setCurrentTimestamp(new Date());
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+      if (dragSelectionReleaseTimeoutRef.current) {
+        window.clearTimeout(dragSelectionReleaseTimeoutRef.current);
+      }
+    };
+  }, []);
 
   function updateQueueItem(id: string, updater: (item: QueueItem) => QueueItem | null) {
     setQueueItems((current) => updateQueueItemTree(current, id, updater));
@@ -1031,21 +1263,28 @@ export default function CalendarClient({
 
     if (nextCursorDay) {
       setCalendarCursor(startOfDay(new Date(`${nextCursorDay}T00:00:00`)));
-      setSelectedCalendarItemId(input.id);
       toast.success(movedItemTitle ? `Rescheduled ${movedItemTitle}` : 'Queue item rescheduled');
     }
   }
 
   function handleAddQueueItem(title?: string) {
-    const defaults = defaultTemplateCopy('custom');
-    setTemplateForm((current) => ({
-      ...buildDefaultTemplateForm(calendarCursor),
-      templateType: 'custom',
-      title: title ?? defaults.title,
-      description: defaults.description,
-    }));
+    if (title) {
+      const defaults = defaultTemplateCopy('campaign_review');
+      const queueOption = getQueueTemplateOption('campaign_review');
+      setTemplateForm({
+        ...buildDefaultTemplateForm(calendarCursor),
+        templateType: 'campaign_review',
+        title,
+        description: defaults.description,
+        durationMinutes: queueOption.defaultDurationMinutes,
+      });
+      setEditingTemplateId(null);
+      setTemplateEditorOpened(true);
+      return;
+    }
+
     setEditingTemplateId(null);
-    setTemplateEditorOpened(true);
+    setTemplateTypePickerOpened(true);
   }
 
   function shiftCalendar(direction: -1 | 1) {
@@ -1062,16 +1301,34 @@ export default function CalendarClient({
     setCalendarCursor(startOfDay(day));
   }
 
+  function handleCalendarItemClick(itemId: string) {
+    if (suppressSelectionOnDragRef.current) {
+      return;
+    }
+
+    setSelectedCalendarItemId(itemId);
+  }
+
   function handleDragStart(event: ReactDragEvent<HTMLElement>, itemId: string) {
+    if (dragSelectionReleaseTimeoutRef.current) {
+      window.clearTimeout(dragSelectionReleaseTimeoutRef.current);
+      dragSelectionReleaseTimeoutRef.current = null;
+    }
+
+    suppressSelectionOnDragRef.current = true;
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', itemId);
     setDraggedQueueItemId(itemId);
-    setSelectedCalendarItemId(itemId);
   }
 
   function handleDragEnd() {
     setDraggedQueueItemId(null);
     setDragTarget(null);
+
+    dragSelectionReleaseTimeoutRef.current = setTimeout(() => {
+      suppressSelectionOnDragRef.current = false;
+      dragSelectionReleaseTimeoutRef.current = null;
+    }, 0);
   }
 
   function resolveWeekColumnStartMinutes(
@@ -1207,75 +1464,8 @@ export default function CalendarClient({
                 className="app-platform-page-action-primary"
                 onClick={() => handleAddQueueItem()}
               >
-                Create custom queue
+                Create queue
               </Button>
-
-              <Paper withBorder radius="xl" p="md" className={classes.topPanel}>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                  Recurring queues
-                </Text>
-                <Text fw={700} mt={6}>
-                  Saved repeating schedules
-                </Text>
-                <Stack gap="sm" mt="md">
-                  {queueTemplates.length > 0 ? (
-                    queueTemplates.map((template) => (
-                      <Paper key={template.id} withBorder radius="md" p="sm" className={classes.templateRow}>
-                        <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <Group gap="xs" wrap="wrap" mb={6}>
-                              <Badge color="violet" variant="light" radius="sm">
-                                {template.recurrenceType === 'weekly' ? 'Weekly' : 'Monthly'}
-                              </Badge>
-                              <Badge color="gray" variant="outline" radius="sm">
-                                {QUEUE_TEMPLATE_TYPE_OPTIONS.find(
-                                  (option) => option.value === template.templateType
-                                )?.label ?? 'Queue'}
-                              </Badge>
-                            </Group>
-                            <Text fw={700} lineClamp={2}>
-                              {template.title}
-                            </Text>
-                            <Text size="sm" c="dimmed" mt={4} lineClamp={2}>
-                              {template.recurrenceType === 'weekly'
-                                ? `Repeats on ${template.weekdays
-                                    .map((weekday) => WEEKDAY_OPTIONS.find((option) => Number(option.value) === weekday)?.label?.slice(0, 3) ?? '')
-                                    .filter(Boolean)
-                                    .join(', ')} at ${template.timeOfDay.slice(0, 5)}`
-                                : `Repeats on day ${template.monthlyDay ?? 1} of each month at ${template.timeOfDay.slice(0, 5)}`}
-                            </Text>
-                          </div>
-
-                          <Group gap={4} wrap="nowrap">
-                            <ActionIcon
-                              variant="subtle"
-                              color="gray"
-                              radius="xl"
-                              aria-label={`Edit ${template.title}`}
-                              onClick={() => openTemplateEditor(template)}
-                            >
-                              <IconEdit size={15} />
-                            </ActionIcon>
-                            <ActionIcon
-                              variant="subtle"
-                              color="red"
-                              radius="xl"
-                              aria-label={`Delete ${template.title}`}
-                              onClick={() => void removeTemplate(template.id)}
-                            >
-                              <IconTrash size={15} />
-                            </ActionIcon>
-                          </Group>
-                        </Group>
-                      </Paper>
-                    ))
-                  ) : (
-                    <Text size="sm" c="dimmed">
-                      Create a weekly or monthly queue here for recurring report reviews, budget checks, creative refreshes, or any custom operating task.
-                    </Text>
-                  )}
-                </Stack>
-              </Paper>
 
               <MiniCalendar
                 monthStart={monthStart}
@@ -1359,9 +1549,21 @@ export default function CalendarClient({
                           {selectedVisibleCalendarItem.channel}
                         </Badge>
                         {selectedVisibleCalendarItem.isRecurring ? (
-                          <Badge color="violet" variant="light">
-                            Recurring
-                          </Badge>
+                          <>
+                            <Badge
+                              color={queueTemplateBadgeColor(
+                                selectedVisibleCalendarItem.recurringTemplateType ?? 'custom'
+                              )}
+                              variant="light"
+                            >
+                              {getQueueTemplateOption(
+                                selectedVisibleCalendarItem.recurringTemplateType ?? 'custom'
+                              ).label}
+                            </Badge>
+                            <Badge color="violet" variant="light">
+                              Recurring
+                            </Badge>
+                          </>
                         ) : null}
                         {selectedVisibleCalendarItem.isParent ? (
                           <Badge color="violet" variant="light">
@@ -1421,7 +1623,7 @@ export default function CalendarClient({
                         leftSection={<IconEdit size={14} />}
                         onClick={() => handleModify(selectedVisibleCalendarItem.id)}
                       >
-                        {selectedVisibleCalendarItem.isRecurring ? 'Edit recurring queue' : 'Modify'}
+                        {selectedVisibleCalendarItem.isRecurring ? 'Edit queue' : 'Modify'}
                       </Button>
                       <Button
                         size="sm"
@@ -1431,7 +1633,7 @@ export default function CalendarClient({
                         leftSection={<IconTrash size={14} />}
                         onClick={() => handleDelete(selectedVisibleCalendarItem.id)}
                       >
-                        {selectedVisibleCalendarItem.isRecurring ? 'Remove recurring queue' : 'Remove'}
+                        {selectedVisibleCalendarItem.isRecurring ? 'Remove queue' : 'Remove'}
                       </Button>
                     </Stack>
                   </Stack>
@@ -1448,6 +1650,108 @@ export default function CalendarClient({
                     </Text>
                   </div>
                 )}
+              </Paper>
+
+              <Paper withBorder radius="xl" p="md" className={classes.topPanel}>
+                <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                      Saved queues
+                    </Text>
+                    <Text fw={700} mt={6}>
+                      Repeatable workflows
+                    </Text>
+                  </div>
+                  {queueTemplates.length > 3 ? (
+                    <Button
+                      variant="subtle"
+                      radius="xl"
+                      size="compact-sm"
+                      onClick={() => setShowAllQueueTemplates((current) => !current)}
+                    >
+                      {showAllQueueTemplates ? 'Show less' : 'See more'}
+                    </Button>
+                  ) : null}
+                </Group>
+
+                <Stack gap="sm" mt="md">
+                  {queueTemplates.length > 0 ? (
+                    visibleQueueTemplates.map((template) => (
+                      <Paper
+                        key={template.id}
+                        withBorder
+                        radius="xl"
+                        p="md"
+                        className={[
+                          classes.templateRow,
+                          queueTemplateCardClassName(template.templateType),
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                      >
+                        <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <Group gap="xs" wrap="wrap" mb={6}>
+                              <Badge
+                                color={queueTemplateBadgeColor(template.templateType)}
+                                variant="light"
+                                radius="sm"
+                              >
+                                {template.recurrenceType === 'weekly' ? 'Weekly' : 'Monthly'}
+                              </Badge>
+                              <Badge color="gray" variant="outline" radius="sm">
+                                {QUEUE_TEMPLATE_TYPE_OPTIONS.find(
+                                  (option) => option.value === template.templateType
+                                )?.label ?? 'Queue'}
+                              </Badge>
+                            </Group>
+                            <Text fw={800} fz="lg" lh={1.1} lineClamp={2}>
+                              {template.title}
+                            </Text>
+                            <Text size="sm" mt={8} lineClamp={2} className={classes.templateRowMeta}>
+                              {template.recurrenceType === 'weekly'
+                                ? `Repeats on ${template.weekdays
+                                    .map((weekday) => WEEKDAY_OPTIONS.find((option) => Number(option.value) === weekday)?.label?.slice(0, 3) ?? '')
+                                    .filter(Boolean)
+                                    .join(', ')} at ${formatTemplateTimeOfDay(template.timeOfDay)}`
+                                : `Repeats on day ${template.monthlyDay ?? 1} of each month at ${formatTemplateTimeOfDay(template.timeOfDay)}`}
+                            </Text>
+                            <Text size="sm" mt={6} lineClamp={2} className={classes.templateRowDescription}>
+                              {template.description}
+                            </Text>
+                          </div>
+
+                          <Group gap={6} wrap="nowrap" className={classes.templateCardActions}>
+                            <ActionIcon
+                              variant="light"
+                              color="dark"
+                              radius="xl"
+                              aria-label={`Edit ${template.title}`}
+                              onClick={() => openTemplateEditor(template)}
+                              className={classes.templateActionButton}
+                            >
+                              <IconEdit size={15} />
+                            </ActionIcon>
+                            <ActionIcon
+                              variant="light"
+                              color="dark"
+                              radius="xl"
+                              aria-label={`Delete ${template.title}`}
+                              onClick={() => void removeTemplate(template.id)}
+                              className={classes.templateActionButton}
+                            >
+                              <IconTrash size={15} />
+                            </ActionIcon>
+                          </Group>
+                        </Group>
+                      </Paper>
+                    ))
+                  ) : (
+                    <Text size="sm" c="dimmed">
+                      Create a weekly or monthly queue here for recurring reports, campaign reviews, budget checks, or creative refreshes.
+                    </Text>
+                  )}
+                </Stack>
               </Paper>
             </div>
           </aside>
@@ -1560,15 +1864,19 @@ export default function CalendarClient({
               <div className={classes.weekScroller} ref={weekScrollerRef}>
                 <div className={classes.weekBody}>
                   <div className={classes.weekTimeColumn}>
-                    {Array.from(
-                      { length: WEEK_VIEW_END_HOUR - WEEK_VIEW_START_HOUR + 1 },
-                      (_, index) => WEEK_VIEW_START_HOUR + index
-                    ).map((hour) => (
-                      <div key={hour} className={classes.weekTimeLabel}>
-                        {formatHourLabel(hour)}
-                      </div>
-                    ))}
-                  </div>
+                            {Array.from(
+                              { length: WEEK_VIEW_END_HOUR - WEEK_VIEW_START_HOUR + 1 },
+                              (_, index) => WEEK_VIEW_START_HOUR + index
+                            ).map((hour) => (
+                            <div
+                              key={hour}
+                              className={classes.weekTimeLabel}
+                              style={weekTimeLabelStyle(hour)}
+                            >
+                                {formatHourLabel(hour)}
+                            </div>
+                          ))}
+                        </div>
 
                   {weekDays.map((day) => {
                     const dayKey = toIsoDay(day);
@@ -1590,7 +1898,7 @@ export default function CalendarClient({
                         onDragOver={(event) => handleWeekColumnDragOver(event, dayKey)}
                         onDrop={(event) => handleWeekColumnDrop(event, dayKey)}
                       >
-                        {isDropTarget && draggedQueueItem && dragTarget.startMinutes !== null ? (
+                              {isDropTarget && draggedQueueItem && dragTarget.startMinutes !== null ? (
                           (() => {
                             const previewItem = {
                               ...draggedQueueItem,
@@ -1603,10 +1911,7 @@ export default function CalendarClient({
                               <div
                                 className={[
                                   classes.weekDropPreview,
-                                  queueEventClassName(
-                                    draggedQueueItem.source,
-                                    false
-                                  ),
+                                  queueItemEventClassName(draggedQueueItem, false),
                                   weekEventDensityClassName(previewDensity),
                                 ]
                                   .filter(Boolean)
@@ -1621,10 +1926,19 @@ export default function CalendarClient({
                               </div>
                             );
                           })()
-                        ) : null}
+                              ) : null}
 
-                        {items.map((item) => {
-                          const density = resolveWeekEventDensity(item);
+                              {currentTimeIndicator && currentTimeIndicator.dayKey === dayKey ? (
+                                <div
+                                  className={classes.currentTimeLine}
+                                  style={{ top: currentTimeIndicator.top }}
+                                >
+                                  <span className={classes.currentTimeDot} />
+                                </div>
+                              ) : null}
+
+                              {items.map((item) => {
+                                const density = resolveWeekEventDensity(item);
 
                           return (
                             <button
@@ -1632,14 +1946,14 @@ export default function CalendarClient({
                               type="button"
                               className={[
                                 classes.weekEvent,
-                                queueEventClassName(item.source, selectedCalendarItemId === item.id),
+                                queueItemEventClassName(item, selectedCalendarItemId === item.id),
                                 weekEventDensityClassName(density),
                                 draggedQueueItemId === item.id ? classes.draggingEvent : '',
                               ]
                                 .filter(Boolean)
                                 .join(' ')}
                               style={weekEventStyle(item)}
-                              onClick={() => setSelectedCalendarItemId(item.id)}
+                                    onClick={() => handleCalendarItemClick(item.id)}
                               title={`${item.title} · ${item.time}`}
                               draggable={!item.isRecurring}
                               onDragStart={
@@ -1665,7 +1979,7 @@ export default function CalendarClient({
                 <div className={classes.emptyState}>
                   <Text fw={700}>Nothing is scheduled in this week</Text>
                   <Text size="sm" c="dimmed" mt={4}>
-                    Add a custom queue item or move the calendar to another week.
+                    Create a queue or move the calendar to another week.
                   </Text>
                 </div>
               ) : null}
@@ -1727,13 +2041,13 @@ export default function CalendarClient({
                             type="button"
                             className={[
                               classes.monthEvent,
-                              queueSourceClassName(item.source),
+                              queueItemMarkerClassName(item),
                               selectedCalendarItemId === item.id ? classes.selectedMonthEvent : '',
                               draggedQueueItemId === item.id ? classes.draggingEvent : '',
                             ]
                               .filter(Boolean)
                               .join(' ')}
-                            onClick={() => setSelectedCalendarItemId(item.id)}
+                                  onClick={() => handleCalendarItemClick(item.id)}
                             title={`${item.time} · ${item.title} · ${queueSourceLabel(item.source)}`}
                             draggable={!item.isRecurring}
                             onDragStart={
@@ -1765,7 +2079,7 @@ export default function CalendarClient({
                 <div className={classes.emptyState}>
                   <Text fw={700}>No queued work is scheduled in this month</Text>
                   <Text size="sm" c="dimmed" mt={4}>
-                    Add a custom queue item or move the calendar to another month.
+                    Create a queue or move the calendar to another month.
                   </Text>
                 </div>
               ) : null}
@@ -1774,65 +2088,113 @@ export default function CalendarClient({
         </section>
         </div>
         <Modal
+          opened={templateTypePickerOpened}
+          onClose={() => setTemplateTypePickerOpened(false)}
+          centered
+          title="Choose a queue"
+          radius="24px"
+        >
+          <div className={classes.templateTypeGrid}>
+            {MAIN_QUEUE_TEMPLATE_TYPE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={[
+                  classes.templateTypeButton,
+                  queueTemplateCardClassName(option.value),
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => startTemplateCreation(option.value)}
+              >
+                <div className={classes.templateTypeButtonHeader}>
+                  <span className={classes.templateTypeLabel}>{option.label}</span>
+                  <Tooltip
+                    multiline
+                    w={260}
+                    label={
+                      <div>
+                        <Text size="sm" fw={700}>
+                          {option.label}
+                        </Text>
+                        <Text size="sm" mt={4}>
+                          {option.helperCopy}
+                        </Text>
+                      </div>
+                    }
+                  >
+                    <span className={classes.templateInfoButton} aria-label={`${option.label} details`}>
+                      <IconInfoCircle size={16} />
+                    </span>
+                  </Tooltip>
+                </div>
+              </button>
+            ))}
+          </div>
+        </Modal>
+
+        <Modal
           opened={templateEditorOpened}
           onClose={() => {
             setTemplateEditorOpened(false);
             setEditingTemplateId(null);
           }}
           centered
-          title={editingTemplateId ? 'Edit recurring queue' : 'Create recurring queue'}
+          title={
+            <Group gap="xs" wrap="nowrap">
+              <Text fw={700}>{editingTemplateId ? `Edit ${selectedTemplateOption.label}` : selectedTemplateOption.label}</Text>
+              <Tooltip
+                multiline
+                w={280}
+                label={
+                  <div>
+                    <Text size="sm" fw={700}>
+                      {selectedTemplateOption.label}
+                    </Text>
+                    <Text size="sm" mt={4}>
+                      {selectedTemplateOption.helperCopy}
+                    </Text>
+                  </div>
+                }
+              >
+                <ActionIcon variant="subtle" color="gray" radius="xl" size="sm" aria-label="Queue details">
+                  <IconInfoCircle size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          }
           radius="24px"
         >
           <Stack gap="md">
-            <Select
-              label="Queue type"
-              value={templateForm.templateType}
-              data={QUEUE_TEMPLATE_TYPE_OPTIONS.map((option) => ({
-                value: option.value,
-                label: option.label,
-              }))}
-              onChange={(value) => {
-                if (!value) {
-                  return;
-                }
 
-                const templateType = value as CalendarQueueTemplateType;
-                const defaults = defaultTemplateCopy(templateType);
+            <TextInput
+              label={selectedTemplateOption.titleLabel}
+              value={templateForm.title}
+              onChange={(event) => {
+                const nextValue = event.currentTarget.value;
                 setTemplateForm((current) => ({
                   ...current,
-                  templateType,
-                  title: defaults.title,
-                  description: defaults.description,
+                  title: nextValue,
                 }));
               }}
             />
 
-            <TextInput
-              label="Queue title"
-              value={templateForm.title}
-              onChange={(event) =>
-                setTemplateForm((current) => ({
-                  ...current,
-                  title: event.currentTarget.value,
-                }))
-              }
-            />
-
             <Textarea
-              label="Description"
+              label={selectedTemplateOption.descriptionLabel}
               minRows={3}
               value={templateForm.description}
-              onChange={(event) =>
+              onChange={(event) => {
+                const nextValue = event.currentTarget.value;
                 setTemplateForm((current) => ({
                   ...current,
-                  description: event.currentTarget.value,
-                }))
-              }
+                  description: nextValue,
+                }));
+              }}
             />
 
             <Group grow align="flex-start">
               <Select
-                label="Repeats"
+                label={selectedTemplateOption.cadenceLabel}
                 value={templateForm.recurrenceType}
                 data={[
                   { value: 'weekly', label: 'Weekly' },
@@ -1851,15 +2213,16 @@ export default function CalendarClient({
               />
 
               <TextInput
-                label="Time"
+                label={selectedTemplateOption.timeLabel}
                 type="time"
                 value={templateForm.timeOfDay}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const nextValue = event.currentTarget.value;
                   setTemplateForm((current) => ({
                     ...current,
-                    timeOfDay: event.currentTarget.value,
-                  }))
-                }
+                    timeOfDay: nextValue,
+                  }));
+                }}
               />
             </Group>
 
@@ -1895,39 +2258,44 @@ export default function CalendarClient({
                 label="Start date"
                 type="date"
                 value={templateForm.startDate}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const nextValue = event.currentTarget.value;
                   setTemplateForm((current) => ({
                     ...current,
-                    startDate: event.currentTarget.value,
-                  }))
-                }
+                    startDate: nextValue,
+                  }));
+                }}
               />
 
-              <NumberInput
-                label="Duration (minutes)"
-                min={15}
-                max={480}
-                step={15}
-                value={templateForm.durationMinutes}
-                onChange={(value) =>
-                  setTemplateForm((current) => ({
-                    ...current,
-                    durationMinutes: Number(value) || 45,
-                  }))
-                }
-              />
+              {selectedTemplateOption.showDuration ? (
+                <NumberInput
+                  label="Duration (minutes)"
+                  min={15}
+                  max={480}
+                  step={15}
+                  value={templateForm.durationMinutes}
+                  onChange={(value) =>
+                    setTemplateForm((current) => ({
+                      ...current,
+                      durationMinutes:
+                        Number(value) || getQueueTemplateOption(current.templateType).defaultDurationMinutes,
+                    }))
+                  }
+                />
+              ) : null}
             </Group>
 
             <Switch
               label="Repeat indefinitely"
               checked={templateForm.isIndefinite}
-              onChange={(event) =>
+              onChange={(event) => {
+                const nextChecked = event.currentTarget.checked;
                 setTemplateForm((current) => ({
                   ...current,
-                  isIndefinite: event.currentTarget.checked,
-                  endDate: event.currentTarget.checked ? '' : current.endDate,
-                }))
-              }
+                  isIndefinite: nextChecked,
+                  endDate: nextChecked ? '' : current.endDate,
+                }));
+              }}
             />
 
             {!templateForm.isIndefinite ? (
@@ -1935,17 +2303,18 @@ export default function CalendarClient({
                 label="End date"
                 type="date"
                 value={templateForm.endDate}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const nextValue = event.currentTarget.value;
                   setTemplateForm((current) => ({
                     ...current,
-                    endDate: event.currentTarget.value,
-                  }))
-                }
+                    endDate: nextValue,
+                  }));
+                }}
               />
             ) : null}
 
             <Text size="sm" c="dimmed">
-              Recurring queues are attached to the currently selected ad account and will keep appearing in Calendar until the end date or until you remove them.
+              Queues are attached to the currently selected ad account and will keep appearing in Calendar until the end date or until you remove them.
             </Text>
 
             <Group justify="flex-end" gap="sm">
@@ -1996,7 +2365,7 @@ export default function CalendarClient({
               <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
                 <Group align="flex-start" gap="md" wrap="nowrap">
                   <span
-                    className={[classes.eventModalMarker, queueSourceClassName(selectedVisibleCalendarItem.source)]
+                    className={[classes.eventModalMarker, queueItemMarkerClassName(selectedVisibleCalendarItem)]
                       .filter(Boolean)
                       .join(' ')}
                   />
@@ -2039,9 +2408,21 @@ export default function CalendarClient({
                   {selectedVisibleCalendarItem.channel}
                 </Badge>
                 {selectedVisibleCalendarItem.isRecurring ? (
-                  <Badge color="violet" variant="light">
-                    Recurring
-                  </Badge>
+                  <>
+                    <Badge
+                      color={queueTemplateBadgeColor(
+                        selectedVisibleCalendarItem.recurringTemplateType ?? 'custom'
+                      )}
+                      variant="light"
+                    >
+                      {getQueueTemplateOption(
+                        selectedVisibleCalendarItem.recurringTemplateType ?? 'custom'
+                      ).label}
+                    </Badge>
+                    <Badge color="violet" variant="light">
+                      Recurring
+                    </Badge>
+                  </>
                 ) : null}
                 <Badge color="gray" variant="light">
                   {formatSidebarDayLabel(selectedVisibleCalendarItem.day)}
@@ -2126,7 +2507,7 @@ export default function CalendarClient({
                   leftSection={<IconEdit size={16} />}
                   onClick={() => handleModify(selectedVisibleCalendarItem.id)}
                 >
-                  {selectedVisibleCalendarItem.isRecurring ? 'Edit recurring queue' : 'Modify'}
+                  {selectedVisibleCalendarItem.isRecurring ? 'Edit queue' : 'Modify'}
                 </Button>
                 <Button
                   radius="xl"
@@ -2135,7 +2516,7 @@ export default function CalendarClient({
                   leftSection={<IconTrash size={16} />}
                   onClick={() => handleDelete(selectedVisibleCalendarItem.id)}
                 >
-                  {selectedVisibleCalendarItem.isRecurring ? 'Remove recurring queue' : 'Remove'}
+                  {selectedVisibleCalendarItem.isRecurring ? 'Remove queue' : 'Remove'}
                 </Button>
               </Group>
             </div>

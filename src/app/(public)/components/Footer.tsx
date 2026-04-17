@@ -16,7 +16,7 @@ const Footer: FC = () => {
                         </span>
                     </div>
                     <p className="max-w-xs text-white/60">
-                        Account intelligence for business owners who need clear ad performance decisions.
+                        Lead intelligence for service businesses that want more qualified quotes and less platform overhead.
                     </p>
                     <p className="text-[11px] text-white/40">
                         © {new Date().getFullYear()} DeepVisor. All rights reserved.

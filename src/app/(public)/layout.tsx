@@ -4,9 +4,9 @@ import Footer from "./components/Footer";
 
 
 export const metadata: Metadata = {
-  title: "DeepVisor - Account Intelligence for Ad Accounts",
+  title: "DeepVisor - Lead Intelligence for Service Businesses",
   description:
-    "DeepVisor helps business owners understand ad account performance with clear dashboards, calendar queues, reports, and explainable recommendations.",
+    "DeepVisor helps service businesses turn ad account history into more qualified leads, clearer quote decisions, queued next steps, and less hands-on digital marketing work.",
 };
 
 export default function RootLayout({

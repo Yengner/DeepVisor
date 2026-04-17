@@ -15,11 +15,11 @@ const CTA: FC = () => {
               </Badge>
 
               <h2 className="text-balance text-3xl font-semibold leading-tight tracking-[-0.04em] text-white sm:text-4xl">
-                The goal is simple: turn ad account history into decisions a business owner can trust.
+                The goal is simple: turn lead-generation history into more qualified quotes, more booked jobs, and less hands-on ad-platform work.
               </h2>
 
               <p className="max-w-2xl text-sm leading-7 text-white/70 sm:text-base">
-                DeepVisor is being built as an account intelligence system: sync the account, understand the history, explain the strongest and weakest areas, then queue the next best work for review.
+                DeepVisor is being built for quote-driven service businesses: sync the account, understand which campaigns drive real leads, explain the strongest and weakest areas, then queue the next best work for review.
               </p>
 
               <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -35,9 +35,9 @@ const CTA: FC = () => {
             <div className="grid gap-3 sm:grid-cols-2">
               {[
                 { label: "Current platform", value: "Meta", hint: "Live foundation for sync and assessment" },
-                { label: "Preview platforms", value: "Google + TikTok", hint: "UI-ready account selection shape" },
-                { label: "Main surfaces", value: "Dashboard, Calendar, Reports", hint: "Clear daily operation for owners" },
-                { label: "Recommendation style", value: "Explainable", hint: "Human review before queued action" },
+                { label: "Best fit", value: "Lead-based services", hint: "Built for quotes, calls, bookings, and follow-up" },
+                { label: "Main surfaces", value: "Dashboard, Calendar, Reports", hint: "Clear daily operation for owners and operators" },
+                { label: "Outcome focus", value: "Leads + booked work", hint: "Not vanity metrics or platform busywork" },
               ].map((stat) => (
                 <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">{stat.label}</p>

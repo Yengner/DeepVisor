@@ -40,7 +40,124 @@
 }
 
 .templateRow {
-  background: rgba(248, 250, 252, 0.84);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.templateCardReport {
+  background: linear-gradient(180deg, #4f46e5 0%, #4338ca 100%);
+}
+
+.templateCardCampaignReview {
+  background: linear-gradient(180deg, #0f766e 0%, #115e59 100%);
+}
+
+.templateCardCreativeRefresh {
+  background: linear-gradient(180deg, #ea580c 0%, #c2410c 100%);
+}
+
+.templateCardBudgetReview {
+  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.templateCardCustom {
+  background: linear-gradient(180deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+.templateRowMeta {
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 700;
+}
+
+.templateRowDescription {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.templateCardActions {
+  align-self: flex-start;
+}
+
+.templateActionButton {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.templateActionButton:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.templateTypeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.templateTypeButton {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  padding: 16px;
+  text-align: left;
+  color: #fff;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease,
+    filter 120ms ease;
+}
+
+.templateTypeButtonHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.templateTypeButton:hover {
+  filter: brightness(1.02);
+}
+
+.templateTypeButtonActive {
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+  transform: translateY(-1px);
+}
+
+.templateTypeLabel {
+  display: block;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.templateTypeDescription {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.templateInfoButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  flex: 0 0 auto;
+}
+
+.templateFormLeadCard {
+  border-color: transparent;
+  color: #fff;
+}
+
+.templateFormLeadCopy {
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .topStats {
@@ -286,16 +403,19 @@
   height: var(--calendar-week-grid-height);
   border-right: 1px solid rgba(226, 232, 240, 0.96);
   background: rgba(255, 255, 255, 0.98);
+  overflow: visible;
 }
 
 .weekTimeLabel {
-  height: var(--calendar-hour-row-height);
+  position: absolute;
+  right: 10px;
   padding-right: 10px;
   text-align: right;
   font-size: 11px;
   font-weight: 600;
   color: #64748b;
-  transform: translateY(-6px);
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .weekDayColumn {
@@ -311,6 +431,28 @@
       rgba(226, 232, 240, 0.94) calc(var(--calendar-hour-row-height) - 1px),
       rgba(226, 232, 240, 0.94) var(--calendar-hour-row-height)
     );
+}
+
+.currentTimeLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ef4444;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.currentTimeDot {
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.98);
 }
 
 .weekDayColumnToday {
@@ -410,6 +552,36 @@
 .eventAutomatic {
   background: #49a36f;
   border-color: #49a36f;
+  color: #fff;
+}
+
+.eventTemplateReport {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #fff;
+}
+
+.eventTemplateCampaignReview {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #fff;
+}
+
+.eventTemplateCreativeRefresh {
+  background: #ea580c;
+  border-color: #ea580c;
+  color: #fff;
+}
+
+.eventTemplateBudgetReview {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+
+.eventTemplateCustom {
+  background: #7c3aed;
+  border-color: #7c3aed;
   color: #fff;
 }
 
@@ -757,6 +929,10 @@
 }
 
 @media (max-width: 640px) {
+  .templateTypeGrid {
+    grid-template-columns: 1fr;
+  }
+
   .calendarToolbar {
     padding: 16px;
   }
