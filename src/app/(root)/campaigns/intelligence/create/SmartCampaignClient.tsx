@@ -125,7 +125,7 @@ export default function SmartCampaignClient({
                 <Card withBorder p="xl" radius="md">
                     <Group align="center" mb="md">
                         <IconBulb size={32} color="#fab005" />
-                        <Title order={2}>Create Smart Campaign</Title>
+                        <Title order={2}>Create Campaign</Title>
                     </Group>
                     <Text mb="xs">
                         <b>Platform:</b> <span style={{ color: '#228be6' }}>{platformName}</span>
@@ -204,7 +204,7 @@ export default function SmartCampaignClient({
                                 type="submit"
                                 disabled={loading}
                             >
-                                {loading ? 'Creating...' : 'Create Smart Campaign'}
+                                {loading ? 'Creating...' : 'Create Campaign'}
                             </Button>
                         </Stack>
                     </form>

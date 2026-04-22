@@ -5,7 +5,6 @@ import { asRecord, asString } from '@/lib/shared/utils/format';
 import {
   ActionIcon,
   Avatar,
-  Badge,
   Box,
   Divider,
   Group,
@@ -27,6 +26,7 @@ import {
   IconPhoto,
   IconTrash,
 } from '@tabler/icons-react';
+import StatusBadge from './StatusBadge';
 
 const BG = 'var(--mantine-color-body)';
 const BORDER = 'var(--mantine-color-gray-3)';
@@ -63,7 +63,7 @@ export default function AdsTable({
   const rows = ads.length;
   const tableHeight = Math.min(rows, maxRowsBeforeScroll) * rowH + headerH + 8;
   const scrollHeight = fillHeight ? '100%' : rows > maxRowsBeforeScroll ? tableHeight : undefined;
-  const rowBg = `var(--mantine-color-${platformColor}-1)`;
+  const stickyCellBg = BG;
 
   if (loading) {
     return (
@@ -194,9 +194,7 @@ export default function AdsTable({
                         color="green"
                         readOnly
                       />
-                      <Badge color={(ad.status || '').toUpperCase() === 'ACTIVE' ? 'green' : 'gray'} variant="light">
-                        {ad.status || '—'}
-                      </Badge>
+                      <StatusBadge status={ad.status} />
                     </Group>
                   </Table.Td>
                   <Table.Td>{fmt$(spend)}</Table.Td>
@@ -219,7 +217,7 @@ export default function AdsTable({
                       position: 'sticky',
                       right: 0,
                       zIndex: Z_STICKY_RIGHT,
-                      background: rowBg || BG,
+                      background: stickyCellBg,
                       boxShadow: `inset 1px 0 0 ${BORDER}`,
                     }}
                     onClick={(event) => event.stopPropagation()}

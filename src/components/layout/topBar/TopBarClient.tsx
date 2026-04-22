@@ -25,9 +25,9 @@ import {
     IconHelp,
     IconBell,
     IconPlus,
-    IconPresentationAnalytics,
     IconChartBar,
-    IconTable
+    IconTable,
+    IconLayersIntersect,
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -192,18 +192,18 @@ export default function TopBarClient({
                         </Button>
                     </Menu.Target>
                     <Menu.Dropdown>
-                        <Menu.Label>Campaigns</Menu.Label>
-                        <Menu.Item
-                            leftSection={<IconPresentationAnalytics size={18} />}
-                            onClick={() => router.push('/campaigns/create?mode=smart')}
-                        >
-                            Smart Campaign
-                        </Menu.Item>
+                        <Menu.Label>Create</Menu.Label>
                         <Menu.Item
                             leftSection={<IconTable size={18} />}
-                            onClick={() => router.push('/campaigns/create?mode=manual')}
+                            onClick={() => router.push('/campaigns/create')}
                         >
-                            Custom Campaign
+                            Campaign
+                        </Menu.Item>
+                        <Menu.Item
+                            leftSection={<IconLayersIntersect size={18} />}
+                            onClick={() => router.push('/campaigns/create?scope=adset')}
+                        >
+                            Ad Set
                         </Menu.Item>
                         <Menu.Divider />
                         <Menu.Item

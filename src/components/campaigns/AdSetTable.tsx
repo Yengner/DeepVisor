@@ -3,7 +3,6 @@
 import type { AdSetLifetimeRow } from '@/lib/server/data';
 import {
   ActionIcon,
-  Badge,
   Group,
   Loader,
   Menu,
@@ -17,6 +16,7 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { IconCheck, IconDots, IconPencil, IconTrash } from '@tabler/icons-react';
+import StatusBadge from './StatusBadge';
 
 const BG = 'var(--mantine-color-body)';
 const BORDER = 'var(--mantine-color-gray-3)';
@@ -135,6 +135,7 @@ export default function AdSetTable({
             adSets.map((adSet) => {
               const isSelected = selectedAdSetId === adSet.id;
               const rowBg = isSelected ? `var(--mantine-color-${platformColor}-1)` : 'transparent';
+              const stickyCellBg = isSelected ? `var(--mantine-color-${platformColor}-1)` : BG;
               const status = (adSet.status || '').toString();
               const delivery = status.toUpperCase() === 'ACTIVE';
               const spend = Number(adSet.spend || 0);
@@ -198,9 +199,7 @@ export default function AdSetTable({
                         color="green"
                         readOnly
                       />
-                      <Badge color={status.toUpperCase() === 'ACTIVE' ? 'green' : 'gray'} variant="light">
-                        {status || '—'}
-                      </Badge>
+                      <StatusBadge status={status} />
                     </Group>
                   </Table.Td>
 
@@ -233,7 +232,7 @@ export default function AdSetTable({
                       position: 'sticky',
                       right: 0,
                       zIndex: Z_STICKY_RIGHT,
-                      background: rowBg || BG,
+                      background: stickyCellBg,
                       boxShadow: `inset 1px 0 0 ${BORDER}`,
                     }}
                     onClick={(event) => event.stopPropagation()}

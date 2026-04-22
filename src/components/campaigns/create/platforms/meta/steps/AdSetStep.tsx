@@ -53,16 +53,20 @@ export default function AdSetStep({
     // This effect runs when metaPages or idx changes
 
     /* eslint-disable react-hooks/exhaustive-deps */
+    const currentAdSetPageId = idx !== null ? form.values.adSets[idx]?.page_id : null;
+
     useEffect(() => {
         if (
-            hasLoaded &&
-            idx !== null &&
-            metaPages.length > 0 &&
-            !form.values.adSets[idx].page_id
+            !hasLoaded ||
+            idx === null ||
+            metaPages.length === 0 ||
+            currentAdSetPageId
         ) {
-            form.setFieldValue(`adSets.${idx}.page_id`, metaPages[0].page_id);
+            return;
         }
-    }, [hasLoaded, metaPages, idx]);
+
+        form.setFieldValue(`adSets.${idx}.page_id`, metaPages[0].page_id);
+    }, [currentAdSetPageId, hasLoaded, idx, metaPages]);
 
     // --- Suggestion text for a new ad set name ---
     const adSetSuggestion = `${values.campaign.campaignName ||

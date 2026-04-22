@@ -14,6 +14,8 @@ export interface CampaignTreeAdsetNode {
 export interface CampaignTreeNode {
   id: string;
   name: string;
+  objective: string | null;
+  status: string | null;
   adset_metrics: CampaignTreeAdsetNode[];
 }
 
@@ -23,7 +25,7 @@ export async function getCampaignsWithAdSetsAndAds(adAccountId: string): Promise
     await Promise.all([
       supabase
         .from('campaign_dims')
-        .select('external_id, name')
+        .select('external_id, name, objective, status')
         .eq('ad_account_id', adAccountId)
         .order('name', { ascending: true }),
       supabase
@@ -70,6 +72,8 @@ export async function getCampaignsWithAdSetsAndAds(adAccountId: string): Promise
   return (campaigns ?? []).map((campaign) => ({
     id: campaign.external_id,
     name: campaign.name || 'Unnamed campaign',
+    objective: campaign.objective ?? null,
+    status: campaign.status ?? null,
     adset_metrics: adsetsByCampaignExternalId.get(campaign.external_id) ?? [],
   }));
 }

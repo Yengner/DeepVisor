@@ -87,6 +87,9 @@ export interface SmartCampaignResult {
  * Form values interface standardized to match Meta API parameters
  */
 export interface CampaignFormValues {
+    creationScope: 'campaign' | 'adset' | 'ad';
+    parentCampaignExternalId: string | null;
+    parentAdSetExternalId: string | null;
     step: 'list' | 'adset' | 'creative';
     activeAdSetIdx: number | null;
     type: string;

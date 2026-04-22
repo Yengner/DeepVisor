@@ -92,8 +92,8 @@ export default function ManualMetaCampaignBuilder({ platformData, adAccountId, d
                 {/* --- Campaign Builder Header --- */}
                 <Group justify="apart" align="center" mb="xl">
                     <Stack gap={0}>
-                        <Title order={2}>Create Manual Campaign</Title>
-                        <Text c="dimmed">Full control over your Meta ad campaign settings</Text>
+                        <Title order={2}>Create Campaign</Title>
+                        <Text c="dimmed">Build and configure your Meta ad campaign in one workflow</Text>
                     </Stack>
                     <Group>
                         <Badge size="lg" color="blue" variant="filled">Meta Platform</Badge>

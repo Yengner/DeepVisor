@@ -98,6 +98,33 @@ export async function listCalendarQueueItems(
 }
 
 /**
+ * Deletes persisted signal-generated queue rows for one ad account so the
+ * automatic workflow queue can be rebuilt cleanly from the latest assessment.
+ * Manual queues and recurring templates are intentionally left alone.
+ */
+export async function deleteSignalCalendarQueueItems(
+  supabase: IntelligenceClient,
+  input: {
+    businessId: string;
+    adAccountId: string;
+  }
+): Promise<number> {
+  const { data, error } = await supabase
+    .from('calendar_queue_items')
+    .delete()
+    .eq('business_id', input.businessId)
+    .eq('ad_account_id', input.adAccountId)
+    .eq('source_type', 'signal')
+    .select('id');
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.isArray(data) ? data.length : 0;
+}
+
+/**
  * Creates or updates workflow parent queue items for the current signal set.
  * Parent workflows that are no longer active are dismissed unless they have
  * already been completed. Materialized child rows are operational records and

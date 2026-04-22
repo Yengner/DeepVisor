@@ -15,6 +15,24 @@ interface GetMetaPagesParams {
     platformId: string;
 }
 
+const STATIC_META_PAGES: MetaPage[] = [
+    {
+        id: 'static-meta-page-1',
+        page_id: '100000000000001',
+        name: 'Temporary Meta Page',
+    },
+    {
+        id: 'static-meta-page-2',
+        page_id: '100000000000002',
+        name: 'Temporary Instagram Page',
+        instagram_account_id: '200000000000002',
+    },
+];
+
+function isMissingMetaPagesTableError(message: string): boolean {
+    return message.includes('relation "public.meta_pages" does not exist');
+}
+
 
 /**
  * Fetches Meta Pages that the user has from the DB
@@ -28,6 +46,13 @@ export async function getMetaPages({ platformId }: GetMetaPagesParams): Promise<
             .eq('platform_integration_id', platformId);
 
         if (error) {
+            if (isMissingMetaPagesTableError(error.message)) {
+                console.warn('meta_pages table is missing, returning static Meta pages fallback', {
+                    platformId,
+                });
+                return ok(STATIC_META_PAGES);
+            }
+
             const errorResponse = fail(error.message, ErrorCode.DATABASE_ERROR, {
                 userMessage: "We couldn't load your Meta pages. Please try again.",
                 details: { platformId },

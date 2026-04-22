@@ -14,6 +14,9 @@ function buildDefaultInitialValues(
   isFastCampaign: boolean
 ) {
   return {
+    creationScope: 'campaign' as 'campaign' | 'adset' | 'ad',
+    parentCampaignExternalId: null as string | null,
+    parentAdSetExternalId: null as string | null,
     step: 'adset' as 'list' | 'adset' | 'creative',
     activeAdSetIdx: 0 as number | null,
     type: isFastCampaign ? 'Quick' : 'Manual',

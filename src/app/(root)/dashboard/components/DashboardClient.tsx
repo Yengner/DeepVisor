@@ -40,7 +40,6 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import ReviveCampaignPrompt from '@/components/campaigns/ReviveCampaignPrompt';
 import {
   buildCalendarQueuePreviewItems,
   compareCalendarQueuePreviewItems,
@@ -862,8 +861,6 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
-  const [reviveModalOpened, setReviveModalOpened] = useState(false);
-  const [revivePromptDismissed, setRevivePromptDismissed] = useState(false);
 
   const stateMeta = stateContent(payload.state);
   const liveSummaryCards = payload.summaryByWindow[activeWindow];
@@ -968,40 +965,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     () => startOfCalendarMonth(calendarPreviewCursor),
     [calendarPreviewCursor]
   );
-  const reviveDismissKey = payload.reviveOpportunity
-    ? `revive-prompt:${payload.reviveOpportunity.adAccountId}:${payload.reviveOpportunity.sourceAssessmentDigestHash}`
-    : null;
   const syncCoverage = payload.syncCoverage;
-
-  useEffect(() => {
-    if (!payload.reviveOpportunity || !reviveDismissKey) {
-      setReviveModalOpened(false);
-      setRevivePromptDismissed(false);
-      return;
-    }
-
-    try {
-      const isDismissed = window.localStorage.getItem(reviveDismissKey) === '1';
-      setRevivePromptDismissed(isDismissed);
-      setReviveModalOpened(!isDismissed);
-    } catch {
-      setRevivePromptDismissed(false);
-      setReviveModalOpened(true);
-    }
-  }, [payload.reviveOpportunity, reviveDismissKey]);
-
-  const dismissReviveModal = () => {
-    if (reviveDismissKey) {
-      try {
-        window.localStorage.setItem(reviveDismissKey, '1');
-      } catch {
-        // Ignore localStorage failures and keep the session moving.
-      }
-    }
-
-    setRevivePromptDismissed(true);
-    setReviveModalOpened(false);
-  };
   const calendarPreviewMonthGridStart = useMemo(
     () => startOfCalendarWeek(calendarPreviewMonthStart),
     [calendarPreviewMonthStart]
@@ -1207,14 +1171,6 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                 : 'DeepVisor will keep expanding the history window in the background before it promotes lifetime guidance as complete.'}
             </Text>
           </Alert>
-        ) : null}
-
-        {payload.reviveOpportunity && !revivePromptDismissed ? (
-          <ReviveCampaignPrompt
-            opportunity={payload.reviveOpportunity}
-            variant="card"
-            onDismiss={dismissReviveModal}
-          />
         ) : null}
 
         {payload.state !== 'ready' ? (
@@ -1579,6 +1535,19 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                                   ? ` · ${queueFollowUpCount(item)} follow-up item${queueFollowUpCount(item) === 1 ? '' : 's'}`
                                   : ''}
                               </Text>
+                              {item.destinationHref ? (
+                                <Button
+                                  component={Link}
+                                  href={item.destinationHref}
+                                  size="xs"
+                                  radius="xl"
+                                  variant="light"
+                                  mt="sm"
+                                  rightSection={<IconArrowUpRight size={14} />}
+                                >
+                                  {item.isParent || item.workflowKey ? 'Open action' : 'Open'}
+                                </Button>
+                              ) : null}
                             </div>
                           </Group>
                         </Paper>
@@ -1818,15 +1787,6 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
           </Grid.Col>
         </Grid>
       </Stack>
-
-      {payload.reviveOpportunity && !revivePromptDismissed ? (
-        <ReviveCampaignPrompt
-          opportunity={payload.reviveOpportunity}
-          variant="modal"
-          opened={reviveModalOpened}
-          onDismiss={dismissReviveModal}
-        />
-      ) : null}
     </Container>
   );
 }

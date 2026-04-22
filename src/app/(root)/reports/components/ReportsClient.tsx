@@ -32,7 +32,6 @@ import {
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
-import ReviveCampaignPrompt from '@/components/campaigns/ReviveCampaignPrompt';
 import type {
   ReportBreakdownRow,
   ReportFilterOptions,
@@ -567,8 +566,6 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [filtersOpened, setFiltersOpened] = useState(false);
-  const [reviveModalOpened, setReviveModalOpened] = useState(false);
-  const [revivePromptDismissed, setRevivePromptDismissed] = useState(false);
 
   const currentSearchString = searchParams?.toString() ?? '';
 
@@ -643,10 +640,6 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
       }),
     [payload.export.filterSummary]
   );
-  const reviveDismissKey = payload.meta.reviveOpportunity
-    ? `revive-prompt:${payload.meta.reviveOpportunity.adAccountId}:${payload.meta.reviveOpportunity.sourceAssessmentDigestHash}`
-    : null;
-
   const hasTrendData = storyData.length > 0;
   const hasEfficiencyTrendData = efficiencyTrendData.length > 0;
   const peakResultsPoint = useMemo(
@@ -656,36 +649,6 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
   const peakSpendPoint = useMemo(() => pickPeakPoint(payload.series, 'spend'), [payload.series]);
   const peakCtrPoint = useMemo(() => pickPeakPoint(payload.series, 'ctr'), [payload.series]);
   const strongestEntity = strongestRows[0] ?? null;
-
-  useEffect(() => {
-    if (!payload.meta.reviveOpportunity || !reviveDismissKey) {
-      setReviveModalOpened(false);
-      setRevivePromptDismissed(false);
-      return;
-    }
-
-    try {
-      const isDismissed = window.localStorage.getItem(reviveDismissKey) === '1';
-      setRevivePromptDismissed(isDismissed);
-      setReviveModalOpened(!isDismissed);
-    } catch {
-      setRevivePromptDismissed(false);
-      setReviveModalOpened(true);
-    }
-  }, [payload.meta.reviveOpportunity, reviveDismissKey]);
-
-  const dismissReviveModal = () => {
-    if (reviveDismissKey) {
-      try {
-        window.localStorage.setItem(reviveDismissKey, '1');
-      } catch {
-        // Ignore localStorage failures and keep the reports view responsive.
-      }
-    }
-
-    setRevivePromptDismissed(true);
-    setReviveModalOpened(false);
-  };
 
   return (
     <Container fluid px={6} py={0} className={`${classes.page} reports-page-shell`}>
@@ -739,14 +702,6 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
               </Badge>
             </Group>
           </Paper>
-        ) : null}
-
-        {payload.meta.reviveOpportunity && !revivePromptDismissed ? (
-          <ReviveCampaignPrompt
-            opportunity={payload.meta.reviveOpportunity}
-            variant="card"
-            onDismiss={dismissReviveModal}
-          />
         ) : null}
 
         {isPending && (
@@ -1083,15 +1038,6 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
           </Stack>
         </Card>
       </Stack>
-
-      {payload.meta.reviveOpportunity && !revivePromptDismissed ? (
-        <ReviveCampaignPrompt
-          opportunity={payload.meta.reviveOpportunity}
-          variant="modal"
-          opened={reviveModalOpened}
-          onDismiss={dismissReviveModal}
-        />
-      ) : null}
     </Container>
   );
 }

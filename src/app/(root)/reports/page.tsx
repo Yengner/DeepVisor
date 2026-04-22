@@ -2,7 +2,6 @@ import { Suspense } from 'react';
 import { EmptyCampaignState } from '@/components/campaigns/EmptyStates';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
-import { getReviveCampaignOpportunity } from '@/lib/server/campaigns/revive';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { getAdAccountSyncCoverage } from '@/lib/server/repositories/ad_accounts/syncState';
 import { buildDemoReportPayload, getDemoReportFilterOptions } from '@/lib/server/reports/demo';
@@ -63,17 +62,9 @@ export default async function ReportsPage({
     coverageTargetAdAccountId &&
     coverageTargetPlatformIntegrationId
   ) {
-    const [syncCoverage, reviveOpportunity] = await Promise.all([
-      getAdAccountSyncCoverage(adminSupabase, coverageTargetAdAccountId),
-      getReviveCampaignOpportunity(adminSupabase, {
-        businessId,
-        platformIntegrationId: coverageTargetPlatformIntegrationId,
-        adAccountId: coverageTargetAdAccountId,
-      }),
-    ]);
+    const syncCoverage = await getAdAccountSyncCoverage(adminSupabase, coverageTargetAdAccountId);
 
     payload.meta.syncCoverage = syncCoverage;
-    payload.meta.reviveOpportunity = reviveOpportunity;
   }
 
   if (!payload || !filterOptions) {

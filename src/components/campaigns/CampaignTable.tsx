@@ -3,7 +3,6 @@
 import type { FormattedCampaign } from '@/app/(root)/campaigns/page';
 import {
   ActionIcon,
-  Badge,
   Group,
   Menu,
   ScrollArea,
@@ -20,6 +19,7 @@ import {
   IconPencil,
   IconTrash,
 } from '@tabler/icons-react';
+import StatusBadge from './StatusBadge';
 
 interface CampaignTableProps {
   campaigns: FormattedCampaign[];
@@ -122,6 +122,7 @@ export default function CampaignTable({
             campaigns.map((campaign) => {
               const selected = selectedCampaignId === campaign.id;
               const rowBg = selected ? `var(--mantine-color-${platformColor}-1)` : 'transparent';
+              const stickyCellBg = selected ? `var(--mantine-color-${platformColor}-1)` : BG;
 
               return (
                 <Table.Tr
@@ -193,12 +194,7 @@ export default function CampaignTable({
                         offLabel="OFF"
                         color="green"
                       />
-                      <Badge
-                        color={campaign.status?.toUpperCase() === 'ACTIVE' ? 'green' : 'gray'}
-                        variant="light"
-                      >
-                        {campaign.status}
-                      </Badge>
+                      <StatusBadge status={campaign.status} />
                     </Group>
                   </Table.Td>
 
@@ -247,7 +243,7 @@ export default function CampaignTable({
                       position: 'sticky',
                       right: 0,
                       zIndex: Z_STICKY_RIGHT,
-                      background: rowBg || BG,
+                      background: stickyCellBg,
                       boxShadow: `inset 1px 0 0 ${BORDER}`,
                     }}
                     onClick={(event) => event.stopPropagation()}

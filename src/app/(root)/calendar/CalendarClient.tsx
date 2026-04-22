@@ -25,6 +25,7 @@ import {
 } from '@mantine/core';
 import {
   IconAlertCircle,
+  IconArrowUpRight,
   IconCalendarMonth,
   IconCalendarWeek,
   IconCheck,
@@ -33,6 +34,7 @@ import {
   IconEdit,
   IconInfoCircle,
   IconPlus,
+  IconRefresh,
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
@@ -823,6 +825,7 @@ export default function CalendarClient({
   const [templateTypePickerOpened, setTemplateTypePickerOpened] = useState(false);
   const [templateEditorOpened, setTemplateEditorOpened] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [rebuildingQueue, setRebuildingQueue] = useState(false);
   const [showAllQueueTemplates, setShowAllQueueTemplates] = useState(false);
   const [currentTimestamp, setCurrentTimestamp] = useState(() => new Date());
   const [templateForm, setTemplateForm] = useState<QueueTemplateFormState>(() =>
@@ -831,6 +834,15 @@ export default function CalendarClient({
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
 
   const selectionRequiredPlatforms = workspace.platforms.filter((platform) => platform.selectionRequired);
+  const selectedAdAccount = useMemo(
+    () =>
+      workspace.selectedAdAccountId
+        ? workspace.adAccounts.find((account) => account.id === workspace.selectedAdAccountId) ?? null
+        : null,
+    [workspace.adAccounts, workspace.selectedAdAccountId]
+  );
+  const selectedPlatformIntegrationId =
+    selectedAdAccount?.platformIntegrationId ?? workspace.selectedPlatformIntegrationId ?? null;
   const selectedAccountSummary =
     workspace.selectedAdAccountName ||
     `${workspace.selection.adAccountIds.length} connected account${workspace.selection.adAccountIds.length === 1 ? '' : 's'}`;
@@ -1100,6 +1112,49 @@ export default function CalendarClient({
       toast.success('Queue removed');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to delete queue.');
+    }
+  }
+
+  async function handleRebuildQueue() {
+    if (!workspace.selectedAdAccountId || !selectedPlatformIntegrationId) {
+      toast.error('Select an ad account before rebuilding the queue.');
+      return;
+    }
+
+    setRebuildingQueue(true);
+
+    try {
+      const response = await fetch('/api/calendar/queue/rebuild', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          adAccountId: workspace.selectedAdAccountId,
+          platformIntegrationId: selectedPlatformIntegrationId,
+        }),
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        removedCount?: number;
+        queueItems?: QueueItem[];
+      };
+
+      if (!response.ok || !Array.isArray(payload.queueItems)) {
+        throw new Error(payload.error ?? 'Unable to rebuild queue.');
+      }
+
+      setQueueItems(payload.queueItems);
+      setSelectedCalendarItemId(null);
+      toast.success(
+        typeof payload.removedCount === 'number'
+          ? `Queue rebuilt. Cleared ${payload.removedCount} saved item${payload.removedCount === 1 ? '' : 's'}.`
+          : 'Queue rebuilt.'
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to rebuild queue.');
+    } finally {
+      setRebuildingQueue(false);
     }
   }
 
@@ -1390,6 +1445,17 @@ export default function CalendarClient({
         </div>
 
         <Group gap="sm" wrap="wrap" mt="lg">
+          {item.destinationHref ? (
+            <Button
+              size="sm"
+              radius="xl"
+              variant="default"
+              leftSection={<IconArrowUpRight size={15} />}
+              onClick={() => router.push(item.destinationHref!)}
+            >
+              Open action
+            </Button>
+          ) : null}
           <Button
             size="sm"
             radius="xl"
@@ -1476,6 +1542,20 @@ export default function CalendarClient({
                 Create queue
               </Button>
 
+              <Button
+                radius="xl"
+                size="sm"
+                fullWidth
+                variant="light"
+                color="violet"
+                leftSection={<IconRefresh size={16} />}
+                loading={rebuildingQueue}
+                disabled={!workspace.selectedAdAccountId || !selectedPlatformIntegrationId}
+                onClick={() => void handleRebuildQueue()}
+              >
+                Rebuild automatic queue
+              </Button>
+
               <MiniCalendar
                 monthStart={monthStart}
                 monthDays={monthDays}
@@ -1528,6 +1608,9 @@ export default function CalendarClient({
                 </Group>
                 <Text size="sm" c="dimmed" mt="md">
                   Cursor {formatSidebarDayLabel(toIsoDay(calendarCursor))}
+                </Text>
+                <Text size="xs" c="dimmed" mt="xs">
+                  Testing tool: rebuilds the signal-generated queue for the selected ad account and clears old saved workflow items first.
                 </Text>
               </Paper>
 

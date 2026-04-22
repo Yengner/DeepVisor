@@ -60,6 +60,39 @@ function buildRecommendedAction(input: {
   };
 }
 
+function buildCreateAdHref(input: {
+  campaignId?: string | null;
+  adSetId?: string | null;
+}): string | null {
+  if (!input.adSetId) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    scope: 'ad',
+    adset_id: input.adSetId,
+  });
+
+  if (input.campaignId) {
+    params.set('campaign_id', input.campaignId);
+  }
+
+  return `/campaigns/create?${params.toString()}`;
+}
+
+function buildCreateAdSetHref(campaignId?: string | null): string | null {
+  if (!campaignId) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    scope: 'adset',
+    campaign_id: campaignId,
+  });
+
+  return `/campaigns/create?${params.toString()}`;
+}
+
 /**
  * Evaluates one deterministic signal set from the latest ad account digest.
  * This is the first product-ready layer on top of synced Meta history.
@@ -70,6 +103,12 @@ export function evaluateMetaAccountSignals(
   const digest = assessment.digest;
   const baseEvidence = buildBaseEvidence(assessment);
   const topCampaign = digest.topCampaigns[0] ?? null;
+  const topAdSet = digest.topAdSets[0] ?? null;
+  const createAdHref = buildCreateAdHref({
+    campaignId: topCampaign?.id ?? null,
+    adSetId: topAdSet?.id ?? null,
+  });
+  const createAdSetHref = buildCreateAdSetHref(topCampaign?.id ?? null);
   const signals: AdAccountSignalDraft[] = [];
 
   if ((digest.daysSinceLastActivity ?? 0) > 30 && digest.historyWindowAvailable.historyDays > 0) {
@@ -123,17 +162,21 @@ export function evaluateMetaAccountSignals(
         ...baseEvidence,
         reviveCampaignId: topCampaign.id,
         reviveCampaignName: topCampaign.name,
+        reviveAdSetId: topAdSet?.id ?? null,
+        reviveAdSetName: topAdSet?.name ?? null,
         reviveWindow: digest.bestWindow30d ?? digest.bestWindow90d,
       },
       recommendedAction: buildRecommendedAction({
         type: 'revive_campaign',
-        label: 'Revive best historic winner',
-        href: '/campaigns/intelligence/create',
+        label: topAdSet ? `Add a fresh ad to ${topAdSet.name}` : 'Revive best historic winner',
+        href: createAdHref ?? createAdSetHref ?? '/campaigns/create',
         destination: 'campaign_draft',
         draftSource: 'historic_clone',
         payload: {
           campaignId: topCampaign.id,
           campaignName: topCampaign.name,
+          adSetId: topAdSet?.id ?? null,
+          adSetName: topAdSet?.name ?? null,
         },
       }),
     });
@@ -193,13 +236,23 @@ export function evaluateMetaAccountSignals(
         ...baseEvidence,
         testingVelocityLabel: digest.testingVelocity.label,
         activeDaysLast30d: digest.recentActivity.activeDaysLast30d,
+        reviveCampaignId: topCampaign?.id ?? null,
+        reviveCampaignName: topCampaign?.name ?? null,
+        reviveAdSetId: topAdSet?.id ?? null,
+        reviveAdSetName: topAdSet?.name ?? null,
       },
       recommendedAction: buildRecommendedAction({
         type: 'launch_test',
-        label: 'Launch a new test',
-        href: '/campaigns/intelligence/create',
+        label: topAdSet ? `Add a new ad to ${topAdSet.name}` : 'Launch a new test',
+        href: createAdHref ?? '/campaigns/create',
         destination: 'campaign_draft',
         draftSource: 'fresh_relaunch',
+        payload: {
+          campaignId: topCampaign?.id ?? null,
+          campaignName: topCampaign?.name ?? null,
+          adSetId: topAdSet?.id ?? null,
+          adSetName: topAdSet?.name ?? null,
+        },
       }),
     });
   }
@@ -354,36 +407,81 @@ function buildQueueItemDraftsFromSignals(signals: AdAccountSignal[]): CalendarQu
     }
 
     if (reviveSignal) {
+      const reviveActionHref =
+        buildCreateAdHref({
+          campaignId:
+            typeof reviveSignal.evidence.reviveCampaignId === 'string'
+              ? reviveSignal.evidence.reviveCampaignId
+              : null,
+          adSetId:
+            typeof reviveSignal.evidence.reviveAdSetId === 'string'
+              ? reviveSignal.evidence.reviveAdSetId
+              : null,
+        }) ??
+        buildCreateAdSetHref(
+          typeof reviveSignal.evidence.reviveCampaignId === 'string'
+            ? reviveSignal.evidence.reviveCampaignId
+            : null
+        ) ??
+        '/campaigns/create';
+
       childBlueprints.push(
         childBlueprint({
           key: 'revive_campaign',
           itemType: 'revive_campaign',
           priority: priorityFromSignals([reviveSignal]),
-          title: 'Build the revive campaign draft',
-          description: topCampaignName
-            ? `Start from ${topCampaignName} as the best historic winner.`
-            : 'Start from the strongest historic campaign structure.',
-          destinationHref: '/campaigns/intelligence/create',
+          title:
+            typeof reviveSignal.evidence.reviveAdSetName === 'string'
+              ? `Add a fresh ad to ${reviveSignal.evidence.reviveAdSetName}`
+              : 'Build the revive campaign draft',
+          description:
+            typeof reviveSignal.evidence.reviveAdSetName === 'string'
+              ? `Use ${reviveSignal.evidence.reviveAdSetName} as the favorable ad set and launch a new creative inside it.`
+              : topCampaignName
+                ? `Start from ${topCampaignName} as the best historic winner.`
+                : 'Start from the strongest historic campaign structure.',
+          destinationHref: reviveActionHref,
           payload: {
             draftSource: 'historic_clone',
             campaignId: reviveSignal.evidence.reviveCampaignId ?? null,
             campaignName: topCampaignName,
+            adSetId: reviveSignal.evidence.reviveAdSetId ?? null,
+            adSetName: reviveSignal.evidence.reviveAdSetName ?? null,
           },
         })
       );
     }
 
     if (testingSignal) {
+      const launchTestHref =
+        buildCreateAdHref({
+          campaignId:
+            typeof reviveSignal?.evidence.reviveCampaignId === 'string'
+              ? reviveSignal.evidence.reviveCampaignId
+              : null,
+          adSetId:
+            typeof reviveSignal?.evidence.reviveAdSetId === 'string'
+              ? reviveSignal.evidence.reviveAdSetId
+              : null,
+        }) ?? '/campaigns/create';
+
       childBlueprints.push(
         childBlueprint({
           key: 'launch_test',
           itemType: 'launch_test',
           priority: 'high',
-          title: 'Launch a fresh test alongside the revive',
-          description: 'Add at least one fresh testing branch so the relaunch does not depend only on the old winner.',
-          destinationHref: '/campaigns/intelligence/create',
+          title:
+            typeof reviveSignal?.evidence.reviveAdSetName === 'string'
+              ? `Launch a new ad inside ${reviveSignal.evidence.reviveAdSetName}`
+              : 'Launch a fresh test alongside the revive',
+          description:
+            typeof reviveSignal?.evidence.reviveAdSetName === 'string'
+              ? 'Add a new creative into the favorable ad set so the account can test without rebuilding the audience layer.'
+              : 'Add at least one fresh testing branch so the relaunch does not depend only on the old winner.',
+          destinationHref: launchTestHref,
           payload: {
             draftSource: 'fresh_relaunch',
+            adSetId: reviveSignal?.evidence.reviveAdSetId ?? null,
           },
         })
       );
@@ -398,7 +496,17 @@ function buildQueueItemDraftsFromSignals(signals: AdAccountSignal[]): CalendarQu
           : 'Run a guided revive workflow',
         description:
           'DeepVisor found enough historic signal to relaunch from a real winner, then layer in the review and remediation tasks that support the comeback.',
-        destinationHref: '/calendar',
+        destinationHref:
+          buildCreateAdHref({
+            campaignId:
+              typeof reviveSignal?.evidence.reviveCampaignId === 'string'
+                ? reviveSignal.evidence.reviveCampaignId
+                : null,
+            adSetId:
+              typeof reviveSignal?.evidence.reviveAdSetId === 'string'
+                ? reviveSignal.evidence.reviveAdSetId
+                : null,
+          }) ?? '/calendar',
         supportingSignals,
         childBlueprints,
       })
@@ -437,16 +545,35 @@ function buildQueueItemDraftsFromSignals(signals: AdAccountSignal[]): CalendarQu
     ];
 
     if (testingSignal) {
+      const launchTestHref =
+        buildCreateAdHref({
+          campaignId:
+            typeof testingSignal.evidence.reviveCampaignId === 'string'
+              ? testingSignal.evidence.reviveCampaignId
+              : null,
+          adSetId:
+            typeof testingSignal.evidence.reviveAdSetId === 'string'
+              ? testingSignal.evidence.reviveAdSetId
+              : null,
+        }) ?? '/campaigns/create';
+
       childBlueprints.push(
         childBlueprint({
           key: 'launch_test',
           itemType: 'launch_test',
           priority: 'high',
-          title: 'Launch a new controlled test',
-          description: 'Add a new test branch so the account can relearn efficiently after the recent drop.',
-          destinationHref: '/campaigns/intelligence/create',
+          title:
+            typeof testingSignal.evidence.reviveAdSetName === 'string'
+              ? `Add a new ad inside ${testingSignal.evidence.reviveAdSetName}`
+              : 'Launch a new controlled test',
+          description:
+            typeof testingSignal.evidence.reviveAdSetName === 'string'
+              ? 'Use the favorable ad set as the test bed and swap in a fresh creative with a new launch window.'
+              : 'Add a new test branch so the account can relearn efficiently after the recent drop.',
+          destinationHref: launchTestHref,
           payload: {
             draftSource: 'fresh_relaunch',
+            adSetId: testingSignal.evidence.reviveAdSetId ?? null,
           },
         })
       );
@@ -513,11 +640,28 @@ function buildQueueItemDraftsFromSignals(signals: AdAccountSignal[]): CalendarQu
             key: 'launch_test',
             itemType: 'launch_test',
             priority: 'high',
-            title: 'Launch a new test',
-            description: 'Open a fresh branch with a controlled budget and one clear variable to learn from.',
-            destinationHref: '/campaigns/intelligence/create',
+            title:
+              typeof testingSignal.evidence.reviveAdSetName === 'string'
+                ? `Add a new ad inside ${testingSignal.evidence.reviveAdSetName}`
+                : 'Launch a new test',
+            description:
+              typeof testingSignal.evidence.reviveAdSetName === 'string'
+                ? 'Add a fresh creative to the favorable ad set so the account can learn from an already-working audience setup.'
+                : 'Open a fresh branch with a controlled budget and one clear variable to learn from.',
+            destinationHref:
+              buildCreateAdHref({
+                campaignId:
+                  typeof testingSignal.evidence.reviveCampaignId === 'string'
+                    ? testingSignal.evidence.reviveCampaignId
+                    : null,
+                adSetId:
+                  typeof testingSignal.evidence.reviveAdSetId === 'string'
+                    ? testingSignal.evidence.reviveAdSetId
+                    : null,
+              }) ?? '/campaigns/create',
             payload: {
               draftSource: 'fresh_relaunch',
+              adSetId: testingSignal.evidence.reviveAdSetId ?? null,
             },
           }),
           childBlueprint({

@@ -518,7 +518,6 @@ export function buildDashboardPayload(input: {
   intelligenceSignals: DashboardPayload['intelligenceSignals'];
   calendarQueuePreview: DashboardPayload['calendarQueuePreview'];
   syncCoverage: DashboardPayload['syncCoverage'];
-  reviveOpportunity: DashboardPayload['reviveOpportunity'];
   reportByWindow?: Partial<Record<DashboardWindow, ReportPayload | null>>;
 }): DashboardPayload {
   const platformConnected = Boolean(input.platform && input.platform.status === 'connected');
@@ -601,7 +600,6 @@ export function buildDashboardPayload(input: {
     intelligenceSignals: input.intelligenceSignals,
     calendarQueuePreview: input.calendarQueuePreview,
     syncCoverage: input.syncCoverage,
-    reviveOpportunity: input.reviveOpportunity,
     platform: input.platform,
     adAccount: input.adAccount,
   };

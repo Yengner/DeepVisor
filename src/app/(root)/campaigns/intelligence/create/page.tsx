@@ -1,5 +1,6 @@
 import SmartCampaignClient from "./SmartCampaignClient";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
+import { redirect } from 'next/navigation';
 import { resolveCurrentSelection } from "@/lib/server/actions/app/selection";
 import { getRequiredAppContext } from "@/lib/server/actions/app/context";
 import { getCampaignDraftById, readCampaignDraftPayload } from '@/lib/server/campaigns/drafts';
@@ -12,11 +13,15 @@ export default async function SmartCampaignPage({
 }: {
     searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-    const { user, businessId } = await getRequiredAppContext();
-    const userId = user.id;
     const params = searchParams ? await searchParams : {};
     const requestedDraftId = typeof params?.draft === 'string' ? params.draft : null;
 
+    if (!requestedDraftId) {
+        redirect('/campaigns/create');
+    }
+
+    const { user, businessId } = await getRequiredAppContext();
+    const userId = user.id;
     const { selectedPlatformId, selectedAdAccountId } = await resolveCurrentSelection(businessId);
 
     if (!selectedPlatformId) {
@@ -45,6 +50,10 @@ export default async function SmartCampaignPage({
         : null;
     const draftPayload = readCampaignDraftPayload(draftRow);
     const smartDraft = draftPayload?.mode === 'smart' ? draftPayload.form : null;
+
+    if (!smartDraft) {
+        redirect(`/campaigns/create?draft=${requestedDraftId}`);
+    }
 
     return (
         <SmartCampaignClient

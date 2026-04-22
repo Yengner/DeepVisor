@@ -3,7 +3,6 @@ import type {
   PlatformDetails,
 } from '@/lib/server/data/types';
 import type { AdAccountSignalView } from '@/lib/server/intelligence';
-import type { ReviveCampaignOpportunity } from '@/lib/shared/types/campaignDrafts';
 import type { SyncCoverage } from '@/lib/shared/types/integrations';
 import type { CalendarQueuePreviewItem } from '@/lib/shared';
 
@@ -114,7 +113,6 @@ export interface DashboardPayload {
   intelligenceSignals: DashboardAttentionSignal[];
   calendarQueuePreview: CalendarQueuePreviewItem[];
   syncCoverage: SyncCoverage | null;
-  reviveOpportunity: ReviveCampaignOpportunity | null;
   platform: PlatformDetails | null;
   adAccount: AdAccountData | null;
 }

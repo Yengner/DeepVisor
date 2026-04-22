@@ -6,7 +6,6 @@ import {
   getAdAccountData,
   getPlatformDetails,
 } from '@/lib/server/data';
-import { getReviveCampaignOpportunity } from '@/lib/server/campaigns/revive';
 import { getAdAccountSyncCoverage } from '@/lib/server/repositories/ad_accounts/syncState';
 import {
   buildDashboardPayload,
@@ -53,7 +52,6 @@ export default async function MainDashboardPage() {
 
   let campaignSnapshot: DashboardCampaignSnapshotItem[] = [];
   let syncCoverage = null;
-  let reviveOpportunity = null;
   let intelligenceSignals: AdAccountSignalView[] = [];
   let calendarQueuePreview: CalendarQueuePreviewItem[] = [];
   let reportByWindow: Partial<Record<'7d' | '30d', Awaited<ReturnType<typeof buildReportPayload>>>> = {};
@@ -61,14 +59,9 @@ export default async function MainDashboardPage() {
     try {
       const last7Days = getTrailingUtcDateRange(7);
       const last30Days = getTrailingUtcDateRange(30);
-      const [campaigns, coverage, revive, intelligence] = await Promise.all([
+      const [campaigns, coverage, intelligence] = await Promise.all([
         getAdAccountTopCampaigns(adAccount.id),
         getAdAccountSyncCoverage(adminSupabase, adAccount.id),
-        getReviveCampaignOpportunity(adminSupabase, {
-          businessId,
-          platformIntegrationId: selectedPlatformId,
-          adAccountId: adAccount.id,
-        }),
         getMetaAccountIntelligenceReadModel(adminSupabase, {
           businessId,
           adAccountId: adAccount.id,
@@ -104,7 +97,6 @@ export default async function MainDashboardPage() {
       ]);
       campaignSnapshot = normalizeCampaignSnapshot(campaigns);
       syncCoverage = coverage;
-      reviveOpportunity = revive;
       intelligenceSignals = intelligence.signals;
       calendarQueuePreview = intelligence.queueItems;
       reportByWindow = {
@@ -126,7 +118,6 @@ export default async function MainDashboardPage() {
     intelligenceSignals,
     calendarQueuePreview,
     syncCoverage,
-    reviveOpportunity,
     reportByWindow,
   });
 

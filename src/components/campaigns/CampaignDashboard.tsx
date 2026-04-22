@@ -8,7 +8,6 @@ import {
   Button,
   Card,
   Group,
-  Menu,
   Select,
   Tabs,
   Text,
@@ -232,7 +231,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
           : 'Select a campaign to review ad sets',
         createLabel: 'Create ad set',
         createHref: selectedCampaignId
-          ? `/campaigns/create?mode=manual&platform=${platform.id}&scope=adset&campaign_id=${selectedCampaignId}`
+          ? `/campaigns/create?platform=${platform.id}&scope=adset&campaign_id=${selectedCampaignId}`
           : null,
       };
     }
@@ -254,7 +253,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
           : 'Select an ad set to review ads',
         createLabel: 'Create ad',
         createHref: selectedAdSetId
-          ? `/campaigns/create?mode=manual&platform=${platform.id}&scope=ad&campaign_id=${selectedCampaignId ?? ''}&adset_id=${selectedAdSetId}`
+          ? `/campaigns/create?platform=${platform.id}&scope=ad&campaign_id=${selectedCampaignId ?? ''}&adset_id=${selectedAdSetId}`
           : null,
       };
     }
@@ -478,26 +477,14 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                 ) : null}
 
                 {activeTab === 'campaigns' ? (
-                  <Menu position="bottom-end" shadow="md">
-                    <Menu.Target>
-                      <Button
-                        leftSection={<IconPlus size={16} />}
-                        radius="xl"
-                        className="app-platform-page-action-primary"
-                      >
-                        Create campaign
-                      </Button>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      <Menu.Label>Campaign type</Menu.Label>
-                      <Menu.Item onClick={() => router.push(`/campaigns/create?mode=smart&platform=${platform.id}`)}>
-                        AI-assisted
-                      </Menu.Item>
-                      <Menu.Item onClick={() => router.push(`/campaigns/create?mode=manual&platform=${platform.id}`)}>
-                        Custom
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
+                  <Button
+                    leftSection={<IconPlus size={16} />}
+                    radius="xl"
+                    className="app-platform-page-action-primary"
+                    onClick={() => router.push(`/campaigns/create?platform=${platform.id}`)}
+                  >
+                    Create campaign
+                  </Button>
                 ) : (
                   <Button
                     leftSection={<IconPlus size={16} />}
