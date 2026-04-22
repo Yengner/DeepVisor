@@ -1,4 +1,6 @@
 export type {
+  DashboardActivityEntityItem,
+  DashboardActivityRail,
   DashboardAttentionSignal,
   DashboardAlert,
   DashboardCampaignPreviewItem,

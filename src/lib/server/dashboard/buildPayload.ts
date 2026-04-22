@@ -9,8 +9,16 @@ import type {
   ReportMetricTotals,
   ReportPayload,
 } from '@/lib/server/reports/types';
+import {
+  getCurrentUtcMonthDateRange,
+  getCurrentUtcWeekDateRange,
+  getPreviousUtcWeekDateRange,
+  getTrailingUtcDateRange,
+} from '@/lib/shared';
 import { resolveDashboardState } from './state';
 import type {
+  DashboardActivityEntityItem,
+  DashboardActivityRail,
   DashboardAlert,
   DashboardCampaignPreviewItem,
   DashboardCampaignSnapshotItem,
@@ -196,10 +204,57 @@ function calculateChangePercent(current: number, previous: number): number | nul
   return ((current - previous) / previous) * 100;
 }
 
+function getPreviousRange(dateFrom: string, dateTo: string): {
+  dateFrom: string;
+  dateTo: string;
+} {
+  const start = new Date(`${dateFrom}T00:00:00.000Z`);
+  const end = new Date(`${dateTo}T00:00:00.000Z`);
+  const days = Math.max(
+    1,
+    Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1
+  );
+  const previousEnd = new Date(start);
+  previousEnd.setUTCDate(previousEnd.getUTCDate() - 1);
+  const previousStart = new Date(previousEnd);
+  previousStart.setUTCDate(previousStart.getUTCDate() - (days - 1));
+
+  return {
+    dateFrom: previousStart.toISOString().slice(0, 10),
+    dateTo: previousEnd.toISOString().slice(0, 10),
+  };
+}
+
+function resolveDashboardWindowRange(window: DashboardWindow): {
+  dateFrom: string;
+  dateTo: string;
+} {
+  switch (window) {
+    case 'this_week':
+      return getCurrentUtcWeekDateRange();
+    case 'last_week':
+      return getPreviousUtcWeekDateRange();
+    case 'last_30d':
+      return getTrailingUtcDateRange(30);
+    case 'this_month':
+      return getCurrentUtcMonthDateRange();
+    default:
+      return getTrailingUtcDateRange(7);
+  }
+}
+
+function filterPointsByRange(
+  points: DailyAccountPoint[],
+  range: { dateFrom: string; dateTo: string }
+): DailyAccountPoint[] {
+  return points.filter((point) => point.date >= range.dateFrom && point.date <= range.dateTo);
+}
+
 function buildSummaryCards(points: DailyAccountPoint[], window: DashboardWindow): DashboardSummaryCard[] {
-  const size = window === '7d' ? 7 : 30;
-  const current = sumWindow(sliceTrailing(points, size));
-  const previousPoints = slicePrevious(points, size);
+  const currentRange = resolveDashboardWindowRange(window);
+  const currentPoints = filterPointsByRange(points, currentRange);
+  const previousPoints = filterPointsByRange(points, getPreviousRange(currentRange.dateFrom, currentRange.dateTo));
+  const current = sumWindow(currentPoints);
   const previous = previousPoints.length > 0 ? sumWindow(previousPoints) : null;
 
   const cards: Array<{ key: DashboardSummaryCard['key']; label: string }> = [
@@ -281,8 +336,11 @@ function buildTrendSeries(
   window: DashboardWindow,
   primaryOutcomeMetric: DashboardOutcomeMetric
 ): DashboardTrendSeries {
-  if (window === '7d') {
-    const recentPoints = sliceTrailing(points, 7);
+  const currentRange = resolveDashboardWindowRange(window);
+  const currentPoints = filterPointsByRange(points, currentRange);
+
+  if (window !== 'last_30d') {
+    const recentPoints = currentPoints;
 
     return {
       outcomeMetric: primaryOutcomeMetric,
@@ -305,8 +363,7 @@ function buildTrendSeries(
     };
   }
 
-  const recentPoints = sliceTrailing(points, 30);
-  const weeklyPoints = groupWeekly(recentPoints);
+  const weeklyPoints = groupWeekly(currentPoints);
 
   return {
     outcomeMetric: primaryOutcomeMetric,
@@ -508,6 +565,124 @@ function buildCampaignPreviewFromReportRows(
   }));
 }
 
+function isLikelyActiveStatus(status: string | null | undefined): boolean {
+  const normalized = (status ?? '').trim().toLowerCase();
+
+  if (!normalized) {
+    return false;
+  }
+
+  const inactiveTokens = [
+    'paused',
+    'archived',
+    'completed',
+    'ended',
+    'disabled',
+    'inactive',
+    'deleted',
+    'removed',
+    'rejected',
+    'disapproved',
+    'error',
+    'failed',
+    'draft',
+  ];
+
+  if (inactiveTokens.some((token) => normalized.includes(token))) {
+    return false;
+  }
+
+  const activeTokens = [
+    'active',
+    'enabled',
+    'learning',
+    'limited',
+    'pending',
+    'review',
+    'running',
+    'serving',
+  ];
+
+  return activeTokens.some((token) => normalized.includes(token));
+}
+
+function activityEntityScore(row: ReportBreakdownRow): number {
+  return row.spend * 100 + row.conversion * 80 + row.clicks * 2 - row.costPerResult * 10;
+}
+
+function sortActivityRows(rows: ReportBreakdownRow[]): ReportBreakdownRow[] {
+  return [...rows].sort((left, right) => {
+    const scoreDifference = activityEntityScore(right) - activityEntityScore(left);
+    if (scoreDifference !== 0) {
+      return scoreDifference;
+    }
+
+    return left.name.localeCompare(right.name);
+  });
+}
+
+function limitActivityRows(rows: ReportBreakdownRow[], limit: number): ReportBreakdownRow[] {
+  const activeRows = rows.filter((row) => isLikelyActiveStatus(row.status));
+  const source = activeRows.length > 0 ? activeRows : rows;
+  return sortActivityRows(source).slice(0, limit);
+}
+
+function isLikelyTestEntity(name: string): boolean {
+  return /\b(test|testing|experiment|split|trial)\b/i.test(name);
+}
+
+function toActivityEntity(row: ReportBreakdownRow): DashboardActivityEntityItem {
+  return {
+    id: row.id,
+    name: row.name,
+    level: row.level,
+    status: row.status ?? 'unknown',
+    primaryContext: row.primaryContext,
+    secondaryContext: row.secondaryContext,
+    spend: row.spend,
+    results: row.conversion,
+    clicks: row.clicks,
+    ctr: row.ctr,
+    costPerResult: row.costPerResult,
+  };
+}
+
+function emptyActivityRail(): DashboardActivityRail {
+  return {
+    tests: [],
+    campaigns: [],
+    adsets: [],
+    ads: [],
+  };
+}
+
+function buildActivityRail(input?: {
+  campaigns?: ReportBreakdownRow[];
+  adsets?: ReportBreakdownRow[];
+  ads?: ReportBreakdownRow[];
+}): DashboardActivityRail {
+  if (!input) {
+    return emptyActivityRail();
+  }
+
+  const tests = sortActivityRows(
+    [
+      ...(input.campaigns ?? []),
+      ...(input.adsets ?? []),
+      ...(input.ads ?? []),
+    ].filter((row) => isLikelyActiveStatus(row.status) && isLikelyTestEntity(row.name))
+  )
+    .slice(0, 4)
+    .map(toActivityEntity);
+
+  return {
+    tests,
+    campaigns: limitActivityRows(input.campaigns ?? [], 4).map(toActivityEntity),
+    adsets: limitActivityRows(input.adsets ?? [], 4).map(toActivityEntity),
+    ads: limitActivityRows(input.ads ?? [], 4).map(toActivityEntity),
+  };
+}
+
 export function buildDashboardPayload(input: {
   businessName: string;
   selectedPlatformIntegrationId: string | null;
@@ -518,12 +693,34 @@ export function buildDashboardPayload(input: {
   intelligenceSignals: DashboardPayload['intelligenceSignals'];
   calendarQueuePreview: DashboardPayload['calendarQueuePreview'];
   syncCoverage: DashboardPayload['syncCoverage'];
+  activityRowsByWindow?: Partial<
+    Record<
+      DashboardWindow,
+      {
+        campaigns: ReportBreakdownRow[];
+        adsets: ReportBreakdownRow[];
+        ads: ReportBreakdownRow[];
+      }
+    >
+  >;
   reportByWindow?: Partial<Record<DashboardWindow, ReportPayload | null>>;
 }): DashboardPayload {
   const platformConnected = Boolean(input.platform && input.platform.status === 'connected');
-  const reportSeven = input.reportByWindow?.['7d'] ?? null;
-  const reportThirty = input.reportByWindow?.['30d'] ?? null;
-  const reportHasMetrics = hasReportMetrics(reportSeven) || hasReportMetrics(reportThirty);
+  const windowOptions: DashboardWindow[] = [
+    'this_week',
+    'last_week',
+    'last_7d',
+    'last_30d',
+    'this_month',
+  ];
+  const reportThisWeek = input.reportByWindow?.['this_week'] ?? null;
+  const reportLastWeek = input.reportByWindow?.['last_week'] ?? null;
+  const reportLastSeven = input.reportByWindow?.['last_7d'] ?? null;
+  const reportLastThirty = input.reportByWindow?.['last_30d'] ?? null;
+  const reportThisMonth = input.reportByWindow?.['this_month'] ?? null;
+  const reportHasMetrics = windowOptions.some((window) =>
+    hasReportMetrics(input.reportByWindow?.[window] ?? null)
+  );
   const adAccountHasMetrics = input.adAccount
     ? hasMeaningfulMetrics(input.adAccount.aggregated_metrics)
     : false;
@@ -538,7 +735,7 @@ export function buildDashboardPayload(input: {
 
   const dailyPoints = sortDailyPoints(input.adAccount?.time_increment_metrics['1']);
   const primaryOutcomeMetric =
-    resolvePrimaryOutcomeMetricFromReport(reportThirty ?? reportSeven) ??
+    resolvePrimaryOutcomeMetricFromReport(reportLastThirty ?? reportLastSeven ?? reportThisMonth) ??
     resolvePrimaryOutcomeMetric(dailyPoints);
   const lastSyncedAt = input.adAccount?.last_synced ?? input.platform?.lastSyncedAt ?? null;
 
@@ -548,8 +745,6 @@ export function buildDashboardPayload(input: {
       selectedPlatformIntegrationId: input.selectedPlatformIntegrationId,
       selectedAdAccountId: input.selectedAdAccountId,
     },
-    activeWindow: '7d',
-    windowOptions: ['7d', '30d'],
     viewContext: {
       businessName: input.businessName,
       platformName: input.platform?.displayName ?? null,
@@ -561,42 +756,78 @@ export function buildDashboardPayload(input: {
       platformError: input.platform?.lastError ?? null,
       canRefresh: platformConnected,
     },
+    activeWindow: 'last_7d',
+    windowOptions,
     alerts:
-      reportSeven && hasReportMetrics(reportSeven)
+      reportLastSeven && hasReportMetrics(reportLastSeven)
         ? buildAlertsFromWindowTotals({
             state,
-            current: totalsFromReportSummary(reportSeven.summary),
-            previous: reportSeven.comparison.previousTotals
-              ? totalsFromReportSummary(reportSeven.comparison.previousTotals)
+            current: totalsFromReportSummary(reportLastSeven.summary),
+            previous: reportLastSeven.comparison.previousTotals
+              ? totalsFromReportSummary(reportLastSeven.comparison.previousTotals)
               : null,
             lastSyncedAt,
             primaryOutcomeMetric,
           })
         : buildAlerts(state, dailyPoints, lastSyncedAt, primaryOutcomeMetric),
     summaryByWindow: {
-      '7d':
-        reportSeven && hasReportMetrics(reportSeven)
-          ? buildSummaryCardsFromReport(reportSeven)
-          : buildSummaryCards(dailyPoints, '7d'),
-      '30d':
-        reportThirty && hasReportMetrics(reportThirty)
-          ? buildSummaryCardsFromReport(reportThirty)
-          : buildSummaryCards(dailyPoints, '30d'),
+      this_week:
+        reportThisWeek && hasReportMetrics(reportThisWeek)
+          ? buildSummaryCardsFromReport(reportThisWeek)
+          : buildSummaryCards(dailyPoints, 'this_week'),
+      last_week:
+        reportLastWeek && hasReportMetrics(reportLastWeek)
+          ? buildSummaryCardsFromReport(reportLastWeek)
+          : buildSummaryCards(dailyPoints, 'last_week'),
+      last_7d:
+        reportLastSeven && hasReportMetrics(reportLastSeven)
+          ? buildSummaryCardsFromReport(reportLastSeven)
+          : buildSummaryCards(dailyPoints, 'last_7d'),
+      last_30d:
+        reportLastThirty && hasReportMetrics(reportLastThirty)
+          ? buildSummaryCardsFromReport(reportLastThirty)
+          : buildSummaryCards(dailyPoints, 'last_30d'),
+      this_month:
+        reportThisMonth && hasReportMetrics(reportThisMonth)
+          ? buildSummaryCardsFromReport(reportThisMonth)
+          : buildSummaryCards(dailyPoints, 'this_month'),
     },
     trendByWindow: {
-      '7d':
-        reportSeven && reportSeven.series.length > 0
-          ? buildTrendSeriesFromReport(reportSeven, primaryOutcomeMetric)
-          : buildTrendSeries(dailyPoints, '7d', primaryOutcomeMetric),
-      '30d':
-        reportThirty && reportThirty.series.length > 0
-          ? buildTrendSeriesFromReport(reportThirty, primaryOutcomeMetric)
-          : buildTrendSeries(dailyPoints, '30d', primaryOutcomeMetric),
+      this_week:
+        reportThisWeek && reportThisWeek.series.length > 0
+          ? buildTrendSeriesFromReport(reportThisWeek, primaryOutcomeMetric)
+          : buildTrendSeries(dailyPoints, 'this_week', primaryOutcomeMetric),
+      last_week:
+        reportLastWeek && reportLastWeek.series.length > 0
+          ? buildTrendSeriesFromReport(reportLastWeek, primaryOutcomeMetric)
+          : buildTrendSeries(dailyPoints, 'last_week', primaryOutcomeMetric),
+      last_7d:
+        reportLastSeven && reportLastSeven.series.length > 0
+          ? buildTrendSeriesFromReport(reportLastSeven, primaryOutcomeMetric)
+          : buildTrendSeries(dailyPoints, 'last_7d', primaryOutcomeMetric),
+      last_30d:
+        reportLastThirty && reportLastThirty.series.length > 0
+          ? buildTrendSeriesFromReport(reportLastThirty, primaryOutcomeMetric)
+          : buildTrendSeries(dailyPoints, 'last_30d', primaryOutcomeMetric),
+      this_month:
+        reportThisMonth && reportThisMonth.series.length > 0
+          ? buildTrendSeriesFromReport(reportThisMonth, primaryOutcomeMetric)
+          : buildTrendSeries(dailyPoints, 'this_month', primaryOutcomeMetric),
     },
     campaignPreview:
-      reportThirty && reportThirty.breakdown.rows.length > 0
-        ? buildCampaignPreviewFromReportRows(reportThirty.breakdown.rows, primaryOutcomeMetric)
+      reportLastThirty && reportLastThirty.breakdown.rows.length > 0
+        ? buildCampaignPreviewFromReportRows(
+            reportLastThirty.breakdown.rows,
+            primaryOutcomeMetric
+          )
         : buildCampaignPreview(input.campaignSnapshot, primaryOutcomeMetric),
+    activityByWindow: {
+      this_week: buildActivityRail(input.activityRowsByWindow?.['this_week']),
+      last_week: buildActivityRail(input.activityRowsByWindow?.['last_week']),
+      last_7d: buildActivityRail(input.activityRowsByWindow?.['last_7d']),
+      last_30d: buildActivityRail(input.activityRowsByWindow?.['last_30d']),
+      this_month: buildActivityRail(input.activityRowsByWindow?.['this_month']),
+    },
     intelligenceSignals: input.intelligenceSignals,
     calendarQueuePreview: input.calendarQueuePreview,
     syncCoverage: input.syncCoverage,

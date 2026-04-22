@@ -39,7 +39,7 @@ import {
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   buildCalendarQueuePreviewItems,
   compareCalendarQueuePreviewItems,
@@ -48,19 +48,47 @@ import {
   type CalendarQueueStatus,
 } from '@/lib/shared';
 import type {
+  DashboardActivityEntityItem,
+  DashboardActivityRail,
   DashboardAttentionSignal,
   DashboardAlert,
   DashboardCampaignPreviewItem,
   DashboardPayload,
   DashboardState,
   DashboardSummaryCard,
-  DashboardTrendSeries,
   DashboardWindow,
 } from '../types';
 import classes from './DashboardClient.module.css';
 
 type DashboardClientProps = {
   payload: DashboardPayload;
+};
+
+type DashboardReadItem = {
+  id: string;
+  title: string;
+  detail: string;
+  tone: DashboardAlert['tone'];
+  primaryAction?: {
+    label: string;
+    href: string;
+  };
+  secondaryAction?: {
+    label: string;
+    href: string;
+  };
+};
+
+type StaticQualityTrendPoint = {
+  label: string;
+  ctr: number;
+  cpc: number;
+};
+
+type StaticQualityTrend = {
+  title: string;
+  description: string;
+  points: StaticQualityTrendPoint[];
 };
 
 const numberFormatter = new Intl.NumberFormat('en-US', {
@@ -70,43 +98,101 @@ const numberFormatter = new Intl.NumberFormat('en-US', {
 const CALENDAR_WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const STATIC_SUMMARY_BY_WINDOW: Record<DashboardWindow, DashboardSummaryCard[]> = {
-  '7d': [
+  this_week: [
+    { key: 'spend', label: 'Spend', value: 980, previousValue: 860, changePercent: 14 },
+    { key: 'results', label: 'Results', value: 56, previousValue: 47, changePercent: 19.1 },
+    { key: 'leads', label: 'Leads', value: 34, previousValue: 26, changePercent: 30.8 },
+    { key: 'link_clicks', label: 'Link clicks', value: 508, previousValue: 446, changePercent: 13.9 },
+  ],
+  last_week: [
+    { key: 'spend', label: 'Spend', value: 1760, previousValue: 1640, changePercent: 7.3 },
+    { key: 'results', label: 'Results', value: 98, previousValue: 91, changePercent: 7.7 },
+    { key: 'leads', label: 'Leads', value: 58, previousValue: 51, changePercent: 13.7 },
+    { key: 'link_clicks', label: 'Link clicks', value: 934, previousValue: 878, changePercent: 6.4 },
+  ],
+  last_7d: [
     { key: 'spend', label: 'Spend', value: 1840, previousValue: 1620, changePercent: 13.6 },
     { key: 'results', label: 'Results', value: 104, previousValue: 93, changePercent: 11.8 },
     { key: 'leads', label: 'Leads', value: 63, previousValue: 48, changePercent: 31.3 },
     { key: 'link_clicks', label: 'Link clicks', value: 982, previousValue: 864, changePercent: 13.7 },
   ],
-  '30d': [
+  last_30d: [
     { key: 'spend', label: 'Spend', value: 7420, previousValue: 6810, changePercent: 9 },
     { key: 'results', label: 'Results', value: 421, previousValue: 365, changePercent: 15.3 },
     { key: 'leads', label: 'Leads', value: 248, previousValue: 214, changePercent: 15.9 },
     { key: 'link_clicks', label: 'Link clicks', value: 4210, previousValue: 3824, changePercent: 10.1 },
   ],
+  this_month: [
+    { key: 'spend', label: 'Spend', value: 5180, previousValue: 4630, changePercent: 11.9 },
+    { key: 'results', label: 'Results', value: 302, previousValue: 258, changePercent: 17.1 },
+    { key: 'leads', label: 'Leads', value: 176, previousValue: 149, changePercent: 18.1 },
+    { key: 'link_clicks', label: 'Link clicks', value: 2910, previousValue: 2604, changePercent: 11.8 },
+  ],
 };
 
-const STATIC_TREND_BY_WINDOW: Record<DashboardWindow, DashboardTrendSeries> = {
-  '7d': {
-    outcomeMetric: 'results',
-    outcomeLabel: 'Results',
+const STATIC_QUALITY_TREND_BY_WINDOW: Record<DashboardWindow, StaticQualityTrend> = {
+  this_week: {
+    title: 'Traffic quality and click cost',
+    description:
+      'Static preview for now. CTR and cost per click read much more clearly here for a mixed account view.',
     points: [
-      { label: 'Apr 4', spend: 210, outcome: 12 },
-      { label: 'Apr 5', spend: 240, outcome: 14 },
-      { label: 'Apr 6', spend: 230, outcome: 13 },
-      { label: 'Apr 7', spend: 275, outcome: 17 },
-      { label: 'Apr 8', spend: 285, outcome: 16 },
-      { label: 'Apr 9', spend: 300, outcome: 18 },
-      { label: 'Apr 10', spend: 300, outcome: 14 },
+      { label: 'Apr 20', ctr: 2.31, cpc: 0.84 },
+      { label: 'Apr 21', ctr: 2.44, cpc: 0.79 },
+      { label: 'Apr 22', ctr: 2.58, cpc: 0.73 },
+      { label: 'Apr 23', ctr: 2.67, cpc: 0.68 },
     ],
   },
-  '30d': {
-    outcomeMetric: 'results',
-    outcomeLabel: 'Results',
+  last_week: {
+    title: 'Traffic quality and click cost',
+    description:
+      'Static preview for now. CTR and cost per click read much more clearly here for a mixed account view.',
     points: [
-      { label: 'Mar 11', spend: 1420, outcome: 61 },
-      { label: 'Mar 18', spend: 1600, outcome: 74 },
-      { label: 'Mar 25', spend: 1710, outcome: 83 },
-      { label: 'Apr 1', spend: 1850, outcome: 97 },
-      { label: 'Apr 8', spend: 1840, outcome: 62 },
+      { label: 'Apr 13', ctr: 2.02, cpc: 0.98 },
+      { label: 'Apr 14', ctr: 2.12, cpc: 0.93 },
+      { label: 'Apr 15', ctr: 2.08, cpc: 0.96 },
+      { label: 'Apr 16', ctr: 2.26, cpc: 0.89 },
+      { label: 'Apr 17', ctr: 2.38, cpc: 0.82 },
+      { label: 'Apr 18', ctr: 2.42, cpc: 0.80 },
+      { label: 'Apr 19', ctr: 2.29, cpc: 0.85 },
+    ],
+  },
+  last_7d: {
+    title: 'Traffic quality and click cost',
+    description:
+      'Static preview for now. CTR and cost per click read much more clearly here for a mixed account view.',
+    points: [
+      { label: 'Apr 4', ctr: 2.18, cpc: 0.94 },
+      { label: 'Apr 5', ctr: 2.27, cpc: 0.90 },
+      { label: 'Apr 6', ctr: 2.24, cpc: 0.92 },
+      { label: 'Apr 7', ctr: 2.48, cpc: 0.83 },
+      { label: 'Apr 8', ctr: 2.57, cpc: 0.77 },
+      { label: 'Apr 9', ctr: 2.71, cpc: 0.71 },
+      { label: 'Apr 10', ctr: 2.63, cpc: 0.74 },
+    ],
+  },
+  last_30d: {
+    title: 'Traffic quality and click cost',
+    description:
+      'Static preview for now. CTR and cost per click read much more clearly here for a mixed account view.',
+    points: [
+      { label: 'Mar 11', ctr: 1.84, cpc: 1.14 },
+      { label: 'Mar 18', ctr: 2.03, cpc: 1.02 },
+      { label: 'Mar 25', ctr: 2.19, cpc: 0.94 },
+      { label: 'Apr 1', ctr: 2.34, cpc: 0.86 },
+      { label: 'Apr 8', ctr: 2.52, cpc: 0.78 },
+    ],
+  },
+  this_month: {
+    title: 'Traffic quality and click cost',
+    description:
+      'Static preview for now. CTR and cost per click read much more clearly here for a mixed account view.',
+    points: [
+      { label: 'Apr 1', ctr: 2.06, cpc: 1.00 },
+      { label: 'Apr 5', ctr: 2.18, cpc: 0.95 },
+      { label: 'Apr 9', ctr: 2.29, cpc: 0.89 },
+      { label: 'Apr 13', ctr: 2.41, cpc: 0.83 },
+      { label: 'Apr 17', ctr: 2.56, cpc: 0.76 },
+      { label: 'Apr 21', ctr: 2.69, cpc: 0.70 },
     ],
   },
 };
@@ -249,6 +335,18 @@ function formatPercent(value: number): string {
   return `${Math.abs(value).toFixed(Math.abs(value) >= 10 ? 0 : 1)}%`;
 }
 
+function formatRate(value: number): string {
+  return `${value.toFixed(2)}%`;
+}
+
+function formatTrendValue(value: number, currencyCode: string | null): string {
+  if (value <= 1.5) {
+    return formatCurrency(value, currencyCode, 2);
+  }
+
+  return formatRate(value);
+}
+
 function formatDateTime(value: string | null): string {
   if (!value) {
     return 'Not synced yet';
@@ -373,12 +471,48 @@ function stateContent(state: DashboardState): {
   }
 }
 
+function windowOptionLabel(window: DashboardWindow): string {
+  switch (window) {
+    case 'this_week':
+      return 'This week';
+    case 'last_week':
+      return 'Last week';
+    case 'last_30d':
+      return 'Last 30D';
+    case 'this_month':
+      return 'This month';
+    default:
+      return 'Last 7 days';
+  }
+}
+
 function windowLabel(window: DashboardWindow): string {
-  return window === '7d' ? 'last 7 days' : 'last 30 days';
+  switch (window) {
+    case 'this_week':
+      return 'this week';
+    case 'last_week':
+      return 'last week';
+    case 'last_30d':
+      return 'last 30 days';
+    case 'this_month':
+      return 'this month';
+    default:
+      return 'last 7 days';
+  }
 }
 
 function previousWindowLabel(window: DashboardWindow): string {
-  return window === '7d' ? 'previous 7 days' : 'previous 30 days';
+  switch (window) {
+    case 'this_week':
+    case 'this_month':
+      return 'previous comparable period';
+    case 'last_week':
+      return 'week before';
+    case 'last_30d':
+      return 'previous 30 days';
+    default:
+      return 'previous 7 days';
+  }
 }
 
 function comparisonText(card: DashboardSummaryCard, window: DashboardWindow): {
@@ -540,103 +674,142 @@ function buildDashboardBrief(input: {
   ].join(' ');
 }
 
+function hasLiveDelivery(activityRail: DashboardActivityRail): boolean {
+  return (
+    activityRail.tests.length > 0 ||
+    activityRail.campaigns.length > 0 ||
+    activityRail.adsets.length > 0 ||
+    activityRail.ads.length > 0
+  );
+}
+
+function buildCreateAdHref(input: {
+  strongestCampaign: DashboardCampaignPreviewItem | null;
+  activityRail: DashboardActivityRail;
+}): string {
+  const campaignId =
+    input.strongestCampaign?.campaignId ?? input.activityRail.campaigns[0]?.id ?? null;
+  const adSetId = input.activityRail.adsets[0]?.id ?? null;
+
+  if (campaignId && adSetId) {
+    return `/campaigns/create?scope=ad&campaign_id=${encodeURIComponent(campaignId)}&adset_id=${encodeURIComponent(adSetId)}`;
+  }
+
+  if (campaignId) {
+    return `/campaigns/create?scope=ad&campaign_id=${encodeURIComponent(campaignId)}`;
+  }
+
+  return '/campaigns/create?scope=ad';
+}
+
 function buildReadFirstItems(input: {
   payload: DashboardPayload;
-  activeWindow: DashboardWindow;
+  activityRail: DashboardActivityRail;
   strongestCampaign: DashboardCampaignPreviewItem | null;
   watchCampaign: DashboardCampaignPreviewItem | null;
-  primaryOutcomeCard: DashboardSummaryCard;
-  spendCard: DashboardSummaryCard;
-}): Array<{
-  title: string;
-  detail: string;
-  tone: DashboardAlert['tone'];
-  childTitles?: string[];
-}> {
+  featuredQueueItem: CalendarQueuePreviewItem | null;
+}): DashboardReadItem[] {
   if (input.payload.state !== 'ready') {
     return [
       {
+        id: 'connect-account',
         title: stateContent(input.payload.state).title,
-        detail: stateContent(input.payload.state).description,
+        detail:
+          'DeepVisor should eventually tell the owner exactly what to schedule next or what to launch next. Connect and select one ad account first so this panel can behave like an operator, not a placeholder.',
         tone: 'blue',
+        primaryAction: {
+          label: 'Manage integrations',
+          href: '/integration',
+        },
       },
     ];
   }
 
-  const workflowItems = input.payload.calendarQueuePreview.filter(
-    (item) => item.isParent || (item.childBlueprints?.length ?? 0) > 0 || (item.children?.length ?? 0) > 0
-  );
+  const createAdHref = buildCreateAdHref({
+    strongestCampaign: input.strongestCampaign,
+    activityRail: input.activityRail,
+  });
+  const calendarHref = '/calendar';
+  const strongestName = input.strongestCampaign?.campaignName ?? 'the favored historical campaign';
+  const watchName = input.watchCampaign?.campaignName ?? 'the weaker current campaign';
+  const queueTone =
+    input.featuredQueueItem?.status === 'approved'
+      ? 'teal'
+      : input.featuredQueueItem?.status === 'ready'
+        ? 'yellow'
+        : 'blue';
+  const queueScheduleText = input.featuredQueueItem
+    ? ` Scheduled ${formatQueueDayLabel(input.featuredQueueItem.day)} · ${input.featuredQueueItem.time}.`
+    : '';
 
-  if (workflowItems.length > 0) {
-    return workflowItems.slice(0, 3).map((item) => ({
-      title: item.title,
-      detail: item.description,
-      tone:
-        item.status === 'draft'
-          ? 'blue'
-          : item.status === 'approved'
-            ? 'teal'
-            : 'yellow',
-      childTitles:
-        (item.children?.length ?? 0) > 0
-          ? item.children?.slice(0, 4).map((child) => child.title)
-          : item.childBlueprints?.slice(0, 4).map((child) => child.title),
-    }));
+  if (!hasLiveDelivery(input.activityRail)) {
+    return [
+      {
+        id: input.featuredQueueItem?.id ?? 'no-live-delivery',
+        title: input.featuredQueueItem?.title ?? 'Put the favored campaign back live',
+        detail:
+          input.featuredQueueItem?.description
+            ? `${input.featuredQueueItem.description} Use ${strongestName} as the relaunch base, put that favored campaign back live from the calendar, and either reuse the old winning creative or add one new creative into the same ad set.${queueScheduleText}`
+            : `There is nothing live to compare right now. Put ${strongestName} back on the calendar as the favored relaunch, and either reuse the old winning creative or add one fresh creative inside the same ad set.${queueScheduleText}`,
+        tone: queueTone,
+        primaryAction: {
+          label: 'Open calendar',
+          href: calendarHref,
+        },
+        secondaryAction: {
+          label: 'Create ad',
+          href: createAdHref,
+        },
+      },
+      {
+        id: 'queue-report-followup',
+        title: 'Add the report follow-up',
+        detail:
+          'Add a report check 3 to 7 days after the relaunch so the campaign is judged on CTR and CPC against the prior winner instead of on spend alone.',
+        tone: 'blue',
+        primaryAction: {
+          label: 'Open calendar',
+          href: calendarHref,
+        },
+      },
+    ];
   }
 
-  if (input.payload.intelligenceSignals.length > 0) {
-    return input.payload.intelligenceSignals.slice(0, 3).map((signal) => ({
-      title: signal.title,
-      detail: signal.reason,
-      tone: signalSeverityTone(signal.severity),
-    }));
-  }
+  const strongestSummary = input.strongestCampaign
+    ? campaignMetricSummary(
+        input.strongestCampaign,
+        input.payload.viewContext.currencyCode
+      )
+    : 'the cleanest current CTR and CPC signal';
 
-  if (input.payload.alerts.length > 0) {
-    return input.payload.alerts.map((alert) => ({
-      title: alert.title,
-      detail: alert.description,
-      tone: alert.tone,
-    }));
-  }
-
-  const items: Array<{ title: string; detail: string; tone: DashboardAlert['tone'] }> = [
+  return [
     {
-      title: 'Outcome movement',
-      detail: comparisonText(input.primaryOutcomeCard, input.activeWindow).label,
-      tone:
-        input.primaryOutcomeCard.changePercent !== null &&
-        input.primaryOutcomeCard.changePercent < 0
-          ? 'yellow'
-          : 'teal',
+      id: input.featuredQueueItem?.id ?? 'launch-into-winner',
+      title: input.featuredQueueItem?.title ?? 'Use the current winner as the control',
+      detail: input.featuredQueueItem?.description
+        ? `${input.featuredQueueItem.description} ${strongestName} is the favored benchmark right now with ${strongestSummary}. Put that winner on the calendar, then either add one new creative inside the same ad set or reuse the old winner if it still matches the offer.${queueScheduleText}`
+        : `${strongestName} is the favored benchmark right now with ${strongestSummary}. Put that winner on the calendar, then either add one new creative inside the same ad set or reuse the old winning creative if it still matches the offer.${queueScheduleText}`,
+      tone: queueTone,
+      primaryAction: {
+        label: 'Open calendar',
+        href: calendarHref,
+      },
+      secondaryAction: {
+        label: 'Create ad',
+        href: createAdHref,
+      },
     },
     {
-      title: 'Spend movement',
-      detail: comparisonText(input.spendCard, input.activeWindow).label,
-      tone:
-        input.spendCard.changePercent !== null && input.spendCard.changePercent > 25
-          ? 'yellow'
-          : 'blue',
+      id: 'schedule-compare-report',
+      title: 'Add the compare-back report',
+      detail: `Schedule a short review comparing ${watchName} against ${strongestName}. The goal is to decide whether the new ad is actually beating the current baseline on CTR and CPC before budgets move.`,
+      tone: 'blue',
+      primaryAction: {
+        label: 'Open calendar',
+        href: calendarHref,
+      },
     },
   ];
-
-  if (input.strongestCampaign) {
-    items.push({
-      title: 'Strongest campaign',
-      detail: `${input.strongestCampaign.campaignName} is carrying the clearest result signal right now.`,
-      tone: 'teal',
-    });
-  }
-
-  if (input.watchCampaign) {
-    items.push({
-      title: 'Watch this campaign',
-      detail: `${input.watchCampaign.campaignName} is the softest spot in the visible campaign set.`,
-      tone: 'yellow',
-    });
-  }
-
-  return items.slice(0, 3);
 }
 
 function signalSeverityTone(
@@ -687,165 +860,196 @@ function DashboardSignalCard({
   );
 }
 
-function CalendarWeekPreview({
+function activityLevelLabel(level: DashboardActivityEntityItem['level']): string {
+  switch (level) {
+    case 'campaign':
+      return 'Campaign';
+    case 'adset':
+      return 'Ad set';
+    default:
+      return 'Ad';
+  }
+}
+
+function activitySectionLabel(key: keyof DashboardActivityRail): string {
+  switch (key) {
+    case 'tests':
+      return 'Tests currently live';
+    case 'campaigns':
+      return 'Active campaigns';
+    case 'adsets':
+      return 'Active ad sets';
+    default:
+      return 'Active ads';
+  }
+}
+
+function activitySupportLabel(item: DashboardActivityEntityItem): string {
+  return item.results > 0 ? 'Cost / result' : 'CTR';
+}
+
+function activitySupportValue(
+  item: DashboardActivityEntityItem,
+  currencyCode: string | null
+): string {
+  if (item.results > 0) {
+    return formatCurrency(item.costPerResult, currencyCode, 2);
+  }
+
+  return `${item.ctr.toFixed(2)}%`;
+}
+
+function CalendarAgendaPreview({
   days,
   itemsByDay,
   todayKey,
+  monthStart,
 }: {
   days: Date[];
   itemsByDay: Map<string, CalendarQueuePreviewItem[]>;
   todayKey: string;
+  monthStart?: Date;
 }) {
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2, lg: 7 }} spacing="xs">
+    <Stack gap="sm" className={classes.calendarAgenda}>
       {days.map((day) => {
         const dayKey = toCalendarIsoDay(day);
         const items = itemsByDay.get(dayKey) ?? [];
         const visibleItems = items.slice(0, 3);
         const remainingCount = items.length - visibleItems.length;
         const isToday = dayKey === todayKey;
+        const inCurrentMonth = monthStart ? isSameCalendarMonth(day, monthStart) : true;
 
         return (
           <Paper
             key={dayKey}
             withBorder
-            radius="md"
-            p="xs"
+            radius="lg"
+            p="sm"
+            className={classes.calendarAgendaRow}
             style={{
-              minHeight: 208,
-              background: isToday ? 'var(--platform-accent-soft)' : 'rgba(255,255,255,0.82)',
+              opacity: inCurrentMonth ? 1 : 0.5,
+              background: isToday ? 'var(--platform-accent-soft)' : 'rgba(255,255,255,0.9)',
               borderColor: isToday ? 'var(--platform-border-strong)' : 'var(--platform-card-border)',
             }}
           >
-            <Group justify="space-between" align="flex-start" mb="xs">
-              <div>
-                <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
-                  {CALENDAR_WEEKDAY_LABELS[day.getDay()]}
-                </Text>
-                <Text fw={800} size="sm">
-                  {day.getDate()}
-                </Text>
-              </div>
-              {items.length > 0 ? (
-                <Badge size="xs" color="gray" variant="light">
-                  {items.length}
-                </Badge>
-              ) : null}
-            </Group>
+            <div className={classes.calendarAgendaDate}>
+              <Text size="10px" c="dimmed" tt="uppercase" fw={800}>
+                {CALENDAR_WEEKDAY_LABELS[day.getDay()]}
+              </Text>
+              <Text fw={900} className={classes.calendarAgendaDateValue}>
+                {day.getDate()}
+              </Text>
+              <Text size="10px" c="dimmed">
+                {day.toLocaleDateString('en-US', { month: 'short' })}
+              </Text>
+            </div>
 
-            <Stack gap={6}>
-              {visibleItems.length > 0 ? (
-                visibleItems.map((item) => (
-                  <Paper
-                    key={item.id}
-                    withBorder
-                    radius="sm"
-                    p={6}
-                    style={{
-                      background: '#fff',
-                      borderColor: `var(--mantine-color-${calendarQueueStatusColor(item.status)}-2)`,
-                    }}
-                  >
-                    <Text size="xs" fw={700} lineClamp={2}>
-                      {item.title}
-                    </Text>
-                    <Text size="10px" c="dimmed" mt={2}>
-                      {item.time}
-                    </Text>
-                  </Paper>
-                ))
-              ) : (
-                <Text size="xs" c="dimmed">
-                  Open
-                </Text>
-              )}
-
-              {remainingCount > 0 ? (
-                <Text size="xs" c="dimmed" fw={600}>
-                  +{remainingCount} more
-                </Text>
-              ) : null}
-            </Stack>
-          </Paper>
-        );
-      })}
-    </SimpleGrid>
-  );
-}
-
-function CalendarMonthPreview({
-  monthStart,
-  days,
-  itemsByDay,
-  todayKey,
-}: {
-  monthStart: Date;
-  days: Date[];
-  itemsByDay: Map<string, CalendarQueuePreviewItem[]>;
-  todayKey: string;
-}) {
-  return (
-    <Stack gap={6}>
-      <SimpleGrid cols={7} spacing={6}>
-        {CALENDAR_WEEKDAY_LABELS.map((label) => (
-          <Text key={label} size="10px" c="dimmed" tt="uppercase" fw={700} ta="center">
-            {label.slice(0, 1)}
-          </Text>
-        ))}
-      </SimpleGrid>
-
-      <SimpleGrid cols={7} spacing={6}>
-        {days.map((day) => {
-          const dayKey = toCalendarIsoDay(day);
-          const items = itemsByDay.get(dayKey) ?? [];
-          const inCurrentMonth = isSameCalendarMonth(day, monthStart);
-          const isToday = dayKey === todayKey;
-
-          return (
-            <Paper
-              key={dayKey}
-              withBorder
-              radius="sm"
-              p={6}
-              style={{
-                minHeight: 102,
-                opacity: inCurrentMonth ? 1 : 0.45,
-                background: isToday ? 'var(--platform-accent-soft)' : 'rgba(255,255,255,0.82)',
-                borderColor: isToday ? 'var(--platform-border-strong)' : 'var(--platform-card-border)',
-              }}
-            >
-              <Group justify="space-between" align="center" mb={4}>
-                <Text size="xs" fw={700}>
-                  {day.getDate()}
+            <div className={classes.calendarAgendaBody}>
+              <Group justify="space-between" align="center" mb={visibleItems.length > 0 ? 6 : 0}>
+                <Text size="sm" fw={700}>
+                  {items.length > 0 ? `${items.length} queued` : 'Open'}
                 </Text>
                 {items.length > 0 ? (
                   <Badge size="xs" color="gray" variant="light">
-                    {items.length}
+                    {formatQueueDayLabel(dayKey)}
                   </Badge>
                 ) : null}
               </Group>
 
-              {items.length > 0 ? (
-                <>
-                  <Text size="10px" fw={700} lineClamp={2}>
-                    {items[0]?.title}
+              <Stack gap={6}>
+                {visibleItems.length > 0 ? (
+                  visibleItems.map((item) => (
+                    <div key={item.id} className={classes.queueMiniRow}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Text size="sm" fw={700} lineClamp={2}>
+                          {item.title}
+                        </Text>
+                        <Text size="xs" c="dimmed" mt={2}>
+                          {item.time}
+                          {queueFollowUpCount(item) > 0
+                            ? ` · ${queueFollowUpCount(item)} follow-up item${queueFollowUpCount(item) === 1 ? '' : 's'}`
+                            : ''}
+                        </Text>
+                      </div>
+                      <Badge
+                        color={calendarQueueStatusColor(item.status)}
+                        variant="light"
+                        radius="sm"
+                      >
+                        {queueStatusLabel(item.status)}
+                      </Badge>
+                    </div>
+                  ))
+                ) : (
+                  <Text size="sm" c="dimmed">
+                    No queued work on this day yet.
                   </Text>
-                  {items.length > 1 ? (
-                    <Text size="10px" c="dimmed" mt={2}>
-                      +{items.length - 1} more
-                    </Text>
-                  ) : null}
-                </>
-              ) : inCurrentMonth ? (
-                <Text size="10px" c="dimmed">
-                  Open
-                </Text>
-              ) : null}
-            </Paper>
-          );
-        })}
-      </SimpleGrid>
+                )}
+
+                {remainingCount > 0 ? (
+                  <Text size="xs" c="dimmed" fw={700}>
+                    +{remainingCount} more queued
+                  </Text>
+                ) : null}
+              </Stack>
+            </div>
+          </Paper>
+        );
+      })}
     </Stack>
+  );
+}
+
+function ActivityRow({
+  item,
+  currencyCode,
+}: {
+  item: DashboardActivityEntityItem;
+  currencyCode: string | null;
+}) {
+  return (
+    <Paper withBorder radius="lg" p="md" className={classes.activityRow}>
+      <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <Group gap="xs" wrap="wrap" mb={6}>
+            <Badge color={statusColor(item.status)} variant="light">
+              {formatStatusLabel(item.status)}
+            </Badge>
+            <Badge color="gray" variant="outline">
+              {activityLevelLabel(item.level)}
+            </Badge>
+          </Group>
+          <Text fw={800}>{item.name}</Text>
+          {item.primaryContext || item.secondaryContext ? (
+            <Text size="sm" c="dimmed" mt={6}>
+              {[item.primaryContext, item.secondaryContext].filter(Boolean).join(' · ')}
+            </Text>
+          ) : null}
+        </div>
+
+        <div className={classes.activityMetrics}>
+          <div>
+            <Text size="10px" c="dimmed" tt="uppercase" fw={800}>
+              Spend
+            </Text>
+            <Text fw={800}>{formatCurrency(item.spend, currencyCode)}</Text>
+          </div>
+          <div>
+            <Text size="10px" c="dimmed" tt="uppercase" fw={800}>
+              Results
+            </Text>
+            <Text fw={800}>{formatNumber(item.results)}</Text>
+          </div>
+          <div>
+            <Text size="10px" c="dimmed" tt="uppercase" fw={800}>
+              {activitySupportLabel(item)}
+            </Text>
+            <Text fw={800}>{activitySupportValue(item, currencyCode)}</Text>
+          </div>
+        </div>
+      </Group>
+    </Paper>
   );
 }
 
@@ -868,10 +1072,10 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     (card) => card.value > 0 || card.previousValue !== null
   );
   const summaryCards = hasLiveSummarySignal ? liveSummaryCards : STATIC_SUMMARY_BY_WINDOW[activeWindow];
-  const liveTrend = payload.trendByWindow[activeWindow];
-  const trend = liveTrend.points.length > 0 ? liveTrend : STATIC_TREND_BY_WINDOW[activeWindow];
+  const trend = STATIC_QUALITY_TREND_BY_WINDOW[activeWindow];
   const campaignPreview =
     payload.campaignPreview.length > 0 ? payload.campaignPreview : STATIC_CAMPAIGN_PREVIEW;
+  const activityRail = payload.activityByWindow[activeWindow];
   const primaryOutcomeCard = pickPrimaryOutcomeCard(summaryCards);
   const spendCard = summaryCards.find((card) => card.key === 'spend') ?? summaryCards[0];
   const strongestCampaign = useMemo(
@@ -881,18 +1085,6 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
   const watchCampaign = useMemo(
     () => pickWatchCampaign(campaignPreview, strongestCampaign?.campaignId ?? null),
     [campaignPreview, strongestCampaign]
-  );
-  const readFirstItems = useMemo(
-    () =>
-      buildReadFirstItems({
-        payload,
-        activeWindow,
-        strongestCampaign,
-        watchCampaign,
-        primaryOutcomeCard,
-        spendCard,
-      }),
-    [payload, activeWindow, strongestCampaign, watchCampaign, primaryOutcomeCard, spendCard]
   );
   const brief = buildDashboardBrief({
     payload,
@@ -908,9 +1100,10 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
       : `Static operating preview: the selected account view will look like this once live data is available. ${brief}`;
   const trendData = trend.points.map((point) => ({
     label: point.label,
-    Spend: Number(point.spend.toFixed(2)),
-    [trend.outcomeLabel]: point.outcome,
+    CTR: Number(point.ctr.toFixed(2)),
+    CPC: Number(point.cpc.toFixed(2)),
   }));
+  const latestTrendPoint = trend.points[trend.points.length - 1] ?? null;
   const calendarPreviewItems = useMemo(
     () => {
       if (payload.calendarQueuePreview.length > 0) {
@@ -932,6 +1125,30 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
       payload.viewContext.platformName,
     ]
   );
+  const featuredQueueItem = useMemo(
+    () =>
+      calendarPreviewItems.find(
+        (item) =>
+          item.isParent ||
+          Boolean(item.workflowKey) ||
+          (item.childBlueprints?.length ?? 0) > 0 ||
+          (item.children?.length ?? 0) > 0
+      ) ??
+      calendarPreviewItems[0] ??
+      null,
+    [calendarPreviewItems]
+  );
+  const readFirstItems = useMemo(
+    () =>
+      buildReadFirstItems({
+        payload,
+        activityRail,
+        strongestCampaign,
+        watchCampaign,
+        featuredQueueItem,
+      }),
+    [payload, activityRail, strongestCampaign, watchCampaign, featuredQueueItem]
+  );
   const calendarPreviewCounts = useMemo(
     () => ({
       total: calendarPreviewItems.length,
@@ -942,13 +1159,16 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     [calendarPreviewItems]
   );
   const queuePriorityItems = useMemo(
-    () => calendarPreviewItems.slice(0, 4),
-    [calendarPreviewItems]
+    () =>
+      (featuredQueueItem
+        ? calendarPreviewItems.filter((item) => item.id !== featuredQueueItem.id)
+        : calendarPreviewItems
+      ).slice(0, 4),
+    [calendarPreviewItems, featuredQueueItem]
   );
-  const calendarPreviewTodayKey = useMemo(
-    () => toCalendarIsoDay(new Date()),
-    []
-  );
+  const hasFeaturedQueueOnly =
+    Boolean(featuredQueueItem) && calendarPreviewItems.length > 0 && queuePriorityItems.length === 0;
+  const calendarPreviewTodayKey = useMemo(() => toCalendarIsoDay(new Date()), []);
   const calendarPreviewWeekStart = useMemo(
     () => startOfCalendarWeek(calendarPreviewCursor),
     [calendarPreviewCursor]
@@ -1017,6 +1237,11 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
         : formatCalendarMonthLabel(calendarPreviewMonthStart),
     [calendarPreviewMonthStart, calendarPreviewView, calendarPreviewWeekDays]
   );
+  const hasLiveActivity =
+    activityRail.tests.length > 0 ||
+    activityRail.campaigns.length > 0 ||
+    activityRail.adsets.length > 0 ||
+    activityRail.ads.length > 0;
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -1069,76 +1294,6 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
   return (
     <Container fluid px={6} py={0} className={`${classes.page} dashboard-page-shell`}>
       <Stack gap="md" className={classes.shell}>
-        <Card withBorder radius="xl" p={{ base: 'md', md: 'lg' }} className={classes.topBar}>
-          <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
-            <div>
-              <Group gap="xs" wrap="wrap">
-                <Badge variant="light" className="app-platform-page-badge">
-                  Dashboard
-                </Badge>
-                <Badge color={statusColor(payload.viewContext.platformStatus)} variant="light">
-                  {payload.viewContext.platformName ?? 'Demo platform'}
-                </Badge>
-                <Badge color={statusColor(payload.viewContext.adAccountStatus)} variant="outline">
-                  {payload.viewContext.adAccountName ?? 'DeepVisor Demo Account'}
-                </Badge>
-                {!hasLiveSummarySignal || payload.campaignPreview.length === 0 ? (
-                  <Badge color="cyan" variant="outline">
-                    Static preview data
-                  </Badge>
-                ) : null}
-              </Group>
-              <Title order={2} mt="xs" className={classes.title}>
-                Account intelligence dashboard
-              </Title>
-              <Text size="sm" c="dimmed" mt={4} maw={760}>
-                {operatingBrief}
-              </Text>
-            </div>
-
-            <Group gap="sm" wrap="wrap">
-              <SegmentedControl
-                size="sm"
-                radius="xl"
-                value={activeWindow}
-                onChange={(value) => setActiveWindow(value as DashboardWindow)}
-                data={payload.windowOptions.map((window) => ({
-                  label: window === '7d' ? '7D' : '30D',
-                  value: window,
-                }))}
-              />
-              <Button
-                onClick={handleRefresh}
-                leftSection={<IconRefresh size={16} />}
-                loading={refreshing}
-                disabled={!payload.viewContext.canRefresh}
-                radius="xl"
-                className="app-platform-page-action-primary"
-              >
-                Refresh
-              </Button>
-              <Button
-                component={Link}
-                href="/reports"
-                radius="xl"
-                variant="default"
-                className="app-platform-page-action-secondary"
-              >
-                Reports
-              </Button>
-              <Button
-                component={Link}
-                href="/calendar"
-                radius="xl"
-                variant="default"
-                className="app-platform-page-action-secondary"
-              >
-                Calendar
-              </Button>
-            </Group>
-          </Group>
-        </Card>
-
         {refreshFeedback ? (
           <Alert
             color={refreshFeedback.type === 'success' ? 'green' : 'red'}
@@ -1205,94 +1360,177 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
           </Alert>
         ) : null}
 
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
-          {summaryCards.map((card) => {
-            const comparison = comparisonText(card, activeWindow);
-            const Icon = cardIcon(card.key);
-            const deltaClass =
-              card.changePercent == null
-                ? classes.deltaNeutral
-                : card.changePercent >= 0
-                  ? classes.deltaPositive
-                  : classes.deltaNegative;
-
-            return (
-              <Paper key={card.key} withBorder radius="xl" p="md" className={classes.metricCard}>
-                <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
-                  <div>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                      {card.label}
-                    </Text>
-                    <Text fw={900} size="1.75rem" mt={8} className={classes.metricValue}>
-                      {formatCardValue(card, payload.viewContext.currencyCode)}
-                    </Text>
-                  </div>
-                  <ThemeIcon variant="light" color="blue" radius="md">
-                    <Icon size={18} />
-                  </ThemeIcon>
-                </Group>
-                <span className={`${classes.deltaPill} ${deltaClass}`}>
-                  {card.changePercent == null ? (
-                    <IconClock size={13} />
-                  ) : card.changePercent >= 0 ? (
-                    <IconArrowUpRight size={13} />
-                  ) : (
-                    <IconArrowDownRight size={13} />
-                  )}
-                  {comparison.label}
-                </span>
-              </Paper>
-            );
-          })}
-        </SimpleGrid>
-
         <Grid gutter="md" align="stretch">
           <Grid.Col span={{ base: 12, xl: 8 }}>
-            <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
-              <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.sectionHeader}>
-                <div>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                    Performance
-                  </Text>
-                  <Title order={3}>{trend.outcomeLabel} and spend trend</Title>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    Fast account pulse for {windowLabel(activeWindow)}.
-                  </Text>
-                </div>
-                <Group gap="xs" wrap="wrap">
-                  <Badge variant="light" color="gray" radius="sm">
-                    {windowLabel(activeWindow)}
-                  </Badge>
-                  <Badge variant="light" color="gray" radius="sm">
-                    {formatRelativeSync(payload.viewContext.lastSyncedAt)}
-                  </Badge>
-                </Group>
-              </Group>
+            <Card withBorder radius="xl" p="lg" h="100%" className={`${classes.panel} ${classes.performancePanel}`}>
+              <Stack gap="lg">
+                <Group
+                  justify="space-between"
+                  align="flex-start"
+                  gap="md"
+                  wrap="wrap"
+                  className={classes.surfaceToolbar}
+                >
+                  <div>
+                    <Group gap="xs" wrap="wrap">
+                      <Badge variant="light" className="app-platform-page-badge">
+                        Dashboard
+                      </Badge>
+                      <Badge color={statusColor(payload.viewContext.platformStatus)} variant="light">
+                        {payload.viewContext.platformName ?? 'Demo platform'}
+                      </Badge>
+                      <Badge color={statusColor(payload.viewContext.adAccountStatus)} variant="outline">
+                        {payload.viewContext.adAccountName ?? 'DeepVisor Demo Account'}
+                      </Badge>
+                      {!hasLiveSummarySignal || payload.campaignPreview.length === 0 ? (
+                        <Badge color="cyan" variant="outline">
+                          Static preview data
+                        </Badge>
+                      ) : null}
+                    </Group>
+                    <Text fw={900} size="1.65rem" mt="sm" className={classes.metricValue}>
+                      {payload.viewContext.adAccountName ?? 'Selected ad account'}
+                    </Text>
+                    <Text size="sm" c="dimmed" mt={6} maw={760}>
+                      Performance, queue, and live delivery for {windowLabel(activeWindow)}.
+                    </Text>
+                  </div>
 
-              {trendData.length > 0 ? (
-                <div className={classes.softPanel}>
-                  <LineChart
-                    h={320}
-                    data={trendData}
-                    dataKey="label"
-                    series={[
-                      { name: trend.outcomeLabel, color: 'blue.6' },
-                      { name: 'Spend', color: 'teal.6' },
-                    ]}
-                    curveType="linear"
-                    withLegend
-                    valueFormatter={(value) => value.toLocaleString()}
-                  />
-                </div>
-              ) : (
-                <Stack justify="center" align="center" h={320} gap="xs">
-                  <Text fw={700}>No trend data yet</Text>
-                  <Text size="sm" c="dimmed" ta="center" maw={360}>
-                    Once the selected account has recent synced metrics, this trend becomes the
-                    quickest way to see whether performance is strengthening or flattening out.
-                  </Text>
-                </Stack>
-              )}
+                  <Group gap="sm" wrap="wrap">
+                    <div className={classes.windowControlWrap}>
+                      <SegmentedControl
+                        size="xs"
+                        radius="xl"
+                        value={activeWindow}
+                        onChange={(value) => setActiveWindow(value as DashboardWindow)}
+                        data={payload.windowOptions.map((window) => ({
+                          label: windowOptionLabel(window),
+                          value: window,
+                        }))}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleRefresh}
+                      leftSection={<IconRefresh size={16} />}
+                      loading={refreshing}
+                      disabled={!payload.viewContext.canRefresh}
+                      radius="xl"
+                      className="app-platform-page-action-primary"
+                    >
+                      Refresh
+                    </Button>
+                    <Button
+                      component={Link}
+                      href="/reports"
+                      radius="xl"
+                      variant="default"
+                      className="app-platform-page-action-secondary"
+                    >
+                      Reports
+                    </Button>
+                    <Button
+                      component={Link}
+                      href="/calendar"
+                      radius="xl"
+                      variant="default"
+                      className="app-platform-page-action-secondary"
+                    >
+                      Calendar
+                    </Button>
+                  </Group>
+                </Group>
+
+                <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+                  {summaryCards.map((card) => {
+                    const comparison = comparisonText(card, activeWindow);
+                    const Icon = cardIcon(card.key);
+                    const deltaClass =
+                      card.changePercent == null
+                        ? classes.deltaNeutral
+                        : card.changePercent >= 0
+                          ? classes.deltaPositive
+                          : classes.deltaNegative;
+
+                    return (
+                      <Paper key={card.key} withBorder radius="xl" p="md" className={classes.metricCard}>
+                        <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
+                          <div>
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                              {card.label}
+                            </Text>
+                            <Text fw={900} size="1.75rem" mt={8} className={classes.metricValue}>
+                              {formatCardValue(card, payload.viewContext.currencyCode)}
+                            </Text>
+                          </div>
+                          <ThemeIcon variant="light" color="blue" radius="md">
+                            <Icon size={18} />
+                          </ThemeIcon>
+                        </Group>
+                        <span className={`${classes.deltaPill} ${deltaClass}`}>
+                          {card.changePercent == null ? (
+                            <IconClock size={13} />
+                          ) : card.changePercent >= 0 ? (
+                            <IconArrowUpRight size={13} />
+                          ) : (
+                            <IconArrowDownRight size={13} />
+                          )}
+                          {comparison.label}
+                        </span>
+                      </Paper>
+                    );
+                  })}
+                </SimpleGrid>
+
+                {trendData.length > 0 ? (
+                  <div className={classes.softPanel}>
+                    <Group justify="space-between" align="flex-start" mb="md" gap="sm" wrap="wrap">
+                      <div>
+                        <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                          {trend.title}
+                        </Text>
+                        <Text size="sm" c="dimmed" mt={6} maw={640}>
+                          {trend.description}
+                        </Text>
+                      </div>
+                      <Group gap="xs" wrap="wrap">
+                        <Badge color="cyan" variant="outline" radius="sm">
+                          Static chart
+                        </Badge>
+                        {latestTrendPoint ? (
+                          <>
+                            <Badge color="blue" variant="light" radius="sm">
+                              CTR {formatRate(latestTrendPoint.ctr)}
+                            </Badge>
+                            <Badge color="teal" variant="light" radius="sm">
+                              CPC {formatCurrency(latestTrendPoint.cpc, payload.viewContext.currencyCode, 2)}
+                            </Badge>
+                          </>
+                        ) : null}
+                      </Group>
+                    </Group>
+                    <LineChart
+                      h={340}
+                      data={trendData}
+                      dataKey="label"
+                      series={[
+                        { name: 'CTR', color: 'blue.6' },
+                        { name: 'CPC', color: 'teal.6' },
+                      ]}
+                      curveType="linear"
+                      withLegend
+                      valueFormatter={(value) => formatTrendValue(value, payload.viewContext.currencyCode)}
+                    />
+                  </div>
+                ) : (
+                  <Stack justify="center" align="center" h={340} gap="xs">
+                    <Text fw={700}>No trend data yet</Text>
+                    <Text size="sm" c="dimmed" ta="center" maw={360}>
+                      Once the selected account has recent synced metrics, this trend becomes the
+                      quickest way to see whether performance is strengthening or flattening out.
+                    </Text>
+                  </Stack>
+                )}
+              </Stack>
             </Card>
           </Grid.Col>
 
@@ -1304,15 +1542,24 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                     <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
                       DeepVisor read
                     </Text>
-                    <Title order={3}>What needs attention</Title>
+                    
                   </div>
                   <ThemeIcon color="blue" variant="light" radius="md">
                     <IconSparkles size={18} />
                   </ThemeIcon>
                 </Group>
 
+                <div className={classes.insightCard}>
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                    Account read
+                  </Text>
+                  <Text size="sm" c="dimmed" mt={6}>
+                    {operatingBrief}
+                  </Text>
+                </div>
+
                 {readFirstItems.map((item) => (
-                  <div key={item.title} className={classes.insightCard}>
+                  <div key={item.id} className={classes.insightCard}>
                     <Group gap="sm" align="flex-start" wrap="nowrap">
                       <ThemeIcon
                         variant="light"
@@ -1333,14 +1580,32 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                         <Text size="sm" c="dimmed" mt={4}>
                           {item.detail}
                         </Text>
-                        {item.childTitles && item.childTitles.length > 0 ? (
-                          <Stack gap={4} mt="xs">
-                            {item.childTitles.map((childTitle) => (
-                              <Text key={childTitle} size="xs" c="dimmed">
-                                {`\u2022 ${childTitle}`}
-                              </Text>
-                            ))}
-                          </Stack>
+                        {item.primaryAction || item.secondaryAction ? (
+                          <Group gap="xs" mt="sm" wrap="wrap">
+                            {item.primaryAction ? (
+                              <Button
+                                component={Link}
+                                href={item.primaryAction.href}
+                                size="xs"
+                                radius="xl"
+                                className="app-platform-page-action-primary"
+                              >
+                                {item.primaryAction.label}
+                              </Button>
+                            ) : null}
+                            {item.secondaryAction ? (
+                              <Button
+                                component={Link}
+                                href={item.secondaryAction.href}
+                                size="xs"
+                                radius="xl"
+                                variant="default"
+                                className="app-platform-page-action-secondary"
+                              >
+                                {item.secondaryAction.label}
+                              </Button>
+                            ) : null}
+                          </Group>
                         ) : null}
                       </div>
                     </Group>
@@ -1370,419 +1635,287 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
         </Grid>
 
         <Grid gutter="md" align="stretch">
-          <Grid.Col span={12}>
-            <Card withBorder radius="xl" p="lg" className={`${classes.panel} ${classes.calendarPanel}`}>
-              <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.sectionHeader}>
-                <div>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                    Calendar queue
-                  </Text>
-                  <Title order={3} mt={4}>
-                    What DeepVisor wants to move next
-                  </Title>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    This is the operational queue for budget changes, creative refreshes, report reviews, and revive workflows tied to this account.
-                  </Text>
-                </div>
-                <Badge color="gray" variant="light" radius="sm">
-                  {calendarPreviewCounts.total} queued
-                </Badge>
-              </Group>
-
-              <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="xs" mb="md">
-                <Paper withBorder radius="md" p="sm" className={classes.queueStatCard}>
-                  <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
-                    Needs approval
-                  </Text>
-                  <Text fw={800} mt={4}>
-                    {calendarPreviewCounts.ready}
-                  </Text>
-                </Paper>
-                <Paper withBorder radius="md" p="sm" className={classes.queueStatCard}>
-                  <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
-                    Drafts
-                  </Text>
-                  <Text fw={800} mt={4}>
-                    {calendarPreviewCounts.draft}
-                  </Text>
-                </Paper>
-                <Paper withBorder radius="md" p="sm" className={classes.queueStatCard}>
-                  <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
-                    Approved
-                  </Text>
-                  <Text fw={800} mt={4}>
-                    {calendarPreviewCounts.approved}
-                  </Text>
-                </Paper>
-                <Paper withBorder radius="md" p="sm" className={classes.queueStatCard}>
-                  <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
-                    Follow-ups
-                  </Text>
-                  <Text fw={800} mt={4}>
-                    {calendarPreviewItems.reduce(
-                      (total, item) => total + queueFollowUpCount(item),
-                      0
-                    )}
-                  </Text>
-                </Paper>
-              </SimpleGrid>
-
-              <Grid gutter="md" align="stretch">
-                <Grid.Col span={{ base: 12, xl: 8 }}>
-                  <Paper withBorder radius="lg" p="md">
-                    <Group justify="space-between" align="center" mb="md" wrap="wrap" gap="sm">
-                      <SegmentedControl
-                        size="xs"
-                        radius="xl"
-                        value={calendarPreviewView}
-                        onChange={(value) => setCalendarPreviewView(value as 'weekly' | 'monthly')}
-                        data={[
-                          {
-                            label: (
-                              <Group gap={4} wrap="nowrap">
-                                <IconCalendarWeek size={14} />
-                                <span>Week</span>
-                              </Group>
-                            ),
-                            value: 'weekly',
-                          },
-                          {
-                            label: (
-                              <Group gap={4} wrap="nowrap">
-                                <IconCalendarMonth size={14} />
-                                <span>Month</span>
-                              </Group>
-                            ),
-                            value: 'monthly',
-                          },
-                          ]}
-                      />
-
-                      <Group gap={6} wrap="nowrap">
-                        <ActionIcon
-                          variant="light"
-                          color="gray"
-                          radius="xl"
-                          onClick={() => shiftCalendarPreview(-1)}
-                          aria-label="Previous calendar preview period"
-                        >
-                          <IconChevronLeft size={16} />
-                        </ActionIcon>
-                        <Text size="sm" fw={700} miw={132} ta="center">
-                          {calendarPreviewLabel}
-                        </Text>
-                        <ActionIcon
-                          variant="light"
-                          color="gray"
-                          radius="xl"
-                          onClick={() => shiftCalendarPreview(1)}
-                          aria-label="Next calendar preview period"
-                        >
-                          <IconChevronRight size={16} />
-                        </ActionIcon>
-                      </Group>
-                    </Group>
-
-                    {calendarPreviewView === 'weekly' ? (
-                      <CalendarWeekPreview
-                        days={calendarPreviewWeekDays}
-                        itemsByDay={calendarPreviewWeekItemsByDay}
-                        todayKey={calendarPreviewTodayKey}
-                      />
-                    ) : (
-                      <CalendarMonthPreview
-                        monthStart={calendarPreviewMonthStart}
-                        days={calendarPreviewMonthDays}
-                        itemsByDay={calendarPreviewMonthItemsByDay}
-                        todayKey={calendarPreviewTodayKey}
-                      />
-                    )}
-                  </Paper>
-                </Grid.Col>
-
-                <Grid.Col span={{ base: 12, xl: 4 }}>
-                  <Stack gap="sm" h="100%">
-
-
-                    {queuePriorityItems.length > 0 ? (
-                      queuePriorityItems.map((item) => (
-                        <Paper key={item.id} withBorder radius="lg" p="md" className={classes.queueHighlightRow}>
-                          <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <Group gap="xs" wrap="wrap" mb={6}>
-                                <Badge
-                                  color={calendarQueueStatusColor(item.status)}
-                                  variant="light"
-                                  radius="sm"
-                                >
-                                  {queueStatusLabel(item.status)}
-                                </Badge>
-                                {item.isParent || item.workflowKey ? (
-                                  <Badge color="violet" variant="outline" radius="sm">
-                                    Workflow
-                                  </Badge>
-                                ) : null}
-                              </Group>
-                              <Text fw={800} lineClamp={2}>
-                                {item.title}
-                              </Text>
-                              <Text size="sm" c="dimmed" mt={4} lineClamp={2}>
-                                {item.description}
-                              </Text>
-                              <Text size="xs" c="dimmed" mt={6}>
-                                {formatQueueDayLabel(item.day)} · {item.time}
-                                {queueFollowUpCount(item) > 0
-                                  ? ` · ${queueFollowUpCount(item)} follow-up item${queueFollowUpCount(item) === 1 ? '' : 's'}`
-                                  : ''}
-                              </Text>
-                              {item.destinationHref ? (
-                                <Button
-                                  component={Link}
-                                  href={item.destinationHref}
-                                  size="xs"
-                                  radius="xl"
-                                  variant="light"
-                                  mt="sm"
-                                  rightSection={<IconArrowUpRight size={14} />}
-                                >
-                                  {item.isParent || item.workflowKey ? 'Open action' : 'Open'}
-                                </Button>
-                              ) : null}
-                            </div>
-                          </Group>
-                        </Paper>
-                      ))
-                    ) : (
-                      <Paper withBorder radius="lg" p="md" className={classes.queueSidebarPanel}>
-                        <Text fw={800}>Queue is clear</Text>
-                        <Text size="sm" c="dimmed" mt={6}>
-                          New workflow items will show up here as signals and recommendations are generated for this account.
-                        </Text>
-                      </Paper>
-                    )}
-
-                    <Group justify="space-between" align="center" mt="auto" gap="sm" wrap="wrap">
-                      <Text size="sm" c="dimmed" maw={320}>
-                        {payload.calendarQueuePreview.length > 0
-                          ? 'This queue is reading directly from your saved workflow and calendar items.'
-                          : 'Open the full Calendar view to approve, modify, or schedule what is queued here.'}
-                      </Text>
-                      <Group gap="sm" wrap="wrap">
-                        <Button
-                          component={Link}
-                          href="/calendar"
-                          radius="xl"
-                          rightSection={<IconArrowUpRight size={14} />}
-                          className="app-platform-page-action-primary"
-                        >
-                          Open calendar
-                        </Button>
-                        <Button
-                          component={Link}
-                          href="/reports?compare=previous_period"
-                          radius="xl"
-                          variant="default"
-                          className="app-platform-page-action-secondary"
-                        >
-                          Reports
-                        </Button>
-                      </Group>
-                    </Group>
-                  </Stack>
-                </Grid.Col>
-              </Grid>
-            </Card>
-          </Grid.Col>
-        </Grid>
-
-        <Grid gutter="md" align="stretch">
-          <Grid.Col span={{ base: 12, xl: 7 }}>
-            <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
-              <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.sectionHeader}>
-                <div>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                    Campaign movers
-                  </Text>
-                  <Title order={3}>Strong, soft, and worth scanning</Title>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    Real campaign data appears here first. Static examples stay visible only when this account has not populated campaign snapshots yet.
-                  </Text>
-                </div>
-                <Group gap="xs" wrap="wrap">
-                  <Badge color="gray" variant="light" radius="sm">
-                    {campaignPreview.length} shown
-                  </Badge>
-                  {payload.campaignPreview.length === 0 ? (
-                    <Badge color="cyan" variant="outline" radius="sm">
-                      Static examples
-                    </Badge>
-                  ) : null}
-                </Group>
-              </Group>
-
-              <Stack gap="sm">
-                {campaignPreview.map((campaign) => (
-                  <div key={campaign.campaignId} className={classes.campaignRow}>
-                    <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
-                      <div style={{ flex: 1, minWidth: 240 }}>
-                        <Group gap="xs" mb={6} wrap="wrap">
-                          <Badge color={statusColor(campaign.status)} variant="light">
-                            {formatStatusLabel(campaign.status)}
-                          </Badge>
-                          {campaign.objective ? (
-                            <Badge color="gray" variant="outline">
-                              {campaign.objective}
-                            </Badge>
-                          ) : null}
-                          {campaign.campaignId === strongestCampaign?.campaignId ? (
-                            <Badge color="teal" variant="light">
-                              Strongest
-                            </Badge>
-                          ) : null}
-                          {campaign.campaignId === watchCampaign?.campaignId ? (
-                            <Badge color="orange" variant="light">
-                              Watch
-                            </Badge>
-                          ) : null}
-                        </Group>
-                        <Text fw={800}>{campaign.campaignName}</Text>
-                        <Text size="sm" c="dimmed" mt={6}>
-                          {campaignMetricSummary(campaign, payload.viewContext.currencyCode)}
-                        </Text>
-                      </div>
-
-                      <Group gap="xl" wrap="wrap">
-                        <div>
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                            Spend
-                          </Text>
-                          <Text fw={800}>
-                            {formatCurrency(campaign.spend, payload.viewContext.currencyCode)}
-                          </Text>
-                        </div>
-                        <div>
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                            {campaign.primaryOutcomeLabel}
-                          </Text>
-                          <Text fw={800}>{formatNumber(campaign.primaryOutcomeValue)}</Text>
-                        </div>
-                        <div>
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                            Support
-                          </Text>
-                          <Text fw={800}>
-                            {campaign.primaryOutcomeMetric !== 'clicks' &&
-                            campaign.primaryOutcomeValue > 0
-                              ? formatCurrency(
-                                  campaign.costPerResult,
-                                  payload.viewContext.currencyCode,
-                                  2
-                                )
-                              : `${campaign.ctr.toFixed(2)}%`}
-                          </Text>
-                        </div>
-                      </Group>
-                    </Group>
-                  </div>
-                ))}
-              </Stack>
-            </Card>
-          </Grid.Col>
-
-          <Grid.Col span={{ base: 12, xl: 5 }}>
-            <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
-              <Group justify="space-between" align="flex-start" className={classes.sectionHeader}>
-                <div>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                    Operating watchlist
-                  </Text>
-                  <Title order={3}>What this account is telling you</Title>
-                </div>
-                <ThemeIcon color="blue" variant="light" radius="md">
-                  <IconSparkles size={18} />
-                </ThemeIcon>
-              </Group>
-
-              <Stack gap="sm">
-                <div className={classes.insightCard}>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                    Leading campaign
-                  </Text>
-                  <Text fw={800} mt={6}>
-                    {strongestCampaign?.campaignName ?? 'No leading campaign yet'}
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={6}>
-                    {strongestCampaign
-                      ? `${campaignMetricSummary(strongestCampaign, payload.viewContext.currencyCode)} and currently setting the account benchmark.`
-                      : 'DeepVisor will call out the strongest campaign once campaign-level delivery is available.'}
-                  </Text>
-                </div>
-
-                <div className={classes.insightCard}>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                    Soft spot to review
-                  </Text>
-                  <Text fw={800} mt={6}>
-                    {watchCampaign?.campaignName ?? 'No soft spot yet'}
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={6}>
-                    {watchCampaign
-                      ? `${campaignMetricSummary(watchCampaign, payload.viewContext.currencyCode)} and showing the weakest visible signal in the current set.`
-                      : 'Once more campaign rows are available, DeepVisor will isolate the weakest visible campaign here.'}
-                  </Text>
-                </div>
-
-                <div className={classes.insightCard}>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                    Queue pressure
-                  </Text>
-                  <Text fw={800} mt={6}>
-                    {calendarPreviewCounts.ready} waiting for approval
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={6}>
-                    {calendarPreviewCounts.total > 0
-                      ? `${calendarPreviewCounts.draft} drafts and ${calendarPreviewCounts.approved} approved items are also sitting in the workflow queue.`
-                      : 'No queue pressure is building right now. New approvals will appear here as DeepVisor generates them.'}
-                  </Text>
-                </div>
-
-                <div className={classes.insightCard}>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                    Data freshness
-                  </Text>
-                  <Text fw={800} mt={6}>
-                    {formatRelativeSync(payload.viewContext.lastSyncedAt)}
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={6}>
-                    Platform {formatStatusLabel(payload.viewContext.platformStatus).toLowerCase()} and account {formatStatusLabel(payload.viewContext.adAccountStatus).toLowerCase()}.
-                  </Text>
-                  {payload.viewContext.platformError ? (
-                    <Text size="sm" c="dimmed" mt={6}>
-                      {payload.viewContext.platformError}
+          <Grid.Col span={{ base: 12, xl: 6 }}>
+            <Card withBorder radius="xl" p="lg" h="100%" className={`${classes.panel} ${classes.calendarPanel}`}>
+              <Stack gap="md" h="100%">
+                <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.sectionHeader}>
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                      Calendar queue
                     </Text>
-                  ) : null}
-                </div>
-              </Stack>
+                    <Title order={3} mt={4}>
+                      What DeepVisor wants to move next
+                    </Title>
+                    <Text size="sm" c="dimmed" mt={4}>
+                      The queue is shown as a vertical operating agenda so it reads like the work stack for this account instead of a horizontal mini-calendar.
+                    </Text>
+                  </div>
+                  <Badge color="gray" variant="light" radius="sm">
+                    {calendarPreviewCounts.total} queued
+                  </Badge>
+                </Group>
 
-              <Group gap="sm" mt="md" wrap="wrap">
-                <Button
-                  component={Link}
-                  href="/reports?compare=previous_period"
-                  radius="xl"
-                  className="app-platform-page-action-primary"
-                >
-                  Open reports
-                </Button>
-                <Button
-                  component={Link}
-                  href="/integration"
-                  radius="xl"
-                  variant="default"
-                  className="app-platform-page-action-secondary"
-                >
-                  Manage integrations
-                </Button>
-              </Group>
+                <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="xs">
+                  <Paper withBorder radius="md" p="sm" className={classes.queueStatCard}>
+                    <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
+                      Needs approval
+                    </Text>
+                    <Text fw={800} mt={4}>
+                      {calendarPreviewCounts.ready}
+                    </Text>
+                  </Paper>
+                  <Paper withBorder radius="md" p="sm" className={classes.queueStatCard}>
+                    <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
+                      Drafts
+                    </Text>
+                    <Text fw={800} mt={4}>
+                      {calendarPreviewCounts.draft}
+                    </Text>
+                  </Paper>
+                  <Paper withBorder radius="md" p="sm" className={classes.queueStatCard}>
+                    <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
+                      Approved
+                    </Text>
+                    <Text fw={800} mt={4}>
+                      {calendarPreviewCounts.approved}
+                    </Text>
+                  </Paper>
+                  <Paper withBorder radius="md" p="sm" className={classes.queueStatCard}>
+                    <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
+                      Follow-ups
+                    </Text>
+                    <Text fw={800} mt={4}>
+                      {calendarPreviewItems.reduce(
+                        (total, item) => total + queueFollowUpCount(item),
+                        0
+                      )}
+                    </Text>
+                  </Paper>
+                </SimpleGrid>
+
+                <Paper withBorder radius="lg" p="md" className={classes.softPanel}>
+                  <Group justify="space-between" align="center" mb="md" wrap="wrap" gap="sm">
+                    <SegmentedControl
+                      size="xs"
+                      radius="xl"
+                      value={calendarPreviewView}
+                      onChange={(value) => setCalendarPreviewView(value as 'weekly' | 'monthly')}
+                      data={[
+                        {
+                          label: (
+                            <Group gap={4} wrap="nowrap">
+                              <IconCalendarWeek size={14} />
+                              <span>Week</span>
+                            </Group>
+                          ),
+                          value: 'weekly',
+                        },
+                        {
+                          label: (
+                            <Group gap={4} wrap="nowrap">
+                              <IconCalendarMonth size={14} />
+                              <span>Month</span>
+                            </Group>
+                          ),
+                          value: 'monthly',
+                        },
+                      ]}
+                    />
+
+                    <Group gap={6} wrap="nowrap">
+                      <ActionIcon
+                        variant="light"
+                        color="gray"
+                        radius="xl"
+                        onClick={() => shiftCalendarPreview(-1)}
+                        aria-label="Previous calendar preview period"
+                      >
+                        <IconChevronLeft size={16} />
+                      </ActionIcon>
+                      <Text size="sm" fw={700} miw={132} ta="center">
+                        {calendarPreviewLabel}
+                      </Text>
+                      <ActionIcon
+                        variant="light"
+                        color="gray"
+                        radius="xl"
+                        onClick={() => shiftCalendarPreview(1)}
+                        aria-label="Next calendar preview period"
+                      >
+                        <IconChevronRight size={16} />
+                      </ActionIcon>
+                    </Group>
+                  </Group>
+
+                  {calendarPreviewView === 'weekly' ? (
+                    <CalendarAgendaPreview
+                      days={calendarPreviewWeekDays}
+                      itemsByDay={calendarPreviewWeekItemsByDay}
+                      todayKey={calendarPreviewTodayKey}
+                    />
+                  ) : (
+                    <CalendarAgendaPreview
+                      days={calendarPreviewMonthDays}
+                      itemsByDay={calendarPreviewMonthItemsByDay}
+                      todayKey={calendarPreviewTodayKey}
+                      monthStart={calendarPreviewMonthStart}
+                    />
+                  )}
+                </Paper>
+
+                <Stack gap="sm">
+                  <Group justify="space-between" align="center" wrap="wrap">
+                    <Text fw={800}>Next up</Text>
+                    <Button
+                      component={Link}
+                      href="/calendar"
+                      radius="xl"
+                      size="xs"
+                      rightSection={<IconArrowUpRight size={14} />}
+                      className="app-platform-page-action-primary"
+                    >
+                      Open calendar
+                    </Button>
+                  </Group>
+
+                  {queuePriorityItems.length > 0 ? (
+                    queuePriorityItems.slice(0, 3).map((item) => (
+                      <Paper key={item.id} withBorder radius="lg" p="md" className={classes.queueHighlightRow}>
+                        <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <Group gap="xs" wrap="wrap" mb={6}>
+                              <Badge
+                                color={calendarQueueStatusColor(item.status)}
+                                variant="light"
+                                radius="sm"
+                              >
+                                {queueStatusLabel(item.status)}
+                              </Badge>
+                              {item.isParent || item.workflowKey ? (
+                                <Badge color="violet" variant="outline" radius="sm">
+                                  Workflow
+                                </Badge>
+                              ) : null}
+                            </Group>
+                            <Text fw={800} lineClamp={2}>
+                              {item.title}
+                            </Text>
+                            <Text size="sm" c="dimmed" mt={4} lineClamp={2}>
+                              {item.description}
+                            </Text>
+                            <Text size="xs" c="dimmed" mt={6}>
+                              {formatQueueDayLabel(item.day)} · {item.time}
+                            </Text>
+                          </div>
+                        </Group>
+                      </Paper>
+                    ))
+                  ) : hasFeaturedQueueOnly ? (
+                    <Paper withBorder radius="lg" p="md" className={classes.queueSidebarPanel}>
+                      <Text fw={800}>Featured workflow is surfaced in DeepVisor read</Text>
+                      <Text size="sm" c="dimmed" mt={6}>
+                        The primary relaunch recommendation is shown in the right-hand read panel so the action and the report follow-up stay together.
+                      </Text>
+                    </Paper>
+                  ) : (
+                    <Paper withBorder radius="lg" p="md" className={classes.queueSidebarPanel}>
+                      <Text fw={800}>Queue is clear</Text>
+                      <Text size="sm" c="dimmed" mt={6}>
+                        New workflow items will show up here as signals and recommendations are generated for this account.
+                      </Text>
+                    </Paper>
+                  )}
+                </Stack>
+              </Stack>
+            </Card>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, xl: 6 }}>
+            <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
+              <Stack gap="md" h="100%">
+                <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.sectionHeader}>
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                      Live activity
+                    </Text>
+                    <Title order={3} mt={4}>
+                      What is active right now
+                    </Title>
+                    <Text size="sm" c="dimmed" mt={4}>
+                      If active tests are live, they surface first. Otherwise this rail shows the active campaigns, ad sets, and ads carrying delivery in the selected window.
+                    </Text>
+                  </div>
+                  <Badge color="gray" variant="light" radius="sm">
+                    {windowOptionLabel(activeWindow)}
+                  </Badge>
+                </Group>
+
+                {activityRail.tests.length > 0 ? (
+                  <div className={classes.activitySection}>
+                    <Group justify="space-between" align="center" mb="sm" wrap="wrap">
+                      <Text fw={800}>{activitySectionLabel('tests')}</Text>
+                      <Badge color="violet" variant="light" radius="sm">
+                        {activityRail.tests.length} live
+                      </Badge>
+                    </Group>
+                    <Stack gap="sm">
+                      {activityRail.tests.map((item) => (
+                        <ActivityRow
+                          key={`${item.level}:${item.id}`}
+                          item={item}
+                          currencyCode={payload.viewContext.currencyCode}
+                        />
+                      ))}
+                    </Stack>
+                  </div>
+                ) : null}
+
+                {(['campaigns', 'adsets', 'ads'] as const).map((sectionKey) => {
+                  const sectionItems = activityRail[sectionKey];
+
+                  return (
+                    <div key={sectionKey} className={classes.activitySection}>
+                      <Group justify="space-between" align="center" mb="sm" wrap="wrap">
+                        <Text fw={800}>{activitySectionLabel(sectionKey)}</Text>
+                        <Badge color="gray" variant="light" radius="sm">
+                          {sectionItems.length}
+                        </Badge>
+                      </Group>
+
+                      {sectionItems.length > 0 ? (
+                        <Stack gap="sm">
+                          {sectionItems.map((item) => (
+                            <ActivityRow
+                              key={`${item.level}:${item.id}`}
+                              item={item}
+                              currencyCode={payload.viewContext.currencyCode}
+                            />
+                          ))}
+                        </Stack>
+                      ) : (
+                        <Paper withBorder radius="lg" p="md" className={classes.queueSidebarPanel}>
+                          <Text size="sm" c="dimmed">
+                            {sectionKey === 'campaigns'
+                              ? 'No active campaign delivery was detected in this window yet.'
+                              : sectionKey === 'adsets'
+                                ? 'No active ad sets were detected in this window yet.'
+                                : 'No active ads were detected in this window yet.'}
+                          </Text>
+                        </Paper>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {!hasLiveActivity ? (
+                  <Paper withBorder radius="lg" p="md" className={classes.queueSidebarPanel}>
+                    <Text fw={800}>Live activity will appear here after delivery starts</Text>
+                    <Text size="sm" c="dimmed" mt={6}>
+                      Once the selected account has active delivery in the chosen window, this panel will break it down into tests, campaigns, ad sets, and ads with spend and result context.
+                    </Text>
+                  </Paper>
+                ) : null}
+              </Stack>
             </Card>
           </Grid.Col>
         </Grid>

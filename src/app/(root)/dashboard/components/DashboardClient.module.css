@@ -16,6 +16,17 @@
   border-color: var(--platform-border);
 }
 
+.surfaceToolbar {
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.88);
+}
+
+.windowControlWrap {
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
 .title {
   color: var(--platform-text-strong);
   letter-spacing: -0.04em;
@@ -24,6 +35,10 @@
 
 .metricCard {
   height: 100%;
+}
+
+.performancePanel {
+  overflow: hidden;
 }
 
 .metricValue {
@@ -97,8 +112,74 @@
   overflow: hidden;
 }
 
+.calendarAgenda {
+  max-height: 440px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.calendarAgendaRow {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.calendarAgendaDate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.calendarAgendaDateValue {
+  font-size: 1.5rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.calendarAgendaBody {
+  min-width: 0;
+}
+
+.queueMiniRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.activitySection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.activityRow {
+  background: rgba(248, 250, 252, 0.74);
+}
+
+.activityMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  min-width: 280px;
+}
+
 @media (max-width: 760px) {
   .title {
     font-size: 1.55rem;
+  }
+
+  .calendarAgendaRow {
+    grid-template-columns: 1fr;
+  }
+
+  .activityMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 100%;
   }
 }

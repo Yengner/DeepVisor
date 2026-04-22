@@ -13,7 +13,12 @@ export type DashboardState =
   | 'ad_account_selected_no_metrics'
   | 'ready';
 
-export type DashboardWindow = '7d' | '30d';
+export type DashboardWindow =
+  | 'this_week'
+  | 'last_week'
+  | 'last_7d'
+  | 'last_30d'
+  | 'this_month';
 
 export type DashboardOutcomeMetric = 'results' | 'leads' | 'messages' | 'clicks';
 
@@ -87,6 +92,27 @@ export interface DashboardCampaignPreviewItem {
   ctr: number;
 }
 
+export interface DashboardActivityEntityItem {
+  id: string;
+  name: string;
+  level: 'campaign' | 'adset' | 'ad';
+  status: string;
+  primaryContext: string | null;
+  secondaryContext: string | null;
+  spend: number;
+  results: number;
+  clicks: number;
+  ctr: number;
+  costPerResult: number;
+}
+
+export interface DashboardActivityRail {
+  tests: DashboardActivityEntityItem[];
+  campaigns: DashboardActivityEntityItem[];
+  adsets: DashboardActivityEntityItem[];
+  ads: DashboardActivityEntityItem[];
+}
+
 export interface DashboardAttentionSignal {
   id: string;
   signalType: AdAccountSignalView['signalType'];
@@ -110,6 +136,7 @@ export interface DashboardPayload {
   summaryByWindow: Record<DashboardWindow, DashboardSummaryCard[]>;
   trendByWindow: Record<DashboardWindow, DashboardTrendSeries>;
   campaignPreview: DashboardCampaignPreviewItem[];
+  activityByWindow: Record<DashboardWindow, DashboardActivityRail>;
   intelligenceSignals: DashboardAttentionSignal[];
   calendarQueuePreview: CalendarQueuePreviewItem[];
   syncCoverage: SyncCoverage | null;

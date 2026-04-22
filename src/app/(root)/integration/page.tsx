@@ -5,6 +5,7 @@ import IntegrationClient from './components/IntegrationClient';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import type { Database } from '@/lib/shared/types/supabase';
 import type { IntegrationStatus } from '@/lib/shared/types/integrations';
+import { getPrimaryAdAccountSelection } from '@/lib/server/integrations/service';
 
 type PlatformRow = Pick<Database['public']['Tables']['platforms']['Row'], 'id' | 'key' | 'name' | 'api_info'>;
 type PlatformIntegrationRow = {
@@ -22,6 +23,10 @@ type PlatformIntegrationRow = {
   created_at: string;
   updated_at: string;
 };
+type AdAccountRow = Pick<
+  Database['public']['Tables']['ad_accounts']['Row'],
+  'platform_id' | 'external_account_id' | 'name'
+>;
 
 const FALLBACK_PLATFORMS: PlatformRow[] = [
   {
@@ -66,7 +71,11 @@ export default async function IntegrationPage() {
   const supabase = await createServerClient();
   const { businessId } = await getRequiredAppContext();
 
-  const [{ data: platforms, error: platformError }, { data: integrations, error: integrationError }] =
+  const [
+    { data: platforms, error: platformError },
+    { data: integrations, error: integrationError },
+    { data: adAccounts, error: adAccountsError },
+  ] =
     await Promise.all([
       supabase
         .from('platforms')
@@ -74,6 +83,10 @@ export default async function IntegrationPage() {
       supabase
         .from('platform_integrations')
         .select('*')
+        .eq('business_id', businessId),
+      supabase
+        .from('ad_accounts')
+        .select('platform_id, external_account_id, name')
         .eq('business_id', businessId),
     ]);
 
@@ -86,6 +99,9 @@ export default async function IntegrationPage() {
     console.error('Error fetching platform integrations in integration page:', integrationError.message);
     return <div>Failed to load integrations</div>;
   }
+  if (adAccountsError) {
+    console.error('Error fetching discovered ad accounts in integration page:', adAccountsError.message);
+  }
 
   const availablePlatforms = FALLBACK_PLATFORMS;
   const livePlatformByKey = new Map<string, PlatformRow>(
@@ -95,6 +111,22 @@ export default async function IntegrationPage() {
   const integrationByPlatformId = new Map<string, PlatformIntegrationRow>(
     ((integrations ?? []) as unknown as PlatformIntegrationRow[]).map((integration) => [integration.platform_id, integration])
   );
+  const discoveredAccountsByPlatformId = new Map<string, Map<string, { name: string | null }>>();
+
+  for (const account of (adAccounts ?? []) as AdAccountRow[]) {
+    if (!account.external_account_id) {
+      continue;
+    }
+
+    const accountsForPlatform =
+      discoveredAccountsByPlatformId.get(account.platform_id) ?? new Map<string, { name: string | null }>();
+    if (!accountsForPlatform.has(account.external_account_id)) {
+      accountsForPlatform.set(account.external_account_id, {
+        name: account.name,
+      });
+    }
+    discoveredAccountsByPlatformId.set(account.platform_id, accountsForPlatform);
+  }
 
   const platformsWithIntegration = availablePlatforms.map((platform) => {
     const livePlatform = livePlatformByKey.get(platform.key);
@@ -102,6 +134,21 @@ export default async function IntegrationPage() {
     const apiInfo = asRecord(platform.api_info);
     const integrationDetails = asRecord(integration?.integration_details);
     const status = toIntegrationStatus(integration?.status ?? integrationDetails.status);
+    const discoveredAccountsForPlatform = livePlatform
+      ? discoveredAccountsByPlatformId.get(livePlatform.id) ?? null
+      : null;
+    const primaryAdAccount = getPrimaryAdAccountSelection(
+      integration?.integration_details as Database['public']['Tables']['platform_integrations']['Row']['integration_details']
+    );
+    const primaryAdAccountName =
+      primaryAdAccount.name ??
+      (primaryAdAccount.externalAccountId
+        ? discoveredAccountsForPlatform?.get(primaryAdAccount.externalAccountId)?.name ?? null
+        : null);
+    const discoveredAdAccountCount = Math.max(
+      discoveredAccountsForPlatform?.size ?? 0,
+      primaryAdAccount.externalAccountId ? 1 : 0
+    );
 
     return {
       id: platform.id,
@@ -119,6 +166,9 @@ export default async function IntegrationPage() {
       connectedAt: integration?.connected_at ?? (asString(integrationDetails.connected_at) || null),
       disconnectedAt: integration?.disconnected_at ?? (asString(integrationDetails.disconnected_at) || null),
       updatedAt: integration?.updated_at ?? null,
+      primaryAdAccountExternalId: primaryAdAccount.externalAccountId,
+      primaryAdAccountName,
+      discoveredAdAccountCount,
     };
   });
 

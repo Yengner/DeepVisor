@@ -60,6 +60,32 @@ export function getUtcToday(): Date {
 }
 
 /**
+ * Returns the current week's UTC start using Sunday as the first day of week.
+ *
+ * @param baseDate - Optional base date to anchor the range.
+ * @returns A Date representing the week's first day at `00:00:00` UTC.
+ */
+export function getUtcWeekStart(baseDate: Date = getUtcToday()): Date {
+  const date = new Date(baseDate);
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() - date.getUTCDay());
+  return date;
+}
+
+/**
+ * Returns the current month's UTC start.
+ *
+ * @param baseDate - Optional base date to anchor the range.
+ * @returns A Date representing the month's first day at `00:00:00` UTC.
+ */
+export function getUtcMonthStart(baseDate: Date = getUtcToday()): Date {
+  const date = new Date(baseDate);
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(1);
+  return date;
+}
+
+/**
  * Builds an inclusive trailing UTC date range ending today.
  *
  * @param days - Number of days to include in the window. Values below 1 are clamped to 1.
@@ -73,6 +99,62 @@ export function getTrailingUtcDateRange(days: number): {
   const dateTo = getUtcToday();
   const dateFrom = new Date(dateTo);
   dateFrom.setUTCDate(dateFrom.getUTCDate() - (safeDays - 1));
+
+  return {
+    dateFrom: toIsoDate(dateFrom),
+    dateTo: toIsoDate(dateTo),
+  };
+}
+
+/**
+ * Builds an inclusive UTC date range for the current week through today.
+ *
+ * @returns An object containing `dateFrom` and `dateTo` in `YYYY-MM-DD` format.
+ */
+export function getCurrentUtcWeekDateRange(): {
+  dateFrom: string;
+  dateTo: string;
+} {
+  const dateTo = getUtcToday();
+  const dateFrom = getUtcWeekStart(dateTo);
+
+  return {
+    dateFrom: toIsoDate(dateFrom),
+    dateTo: toIsoDate(dateTo),
+  };
+}
+
+/**
+ * Builds an inclusive UTC date range covering the previous full week.
+ *
+ * @returns An object containing `dateFrom` and `dateTo` in `YYYY-MM-DD` format.
+ */
+export function getPreviousUtcWeekDateRange(): {
+  dateFrom: string;
+  dateTo: string;
+} {
+  const currentWeekStart = getUtcWeekStart();
+  const dateTo = new Date(currentWeekStart);
+  dateTo.setUTCDate(dateTo.getUTCDate() - 1);
+  const dateFrom = getUtcWeekStart(dateTo);
+
+  return {
+    dateFrom: toIsoDate(dateFrom),
+    dateTo: toIsoDate(dateTo),
+  };
+}
+
+/**
+ * Builds an inclusive UTC date range for the current month through today.
+ *
+ * @returns An object containing `dateFrom` and `dateTo` in `YYYY-MM-DD` format.
+ */
+export function getCurrentUtcMonthDateRange(): {
+  dateFrom: string;
+  dateTo: string;
+} {
+  const dateTo = getUtcToday();
+  const dateFrom = getUtcMonthStart(dateTo);
 
   return {
     dateFrom: toIsoDate(dateFrom),

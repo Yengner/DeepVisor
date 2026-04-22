@@ -16,6 +16,7 @@ import {
   Modal,
   Paper,
   Progress,
+  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -69,10 +70,39 @@ type Platform = {
   connectedAt: string | null;
   disconnectedAt: string | null;
   updatedAt: string | null;
+  primaryAdAccountExternalId: string | null;
+  primaryAdAccountName: string | null;
+  discoveredAdAccountCount: number;
 };
 
 type PlatformListProps = {
   platforms: Platform[];
+};
+
+type MetaAccountOption = {
+  value: string;
+  label: string;
+};
+
+type MetaAccountListResponse = {
+  success?: boolean;
+  data?: {
+    accounts?: Array<{ externalAccountId: string; name: string | null; status: string | null }>;
+    primaryAdAccountExternalId?: string | null;
+  };
+  error?: {
+    userMessage?: string;
+  };
+};
+
+type MetaSelectResponse = {
+  success?: boolean;
+  data?: {
+    firstSyncJob?: { jobId?: string } | null;
+  };
+  error?: {
+    userMessage?: string;
+  };
 };
 
 /**
@@ -146,6 +176,12 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
   const [disconnectingPlatformId, setDisconnectingPlatformId] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [focusedPlatformId, setFocusedPlatformId] = useState<string | null>(null);
+  const [accountSelectionPlatform, setAccountSelectionPlatform] = useState<Platform | null>(null);
+  const [accountOptions, setAccountOptions] = useState<MetaAccountOption[]>([]);
+  const [selectedAccountExternalId, setSelectedAccountExternalId] = useState<string | null>(null);
+  const [loadingAccountOptions, setLoadingAccountOptions] = useState(false);
+  const [submittingAccountSelection, setSubmittingAccountSelection] = useState(false);
   const router = useRouter();
 
   const sortedPlatforms = sortIntegrationPlatforms(platforms);
@@ -162,6 +198,45 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
   const syncCoverage = sortedPlatforms.length > 0
     ? Math.round((connectedPlatforms.length / sortedPlatforms.length) * 100)
     : 0;
+  const focusedPlatform =
+    sortedPlatforms.find((platform) => platform.id === focusedPlatformId) ??
+    connectedPlatforms[0] ??
+    sortedPlatforms[0] ??
+    null;
+  const focusedPalette = getIntegrationPlatformPalette(focusedPlatform?.platformKey ?? 'default');
+  const focusedPlatformConnected = focusedPlatform
+    ? isIntegrationConnected(focusedPlatform.status)
+    : false;
+  const focusedPlatformNeedsAttention = focusedPlatform
+    ? integrationNeedsAttention(focusedPlatform.status)
+    : false;
+  const focusedPlatformPreviewOnly = Boolean(focusedPlatform) &&
+    !focusedPlatformConnected &&
+    focusedPlatform?.platformKey !== 'meta';
+  const focusedHeroTitle = !focusedPlatform
+    ? 'Connect each ad channel once, then let DeepVisor run from it.'
+    : focusedPlatformConnected
+      ? `${focusedPlatform.platformName} is connected and driving this workspace.`
+      : `Connect ${focusedPlatform.platformName}`;
+  const focusedHeroDescription = !focusedPlatform
+    ? 'Pick the platform, choose the one ad account DeepVisor should watch, and see which channels are live, preview-only, or need attention before reports, dashboard, and calendar work depend on them.'
+    : focusedPlatformConnected
+      ? `${focusedPlatform.platformName} is already live in DeepVisor. Keep its sync current, manage its primary ad account, and use this as the clean channel source for dashboard, reports, and calendar work.`
+      : focusedPlatform.platformKey === 'meta'
+        ? 'Authorize Meta, choose the one ad account DeepVisor should watch, and start feeding reporting, calendar, and recommendations from a single clean source.'
+        : `${focusedPlatform.platformName} is still a preview channel. Its connection pattern is visible here so you can plan how it will slot into the workspace once support is enabled.`;
+  const focusedPrimaryLabel = !focusedPlatform
+    ? 'Sync connected channels'
+    : focusedPlatformConnected
+      ? `Sync ${focusedPlatform.platformName}`
+      : focusedPlatformNeedsAttention
+        ? `Reconnect ${focusedPlatform.platformName}`
+        : `Connect ${focusedPlatform.platformName}`;
+  const focusedPrimaryDisabled = !focusedPlatform || focusedPlatformPreviewOnly;
+  const heroCardStyle = {
+    background: `linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, ${focusedPalette.accentSurface} 100%)`,
+    borderColor: focusedPalette.border,
+  } satisfies CSSProperties;
 
   const handleDisconnect = async (platform: Platform) => {
     if (!confirm(`Disconnect ${platform.platformName}?`)) {
@@ -228,6 +303,93 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
     }
   };
 
+  const handleOpenAccountSelection = async (platform: Platform) => {
+    if (platform.platformKey !== 'meta' || !platform.integrationId) {
+      return;
+    }
+
+    setSelectedPlatform(null);
+    setAccountSelectionPlatform(platform);
+    setAccountOptions([]);
+    setSelectedAccountExternalId(platform.primaryAdAccountExternalId);
+    setLoadingAccountOptions(true);
+
+    try {
+      const response = await fetch(
+        `/api/integrations/meta/ad-accounts?integrationId=${platform.integrationId}`
+      );
+      const body = (await response.json().catch(() => ({}))) as MetaAccountListResponse;
+
+      if (!response.ok || !body?.success) {
+        throw new Error(body?.error?.userMessage || 'Failed to load Meta ad accounts');
+      }
+
+      const options = Array.isArray(body.data?.accounts)
+        ? body.data.accounts.map((account) => ({
+            value: account.externalAccountId,
+            label: account.name || account.externalAccountId,
+          }))
+        : [];
+
+      setAccountOptions(options);
+      setSelectedAccountExternalId(
+        body.data?.primaryAdAccountExternalId ??
+          platform.primaryAdAccountExternalId ??
+          options[0]?.value ??
+          null
+      );
+    } catch (error) {
+      console.error('Error loading Meta ad accounts:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to load Meta ad accounts.');
+      setAccountSelectionPlatform(null);
+    } finally {
+      setLoadingAccountOptions(false);
+    }
+  };
+
+  const handleSelectAdAccount = async () => {
+    if (
+      !accountSelectionPlatform?.integrationId ||
+      !selectedAccountExternalId ||
+      submittingAccountSelection
+    ) {
+      return;
+    }
+
+    setSubmittingAccountSelection(true);
+
+    try {
+      const response = await fetch('/api/integrations/meta/select-ad-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          integrationId: accountSelectionPlatform.integrationId,
+          externalAccountId: selectedAccountExternalId,
+        }),
+      });
+      const body = (await response.json().catch(() => ({}))) as MetaSelectResponse;
+
+      if (!response.ok || !body?.success) {
+        throw new Error(body?.error?.userMessage || 'Failed to change Meta ad account');
+      }
+
+      toast.success(
+        body.data?.firstSyncJob
+          ? 'Primary Meta ad account changed. Full history sync started.'
+          : 'Primary Meta ad account changed and sync started.'
+      );
+      setAccountSelectionPlatform(null);
+      router.refresh();
+    } catch (error) {
+      console.error('Error selecting Meta ad account:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to change Meta ad account.');
+    } finally {
+      setSubmittingAccountSelection(false);
+    }
+  };
+
   return (
     <MetaIntegrationFlow returnTo="/integration">
       {({ connectMeta, connecting }) => (
@@ -239,47 +401,124 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
           />
 
           <Stack gap="xl">
-            <Card withBorder radius="xl" p="xl" className={`${styles.heroCard} app-platform-page-hero`}>
-              <div className={styles.heroGlowLeft} />
-              <div className={styles.heroGlowRight} />
+            <Card
+              withBorder
+              radius="xl"
+              p="xl"
+              className={`${styles.heroCard} app-platform-page-hero`}
+              style={heroCardStyle}
+            >
+              <div
+                className={styles.heroGlowLeft}
+                style={{ background: focusedPalette.accentSurface } as CSSProperties}
+              />
+              <div
+                className={styles.heroGlowRight}
+                style={{ background: focusedPalette.accentSoft } as CSSProperties}
+              />
               <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="xl">
                 <Stack gap="md" className={styles.heroContent}>
                   <Group gap="xs" wrap="wrap">
                     <Badge variant="light" className="app-platform-page-badge">
                       Integrations
                     </Badge>
-                    <Badge color="gray" variant="outline">
-                      One primary ad account per platform
-                    </Badge>
+                    {focusedPlatform ? (
+                      <Badge
+                        variant="light"
+                        style={{
+                          backgroundColor: focusedPalette.accentSoft,
+                          color: focusedPalette.text,
+                        }}
+                      >
+                        {focusedPlatform.platformName}
+                      </Badge>
+                    ) : null}
                   </Group>
 
                   <div>
-                    <Title order={2}>Connect each ad channel once, then let DeepVisor run from it.</Title>
+                    <Title order={2} style={{ color: focusedPalette.text }}>
+                      {focusedHeroTitle}
+                    </Title>
                     <Text size="md" c="dimmed" mt="sm" maw={680}>
-                      Pick the platform, choose the one ad account DeepVisor should watch, and see
-                      which channels are live, preview-only, or need attention before reports,
-                      dashboard, and calendar work depend on them.
+                      {focusedHeroDescription}
                     </Text>
                   </div>
 
                   <Group gap="sm" wrap="wrap">
                     <Button
-                      leftSection={<IconRefresh size={16} />}
-                      onClick={handleRefreshConnections}
-                      loading={refreshing}
+                      leftSection={
+                        focusedPlatformConnected ? <IconRefresh size={16} /> : <IconLink size={16} />
+                      }
+                      onClick={() => {
+                        if (!focusedPlatform) {
+                          void handleRefreshConnections();
+                          return;
+                        }
+
+                        if (focusedPlatformConnected) {
+                          void handleRefreshConnections();
+                          return;
+                        }
+
+                        if (focusedPlatform.platformKey === 'meta') {
+                          void connectMeta();
+                        }
+                      }}
+                      loading={
+                        focusedPlatformConnected
+                          ? refreshing
+                          : focusedPlatform?.platformKey === 'meta'
+                            ? connecting
+                            : false
+                      }
+                      disabled={focusedPrimaryDisabled}
                       radius="xl"
+                      style={
+                        focusedPrimaryDisabled
+                          ? undefined
+                          : ({
+                              backgroundColor: focusedPalette.accent,
+                              color: '#ffffff',
+                            } as CSSProperties)
+                      }
                     >
-                      Sync connected channels
+                      {focusedPrimaryLabel}
                     </Button>
-                    <Button
-                      leftSection={<IconLink size={16} />}
-                      variant="light"
-                      radius="xl"
-                      onClick={connectMeta}
-                      loading={connecting}
-                    >
-                      Connect Meta now
-                    </Button>
+                    {focusedPlatform ? (
+                      <Button
+                        leftSection={
+                          focusedPlatformConnected &&
+                          focusedPlatform.platformKey === 'meta' &&
+                          focusedPlatform.discoveredAdAccountCount > 1
+                            ? <IconSettings size={16} />
+                            : <IconArrowUpRight size={16} />
+                        }
+                        variant="light"
+                        radius="xl"
+                        onClick={() => {
+                          if (
+                            focusedPlatform.platformKey === 'meta' &&
+                            focusedPlatformConnected &&
+                            focusedPlatform.discoveredAdAccountCount > 1
+                          ) {
+                            void handleOpenAccountSelection(focusedPlatform);
+                            return;
+                          }
+
+                          setSelectedPlatform(focusedPlatform);
+                        }}
+                        style={{
+                          backgroundColor: focusedPalette.accentSoft,
+                          color: focusedPalette.text,
+                        }}
+                      >
+                        {focusedPlatformConnected &&
+                        focusedPlatform.platformKey === 'meta' &&
+                        focusedPlatform.discoveredAdAccountCount > 1
+                          ? 'Change ad account'
+                          : `View ${focusedPlatform.platformName}`}
+                      </Button>
+                    ) : null}
                   </Group>
 
                   <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
@@ -337,11 +576,20 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                     </Badge>
                   </Group>
 
-                  <Progress value={syncCoverage} size="lg" radius="xl" color="blue" />
+                  <Progress
+                    value={syncCoverage}
+                    size="lg"
+                    radius="xl"
+                    color={focusedPalette.accent}
+                  />
+                  <Text size="xs" c="dimmed" mt="sm">
+                    Select a channel to update the hero card and action state.
+                  </Text>
 
                   <Stack gap="sm" mt="lg">
                     {sortedPlatforms.map((platform) => {
                       const palette = getIntegrationPlatformPalette(platform.platformKey);
+                      const isFocused = focusedPlatform?.id === platform.id;
 
                       return (
                         <Paper
@@ -349,8 +597,23 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                           withBorder
                           radius="lg"
                           p="sm"
-                          className={styles.statusRow}
-                          style={{ borderColor: palette.border } as CSSProperties}
+                          className={`${styles.statusRow} ${isFocused ? styles.statusRowActive : ''}`}
+                          style={{
+                            borderColor: isFocused ? palette.accent : palette.border,
+                            background: isFocused ? palette.accentSurface : '#fff',
+                            boxShadow: isFocused
+                              ? `0 18px 36px ${palette.accentSoft}`
+                              : undefined,
+                          } as CSSProperties}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setFocusedPlatformId(platform.id)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              setFocusedPlatformId(platform.id);
+                            }
+                          }}
                         >
                           <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
                             <Group gap="sm" wrap="nowrap">
@@ -604,14 +867,25 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                         <Group justify="space-between" align="center" mt="auto" wrap="wrap">
                           <Group gap="xs" wrap="wrap">
                             {canManageLive ? (
-                              <Button
-                                leftSection={<IconRefresh size={16} />}
-                                variant="light"
-                                onClick={handleRefreshConnections}
-                                loading={refreshing}
-                              >
-                                Refresh data
-                              </Button>
+                              <>
+                                <Button
+                                  leftSection={<IconRefresh size={16} />}
+                                  variant="light"
+                                  onClick={handleRefreshConnections}
+                                  loading={refreshing}
+                                >
+                                  Refresh data
+                                </Button>
+                                {platform.platformKey === 'meta' &&
+                                platform.discoveredAdAccountCount > 1 ? (
+                                  <Button
+                                    variant="default"
+                                    onClick={() => void handleOpenAccountSelection(platform)}
+                                  >
+                                    Change ad account
+                                  </Button>
+                                ) : null}
+                              </>
                             ) : canConnectNow ? (
                               <Button
                                 leftSection={<IconLink size={16} />}
@@ -672,6 +946,61 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
             </div>
 
             <Modal
+              opened={Boolean(accountSelectionPlatform)}
+              onClose={() => {
+                if (!submittingAccountSelection) {
+                  setAccountSelectionPlatform(null);
+                }
+              }}
+              title="Change Meta ad account"
+              centered
+            >
+              <Stack gap="md">
+                <Text size="sm" c="dimmed">
+                  Choose which discovered Meta ad account DeepVisor should watch next. Saving this
+                  selection also starts sync for that account.
+                </Text>
+
+                <Select
+                  label="Discovered Meta ad accounts"
+                  placeholder={loadingAccountOptions ? 'Loading ad accounts...' : 'Select one ad account'}
+                  data={accountOptions}
+                  value={selectedAccountExternalId}
+                  onChange={setSelectedAccountExternalId}
+                  disabled={loadingAccountOptions || submittingAccountSelection}
+                  searchable
+                  nothingFoundMessage="No discovered ad accounts found"
+                />
+
+                {accountSelectionPlatform ? (
+                  <Text size="sm" c="dimmed">
+                    Current primary account:{' '}
+                    {accountSelectionPlatform.primaryAdAccountName ||
+                      accountSelectionPlatform.primaryAdAccountExternalId ||
+                      'Not selected yet'}
+                  </Text>
+                ) : null}
+
+                <Group justify="flex-end" gap="sm">
+                  <Button
+                    variant="default"
+                    onClick={() => setAccountSelectionPlatform(null)}
+                    disabled={submittingAccountSelection}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSelectAdAccount}
+                    loading={submittingAccountSelection}
+                    disabled={!selectedAccountExternalId || loadingAccountOptions}
+                  >
+                    Save and sync account
+                  </Button>
+                </Group>
+              </Stack>
+            </Modal>
+
+            <Modal
               opened={Boolean(selectedPlatform)}
               onClose={() => setSelectedPlatform(null)}
               size="lg"
@@ -684,6 +1013,10 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                   const disconnecting = disconnectingPlatformId === selectedPlatform.id;
                   const connected = isIntegrationConnected(selectedPlatform.status);
                   const canConnectNow = selectedPlatform.platformKey === 'meta' && !connected;
+                  const canChangeMetaAccount =
+                    selectedPlatform.platformKey === 'meta' &&
+                    connected &&
+                    selectedPlatform.discoveredAdAccountCount > 1;
 
                   return (
                     <Stack gap="lg">
@@ -782,6 +1115,36 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                         </Paper>
                       </SimpleGrid>
 
+                      {selectedPlatform.platformKey === 'meta' && connected ? (
+                        <div>
+                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                            Primary ad account
+                          </Text>
+                          <Group gap="xs" mt="sm" wrap="wrap">
+                            <Button
+                              radius="xl"
+                              variant="default"
+                              onClick={
+                                canChangeMetaAccount
+                                  ? () => void handleOpenAccountSelection(selectedPlatform)
+                                  : undefined
+                              }
+                            >
+                              {selectedPlatform.primaryAdAccountName ||
+                                selectedPlatform.primaryAdAccountExternalId ||
+                                'Not selected yet'}
+                            </Button>
+                            <Text size="sm" c="dimmed">
+                              {selectedPlatform.discoveredAdAccountCount > 1
+                                ? `${selectedPlatform.discoveredAdAccountCount} discovered ad accounts can be switched and synced from here.`
+                                : selectedPlatform.discoveredAdAccountCount === 1
+                                  ? 'Only one discovered ad account is currently available.'
+                                  : 'No saved Meta ad accounts have been discovered yet.'}
+                            </Text>
+                          </Group>
+                        </div>
+                      ) : null}
+
                       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                         <Paper withBorder radius="lg" p="md">
                           <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
@@ -827,6 +1190,14 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                               >
                                 Refresh data
                               </Button>
+                              {canChangeMetaAccount ? (
+                                <Button
+                                  variant="default"
+                                  onClick={() => void handleOpenAccountSelection(selectedPlatform)}
+                                >
+                                  Change ad account
+                                </Button>
+                              ) : null}
                               <Button
                                 color="red"
                                 variant="light"

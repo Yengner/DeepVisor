@@ -66,7 +66,8 @@ export default function TopBarClient({
         setNotificationCount(userNotifications.filter(n => !n.read).length);
     }, [userNotifications]);
 
-    const fullName = userInfo?.full_name || 'User';
+
+    const fullName = (userInfo?.first_name + ' ' + userInfo?.last_name).trim();
     const userInitials = fullName.split(' ').map((name: string) => name[0]).join('').toUpperCase();
     const accentColor = 'var(--platform-accent)';
     const accentStrong = 'var(--platform-accent-strong)';

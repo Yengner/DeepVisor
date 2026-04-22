@@ -40,6 +40,7 @@
 
 .statusRow {
   background: #fff;
+  cursor: pointer;
   transition:
     transform 160ms ease,
     box-shadow 160ms ease,
@@ -49,6 +50,15 @@
 .statusRow:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.statusRowActive {
+  transform: translateY(-1px);
+}
+
+.statusRow:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.28);
+  outline-offset: 2px;
 }
 
 .summaryCard {
