@@ -22,14 +22,17 @@ import {
 } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/client/supabase/browser';
-import type { FirstSyncJobStatus } from '@/lib/shared/types/integrations';
+import type {
+  FirstSyncJobStatus,
+  SupportedIntegrationPlatform,
+} from '@/lib/shared/types/integrations';
 import {
-  META_FIRST_SYNC_TRACK_EVENT,
-  readTrackedMetaFirstSyncJobs,
-  type TrackedMetaFirstSyncJob,
-  updateTrackedMetaFirstSyncJob,
-  untrackMetaFirstSyncJob,
-} from './metaFirstSyncTracking';
+  FIRST_SYNC_TRACK_EVENT,
+  readTrackedFirstSyncJobs,
+  type TrackedFirstSyncJob,
+  updateTrackedFirstSyncJob,
+  untrackFirstSyncJob,
+} from './firstSyncTracking';
 
 const STAGE_ORDER: Array<NonNullable<FirstSyncJobStatus['stage']>> = [
   'resolving_account',
@@ -49,10 +52,14 @@ const STAGE_LABELS: Record<NonNullable<FirstSyncJobStatus['stage']>, string> = {
   syncing_adsets: 'Syncing ad sets',
   syncing_ads: 'Syncing ads',
   syncing_creatives: 'Syncing creatives',
-  syncing_performance_windows: 'Syncing 30-day performance windows',
+  syncing_performance_windows: 'Syncing performance windows',
   finalizing_summaries: 'Finalizing lifetime summaries',
   running_assessments: 'Running DeepVisor analysis',
   completed: 'Completed',
+};
+
+const PLATFORM_COLORS: Record<SupportedIntegrationPlatform, string> = {
+  meta: 'indigo',
 };
 
 function formatJobCount(value: number): string {
@@ -60,11 +67,7 @@ function formatJobCount(value: number): string {
 }
 
 function computeStageProgress(job: FirstSyncJobStatus): number {
-  if (job.status === 'completed') {
-    return 100;
-  }
-
-  if (job.status === 'failed') {
+  if (job.status === 'completed' || job.status === 'failed') {
     return 100;
   }
 
@@ -80,8 +83,26 @@ function computeStageProgress(job: FirstSyncJobStatus): number {
   return Math.min(95, Math.round(((stageIndex + 1) / STAGE_ORDER.length) * 100));
 }
 
-export default function MetaFirstSyncTracker() {
-  const [trackedJobs, setTrackedJobs] = useState<TrackedMetaFirstSyncJob[]>([]);
+function getSyncJobRoutes(platformKey: SupportedIntegrationPlatform, jobId: string): {
+  status: string;
+  dispatch: string;
+} {
+  switch (platformKey) {
+    case 'meta':
+      return {
+        status: `/api/integrations/meta/sync-jobs/${jobId}`,
+        dispatch: `/api/integrations/meta/sync-jobs/${jobId}/dispatch`,
+      };
+    default:
+      return {
+        status: `/api/integrations/${platformKey}/sync-jobs/${jobId}`,
+        dispatch: `/api/integrations/${platformKey}/sync-jobs/${jobId}/dispatch`,
+      };
+  }
+}
+
+export default function FirstSyncTracker() {
+  const [trackedJobs, setTrackedJobs] = useState<TrackedFirstSyncJob[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [modalOpened, setModalOpened] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState<'idle' | 'connecting' | 'subscribed' | 'error'>('idle');
@@ -90,21 +111,21 @@ export default function MetaFirstSyncTracker() {
   const supabaseRef = useRef(createClient());
 
   const applyLatestJobState = (
-    trackedJob: TrackedMetaFirstSyncJob,
+    trackedJob: TrackedFirstSyncJob,
     latestJob: FirstSyncJobStatus,
     options?: {
       showToast?: boolean;
     }
-  ): TrackedMetaFirstSyncJob | null => {
+  ): TrackedFirstSyncJob | null => {
     const nextTrackedJob = {
       ...trackedJob,
       job: latestJob,
     };
 
     if (latestJob.status === 'completed') {
-      untrackMetaFirstSyncJob(trackedJob.jobId);
+      untrackFirstSyncJob(trackedJob.jobId);
       if (options?.showToast) {
-        toast.success('Meta history sync completed.');
+        toast.success(`${trackedJob.platformName} sync completed.`);
       }
       if (selectedJobId === trackedJob.jobId) {
         setModalOpened(false);
@@ -113,9 +134,9 @@ export default function MetaFirstSyncTracker() {
     }
 
     if (latestJob.status === 'failed') {
-      untrackMetaFirstSyncJob(trackedJob.jobId);
+      untrackFirstSyncJob(trackedJob.jobId);
       if (options?.showToast) {
-        toast.error(latestJob.errorMessage || 'Meta history sync failed.');
+        toast.error(latestJob.errorMessage || `${trackedJob.platformName} sync failed.`);
       }
       if (selectedJobId === trackedJob.jobId) {
         setModalOpened(false);
@@ -123,19 +144,19 @@ export default function MetaFirstSyncTracker() {
       return null;
     }
 
-    updateTrackedMetaFirstSyncJob(nextTrackedJob);
+    updateTrackedFirstSyncJob(nextTrackedJob);
     return nextTrackedJob;
   };
 
   useEffect(() => {
-    const storedJobs = readTrackedMetaFirstSyncJobs();
+    const storedJobs = readTrackedFirstSyncJobs();
     setTrackedJobs(storedJobs);
     setSelectedJobId(storedJobs[0]?.jobId ?? null);
   }, []);
 
   useEffect(() => {
     const handleTrack = (event: Event) => {
-      const detail = (event as CustomEvent<TrackedMetaFirstSyncJob>).detail;
+      const detail = (event as CustomEvent<TrackedFirstSyncJob>).detail;
       if (!detail?.jobId) {
         return;
       }
@@ -148,9 +169,9 @@ export default function MetaFirstSyncTracker() {
       setModalOpened(true);
     };
 
-    window.addEventListener(META_FIRST_SYNC_TRACK_EVENT, handleTrack);
+    window.addEventListener(FIRST_SYNC_TRACK_EVENT, handleTrack);
     return () => {
-      window.removeEventListener(META_FIRST_SYNC_TRACK_EVENT, handleTrack);
+      window.removeEventListener(FIRST_SYNC_TRACK_EVENT, handleTrack);
     };
   }, []);
 
@@ -169,10 +190,12 @@ export default function MetaFirstSyncTracker() {
       }
 
       dispatchRequestedAt.current.set(trackedJob.jobId, Date.now());
-      void fetch(`/api/integrations/meta/sync-jobs/${trackedJob.jobId}/dispatch`, {
+      const routes = getSyncJobRoutes(trackedJob.platformKey, trackedJob.jobId);
+
+      void fetch(routes.dispatch, {
         method: 'POST',
       }).catch((error) => {
-        console.error('Failed to dispatch Meta first-sync job:', error);
+        console.error('Failed to dispatch first-sync job:', error);
       });
     }
   }, [trackedJobs]);
@@ -189,29 +212,27 @@ export default function MetaFirstSyncTracker() {
     setRealtimeStatus('connecting');
 
     const refreshJobStatus = async (
-      trackedJob: TrackedMetaFirstSyncJob,
+      trackedJob: TrackedFirstSyncJob,
       options?: {
         showToast?: boolean;
       }
-    ): Promise<TrackedMetaFirstSyncJob | null> => {
+    ): Promise<TrackedFirstSyncJob | null> => {
       try {
-        const response = await fetch(
-          `/api/integrations/meta/sync-jobs/${trackedJob.jobId}`,
-          {
-            cache: 'no-store',
-          }
-        );
+        const routes = getSyncJobRoutes(trackedJob.platformKey, trackedJob.jobId);
+        const response = await fetch(routes.status, {
+          cache: 'no-store',
+        });
 
         const contentType = response.headers.get('content-type') ?? '';
 
         if (response.redirected || !contentType.includes('application/json')) {
-          untrackMetaFirstSyncJob(trackedJob.jobId);
+          untrackFirstSyncJob(trackedJob.jobId);
           return null;
         }
 
         if (!response.ok) {
           if (response.status === 401 || response.status === 404) {
-            untrackMetaFirstSyncJob(trackedJob.jobId);
+            untrackFirstSyncJob(trackedJob.jobId);
             return null;
           }
 
@@ -230,7 +251,7 @@ export default function MetaFirstSyncTracker() {
 
         return applyLatestJobState(trackedJob, latestJob, options);
       } catch (error) {
-        console.error('Failed to refresh Meta first-sync status:', error);
+        console.error('Failed to refresh first-sync status:', error);
         return trackedJob;
       }
     };
@@ -242,7 +263,7 @@ export default function MetaFirstSyncTracker() {
 
       if (!cancelled) {
         const filteredJobs = nextJobs.filter(
-          (job): job is TrackedMetaFirstSyncJob => job !== null
+          (job): job is TrackedFirstSyncJob => job !== null
         );
         setTrackedJobs(filteredJobs);
         if (filteredJobs.length === 0) {
@@ -257,7 +278,7 @@ export default function MetaFirstSyncTracker() {
 
     for (const trackedJob of trackedJobs) {
       const channel = supabase
-        .channel(`meta-first-sync-job-${trackedJob.jobId}`)
+        .channel(`first-sync-job-${trackedJob.jobId}`)
         .on(
           'postgres_changes',
           {
@@ -316,19 +337,18 @@ export default function MetaFirstSyncTracker() {
   }, [trackedJobs, selectedJobId]);
 
   const selectedJob =
-    trackedJobs.find((job) => job.jobId === selectedJobId) ??
-    trackedJobs[0] ??
-    null;
+    trackedJobs.find((job) => job.jobId === selectedJobId) ?? trackedJobs[0] ?? null;
   const runningJobs = trackedJobs.filter(
     (job) => job.job.status === 'queued' || job.job.status === 'running'
   );
+  const selectedPlatformColor = selectedJob ? PLATFORM_COLORS[selectedJob.platformKey] : 'blue';
 
   return (
     <>
       <Modal
         opened={Boolean(selectedJob) && modalOpened}
         onClose={() => setModalOpened(false)}
-        title="Syncing Meta history"
+        title="Syncing ad account"
         centered
         size="lg"
       >
@@ -336,14 +356,19 @@ export default function MetaFirstSyncTracker() {
           <Stack gap="md">
             <Group justify="space-between" align="flex-start">
               <Stack gap={4}>
-                <Text fw={700}>{selectedJob.adAccountName ?? selectedJob.externalAccountId}</Text>
+                <Group gap="xs">
+                  <Text fw={700}>{selectedJob.adAccountName ?? selectedJob.externalAccountId}</Text>
+                  <Badge color={selectedPlatformColor} variant="light">
+                    {selectedJob.platformName}
+                  </Badge>
+                </Group>
                 <Text size="sm" c="dimmed">
-                  DeepVisor is filling campaigns, ad sets, ads, creatives, and daily performance in
+                  DeepVisor is filling campaigns, ad sets, ads, creatives, and recent performance in
                   the background. You can close this and reopen it anytime.
                 </Text>
               </Stack>
               <Badge
-                color={selectedJob.job.status === 'queued' ? 'gray' : 'blue'}
+                color={selectedJob.job.status === 'queued' ? 'gray' : selectedPlatformColor}
                 variant="light"
               >
                 {selectedJob.job.status}
@@ -351,9 +376,10 @@ export default function MetaFirstSyncTracker() {
             </Group>
 
             <Stack gap={6}>
-              <Text fw={600}>{selectedJob.job.message ?? 'Preparing the first history sync.'}</Text>
+              <Text fw={600}>{selectedJob.job.message ?? 'Preparing the first sync.'}</Text>
               <Progress
                 value={computeStageProgress(selectedJob.job)}
+                color={selectedPlatformColor}
                 animated={selectedJob.job.status === 'running'}
                 size="lg"
                 radius="xl"
@@ -363,12 +389,12 @@ export default function MetaFirstSyncTracker() {
             {selectedJob.job.windowSince && selectedJob.job.windowUntil ? (
               <Paper withBorder radius="md" p="sm">
                 <Group gap="sm" wrap="nowrap">
-                  <ThemeIcon color="blue" variant="light" radius="xl">
+                  <ThemeIcon color={selectedPlatformColor} variant="light" radius="xl">
                     <IconArrowAutofitDown size={16} />
                   </ThemeIcon>
                   <Stack gap={2}>
                     <Text size="sm" fw={600}>
-                      Current 30-day window
+                      Current sync window
                     </Text>
                     <Text size="sm" c="dimmed">
                       {selectedJob.job.windowSince} through {selectedJob.job.windowUntil}
@@ -426,7 +452,7 @@ export default function MetaFirstSyncTracker() {
                 return (
                   <Group key={stage} gap="sm" wrap="nowrap">
                     <ThemeIcon
-                      color={complete ? 'green' : active ? 'blue' : 'gray'}
+                      color={complete ? 'green' : active ? selectedPlatformColor : 'gray'}
                       variant={complete || active ? 'filled' : 'light'}
                       radius="xl"
                       size="sm"
@@ -466,25 +492,30 @@ export default function MetaFirstSyncTracker() {
         ) : null}
       </Modal>
 
-      {runningJobs.length > 0 && !modalOpened ? (
-        <Button
-          onClick={() => {
-            setSelectedJobId(runningJobs[0]?.jobId ?? null);
-            setModalOpened(true);
-          }}
-          radius="xl"
-          size="md"
-          leftSection={<IconCloudDownload size={16} />}
-          style={{
-            position: 'fixed',
-            right: 24,
-            bottom: 24,
-            zIndex: 80,
-          }}
-        >
-          {runningJobs.length === 1 ? 'Meta history sync running' : `${runningJobs.length} syncs running`}
-        </Button>
-      ) : null}
+      <Stack
+        gap="sm"
+        style={{
+          position: 'fixed',
+          right: 24,
+          bottom: 24,
+          zIndex: 80,
+          alignItems: 'flex-end',
+        }}
+      >
+        {runningJobs.length > 0 && !modalOpened ? (
+          <Button
+            onClick={() => {
+              setSelectedJobId(runningJobs[0]?.jobId ?? null);
+              setModalOpened(true);
+            }}
+            radius="xl"
+            size="md"
+            leftSection={<IconCloudDownload size={16} />}
+          >
+            {runningJobs.length === 1 ? 'Sync running' : `${runningJobs.length} syncs running`}
+          </Button>
+        ) : null}
+      </Stack>
     </>
   );
 }

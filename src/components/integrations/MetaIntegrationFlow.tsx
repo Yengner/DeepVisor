@@ -17,7 +17,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import type { FirstSyncJobStatus, SyncCoverage } from '@/lib/shared/types/integrations';
 import BlockingTaskScreen from '@/components/ui/states/BlockingTaskScreen';
-import { trackMetaFirstSyncJob } from './metaFirstSyncTracking';
+import { trackFirstSyncJob } from './firstSyncTracking';
 
 type MetaIntegrationFlowProps = {
   returnTo: '/onboarding' | '/integration';
@@ -230,7 +230,7 @@ export default function MetaIntegrationFlow({
       resetFlow();
 
       if (firstSyncJob && body.data?.integrationId && body.data?.adAccountId && body.data.externalAccountId) {
-        trackMetaFirstSyncJob({
+        trackFirstSyncJob({
           jobId: firstSyncJob.jobId,
           integrationId: body.data.integrationId,
           adAccountId: body.data.adAccountId,
@@ -238,6 +238,8 @@ export default function MetaIntegrationFlow({
           adAccountName: accountOptions.find(
             (option) => option.value === body.data?.externalAccountId
           )?.label ?? null,
+          platformKey: 'meta',
+          platformName: 'Meta',
           job: firstSyncJob,
         });
         toast.success('Meta connected. Full history sync started in the background.');

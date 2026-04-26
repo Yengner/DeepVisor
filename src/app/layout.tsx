@@ -4,7 +4,7 @@ import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from "@mantine/c
 import { Manrope, Sora } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import PendingAuthToast from "@/components/ui/toasts/PendingAuthToast";
-import MetaFirstSyncTracker from "@/components/integrations/MetaFirstSyncTracker";
+import FirstSyncTracker from "@/components/integrations/FirstSyncTracker";
 import "../globals.css";
 
 const bodyFont = Manrope({
@@ -38,7 +38,7 @@ export default function MainLayout({
         <MantineProvider>
           <Toaster />
           <PendingAuthToast />
-          <MetaFirstSyncTracker />
+          <FirstSyncTracker />
           {children}
         </MantineProvider>
       </body>

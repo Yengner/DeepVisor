@@ -14,77 +14,6 @@ export type Database = {
   }
   ai: {
     Tables: {
-      ad_account_signals: {
-        Row: {
-          ad_account_id: string
-          business_id: string
-          created_at: string
-          evidence_json: Json
-          first_detected_at: string
-          id: string
-          last_detected_at: string
-          platform_integration_id: string
-          reason: string
-          recommended_action_json: Json
-          resolved_at: string | null
-          severity: string
-          signal_type: string
-          source_assessment_id: string | null
-          source_digest_hash: string
-          status: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          ad_account_id: string
-          business_id: string
-          created_at?: string
-          evidence_json?: Json
-          first_detected_at?: string
-          id?: string
-          last_detected_at?: string
-          platform_integration_id: string
-          reason: string
-          recommended_action_json?: Json
-          resolved_at?: string | null
-          severity: string
-          signal_type: string
-          source_assessment_id?: string | null
-          source_digest_hash: string
-          status?: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          ad_account_id?: string
-          business_id?: string
-          created_at?: string
-          evidence_json?: Json
-          first_detected_at?: string
-          id?: string
-          last_detected_at?: string
-          platform_integration_id?: string
-          reason?: string
-          recommended_action_json?: Json
-          resolved_at?: string | null
-          severity?: string
-          signal_type?: string
-          source_assessment_id?: string | null
-          source_digest_hash?: string
-          status?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ad_account_signals_source_assessment_id_fkey"
-            columns: ["source_assessment_id"]
-            isOneToOne: false
-            referencedRelation: "business_assessments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       agent_observations: {
         Row: {
           ad_account_id: string | null
@@ -1605,6 +1534,91 @@ export type Database = {
           },
         ]
       }
+      calendar_queue_templates: {
+        Row: {
+          ad_account_id: string | null
+          business_id: string
+          created_at: string
+          description: string | null
+          destination_href: string | null
+          duration_minutes: number
+          end_date: string | null
+          id: string
+          monthly_day: number | null
+          platform_integration_id: string | null
+          recurrence_type: string
+          start_date: string
+          status: string
+          template_type: string
+          time_of_day: string
+          title: string
+          updated_at: string
+          weekdays: number[]
+        }
+        Insert: {
+          ad_account_id?: string | null
+          business_id: string
+          created_at?: string
+          description?: string | null
+          destination_href?: string | null
+          duration_minutes?: number
+          end_date?: string | null
+          id?: string
+          monthly_day?: number | null
+          platform_integration_id?: string | null
+          recurrence_type: string
+          start_date: string
+          status?: string
+          template_type: string
+          time_of_day: string
+          title: string
+          updated_at?: string
+          weekdays?: number[]
+        }
+        Update: {
+          ad_account_id?: string | null
+          business_id?: string
+          created_at?: string
+          description?: string | null
+          destination_href?: string | null
+          duration_minutes?: number
+          end_date?: string | null
+          id?: string
+          monthly_day?: number | null
+          platform_integration_id?: string | null
+          recurrence_type?: string
+          start_date?: string
+          status?: string
+          template_type?: string
+          time_of_day?: string
+          title?: string
+          updated_at?: string
+          weekdays?: number[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_queue_templates_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_queue_templates_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_queue_templates_platform_integration_id_fkey"
+            columns: ["platform_integration_id"]
+            isOneToOne: false
+            referencedRelation: "platform_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_dims: {
         Row: {
           ad_account_id: string
@@ -1893,6 +1907,128 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "campaigns_performance_daily_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meta_audience_breakdowns_daily: {
+        Row: {
+          actions_json: Json
+          ad_account_id: string
+          ad_id: string | null
+          adset_id: string | null
+          breakdown_type: string
+          calls: number
+          campaign_id: string | null
+          clicks: number
+          cost_per_action_type_json: Json
+          created_at: string
+          currency_code: string | null
+          day: string
+          dimension_1_key: string
+          dimension_1_value: string
+          dimension_2_key: string
+          dimension_2_value: string
+          entity_id: string
+          entity_level: string
+          impressions: number
+          inline_link_clicks: number
+          leads: number
+          messages: number
+          objective: string | null
+          raw: Json | null
+          reach: number
+          source: string
+          spend: number
+          updated_at: string
+        }
+        Insert: {
+          actions_json?: Json
+          ad_account_id: string
+          ad_id?: string | null
+          adset_id?: string | null
+          breakdown_type: string
+          calls?: number
+          campaign_id?: string | null
+          clicks?: number
+          cost_per_action_type_json?: Json
+          created_at?: string
+          currency_code?: string | null
+          day: string
+          dimension_1_key: string
+          dimension_1_value: string
+          dimension_2_key?: string
+          dimension_2_value?: string
+          entity_id: string
+          entity_level: string
+          impressions?: number
+          inline_link_clicks?: number
+          leads?: number
+          messages?: number
+          objective?: string | null
+          raw?: Json | null
+          reach?: number
+          source?: string
+          spend?: number
+          updated_at?: string
+        }
+        Update: {
+          actions_json?: Json
+          ad_account_id?: string
+          ad_id?: string | null
+          adset_id?: string | null
+          breakdown_type?: string
+          calls?: number
+          campaign_id?: string | null
+          clicks?: number
+          cost_per_action_type_json?: Json
+          created_at?: string
+          currency_code?: string | null
+          day?: string
+          dimension_1_key?: string
+          dimension_1_value?: string
+          dimension_2_key?: string
+          dimension_2_value?: string
+          entity_id?: string
+          entity_level?: string
+          impressions?: number
+          inline_link_clicks?: number
+          leads?: number
+          messages?: number
+          objective?: string | null
+          raw?: Json | null
+          reach?: number
+          source?: string
+          spend?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_audience_breakdowns_daily_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_audience_breakdowns_daily_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_audience_breakdowns_daily_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_audience_breakdowns_daily_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaign_dims"
@@ -2225,7 +2361,7 @@ export type Database = {
     }
     Functions: {
       accept_calendar_queue_workflow: {
-        Args: { p_queue_item_id: string; p_user_id?: string | null }
+        Args: { p_queue_item_id: string; p_user_id?: string }
         Returns: {
           ad_account_id: string
           business_id: string
