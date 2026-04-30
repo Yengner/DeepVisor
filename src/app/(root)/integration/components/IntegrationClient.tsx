@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import {
   ActionIcon,
@@ -37,6 +37,12 @@ import {
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import MetaIntegrationFlow from '@/components/integrations/MetaIntegrationFlow';
+import {
+  clearPitchDetachedPlatform,
+  readPitchDetachedPlatforms,
+  upsertPitchDetachedPlatform,
+  type PitchDetachedPlatform,
+} from '@/components/integrations/pitchDetach';
 import { getPlatformIcon } from '@/components/utils/utils';
 import {
   formatDateTime,
@@ -73,6 +79,10 @@ type Platform = {
   primaryAdAccountExternalId: string | null;
   primaryAdAccountName: string | null;
   discoveredAdAccountCount: number;
+};
+
+type DisplayPlatform = Platform & {
+  pitchDetached: boolean;
 };
 
 type PlatformListProps = {
@@ -174,7 +184,7 @@ function ChannelArtwork({
 
 export default function IntegrationClient({ platforms }: PlatformListProps) {
   const [disconnectingPlatformId, setDisconnectingPlatformId] = useState<string | null>(null);
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<DisplayPlatform | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [focusedPlatformId, setFocusedPlatformId] = useState<string | null>(null);
   const [accountSelectionPlatform, setAccountSelectionPlatform] = useState<Platform | null>(null);
@@ -182,9 +192,39 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
   const [selectedAccountExternalId, setSelectedAccountExternalId] = useState<string | null>(null);
   const [loadingAccountOptions, setLoadingAccountOptions] = useState(false);
   const [submittingAccountSelection, setSubmittingAccountSelection] = useState(false);
+  const [pitchDetachedPlatforms, setPitchDetachedPlatforms] = useState<PitchDetachedPlatform[]>([]);
   const router = useRouter();
 
-  const sortedPlatforms = sortIntegrationPlatforms(platforms);
+  useEffect(() => {
+    const syncPitchDetachedPlatforms = () => {
+      setPitchDetachedPlatforms(readPitchDetachedPlatforms());
+    };
+
+    syncPitchDetachedPlatforms();
+    window.addEventListener('storage', syncPitchDetachedPlatforms);
+
+    return () => {
+      window.removeEventListener('storage', syncPitchDetachedPlatforms);
+    };
+  }, []);
+
+  const pitchDetachedByPlatformId = useMemo(
+    () => new Map(pitchDetachedPlatforms.map((platform) => [platform.platformId, platform])),
+    [pitchDetachedPlatforms]
+  );
+
+  const sortedPlatforms = sortIntegrationPlatforms(
+    platforms.map((platform) => {
+      const detached = pitchDetachedByPlatformId.has(platform.id);
+
+      return {
+        ...platform,
+        status: detached ? 'disconnected' : platform.status,
+        lastError: detached ? null : platform.lastError,
+        pitchDetached: detached,
+      } satisfies DisplayPlatform;
+    })
+  );
   const connectedPlatforms = sortedPlatforms.filter((platform) => isIntegrationConnected(platform.status));
   const attentionPlatforms = sortedPlatforms.filter((platform) => integrationNeedsAttention(platform.status));
   const latestSyncedPlatform = [...connectedPlatforms]
@@ -207,6 +247,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
   const focusedPlatformConnected = focusedPlatform
     ? isIntegrationConnected(focusedPlatform.status)
     : false;
+  const focusedPlatformPitchDetached = Boolean(focusedPlatform?.pitchDetached);
   const focusedPlatformNeedsAttention = focusedPlatform
     ? integrationNeedsAttention(focusedPlatform.status)
     : false;
@@ -215,11 +256,15 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
     focusedPlatform?.platformKey !== 'meta';
   const focusedHeroTitle = !focusedPlatform
     ? 'Connect each ad channel once, then let DeepVisor run from it.'
+    : focusedPlatformPitchDetached
+      ? `Reconnect ${focusedPlatform.platformName} and reattach saved workspace data.`
     : focusedPlatformConnected
       ? `${focusedPlatform.platformName} is connected and driving this workspace.`
       : `Connect ${focusedPlatform.platformName}`;
   const focusedHeroDescription = !focusedPlatform
     ? 'Pick the platform, choose the one ad account DeepVisor should watch, and see which channels are live, preview-only, or need attention before reports, dashboard, and calendar work depend on them.'
+    : focusedPlatformPitchDetached
+      ? `This pitch-safe detach keeps the synced workspace data intact while making ${focusedPlatform.platformName} look disconnected here. Reconnect to replay the Meta connection story without rebuilding the workspace.`
     : focusedPlatformConnected
       ? `${focusedPlatform.platformName} is already live in DeepVisor. Keep its sync current, manage its primary ad account, and use this as the clean channel source for dashboard, reports, and calendar work.`
       : focusedPlatform.platformKey === 'meta'
@@ -227,6 +272,8 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
         : `${focusedPlatform.platformName} is still a preview channel. Its connection pattern is visible here so you can plan how it will slot into the workspace once support is enabled.`;
   const focusedPrimaryLabel = !focusedPlatform
     ? 'Sync connected channels'
+    : focusedPlatformPitchDetached
+      ? `Reconnect ${focusedPlatform.platformName}`
     : focusedPlatformConnected
       ? `Sync ${focusedPlatform.platformName}`
       : focusedPlatformNeedsAttention
@@ -237,6 +284,53 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
     background: `linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, ${focusedPalette.accentSurface} 100%)`,
     borderColor: focusedPalette.border,
   } satisfies CSSProperties;
+
+  const syncPitchDetachedState = () => {
+    setPitchDetachedPlatforms(readPitchDetachedPlatforms());
+  };
+
+  const handlePitchDetach = (platform: Platform) => {
+    if (platform.platformKey !== 'meta' || !platform.integrationId) {
+      toast.error('Pitch detach is currently set up for Meta only.');
+      return;
+    }
+
+    if (!confirm(`Pitch-detach ${platform.platformName}? This will not delete any synced data.`)) {
+      return;
+    }
+
+    upsertPitchDetachedPlatform({
+      platformId: platform.id,
+      platformKey: platform.platformKey,
+      platformName: platform.platformName,
+      integrationId: platform.integrationId,
+      primaryAdAccountExternalId: platform.primaryAdAccountExternalId,
+      primaryAdAccountName: platform.primaryAdAccountName,
+      detachedAt: new Date().toISOString(),
+    });
+    syncPitchDetachedState();
+    toast.success('Meta detached for the pitch. Synced data is preserved.');
+  };
+
+  useEffect(() => {
+    if (!selectedPlatform) {
+      return;
+    }
+
+    const nextSelectedPlatform = sortedPlatforms.find((platform) => platform.id === selectedPlatform.id) ?? null;
+
+    if (
+      nextSelectedPlatform &&
+      (
+        nextSelectedPlatform.status !== selectedPlatform.status ||
+        nextSelectedPlatform.pitchDetached !== selectedPlatform.pitchDetached ||
+        nextSelectedPlatform.primaryAdAccountExternalId !== selectedPlatform.primaryAdAccountExternalId ||
+        nextSelectedPlatform.primaryAdAccountName !== selectedPlatform.primaryAdAccountName
+      )
+    ) {
+      setSelectedPlatform(nextSelectedPlatform);
+    }
+  }, [selectedPlatform, sortedPlatforms]);
 
   const handleDisconnect = async (platform: Platform) => {
     if (!confirm(`Disconnect ${platform.platformName}?`)) {
@@ -429,8 +523,13 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                           backgroundColor: focusedPalette.accentSoft,
                           color: focusedPalette.text,
                         }}
-                      >
-                        {focusedPlatform.platformName}
+                        >
+                          {focusedPlatform.platformName}
+                        </Badge>
+                    ) : null}
+                    {focusedPlatformPitchDetached ? (
+                      <Badge color="violet" variant="light">
+                        Pitch detached
                       </Badge>
                     ) : null}
                   </Group>
@@ -484,6 +583,16 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                     >
                       {focusedPrimaryLabel}
                     </Button>
+                    {focusedPlatformConnected && focusedPlatform?.platformKey === 'meta' ? (
+                      <Button
+                        leftSection={<IconSettings size={16} />}
+                        variant="default"
+                        radius="xl"
+                        onClick={() => handlePitchDetach(focusedPlatform)}
+                      >
+                        Pitch detach
+                      </Button>
+                    ) : null}
                     {focusedPlatform ? (
                       <Button
                         leftSection={
@@ -885,11 +994,21 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                     Change ad account
                                   </Button>
                                 ) : null}
+                                {platform.platformKey === 'meta' ? (
+                                  <Button
+                                    variant="default"
+                                    onClick={() => handlePitchDetach(platform)}
+                                  >
+                                    Pitch detach
+                                  </Button>
+                                ) : null}
                               </>
                             ) : canConnectNow ? (
                               <Button
                                 leftSection={<IconLink size={16} />}
-                                onClick={connectMeta}
+                                onClick={() => {
+                                  void connectMeta();
+                                }}
                                 loading={connecting}
                               >
                                 {integrationNeedsAttention(platform.status) ? 'Reconnect Meta' : 'Connect Meta'}
@@ -925,6 +1044,14 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                 <Menu.Item onClick={() => setSelectedPlatform(platform)}>
                                   View details
                                 </Menu.Item>
+                                {platform.platformKey === 'meta' && !platform.pitchDetached ? (
+                                  <Menu.Item
+                                    leftSection={<IconClock size={14} />}
+                                    onClick={() => handlePitchDetach(platform)}
+                                  >
+                                    Pitch detach
+                                  </Menu.Item>
+                                ) : null}
                                 <Menu.Divider />
                                 <Menu.Item
                                   color="red"
@@ -1035,7 +1162,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                             <ChannelArtwork platform={selectedPlatform} size={96} />
                             <div>
                               <Group gap="xs" wrap="wrap" mb={8}>
-                                <Text fw={700} size="xl" style={{ color: palette.text }}>
+                              <Text fw={700} size="xl" style={{ color: palette.text }}>
                                   {selectedPlatform.platformName}
                                 </Text>
                                 <Badge
@@ -1044,6 +1171,11 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                 >
                                   {getIntegrationStatusLabel(selectedPlatform.status)}
                                 </Badge>
+                                {selectedPlatform.pitchDetached ? (
+                                  <Badge color="violet" variant="light">
+                                    Pitch detached
+                                  </Badge>
+                                ) : null}
                               </Group>
                               <Text size="sm" maw={460}>
                                 {selectedPlatform.fullDescription ||
@@ -1198,6 +1330,14 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                   Change ad account
                                 </Button>
                               ) : null}
+                              {selectedPlatform.platformKey === 'meta' ? (
+                                <Button
+                                  variant="default"
+                                  onClick={() => handlePitchDetach(selectedPlatform)}
+                                >
+                                  Pitch detach
+                                </Button>
+                              ) : null}
                               <Button
                                 color="red"
                                 variant="light"
@@ -1211,7 +1351,9 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                           ) : canConnectNow ? (
                             <Button
                               leftSection={<IconLink size={16} />}
-                              onClick={connectMeta}
+                              onClick={() => {
+                                void connectMeta();
+                              }}
                               loading={connecting}
                             >
                               {integrationNeedsAttention(selectedPlatform.status) ? 'Reconnect Meta' : 'Connect Meta'}

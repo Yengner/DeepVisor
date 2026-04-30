@@ -8,7 +8,7 @@ import {
 import type { Database } from '@/lib/shared/types/supabase';
 import { syncBusinessPlatform } from '@/lib/server/sync';
 import type { SyncTrigger } from '@/lib/server/sync/types';
-import { FULL_HISTORY_BACKFILL_DAYS, RECENT_SEED_SYNC_DAYS } from '@/lib/server/sync/types';
+import { FULL_HISTORY_BACKFILL_DAYS } from '@/lib/server/sync/types';
 import { resolveMetaBackfillWindow } from '@/lib/server/sync/meta/client';
 import type { FirstSyncJobStatus, SyncCoverage } from '@/lib/shared/types/integrations';
 import { setPrimaryMetaAdAccount } from './service';
@@ -104,8 +104,8 @@ export async function syncSelectedMetaAdAccount(
         businessId: input.businessId,
         integrationId: input.integrationId,
         trigger: input.trigger,
-        backfillDays: input.backfillDays ?? RECENT_SEED_SYNC_DAYS,
-        syncMode: 'seed_recent',
+        backfillDays: input.backfillDays ?? 7,
+        syncMode: 'default',
         primaryExternalAccountId: input.externalAccountId,
       });
       syncCoverage = await getAdAccountSyncCoverage(input.supabase, syncedAccount.id);

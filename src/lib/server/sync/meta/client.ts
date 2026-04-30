@@ -22,6 +22,16 @@ type MetaParsedError = {
   status: number;
 };
 
+class MetaRequestError extends Error {
+  retryable: boolean;
+
+  constructor(message: string, retryable: boolean) {
+    super(message);
+    this.name = 'MetaRequestError';
+    this.retryable = retryable;
+  }
+}
+
 function startOfUtcDay(date: Date): Date {
   const copy = new Date(date);
   copy.setUTCHours(0, 0, 0, 0);
@@ -106,9 +116,13 @@ async function fetchMetaResponseWithRetry(url: URL): Promise<Response> {
       }
 
       const parsedError = await parseMetaError(response);
-      lastError = new Error(parsedError.message);
+      lastError = new MetaRequestError(parsedError.message, parsedError.retryable);
 
-      if (!parsedError.retryable || attempt === META_TRANSIENT_MAX_ATTEMPTS) {
+      if (!parsedError.retryable) {
+        throw lastError;
+      }
+
+      if (attempt === META_TRANSIENT_MAX_ATTEMPTS) {
         throw lastError;
       }
 
@@ -117,8 +131,9 @@ async function fetchMetaResponseWithRetry(url: URL): Promise<Response> {
       );
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Meta request failed');
+      const retryable = error instanceof MetaRequestError ? error.retryable : true;
 
-      if (attempt === META_TRANSIENT_MAX_ATTEMPTS) {
+      if (!retryable || attempt === META_TRANSIENT_MAX_ATTEMPTS) {
         throw lastError;
       }
 

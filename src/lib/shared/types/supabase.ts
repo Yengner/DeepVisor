@@ -1934,11 +1934,14 @@ export type Database = {
           dimension_2_value: string
           entity_id: string
           entity_level: string
+          impression_device: string | null
           impressions: number
           inline_link_clicks: number
           leads: number
           messages: number
           objective: string | null
+          platform_position: string | null
+          publisher_platform: string | null
           raw: Json | null
           reach: number
           source: string
@@ -1964,11 +1967,14 @@ export type Database = {
           dimension_2_value?: string
           entity_id: string
           entity_level: string
+          impression_device?: string | null
           impressions?: number
           inline_link_clicks?: number
           leads?: number
           messages?: number
           objective?: string | null
+          platform_position?: string | null
+          publisher_platform?: string | null
           raw?: Json | null
           reach?: number
           source?: string
@@ -1994,11 +2000,14 @@ export type Database = {
           dimension_2_value?: string
           entity_id?: string
           entity_level?: string
+          impression_device?: string | null
           impressions?: number
           inline_link_clicks?: number
           leads?: number
           messages?: number
           objective?: string | null
+          platform_position?: string | null
+          publisher_platform?: string | null
           raw?: Json | null
           reach?: number
           source?: string
@@ -2029,6 +2038,122 @@ export type Database = {
           },
           {
             foreignKeyName: "meta_audience_breakdowns_daily_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meta_hourly_performance: {
+        Row: {
+          actions_json: Json
+          ad_account_id: string
+          ad_id: string | null
+          advertiser_time_bucket: string
+          adset_id: string
+          campaign_id: string | null
+          clicks: number
+          cpc: number
+          cpm: number
+          created_at: string
+          ctr: number
+          currency_code: string | null
+          day: string
+          day_of_week: number
+          entity_id: string
+          entity_level: string
+          hour_of_day: number
+          impressions: number
+          inline_link_clicks: number
+          objective: string | null
+          raw: Json | null
+          source: string
+          spend: number
+          time_basis: string
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          actions_json?: Json
+          ad_account_id: string
+          ad_id?: string | null
+          advertiser_time_bucket: string
+          adset_id: string
+          campaign_id?: string | null
+          clicks?: number
+          cpc?: number
+          cpm?: number
+          created_at?: string
+          ctr?: number
+          currency_code?: string | null
+          day: string
+          day_of_week: number
+          entity_id: string
+          entity_level: string
+          hour_of_day: number
+          impressions?: number
+          inline_link_clicks?: number
+          objective?: string | null
+          raw?: Json | null
+          source?: string
+          spend?: number
+          time_basis?: string
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          actions_json?: Json
+          ad_account_id?: string
+          ad_id?: string | null
+          advertiser_time_bucket?: string
+          adset_id?: string
+          campaign_id?: string | null
+          clicks?: number
+          cpc?: number
+          cpm?: number
+          created_at?: string
+          ctr?: number
+          currency_code?: string | null
+          day?: string
+          day_of_week?: number
+          entity_id?: string
+          entity_level?: string
+          hour_of_day?: number
+          impressions?: number
+          inline_link_clicks?: number
+          objective?: string | null
+          raw?: Json | null
+          source?: string
+          spend?: number
+          time_basis?: string
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_hourly_performance_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_hourly_performance_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_hourly_performance_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_hourly_performance_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaign_dims"

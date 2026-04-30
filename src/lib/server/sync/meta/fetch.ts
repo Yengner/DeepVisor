@@ -7,8 +7,10 @@ import { fetchMetaCollection, fetchMetaObject, getBackfillDateRange } from './cl
 import type {
   MetaAdAccountPerformanceSeed,
   MetaAdCreativeSeed,
+  MetaAudienceBreakdownSeed,
   MetaActionMetric,
   MetaAdPerformanceSeed,
+  MetaHourlyPerformanceSeed,
   MetaAdSeed,
   MetaAdsetPerformanceSeed,
   MetaAdsetSeed,
@@ -69,12 +71,19 @@ type MetaInsightRow = {
   adset_id?: string;
   ad_id?: string;
   date_start?: string;
+  date_stop?: string;
+  hourly_stats_aggregated_by_advertiser_time_zone?: string;
   account_currency?: string;
   spend?: string;
   reach?: string;
   impressions?: string;
   clicks?: string;
+  inline_link_clicks?: string;
+  ctr?: string;
+  cpc?: string;
+  cpm?: string;
   actions?: MetaActionMetric[];
+  cost_per_action_type?: MetaActionMetric[];
 };
 
 type MetaInsightLevel = 'account' | 'campaign' | 'adset' | 'ad';
@@ -83,12 +92,28 @@ export type MetaDateRange = {
   until: string;
 };
 
+const META_HOURLY_DEBUG_PREFIX = '[meta-hourly-sync]';
+
 const META_INSIGHTS_WINDOW_DAYS_BY_LEVEL: Record<MetaInsightLevel, number> = {
   account: 180,
   campaign: 90,
   adset: 60,
   ad: 30,
 };
+
+const INSIGHTS_BREAKDOWNS = new Set([
+  'age',
+  'country',
+  'device_platform',
+  'dma',
+  'gender',
+  'hourly_stats_aggregated_by_advertiser_time_zone',
+  'hourly_stats_aggregated_by_audience_time_zone',
+  'impression_device',
+  'platform_position',
+  'publisher_platform',
+  'region',
+]);
 
 function toJson(value: unknown): Json | null {
   if (value == null) {
@@ -207,6 +232,23 @@ function buildDateWindows(input: {
   return windows;
 }
 
+function sanitizeInsightsFields(fields: string[]): string[] {
+  const sanitized: string[] = [];
+  const seen = new Set<string>();
+
+  for (const field of fields) {
+    const normalized = field.trim();
+    if (!normalized || INSIGHTS_BREAKDOWNS.has(normalized) || seen.has(normalized)) {
+      continue;
+    }
+
+    seen.add(normalized);
+    sanitized.push(normalized);
+  }
+
+  return sanitized;
+}
+
 async function fetchMetaInsightsRows(input: {
   accessToken: string;
   adAccountExternalId: string;
@@ -214,8 +256,10 @@ async function fetchMetaInsightsRows(input: {
   dateRange?: MetaDateRange;
   level: MetaInsightLevel;
   fields: string[];
+  params?: Record<string, string | number | boolean | undefined>;
 }): Promise<MetaInsightRow[]> {
   const range = input.dateRange ?? getBackfillDateRange(input.backfillDays ?? 30);
+  const sanitizedFields = sanitizeInsightsFields(input.fields);
   const windows = buildDateWindows({
     since: range.since,
     until: range.until,
@@ -231,8 +275,9 @@ async function fetchMetaInsightsRows(input: {
         level: input.level,
         time_increment: '1',
         time_range: JSON.stringify(window),
-        fields: input.fields.join(','),
+        fields: sanitizedFields.join(','),
         limit: 500,
+        ...(input.params ?? {}),
       },
     });
 
@@ -325,6 +370,8 @@ function normalizeMetaAdCreativeSeed(creative: MetaAdCreativeNode): MetaAdCreati
 }
 
 function normalizeInsightMetrics(row: MetaInsightRow) {
+  const directInlineLinkClicks = asNumber(row.inline_link_clicks);
+
   return {
     day: asString(row.date_start),
     currencyCode: asString(row.account_currency) || null,
@@ -332,7 +379,10 @@ function normalizeInsightMetrics(row: MetaInsightRow) {
     reach: asNumber(row.reach),
     impressions: asNumber(row.impressions),
     clicks: asNumber(row.clicks),
-    inlineLinkClicks: extractActionMetric(row.actions, ['link_click', 'inline_link_click']),
+    inlineLinkClicks:
+      directInlineLinkClicks > 0
+        ? directInlineLinkClicks
+        : extractActionMetric(row.actions, ['link_click', 'inline_link_click']),
     leads: extractActionMetric(row.actions, [
       'onsite_conversion.lead_grouped',
       'lead',
@@ -348,6 +398,154 @@ function normalizeInsightMetrics(row: MetaInsightRow) {
       'click_to_call',
     ]),
   };
+}
+
+function computeCtr(clicks: number, impressions: number): number {
+  if (impressions <= 0) {
+    return 0;
+  }
+
+  return Number((((clicks / impressions) * 100) || 0).toFixed(6));
+}
+
+function computeCpc(spend: number, clicks: number): number {
+  if (clicks <= 0) {
+    return 0;
+  }
+
+  return Number((spend / clicks).toFixed(6));
+}
+
+function computeCpm(spend: number, impressions: number): number {
+  if (impressions <= 0) {
+    return 0;
+  }
+
+  return Number(((spend / impressions) * 1000).toFixed(6));
+}
+
+function parseAdvertiserHourBucket(bucket: string): number | null {
+  const match = bucket.trim().match(/^(\d{2}):00:00\s*-\s*(\d{2}):59:59$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const startHour = Number.parseInt(match[1], 10);
+  const endHour = Number.parseInt(match[2], 10);
+
+  if (!Number.isFinite(startHour) || startHour < 0 || startHour > 23) {
+    return null;
+  }
+
+  if (!Number.isFinite(endHour) || endHour !== startHour) {
+    return null;
+  }
+
+  return startHour;
+}
+
+function resolveIsoDayOfWeek(day: string): number | null {
+  const date = new Date(`${day}T00:00:00.000Z`);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return (date.getUTCDay() + 6) % 7;
+}
+
+function resolveIsoWeekStart(day: string): string | null {
+  const date = new Date(`${day}T00:00:00.000Z`);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const isoDayOfWeek = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - isoDayOfWeek);
+  return date.toISOString().slice(0, 10);
+}
+
+type MetaAudienceBreakdownConfig = {
+  breakdownType: string;
+  breakdowns: string;
+  dimension1Key: string;
+  dimension2Key?: string;
+};
+
+const META_AUDIENCE_BREAKDOWN_CONFIGS: MetaAudienceBreakdownConfig[] = [
+  {
+    breakdownType: 'publisher_platform',
+    breakdowns: 'publisher_platform',
+    dimension1Key: 'publisher_platform',
+  },
+  {
+    breakdownType: 'platform_position',
+    breakdowns: 'platform_position',
+    dimension1Key: 'platform_position',
+  },
+  {
+    breakdownType: 'age_gender',
+    breakdowns: 'age,gender',
+    dimension1Key: 'age',
+    dimension2Key: 'gender',
+  },
+  {
+    breakdownType: 'country',
+    breakdowns: 'country',
+    dimension1Key: 'country',
+  },
+  {
+    breakdownType: 'region',
+    breakdowns: 'region',
+    dimension1Key: 'region',
+  },
+  {
+    breakdownType: 'impression_device',
+    breakdowns: 'impression_device',
+    dimension1Key: 'impression_device',
+  },
+  {
+    breakdownType: 'dma',
+    breakdowns: 'dma',
+    dimension1Key: 'dma',
+  },
+];
+
+const META_PLACEMENT_BREAKDOWN_TYPES = new Set([
+  'publisher_platform',
+  'platform_position',
+  'impression_device',
+  'device_platform',
+]);
+
+function isPlacementBreakdown(breakdownType: string): boolean {
+  return META_PLACEMENT_BREAKDOWN_TYPES.has(breakdownType);
+}
+
+function getInsightsFieldsForBreakdown(config: MetaAudienceBreakdownConfig): string[] {
+  const deliveryFields = [
+    'campaign_id',
+    'ad_id',
+    'adset_id',
+    'date_start',
+    'date_stop',
+    'account_currency',
+    'spend',
+    'impressions',
+    'clicks',
+    'inline_link_clicks',
+    'ctr',
+    'cpc',
+    'cpm',
+  ];
+
+  if (isPlacementBreakdown(config.breakdownType)) {
+    return deliveryFields;
+  }
+
+  return [...deliveryFields, 'reach', 'actions', 'cost_per_action_type'];
 }
 
 export { fetchMetaAdAccountSnapshots };
@@ -721,4 +919,293 @@ export async function fetchMetaAdPerformanceSeeds(input: {
       } satisfies MetaAdPerformanceSeed;
     })
     .filter((row): row is MetaAdPerformanceSeed => row !== null);
+}
+
+export async function fetchMetaAdsetAudienceBreakdownSeeds(input: {
+  accessToken: string;
+  adAccountExternalId: string;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
+}): Promise<MetaAudienceBreakdownSeed[]> {
+  return fetchMetaAudienceBreakdownSeedsByLevel({
+    ...input,
+    level: 'adset',
+  });
+}
+
+export async function fetchMetaAdAudienceBreakdownSeeds(input: {
+  accessToken: string;
+  adAccountExternalId: string;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
+}): Promise<MetaAudienceBreakdownSeed[]> {
+  return fetchMetaAudienceBreakdownSeedsByLevel({
+    ...input,
+    level: 'ad',
+  });
+}
+
+export async function fetchMetaAdsetHourlyPerformanceSeeds(input: {
+  accessToken: string;
+  adAccountExternalId: string;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
+}): Promise<MetaHourlyPerformanceSeed[]> {
+  return fetchMetaHourlyPerformanceSeedsByLevel({
+    ...input,
+    level: 'adset',
+  });
+}
+
+export async function fetchMetaAdHourlyPerformanceSeeds(input: {
+  accessToken: string;
+  adAccountExternalId: string;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
+}): Promise<MetaHourlyPerformanceSeed[]> {
+  return fetchMetaHourlyPerformanceSeedsByLevel({
+    ...input,
+    level: 'ad',
+  });
+}
+
+async function fetchMetaAudienceBreakdownSeedsByLevel(input: {
+  accessToken: string;
+  adAccountExternalId: string;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
+  level: 'adset' | 'ad';
+}): Promise<MetaAudienceBreakdownSeed[]> {
+  const rows: MetaAudienceBreakdownSeed[] = [];
+
+  for (const config of META_AUDIENCE_BREAKDOWN_CONFIGS) {
+    try {
+      const insights = await fetchMetaInsightsRows({
+        accessToken: input.accessToken,
+        adAccountExternalId: input.adAccountExternalId,
+        backfillDays: input.backfillDays,
+        dateRange: input.dateRange,
+        level: input.level,
+        fields: getInsightsFieldsForBreakdown(config),
+        params: {
+          breakdowns: config.breakdowns,
+        },
+      });
+
+      for (const row of insights) {
+        const adsetExternalId = asString(row.adset_id);
+        const adExternalId = asString(row.ad_id) || null;
+        const day = asString(row.date_start);
+        const dimension1Value = asString(
+          asRecord(row)[config.dimension1Key]
+        ).trim();
+        const dimension2Value = asString(
+          config.dimension2Key ? asRecord(row)[config.dimension2Key] : ''
+        ).trim();
+        const metrics = normalizeInsightMetrics(row);
+        const entityExternalId = input.level === 'ad' ? adExternalId : adsetExternalId;
+
+        if (!adsetExternalId || !entityExternalId || !day || !dimension1Value) {
+          continue;
+        }
+
+        rows.push({
+          entityLevel: input.level,
+          entityExternalId,
+          adsetExternalId,
+          adExternalId,
+          campaignExternalId: asString(row.campaign_id) || null,
+          day,
+          breakdownType: config.breakdownType,
+          dimension1Key: config.dimension1Key,
+          dimension1Value,
+          dimension2Key: config.dimension2Key ?? '',
+          dimension2Value,
+          publisherPlatform:
+            config.breakdownType === 'publisher_platform' ? dimension1Value : null,
+          platformPosition:
+            config.breakdownType === 'platform_position' ? dimension1Value : null,
+          impressionDevice:
+            config.breakdownType === 'impression_device' ? dimension1Value : null,
+          currencyCode: metrics.currencyCode,
+          spend: metrics.spend,
+          reach: metrics.reach,
+          impressions: metrics.impressions,
+          clicks: metrics.clicks,
+          inlineLinkClicks: metrics.inlineLinkClicks,
+          leads: metrics.leads,
+          messages: metrics.messages,
+          calls: metrics.calls,
+          actions: toJson(row.actions ?? []) ?? [],
+          costPerActionType: toJson(row.cost_per_action_type ?? []) ?? [],
+          raw: toJson(row),
+        } satisfies MetaAudienceBreakdownSeed);
+      }
+    } catch (error) {
+      console.warn(
+        `Skipping Meta audience breakdown "${config.breakdownType}" at ${input.level} level for ${input.adAccountExternalId}:`,
+        error
+      );
+    }
+  }
+
+  return rows;
+}
+
+async function fetchMetaHourlyPerformanceSeedsByLevel(input: {
+  accessToken: string;
+  adAccountExternalId: string;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
+  level: 'adset' | 'ad';
+}): Promise<MetaHourlyPerformanceSeed[]> {
+  const fields = [
+    'campaign_id',
+    'ad_id',
+    'adset_id',
+    'date_start',
+    'date_stop',
+    'account_currency',
+    'spend',
+    'impressions',
+    'clicks',
+    'inline_link_clicks',
+    'cpc',
+    'ctr',
+    'cpm',
+  ];
+
+  console.info(`${META_HOURLY_DEBUG_PREFIX} fetch:start`, {
+    adAccountExternalId: input.adAccountExternalId,
+    level: input.level,
+    dateRange: input.dateRange ?? null,
+    backfillDays: input.backfillDays ?? null,
+    fields,
+  });
+
+  let insights: MetaInsightRow[];
+
+  try {
+    insights = await fetchMetaInsightsRows({
+      accessToken: input.accessToken,
+      adAccountExternalId: input.adAccountExternalId,
+      backfillDays: input.backfillDays,
+      dateRange: input.dateRange,
+      level: input.level,
+      fields,
+      params: {
+        breakdowns: 'hourly_stats_aggregated_by_advertiser_time_zone',
+      },
+    });
+  } catch (error) {
+    console.error(`${META_HOURLY_DEBUG_PREFIX} fetch:error`, {
+      adAccountExternalId: input.adAccountExternalId,
+      level: input.level,
+      dateRange: input.dateRange ?? null,
+      backfillDays: input.backfillDays ?? null,
+      message: error instanceof Error ? error.message : 'Unknown hourly fetch error',
+    });
+    throw error;
+  }
+
+  const rows: MetaHourlyPerformanceSeed[] = [];
+  const skipped = {
+    missingAdsetExternalId: 0,
+    missingEntityExternalId: 0,
+    missingDay: 0,
+    missingBucket: 0,
+    invalidHourBucket: 0,
+    invalidDayOfWeek: 0,
+    invalidWeekStart: 0,
+  };
+  const invalidBucketSamples = new Set<string>();
+
+  for (const row of insights) {
+    const adsetExternalId = asString(row.adset_id);
+    const adExternalId = asString(row.ad_id) || null;
+    const entityExternalId = input.level === 'ad' ? adExternalId : adsetExternalId;
+    const day = asString(row.date_start);
+    const advertiserTimeBucket = asString(
+      row.hourly_stats_aggregated_by_advertiser_time_zone
+    ).trim();
+    const hourOfDay = parseAdvertiserHourBucket(advertiserTimeBucket);
+    const dayOfWeek = day ? resolveIsoDayOfWeek(day) : null;
+    const weekStart = day ? resolveIsoWeekStart(day) : null;
+    const metrics = normalizeInsightMetrics(row);
+
+    if (!adsetExternalId) {
+      skipped.missingAdsetExternalId += 1;
+      continue;
+    }
+
+    if (!entityExternalId) {
+      skipped.missingEntityExternalId += 1;
+      continue;
+    }
+
+    if (!day) {
+      skipped.missingDay += 1;
+      continue;
+    }
+
+    if (!advertiserTimeBucket) {
+      skipped.missingBucket += 1;
+      continue;
+    }
+
+    if (hourOfDay == null) {
+      skipped.invalidHourBucket += 1;
+      if (invalidBucketSamples.size < 5) {
+        invalidBucketSamples.add(advertiserTimeBucket);
+      }
+      continue;
+    }
+
+    if (dayOfWeek == null) {
+      skipped.invalidDayOfWeek += 1;
+      continue;
+    }
+
+    if (!weekStart) {
+      skipped.invalidWeekStart += 1;
+      continue;
+    }
+
+    rows.push({
+      entityLevel: input.level,
+      entityExternalId,
+      adsetExternalId,
+      adExternalId,
+      campaignExternalId: asString(row.campaign_id) || null,
+      day,
+      weekStart,
+      dayOfWeek,
+      hourOfDay,
+      advertiserTimeBucket,
+      timeBasis: 'advertiser',
+      currencyCode: metrics.currencyCode,
+      spend: metrics.spend,
+      impressions: metrics.impressions,
+      clicks: metrics.clicks,
+      inlineLinkClicks: metrics.inlineLinkClicks,
+      ctr: asNumber(row.ctr) || computeCtr(metrics.clicks, metrics.impressions),
+      cpc: asNumber(row.cpc) || computeCpc(metrics.spend, metrics.clicks),
+      cpm: asNumber(row.cpm) || computeCpm(metrics.spend, metrics.impressions),
+      actions: (toJson(row.actions ?? []) ?? []) as Json,
+      raw: toJson(row),
+    });
+  }
+
+  console.info(`${META_HOURLY_DEBUG_PREFIX} fetch:result`, {
+    adAccountExternalId: input.adAccountExternalId,
+    level: input.level,
+    fetchedRows: insights.length,
+    normalizedRows: rows.length,
+    skipped,
+    invalidBucketSamples: Array.from(invalidBucketSamples),
+    firstDay: rows[0]?.day ?? null,
+    lastDay: rows[rows.length - 1]?.day ?? null,
+  });
+
+  return rows;
 }

@@ -16,6 +16,7 @@ export interface BusinessPlatformSyncCounts {
   campaignPerformanceRows: number;
   adsetPerformanceRows: number;
   adPerformanceRows: number;
+  metaHourlyPerformanceRows: number;
   campaignPerformanceSummaries: number;
   adsetPerformanceSummaries: number;
   adPerformanceSummaries: number;

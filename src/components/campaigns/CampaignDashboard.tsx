@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActionIcon,
   Alert,
@@ -155,7 +155,6 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [adsetsLoading, setAdsetsLoading] = useState(false);
   const [adsLoading, setAdsLoading] = useState(false);
-  const [isPending, startTransition] = useTransition();
   const [refreshFeedback, setRefreshFeedback] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -164,6 +163,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const previousCampaignIdRef = useRef<string | null>(selectedCampaignId);
 
   const types = useMemo(
     () => Array.from(new Set(campaignData.map((campaign) => campaign.type))).filter(Boolean),
@@ -312,6 +312,11 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   }, [selectedCampaignId, selectedAdSetId, activeTab]);
 
   useEffect(() => {
+    if (previousCampaignIdRef.current === selectedCampaignId) {
+      return;
+    }
+
+    previousCampaignIdRef.current = selectedCampaignId;
     setSelectedAdSetId(null);
   }, [selectedCampaignId]);
 
@@ -320,15 +325,28 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     if (!selectedCampaignId) return;
     if (adSetsByCampaign[selectedCampaignId]) return;
 
+    let cancelled = false;
     setAdsetsLoading(true);
-    startTransition(async () => {
+
+    void (async () => {
       try {
         const rows = await fetchAdSetsForCampaign(adAccountId, selectedCampaignId);
+
+        if (cancelled) {
+          return;
+        }
+
         setAdSetsByCampaign((previous) => ({ ...previous, [selectedCampaignId]: rows || [] }));
       } finally {
-        setAdsetsLoading(false);
+        if (!cancelled) {
+          setAdsetsLoading(false);
+        }
       }
-    });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [activeTab, selectedCampaignId, adAccountId, adSetsByCampaign]);
 
   useEffect(() => {
@@ -336,15 +354,28 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     if (!selectedAdSetId) return;
     if (adsByAdset[selectedAdSetId]) return;
 
+    let cancelled = false;
     setAdsLoading(true);
-    startTransition(async () => {
+
+    void (async () => {
       try {
         const rows = await fetchAdsForAdset(adAccountId, selectedAdSetId);
+
+        if (cancelled) {
+          return;
+        }
+
         setAdsByAdset((previous) => ({ ...previous, [selectedAdSetId]: rows || [] }));
       } finally {
-        setAdsLoading(false);
+        if (!cancelled) {
+          setAdsLoading(false);
+        }
       }
-    });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [activeTab, selectedAdSetId, adAccountId, adsByAdset]);
 
   const handleRefresh = async () => {
@@ -610,7 +641,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                 {selectedCampaignId ? (
                   <AdSetTable
                     adSets={adSetsByCampaign[selectedCampaignId] ?? []}
-                    loading={adsetsLoading || isPending}
+                    loading={adsetsLoading}
                     onSelectAdSet={setSelectedAdSetId}
                     onOpenAdSet={handleOpenAdSet}
                     selectedAdSetId={selectedAdSetId}
@@ -626,7 +657,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                 {selectedAdSetId ? (
                   <AdsTable
                     ads={adsByAdset[selectedAdSetId] ?? []}
-                    loading={adsLoading || isPending}
+                    loading={adsLoading}
                     platformColor={platformColor}
                     fillHeight
                   />

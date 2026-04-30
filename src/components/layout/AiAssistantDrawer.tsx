@@ -297,6 +297,23 @@ export default function AiAssistantDrawer({ payload }: AiAssistantDrawerProps) {
         position="right"
         size={440}
         padding="lg"
+        withOverlay={false}
+        lockScroll={false}
+        trapFocus={false}
+        returnFocus={false}
+        closeOnClickOutside={false}
+        styles={{
+          content: {
+            height: '100dvh',
+            maxHeight: '100dvh',
+          },
+          body: {
+            height: 'calc(100dvh - 76px)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          },
+        }}
         title={
           <Group gap="sm">
             <ThemeIcon radius="xl" variant="light" color="blue">
@@ -311,7 +328,7 @@ export default function AiAssistantDrawer({ payload }: AiAssistantDrawerProps) {
           </Group>
         }
       >
-        <Stack gap="lg" h="100%">
+        <Stack gap="lg" h="100%" style={{ minHeight: 0 }}>
           <Paper withBorder radius="xl" p="lg" bg="var(--mantine-color-blue-0)">
             <Group justify="space-between" align="flex-start" mb="sm">
               <div>

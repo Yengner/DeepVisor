@@ -1,14 +1,30 @@
-export { buildDashboardPayload } from './buildPayload';
-export { normalizeCampaignSnapshot } from '@/lib/server/repositories/campaigns/normalizers';
+export {
+  buildAudienceBreakdowns,
+  buildDashboardLiveWindow,
+  buildDashboardPayload,
+  buildPlatformBreakdowns,
+  isLikelyActiveStatus,
+} from './buildPayload';
 export { resolveDashboardState } from './state';
 export type {
-  DashboardAlert,
-  DashboardCampaignPreviewItem,
   DashboardCampaignSnapshotItem,
+  DashboardCampaignDimension,
+  DashboardAdsetDimension,
+  DashboardAdDimension,
+  DashboardAudienceMetricRow,
+  DashboardAudienceBreakdowns,
+  DashboardAudienceSlice,
+  DashboardFeaturedAdsetHistory,
+  DashboardLiveComparisons,
+  DashboardPlatformSlice,
+  DashboardPlatformBreakdowns,
+  DashboardLiveAdItem,
+  DashboardLiveAdsetItem,
+  DashboardLiveCampaignContainer,
+  DashboardLiveSummary,
+  DashboardTrendPoint,
+  DashboardLiveWindow,
   DashboardPayload,
-  DashboardSummaryCard,
   DashboardState,
-  DashboardTrendSeries,
   DashboardViewContext,
-  DashboardWindow,
 } from './types';

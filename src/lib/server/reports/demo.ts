@@ -60,7 +60,15 @@ type DemoAd = {
 
 type DemoRawTotals = Pick<
   ReportMetricTotals,
-  'spend' | 'reach' | 'impressions' | 'clicks' | 'linkClicks' | 'leads' | 'messages' | 'conversion'
+  | 'spend'
+  | 'reach'
+  | 'impressions'
+  | 'clicks'
+  | 'linkClicks'
+  | 'leads'
+  | 'messages'
+  | 'calls'
+  | 'conversion'
 >;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -315,6 +323,7 @@ const EMPTY_RAW_TOTALS: DemoRawTotals = {
   linkClicks: 0,
   leads: 0,
   messages: 0,
+  calls: 0,
   conversion: 0,
 };
 
@@ -356,6 +365,7 @@ function addRawTotals(target: DemoRawTotals, source: DemoRawTotals): DemoRawTota
   target.linkClicks += source.linkClicks;
   target.leads += source.leads;
   target.messages += source.messages;
+  target.calls += source.calls;
   target.conversion += source.conversion;
   return target;
 }
@@ -593,6 +603,12 @@ function generateAdDailyRaw(ad: DemoAd, isoDate: string): DemoRawTotals {
       : ad.segment === 'search'
         ? Math.round(conversion * 0.08)
         : Math.round(conversion * 0.1);
+  const calls =
+    ad.segment === 'search'
+      ? Math.round(conversion * 0.04)
+      : ad.segment === 'retargeting'
+        ? Math.round(conversion * 0.02)
+        : 0;
   const frequency = clamp(
     ad.frequencyBase * (0.96 + Math.sin(absoluteDay / 9 + ad.phase) * 0.08),
     1.15,
@@ -608,6 +624,7 @@ function generateAdDailyRaw(ad: DemoAd, isoDate: string): DemoRawTotals {
     linkClicks,
     leads,
     messages,
+    calls,
     conversion,
   };
 }

@@ -337,6 +337,7 @@ export async function syncBusinessPlatform(input: {
         campaignPerformanceRows: syncResult.campaignPerformanceRows,
         adsetPerformanceRows: syncResult.adsetPerformanceRows,
         adPerformanceRows: syncResult.adPerformanceRows,
+        metaHourlyPerformanceRows: syncResult.metaHourlyPerformanceRows,
         campaignPerformanceSummaries: syncResult.campaignPerformanceSummaries,
         adsetPerformanceSummaries: syncResult.adsetPerformanceSummaries,
         adPerformanceSummaries: syncResult.adPerformanceSummaries,

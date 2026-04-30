@@ -335,7 +335,8 @@ export async function processMetaFirstSyncJob(input: {
       performance.adAccountPerformanceRows +
       performance.campaignPerformanceRows +
       performance.adsetPerformanceRows +
-      performance.adPerformanceRows;
+      performance.adPerformanceRows +
+      performance.metaHourlyPerformanceRows;
 
     await updateHistoricalSyncJobProgress(input.supabase, {
       jobId: input.job.id,

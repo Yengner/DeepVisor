@@ -266,10 +266,6 @@ export default function MetaIntegrationFlow({
     }
   };
 
-  const submitSelectedAdAccount = async () => {
-    await syncMetaAdAccount();
-  };
-
   useEffect(() => {
     if (
       !autoSyncRequested ||
@@ -281,7 +277,7 @@ export default function MetaIntegrationFlow({
       return;
     }
 
-    void submitSelectedAdAccount();
+    void syncMetaAdAccount();
   }, [
     autoSyncRequested,
     loadingAccountOptions,
@@ -373,9 +369,11 @@ export default function MetaIntegrationFlow({
                 the selected primary account.
               </Text>
             </Stack>
-            <Badge color="blue" variant="light">
-              1 primary account
-            </Badge>
+            <Group gap="xs">
+              <Badge color="blue" variant="light">
+                1 primary account
+              </Badge>
+            </Group>
           </Group>
 
           <Group gap="sm" align="flex-start" wrap="nowrap">
@@ -383,8 +381,7 @@ export default function MetaIntegrationFlow({
               <IconLock size={16} />
             </ThemeIcon>
             <Text size="sm">
-              Choosing a primary account keeps onboarding, reporting, and AI analysis focused on
-              one clean dataset.
+              Choosing a primary account keeps onboarding, reporting, and AI analysis focused on one clean dataset.
             </Text>
           </Group>
 
@@ -417,7 +414,7 @@ export default function MetaIntegrationFlow({
           <Button
             fullWidth
             onClick={() => {
-              void submitSelectedAdAccount();
+              void syncMetaAdAccount();
             }}
             loading={submittingAccountSelection}
             disabled={!selectedAccountExternalId || loadingAccountOptions}

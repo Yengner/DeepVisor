@@ -21,6 +21,7 @@ import { discoverMetaAdAccounts } from './discoverMetaAdAccounts';
 import { syncMetaPerformance } from './syncMetaPerformance';
 
 type AdAccountRow = Database['public']['Tables']['ad_accounts']['Row'];
+type AdAccountSyncStateRow = Database['public']['Tables']['ad_account_sync_state']['Row'];
 
 function resolveHistoricalJobType(input: {
   trigger: SyncTrigger;
@@ -34,9 +35,42 @@ function resolveHistoricalJobType(input: {
 }
 
 function resolvePerformanceWindow(input: {
+  syncState: Pick<
+    AdAccountSyncStateRow,
+    'last_incremental_sync_at' | 'insights_synced_through' | 'latest_activity_date'
+  > | null;
   syncMode: PlatformSyncMode;
   backfillDays: number;
 }): { since: string; until: string; backfillDays: number } {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const todayIso = today.toISOString().slice(0, 10);
+  const catchupAnchor =
+    input.syncState?.insights_synced_through ??
+    input.syncState?.last_incremental_sync_at?.slice(0, 10) ??
+    input.syncState?.latest_activity_date ??
+    null;
+
+  if (
+    input.syncMode !== 'full_backfill' &&
+    catchupAnchor &&
+    /^\d{4}-\d{2}-\d{2}$/.test(catchupAnchor) &&
+    catchupAnchor <= todayIso
+  ) {
+    return {
+      since: catchupAnchor,
+      until: todayIso,
+      backfillDays:
+        Math.max(
+          1,
+          Math.floor(
+            (today.getTime() - new Date(`${catchupAnchor}T00:00:00.000Z`).getTime()) /
+              86_400_000
+          ) + 1
+        ),
+    };
+  }
+
   if (input.syncMode === 'seed_recent') {
     return resolveMetaBackfillWindow(Math.min(input.backfillDays, RECENT_SEED_SYNC_DAYS));
   }
@@ -46,6 +80,33 @@ function resolvePerformanceWindow(input: {
   }
 
   return resolveMetaBackfillWindow(input.backfillDays);
+}
+
+async function getAdAccountSyncStateForWindow(input: {
+  supabase: RepositoryClient;
+  adAccountId: string;
+}): Promise<
+  Pick<
+    AdAccountSyncStateRow,
+    'last_incremental_sync_at' | 'insights_synced_through' | 'latest_activity_date'
+  > | null
+> {
+  const { data, error } = await input.supabase
+    .from('ad_account_sync_state')
+    .select('last_incremental_sync_at, insights_synced_through, latest_activity_date')
+    .eq('ad_account_id', input.adAccountId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as
+    | Pick<
+        AdAccountSyncStateRow,
+        'last_incremental_sync_at' | 'insights_synced_through' | 'latest_activity_date'
+      >
+    | null) ?? null;
 }
 
 async function runMetaSyncStage<T>(label: string, operation: () => Promise<T>): Promise<T> {
@@ -184,7 +245,12 @@ export async function syncMetaBusinessPlatform(input: {
     await ensureAdAccountSyncStates(input.supabase, [primaryAdAccount]);
   }
 
+  const adAccountSyncState = await getAdAccountSyncStateForWindow({
+    supabase: input.supabase,
+    adAccountId: primaryAdAccount.id,
+  });
   const performanceWindow = resolvePerformanceWindow({
+    syncState: adAccountSyncState,
     syncMode: input.syncMode,
     backfillDays: input.backfillDays,
   });
@@ -276,7 +342,8 @@ export async function syncMetaBusinessPlatform(input: {
         performanceRowsSynced:
           performance.campaignPerformanceRows +
           performance.adsetPerformanceRows +
-          performance.adPerformanceRows,
+          performance.adPerformanceRows +
+          performance.metaHourlyPerformanceRows,
       }),
       markAdAccountHistoricalSyncSucceeded(input.supabase, {
         adAccountId: primaryAdAccount.id,
@@ -305,6 +372,7 @@ export async function syncMetaBusinessPlatform(input: {
       campaignPerformanceRows: performance.campaignPerformanceRows,
       adsetPerformanceRows: performance.adsetPerformanceRows,
       adPerformanceRows: performance.adPerformanceRows,
+      metaHourlyPerformanceRows: performance.metaHourlyPerformanceRows,
       campaignPerformanceSummaries: performance.campaignPerformanceSummaries,
       adsetPerformanceSummaries: performance.adsetPerformanceSummaries,
       adPerformanceSummaries: performance.adPerformanceSummaries,

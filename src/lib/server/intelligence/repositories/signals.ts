@@ -8,8 +8,43 @@ import type {
 } from '../types';
 
 type IntelligenceClient = SupabaseClient<Database>;
-type SignalRow = Database['ai']['Tables']['ad_account_signals']['Row'];
-type SignalInsert = Database['ai']['Tables']['ad_account_signals']['Insert'];
+type SignalRow = {
+  id: string;
+  business_id: string;
+  platform_integration_id: string;
+  ad_account_id: string;
+  source_assessment_id: string | null;
+  source_digest_hash: string;
+  signal_type: string;
+  severity: string;
+  status: string;
+  title: string;
+  reason: string;
+  evidence_json: unknown;
+  recommended_action_json: unknown;
+  first_detected_at: string;
+  last_detected_at: string;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+type SignalInsert = {
+  business_id: string;
+  platform_integration_id: string;
+  ad_account_id: string;
+  source_assessment_id: string | null;
+  source_digest_hash: string;
+  signal_type: string;
+  severity: string;
+  status: string;
+  title: string;
+  reason: string;
+  evidence_json: unknown;
+  recommended_action_json: unknown;
+  first_detected_at: string;
+  last_detected_at: string;
+  updated_at: string;
+};
 const SIGNAL_SCHEMA = 'intelligence';
 
 function mapSignalRow(row: SignalRow): AdAccountSignal {

@@ -248,6 +248,28 @@ export async function syncSignalCalendarQueueItems(
 }
 
 /**
+ * Creates one queue item directly. This is used by product surfaces that
+ * generate a one-off approval suggestion without going through the signal sync.
+ */
+export async function createCalendarQueueItem(
+  supabase: IntelligenceClient,
+  input: CalendarQueueItemDraft
+): Promise<CalendarQueueItem> {
+  const timestamp = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('calendar_queue_items')
+    .insert(toQueueInsert(input, timestamp))
+    .select('*')
+    .single();
+
+  if (error || !data) {
+    throw error ?? new Error('Failed to insert calendar queue item');
+  }
+
+  return mapQueueRow(data as QueueRow);
+}
+
+/**
  * Accepts one queue item. Workflow parents are approved and materialize their
  * child items atomically through the database RPC; ordinary items simply move
  * to approved.
@@ -261,7 +283,7 @@ export async function acceptCalendarQueueWorkflow(
 ): Promise<CalendarQueueItem[]> {
   const { data, error } = await supabase.rpc('accept_calendar_queue_workflow', {
     p_queue_item_id: input.queueItemId,
-    p_user_id: input.userId,
+    p_user_id: input.userId ?? undefined,
   });
 
   if (error) {

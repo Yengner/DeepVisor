@@ -27,6 +27,7 @@ type MetricsRow = {
   inline_link_clicks: number;
   leads: number;
   messages: number;
+  calls: number;
   currency_code: string | null;
 };
 
@@ -67,6 +68,7 @@ type CampaignPerformanceRow = Pick<
   | 'inline_link_clicks'
   | 'leads'
   | 'messages'
+  | 'calls'
 >;
 
 type AdsetDimRow = Pick<
@@ -86,6 +88,7 @@ type AdsetPerformanceRow = Pick<
   | 'inline_link_clicks'
   | 'leads'
   | 'messages'
+  | 'calls'
 >;
 
 type AdDimRow = Pick<
@@ -105,6 +108,7 @@ type AdPerformanceRow = Pick<
   | 'inline_link_clicks'
   | 'leads'
   | 'messages'
+  | 'calls'
 >;
 
 type AdAccountTimeseriesRow = Pick<
@@ -120,6 +124,7 @@ type EntityAggregate = {
   linkClicks: number;
   leads: number;
   messages: number;
+  calls: number;
   startDate: string | null;
   endDate: string | null;
   currencyCodes: Set<string>;
@@ -150,6 +155,7 @@ function sumMetrics(rows: MetricsRow[]): ReportMetricTotals {
   let linkClicks = 0;
   let leads = 0;
   let messages = 0;
+  let calls = 0;
 
   for (const row of rows) {
     spend += row.spend;
@@ -159,6 +165,7 @@ function sumMetrics(rows: MetricsRow[]): ReportMetricTotals {
     linkClicks += row.inline_link_clicks;
     leads += row.leads;
     messages += row.messages;
+    calls += row.calls;
   }
 
   const derived = derivePerformanceMetrics({
@@ -168,6 +175,7 @@ function sumMetrics(rows: MetricsRow[]): ReportMetricTotals {
     clicks,
     leads,
     messages,
+    calls,
   });
 
   return {
@@ -178,6 +186,7 @@ function sumMetrics(rows: MetricsRow[]): ReportMetricTotals {
     linkClicks,
     leads,
     messages,
+    calls,
     conversion: derived.conversion,
     conversionRate: derived.conversion_rate,
     costPerResult: derived.cost_per_result,
@@ -648,6 +657,7 @@ async function listAdAccountDailyRows(
             inline_link_clicks: metricRow.inline_link_clicks,
             leads: metricRow.leads,
             messages: metricRow.messages,
+            calls: metricRow.calls ?? 0,
           }))
       );
     }
@@ -742,6 +752,7 @@ function aggregateEntityMetrics(rows: MetricsRow[]): EntityAggregate {
     linkClicks: 0,
     leads: 0,
     messages: 0,
+    calls: 0,
     startDate: null as string | null,
     endDate: null as string | null,
     currencyCodes: new Set<string>(),
@@ -755,6 +766,7 @@ function aggregateEntityMetrics(rows: MetricsRow[]): EntityAggregate {
     metrics.linkClicks += row.inline_link_clicks;
     metrics.leads += row.leads;
     metrics.messages += row.messages;
+    metrics.calls += row.calls;
     metrics.startDate = metrics.startDate === null || row.day < metrics.startDate ? row.day : metrics.startDate;
     metrics.endDate = metrics.endDate === null || row.day > metrics.endDate ? row.day : metrics.endDate;
     if (row.currency_code) {
@@ -781,6 +793,7 @@ function toBreakdownRow(input: {
     clicks: input.aggregate.clicks,
     leads: input.aggregate.leads,
     messages: input.aggregate.messages,
+    calls: input.aggregate.calls,
   });
 
   return {
@@ -797,6 +810,7 @@ function toBreakdownRow(input: {
     linkClicks: input.aggregate.linkClicks,
     leads: input.aggregate.leads,
     messages: input.aggregate.messages,
+    calls: input.aggregate.calls,
     conversion: derived.conversion,
     conversionRate: derived.conversion_rate,
     costPerResult: derived.cost_per_result,
@@ -840,7 +854,7 @@ async function buildTopLevelMetricsRows(
       dateFrom,
       dateTo,
       select:
-        'campaign_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages',
+        'campaign_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls',
     });
 
     return rows.map((row) => ({
@@ -853,6 +867,7 @@ async function buildTopLevelMetricsRows(
       inline_link_clicks: row.inline_link_clicks ?? 0,
       leads: row.leads ?? 0,
       messages: row.messages ?? 0,
+      calls: row.calls ?? 0,
     }));
   }
 
@@ -868,7 +883,7 @@ async function buildTopLevelMetricsRows(
       dateFrom,
       dateTo,
       select:
-        'adset_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages',
+        'adset_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls',
     });
 
     return rows.map((row) => ({
@@ -881,6 +896,7 @@ async function buildTopLevelMetricsRows(
       inline_link_clicks: row.inline_link_clicks ?? 0,
       leads: row.leads ?? 0,
       messages: row.messages ?? 0,
+      calls: row.calls ?? 0,
     }));
   }
 
@@ -895,7 +911,7 @@ async function buildTopLevelMetricsRows(
     dateFrom,
     dateTo,
     select:
-      'ad_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages',
+      'ad_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls',
   });
 
   return rows.map((row) => ({
@@ -908,6 +924,7 @@ async function buildTopLevelMetricsRows(
     inline_link_clicks: row.inline_link_clicks ?? 0,
     leads: row.leads ?? 0,
     messages: row.messages ?? 0,
+    calls: row.calls ?? 0,
   }));
 }
 
@@ -936,7 +953,7 @@ async function buildCampaignFallbackMetricsRows(
     dateFrom,
     dateTo,
     select:
-      'campaign_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages',
+      'campaign_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls',
   });
 
   return rows.map((row) => ({
@@ -949,6 +966,7 @@ async function buildCampaignFallbackMetricsRows(
     inline_link_clicks: row.inline_link_clicks ?? 0,
     leads: row.leads ?? 0,
     messages: row.messages ?? 0,
+    calls: row.calls ?? 0,
   }));
 }
 
@@ -979,7 +997,7 @@ async function buildBreakdown(
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
       select:
-        'campaign_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages',
+        'campaign_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls',
     });
     const rowsByCampaignId = new Map<string, MetricsRow[]>();
 
@@ -995,6 +1013,7 @@ async function buildBreakdown(
         inline_link_clicks: row.inline_link_clicks ?? 0,
         leads: row.leads ?? 0,
         messages: row.messages ?? 0,
+        calls: row.calls ?? 0,
       });
       rowsByCampaignId.set(row.campaign_id, rows);
     }
@@ -1039,7 +1058,7 @@ async function buildBreakdown(
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
       select:
-        'adset_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages',
+        'adset_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls',
     });
     const rowsByAdsetId = new Map<string, MetricsRow[]>();
 
@@ -1055,6 +1074,7 @@ async function buildBreakdown(
         inline_link_clicks: row.inline_link_clicks ?? 0,
         leads: row.leads ?? 0,
         messages: row.messages ?? 0,
+        calls: row.calls ?? 0,
       });
       rowsByAdsetId.set(row.adset_id, rows);
     }
@@ -1098,7 +1118,7 @@ async function buildBreakdown(
     ids: ads.map((ad) => ad.id),
     dateFrom: query.dateFrom,
     dateTo: query.dateTo,
-    select: 'ad_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages',
+    select: 'ad_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls',
   });
   const rowsByAdId = new Map<string, MetricsRow[]>();
 
@@ -1114,6 +1134,7 @@ async function buildBreakdown(
       inline_link_clicks: row.inline_link_clicks ?? 0,
       leads: row.leads ?? 0,
       messages: row.messages ?? 0,
+      calls: row.calls ?? 0,
     });
     rowsByAdId.set(row.ad_id, rows);
   }

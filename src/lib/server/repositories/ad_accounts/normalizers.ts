@@ -15,6 +15,7 @@ const ZERO_METRICS: AdAccountAggregatedMetrics = {
   reach: 0,
   leads: 0,
   messages: 0,
+  calls: 0,
   ctr: 0,
   cpc: 0,
   cpm: 0,
@@ -37,6 +38,7 @@ export function parseAggregatedMetrics(value: unknown): AdAccountAggregatedMetri
     reach: asNumber(metrics.reach),
     leads: asNumber(metrics.leads),
     messages: asNumber(metrics.messages),
+    calls: asNumber(metrics.calls),
     ctr: asNumber(metrics.ctr) || (impressions > 0 ? (clicks / impressions) * 100 : 0),
     cpc: asNumber(metrics.cpc) || (clicks > 0 ? spend / clicks : 0),
     cpm: asNumber(metrics.cpm) || (impressions > 0 ? spend / (impressions / 1000) : 0),
@@ -59,6 +61,7 @@ function parseTimePoint(value: unknown): AdAccountTimeIncrementPoint {
     reach: asNumber(row.reach),
     leads: asNumber(row.leads),
     messages: asNumber(row.messages),
+    calls: asNumber(row.calls),
     ctr: asNumber(row.ctr) || (impressions > 0 ? (clicks / impressions) * 100 : 0),
     cpc: asNumber(row.cpc) || (clicks > 0 ? spend / clicks : 0),
     cpm: asNumber(row.cpm) || (impressions > 0 ? spend / (impressions / 1000) : 0),
@@ -110,6 +113,7 @@ export function aggregateDailyMetricsRows(
   let reach = 0;
   let leads = 0;
   let messages = 0;
+  let calls = 0;
 
   for (const row of rows) {
     spend += row.spend;
@@ -119,6 +123,7 @@ export function aggregateDailyMetricsRows(
     reach += row.reach;
     leads += row.leads;
     messages += row.messages;
+    calls += row.calls ?? 0;
   }
 
   return {
@@ -129,6 +134,7 @@ export function aggregateDailyMetricsRows(
     reach,
     leads,
     messages,
+    calls,
     ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
     cpc: clicks > 0 ? spend / clicks : 0,
     cpm: impressions > 0 ? spend / (impressions / 1000) : 0,
@@ -155,6 +161,7 @@ export function sumPerformanceSummaries(
   let reach = 0;
   let leads = 0;
   let messages = 0;
+  let calls = 0;
 
   for (const metric of metrics) {
     spend += metric.spend;
@@ -164,6 +171,7 @@ export function sumPerformanceSummaries(
     reach += metric.reach;
     leads += metric.leads;
     messages += metric.messages;
+    calls += metric.calls ?? 0;
   }
 
   return {
@@ -174,6 +182,7 @@ export function sumPerformanceSummaries(
     reach,
     leads,
     messages,
+    calls,
     ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
     cpc: clicks > 0 ? spend / clicks : 0,
     cpm: impressions > 0 ? spend / (impressions / 1000) : 0,
@@ -188,7 +197,8 @@ export function hasMeaningfulMetrics(metrics: AdAccountAggregatedMetrics): boole
     metrics.link_clicks > 0 ||
     metrics.reach > 0 ||
     metrics.leads > 0 ||
-    metrics.messages > 0
+    metrics.messages > 0 ||
+    (metrics.calls ?? 0) > 0
   );
 }
 
@@ -226,6 +236,7 @@ export function parseDailyMetricsRowsFromTimeIncrementMetrics(
       inline_link_clicks: point.link_clicks,
       leads: point.leads,
       messages: point.messages,
+      calls: point.calls ?? 0,
       currency_code: input?.currencyCode ?? null,
     }))
     .filter((row) => row.day.length > 0)
@@ -251,6 +262,7 @@ function toTimeIncrementPoint(
     reach: summary.reach,
     leads: summary.leads,
     messages: summary.messages,
+    calls: summary.calls ?? 0,
     ctr: summary.ctr,
     cpc: summary.cpc,
     cpm: summary.cpm,
@@ -289,6 +301,7 @@ export function buildTimeIncrementMetricsFromDailyRows(
       reach: row.reach,
       leads: row.leads,
       messages: row.messages,
+      calls: row.calls ?? 0,
       ctr: row.impressions > 0 ? (row.clicks / row.impressions) * 100 : 0,
       cpc: row.clicks > 0 ? row.spend / row.clicks : 0,
       cpm: row.impressions > 0 ? row.spend / (row.impressions / 1000) : 0,

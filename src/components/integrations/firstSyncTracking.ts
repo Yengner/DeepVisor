@@ -15,6 +15,7 @@ export type TrackedFirstSyncJob = {
   adAccountName: string | null;
   platformKey: SupportedIntegrationPlatform;
   platformName: string;
+  mode?: 'live' | 'demo';
   job: FirstSyncJobStatus;
 };
 
@@ -46,6 +47,7 @@ function normalizeTrackedJob(
     ...job,
     platformKey: 'platformKey' in job && job.platformKey ? job.platformKey : 'meta',
     platformName: 'platformName' in job && job.platformName ? job.platformName : 'Meta',
+    mode: 'mode' in job && job.mode === 'demo' ? 'demo' : 'live',
   };
 }
 
@@ -127,4 +129,9 @@ export function updateTrackedFirstSyncJob(job: TrackedFirstSyncJob): void {
 export function untrackFirstSyncJob(jobId: string): void {
   const existingJobs = readTrackedFirstSyncJobs();
   writeTrackedFirstSyncJobs(existingJobs.filter((job) => job.jobId !== jobId));
+}
+
+export function clearDemoTrackedFirstSyncJobs(): void {
+  const existingJobs = readTrackedFirstSyncJobs();
+  writeTrackedFirstSyncJobs(existingJobs.filter((job) => job.mode !== 'demo'));
 }

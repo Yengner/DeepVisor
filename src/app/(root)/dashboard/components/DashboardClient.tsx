@@ -2,9 +2,8 @@
 
 import '@mantine/charts/styles.css';
 
-import { LineChart } from '@mantine/charts';
+import { BarChart, LineChart } from '@mantine/charts';
 import {
-  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -13,50 +12,39 @@ import {
   Grid,
   Group,
   Paper,
+  ScrollArea,
   SegmentedControl,
   SimpleGrid,
   Stack,
+  Table,
   Text,
   ThemeIcon,
-  Title,
 } from '@mantine/core';
 import {
   IconAlertCircle,
-  IconArrowDownRight,
-  IconArrowUpRight,
-  IconCalendarMonth,
-  IconCalendarWeek,
-  IconChevronLeft,
-  IconChevronRight,
+  IconChartBar,
+  IconChartLine,
+  IconCalendarEvent,
   IconClock,
   IconCurrencyDollar,
   IconLink,
-  IconMessageCircle,
   IconRefresh,
-  IconSparkles,
   IconTargetArrow,
   IconUsers,
 } from '@tabler/icons-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
-import {
-  buildCalendarQueuePreviewItems,
-  compareCalendarQueuePreviewItems,
-  formatRetryDelay,
-  type CalendarQueuePreviewItem,
-  type CalendarQueueStatus,
-} from '@/lib/shared';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { formatRetryDelay } from '@/lib/shared';
 import type {
-  DashboardActivityEntityItem,
-  DashboardActivityRail,
-  DashboardAttentionSignal,
-  DashboardAlert,
-  DashboardCampaignPreviewItem,
+  DashboardLiveAdItem,
+  DashboardLiveAdsetItem,
+  DashboardLiveCampaignContainer,
   DashboardPayload,
+  DashboardAudienceSlice,
+  DashboardPlatformSlice,
   DashboardState,
-  DashboardSummaryCard,
-  DashboardWindow,
 } from '../types';
 import classes from './DashboardClient.module.css';
 
@@ -64,266 +52,304 @@ type DashboardClientProps = {
   payload: DashboardPayload;
 };
 
-type DashboardReadItem = {
-  id: string;
+type TrendMode = 'delivery' | 'efficiency' | 'combined';
+type HistoryGranularity = 'day' | 'hourly';
+type HourlyRangeMode = 'today' | 'expanded';
+type SurfacePanelMode = 'platform' | 'device' | 'geo' | 'times';
+type TrendSignalType =
+  | 'crossover_up'
+  | 'crossover_down'
+  | 'delivery_drop_vs_efficiency'
+  | 'efficiency_drop_vs_delivery'
+  | 'sustained_divergence';
+type TrendSignalSeverity = 'info' | 'warning' | 'critical';
+type TrendSignalConfidence = 'low' | 'high';
+type AudienceChartType = 'default' | 'stacked';
+type BreakdownMetric = 'results' | 'clicks' | 'spend';
+type AudienceChartSeries = {
+  name: string;
+  color: string;
+};
+
+type AudienceChartConfig = {
+  data: Record<string, string | number>[];
   title: string;
-  detail: string;
-  tone: DashboardAlert['tone'];
-  primaryAction?: {
-    label: string;
-    href: string;
-  };
-  secondaryAction?: {
-    label: string;
-    href: string;
-  };
+  formatter: (value: number) => string;
+  type: AudienceChartType;
+  series: AudienceChartSeries[];
 };
 
-type StaticQualityTrendPoint = {
+type SimpleBarChartConfig = {
+  data: Record<string, string | number>[];
+  title: string;
+  formatter: (value: number) => string;
+  color: string;
+};
+
+type PlacementVisualRow = {
+  key: string;
   label: string;
-  ctr: number;
-  cpc: number;
+  value: number;
+  valueLabel: string;
+  detailLabel: string;
+  fillPercent: number;
+  imageSrc: string;
+  imageAlt: string;
 };
 
-type StaticQualityTrend = {
+type MultiSeriesBarChartConfig = {
+  data: Record<string, string | number>[];
+  title: string;
+  formatter: (value: number) => string;
+  series: AudienceChartSeries[];
+  withLegend: boolean;
+};
+
+type TrendChartConfig = {
+  data: Record<string, string | number>[];
+  series: {
+    name: string;
+    color: string;
+    strokeDasharray?: string | number;
+  }[];
   title: string;
   description: string;
-  points: StaticQualityTrendPoint[];
+  formatter: (value: number) => string;
+};
+
+type CombinedTrendPoint = {
+  label: string;
+  displayLabel: string;
+  deliveryIndex: number;
+  efficiencyIndex: number;
+};
+
+type TrendSignal = {
+  type: TrendSignalType;
+  dateLabel: string;
+  severity: TrendSignalSeverity;
+  confidence: TrendSignalConfidence;
+  title: string;
+  markerLabel: string;
+  description: string;
+  deliveryIndex: number;
+  efficiencyIndex: number;
+  gap: number;
+};
+
+type CalendarSuggestion = {
+  itemType: 'review_report' | 'launch_test' | 'investigate_efficiency' | 'refresh_creative';
+  priority: 'medium' | 'high' | 'critical';
+  title: string;
+  description: string;
+  destinationHref: string;
+  markerLabel: string;
+  dedupeKey: string;
+};
+
+type StateTileDefinition = {
+  code: string;
+  name: string;
+  col: number;
+  row: number;
+};
+
+type RegionStateTile = {
+  code: string;
+  name: string;
+  col: number;
+  row: number;
+  value: number;
+  valueLabel: string;
+  intensity: number;
+  isActive: boolean;
+};
+
+type RegionStateMapConfig = {
+  title: string;
+  states: RegionStateTile[];
+  activeStates: RegionStateTile[];
+};
+
+type HeatmapCell = {
+  key: string;
+  dayLabel: string;
+  dayOfWeek: number;
+  hourOfDay: number;
+  metricAverage: number;
+  metricTotal: number;
+  clicks: number;
+  linkClicks: number;
+  spend: number;
+  ctr: number;
+  impressions: number;
+  intensity: number;
+};
+
+type HeatmapRow = {
+  dayLabel: string;
+  dayOfWeek: number;
+  cells: HeatmapCell[];
+};
+
+type HourlyHeatmapConfig = {
+  title: string;
+  metricLabel: string;
+  summarySlotLabel: string;
+  summaryDayLabel: string;
+  summaryHourLabel: string;
+  rows: HeatmapRow[];
+  hourLabels: string[];
 };
 
 const numberFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 });
 
-const CALENDAR_WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const AGE_BUCKET_ORDER = ['13-17', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'] as const;
+const FEATURED_HISTORY_CHART_HEIGHT = 560;
+const DELIVERY_SURFACE_CHART_HEIGHT = 260;
+const AUDIENCE_BREAKDOWN_CHART_HEIGHT = 180;
+const DIVERGENCE_THRESHOLD = 10;
+const MAJOR_DIVERGENCE_THRESHOLD = 15;
+const HOURLY_SIGNAL_MIN_IMPRESSIONS = 100;
+const HOURLY_SIGNAL_MIN_CLICKS = 3;
+const HOURLY_SIGNAL_MIN_SPEND = 5;
+const EXPANDED_HOURLY_POINT_WIDTH = 28;
+const EXPANDED_HOURLY_MIN_WIDTH = 1400;
 
-const STATIC_SUMMARY_BY_WINDOW: Record<DashboardWindow, DashboardSummaryCard[]> = {
-  this_week: [
-    { key: 'spend', label: 'Spend', value: 980, previousValue: 860, changePercent: 14 },
-    { key: 'results', label: 'Results', value: 56, previousValue: 47, changePercent: 19.1 },
-    { key: 'leads', label: 'Leads', value: 34, previousValue: 26, changePercent: 30.8 },
-    { key: 'link_clicks', label: 'Link clicks', value: 508, previousValue: 446, changePercent: 13.9 },
-  ],
-  last_week: [
-    { key: 'spend', label: 'Spend', value: 1760, previousValue: 1640, changePercent: 7.3 },
-    { key: 'results', label: 'Results', value: 98, previousValue: 91, changePercent: 7.7 },
-    { key: 'leads', label: 'Leads', value: 58, previousValue: 51, changePercent: 13.7 },
-    { key: 'link_clicks', label: 'Link clicks', value: 934, previousValue: 878, changePercent: 6.4 },
-  ],
-  last_7d: [
-    { key: 'spend', label: 'Spend', value: 1840, previousValue: 1620, changePercent: 13.6 },
-    { key: 'results', label: 'Results', value: 104, previousValue: 93, changePercent: 11.8 },
-    { key: 'leads', label: 'Leads', value: 63, previousValue: 48, changePercent: 31.3 },
-    { key: 'link_clicks', label: 'Link clicks', value: 982, previousValue: 864, changePercent: 13.7 },
-  ],
-  last_30d: [
-    { key: 'spend', label: 'Spend', value: 7420, previousValue: 6810, changePercent: 9 },
-    { key: 'results', label: 'Results', value: 421, previousValue: 365, changePercent: 15.3 },
-    { key: 'leads', label: 'Leads', value: 248, previousValue: 214, changePercent: 15.9 },
-    { key: 'link_clicks', label: 'Link clicks', value: 4210, previousValue: 3824, changePercent: 10.1 },
-  ],
-  this_month: [
-    { key: 'spend', label: 'Spend', value: 5180, previousValue: 4630, changePercent: 11.9 },
-    { key: 'results', label: 'Results', value: 302, previousValue: 258, changePercent: 17.1 },
-    { key: 'leads', label: 'Leads', value: 176, previousValue: 149, changePercent: 18.1 },
-    { key: 'link_clicks', label: 'Link clicks', value: 2910, previousValue: 2604, changePercent: 11.8 },
-  ],
-};
-
-const STATIC_QUALITY_TREND_BY_WINDOW: Record<DashboardWindow, StaticQualityTrend> = {
-  this_week: {
-    title: 'Traffic quality and click cost',
-    description:
-      'Static preview for now. CTR and cost per click read much more clearly here for a mixed account view.',
-    points: [
-      { label: 'Apr 20', ctr: 2.31, cpc: 0.84 },
-      { label: 'Apr 21', ctr: 2.44, cpc: 0.79 },
-      { label: 'Apr 22', ctr: 2.58, cpc: 0.73 },
-      { label: 'Apr 23', ctr: 2.67, cpc: 0.68 },
-    ],
-  },
-  last_week: {
-    title: 'Traffic quality and click cost',
-    description:
-      'Static preview for now. CTR and cost per click read much more clearly here for a mixed account view.',
-    points: [
-      { label: 'Apr 13', ctr: 2.02, cpc: 0.98 },
-      { label: 'Apr 14', ctr: 2.12, cpc: 0.93 },
-      { label: 'Apr 15', ctr: 2.08, cpc: 0.96 },
-      { label: 'Apr 16', ctr: 2.26, cpc: 0.89 },
-      { label: 'Apr 17', ctr: 2.38, cpc: 0.82 },
-      { label: 'Apr 18', ctr: 2.42, cpc: 0.80 },
-      { label: 'Apr 19', ctr: 2.29, cpc: 0.85 },
-    ],
-  },
-  last_7d: {
-    title: 'Traffic quality and click cost',
-    description:
-      'Static preview for now. CTR and cost per click read much more clearly here for a mixed account view.',
-    points: [
-      { label: 'Apr 4', ctr: 2.18, cpc: 0.94 },
-      { label: 'Apr 5', ctr: 2.27, cpc: 0.90 },
-      { label: 'Apr 6', ctr: 2.24, cpc: 0.92 },
-      { label: 'Apr 7', ctr: 2.48, cpc: 0.83 },
-      { label: 'Apr 8', ctr: 2.57, cpc: 0.77 },
-      { label: 'Apr 9', ctr: 2.71, cpc: 0.71 },
-      { label: 'Apr 10', ctr: 2.63, cpc: 0.74 },
-    ],
-  },
-  last_30d: {
-    title: 'Traffic quality and click cost',
-    description:
-      'Static preview for now. CTR and cost per click read much more clearly here for a mixed account view.',
-    points: [
-      { label: 'Mar 11', ctr: 1.84, cpc: 1.14 },
-      { label: 'Mar 18', ctr: 2.03, cpc: 1.02 },
-      { label: 'Mar 25', ctr: 2.19, cpc: 0.94 },
-      { label: 'Apr 1', ctr: 2.34, cpc: 0.86 },
-      { label: 'Apr 8', ctr: 2.52, cpc: 0.78 },
-    ],
-  },
-  this_month: {
-    title: 'Traffic quality and click cost',
-    description:
-      'Static preview for now. CTR and cost per click read much more clearly here for a mixed account view.',
-    points: [
-      { label: 'Apr 1', ctr: 2.06, cpc: 1.00 },
-      { label: 'Apr 5', ctr: 2.18, cpc: 0.95 },
-      { label: 'Apr 9', ctr: 2.29, cpc: 0.89 },
-      { label: 'Apr 13', ctr: 2.41, cpc: 0.83 },
-      { label: 'Apr 17', ctr: 2.56, cpc: 0.76 },
-      { label: 'Apr 21', ctr: 2.69, cpc: 0.70 },
-    ],
-  },
-};
-
-const STATIC_CAMPAIGN_PREVIEW: DashboardCampaignPreviewItem[] = [
-  {
-    campaignId: 'demo-local-lead-machine',
-    campaignName: 'Local Lead Machine - Search + Social',
-    objective: 'LEADS',
-    status: 'active',
-    spend: 2480,
-    primaryOutcomeMetric: 'results',
-    primaryOutcomeLabel: 'Results',
-    primaryOutcomeValue: 96,
-    conversionRate: 0.071,
-    costPerResult: 25.83,
-    ctr: 2.94,
-  },
-  {
-    campaignId: 'demo-retargeting-trust',
-    campaignName: 'Retargeting - Trust Builders',
-    objective: 'MESSAGES',
-    status: 'active',
-    spend: 1180,
-    primaryOutcomeMetric: 'results',
-    primaryOutcomeLabel: 'Results',
-    primaryOutcomeValue: 58,
-    conversionRate: 0.052,
-    costPerResult: 20.34,
-    ctr: 3.42,
-  },
-  {
-    campaignId: 'demo-spring-offer',
-    campaignName: 'Spring Offer - Broad Prospecting',
-    objective: 'TRAFFIC',
-    status: 'active',
-    spend: 2190,
-    primaryOutcomeMetric: 'clicks',
-    primaryOutcomeLabel: 'Clicks',
-    primaryOutcomeValue: 1420,
-    conversionRate: 0.014,
-    costPerResult: 86.12,
-    ctr: 1.18,
-  },
-  {
-    campaignId: 'demo-old-creative',
-    campaignName: 'Legacy Creative Test - Static Images',
-    objective: 'LEADS',
-    status: 'paused',
-    spend: 860,
-    primaryOutcomeMetric: 'leads',
-    primaryOutcomeLabel: 'Leads',
-    primaryOutcomeValue: 9,
-    conversionRate: 0.008,
-    costPerResult: 95.56,
-    ctr: 0.74,
-  },
+const US_STATE_TILES: StateTileDefinition[] = [
+  { code: 'WA', name: 'Washington', col: 1, row: 1 },
+  { code: 'OR', name: 'Oregon', col: 1, row: 2 },
+  { code: 'CA', name: 'California', col: 1, row: 3 },
+  { code: 'AK', name: 'Alaska', col: 1, row: 6 },
+  { code: 'HI', name: 'Hawaii', col: 2, row: 7 },
+  { code: 'ID', name: 'Idaho', col: 2, row: 2 },
+  { code: 'NV', name: 'Nevada', col: 2, row: 3 },
+  { code: 'AZ', name: 'Arizona', col: 2, row: 4 },
+  { code: 'MT', name: 'Montana', col: 3, row: 1 },
+  { code: 'WY', name: 'Wyoming', col: 3, row: 2 },
+  { code: 'UT', name: 'Utah', col: 3, row: 3 },
+  { code: 'NM', name: 'New Mexico', col: 3, row: 4 },
+  { code: 'ND', name: 'North Dakota', col: 4, row: 1 },
+  { code: 'SD', name: 'South Dakota', col: 4, row: 2 },
+  { code: 'CO', name: 'Colorado', col: 4, row: 3 },
+  { code: 'TX', name: 'Texas', col: 4, row: 5 },
+  { code: 'MN', name: 'Minnesota', col: 5, row: 1 },
+  { code: 'NE', name: 'Nebraska', col: 5, row: 2 },
+  { code: 'KS', name: 'Kansas', col: 5, row: 3 },
+  { code: 'OK', name: 'Oklahoma', col: 5, row: 4 },
+  { code: 'LA', name: 'Louisiana', col: 5, row: 6 },
+  { code: 'WI', name: 'Wisconsin', col: 6, row: 1 },
+  { code: 'IA', name: 'Iowa', col: 6, row: 2 },
+  { code: 'MO', name: 'Missouri', col: 6, row: 3 },
+  { code: 'AR', name: 'Arkansas', col: 6, row: 4 },
+  { code: 'MS', name: 'Mississippi', col: 6, row: 5 },
+  { code: 'MI', name: 'Michigan', col: 7, row: 1 },
+  { code: 'IL', name: 'Illinois', col: 7, row: 2 },
+  { code: 'KY', name: 'Kentucky', col: 7, row: 3 },
+  { code: 'TN', name: 'Tennessee', col: 7, row: 4 },
+  { code: 'AL', name: 'Alabama', col: 7, row: 5 },
+  { code: 'IN', name: 'Indiana', col: 8, row: 2 },
+  { code: 'OH', name: 'Ohio', col: 9, row: 2 },
+  { code: 'WV', name: 'West Virginia', col: 9, row: 3 },
+  { code: 'GA', name: 'Georgia', col: 8, row: 5 },
+  { code: 'FL', name: 'Florida', col: 9, row: 6 },
+  { code: 'PA', name: 'Pennsylvania', col: 10, row: 2 },
+  { code: 'VA', name: 'Virginia', col: 10, row: 3 },
+  { code: 'NC', name: 'North Carolina', col: 10, row: 4 },
+  { code: 'SC', name: 'South Carolina', col: 9, row: 5 },
+  { code: 'NY', name: 'New York', col: 11, row: 1 },
+  { code: 'NJ', name: 'New Jersey', col: 11, row: 2 },
+  { code: 'MD', name: 'Maryland', col: 11, row: 3 },
+  { code: 'DE', name: 'Delaware', col: 12, row: 3 },
+  { code: 'VT', name: 'Vermont', col: 12, row: 1 },
+  { code: 'NH', name: 'New Hampshire', col: 13, row: 1 },
+  { code: 'MA', name: 'Massachusetts', col: 12, row: 2 },
+  { code: 'CT', name: 'Connecticut', col: 12, row: 4 },
+  { code: 'RI', name: 'Rhode Island', col: 13, row: 2 },
+  { code: 'ME', name: 'Maine', col: 14, row: 1 },
+  { code: 'DC', name: 'District of Columbia', col: 13, row: 4 },
 ];
 
-function startOfCalendarDay(date: Date): Date {
-  const next = new Date(date);
-  next.setHours(0, 0, 0, 0);
-  return next;
-}
+const HEATMAP_DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
 
-function toCalendarIsoDay(date: Date): string {
-  return startOfCalendarDay(date).toISOString().slice(0, 10);
-}
+const STATE_NAME_TO_CODE: Record<string, string> = {
+  alabama: 'AL',
+  alaska: 'AK',
+  arizona: 'AZ',
+  arkansas: 'AR',
+  california: 'CA',
+  colorado: 'CO',
+  connecticut: 'CT',
+  delaware: 'DE',
+  florida: 'FL',
+  georgia: 'GA',
+  hawaii: 'HI',
+  idaho: 'ID',
+  illinois: 'IL',
+  indiana: 'IN',
+  iowa: 'IA',
+  kansas: 'KS',
+  kentucky: 'KY',
+  louisiana: 'LA',
+  maine: 'ME',
+  maryland: 'MD',
+  massachusetts: 'MA',
+  michigan: 'MI',
+  minnesota: 'MN',
+  mississippi: 'MS',
+  missouri: 'MO',
+  montana: 'MT',
+  nebraska: 'NE',
+  nevada: 'NV',
+  'new hampshire': 'NH',
+  'new jersey': 'NJ',
+  'new mexico': 'NM',
+  'new york': 'NY',
+  'north carolina': 'NC',
+  'north dakota': 'ND',
+  ohio: 'OH',
+  oklahoma: 'OK',
+  oregon: 'OR',
+  pennsylvania: 'PA',
+  'rhode island': 'RI',
+  'south carolina': 'SC',
+  'south dakota': 'SD',
+  tennessee: 'TN',
+  texas: 'TX',
+  utah: 'UT',
+  vermont: 'VT',
+  virginia: 'VA',
+  washington: 'WA',
+  'west virginia': 'WV',
+  wisconsin: 'WI',
+  wyoming: 'WY',
+  'district of columbia': 'DC',
+};
 
-function addCalendarDays(base: Date, days: number): Date {
-  const next = new Date(base);
-  next.setDate(next.getDate() + days);
-  return next;
-}
+function formatCurrency(value: number, currencyCode: string | null, digits?: number): string {
+  const resolvedDigits =
+    typeof digits === 'number'
+      ? digits
+      : Math.abs(value) > 0 && Math.abs(value) < 100
+        ? 2
+        : 0;
 
-function addCalendarMonths(base: Date, months: number): Date {
-  const next = startOfCalendarDay(base);
-  next.setDate(1);
-  next.setMonth(next.getMonth() + months);
-  return next;
-}
-
-function startOfCalendarWeek(date: Date): Date {
-  return addCalendarDays(startOfCalendarDay(date), -startOfCalendarDay(date).getDay());
-}
-
-function startOfCalendarMonth(date: Date): Date {
-  const next = startOfCalendarDay(date);
-  next.setDate(1);
-  return next;
-}
-
-function isSameCalendarMonth(left: Date, right: Date): boolean {
-  return left.getFullYear() === right.getFullYear() && left.getMonth() === right.getMonth();
-}
-
-function formatCalendarMonthLabel(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
-function formatCalendarWeekLabel(days: Date[]): string {
-  const start = days[0];
-  const end = days[days.length - 1];
-
-  if (start.getMonth() === end.getMonth()) {
-    return `${start.toLocaleDateString('en-US', { month: 'short' })} ${start.getDate()}-${end.getDate()}`;
-  }
-
-  return `${start.toLocaleDateString('en-US', { month: 'short' })} ${start.getDate()}-${end.toLocaleDateString('en-US', { month: 'short' })} ${end.getDate()}`;
-}
-
-function calendarQueueStatusColor(status: CalendarQueueStatus): string {
-  switch (status) {
-    case 'approved':
-      return 'green';
-    case 'ready':
-      return 'blue';
-    default:
-      return 'gray';
-  }
-}
-
-function formatCurrency(value: number, currencyCode: string | null, digits = 0): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currencyCode || 'USD',
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
+    minimumFractionDigits: resolvedDigits,
+    maximumFractionDigits: resolvedDigits,
+  }).format(Number.isFinite(value) ? value : 0);
+}
+
+function formatCompactCurrency(value: number, currencyCode: string | null): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currencyCode || 'USD',
+    notation: 'compact',
+    maximumFractionDigits: 1,
   }).format(Number.isFinite(value) ? value : 0);
 }
 
@@ -331,20 +357,62 @@ function formatNumber(value: number): string {
   return numberFormatter.format(Number.isFinite(value) ? value : 0);
 }
 
-function formatPercent(value: number): string {
-  return `${Math.abs(value).toFixed(Math.abs(value) >= 10 ? 0 : 1)}%`;
-}
-
 function formatRate(value: number): string {
-  return `${value.toFixed(2)}%`;
+  return `${(Number.isFinite(value) ? value : 0).toFixed(2)}%`;
 }
 
-function formatTrendValue(value: number, currencyCode: string | null): string {
-  if (value <= 1.5) {
-    return formatCurrency(value, currencyCode, 2);
+function formatDecimal(value: number): string {
+  return (Number.isFinite(value) ? value : 0).toFixed(2);
+}
+
+function formatCompactNumber(value: number): string {
+  return new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(Number.isFinite(value) ? value : 0);
+}
+
+function formatStatusLabel(value: string | null | undefined): string {
+  if (!value) {
+    return 'Unknown';
   }
 
-  return formatRate(value);
+  return value
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function statusColor(status: string | null | undefined): string {
+  const normalized = (status ?? '').trim().toLowerCase();
+
+  if (
+    normalized.includes('paused') ||
+    normalized.includes('inactive') ||
+    normalized.includes('disabled') ||
+    normalized.includes('error') ||
+    normalized.includes('failed')
+  ) {
+    return 'red';
+  }
+
+  if (
+    normalized.includes('active') ||
+    normalized.includes('serving') ||
+    normalized.includes('running') ||
+    normalized.includes('connected')
+  ) {
+    return 'green';
+  }
+
+  if (
+    normalized.includes('review') ||
+    normalized.includes('pending') ||
+    normalized.includes('learning')
+  ) {
+    return 'yellow';
+  }
+
+  return 'gray';
 }
 
 function formatDateTime(value: string | null): string {
@@ -391,40 +459,686 @@ function formatRelativeSync(value: string | null): string {
   return `Synced ${days}d ago`;
 }
 
-function formatStatusLabel(value: string | null | undefined): string {
+function formatReadableDate(value: string | null): string | null {
   if (!value) {
-    return 'Not connected';
+    return null;
   }
 
-  return value
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (character) => character.toUpperCase());
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 }
 
-function statusColor(status: string | null | undefined): string {
-  switch (status) {
-    case 'connected':
-    case 'active':
-      return 'green';
-    case 'error':
+function formatReadableDateLabel(value: string): string {
+  const trimmed = value.trim();
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return formatReadableDate(trimmed) ?? trimmed;
+  }
+
+  const rangeMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})\s*-\s*(\d{4}-\d{2}-\d{2})$/);
+  if (rangeMatch) {
+    const start = formatReadableDate(rangeMatch[1]);
+    const end = formatReadableDate(rangeMatch[2]);
+    return start && end ? `${start} - ${end}` : trimmed;
+  }
+
+  return trimmed;
+}
+
+function formatDateSpan(start: string | null, end: string | null): string | null {
+  const startLabel = formatReadableDate(start);
+  const endLabel = formatReadableDate(end);
+
+  if (startLabel && endLabel) {
+    return start === end ? startLabel : `${startLabel} through ${endLabel}`;
+  }
+
+  return startLabel ?? endLabel ?? null;
+}
+
+function formatTrendLabel(value: string, granularity: HistoryGranularity): string {
+  return granularity === 'day' ? formatReadableDateLabel(value) : value.trim();
+}
+
+function formatHourShortLabel(hour: number): string {
+  if (!Number.isFinite(hour) || hour < 0 || hour > 23) {
+    return '—';
+  }
+
+  const suffix = hour >= 12 ? 'P' : 'A';
+  const normalizedHour = hour % 12 || 12;
+  return `${normalizedHour}${suffix}`;
+}
+
+function formatHourLongLabel(hour: number): string {
+  if (!Number.isFinite(hour) || hour < 0 || hour > 23) {
+    return 'Unknown';
+  }
+
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  const normalizedHour = hour % 12 || 12;
+  return `${normalizedHour}${suffix}`;
+}
+
+function shouldRenderHeatmapHourLabel(hour: number): boolean {
+  return hour === 0 || hour === 4 || hour === 8 || hour === 12 || hour === 16 || hour === 20;
+}
+
+function buildHourlyHeatmap(
+  points: DashboardPayload['featuredAdsetHistory']['hourlyTrendExpanded']
+): HourlyHeatmapConfig | null {
+  const hourlyPoints = points
+    .filter(
+      (point) =>
+        point.dayKey &&
+        point.dayOfWeek != null &&
+        point.dayOfWeek >= 0 &&
+        point.dayOfWeek <= 6 &&
+        point.hourOfDay != null &&
+        point.hourOfDay >= 0 &&
+        point.hourOfDay <= 23
+    )
+    .map((point) => ({
+      ...point,
+      dayOfWeek: point.dayOfWeek as number,
+      hourOfDay: point.hourOfDay as number,
+    }));
+
+  if (hourlyPoints.length === 0) {
+    return null;
+  }
+
+  const prefersLinkClicks = hourlyPoints.some((point) => point.inlineLinkClicks > 0);
+  const metricLabel = prefersLinkClicks ? 'Link clicks' : 'Clicks';
+  const aggregates = new Map<
+    string,
+    {
+      dayOfWeek: number;
+      hourOfDay: number;
+      impressions: number;
+      clicks: number;
+      linkClicks: number;
+      spend: number;
+      occurrences: number;
+    }
+  >();
+
+  for (const point of hourlyPoints) {
+    const key = `${point.dayOfWeek}:${point.hourOfDay}`;
+    const current = aggregates.get(key) ?? {
+      dayOfWeek: point.dayOfWeek,
+      hourOfDay: point.hourOfDay,
+      impressions: 0,
+      clicks: 0,
+      linkClicks: 0,
+      spend: 0,
+      occurrences: 0,
+    };
+
+    current.impressions += point.impressions;
+    current.clicks += point.clicks;
+    current.linkClicks += point.inlineLinkClicks;
+    current.spend += point.spend;
+    current.occurrences += 1;
+    aggregates.set(key, current);
+  }
+
+  const cells = Array.from(aggregates.values()).map((aggregate) => {
+    const metricTotal = prefersLinkClicks ? aggregate.linkClicks : aggregate.clicks;
+    const metricAverage = aggregate.occurrences > 0 ? metricTotal / aggregate.occurrences : 0;
+    const ctr = aggregate.impressions > 0 ? (aggregate.clicks / aggregate.impressions) * 100 : 0;
+
+    return {
+      key: `${aggregate.dayOfWeek}:${aggregate.hourOfDay}`,
+      dayLabel: HEATMAP_DAY_LABELS[aggregate.dayOfWeek] ?? '—',
+      dayOfWeek: aggregate.dayOfWeek,
+      hourOfDay: aggregate.hourOfDay,
+      metricAverage,
+      metricTotal,
+      clicks: aggregate.clicks,
+      linkClicks: aggregate.linkClicks,
+      spend: aggregate.spend,
+      ctr,
+      impressions: aggregate.impressions,
+      intensity: 0,
+    } satisfies HeatmapCell;
+  });
+
+  const maxAverage = cells.reduce((max, cell) => Math.max(max, cell.metricAverage), 0);
+  const normalizedCells = cells.map((cell) => ({
+    ...cell,
+    intensity: maxAverage > 0 ? Math.min(1, Math.sqrt(cell.metricAverage / maxAverage)) : 0,
+  }));
+
+  const rows: HeatmapRow[] = HEATMAP_DAY_LABELS.map((label, dayOfWeek) => ({
+    dayLabel: label,
+    dayOfWeek,
+    cells: Array.from({ length: 24 }, (_, hourOfDay) => {
+      const cell = normalizedCells.find(
+        (candidate) =>
+          candidate.dayOfWeek === dayOfWeek && candidate.hourOfDay === hourOfDay
+      );
+
+      return (
+        cell ?? {
+          key: `${dayOfWeek}:${hourOfDay}`,
+          dayLabel: label,
+          dayOfWeek,
+          hourOfDay,
+          metricAverage: 0,
+          metricTotal: 0,
+          clicks: 0,
+          linkClicks: 0,
+          spend: 0,
+          ctr: 0,
+          impressions: 0,
+          intensity: 0,
+        }
+      );
+    }),
+  }));
+
+  const bestCell = normalizedCells.sort(
+    (left, right) =>
+      right.metricAverage - left.metricAverage ||
+      right.ctr - left.ctr ||
+      right.spend - left.spend
+  )[0];
+
+  if (!bestCell) {
+    return null;
+  }
+
+  const bestDay = rows
+    .map((row) => ({
+      dayLabel: row.dayLabel,
+      metricAverage: row.cells.reduce((sum, cell) => sum + cell.metricAverage, 0),
+    }))
+    .sort((left, right) => right.metricAverage - left.metricAverage)[0];
+
+  const hourTotals = Array.from({ length: 24 }, (_, hourOfDay) => ({
+    hourOfDay,
+    metricAverage: rows.reduce((sum, row) => sum + row.cells[hourOfDay].metricAverage, 0),
+  }));
+  const bestHour = hourTotals.sort((left, right) => right.metricAverage - left.metricAverage)[0];
+
+  return {
+    title: `Best recurring ${metricLabel.toLowerCase()} times`,
+    metricLabel,
+    summarySlotLabel: `${bestCell.dayLabel} · ${formatHourLongLabel(bestCell.hourOfDay)}`,
+    summaryDayLabel: bestDay?.dayLabel ?? '—',
+    summaryHourLabel: bestHour ? formatHourLongLabel(bestHour.hourOfDay) : '—',
+    rows,
+    hourLabels: Array.from({ length: 24 }, (_, hourOfDay) =>
+      shouldRenderHeatmapHourLabel(hourOfDay) ? formatHourShortLabel(hourOfDay) : ''
+    ),
+  };
+}
+
+function formatAxisShortDate(value: string): string {
+  const date = new Date(value);
+  if (!Number.isNaN(date.getTime())) {
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+
+  return value.replace(/,\s*\d{4}$/, '').trim();
+}
+
+function formatExpandedHourlyAxisLabel(value: string): string {
+  const [rawDate, rawHourToken] = value.split('·').map((part) => part.trim());
+
+  if (!rawDate || !rawHourToken) {
+    return value;
+  }
+
+  if (rawHourToken === '12A') {
+    return `${formatAxisShortDate(rawDate)}, 12AM`;
+  }
+
+  if (rawHourToken === '12P') {
+    return `${formatAxisShortDate(rawDate)}, 12PM`;
+  }
+
+  return '';
+}
+
+function isExpandedHourlyAnchor(value: string): boolean {
+  const [, rawHourToken] = value.split('·').map((part) => part.trim());
+  return rawHourToken === '12A' || rawHourToken === '12P';
+}
+
+function normalizeTrendSeries(values: number[]): number[] {
+  const baseline = values.find((value) => value > 0) ?? 0;
+
+  if (baseline <= 0) {
+    return values.map(() => 0);
+  }
+
+  return values.map((value) => Number(((value / baseline) * 100).toFixed(1)));
+}
+
+function buildCombinedTrendSeries(input: {
+  granularity: HistoryGranularity;
+  trendPoints: DashboardPayload['featuredAdsetHistory']['dailyTrend'];
+}): CombinedTrendPoint[] {
+  const deliveryValues =
+    input.granularity === 'hourly'
+      ? input.trendPoints.map(
+          (point) => point.spend * 0.4 + point.clicks * 0.35 + point.inlineLinkClicks * 0.25
+        )
+      : input.trendPoints.map(
+          (point) => point.spend * 0.35 + point.results * 0.4 + point.clicks * 0.25
+        );
+  const efficiencyValues =
+    input.granularity === 'hourly'
+      ? input.trendPoints.map((point) => {
+          const ctrScore = point.ctr;
+          const cpcScore = point.cpc > 0 ? 100 / point.cpc : 0;
+          const cpmScore = point.cpm > 0 ? 100 / point.cpm : 0;
+
+          return ctrScore * 0.4 + cpcScore * 0.35 + cpmScore * 0.25;
+        })
+      : input.trendPoints.map((point) => {
+          const ctrScore = point.ctr;
+          const cpcScore = point.cpc > 0 ? 100 / point.cpc : 0;
+          const frequencyPenalty = point.frequency > 0 ? 100 / point.frequency : 0;
+
+          return ctrScore * 0.45 + cpcScore * 0.35 + frequencyPenalty * 0.2;
+        });
+
+  const normalizedDelivery = normalizeTrendSeries(deliveryValues);
+  const normalizedEfficiency = normalizeTrendSeries(efficiencyValues);
+
+  return input.trendPoints.map((point, index) => ({
+    label: point.label,
+    displayLabel: formatTrendLabel(point.label, input.granularity),
+    deliveryIndex: normalizedDelivery[index] ?? 0,
+    efficiencyIndex: normalizedEfficiency[index] ?? 0,
+  }));
+}
+
+function signalSeverityColor(severity: TrendSignalSeverity): string {
+  switch (severity) {
+    case 'critical':
       return 'red';
-    case 'needs_reauth':
+    case 'warning':
       return 'yellow';
     default:
-      return 'gray';
-  }
-}
-
-function alertToneColor(tone: DashboardAlert['tone']): string {
-  switch (tone) {
-    case 'red':
-      return 'red';
-    case 'yellow':
-      return 'yellow';
-    case 'blue':
       return 'blue';
+  }
+}
+
+function isLowConfidenceHourlyEfficiencyPoint(
+  point: DashboardPayload['featuredAdsetHistory']['dailyTrend'][number]
+): boolean {
+  return (
+    point.impressions < HOURLY_SIGNAL_MIN_IMPRESSIONS &&
+    point.clicks < HOURLY_SIGNAL_MIN_CLICKS &&
+    point.spend < HOURLY_SIGNAL_MIN_SPEND
+  );
+}
+
+function detectTrendSignals(input: {
+  granularity: HistoryGranularity;
+  trendPoints: DashboardPayload['featuredAdsetHistory']['dailyTrend'];
+}): TrendSignal[] {
+  const combinedPoints = buildCombinedTrendSeries(input);
+
+  if (combinedPoints.length < 2) {
+    return [];
+  }
+
+  const signals: TrendSignal[] = [];
+
+  for (let index = 1; index < combinedPoints.length; index += 1) {
+    const previous = combinedPoints[index - 1];
+    const current = combinedPoints[index];
+    const currentPoint = input.trendPoints[index];
+    const previousGap = Math.abs(previous.deliveryIndex - previous.efficiencyIndex);
+    const gap = Math.abs(current.deliveryIndex - current.efficiencyIndex);
+    const majorGap = gap >= MAJOR_DIVERGENCE_THRESHOLD;
+    const lowConfidenceEfficiency =
+      input.granularity === 'hourly' && isLowConfidenceHourlyEfficiencyPoint(currentPoint);
+
+    if (
+      previous.efficiencyIndex < previous.deliveryIndex &&
+      current.efficiencyIndex >= current.deliveryIndex
+    ) {
+      signals.push({
+        type: 'crossover_up',
+        dateLabel: current.displayLabel,
+        severity: 'info',
+        confidence: lowConfidenceEfficiency ? 'low' : 'high',
+        title: lowConfidenceEfficiency
+          ? 'Promising efficiency, limited delivery'
+          : 'Efficiency crossed above delivery',
+        markerLabel: lowConfidenceEfficiency ? 'Low-confidence spike' : 'Efficiency lead',
+        description: lowConfidenceEfficiency
+          ? 'Efficiency moved above delivery on a very small hourly sample, so this hour is interesting but not strong enough to treat as a real optimization signal yet.'
+          : 'Efficiency moved above delivery, which can mean the ad set is holding up on quality while volume pressure shifts.',
+        deliveryIndex: current.deliveryIndex,
+        efficiencyIndex: current.efficiencyIndex,
+        gap,
+      });
+    }
+
+    if (
+      previous.deliveryIndex < previous.efficiencyIndex &&
+      current.deliveryIndex >= current.efficiencyIndex
+    ) {
+      signals.push({
+        type: 'crossover_down',
+        dateLabel: current.displayLabel,
+        severity: 'info',
+        confidence: 'high',
+        title: 'Delivery crossed above efficiency',
+        markerLabel: 'Delivery regained lead',
+        description:
+          'Delivery moved above efficiency, which can mean volume recovered faster than efficiency at this point.',
+        deliveryIndex: current.deliveryIndex,
+        efficiencyIndex: current.efficiencyIndex,
+        gap,
+      });
+    }
+
+    if (
+      current.deliveryIndex < previous.deliveryIndex &&
+      current.efficiencyIndex >= previous.efficiencyIndex &&
+      gap >= DIVERGENCE_THRESHOLD
+    ) {
+      signals.push({
+        type: 'delivery_drop_vs_efficiency',
+        dateLabel: current.displayLabel,
+        severity: lowConfidenceEfficiency ? 'info' : majorGap ? 'critical' : 'warning',
+        confidence: lowConfidenceEfficiency ? 'low' : 'high',
+        title: lowConfidenceEfficiency
+          ? 'Efficient but low-confidence'
+          : 'Delivery weakened while efficiency held up',
+        markerLabel: lowConfidenceEfficiency ? 'Low-confidence spike' : 'Volume softened',
+        description: lowConfidenceEfficiency
+          ? 'This hour looks efficient, but the delivery sample is too small to treat it as a strong signal yet.'
+          : 'Ad set may be losing volume momentum while remaining relatively efficient.',
+        deliveryIndex: current.deliveryIndex,
+        efficiencyIndex: current.efficiencyIndex,
+        gap,
+      });
+    }
+
+    if (
+      current.efficiencyIndex < previous.efficiencyIndex &&
+      current.deliveryIndex >= previous.deliveryIndex &&
+      gap >= DIVERGENCE_THRESHOLD
+    ) {
+      signals.push({
+        type: 'efficiency_drop_vs_delivery',
+        dateLabel: current.displayLabel,
+        severity: majorGap ? 'critical' : 'warning',
+        confidence: 'high',
+        title: 'Volume is rising faster than efficiency',
+        markerLabel: 'Efficiency slipped',
+        description:
+          'Ad set is scaling, but efficiency may be weakening as delivery continues to rise.',
+        deliveryIndex: current.deliveryIndex,
+        efficiencyIndex: current.efficiencyIndex,
+        gap,
+      });
+    }
+
+    if (gap >= DIVERGENCE_THRESHOLD && previousGap >= DIVERGENCE_THRESHOLD) {
+      const earlierGap =
+        index >= 2
+          ? Math.abs(
+              combinedPoints[index - 2].deliveryIndex - combinedPoints[index - 2].efficiencyIndex
+            )
+          : 0;
+      const isFirstSustainedPoint = index === 1 || earlierGap < DIVERGENCE_THRESHOLD;
+
+      if (isFirstSustainedPoint) {
+        const efficiencyLeading = current.efficiencyIndex > current.deliveryIndex;
+
+        signals.push({
+          type: 'sustained_divergence',
+          dateLabel: current.displayLabel,
+          severity:
+            efficiencyLeading && lowConfidenceEfficiency
+              ? 'info'
+              : majorGap
+                ? 'critical'
+                : 'warning',
+          confidence: efficiencyLeading && lowConfidenceEfficiency ? 'low' : 'high',
+          title: efficiencyLeading
+            ? lowConfidenceEfficiency
+              ? 'Low-volume efficiency spike'
+              : 'Efficiency is outpacing delivery'
+            : 'Scaling may be slowing',
+          markerLabel: efficiencyLeading
+            ? lowConfidenceEfficiency
+              ? 'Low-confidence spike'
+              : 'Efficiency lead'
+            : 'Scale pressure',
+          description: efficiencyLeading
+            ? lowConfidenceEfficiency
+              ? 'Efficiency stayed ahead of delivery, but only on very limited hourly volume. Treat this as promising, not conclusive.'
+              : 'Efficiency stayed meaningfully ahead of delivery for multiple points in a row.'
+            : 'Delivery stayed materially ahead of efficiency for multiple points in a row.',
+          deliveryIndex: current.deliveryIndex,
+          efficiencyIndex: current.efficiencyIndex,
+          gap,
+        });
+      }
+    }
+  }
+
+  return signals;
+}
+
+function selectPrimaryTrendSignal(signals: TrendSignal[]): TrendSignal | null {
+  if (signals.length === 0) {
+    return null;
+  }
+
+  const severityRank: Record<TrendSignalSeverity, number> = {
+    info: 1,
+    warning: 2,
+    critical: 3,
+  };
+
+  return signals.reduce<TrendSignal | null>((currentBest, candidate) => {
+    if (!currentBest) {
+      return candidate;
+    }
+
+    const candidateRank = severityRank[candidate.severity];
+    const currentRank = severityRank[currentBest.severity];
+
+    if (candidateRank !== currentRank) {
+      return candidateRank > currentRank ? candidate : currentBest;
+    }
+
+    if (candidate.gap !== currentBest.gap) {
+      return candidate.gap > currentBest.gap ? candidate : currentBest;
+    }
+
+  return candidate;
+  }, null);
+}
+
+function renderTrendTooltip(input: {
+  label: string | undefined;
+  payload: Array<{ name?: string; value?: number | string; color?: string }> | undefined;
+  series: TrendChartConfig['series'];
+  formatter: (value: number) => string;
+  signal: TrendSignal | null;
+}) {
+  if (!input.label || !input.payload || input.payload.length === 0) {
+    return null;
+  }
+
+  const colorBySeriesName = new Map(input.series.map((series) => [series.name, series.color]));
+
+  return (
+    <Paper withBorder radius="md" p="sm" shadow="sm" className={classes.historyTooltipCard}>
+      <Stack gap={8}>
+        <Text size="sm" fw={700}>
+          {input.label}
+        </Text>
+
+        <Stack gap={6}>
+          {input.payload.map((item) => {
+            const color = item.color || colorBySeriesName.get(item.name ?? '') || 'gray.6';
+            const value =
+              typeof item.value === 'number'
+                ? input.formatter(item.value)
+                : String(item.value ?? '—');
+
+            return (
+              <Group key={`${item.name ?? 'value'}:${value}`} justify="space-between" gap="md" wrap="nowrap">
+                <Group gap="xs" wrap="nowrap">
+                  <ThemeIcon color={color} variant="light" radius="xl" size="xs" />
+                  <Text size="sm" c="dimmed">
+                    {item.name ?? 'Value'}
+                  </Text>
+                </Group>
+                <Text size="sm" fw={700}>
+                  {value}
+                </Text>
+              </Group>
+            );
+          })}
+        </Stack>
+
+        {input.signal ? (
+          <Paper withBorder radius="md" p="xs" className={classes.historyTooltipSignal}>
+            <Badge color={signalSeverityColor(input.signal.severity)} variant="light" size="xs">
+              {input.signal.title}
+            </Badge>
+            {input.signal.confidence === 'low' ? (
+              <Text size="xs" c="dimmed" mt={6} fw={700} className={classes.historyTooltipCopy}>
+                Low-confidence hourly read
+              </Text>
+            ) : null}
+            <Text size="xs" c="dimmed" mt={6} className={classes.historyTooltipCopy}>
+              {input.signal.description}
+            </Text>
+            <Text size="xs" c="dimmed" mt={4} fw={700} className={classes.historyTooltipCopy}>
+              Gap {formatDecimal(input.signal.gap)} idx
+            </Text>
+          </Paper>
+        ) : null}
+      </Stack>
+    </Paper>
+  );
+}
+
+function buildCreateAdHref(input: {
+  campaignId?: string | null;
+  adsetId?: string | null;
+}): string | null {
+  if (!input.adsetId) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    scope: 'ad',
+    adset_id: input.adsetId,
+  });
+
+  if (input.campaignId) {
+    params.set('campaign_id', input.campaignId);
+  }
+
+  return `/campaigns/create?${params.toString()}`;
+}
+
+function buildCalendarSuggestion(input: {
+  signal: TrendSignal | null;
+  adset: DashboardLiveAdsetItem | null;
+}): CalendarSuggestion | null {
+  if (!input.signal || !input.adset) {
+    return null;
+  }
+
+  if (input.signal.confidence === 'low') {
+    return null;
+  }
+
+  const adCreateHref = buildCreateAdHref({
+    campaignId: input.adset.campaignId,
+    adsetId: input.adset.id,
+  });
+  const markerLabel = `${input.signal.dateLabel} · gap ${formatDecimal(input.signal.gap)} idx`;
+  const dedupeKey = `${input.adset.id}:${input.signal.type}:${input.signal.dateLabel}`;
+
+  switch (input.signal.type) {
+    case 'delivery_drop_vs_efficiency':
+      return {
+        itemType: 'launch_test',
+        priority: input.signal.severity === 'critical' ? 'critical' : 'high',
+        title: `Add a recovery test to ${input.adset.name}`,
+        description:
+          `Delivery lost momentum while efficiency held up around ${input.signal.dateLabel}. Queue one new ad or variation to recover volume without changing too many variables at once.`,
+        destinationHref: adCreateHref ?? '/campaigns/create',
+        markerLabel,
+        dedupeKey,
+      };
+    case 'efficiency_drop_vs_delivery':
+      return {
+        itemType: 'investigate_efficiency',
+        priority: input.signal.severity === 'critical' ? 'critical' : 'high',
+        title: `Review efficiency drift in ${input.adset.name}`,
+        description:
+          `Delivery kept rising while efficiency weakened around ${input.signal.dateLabel}. Queue a review before scaling further so spend does not outrun quality.`,
+        destinationHref: '/reports',
+        markerLabel,
+        dedupeKey,
+      };
+    case 'sustained_divergence':
+      return {
+        itemType:
+          input.signal.efficiencyIndex > input.signal.deliveryIndex
+            ? 'launch_test'
+            : 'investigate_efficiency',
+        priority: input.signal.severity === 'critical' ? 'critical' : 'high',
+        title:
+          input.signal.efficiencyIndex > input.signal.deliveryIndex
+            ? `Turn ${input.adset.name} into a scheduled test`
+            : `Watch the scale pressure in ${input.adset.name}`,
+        description:
+          input.signal.efficiencyIndex > input.signal.deliveryIndex
+            ? `Efficiency stayed ahead of delivery for multiple points starting around ${input.signal.dateLabel}. Queue a test so the ad set can pick up more volume carefully.`
+            : `Delivery stayed materially ahead of efficiency for multiple points starting around ${input.signal.dateLabel}. Queue a calendar review before scale pressure worsens.`,
+        destinationHref:
+          input.signal.efficiencyIndex > input.signal.deliveryIndex
+            ? adCreateHref ?? '/campaigns/create'
+            : '/reports',
+        markerLabel,
+        dedupeKey,
+      };
+    case 'crossover_up':
+    case 'crossover_down':
     default:
-      return 'teal';
+      return {
+        itemType: 'review_report',
+        priority: 'medium',
+        title: `Review crossover point for ${input.adset.name}`,
+        description:
+          `Delivery and efficiency crossed around ${input.signal.dateLabel}. Queue a short report review so the next decision is tied to a real inflection point instead of a guess.`,
+        destinationHref: '/reports',
+        markerLabel,
+        dedupeKey,
+      };
   }
 }
 
@@ -439,7 +1153,7 @@ function stateContent(state: DashboardState): {
         color: 'blue',
         title: 'Connect a platform to start the dashboard',
         description:
-          'This page is designed around one selected ad account. Connect a platform first, then choose the account you want this dashboard to watch.',
+          'This page is intentionally account-specific. Connect a platform first, then choose the ad account you want this dashboard to watch.',
       };
     case 'platform_not_found_or_not_connected':
       return {
@@ -453,795 +1167,1023 @@ function stateContent(state: DashboardState): {
         color: 'yellow',
         title: 'Choose an ad account to make this dashboard useful',
         description:
-          'The dashboard is intentionally narrow. Once one ad account is selected, this page becomes a clear daily read instead of a mixed overview.',
+          'The dashboard only becomes meaningful when it is tied to one selected ad account and one platform connection.',
       };
     case 'ad_account_selected_no_metrics':
       return {
         color: 'teal',
         title: 'This account is selected, but performance data is still sparse',
         description:
-          'Keep the account selected and refresh again after the next sync cycle. The trend and campaign surfaces will fill in once metrics arrive.',
+          'Keep the account selected and refresh again after the next sync cycle. The performance graphs and live delivery rows will fill in once metrics arrive.',
       };
     default:
       return {
         color: 'teal',
         title: 'Dashboard ready',
-        description: 'Your selected ad account is loaded and ready for a simple operating read.',
+        description: 'Your selected ad account is ready for a daily operating read.',
       };
   }
 }
 
-function windowOptionLabel(window: DashboardWindow): string {
-  switch (window) {
-    case 'this_week':
-      return 'This week';
-    case 'last_week':
-      return 'Last week';
-    case 'last_30d':
-      return 'Last 30D';
-    case 'this_month':
-      return 'This month';
-    default:
-      return 'Last 7 days';
-  }
-}
-
-function windowLabel(window: DashboardWindow): string {
-  switch (window) {
-    case 'this_week':
-      return 'this week';
-    case 'last_week':
-      return 'last week';
-    case 'last_30d':
-      return 'last 30 days';
-    case 'this_month':
-      return 'this month';
-    default:
-      return 'last 7 days';
-  }
-}
-
-function previousWindowLabel(window: DashboardWindow): string {
-  switch (window) {
-    case 'this_week':
-    case 'this_month':
-      return 'previous comparable period';
-    case 'last_week':
-      return 'week before';
-    case 'last_30d':
-      return 'previous 30 days';
-    default:
-      return 'previous 7 days';
-  }
-}
-
-function comparisonText(card: DashboardSummaryCard, window: DashboardWindow): {
-  label: string;
-  color: string;
-} {
-  if (card.previousValue === null || card.changePercent === null) {
-    return {
-      label: `No comparison yet against the ${previousWindowLabel(window)}`,
-      color: 'var(--mantine-color-gray-6)',
-    };
-  }
-
-  if (Math.abs(card.changePercent) < 0.5) {
-    return {
-      label: `Holding steady vs the ${previousWindowLabel(window)}`,
-      color: 'var(--mantine-color-gray-7)',
-    };
-  }
-
-  if (card.changePercent > 0) {
-    return {
-      label: `Up ${formatPercent(card.changePercent)} vs the ${previousWindowLabel(window)}`,
-      color: 'var(--mantine-color-green-7)',
-    };
-  }
-
-  return {
-    label: `Down ${formatPercent(card.changePercent)} vs the ${previousWindowLabel(window)}`,
-    color: 'var(--mantine-color-red-7)',
-  };
-}
-
-function cardIcon(key: DashboardSummaryCard['key']) {
-  switch (key) {
-    case 'spend':
-      return IconCurrencyDollar;
-    case 'results':
-      return IconTargetArrow;
-    case 'messages':
-      return IconMessageCircle;
-    case 'link_clicks':
-      return IconLink;
-    default:
-      return IconUsers;
-  }
-}
-
-function formatCardValue(card: DashboardSummaryCard, currencyCode: string | null): string {
-  if (card.key === 'spend') {
-    return formatCurrency(card.value, currencyCode);
-  }
-
-  return formatNumber(card.value);
-}
-
-function pickPrimaryOutcomeCard(cards: DashboardSummaryCard[]): DashboardSummaryCard {
-  return (
-    cards.find((card) => card.key === 'results' && card.value > 0) ||
-    cards.find((card) => card.key === 'leads' && card.value > 0) ||
-    cards.find((card) => card.key === 'messages' && card.value > 0) ||
-    cards.find((card) => card.key === 'link_clicks' && card.value > 0) ||
-    cards.find((card) => card.key === 'results') ||
-    cards[0]
-  );
-}
-
-function campaignStrengthScore(campaign: DashboardCampaignPreviewItem): number {
-  return campaign.primaryOutcomeValue * 100 + campaign.ctr * 15 - campaign.costPerResult * 2;
-}
-
-function campaignWatchScore(campaign: DashboardCampaignPreviewItem): number {
-  return (
-    (campaign.primaryOutcomeValue === 0 ? campaign.spend * 5 : 0) +
-    campaign.costPerResult * 4 +
-    campaign.spend -
-    campaign.primaryOutcomeValue * 12 -
-    campaign.ctr * 20
-  );
-}
-
-function pickStrongestCampaign(
-  campaigns: DashboardCampaignPreviewItem[]
-): DashboardCampaignPreviewItem | null {
-  return [...campaigns].sort((left, right) => campaignStrengthScore(right) - campaignStrengthScore(left))[0] ?? null;
-}
-
-function pickWatchCampaign(
-  campaigns: DashboardCampaignPreviewItem[],
-  strongestCampaignId: string | null
-): DashboardCampaignPreviewItem | null {
-  const filtered = campaigns.filter((campaign) => campaign.campaignId !== strongestCampaignId);
-  return [...filtered].sort((left, right) => campaignWatchScore(right) - campaignWatchScore(left))[0] ?? null;
-}
-
-function campaignMetricSummary(
-  campaign: DashboardCampaignPreviewItem,
-  currencyCode: string | null
-): string {
-  if (campaign.primaryOutcomeMetric !== 'clicks' && campaign.primaryOutcomeValue > 0) {
-    return `${formatNumber(campaign.primaryOutcomeValue)} ${campaign.primaryOutcomeLabel.toLowerCase()} at ${formatCurrency(
-      campaign.costPerResult,
-      currencyCode,
-      2
-    )} per result`;
-  }
-
-  return `${formatNumber(campaign.primaryOutcomeValue)} ${campaign.primaryOutcomeLabel.toLowerCase()} with ${campaign.ctr.toFixed(2)}% CTR`;
-}
-
-function formatQueueDayLabel(value: string): string {
-  return new Date(`${value}T00:00:00`).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function queueStatusLabel(status: CalendarQueueStatus): string {
-  switch (status) {
-    case 'approved':
-      return 'Approved';
-    case 'ready':
-      return 'Needs approval';
-    default:
-      return 'Draft';
-  }
-}
-
-function queueFollowUpCount(item: CalendarQueuePreviewItem): number {
-  return item.children?.length ?? item.childBlueprints?.length ?? 0;
-}
-
-function buildDashboardBrief(input: {
-  payload: DashboardPayload;
-  activeWindow: DashboardWindow;
-  spendCard: DashboardSummaryCard;
-  primaryOutcomeCard: DashboardSummaryCard;
-  strongestCampaign: DashboardCampaignPreviewItem | null;
-  stateMeta: ReturnType<typeof stateContent>;
-}): string {
-  if (input.payload.state !== 'ready') {
-    return input.stateMeta.description;
-  }
-
-  const accountName = input.payload.viewContext.adAccountName || 'your selected ad account';
-  const spendText = formatCardValue(input.spendCard, input.payload.viewContext.currencyCode);
-  const outcomeText = `${formatCardValue(
-    input.primaryOutcomeCard,
-    input.payload.viewContext.currencyCode
-  )} ${input.primaryOutcomeCard.label.toLowerCase()}`;
-  const outcomeComparison = comparisonText(input.primaryOutcomeCard, input.activeWindow).label;
-
-  return [
-    `In the ${windowLabel(input.activeWindow)}, ${accountName} spent ${spendText} and produced ${outcomeText}.`,
-    `${outcomeComparison}.`,
-    input.strongestCampaign
-      ? `${input.strongestCampaign.campaignName} is currently the strongest visible campaign in this account.`
-      : 'Campaign-level visibility will appear here as soon as campaign data is available.',
-  ].join(' ');
-}
-
-function hasLiveDelivery(activityRail: DashboardActivityRail): boolean {
-  return (
-    activityRail.tests.length > 0 ||
-    activityRail.campaigns.length > 0 ||
-    activityRail.adsets.length > 0 ||
-    activityRail.ads.length > 0
-  );
-}
-
-function buildCreateAdHref(input: {
-  strongestCampaign: DashboardCampaignPreviewItem | null;
-  activityRail: DashboardActivityRail;
-}): string {
-  const campaignId =
-    input.strongestCampaign?.campaignId ?? input.activityRail.campaigns[0]?.id ?? null;
-  const adSetId = input.activityRail.adsets[0]?.id ?? null;
-
-  if (campaignId && adSetId) {
-    return `/campaigns/create?scope=ad&campaign_id=${encodeURIComponent(campaignId)}&adset_id=${encodeURIComponent(adSetId)}`;
-  }
-
-  if (campaignId) {
-    return `/campaigns/create?scope=ad&campaign_id=${encodeURIComponent(campaignId)}`;
-  }
-
-  return '/campaigns/create?scope=ad';
-}
-
-function buildReadFirstItems(input: {
-  payload: DashboardPayload;
-  activityRail: DashboardActivityRail;
-  strongestCampaign: DashboardCampaignPreviewItem | null;
-  watchCampaign: DashboardCampaignPreviewItem | null;
-  featuredQueueItem: CalendarQueuePreviewItem | null;
-}): DashboardReadItem[] {
-  if (input.payload.state !== 'ready') {
-    return [
-      {
-        id: 'connect-account',
-        title: stateContent(input.payload.state).title,
-        detail:
-          'DeepVisor should eventually tell the owner exactly what to schedule next or what to launch next. Connect and select one ad account first so this panel can behave like an operator, not a placeholder.',
-        tone: 'blue',
-        primaryAction: {
-          label: 'Manage integrations',
-          href: '/integration',
-        },
-      },
-    ];
-  }
-
-  const createAdHref = buildCreateAdHref({
-    strongestCampaign: input.strongestCampaign,
-    activityRail: input.activityRail,
-  });
-  const calendarHref = '/calendar';
-  const strongestName = input.strongestCampaign?.campaignName ?? 'the favored historical campaign';
-  const watchName = input.watchCampaign?.campaignName ?? 'the weaker current campaign';
-  const queueTone =
-    input.featuredQueueItem?.status === 'approved'
-      ? 'teal'
-      : input.featuredQueueItem?.status === 'ready'
-        ? 'yellow'
-        : 'blue';
-  const queueScheduleText = input.featuredQueueItem
-    ? ` Scheduled ${formatQueueDayLabel(input.featuredQueueItem.day)} · ${input.featuredQueueItem.time}.`
-    : '';
-
-  if (!hasLiveDelivery(input.activityRail)) {
-    return [
-      {
-        id: input.featuredQueueItem?.id ?? 'no-live-delivery',
-        title: input.featuredQueueItem?.title ?? 'Put the favored campaign back live',
-        detail:
-          input.featuredQueueItem?.description
-            ? `${input.featuredQueueItem.description} Use ${strongestName} as the relaunch base, put that favored campaign back live from the calendar, and either reuse the old winning creative or add one new creative into the same ad set.${queueScheduleText}`
-            : `There is nothing live to compare right now. Put ${strongestName} back on the calendar as the favored relaunch, and either reuse the old winning creative or add one fresh creative inside the same ad set.${queueScheduleText}`,
-        tone: queueTone,
-        primaryAction: {
-          label: 'Open calendar',
-          href: calendarHref,
-        },
-        secondaryAction: {
-          label: 'Create ad',
-          href: createAdHref,
-        },
-      },
-      {
-        id: 'queue-report-followup',
-        title: 'Add the report follow-up',
-        detail:
-          'Add a report check 3 to 7 days after the relaunch so the campaign is judged on CTR and CPC against the prior winner instead of on spend alone.',
-        tone: 'blue',
-        primaryAction: {
-          label: 'Open calendar',
-          href: calendarHref,
-        },
-      },
-    ];
-  }
-
-  const strongestSummary = input.strongestCampaign
-    ? campaignMetricSummary(
-        input.strongestCampaign,
-        input.payload.viewContext.currencyCode
-      )
-    : 'the cleanest current CTR and CPC signal';
-
-  return [
-    {
-      id: input.featuredQueueItem?.id ?? 'launch-into-winner',
-      title: input.featuredQueueItem?.title ?? 'Use the current winner as the control',
-      detail: input.featuredQueueItem?.description
-        ? `${input.featuredQueueItem.description} ${strongestName} is the favored benchmark right now with ${strongestSummary}. Put that winner on the calendar, then either add one new creative inside the same ad set or reuse the old winner if it still matches the offer.${queueScheduleText}`
-        : `${strongestName} is the favored benchmark right now with ${strongestSummary}. Put that winner on the calendar, then either add one new creative inside the same ad set or reuse the old winning creative if it still matches the offer.${queueScheduleText}`,
-      tone: queueTone,
-      primaryAction: {
-        label: 'Open calendar',
-        href: calendarHref,
-      },
-      secondaryAction: {
-        label: 'Create ad',
-        href: createAdHref,
-      },
-    },
-    {
-      id: 'schedule-compare-report',
-      title: 'Add the compare-back report',
-      detail: `Schedule a short review comparing ${watchName} against ${strongestName}. The goal is to decide whether the new ad is actually beating the current baseline on CTR and CPC before budgets move.`,
-      tone: 'blue',
-      primaryAction: {
-        label: 'Open calendar',
-        href: calendarHref,
-      },
-    },
-  ];
-}
-
-function signalSeverityTone(
-  severity: DashboardAttentionSignal['severity']
-): DashboardAlert['tone'] {
-  switch (severity) {
-    case 'critical':
-      return 'red';
-    case 'warning':
-      return 'yellow';
-    default:
-      return 'blue';
-  }
-}
-
-function DashboardSignalCard({
+function SummaryCard({
   label,
   value,
   detail,
-  color,
   icon: Icon,
 }: {
   label: string;
   value: string;
-  detail: string;
-  color: string;
-  icon: typeof IconCurrencyDollar;
+  detail?: string | null;
+  icon: typeof IconUsers;
 }) {
   return (
-    <Paper withBorder radius="md" p="md">
-      <Group justify="space-between" align="flex-start" mb="sm">
+    <Paper withBorder radius="xl" p="md" className={classes.metricCard}>
+      <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
         <div>
-          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
             {label}
           </Text>
-          <Text fw={800} mt={6}>
+          <Text fw={900} mt={8} className={classes.metricValue}>
             {value}
           </Text>
+          {detail ? (
+            <Text size="sm" c="dimmed" mt={8}>
+              {detail}
+            </Text>
+          ) : null}
         </div>
-        <ThemeIcon variant="light" color={color} radius="md">
-          <Icon size={16} />
+        <ThemeIcon variant="light" color="blue" radius="md">
+          <Icon size={18} />
         </ThemeIcon>
       </Group>
-      <Text size="sm" c="dimmed">
-        {detail}
-      </Text>
     </Paper>
   );
 }
 
-function activityLevelLabel(level: DashboardActivityEntityItem['level']): string {
-  switch (level) {
-    case 'campaign':
-      return 'Campaign';
-    case 'adset':
-      return 'Ad set';
-    default:
-      return 'Ad';
-  }
-}
-
-function activitySectionLabel(key: keyof DashboardActivityRail): string {
-  switch (key) {
-    case 'tests':
-      return 'Tests currently live';
-    case 'campaigns':
-      return 'Active campaigns';
-    case 'adsets':
-      return 'Active ad sets';
-    default:
-      return 'Active ads';
-  }
-}
-
-function activitySupportLabel(item: DashboardActivityEntityItem): string {
-  return item.results > 0 ? 'Cost / result' : 'CTR';
-}
-
-function activitySupportValue(
-  item: DashboardActivityEntityItem,
-  currencyCode: string | null
-): string {
-  if (item.results > 0) {
-    return formatCurrency(item.costPerResult, currencyCode, 2);
-  }
-
-  return `${item.ctr.toFixed(2)}%`;
-}
-
-function CalendarAgendaPreview({
-  days,
-  itemsByDay,
-  todayKey,
-  monthStart,
+function ComparisonMetric({
+  label,
+  value,
 }: {
-  days: Date[];
-  itemsByDay: Map<string, CalendarQueuePreviewItem[]>;
-  todayKey: string;
-  monthStart?: Date;
+  label: string;
+  value: string;
 }) {
   return (
-    <Stack gap="sm" className={classes.calendarAgenda}>
-      {days.map((day) => {
-        const dayKey = toCalendarIsoDay(day);
-        const items = itemsByDay.get(dayKey) ?? [];
-        const visibleItems = items.slice(0, 3);
-        const remainingCount = items.length - visibleItems.length;
-        const isToday = dayKey === todayKey;
-        const inCurrentMonth = monthStart ? isSameCalendarMonth(day, monthStart) : true;
-
-        return (
-          <Paper
-            key={dayKey}
-            withBorder
-            radius="lg"
-            p="sm"
-            className={classes.calendarAgendaRow}
-            style={{
-              opacity: inCurrentMonth ? 1 : 0.5,
-              background: isToday ? 'var(--platform-accent-soft)' : 'rgba(255,255,255,0.9)',
-              borderColor: isToday ? 'var(--platform-border-strong)' : 'var(--platform-card-border)',
-            }}
-          >
-            <div className={classes.calendarAgendaDate}>
-              <Text size="10px" c="dimmed" tt="uppercase" fw={800}>
-                {CALENDAR_WEEKDAY_LABELS[day.getDay()]}
-              </Text>
-              <Text fw={900} className={classes.calendarAgendaDateValue}>
-                {day.getDate()}
-              </Text>
-              <Text size="10px" c="dimmed">
-                {day.toLocaleDateString('en-US', { month: 'short' })}
-              </Text>
-            </div>
-
-            <div className={classes.calendarAgendaBody}>
-              <Group justify="space-between" align="center" mb={visibleItems.length > 0 ? 6 : 0}>
-                <Text size="sm" fw={700}>
-                  {items.length > 0 ? `${items.length} queued` : 'Open'}
-                </Text>
-                {items.length > 0 ? (
-                  <Badge size="xs" color="gray" variant="light">
-                    {formatQueueDayLabel(dayKey)}
-                  </Badge>
-                ) : null}
-              </Group>
-
-              <Stack gap={6}>
-                {visibleItems.length > 0 ? (
-                  visibleItems.map((item) => (
-                    <div key={item.id} className={classes.queueMiniRow}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <Text size="sm" fw={700} lineClamp={2}>
-                          {item.title}
-                        </Text>
-                        <Text size="xs" c="dimmed" mt={2}>
-                          {item.time}
-                          {queueFollowUpCount(item) > 0
-                            ? ` · ${queueFollowUpCount(item)} follow-up item${queueFollowUpCount(item) === 1 ? '' : 's'}`
-                            : ''}
-                        </Text>
-                      </div>
-                      <Badge
-                        color={calendarQueueStatusColor(item.status)}
-                        variant="light"
-                        radius="sm"
-                      >
-                        {queueStatusLabel(item.status)}
-                      </Badge>
-                    </div>
-                  ))
-                ) : (
-                  <Text size="sm" c="dimmed">
-                    No queued work on this day yet.
-                  </Text>
-                )}
-
-                {remainingCount > 0 ? (
-                  <Text size="xs" c="dimmed" fw={700}>
-                    +{remainingCount} more queued
-                  </Text>
-                ) : null}
-              </Stack>
-            </div>
-          </Paper>
-        );
-      })}
-    </Stack>
+    <div>
+      <Text size="10px" c="dimmed" tt="uppercase" fw={800}>
+        {label}
+      </Text>
+      <Text fw={800}>{value}</Text>
+    </div>
   );
 }
 
-function ActivityRow({
-  item,
+function LiveDeliverySectionHeader({
+  title,
+}: {
+  title: string;
+}) {
+  return (
+    <div className={classes.liveTableHeader}>
+      <Text size="11px" c="dimmed" tt="uppercase" fw={800}>
+        {title}
+      </Text>
+    </div>
+  );
+}
+
+function TableStatusBadge({ status }: { status: string | null | undefined }) {
+  return (
+    <Badge color={statusColor(status)} variant="light" radius="sm">
+      {formatStatusLabel(status)}
+    </Badge>
+  );
+}
+
+function CampaignLiveRow({
+  campaign,
   currencyCode,
 }: {
-  item: DashboardActivityEntityItem;
+  campaign: DashboardLiveCampaignContainer;
   currencyCode: string | null;
 }) {
   return (
-    <Paper withBorder radius="lg" p="md" className={classes.activityRow}>
+    <Paper withBorder radius="xl" p="md" className={classes.liveRow}>
       <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
-        <div style={{ flex: 1, minWidth: 220 }}>
+        <div style={{ flex: 1, minWidth: 240 }}>
+          <Group gap="xs" wrap="wrap" mb={6}>
+            <Badge color={statusColor(campaign.status)} variant="light">
+              {formatStatusLabel(campaign.status)}
+            </Badge>
+            <Badge color="gray" variant="outline">
+              Campaign
+            </Badge>
+            {campaign.objective ? (
+              <Badge color="blue" variant="outline">
+                {formatStatusLabel(campaign.objective)}
+              </Badge>
+            ) : null}
+          </Group>
+          <Text fw={800}>{campaign.name}</Text>
+        </div>
+
+        <div className={classes.metricGrid}>
+          <ComparisonMetric label="Spend" value={formatCurrency(campaign.spend, currencyCode)} />
+          <ComparisonMetric label="Results" value={formatNumber(campaign.results)} />
+          <ComparisonMetric label="CTR" value={formatRate(campaign.ctr)} />
+          <ComparisonMetric label="Live ad sets" value={formatNumber(campaign.adsetCount)} />
+          <ComparisonMetric label="Live ads" value={formatNumber(campaign.adCount)} />
+        </div>
+      </Group>
+    </Paper>
+  );
+}
+
+function AdsetComparisonRow({
+  item,
+  currencyCode,
+}: {
+  item: DashboardLiveAdsetItem;
+  currencyCode: string | null;
+}) {
+  return (
+    <Paper withBorder radius="xl" p="md" className={classes.liveRow}>
+      <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
+        <div style={{ flex: 1, minWidth: 240 }}>
           <Group gap="xs" wrap="wrap" mb={6}>
             <Badge color={statusColor(item.status)} variant="light">
               {formatStatusLabel(item.status)}
             </Badge>
             <Badge color="gray" variant="outline">
-              {activityLevelLabel(item.level)}
+              Ad set
             </Badge>
+            {item.optimizationGoal ? (
+              <Badge color="blue" variant="outline">
+                {formatStatusLabel(item.optimizationGoal)}
+              </Badge>
+            ) : null}
           </Group>
           <Text fw={800}>{item.name}</Text>
-          {item.primaryContext || item.secondaryContext ? (
-            <Text size="sm" c="dimmed" mt={6}>
-              {[item.primaryContext, item.secondaryContext].filter(Boolean).join(' · ')}
+          <Text size="sm" c="dimmed" mt={6}>
+            {item.campaignName ?? 'Campaign unavailable'}
+          </Text>
+          {item.topPublisherPlatform || item.topPlacement ? (
+            <Text size="sm" c="dimmed" mt={4}>
+              {[item.topPublisherPlatform, item.topPlacement].filter(Boolean).join(' · ')}
             </Text>
           ) : null}
         </div>
 
-        <div className={classes.activityMetrics}>
-          <div>
-            <Text size="10px" c="dimmed" tt="uppercase" fw={800}>
-              Spend
-            </Text>
-            <Text fw={800}>{formatCurrency(item.spend, currencyCode)}</Text>
-          </div>
-          <div>
-            <Text size="10px" c="dimmed" tt="uppercase" fw={800}>
-              Results
-            </Text>
-            <Text fw={800}>{formatNumber(item.results)}</Text>
-          </div>
-          <div>
-            <Text size="10px" c="dimmed" tt="uppercase" fw={800}>
-              {activitySupportLabel(item)}
-            </Text>
-            <Text fw={800}>{activitySupportValue(item, currencyCode)}</Text>
-          </div>
+        <div className={classes.metricGrid}>
+          <ComparisonMetric label="Spend" value={formatCurrency(item.spend, currencyCode)} />
+          <ComparisonMetric label="Results" value={formatNumber(item.results)} />
+          <ComparisonMetric label="CTR" value={formatRate(item.ctr)} />
+          <ComparisonMetric
+            label="Cost / result"
+            value={item.results > 0 ? formatCurrency(item.costPerResult, currencyCode, 2) : '—'}
+          />
+          <ComparisonMetric label="Live ads" value={formatNumber(item.adCount)} />
         </div>
       </Group>
     </Paper>
   );
 }
 
+function AdComparisonRow({
+  item,
+  currencyCode,
+}: {
+  item: DashboardLiveAdItem;
+  currencyCode: string | null;
+}) {
+  return (
+    <Paper withBorder radius="xl" p="md" className={classes.liveRow}>
+      <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
+        <div style={{ flex: 1, minWidth: 240 }}>
+          <Group gap="xs" wrap="wrap" mb={6}>
+            <Badge color={statusColor(item.status)} variant="light">
+              {formatStatusLabel(item.status)}
+            </Badge>
+            <Badge color="gray" variant="outline">
+              Ad
+            </Badge>
+          </Group>
+          <Text fw={800}>{item.name}</Text>
+          <Text size="sm" c="dimmed" mt={6}>
+            {[item.campaignName, item.adsetName].filter(Boolean).join(' · ')}
+          </Text>
+          {item.topPublisherPlatform || item.topPlacement ? (
+            <Text size="sm" c="dimmed" mt={4}>
+              {[item.topPublisherPlatform, item.topPlacement].filter(Boolean).join(' · ')}
+            </Text>
+          ) : null}
+        </div>
+
+        <div className={classes.metricGrid}>
+          <ComparisonMetric label="Spend" value={formatCurrency(item.spend, currencyCode)} />
+          <ComparisonMetric label="Results" value={formatNumber(item.results)} />
+          <ComparisonMetric label="CTR" value={formatRate(item.ctr)} />
+          <ComparisonMetric
+            label="Cost / result"
+            value={item.results > 0 ? formatCurrency(item.costPerResult, currencyCode, 2) : '—'}
+          />
+        </div>
+      </Group>
+    </Paper>
+  );
+}
+
+function resolveBreakdownMetric(
+  items: Array<{ results: number; clicks: number; spend: number }>
+): BreakdownMetric {
+  return items.some((item) => item.results > 0)
+    ? 'results'
+    : items.some((item) => item.clicks > 0)
+      ? 'clicks'
+      : 'spend';
+}
+
+function readBreakdownMetricValue(
+  item: { results: number; clicks: number; spend: number },
+  metric: BreakdownMetric
+): number {
+  return metric === 'results' ? item.results : metric === 'clicks' ? item.clicks : item.spend;
+}
+
+function normalizeGender(value: string): 'Female' | 'Male' | 'Unknown' {
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === 'female') {
+    return 'Female';
+  }
+
+  if (normalized === 'male') {
+    return 'Male';
+  }
+
+  return 'Unknown';
+}
+
+function ageBucketSortValue(value: string): number {
+  const normalized = value.trim();
+  const explicitIndex = AGE_BUCKET_ORDER.indexOf(normalized as (typeof AGE_BUCKET_ORDER)[number]);
+
+  if (explicitIndex >= 0) {
+    return explicitIndex;
+  }
+
+  if (/^\d+\+$/.test(normalized)) {
+    return 900 + Number.parseInt(normalized, 10);
+  }
+
+  const rangeMatch = normalized.match(/^(\d+)\s*-\s*(\d+)$/);
+  if (rangeMatch) {
+    return Number.parseInt(rangeMatch[1], 10);
+  }
+
+  return 10_000;
+}
+
+function buildAgeGenderAudienceChart(input: {
+  ageGender: DashboardAudienceSlice[];
+  currencyCode: string | null;
+}): AudienceChartConfig {
+  const metric = resolveBreakdownMetric(input.ageGender);
+  const ageBuckets = new Map<
+    string,
+    {
+      segment: string;
+      Female: number;
+      Male: number;
+      Unknown: number;
+    }
+  >();
+
+  for (const slice of input.ageGender) {
+    const [, ageValue = '', genderValue = ''] = slice.key.split(':');
+    const age = ageValue.trim() || slice.label.trim();
+    const gender = normalizeGender(genderValue);
+    const current = ageBuckets.get(age) ?? {
+      segment: age,
+      Female: 0,
+      Male: 0,
+      Unknown: 0,
+    };
+
+    current[gender] += readBreakdownMetricValue(slice, metric);
+    ageBuckets.set(age, current);
+  }
+
+  const data = Array.from(ageBuckets.values()).sort(
+    (left, right) =>
+      ageBucketSortValue(left.segment) - ageBucketSortValue(right.segment) ||
+      left.segment.localeCompare(right.segment)
+  );
+
+  const includeUnknown = data.some((row) => row.Unknown > 0);
+  const series: AudienceChartSeries[] = [
+    { name: 'Female', color: 'pink.5' },
+    { name: 'Male', color: 'blue.6' },
+  ];
+
+  if (includeUnknown) {
+    series.push({ name: 'Unknown', color: 'gray.5' });
+  }
+
+  return {
+    data,
+    title: 'Audience response by age and gender',
+    type: 'stacked',
+    series,
+    formatter: (value: number) =>
+      metric === 'spend'
+        ? formatCompactCurrency(value, input.currencyCode)
+        : formatNumber(value),
+  };
+}
+
+function buildAudienceChart(input: {
+  ageGender: DashboardAudienceSlice[];
+  geo: DashboardAudienceSlice[];
+  currencyCode: string | null;
+}): AudienceChartConfig {
+  if (input.ageGender.length > 0) {
+    return buildAgeGenderAudienceChart({
+      ageGender: input.ageGender,
+      currencyCode: input.currencyCode,
+    });
+  }
+
+  const metric = resolveBreakdownMetric(input.geo);
+  const data = input.geo.slice(0, 6).map((item) => ({
+    segment: item.label,
+    Value: readBreakdownMetricValue(item, metric),
+  }));
+
+  return {
+    data,
+    title: 'Audience response by geo',
+    type: 'default',
+    series: [{ name: 'Value', color: 'teal.6' }],
+    formatter: (value: number) =>
+      metric === 'spend'
+        ? formatCompactCurrency(value, input.currencyCode)
+        : formatNumber(value),
+  };
+}
+
+function buildSurfaceChart(input: {
+  publisherPlatforms: DashboardPlatformSlice[];
+  placements: DashboardPlatformSlice[];
+  impressionDevices: DashboardPlatformSlice[];
+  currencyCode: string | null;
+}): SimpleBarChartConfig {
+  const metric = resolveBreakdownMetric([
+    ...input.publisherPlatforms,
+    ...input.placements,
+    ...input.impressionDevices,
+  ]);
+
+  const data = [
+    ...input.publisherPlatforms.slice(0, 3).map((slice) => ({
+      segment: `Platform · ${slice.label}`,
+      Value: readBreakdownMetricValue(slice, metric),
+    })),
+    ...input.placements.slice(0, 3).map((slice) => ({
+      segment: `Position · ${slice.label}`,
+      Value: readBreakdownMetricValue(slice, metric),
+    })),
+    ...input.impressionDevices.slice(0, 2).map((slice) => ({
+      segment: `Device · ${slice.label}`,
+      Value: readBreakdownMetricValue(slice, metric),
+    })),
+  ];
+
+  return {
+    data,
+    title: 'Surface response by platform, position, and device',
+    color: 'blue.6',
+    formatter: (value: number) =>
+      metric === 'spend'
+        ? formatCompactCurrency(value, input.currencyCode)
+        : formatNumber(value),
+  };
+}
+
+function buildGeoChart(input: {
+  geo: DashboardAudienceSlice[];
+  currencyCode: string | null;
+}): SimpleBarChartConfig {
+  const metric = resolveBreakdownMetric(input.geo);
+
+  return {
+    data: input.geo.slice(0, 6).map((slice) => ({
+      segment: slice.secondaryLabel ? `${slice.label} · ${slice.secondaryLabel}` : slice.label,
+      Value: readBreakdownMetricValue(slice, metric),
+    })),
+    title: 'Geo response from live delivery',
+    color: 'teal.6',
+    formatter: (value: number) =>
+      metric === 'spend'
+        ? formatCompactCurrency(value, input.currencyCode)
+        : formatNumber(value),
+  };
+}
+
+function resolvePlacementImage(label: string): { imageSrc: string; imageAlt: string } {
+  const normalized = label.trim().toLowerCase();
+
+  if (
+    normalized.includes('instagram') ||
+    normalized.includes('story') ||
+    normalized.includes('stories') ||
+    normalized.includes('reel') ||
+    normalized.includes('explore') ||
+    normalized.includes('profile')
+  ) {
+    return {
+      imageSrc: '/images/platforms/logo/instagram.png',
+      imageAlt: 'Instagram',
+    };
+  }
+
+  if (
+    normalized.includes('facebook') ||
+    normalized.includes('feed') ||
+    normalized.includes('video') ||
+    normalized.includes('marketplace') ||
+    normalized.includes('search') ||
+    normalized.includes('right-hand') ||
+    normalized.includes('in-stream')
+  ) {
+    return {
+      imageSrc: '/images/platforms/logo/facebook.png',
+      imageAlt: 'Facebook',
+    };
+  }
+
+  return {
+    imageSrc: '/images/platforms/logo/meta.png',
+    imageAlt: 'Meta',
+  };
+}
+
+function buildPlacementVisualRows(input: {
+  placements: DashboardPlatformSlice[];
+  currencyCode: string | null;
+}): PlacementVisualRow[] {
+  const metric = resolveBreakdownMetric(input.placements);
+  const topPlacements = input.placements.slice(0, 5);
+  const maxValue = Math.max(
+    ...topPlacements.map((slice) => readBreakdownMetricValue(slice, metric)),
+    0
+  );
+
+  return topPlacements.map((slice) => {
+    const value = readBreakdownMetricValue(slice, metric);
+    const { imageSrc, imageAlt } = resolvePlacementImage(slice.label);
+
+    return {
+      key: slice.key,
+      label: slice.label,
+      value,
+      valueLabel:
+        metric === 'spend'
+          ? formatCompactCurrency(value, input.currencyCode)
+          : formatNumber(value),
+      detailLabel: `${slice.shareOfSpend.toFixed(1)}% of spend`,
+      fillPercent: maxValue > 0 ? Math.max((value / maxValue) * 100, 8) : 0,
+      imageSrc,
+      imageAlt,
+    };
+  });
+}
+
+function platformSeriesColor(label: string): string {
+  const normalized = label.trim().toLowerCase();
+
+  switch (normalized) {
+    case 'facebook':
+      return 'blue.6';
+    case 'instagram':
+      return 'red.6';
+    case 'messenger':
+      return 'violet.6';
+    case 'audience network':
+      return 'orange.6';
+    default:
+      return 'gray.6';
+  }
+}
+
+function buildPlatformPanelChart(input: {
+  platforms: DashboardPlatformSlice[];
+  currencyCode: string | null;
+}): MultiSeriesBarChartConfig {
+  const slices = input.platforms.slice(0, 4);
+  const metric = resolveBreakdownMetric(slices);
+  const series = slices.map((slice) => ({
+    name: slice.label,
+    color: platformSeriesColor(slice.label),
+  }));
+
+  const data = slices.map((slice) => {
+    const row: Record<string, string | number> = {
+      segment: slice.label,
+    };
+
+    for (const seriesItem of series) {
+      row[seriesItem.name] = 0;
+    }
+
+    row[slice.label] = readBreakdownMetricValue(slice, metric);
+    return row;
+  });
+
+  return {
+    data,
+    title: 'Publisher platform response',
+    series,
+    withLegend: series.length > 1,
+    formatter: (value: number) =>
+      metric === 'spend'
+        ? formatCompactCurrency(value, input.currencyCode)
+        : formatNumber(value),
+  };
+}
+
+function buildDevicePanelChart(input: {
+  devices: DashboardPlatformSlice[];
+  currencyCode: string | null;
+}): MultiSeriesBarChartConfig {
+  const slices = input.devices.slice(0, 6);
+  const metric = resolveBreakdownMetric(slices);
+
+  return {
+    data: slices.map((slice) => ({
+      segment: slice.label,
+      Value: readBreakdownMetricValue(slice, metric),
+    })),
+    title: 'Impression device response',
+    series: [{ name: 'Value', color: 'cyan.6' }],
+    withLegend: false,
+    formatter: (value: number) =>
+      metric === 'spend'
+        ? formatCompactCurrency(value, input.currencyCode)
+        : formatNumber(value),
+  };
+}
+
+function normalizeStateCode(label: string): string | null {
+  const normalized = label.trim().toLowerCase().replace(/\./g, '');
+
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized.length === 2) {
+    return normalized.toUpperCase();
+  }
+
+  return STATE_NAME_TO_CODE[normalized] ?? null;
+}
+
+function buildRegionStateMap(input: {
+  geo: DashboardAudienceSlice[];
+  currencyCode: string | null;
+}): RegionStateMapConfig {
+  const regionSlices = input.geo.filter(
+    (slice) => slice.secondaryLabel?.trim().toLowerCase() === 'region'
+  );
+  const metric = resolveBreakdownMetric(regionSlices);
+  const regionValues = new Map<string, { name: string; value: number }>();
+
+  for (const slice of regionSlices) {
+    const code = normalizeStateCode(slice.label);
+    if (!code) {
+      continue;
+    }
+
+    const current = regionValues.get(code) ?? {
+      name:
+        US_STATE_TILES.find((tile) => tile.code === code)?.name ??
+        slice.label,
+      value: 0,
+    };
+
+    current.value += readBreakdownMetricValue(slice, metric);
+    regionValues.set(code, current);
+  }
+
+  const maxValue = Math.max(...Array.from(regionValues.values()).map((entry) => entry.value), 0);
+
+  const states = US_STATE_TILES.map((tile) => {
+    const match = regionValues.get(tile.code);
+    const value = match?.value ?? 0;
+    const intensity = maxValue > 0 ? value / maxValue : 0;
+
+    return {
+      code: tile.code,
+      name: tile.name,
+      col: tile.col,
+      row: tile.row,
+      value,
+      valueLabel:
+        metric === 'spend'
+          ? formatCompactCurrency(value, input.currencyCode)
+          : formatNumber(value),
+      intensity,
+      isActive: Boolean(match) && value > 0,
+    };
+  });
+
+  return {
+    title: 'Regional response by state',
+    states,
+    activeStates: states
+      .filter((state) => state.isActive)
+      .sort((left, right) => right.value - left.value || left.name.localeCompare(right.name))
+      .slice(0, 6),
+  };
+}
+
+function buildTrendChartConfig(input: {
+  trendMode: TrendMode;
+  granularity: HistoryGranularity;
+  trendPoints: DashboardPayload['featuredAdsetHistory']['dailyTrend'];
+  currencyCode: string | null;
+}): TrendChartConfig {
+  if (input.granularity === 'hourly') {
+    if (input.trendMode === 'efficiency') {
+      return {
+        data: input.trendPoints.map((point) => ({
+          label: point.label,
+          'CTR (%)': Number(point.ctr.toFixed(2)),
+          'CPC ($)': Number(point.cpc.toFixed(2)),
+          'CPM ($)': Number(point.cpm.toFixed(2)),
+        })),
+        series: [
+          { name: 'CTR (%)', color: 'teal.8' },
+          { name: 'CPC ($)', color: 'orange.8' },
+          { name: 'CPM ($)', color: 'grape.8', strokeDasharray: '6 4' },
+        ],
+        title: 'CTR, CPC, and CPM by hour',
+        description:
+          'Advertiser-time efficiency signals across the full synced hourly history for the featured ad set.',
+        formatter: (value: number) => formatDecimal(value),
+      };
+    }
+
+    if (input.trendMode === 'combined') {
+      const deliveryValues = input.trendPoints.map(
+        (point) => point.spend * 0.4 + point.clicks * 0.35 + point.inlineLinkClicks * 0.25
+      );
+      const efficiencyValues = input.trendPoints.map((point) => {
+        const ctrScore = point.ctr;
+        const cpcScore = point.cpc > 0 ? 100 / point.cpc : 0;
+        const cpmScore = point.cpm > 0 ? 100 / point.cpm : 0;
+
+        return ctrScore * 0.4 + cpcScore * 0.35 + cpmScore * 0.25;
+      });
+
+      const normalizedDelivery = normalizeTrendSeries(deliveryValues);
+      const normalizedEfficiency = normalizeTrendSeries(efficiencyValues);
+
+      return {
+        data: input.trendPoints.map((point, index) => ({
+          label: point.label,
+          'Delivery index': normalizedDelivery[index] ?? 0,
+          'Efficiency index': normalizedEfficiency[index] ?? 0,
+        })),
+        series: [
+          { name: 'Delivery index', color: 'blue.8' },
+          { name: 'Efficiency index', color: 'green.8' },
+        ],
+        title: 'Hourly delivery and efficiency crossover',
+        description:
+          'Indexed advertiser-time view of delivery versus efficiency across the full synced hourly history for the featured ad set.',
+        formatter: (value: number) => `${formatDecimal(value)} idx`,
+      };
+    }
+
+    return {
+      data: input.trendPoints.map((point) => ({
+        label: point.label,
+        'Spend ($)': Number(point.spend.toFixed(2)),
+        Clicks: point.clicks,
+        'Link clicks': point.inlineLinkClicks,
+      })),
+      series: [
+        { name: 'Spend ($)', color: 'indigo.8' },
+        { name: 'Clicks', color: 'green.8' },
+        { name: 'Link clicks', color: 'blue.7', strokeDasharray: '6 4' },
+      ],
+      title: 'Spend, clicks, and link clicks by hour',
+      description:
+        'Advertiser-time delivery across the full synced hourly history for the featured ad set.',
+      formatter: (value: number) => formatCompactNumber(value),
+    };
+  }
+
+  if (input.trendMode === 'efficiency') {
+    return {
+      data: input.trendPoints.map((point) => ({
+        label: formatReadableDateLabel(point.label),
+        'CTR (%)': Number(point.ctr.toFixed(2)),
+        'CPC ($)': Number(point.cpc.toFixed(2)),
+        Frequency: Number(point.frequency.toFixed(2)),
+      })),
+      series: [
+        { name: 'CTR (%)', color: 'teal.8' },
+        { name: 'CPC ($)', color: 'orange.8' },
+        { name: 'Frequency', color: 'grape.8', strokeDasharray: '6 4' },
+      ],
+      title: 'CTR, CPC, and frequency',
+      description: 'Efficiency signals that show whether the featured ad set is getting cheaper and cleaner over time.',
+      formatter: (value: number) => formatDecimal(value),
+    };
+  }
+
+  if (input.trendMode === 'combined') {
+    const combinedPoints = buildCombinedTrendSeries({
+      granularity: input.granularity,
+      trendPoints: input.trendPoints,
+    });
+
+    return {
+      data: combinedPoints.map((point) => ({
+        label: point.displayLabel,
+        'Delivery index': point.deliveryIndex,
+        'Efficiency index': point.efficiencyIndex,
+      })),
+      series: [
+        { name: 'Delivery index', color: 'blue.8' },
+        { name: 'Efficiency index', color: 'green.8' },
+      ],
+      title: 'Delivery and efficiency crossover',
+      description:
+        'Indexed view of volume versus efficiency so you can spot where performance growth started to help or hurt efficiency.',
+      formatter: (value: number) => `${formatDecimal(value)} idx`,
+    };
+  }
+
+  return {
+      data: input.trendPoints.map((point) => ({
+        label: formatReadableDateLabel(point.label),
+        'Spend ($)': Number(point.spend.toFixed(2)),
+        Results: point.results,
+        Clicks: point.clicks,
+      })),
+      series: [
+        { name: 'Spend ($)', color: 'indigo.8' },
+        { name: 'Results', color: 'green.8' },
+        { name: 'Clicks', color: 'blue.7', strokeDasharray: '6 4' },
+      ],
+    title: 'Spend, results, and clicks',
+    description: 'Delivery volume for the featured ad set from first delivery through today.',
+    formatter: (value: number) => formatCompactNumber(value),
+  };
+}
+
 export default function DashboardClient({ payload }: DashboardClientProps) {
   const router = useRouter();
-  const [activeWindow, setActiveWindow] = useState<DashboardWindow>(payload.activeWindow);
-  const [calendarPreviewView, setCalendarPreviewView] = useState<'weekly' | 'monthly'>('weekly');
-  const [calendarPreviewCursor, setCalendarPreviewCursor] = useState(() =>
-    startOfCalendarDay(new Date())
-  );
   const [refreshing, setRefreshing] = useState(false);
+  const [trendMode, setTrendMode] = useState<TrendMode>('delivery');
+  const [historyGranularity, setHistoryGranularity] = useState<HistoryGranularity>('day');
+  const [hourlyRangeMode, setHourlyRangeMode] = useState<HourlyRangeMode>('today');
+  const [surfacePanelMode, setSurfacePanelMode] = useState<SurfacePanelMode>('platform');
   const [refreshFeedback, setRefreshFeedback] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+  const [calendarSuggestionState, setCalendarSuggestionState] = useState<{
+    status: 'idle' | 'creating' | 'created' | 'error';
+    message: string | null;
+  }>({
+    status: 'idle',
+    message: null,
+  });
+  const expandedHourlyViewportRef = useRef<HTMLDivElement>(null);
 
   const stateMeta = stateContent(payload.state);
-  const liveSummaryCards = payload.summaryByWindow[activeWindow];
-  const hasLiveSummarySignal = liveSummaryCards.some(
-    (card) => card.value > 0 || card.previousValue !== null
+  const liveWindow = payload.liveToday;
+  const liveSummary = payload.liveToday.summary;
+  const liveComparisons = payload.liveToday.comparisons;
+  const featuredPlatformBreakdowns = payload.featuredAdsetHistory.platformBreakdowns;
+  const featuredAudienceBreakdowns = payload.featuredAdsetHistory.audienceBreakdowns;
+  const dailyTrendPoints = payload.featuredAdsetHistory.dailyTrend;
+  const hourlyTrendPoints = payload.featuredAdsetHistory.hourlyTrend;
+  const hourlyTrendExpandedPoints = payload.featuredAdsetHistory.hourlyTrendExpanded;
+  const hasExpandedHourlyTrend = hourlyTrendExpandedPoints.length > hourlyTrendPoints.length;
+  const selectedHourlyTrendPoints =
+    hourlyRangeMode === 'expanded' && hasExpandedHourlyTrend
+      ? hourlyTrendExpandedPoints
+      : hourlyTrendPoints;
+  const trendPoints = historyGranularity === 'hourly' ? selectedHourlyTrendPoints : dailyTrendPoints;
+  const featuredAdset = payload.featuredAdsetHistory.adset;
+  const isMeta = payload.platform?.vendor === 'meta';
+  const dailyHistoryRangeLabel = formatDateSpan(
+    payload.featuredAdsetHistory.dailyHistoryStartDate,
+    payload.featuredAdsetHistory.dailyHistoryEndDate
   );
-  const summaryCards = hasLiveSummarySignal ? liveSummaryCards : STATIC_SUMMARY_BY_WINDOW[activeWindow];
-  const trend = STATIC_QUALITY_TREND_BY_WINDOW[activeWindow];
-  const campaignPreview =
-    payload.campaignPreview.length > 0 ? payload.campaignPreview : STATIC_CAMPAIGN_PREVIEW;
-  const activityRail = payload.activityByWindow[activeWindow];
-  const primaryOutcomeCard = pickPrimaryOutcomeCard(summaryCards);
-  const spendCard = summaryCards.find((card) => card.key === 'spend') ?? summaryCards[0];
-  const strongestCampaign = useMemo(
-    () => pickStrongestCampaign(campaignPreview),
-    [campaignPreview]
+  const hourlyHistoryRangeLabel = formatDateSpan(
+    payload.featuredAdsetHistory.hourlyHistoryStartDate,
+    payload.featuredAdsetHistory.hourlyHistoryEndDate
   );
-  const watchCampaign = useMemo(
-    () => pickWatchCampaign(campaignPreview, strongestCampaign?.campaignId ?? null),
-    [campaignPreview, strongestCampaign]
-  );
-  const brief = buildDashboardBrief({
-    payload,
-    activeWindow,
-    spendCard,
-    primaryOutcomeCard,
-    strongestCampaign,
-    stateMeta,
-  });
-  const operatingBrief =
-    payload.state === 'ready'
-      ? brief
-      : `Static operating preview: the selected account view will look like this once live data is available. ${brief}`;
-  const trendData = trend.points.map((point) => ({
-    label: point.label,
-    CTR: Number(point.ctr.toFixed(2)),
-    CPC: Number(point.cpc.toFixed(2)),
-  }));
-  const latestTrendPoint = trend.points[trend.points.length - 1] ?? null;
-  const calendarPreviewItems = useMemo(
-    () => {
-      if (payload.calendarQueuePreview.length > 0) {
-        return [...payload.calendarQueuePreview].sort(compareCalendarQueuePreviewItems);
-      }
+  const hasHourlyTrend = hourlyTrendPoints.length > 0;
+  const hourlyTodayLabel = formatReadableDate(payload.featuredAdsetHistory.hourlyHistoryDate);
 
-      if (payload.state === 'ready') {
-        return [];
-      }
+  const trendChart = useMemo(
+    () =>
+      buildTrendChartConfig({
+        trendMode,
+        granularity: historyGranularity,
+        trendPoints,
+        currencyCode: payload.viewContext.currencyCode,
+      }),
+    [trendMode, historyGranularity, trendPoints, payload.viewContext.currencyCode]
+  );
+  const expandedHourlyTickValues = useMemo(
+    () =>
+      historyGranularity === 'hourly' && hourlyRangeMode === 'expanded'
+        ? trendChart.data
+            .map((point) => String(point.label ?? ''))
+            .filter(isExpandedHourlyAnchor)
+        : [],
+    [historyGranularity, hourlyRangeMode, trendChart.data]
+  );
+  const isExpandedHourlyScrollable =
+    historyGranularity === 'hourly' && hourlyRangeMode === 'expanded';
+  const expandedHourlyChartWidth = useMemo(
+    () =>
+      isExpandedHourlyScrollable
+        ? Math.max(EXPANDED_HOURLY_MIN_WIDTH, trendChart.data.length * EXPANDED_HOURLY_POINT_WIDTH)
+        : null,
+    [isExpandedHourlyScrollable, trendChart.data.length]
+  );
+  const trendXAxisProps = useMemo(() => {
+    if (historyGranularity === 'hourly' && hourlyRangeMode === 'expanded') {
+      return {
+        interval: 0 as const,
+        minTickGap: 28,
+        tickMargin: 10,
+        ticks: expandedHourlyTickValues,
+        tickFormatter: (value: string) => formatExpandedHourlyAxisLabel(String(value)),
+      };
+    }
 
-      return buildCalendarQueuePreviewItems(
-        payload.viewContext.adAccountName ?? payload.viewContext.platformName
-      ).sort(compareCalendarQueuePreviewItems);
-    },
+    return undefined;
+  }, [expandedHourlyTickValues, historyGranularity, hourlyRangeMode]);
+  const combinedTrendSignals = useMemo(
+    () =>
+      detectTrendSignals({
+        granularity: historyGranularity,
+        trendPoints,
+      }),
+    [historyGranularity, trendPoints]
+  );
+  const combinedSignalByLabel = useMemo(
+    () =>
+      new Map(
+        combinedTrendSignals.map((signal) => [signal.dateLabel, signal] as const)
+      ),
+    [combinedTrendSignals]
+  );
+  const primaryCombinedTrendSignal = useMemo(
+    () => selectPrimaryTrendSignal(combinedTrendSignals),
+    [combinedTrendSignals]
+  );
+  const calendarSuggestion = useMemo(
+    () =>
+      buildCalendarSuggestion({
+        signal: primaryCombinedTrendSignal,
+        adset: featuredAdset,
+      }),
+    [primaryCombinedTrendSignal, featuredAdset]
+  );
+  const trendReferenceLines = useMemo(
+    () =>
+      trendMode === 'combined' && primaryCombinedTrendSignal
+        ? [
+            {
+              x: primaryCombinedTrendSignal.dateLabel,
+              color: signalSeverityColor(primaryCombinedTrendSignal.severity),
+              label: primaryCombinedTrendSignal.markerLabel,
+              labelPosition: 'insideTop' as const,
+              strokeDasharray: '4 4',
+            },
+          ]
+        : undefined,
+    [primaryCombinedTrendSignal, trendMode]
+  );
+  const trendTooltipProps = useMemo(
+    () => ({
+      content: ({
+        label,
+        payload,
+      }: {
+        label?: string;
+        payload?: Array<{ name?: string; value?: number | string; color?: string }>;
+      }) =>
+        renderTrendTooltip({
+          label,
+          payload,
+          series: trendChart.series,
+          formatter: trendChart.formatter,
+          signal:
+            trendMode === 'combined' && typeof label === 'string'
+              ? combinedSignalByLabel.get(label) ?? null
+              : null,
+        }),
+    }),
+    [combinedSignalByLabel, trendChart.formatter, trendChart.series, trendMode]
+  );
+
+  const audienceChart = useMemo(
+    () =>
+      buildAudienceChart({
+        ageGender: featuredAudienceBreakdowns.ageGender,
+        geo: featuredAudienceBreakdowns.geo,
+        currencyCode: payload.viewContext.currencyCode,
+      }),
     [
-      payload.calendarQueuePreview,
-      payload.state,
-      payload.viewContext.adAccountName,
-      payload.viewContext.platformName,
+      featuredAudienceBreakdowns.ageGender,
+      featuredAudienceBreakdowns.geo,
+      payload.viewContext.currencyCode,
     ]
   );
-  const featuredQueueItem = useMemo(
-    () =>
-      calendarPreviewItems.find(
-        (item) =>
-          item.isParent ||
-          Boolean(item.workflowKey) ||
-          (item.childBlueprints?.length ?? 0) > 0 ||
-          (item.children?.length ?? 0) > 0
-      ) ??
-      calendarPreviewItems[0] ??
-      null,
-    [calendarPreviewItems]
+
+  const hourlyHeatmap = useMemo(
+    () => buildHourlyHeatmap(hourlyTrendExpandedPoints),
+    [hourlyTrendExpandedPoints]
   );
-  const readFirstItems = useMemo(
+
+  const platformPanelChart = useMemo(
     () =>
-      buildReadFirstItems({
-        payload,
-        activityRail,
-        strongestCampaign,
-        watchCampaign,
-        featuredQueueItem,
+      buildPlatformPanelChart({
+        platforms: featuredPlatformBreakdowns.publisherPlatforms,
+        currencyCode: payload.viewContext.currencyCode,
       }),
-    [payload, activityRail, strongestCampaign, watchCampaign, featuredQueueItem]
+    [featuredPlatformBreakdowns.publisherPlatforms, payload.viewContext.currencyCode]
   );
-  const calendarPreviewCounts = useMemo(
-    () => ({
-      total: calendarPreviewItems.length,
-      ready: calendarPreviewItems.filter((item) => item.status === 'ready').length,
-      approved: calendarPreviewItems.filter((item) => item.status === 'approved').length,
-      draft: calendarPreviewItems.filter((item) => item.status === 'draft').length,
-    }),
-    [calendarPreviewItems]
-  );
-  const queuePriorityItems = useMemo(
+
+  const devicePanelChart = useMemo(
     () =>
-      (featuredQueueItem
-        ? calendarPreviewItems.filter((item) => item.id !== featuredQueueItem.id)
-        : calendarPreviewItems
-      ).slice(0, 4),
-    [calendarPreviewItems, featuredQueueItem]
+      buildDevicePanelChart({
+        devices: featuredPlatformBreakdowns.impressionDevices,
+        currencyCode: payload.viewContext.currencyCode,
+      }),
+    [
+      featuredPlatformBreakdowns.impressionDevices,
+      payload.viewContext.currencyCode,
+    ]
   );
-  const hasFeaturedQueueOnly =
-    Boolean(featuredQueueItem) && calendarPreviewItems.length > 0 && queuePriorityItems.length === 0;
-  const calendarPreviewTodayKey = useMemo(() => toCalendarIsoDay(new Date()), []);
-  const calendarPreviewWeekStart = useMemo(
-    () => startOfCalendarWeek(calendarPreviewCursor),
-    [calendarPreviewCursor]
-  );
-  const calendarPreviewWeekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, index) => addCalendarDays(calendarPreviewWeekStart, index)),
-    [calendarPreviewWeekStart]
-  );
-  const calendarPreviewWeekKeys = useMemo(
-    () => calendarPreviewWeekDays.map((day) => toCalendarIsoDay(day)),
-    [calendarPreviewWeekDays]
-  );
-  const calendarPreviewMonthStart = useMemo(
-    () => startOfCalendarMonth(calendarPreviewCursor),
-    [calendarPreviewCursor]
-  );
-  const syncCoverage = payload.syncCoverage;
-  const calendarPreviewMonthGridStart = useMemo(
-    () => startOfCalendarWeek(calendarPreviewMonthStart),
-    [calendarPreviewMonthStart]
-  );
-  const calendarPreviewMonthDays = useMemo(
-    () => Array.from({ length: 35 }, (_, index) => addCalendarDays(calendarPreviewMonthGridStart, index)),
-    [calendarPreviewMonthGridStart]
-  );
-  const calendarPreviewMonthKeys = useMemo(
-    () => calendarPreviewMonthDays.map((day) => toCalendarIsoDay(day)),
-    [calendarPreviewMonthDays]
-  );
-  const calendarPreviewWeekItemsByDay = useMemo(() => {
-    const grouped = new Map<string, CalendarQueuePreviewItem[]>(
-      calendarPreviewWeekKeys.map((day) => [day, []])
-    );
 
-    calendarPreviewItems.forEach((item) => {
-      const bucket = grouped.get(item.day);
-
-      if (bucket) {
-        bucket.push(item);
-      }
-    });
-
-    grouped.forEach((items) => items.sort(compareCalendarQueuePreviewItems));
-    return grouped;
-  }, [calendarPreviewItems, calendarPreviewWeekKeys]);
-  const calendarPreviewMonthItemsByDay = useMemo(() => {
-    const grouped = new Map<string, CalendarQueuePreviewItem[]>(
-      calendarPreviewMonthKeys.map((day) => [day, []])
-    );
-
-    calendarPreviewItems.forEach((item) => {
-      const bucket = grouped.get(item.day);
-
-      if (bucket) {
-        bucket.push(item);
-      }
-    });
-
-    grouped.forEach((items) => items.sort(compareCalendarQueuePreviewItems));
-    return grouped;
-  }, [calendarPreviewItems, calendarPreviewMonthKeys]);
-  const calendarPreviewLabel = useMemo(
+  const regionStateMap = useMemo(
     () =>
-      calendarPreviewView === 'weekly'
-        ? formatCalendarWeekLabel(calendarPreviewWeekDays)
-        : formatCalendarMonthLabel(calendarPreviewMonthStart),
-    [calendarPreviewMonthStart, calendarPreviewView, calendarPreviewWeekDays]
+      buildRegionStateMap({
+        geo: featuredAudienceBreakdowns.geo,
+        currencyCode: payload.viewContext.currencyCode,
+      }),
+    [featuredAudienceBreakdowns.geo, payload.viewContext.currencyCode]
   );
-  const hasLiveActivity =
-    activityRail.tests.length > 0 ||
-    activityRail.campaigns.length > 0 ||
-    activityRail.adsets.length > 0 ||
-    activityRail.ads.length > 0;
+
+  const placementRows = useMemo(
+    () =>
+      buildPlacementVisualRows({
+        placements: featuredPlatformBreakdowns.placements,
+        currencyCode: payload.viewContext.currencyCode,
+      }),
+    [featuredPlatformBreakdowns.placements, payload.viewContext.currencyCode]
+  );
+
+  const activeSurfaceChart =
+    surfacePanelMode === 'platform' ? platformPanelChart : devicePanelChart;
+
+  useEffect(() => {
+    setCalendarSuggestionState({
+      status: 'idle',
+      message: null,
+    });
+  }, [calendarSuggestion?.dedupeKey]);
+
+  useEffect(() => {
+    setHourlyRangeMode('today');
+  }, [featuredAdset?.id]);
+
+  useEffect(() => {
+    if (!hasExpandedHourlyTrend && hourlyRangeMode === 'expanded') {
+      setHourlyRangeMode('today');
+    }
+  }, [hasExpandedHourlyTrend, hourlyRangeMode]);
+
+  useEffect(() => {
+    if (!isExpandedHourlyScrollable || !expandedHourlyViewportRef.current) {
+      return;
+    }
+
+    const viewport = expandedHourlyViewportRef.current;
+    viewport.scrollLeft = viewport.scrollWidth;
+  }, [expandedHourlyChartWidth, isExpandedHourlyScrollable]);
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -1283,12 +2225,64 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     }
   }
 
-  function shiftCalendarPreview(direction: -1 | 1) {
-    setCalendarPreviewCursor((current) =>
-      calendarPreviewView === 'weekly'
-        ? addCalendarDays(current, direction * 7)
-        : addCalendarMonths(current, direction)
-    );
+  async function handleCreateCalendarSuggestion() {
+    if (!calendarSuggestion || !payload.selection.selectedAdAccountId || !payload.selection.selectedPlatformIntegrationId) {
+      return;
+    }
+
+    setCalendarSuggestionState({
+      status: 'creating',
+      message: null,
+    });
+
+    try {
+      const response = await fetch('/api/calendar/queue', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          platformIntegrationId: payload.selection.selectedPlatformIntegrationId,
+          adAccountId: payload.selection.selectedAdAccountId,
+          itemType: calendarSuggestion.itemType,
+          priority: calendarSuggestion.priority,
+          title: calendarSuggestion.title,
+          description: calendarSuggestion.description,
+          destinationHref: calendarSuggestion.destinationHref,
+          payload: {
+            source: 'dashboard_trend_signal',
+            dedupeKey: calendarSuggestion.dedupeKey,
+            markerLabel: calendarSuggestion.markerLabel,
+            featuredAdsetId: featuredAdset?.id ?? null,
+            featuredAdsetName: featuredAdset?.name ?? null,
+            signalType: primaryCombinedTrendSignal?.type ?? null,
+          },
+        }),
+      });
+
+      const result = (await response.json()) as {
+        success?: boolean;
+        created?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Unable to send suggestion to calendar.');
+      }
+
+      setCalendarSuggestionState({
+        status: 'created',
+        message: result.created === false ? 'Suggestion is already in the calendar.' : 'Suggestion added to the calendar queue.',
+      });
+    } catch (error) {
+      setCalendarSuggestionState({
+        status: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Unable to send suggestion to the calendar.',
+      });
+    }
   }
 
   return (
@@ -1304,26 +2298,21 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
           </Alert>
         ) : null}
 
-        {syncCoverage?.historicalAnalysisPending ? (
+        {payload.syncCoverage?.historicalAnalysisPending ? (
           <Alert
-            color={syncCoverage.activeJobStatus === 'failed' ? 'red' : 'blue'}
+            color={payload.syncCoverage.activeJobStatus === 'failed' ? 'red' : 'blue'}
             radius="lg"
-            icon={<IconSparkles size={16} />}
+            icon={<IconClock size={16} />}
             title={
-              syncCoverage.activeJobStatus === 'failed'
-                ? 'Meta history sync needs attention'
+              payload.syncCoverage.activeJobStatus === 'failed'
+                ? 'History sync needs attention'
                 : 'Recent data is ready while full history continues'
             }
           >
             <Text size="sm">
-              {syncCoverage.coverageStartDate && syncCoverage.coverageEndDate
-                ? `Dashboard cards are using synced data from ${syncCoverage.coverageStartDate} through ${syncCoverage.coverageEndDate}.`
+              {payload.syncCoverage.coverageStartDate && payload.syncCoverage.coverageEndDate
+                ? `Dashboard readings are using synced data from ${payload.syncCoverage.coverageStartDate} through ${payload.syncCoverage.coverageEndDate}.`
                 : 'DeepVisor is still filling the first historical sync for this account.'}
-            </Text>
-            <Text size="sm" mt="sm">
-              {syncCoverage.activeJobStatus === 'failed'
-                ? 'Retry the background sync job before treating historical reads as complete lifetime context.'
-                : 'DeepVisor will keep expanding the history window in the background before it promotes lifetime guidance as complete.'}
             </Text>
           </Alert>
         ) : null}
@@ -1360,565 +2349,963 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
           </Alert>
         ) : null}
 
-        <Grid gutter="md" align="stretch">
-          <Grid.Col span={{ base: 12, xl: 8 }}>
-            <Card withBorder radius="xl" p="lg" h="100%" className={`${classes.panel} ${classes.performancePanel}`}>
-              <Stack gap="lg">
-                <Group
-                  justify="space-between"
-                  align="flex-start"
-                  gap="md"
-                  wrap="wrap"
-                  className={classes.surfaceToolbar}
+        <Card withBorder radius="xl" p="lg" className={classes.topBar}>
+          <Stack gap="lg">
+            <Group
+              justify="space-between"
+              align="flex-start"
+              gap="md"
+              wrap="wrap"
+              className={classes.surfaceToolbar}
+            >
+              <div>
+                <Group gap="xs" wrap="wrap">
+                  <Badge variant="light" className="app-platform-page-badge">
+                    Dashboard
+                  </Badge>
+                  <Badge color={statusColor(payload.viewContext.platformStatus)} variant="light">
+                    {payload.viewContext.platformName ?? 'No platform selected'}
+                  </Badge>
+                  <Badge color={statusColor(payload.viewContext.adAccountStatus)} variant="outline">
+                    {payload.viewContext.adAccountName ?? 'No ad account selected'}
+                  </Badge>
+                </Group>
+                <Text fw={900} size="1.65rem" mt="sm" className={classes.title}>
+                  {payload.viewContext.adAccountName ?? 'Selected ad account'}
+                </Text>
+
+              </div>
+
+              <Group gap="sm" wrap="wrap">
+                <Button
+                  onClick={handleRefresh}
+                  leftSection={<IconRefresh size={16} />}
+                  loading={refreshing}
+                  disabled={!payload.viewContext.canRefresh}
+                  radius="xl"
+                  className="app-platform-page-action-primary"
                 >
-                  <div>
-                    <Group gap="xs" wrap="wrap">
-                      <Badge variant="light" className="app-platform-page-badge">
-                        Dashboard
-                      </Badge>
-                      <Badge color={statusColor(payload.viewContext.platformStatus)} variant="light">
-                        {payload.viewContext.platformName ?? 'Demo platform'}
-                      </Badge>
-                      <Badge color={statusColor(payload.viewContext.adAccountStatus)} variant="outline">
-                        {payload.viewContext.adAccountName ?? 'DeepVisor Demo Account'}
-                      </Badge>
-                      {!hasLiveSummarySignal || payload.campaignPreview.length === 0 ? (
-                        <Badge color="cyan" variant="outline">
-                          Static preview data
-                        </Badge>
-                      ) : null}
-                    </Group>
-                    <Text fw={900} size="1.65rem" mt="sm" className={classes.metricValue}>
-                      {payload.viewContext.adAccountName ?? 'Selected ad account'}
-                    </Text>
-                    <Text size="sm" c="dimmed" mt={6} maw={760}>
-                      Performance, queue, and live delivery for {windowLabel(activeWindow)}.
-                    </Text>
-                  </div>
+                  Refresh
+                </Button>
+                <Button
+                  component={Link}
+                  href="/reports"
+                  radius="xl"
+                  variant="default"
+                  className="app-platform-page-action-secondary"
+                >
+                  Reports
+                </Button>
+              </Group>
+            </Group>
 
-                  <Group gap="sm" wrap="wrap">
-                    <div className={classes.windowControlWrap}>
-                      <SegmentedControl
-                        size="xs"
-                        radius="xl"
-                        value={activeWindow}
-                        onChange={(value) => setActiveWindow(value as DashboardWindow)}
-                        data={payload.windowOptions.map((window) => ({
-                          label: windowOptionLabel(window),
-                          value: window,
-                        }))}
-                      />
-                    </div>
-                    <Button
-                      onClick={handleRefresh}
-                      leftSection={<IconRefresh size={16} />}
-                      loading={refreshing}
-                      disabled={!payload.viewContext.canRefresh}
-                      radius="xl"
-                      className="app-platform-page-action-primary"
-                    >
-                      Refresh
-                    </Button>
-                    <Button
-                      component={Link}
-                      href="/reports"
-                      radius="xl"
-                      variant="default"
-                      className="app-platform-page-action-secondary"
-                    >
-                      Reports
-                    </Button>
-                    <Button
-                      component={Link}
-                      href="/calendar"
-                      radius="xl"
-                      variant="default"
-                      className="app-platform-page-action-secondary"
-                    >
-                      Calendar
-                    </Button>
-                  </Group>
-                </Group>
-
-                <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
-                  {summaryCards.map((card) => {
-                    const comparison = comparisonText(card, activeWindow);
-                    const Icon = cardIcon(card.key);
-                    const deltaClass =
-                      card.changePercent == null
-                        ? classes.deltaNeutral
-                        : card.changePercent >= 0
-                          ? classes.deltaPositive
-                          : classes.deltaNegative;
-
-                    return (
-                      <Paper key={card.key} withBorder radius="xl" p="md" className={classes.metricCard}>
-                        <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
-                          <div>
-                            <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                              {card.label}
-                            </Text>
-                            <Text fw={900} size="1.75rem" mt={8} className={classes.metricValue}>
-                              {formatCardValue(card, payload.viewContext.currencyCode)}
-                            </Text>
-                          </div>
-                          <ThemeIcon variant="light" color="blue" radius="md">
-                            <Icon size={18} />
-                          </ThemeIcon>
-                        </Group>
-                        <span className={`${classes.deltaPill} ${deltaClass}`}>
-                          {card.changePercent == null ? (
-                            <IconClock size={13} />
-                          ) : card.changePercent >= 0 ? (
-                            <IconArrowUpRight size={13} />
-                          ) : (
-                            <IconArrowDownRight size={13} />
-                          )}
-                          {comparison.label}
-                        </span>
-                      </Paper>
-                    );
-                  })}
-                </SimpleGrid>
-
-                {trendData.length > 0 ? (
-                  <div className={classes.softPanel}>
-                    <Group justify="space-between" align="flex-start" mb="md" gap="sm" wrap="wrap">
-                      <div>
-                        <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                          {trend.title}
-                        </Text>
-                        <Text size="sm" c="dimmed" mt={6} maw={640}>
-                          {trend.description}
-                        </Text>
-                      </div>
-                      <Group gap="xs" wrap="wrap">
-                        <Badge color="cyan" variant="outline" radius="sm">
-                          Static chart
-                        </Badge>
-                        {latestTrendPoint ? (
-                          <>
-                            <Badge color="blue" variant="light" radius="sm">
-                              CTR {formatRate(latestTrendPoint.ctr)}
-                            </Badge>
-                            <Badge color="teal" variant="light" radius="sm">
-                              CPC {formatCurrency(latestTrendPoint.cpc, payload.viewContext.currencyCode, 2)}
-                            </Badge>
-                          </>
-                        ) : null}
-                      </Group>
-                    </Group>
-                    <LineChart
-                      h={340}
-                      data={trendData}
-                      dataKey="label"
-                      series={[
-                        { name: 'CTR', color: 'blue.6' },
-                        { name: 'CPC', color: 'teal.6' },
-                      ]}
-                      curveType="linear"
-                      withLegend
-                      valueFormatter={(value) => formatTrendValue(value, payload.viewContext.currencyCode)}
-                    />
-                  </div>
-                ) : (
-                  <Stack justify="center" align="center" h={340} gap="xs">
-                    <Text fw={700}>No trend data yet</Text>
-                    <Text size="sm" c="dimmed" ta="center" maw={360}>
-                      Once the selected account has recent synced metrics, this trend becomes the
-                      quickest way to see whether performance is strengthening or flattening out.
-                    </Text>
-                  </Stack>
-                )}
-              </Stack>
-            </Card>
-          </Grid.Col>
-
-          <Grid.Col span={{ base: 12, xl: 4 }}>
-            <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
-              <Stack gap="sm" h="100%">
-                <Group justify="space-between" align="flex-start" className={classes.sectionHeader}>
-                  <div>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                      DeepVisor read
-                    </Text>
-                    
-                  </div>
-                  <ThemeIcon color="blue" variant="light" radius="md">
-                    <IconSparkles size={18} />
-                  </ThemeIcon>
-                </Group>
-
-                <div className={classes.insightCard}>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                    Account read
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={6}>
-                    {operatingBrief}
-                  </Text>
-                </div>
-
-                {readFirstItems.map((item) => (
-                  <div key={item.id} className={classes.insightCard}>
-                    <Group gap="sm" align="flex-start" wrap="nowrap">
-                      <ThemeIcon
-                        variant="light"
-                        color={alertToneColor(item.tone)}
-                        radius="md"
-                        size="md"
-                      >
-                        {item.tone === 'red' ? (
-                          <IconArrowDownRight size={14} />
-                        ) : (
-                          <IconArrowUpRight size={14} />
-                        )}
+            <Grid gutter="md" align="stretch">
+              <Grid.Col span={{ base: 12, xl: 8 }}>
+                <Paper withBorder radius="xl" p="md" className={classes.chartPanel}>
+                  <Stack gap="md" mb="md" className={classes.historyHeader}>
+                    <Group justify="space-between" align="flex-start" gap="sm" wrap="wrap">
+                      <Group gap="sm" wrap="nowrap" align="flex-start">
+                      <ThemeIcon color="blue" variant="light" radius="md">
+                        <IconChartLine size={18} />
                       </ThemeIcon>
-                      <div>
-                        <Text fw={800} size="sm">
-                          {item.title}
+                      <div className={classes.historyHeaderBody}>
+                        <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                          Featured ad set history
+                        </Text>
+                        <Text fw={800}>
+                          {featuredAdset?.name ?? 'Waiting for a live ad set today'}
                         </Text>
                         <Text size="sm" c="dimmed" mt={4}>
-                          {item.detail}
+                          {trendChart.title}
                         </Text>
-                        {item.primaryAction || item.secondaryAction ? (
-                          <Group gap="xs" mt="sm" wrap="wrap">
-                            {item.primaryAction ? (
-                              <Button
-                                component={Link}
-                                href={item.primaryAction.href}
-                                size="xs"
-                                radius="xl"
-                                className="app-platform-page-action-primary"
-                              >
-                                {item.primaryAction.label}
-                              </Button>
-                            ) : null}
-                            {item.secondaryAction ? (
-                              <Button
-                                component={Link}
-                                href={item.secondaryAction.href}
-                                size="xs"
-                                radius="xl"
-                                variant="default"
-                                className="app-platform-page-action-secondary"
-                              >
-                                {item.secondaryAction.label}
-                              </Button>
-                            ) : null}
-                          </Group>
+                        {historyGranularity === 'day' && dailyHistoryRangeLabel ? (
+                          <Text size="sm" c="dimmed" mt={4}>
+                            {dailyHistoryRangeLabel}
+                          </Text>
+                        ) : null}
+                        {historyGranularity === 'hourly' && hourlyRangeMode === 'today' && hourlyTodayLabel ? (
+                          <Text size="sm" c="dimmed" mt={4}>
+                            {hourlyTodayLabel} · advertiser account time
+                          </Text>
+                        ) : null}
+                      </div>
+                      </Group>
+
+                      <div className={classes.historyControlsRow}>
+                        <SegmentedControl
+                          radius="xl"
+                          size="xs"
+                          value={historyGranularity}
+                          onChange={(value) => setHistoryGranularity(value as HistoryGranularity)}
+                          data={[
+                            { label: 'Day', value: 'day' },
+                            { label: 'Hourly', value: 'hourly', disabled: !hasHourlyTrend },
+                          ]}
+                        />
+                        {historyGranularity === 'hourly' && hasExpandedHourlyTrend ? (
+                          <SegmentedControl
+                            radius="xl"
+                            size="xs"
+                            value={hourlyRangeMode}
+                            onChange={(value) => setHourlyRangeMode(value as HourlyRangeMode)}
+                            data={[
+                              { label: 'Today', value: 'today' },
+                              { label: 'Full range', value: 'expanded' },
+                            ]}
+                          />
+                        ) : null}
+                        <SegmentedControl
+                          radius="xl"
+                          size="xs"
+                          value={trendMode}
+                          onChange={(value) => setTrendMode(value as TrendMode)}
+                          data={[
+                            { label: 'Delivery', value: 'delivery' },
+                            { label: 'Efficiency', value: 'efficiency' },
+                            { label: 'Combined', value: 'combined' },
+                          ]}
+                        />
+                      </div>
+                    </Group>
+
+                    {historyGranularity === 'hourly' &&
+                    hourlyRangeMode === 'expanded' &&
+                    hourlyHistoryRangeLabel ? (
+                      <Text size="sm" c="dimmed">
+                        {hourlyHistoryRangeLabel} · advertiser account time
+                      </Text>
+                    ) : null}
+                  </Stack>
+
+                  {trendChart.data.length > 0 ? (
+                    isExpandedHourlyScrollable ? (
+                      <ScrollArea
+                        type="auto"
+                        scrollbars="x"
+                        offsetScrollbars="x"
+                        viewportRef={expandedHourlyViewportRef}
+                        className={classes.historyChartScrollArea}
+                      >
+                        <div
+                          className={classes.historyChartScrollableCanvas}
+                          style={{ width: expandedHourlyChartWidth ?? undefined }}
+                        >
+                          <LineChart
+                            h={FEATURED_HISTORY_CHART_HEIGHT}
+                            data={trendChart.data}
+                            dataKey="label"
+                            type="default"
+                            curveType="monotone"
+                            withLegend
+                            withDots
+                            strokeWidth={4}
+                            gridAxis="xy"
+                            strokeDasharray="4 4"
+                            yAxisProps={{ width: 68 }}
+                            xAxisProps={trendXAxisProps}
+                            tooltipProps={trendTooltipProps}
+                            dotProps={{
+                              r: 3,
+                              strokeWidth: 2,
+                              fill: '#ffffff',
+                            }}
+                            activeDotProps={{
+                              r: 5,
+                              strokeWidth: 2,
+                              fill: '#ffffff',
+                            }}
+                            lineProps={(series) => ({
+                              strokeDasharray: series.strokeDasharray,
+                              strokeLinecap: 'round',
+                              strokeLinejoin: 'round',
+                            })}
+                            referenceLines={trendReferenceLines}
+                            series={trendChart.series}
+                            valueFormatter={(value) =>
+                              typeof value === 'number' ? trendChart.formatter(value) : String(value)
+                            }
+                          />
+                        </div>
+                      </ScrollArea>
+                    ) : (
+                      <LineChart
+                        h={FEATURED_HISTORY_CHART_HEIGHT}
+                        data={trendChart.data}
+                        dataKey="label"
+                        type="default"
+                        curveType="monotone"
+                        withLegend
+                        withDots
+                        strokeWidth={4}
+                        gridAxis="xy"
+                        strokeDasharray="4 4"
+                        yAxisProps={{ width: 68 }}
+                        xAxisProps={trendXAxisProps}
+                        tooltipProps={trendTooltipProps}
+                        dotProps={{
+                          r: 3,
+                          strokeWidth: 2,
+                          fill: '#ffffff',
+                        }}
+                        activeDotProps={{
+                          r: 5,
+                          strokeWidth: 2,
+                          fill: '#ffffff',
+                        }}
+                        lineProps={(series) => ({
+                          strokeDasharray: series.strokeDasharray,
+                          strokeLinecap: 'round',
+                          strokeLinejoin: 'round',
+                        })}
+                        referenceLines={trendReferenceLines}
+                        series={trendChart.series}
+                        valueFormatter={(value) =>
+                          typeof value === 'number' ? trendChart.formatter(value) : String(value)
+                        }
+                      />
+                    )
+                  ) : (
+                    <Stack
+                      justify="center"
+                      align="center"
+                      h={FEATURED_HISTORY_CHART_HEIGHT}
+                      gap="xs"
+                    >
+                      <Text fw={800}>No live ad set history yet</Text>
+                      <Text size="sm" c="dimmed" ta="center" maw={360}>
+                        {historyGranularity === 'hourly'
+                          ? 'Hourly advertiser-time rows will appear here once the featured ad set has synced enough hourly performance to show its full active-time history.'
+                          : 'Once a live ad set is serving today, this graph will stay anchored on today and expand backward across that ad set&apos;s history.'}
+                      </Text>
+                      <Text size="sm" c="dimmed" ta="center" maw={360}>
+                        {trendChart.description}
+                      </Text>
+                    </Stack>
+                  )}
+                </Paper>
+              </Grid.Col>
+
+              <Grid.Col span={{ base: 12, xl: 4 }}>
+                <Paper withBorder radius="xl" p="md" className={classes.chartPanel}>
+                  <Group justify="space-between" align="flex-start" gap="sm" mb="md" wrap="wrap">
+                    <Group gap="sm" wrap="nowrap">
+                      <ThemeIcon color="teal" variant="light" radius="md">
+                        <IconChartBar size={18} />
+                      </ThemeIcon>
+                      <div>
+                        <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                          Delivery surface graph
+                        </Text>
+                        <Text fw={800}>
+                          {surfacePanelMode === 'platform'
+                            ? platformPanelChart.title
+                            : surfacePanelMode === 'device'
+                              ? devicePanelChart.title
+                              : surfacePanelMode === 'times'
+                                ? hourlyHeatmap?.title ?? 'Best recurring click times'
+                                : regionStateMap.title}
+                        </Text>
+                        {surfacePanelMode === 'platform' || surfacePanelMode === 'device' ? (
+                          featuredAdset ? (
+                            <Text size="sm" c="dimmed" mt={4}>
+                              Full synced delivery surface history for {featuredAdset.name}
+                            </Text>
+                          ) : null
+                        ) : null}
+                        {surfacePanelMode === 'times' ? (
+                          <Text size="sm" c="dimmed" mt={4}>
+                            Recurring hourly response from synced advertiser-time history.
+                          </Text>
+                        ) : null}
+                        {surfacePanelMode === 'geo' ? (
+                          <Text size="sm" c="dimmed" mt={4}>
+                            Country rows are excluded here. Only state-level regional rows are
+                            highlighted.
+                          </Text>
                         ) : null}
                       </div>
                     </Group>
-                  </div>
-                ))}
-
-                <div className={classes.insightCard}>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                    Data status
-                  </Text>
-                  <Text fw={800} mt={6}>
-                    {formatRelativeSync(payload.viewContext.lastSyncedAt)}
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={6}>
-                    Platform: {formatStatusLabel(payload.viewContext.platformStatus)}. Account:{' '}
-                    {formatStatusLabel(payload.viewContext.adAccountStatus)}.
-                  </Text>
-                  {payload.viewContext.platformError ? (
-                    <Text size="sm" c="dimmed" mt={6}>
-                      {payload.viewContext.platformError}
-                    </Text>
-                  ) : null}
-                </div>
-              </Stack>
-            </Card>
-          </Grid.Col>
-        </Grid>
-
-        <Grid gutter="md" align="stretch">
-          <Grid.Col span={{ base: 12, xl: 6 }}>
-            <Card withBorder radius="xl" p="lg" h="100%" className={`${classes.panel} ${classes.calendarPanel}`}>
-              <Stack gap="md" h="100%">
-                <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.sectionHeader}>
-                  <div>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                      Calendar queue
-                    </Text>
-                    <Title order={3} mt={4}>
-                      What DeepVisor wants to move next
-                    </Title>
-                    <Text size="sm" c="dimmed" mt={4}>
-                      The queue is shown as a vertical operating agenda so it reads like the work stack for this account instead of a horizontal mini-calendar.
-                    </Text>
-                  </div>
-                  <Badge color="gray" variant="light" radius="sm">
-                    {calendarPreviewCounts.total} queued
-                  </Badge>
-                </Group>
-
-                <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="xs">
-                  <Paper withBorder radius="md" p="sm" className={classes.queueStatCard}>
-                    <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
-                      Needs approval
-                    </Text>
-                    <Text fw={800} mt={4}>
-                      {calendarPreviewCounts.ready}
-                    </Text>
-                  </Paper>
-                  <Paper withBorder radius="md" p="sm" className={classes.queueStatCard}>
-                    <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
-                      Drafts
-                    </Text>
-                    <Text fw={800} mt={4}>
-                      {calendarPreviewCounts.draft}
-                    </Text>
-                  </Paper>
-                  <Paper withBorder radius="md" p="sm" className={classes.queueStatCard}>
-                    <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
-                      Approved
-                    </Text>
-                    <Text fw={800} mt={4}>
-                      {calendarPreviewCounts.approved}
-                    </Text>
-                  </Paper>
-                  <Paper withBorder radius="md" p="sm" className={classes.queueStatCard}>
-                    <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
-                      Follow-ups
-                    </Text>
-                    <Text fw={800} mt={4}>
-                      {calendarPreviewItems.reduce(
-                        (total, item) => total + queueFollowUpCount(item),
-                        0
-                      )}
-                    </Text>
-                  </Paper>
-                </SimpleGrid>
-
-                <Paper withBorder radius="lg" p="md" className={classes.softPanel}>
-                  <Group justify="space-between" align="center" mb="md" wrap="wrap" gap="sm">
-                    <SegmentedControl
-                      size="xs"
-                      radius="xl"
-                      value={calendarPreviewView}
-                      onChange={(value) => setCalendarPreviewView(value as 'weekly' | 'monthly')}
-                      data={[
-                        {
-                          label: (
-                            <Group gap={4} wrap="nowrap">
-                              <IconCalendarWeek size={14} />
-                              <span>Week</span>
-                            </Group>
-                          ),
-                          value: 'weekly',
-                        },
-                        {
-                          label: (
-                            <Group gap={4} wrap="nowrap">
-                              <IconCalendarMonth size={14} />
-                              <span>Month</span>
-                            </Group>
-                          ),
-                          value: 'monthly',
-                        },
-                      ]}
-                    />
-
-                    <Group gap={6} wrap="nowrap">
-                      <ActionIcon
-                        variant="light"
-                        color="gray"
+                    <Group gap="xs" wrap="wrap">
+                      <Button
+                        size="xs"
                         radius="xl"
-                        onClick={() => shiftCalendarPreview(-1)}
-                        aria-label="Previous calendar preview period"
+                        variant={surfacePanelMode === 'platform' ? 'filled' : 'light'}
+                        onClick={() => setSurfacePanelMode('platform')}
                       >
-                        <IconChevronLeft size={16} />
-                      </ActionIcon>
-                      <Text size="sm" fw={700} miw={132} ta="center">
-                        {calendarPreviewLabel}
-                      </Text>
-                      <ActionIcon
-                        variant="light"
-                        color="gray"
+                        Platforms
+                      </Button>
+                      <Button
+                        size="xs"
                         radius="xl"
-                        onClick={() => shiftCalendarPreview(1)}
-                        aria-label="Next calendar preview period"
+                        variant={surfacePanelMode === 'device' ? 'filled' : 'light'}
+                        onClick={() => setSurfacePanelMode('device')}
                       >
-                        <IconChevronRight size={16} />
-                      </ActionIcon>
+                        Devices
+                      </Button>
+                      <Button
+                        size="xs"
+                        radius="xl"
+                        variant={surfacePanelMode === 'geo' ? 'filled' : 'light'}
+                        onClick={() => setSurfacePanelMode('geo')}
+                      >
+                        Geo
+                      </Button>
+                      <Button
+                        size="xs"
+                        radius="xl"
+                        variant={surfacePanelMode === 'times' ? 'filled' : 'light'}
+                        onClick={() => setSurfacePanelMode('times')}
+                      >
+                        Times
+                      </Button>
                     </Group>
                   </Group>
 
-                  {calendarPreviewView === 'weekly' ? (
-                    <CalendarAgendaPreview
-                      days={calendarPreviewWeekDays}
-                      itemsByDay={calendarPreviewWeekItemsByDay}
-                      todayKey={calendarPreviewTodayKey}
-                    />
-                  ) : (
-                    <CalendarAgendaPreview
-                      days={calendarPreviewMonthDays}
-                      itemsByDay={calendarPreviewMonthItemsByDay}
-                      todayKey={calendarPreviewTodayKey}
-                      monthStart={calendarPreviewMonthStart}
-                    />
-                  )}
-                </Paper>
-
-                <Stack gap="sm">
-                  <Group justify="space-between" align="center" wrap="wrap">
-                    <Text fw={800}>Next up</Text>
-                    <Button
-                      component={Link}
-                      href="/calendar"
-                      radius="xl"
-                      size="xs"
-                      rightSection={<IconArrowUpRight size={14} />}
-                      className="app-platform-page-action-primary"
-                    >
-                      Open calendar
-                    </Button>
-                  </Group>
-
-                  {queuePriorityItems.length > 0 ? (
-                    queuePriorityItems.slice(0, 3).map((item) => (
-                      <Paper key={item.id} withBorder radius="lg" p="md" className={classes.queueHighlightRow}>
-                        <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <Group gap="xs" wrap="wrap" mb={6}>
-                              <Badge
-                                color={calendarQueueStatusColor(item.status)}
-                                variant="light"
-                                radius="sm"
-                              >
-                                {queueStatusLabel(item.status)}
-                              </Badge>
-                              {item.isParent || item.workflowKey ? (
-                                <Badge color="violet" variant="outline" radius="sm">
-                                  Workflow
-                                </Badge>
-                              ) : null}
-                            </Group>
-                            <Text fw={800} lineClamp={2}>
-                              {item.title}
-                            </Text>
-                            <Text size="sm" c="dimmed" mt={4} lineClamp={2}>
-                              {item.description}
-                            </Text>
-                            <Text size="xs" c="dimmed" mt={6}>
-                              {formatQueueDayLabel(item.day)} · {item.time}
-                            </Text>
-                          </div>
-                        </Group>
-                      </Paper>
-                    ))
-                  ) : hasFeaturedQueueOnly ? (
-                    <Paper withBorder radius="lg" p="md" className={classes.queueSidebarPanel}>
-                      <Text fw={800}>Featured workflow is surfaced in DeepVisor read</Text>
-                      <Text size="sm" c="dimmed" mt={6}>
-                        The primary relaunch recommendation is shown in the right-hand read panel so the action and the report follow-up stay together.
-                      </Text>
-                    </Paper>
-                  ) : (
-                    <Paper withBorder radius="lg" p="md" className={classes.queueSidebarPanel}>
-                      <Text fw={800}>Queue is clear</Text>
-                      <Text size="sm" c="dimmed" mt={6}>
-                        New workflow items will show up here as signals and recommendations are generated for this account.
-                      </Text>
-                    </Paper>
-                  )}
-                </Stack>
-              </Stack>
-            </Card>
-          </Grid.Col>
-
-          <Grid.Col span={{ base: 12, xl: 6 }}>
-            <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
-              <Stack gap="md" h="100%">
-                <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.sectionHeader}>
-                  <div>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                      Live activity
-                    </Text>
-                    <Title order={3} mt={4}>
-                      What is active right now
-                    </Title>
-                    <Text size="sm" c="dimmed" mt={4}>
-                      If active tests are live, they surface first. Otherwise this rail shows the active campaigns, ad sets, and ads carrying delivery in the selected window.
-                    </Text>
-                  </div>
-                  <Badge color="gray" variant="light" radius="sm">
-                    {windowOptionLabel(activeWindow)}
-                  </Badge>
-                </Group>
-
-                {activityRail.tests.length > 0 ? (
-                  <div className={classes.activitySection}>
-                    <Group justify="space-between" align="center" mb="sm" wrap="wrap">
-                      <Text fw={800}>{activitySectionLabel('tests')}</Text>
-                      <Badge color="violet" variant="light" radius="sm">
-                        {activityRail.tests.length} live
-                      </Badge>
-                    </Group>
-                    <Stack gap="sm">
-                      {activityRail.tests.map((item) => (
-                        <ActivityRow
-                          key={`${item.level}:${item.id}`}
-                          item={item}
-                          currencyCode={payload.viewContext.currencyCode}
-                        />
-                      ))}
-                    </Stack>
-                  </div>
-                ) : null}
-
-                {(['campaigns', 'adsets', 'ads'] as const).map((sectionKey) => {
-                  const sectionItems = activityRail[sectionKey];
-
-                  return (
-                    <div key={sectionKey} className={classes.activitySection}>
-                      <Group justify="space-between" align="center" mb="sm" wrap="wrap">
-                        <Text fw={800}>{activitySectionLabel(sectionKey)}</Text>
-                        <Badge color="gray" variant="light" radius="sm">
-                          {sectionItems.length}
-                        </Badge>
-                      </Group>
-
-                      {sectionItems.length > 0 ? (
+                  <Stack gap="md">
+                    {surfacePanelMode === 'times' ? (
+                      hourlyHeatmap ? (
                         <Stack gap="sm">
-                          {sectionItems.map((item) => (
-                            <ActivityRow
-                              key={`${item.level}:${item.id}`}
-                              item={item}
-                              currencyCode={payload.viewContext.currencyCode}
-                            />
-                          ))}
+                          <Group gap="xs" wrap="wrap">
+                            <Badge color="blue" variant="light" radius="sm">
+                              Best slot: {hourlyHeatmap.summarySlotLabel}
+                            </Badge>
+                            <Badge color="gray" variant="outline" radius="sm">
+                              Best day: {hourlyHeatmap.summaryDayLabel}
+                            </Badge>
+                            <Badge color="gray" variant="outline" radius="sm">
+                              Best hour: {hourlyHeatmap.summaryHourLabel}
+                            </Badge>
+                          </Group>
+
+                          <ScrollArea
+                            type="auto"
+                            scrollbars="x"
+                            offsetScrollbars="x"
+                            className={classes.heatmapScrollArea}
+                          >
+                            <div className={classes.heatmapGrid}>
+                              <div className={classes.heatmapCorner} />
+                              {hourlyHeatmap.hourLabels.map((label, index) => (
+                                <Text
+                                  key={`heatmap-hour-${index}`}
+                                  size="10px"
+                                  c="dimmed"
+                                  ta="center"
+                                  className={classes.heatmapHourLabel}
+                                >
+                                  {label}
+                                </Text>
+                              ))}
+
+                              {hourlyHeatmap.rows.map((row) => (
+                                <Fragment key={`heatmap-row-${row.dayOfWeek}`}>
+                                  <Text
+                                    size="10px"
+                                    fw={700}
+                                    c="dimmed"
+                                    className={classes.heatmapDayLabel}
+                                  >
+                                    {row.dayLabel}
+                                  </Text>
+                                  {row.cells.map((cell) => (
+                                    <div
+                                      key={cell.key}
+                                      className={classes.heatmapCell}
+                                      style={{
+                                        backgroundColor:
+                                          cell.metricAverage > 0
+                                            ? `rgba(37, 99, 235, ${0.12 + cell.intensity * 0.76})`
+                                            : 'rgba(241, 245, 249, 0.94)',
+                                        borderColor:
+                                          cell.metricAverage > 0
+                                            ? 'rgba(37, 99, 235, 0.28)'
+                                            : 'rgba(226, 232, 240, 0.94)',
+                                      }}
+                                      title={`${cell.dayLabel} · ${formatHourLongLabel(
+                                        cell.hourOfDay
+                                      )}: avg ${formatDecimal(cell.metricAverage)} ${
+                                        hourlyHeatmap.metricLabel
+                                      }/slot · total ${formatNumber(
+                                        cell.metricTotal
+                                      )} · CTR ${formatRate(cell.ctr)} · Spend ${formatCurrency(
+                                        cell.spend,
+                                        payload.viewContext.currencyCode,
+                                        2
+                                      )}`}
+                                    />
+                                  ))}
+                                </Fragment>
+                              ))}
+                            </div>
+                          </ScrollArea>
+
+                          <Text size="xs" c="dimmed">
+                            Full synced hourly history in advertiser account time. Darker cells show
+                            stronger recurring {hourlyHeatmap.metricLabel.toLowerCase()} periods.
+                          </Text>
                         </Stack>
                       ) : (
-                        <Paper withBorder radius="lg" p="md" className={classes.queueSidebarPanel}>
-                          <Text size="sm" c="dimmed">
-                            {sectionKey === 'campaigns'
-                              ? 'No active campaign delivery was detected in this window yet.'
-                              : sectionKey === 'adsets'
-                                ? 'No active ad sets were detected in this window yet.'
-                                : 'No active ads were detected in this window yet.'}
+                        <Paper withBorder radius="xl" p="md" className={classes.emptyPanel}>
+                          <Text fw={700}>
+                            {hasHourlyTrend
+                              ? 'Best times heatmap is still preparing'
+                              : 'Hourly history is still syncing'}
+                          </Text>
+                          <Text size="sm" c="dimmed" mt={6}>
+                            The heatmap will appear here once enough hourly advertiser-time rows
+                            exist for the featured ad set.
+                          </Text>
+                        </Paper>
+                      )
+                    ) : surfacePanelMode === 'geo' ? (
+                      featuredAudienceBreakdowns.state === 'available' &&
+                      regionStateMap.activeStates.length > 0 ? (
+                        <Stack gap="sm">
+                          <div className={classes.stateMapWrap}>
+                            <div className={classes.stateMapGrid}>
+                              {regionStateMap.states.map((state) => (
+                                <div
+                                  key={state.code}
+                                  className={classes.stateMapTile}
+                                  style={{
+                                    gridColumn: `${state.col}`,
+                                    gridRow: `${state.row}`,
+                                    backgroundColor: state.isActive
+                                      ? `rgba(37, 99, 235, ${0.18 + state.intensity * 0.68})`
+                                      : 'rgba(241, 245, 249, 0.96)',
+                                    borderColor: state.isActive
+                                      ? 'rgba(37, 99, 235, 0.42)'
+                                      : 'rgba(203, 213, 225, 0.9)',
+                                    color:
+                                      state.isActive && state.intensity > 0.45
+                                        ? '#ffffff'
+                                        : state.isActive
+                                          ? '#1d4ed8'
+                                          : '#64748b',
+                                  }}
+                                  title={
+                                    state.isActive
+                                      ? `${state.name}: ${state.valueLabel}`
+                                      : state.name
+                                  }
+                                >
+                                  {state.code}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <Group gap="xs" wrap="wrap">
+                            {regionStateMap.activeStates.map((state) => (
+                              <Badge key={state.code} color="blue" variant="light" radius="sm">
+                                {state.name}: {state.valueLabel}
+                              </Badge>
+                            ))}
+                          </Group>
+                        </Stack>
+                      ) : (
+                        <Stack justify="center" align="center" h={DELIVERY_SURFACE_CHART_HEIGHT} gap="xs">
+                          <Text fw={800}>
+                            {isMeta
+                              ? 'Regional state rows are still syncing'
+                              : 'Regional state map is currently Meta-only'}
+                          </Text>
+                          <Text size="sm" c="dimmed" ta="center" maw={320}>
+                            {isMeta
+                              ? 'DeepVisor will highlight state-level regions here once Meta region rows are available across the featured ad set history.'
+                              : 'The geo state map is only wired for Meta right now.'}
+                          </Text>
+                        </Stack>
+                      )
+                    ) : featuredPlatformBreakdowns.state === 'available' &&
+                      activeSurfaceChart.data.length > 0 ? (
+                      <BarChart
+                        h={DELIVERY_SURFACE_CHART_HEIGHT}
+                        data={activeSurfaceChart.data}
+                        dataKey="segment"
+                        withLegend={activeSurfaceChart.withLegend}
+                        series={activeSurfaceChart.series}
+                        valueFormatter={activeSurfaceChart.formatter}
+                        tickLine="y"
+                      />
+                    ) : (
+                      <Stack justify="center" align="center" h={DELIVERY_SURFACE_CHART_HEIGHT} gap="xs">
+                        <Text fw={800}>
+                          {isMeta
+                            ? surfacePanelMode === 'device'
+                              ? 'Device rows are still syncing'
+                              : 'Platform rows are still syncing'
+                            : 'This graph is currently Meta-only'}
+                        </Text>
+                        <Text size="sm" c="dimmed" ta="center" maw={320}>
+                          {isMeta
+                            ? surfacePanelMode === 'device'
+                              ? 'Impression-device bars will appear here as Meta sync fills in the featured ad set history.'
+                              : 'Publisher platform bars will appear here as Meta sync fills in the featured ad set history.'
+                            : 'The top-right surface graph is only wired for Meta right now.'}
+                        </Text>
+                      </Stack>
+                    )}
+
+                    <div className={classes.chartSubSection}>
+                      <Text size="xs" c="dimmed" tt="uppercase" fw={800} mb={6}>
+                        Audience breakdown
+                      </Text>
+                      <Text fw={700} mb="sm">
+                        {audienceChart.title}
+                      </Text>
+                      {featuredAudienceBreakdowns.state === 'available' &&
+                      audienceChart.data.length > 0 ? (
+                        <BarChart
+                          h={AUDIENCE_BREAKDOWN_CHART_HEIGHT}
+                          type={audienceChart.type}
+                          data={audienceChart.data}
+                          dataKey="segment"
+                          withLegend={audienceChart.series.length > 1}
+                          series={audienceChart.series}
+                          valueFormatter={audienceChart.formatter}
+                          tickLine="y"
+                        />
+                      ) : (
+                        <Paper withBorder radius="xl" p="md" className={classes.emptyPanel}>
+                          <Text fw={700}>
+                            {isMeta
+                              ? 'Audience rows are still syncing'
+                              : 'Audience graph is currently Meta-only'}
+                          </Text>
+                          <Text size="sm" c="dimmed" mt={6}>
+                            {isMeta
+                              ? 'Age and gender breakdowns will appear here as synced audience rows fill in for the featured ad set history.'
+                              : 'The audience breakdown graph is only wired for Meta right now.'}
                           </Text>
                         </Paper>
                       )}
                     </div>
-                  );
-                })}
+                  </Stack>
+                </Paper>
+              </Grid.Col>
+            </Grid>
 
-                {!hasLiveActivity ? (
-                  <Paper withBorder radius="lg" p="md" className={classes.queueSidebarPanel}>
-                    <Text fw={800}>Live activity will appear here after delivery starts</Text>
-                    <Text size="sm" c="dimmed" mt={6}>
-                      Once the selected account has active delivery in the chosen window, this panel will break it down into tests, campaigns, ad sets, and ads with spend and result context.
-                    </Text>
-                  </Paper>
-                ) : null}
-              </Stack>
-            </Card>
-          </Grid.Col>
-        </Grid>
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3, xl: 6 }} spacing="md">
+              <SummaryCard
+                label="Live campaigns"
+                value={formatNumber(liveSummary.liveCampaignCount)}
+                icon={IconUsers}
+              />
+              <SummaryCard
+                label="Live ad sets"
+                value={formatNumber(liveSummary.liveAdsetCount)}
+                icon={IconTargetArrow}
+              />
+              <SummaryCard
+                label="Live ads"
+                value={formatNumber(liveSummary.liveAdCount)}
+                icon={IconLink}
+              />
+              <SummaryCard
+                label="Spend"
+                value={formatCurrency(liveSummary.spend, payload.viewContext.currencyCode)}
+                icon={IconCurrencyDollar}
+              />
+              <SummaryCard
+                label={liveSummary.primaryOutcomeLabel}
+                value={formatNumber(liveSummary.primaryOutcomeValue)}
+                icon={IconTargetArrow}
+              />
+              <SummaryCard
+                label="Serving platforms"
+                value={
+                  liveSummary.servingPlatformLabels.length > 0
+                    ? liveSummary.servingPlatformLabels.join(', ')
+                    : isMeta
+                      ? 'Syncing'
+                      : 'Unavailable'
+                }
+                icon={IconLink}
+              />
+            </SimpleGrid>
+          </Stack>
+        </Card>
+
+        {payload.state === 'ready' && !liveWindow.hasLiveDelivery ? (
+          <Alert color="blue" radius="lg" icon={<IconAlertCircle size={16} />}>
+            <Text size="sm">
+              No live delivery was found today. This dashboard only shows campaigns, ad sets, and
+              ads that are active and actually serving right now.
+            </Text>
+          </Alert>
+        ) : null}
+
+        {payload.state === 'ready' && liveWindow.hasLiveDelivery ? (
+          <Grid gutter="md" align="stretch">
+            <Grid.Col span={{ base: 12, xl: 8 }}>
+              <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
+                <Stack gap="md">
+                  <Text fw={800} className={classes.liveDeliveryTitle}>
+                    Live delivery today
+                  </Text>
+
+                  <Stack gap="xs">
+                    <LiveDeliverySectionHeader
+                      title="Campaign containers"
+                    />
+                    <div className={classes.tableWrap}>
+                      <ScrollArea>
+                        <Table
+                          striped
+                          highlightOnHover
+                          withTableBorder
+                          className={`${classes.dataTable} ${classes.liveCampaignTable}`}
+                        >
+                          <colgroup>
+                            <col style={{ width: '260px' }} />
+                            <col style={{ width: '130px' }} />
+                            <col style={{ width: '170px' }} />
+                            <col style={{ width: '110px' }} />
+                            <col style={{ width: '110px' }} />
+                            <col style={{ width: '90px' }} />
+                            <col style={{ width: '120px' }} />
+                            <col style={{ width: '120px' }} />
+                          </colgroup>
+                          <Table.Thead>
+                            <Table.Tr>
+                              <Table.Th>Campaign</Table.Th>
+                              <Table.Th>Status</Table.Th>
+                              <Table.Th>Objective</Table.Th>
+                              <Table.Th ta="right">Spend</Table.Th>
+                              <Table.Th ta="right">Results</Table.Th>
+                              <Table.Th ta="right">CTR</Table.Th>
+                              <Table.Th ta="right">Live ad sets</Table.Th>
+                              <Table.Th ta="right">Live ads</Table.Th>
+                            </Table.Tr>
+                          </Table.Thead>
+                          <Table.Tbody>
+                            {liveWindow.campaigns.map((campaign) => (
+                              <Table.Tr key={campaign.id}>
+                                <Table.Td>
+                                  <Text fw={700} className={classes.tableTruncatePrimary}>
+                                    {campaign.name}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <TableStatusBadge status={campaign.status} />
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text className={classes.tableValueText}>
+                                    {campaign.objective ? formatStatusLabel(campaign.objective) : '—'}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td ta="right">
+                                  {formatCurrency(campaign.spend, payload.viewContext.currencyCode)}
+                                </Table.Td>
+                                <Table.Td ta="right">{formatNumber(campaign.results)}</Table.Td>
+                                <Table.Td ta="right">{formatRate(campaign.ctr)}</Table.Td>
+                                <Table.Td ta="right">{formatNumber(campaign.adsetCount)}</Table.Td>
+                                <Table.Td ta="right">{formatNumber(campaign.adCount)}</Table.Td>
+                              </Table.Tr>
+                            ))}
+                          </Table.Tbody>
+                        </Table>
+                      </ScrollArea>
+                    </div>
+                  </Stack>
+
+                  <Stack gap="xs" className={classes.subSection}>
+                    <LiveDeliverySectionHeader
+                      title="Ad set comparison"
+                    />
+                    <div className={classes.tableWrap}>
+                      <ScrollArea>
+                        <Table
+                          striped
+                          highlightOnHover
+                          withTableBorder
+                          className={`${classes.dataTable} ${classes.liveAdsetTable}`}
+                        >
+                          <colgroup>
+                            <col style={{ width: '260px' }} />
+                            <col style={{ width: '220px' }} />
+                            <col style={{ width: '130px' }} />
+                            <col style={{ width: '170px' }} />
+                            <col style={{ width: '120px' }} />
+                            <col style={{ width: '110px' }} />
+                            <col style={{ width: '100px' }} />
+                            <col style={{ width: '140px' }} />
+                            <col style={{ width: '130px' }} />
+                            <col style={{ width: '150px' }} />
+                            <col style={{ width: '110px' }} />
+                          </colgroup>
+                          <Table.Thead>
+                            <Table.Tr>
+                              <Table.Th>Ad set</Table.Th>
+                              <Table.Th>Campaign</Table.Th>
+                              <Table.Th>Status</Table.Th>
+                              <Table.Th>Goal</Table.Th>
+                              <Table.Th ta="right">Spend</Table.Th>
+                              <Table.Th ta="right">Results</Table.Th>
+                              <Table.Th ta="right">CTR</Table.Th>
+                              <Table.Th ta="right">Cost / result</Table.Th>
+                              <Table.Th>Platform</Table.Th>
+                              <Table.Th>Placement</Table.Th>
+                              <Table.Th ta="right">Live ads</Table.Th>
+                            </Table.Tr>
+                          </Table.Thead>
+                          <Table.Tbody>
+                            {liveComparisons.adsets.map((item) => (
+                              <Table.Tr key={item.id}>
+                                <Table.Td>
+                                  <Text fw={700} className={classes.tableTruncatePrimary}>
+                                    {item.name}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td className={classes.tableCellMuted}>
+                                  <Text className={classes.tableTruncateMuted}>
+                                    {item.campaignName ?? '—'}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <TableStatusBadge status={item.status} />
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text className={classes.tableValueText}>
+                                    {item.optimizationGoal
+                                      ? formatStatusLabel(item.optimizationGoal)
+                                      : '—'}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td ta="right">
+                                  {formatCurrency(item.spend, payload.viewContext.currencyCode)}
+                                </Table.Td>
+                                <Table.Td ta="right">{formatNumber(item.results)}</Table.Td>
+                                <Table.Td ta="right">{formatRate(item.ctr)}</Table.Td>
+                                <Table.Td ta="right">
+                                  {item.results > 0
+                                    ? formatCurrency(
+                                        item.costPerResult,
+                                        payload.viewContext.currencyCode,
+                                        2
+                                      )
+                                    : '—'}
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text className={classes.tableValueText}>
+                                    {item.topPublisherPlatform ?? '—'}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text className={classes.tableValueText}>
+                                    {item.topPlacement ?? '—'}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td ta="right">{formatNumber(item.adCount)}</Table.Td>
+                              </Table.Tr>
+                            ))}
+                          </Table.Tbody>
+                        </Table>
+                      </ScrollArea>
+                    </div>
+                  </Stack>
+
+                  <Stack gap="xs" className={classes.subSection}>
+                    <LiveDeliverySectionHeader
+                      title="Ad comparison"
+                    />
+                    <div className={classes.tableWrap}>
+                      <ScrollArea>
+                        <Table
+                          striped
+                          highlightOnHover
+                          withTableBorder
+                          className={`${classes.dataTable} ${classes.liveAdTable}`}
+                        >
+                          <colgroup>
+                            <col style={{ width: '260px' }} />
+                            <col style={{ width: '220px' }} />
+                            <col style={{ width: '220px' }} />
+                            <col style={{ width: '130px' }} />
+                            <col style={{ width: '120px' }} />
+                            <col style={{ width: '110px' }} />
+                            <col style={{ width: '100px' }} />
+                            <col style={{ width: '140px' }} />
+                            <col style={{ width: '130px' }} />
+                            <col style={{ width: '150px' }} />
+                          </colgroup>
+                          <Table.Thead>
+                            <Table.Tr>
+                              <Table.Th>Ad</Table.Th>
+                              <Table.Th>Campaign</Table.Th>
+                              <Table.Th>Ad set</Table.Th>
+                              <Table.Th>Status</Table.Th>
+                              <Table.Th ta="right">Spend</Table.Th>
+                              <Table.Th ta="right">Results</Table.Th>
+                              <Table.Th ta="right">CTR</Table.Th>
+                              <Table.Th ta="right">Cost / result</Table.Th>
+                              <Table.Th>Platform</Table.Th>
+                              <Table.Th>Placement</Table.Th>
+                            </Table.Tr>
+                          </Table.Thead>
+                          <Table.Tbody>
+                            {liveComparisons.ads.map((item) => (
+                              <Table.Tr key={item.id}>
+                                <Table.Td>
+                                  <Text fw={700} className={classes.tableTruncatePrimary}>
+                                    {item.name}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td className={classes.tableCellMuted}>
+                                  <Text className={classes.tableTruncateMuted}>
+                                    {item.campaignName ?? '—'}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td className={classes.tableCellMuted}>
+                                  <Text className={classes.tableTruncateMuted}>
+                                    {item.adsetName ?? '—'}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <TableStatusBadge status={item.status} />
+                                </Table.Td>
+                                <Table.Td ta="right">
+                                  {formatCurrency(item.spend, payload.viewContext.currencyCode)}
+                                </Table.Td>
+                                <Table.Td ta="right">{formatNumber(item.results)}</Table.Td>
+                                <Table.Td ta="right">{formatRate(item.ctr)}</Table.Td>
+                                <Table.Td ta="right">
+                                  {item.results > 0
+                                    ? formatCurrency(
+                                        item.costPerResult,
+                                        payload.viewContext.currencyCode,
+                                        2
+                                      )
+                                    : '—'}
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text className={classes.tableValueText}>
+                                    {item.topPublisherPlatform ?? '—'}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text className={classes.tableValueText}>
+                                    {item.topPlacement ?? '—'}
+                                  </Text>
+                                </Table.Td>
+                              </Table.Tr>
+                            ))}
+                          </Table.Tbody>
+                        </Table>
+                      </ScrollArea>
+                    </div>
+                  </Stack>
+                </Stack>
+              </Card>
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, xl: 4 }}>
+              <Card withBorder radius="xl" p="lg" h="100%" className={classes.panel}>
+                <Stack gap="md">
+                  <Group justify="space-between" align="flex-start" className={classes.sectionHeader}>
+                    <div>
+                      <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                        Calendar approvals
+                      </Text>
+                    </div>
+                  </Group>
+
+                  {calendarSuggestion && primaryCombinedTrendSignal ? (
+                    <Paper withBorder radius="xl" p="md" className={classes.approvalCard}>
+                      <Stack gap="md">
+                        <Group justify="space-between" align="flex-start" gap="sm" wrap="wrap">
+                          <div>
+                            <Group gap="xs" wrap="wrap" mb={8}>
+                              <Badge
+                                color={signalSeverityColor(primaryCombinedTrendSignal.severity)}
+                                variant="light"
+                              >
+                                {primaryCombinedTrendSignal.title}
+                              </Badge>
+                              <Badge color="gray" variant="outline">
+                                Marker on combined chart
+                              </Badge>
+                            </Group>
+                            <Text fw={800}>{calendarSuggestion.title}</Text>
+                            <Text size="sm" c="dimmed" mt={6}>
+                              {calendarSuggestion.description}
+                            </Text>
+                          </div>
+                          <ThemeIcon color="blue" variant="light" radius="xl" size="lg">
+                            <IconCalendarEvent size={18} />
+                          </ThemeIcon>
+                        </Group>
+
+                        <div className={classes.approvalMeta}>
+                          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                            Trigger point
+                          </Text>
+                          <Text fw={700}>{calendarSuggestion.markerLabel}</Text>
+                          <Text size="sm" c="dimmed" mt={4}>
+                            Approve this suggestion to move it into the calendar queue for follow-up.
+                          </Text>
+                        </div>
+
+                        {calendarSuggestionState.message ? (
+                          <Alert
+                            color={calendarSuggestionState.status === 'error' ? 'red' : 'green'}
+                            radius="lg"
+                            icon={<IconAlertCircle size={16} />}
+                          >
+                            {calendarSuggestionState.message}
+                          </Alert>
+                        ) : null}
+
+                        <Group gap="sm" wrap="wrap">
+                          <Button
+                            radius="xl"
+                            onClick={handleCreateCalendarSuggestion}
+                            loading={calendarSuggestionState.status === 'creating'}
+                            disabled={calendarSuggestionState.status === 'created'}
+                          >
+                            {calendarSuggestionState.status === 'created'
+                              ? 'Added to calendar'
+                              : 'Send to calendar'}
+                          </Button>
+                          <Button
+                            component={Link}
+                            href="/calendar"
+                            radius="xl"
+                            variant="default"
+                          >
+                            Open calendar
+                          </Button>
+                          <Button
+                            component={Link}
+                            href={calendarSuggestion.destinationHref}
+                            radius="xl"
+                            variant="light"
+                          >
+                            Open suggested action
+                          </Button>
+                        </Group>
+                      </Stack>
+                    </Paper>
+                  ) : (
+                    <Paper withBorder radius="xl" p="md" className={classes.emptyPanel}>
+                      <Text fw={700}>
+                        {trendPoints.length > 1
+                          ? 'No calendar approval suggestion yet'
+                          : 'Waiting for enough chart history'}
+                      </Text>
+                      <Text size="sm" c="dimmed" mt={6}>
+                        {trendPoints.length > 1
+                          ? 'Once the combined chart sees a meaningful crossover or divergence, DeepVisor will surface the suggested next move here for approval.'
+                          : 'DeepVisor needs at least a small sequence of featured ad set history points before it can suggest a calendar action from the chart.'}
+                      </Text>
+                    </Paper>
+                  )}
+                </Stack>
+              </Card>
+            </Grid.Col>
+          </Grid>
+        ) : null}
       </Stack>
     </Container>
   );

@@ -62,6 +62,147 @@ const PLATFORM_COLORS: Record<SupportedIntegrationPlatform, string> = {
   meta: 'indigo',
 };
 
+const DEMO_SYNC_TOTAL_MS = 34_000;
+const DEMO_STAGE_SNAPSHOTS: Array<{
+  atMs: number;
+  stage: NonNullable<FirstSyncJobStatus['stage']>;
+  message: string;
+  windowSince: string | null;
+  windowUntil: string | null;
+  coverageStartDate: string | null;
+  coverageEndDate: string | null;
+  counts: FirstSyncJobStatus['counts'];
+}> = [
+  {
+    atMs: 0,
+    stage: 'resolving_account',
+    message: 'Resolving the selected account and preparing the first sync.',
+    windowSince: null,
+    windowUntil: null,
+    coverageStartDate: null,
+    coverageEndDate: null,
+    counts: {
+      campaignsSynced: 0,
+      adsetsSynced: 0,
+      adsSynced: 0,
+      creativesSynced: 0,
+      performanceRowsSynced: 0,
+    },
+  },
+  {
+    atMs: 3_000,
+    stage: 'syncing_campaigns',
+    message: 'Finding live campaign structure and starting campaign sync.',
+    windowSince: null,
+    windowUntil: null,
+    coverageStartDate: null,
+    coverageEndDate: null,
+    counts: {
+      campaignsSynced: 4,
+      adsetsSynced: 0,
+      adsSynced: 0,
+      creativesSynced: 0,
+      performanceRowsSynced: 0,
+    },
+  },
+  {
+    atMs: 7_000,
+    stage: 'syncing_adsets',
+    message: 'Syncing ad sets so delivery and audience structure are available.',
+    windowSince: null,
+    windowUntil: null,
+    coverageStartDate: null,
+    coverageEndDate: null,
+    counts: {
+      campaignsSynced: 4,
+      adsetsSynced: 11,
+      adsSynced: 0,
+      creativesSynced: 0,
+      performanceRowsSynced: 0,
+    },
+  },
+  {
+    atMs: 11_000,
+    stage: 'syncing_ads',
+    message: 'Pulling live ads and mapping creative delivery.',
+    windowSince: null,
+    windowUntil: null,
+    coverageStartDate: null,
+    coverageEndDate: null,
+    counts: {
+      campaignsSynced: 4,
+      adsetsSynced: 11,
+      adsSynced: 23,
+      creativesSynced: 0,
+      performanceRowsSynced: 0,
+    },
+  },
+  {
+    atMs: 15_000,
+    stage: 'syncing_creatives',
+    message: 'Collecting creative records so the dashboard can compare what is live.',
+    windowSince: null,
+    windowUntil: null,
+    coverageStartDate: null,
+    coverageEndDate: null,
+    counts: {
+      campaignsSynced: 4,
+      adsetsSynced: 11,
+      adsSynced: 23,
+      creativesSynced: 18,
+      performanceRowsSynced: 0,
+    },
+  },
+  {
+    atMs: 19_000,
+    stage: 'syncing_performance_windows',
+    message: 'Syncing performance windows and recent hourly activity.',
+    windowSince: '2026-04-22',
+    windowUntil: '2026-04-29',
+    coverageStartDate: '2026-04-22',
+    coverageEndDate: '2026-04-29',
+    counts: {
+      campaignsSynced: 4,
+      adsetsSynced: 11,
+      adsSynced: 23,
+      creativesSynced: 18,
+      performanceRowsSynced: 486,
+    },
+  },
+  {
+    atMs: 24_000,
+    stage: 'finalizing_summaries',
+    message: 'Finalizing lifetime summaries and delivery rollups.',
+    windowSince: '2026-01-01',
+    windowUntil: '2026-04-29',
+    coverageStartDate: '2026-01-01',
+    coverageEndDate: '2026-04-29',
+    counts: {
+      campaignsSynced: 6,
+      adsetsSynced: 16,
+      adsSynced: 31,
+      creativesSynced: 24,
+      performanceRowsSynced: 1142,
+    },
+  },
+  {
+    atMs: 28_000,
+    stage: 'running_assessments',
+    message: 'Running DeepVisor analysis and preparing dashboard-ready summaries.',
+    windowSince: '2025-11-01',
+    windowUntil: '2026-04-29',
+    coverageStartDate: '2025-11-01',
+    coverageEndDate: '2026-04-29',
+    counts: {
+      campaignsSynced: 7,
+      adsetsSynced: 19,
+      adsSynced: 36,
+      creativesSynced: 29,
+      performanceRowsSynced: 1548,
+    },
+  },
+];
+
 function formatJobCount(value: number): string {
   return new Intl.NumberFormat().format(value);
 }
@@ -99,6 +240,32 @@ function getSyncJobRoutes(platformKey: SupportedIntegrationPlatform, jobId: stri
         dispatch: `/api/integrations/${platformKey}/sync-jobs/${jobId}/dispatch`,
       };
   }
+}
+
+function buildDemoJobSnapshot(trackedJob: TrackedFirstSyncJob): FirstSyncJobStatus {
+  const startedAtMs = trackedJob.job.startedAt
+    ? new Date(trackedJob.job.startedAt).getTime()
+    : Date.now();
+  const elapsedMs = Math.max(0, Date.now() - startedAtMs);
+  const snapshot =
+    [...DEMO_STAGE_SNAPSHOTS].reverse().find((candidate) => elapsedMs >= candidate.atMs) ??
+    DEMO_STAGE_SNAPSHOTS[0];
+  const completed = elapsedMs >= DEMO_SYNC_TOTAL_MS;
+
+  return {
+    ...trackedJob.job,
+    status: completed ? 'completed' : 'running',
+    stage: completed ? 'completed' : snapshot.stage,
+    message: completed ? 'Demo sync completed.' : snapshot.message,
+    windowSince: snapshot.windowSince,
+    windowUntil: snapshot.windowUntil,
+    coverageStartDate: snapshot.coverageStartDate,
+    coverageEndDate: snapshot.coverageEndDate,
+    firstFullSyncCompleted: completed,
+    counts: snapshot.counts,
+    finishedAt: completed ? new Date(startedAtMs + DEMO_SYNC_TOTAL_MS).toISOString() : null,
+    errorMessage: null,
+  };
 }
 
 export default function FirstSyncTracker() {
@@ -181,6 +348,9 @@ export default function FirstSyncTracker() {
     }
 
     for (const trackedJob of trackedJobs) {
+      if (trackedJob.mode === 'demo') {
+        continue;
+      }
       const lastRequestedAt = dispatchRequestedAt.current.get(trackedJob.jobId) ?? 0;
       if (
         trackedJob.job.status !== 'queued' ||
@@ -201,7 +371,9 @@ export default function FirstSyncTracker() {
   }, [trackedJobs]);
 
   useEffect(() => {
-    if (trackedJobs.length === 0) {
+    const liveTrackedJobs = trackedJobs.filter((job) => job.mode !== 'demo');
+
+    if (liveTrackedJobs.length === 0) {
       setRealtimeStatus('idle');
       return;
     }
@@ -258,25 +430,31 @@ export default function FirstSyncTracker() {
 
     const bootstrapStatuses = async () => {
       const nextJobs = await Promise.all(
-        trackedJobs.map((trackedJob) => refreshJobStatus(trackedJob))
+        liveTrackedJobs.map((trackedJob) => refreshJobStatus(trackedJob))
       );
 
       if (!cancelled) {
-        const filteredJobs = nextJobs.filter(
+        const filteredLiveJobs = nextJobs.filter(
           (job): job is TrackedFirstSyncJob => job !== null
         );
-        setTrackedJobs(filteredJobs);
-        if (filteredJobs.length === 0) {
-          setSelectedJobId(null);
-        } else if (!filteredJobs.some((job) => job.jobId === selectedJobId)) {
-          setSelectedJobId(filteredJobs[0]?.jobId ?? null);
-        }
+        setTrackedJobs((current) => {
+          const demoJobs = current.filter((job) => job.mode === 'demo');
+          const mergedJobs = [...demoJobs, ...filteredLiveJobs];
+
+          if (mergedJobs.length === 0) {
+            setSelectedJobId(null);
+          } else if (!mergedJobs.some((job) => job.jobId === selectedJobId)) {
+            setSelectedJobId(mergedJobs[0]?.jobId ?? null);
+          }
+
+          return mergedJobs;
+        });
       }
     };
 
     void bootstrapStatuses();
 
-    for (const trackedJob of trackedJobs) {
+    for (const trackedJob of liveTrackedJobs) {
       const channel = supabase
         .channel(`first-sync-job-${trackedJob.jobId}`)
         .on(
@@ -333,6 +511,60 @@ export default function FirstSyncTracker() {
       for (const channel of channels) {
         void supabase.removeChannel(channel);
       }
+    };
+  }, [trackedJobs, selectedJobId]);
+
+  useEffect(() => {
+    const demoJobIds = trackedJobs.filter((job) => job.mode === 'demo').map((job) => job.jobId);
+    if (demoJobIds.length === 0) {
+      return;
+    }
+
+    const tick = () => {
+      setTrackedJobs((current) => {
+        const nextJobs: TrackedFirstSyncJob[] = [];
+
+        for (const trackedJob of current) {
+          if (trackedJob.mode !== 'demo') {
+            nextJobs.push(trackedJob);
+            continue;
+          }
+
+          const nextJob = buildDemoJobSnapshot(trackedJob);
+          if (nextJob.status === 'completed') {
+            untrackFirstSyncJob(trackedJob.jobId);
+            if (selectedJobId === trackedJob.jobId) {
+              setModalOpened(false);
+            }
+            toast.success(`${trackedJob.platformName} demo sync completed.`);
+            continue;
+          }
+
+          const nextTrackedJob = {
+            ...trackedJob,
+            job: nextJob,
+          };
+          updateTrackedFirstSyncJob(nextTrackedJob);
+          nextJobs.push(nextTrackedJob);
+        }
+
+        if (nextJobs.length === 0) {
+          setSelectedJobId(null);
+          return nextJobs;
+        }
+
+        if (!nextJobs.some((job) => job.jobId === selectedJobId)) {
+          setSelectedJobId(nextJobs[0]?.jobId ?? null);
+        }
+
+        return nextJobs;
+      });
+    };
+
+    tick();
+    const intervalId = window.setInterval(tick, 1000);
+    return () => {
+      window.clearInterval(intervalId);
     };
   }, [trackedJobs, selectedJobId]);
 
@@ -497,7 +729,7 @@ export default function FirstSyncTracker() {
         style={{
           position: 'fixed',
           right: 24,
-          bottom: 24,
+          bottom: 88,
           zIndex: 80,
           alignItems: 'flex-end',
         }}

@@ -8,7 +8,9 @@
 
 .topBar,
 .panel,
-.metricCard {
+.metricCard,
+.chartPanel,
+.emptyPanel {
   background: rgba(255, 255, 255, 0.97);
 }
 
@@ -33,153 +35,343 @@
   line-height: 1.05;
 }
 
+.panel {
+  height: 100%;
+}
+
+.chartPanel {
+  height: 100%;
+}
+
+.historyHeader {
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.88);
+}
+
+.historyHeaderBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.historyControlsRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.historyChartScrollArea {
+  width: 100%;
+}
+
+.historyChartScrollableCanvas {
+  min-width: 100%;
+  padding-bottom: 6px;
+}
+
+.sectionHeader {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.88);
+}
+
+.liveDeliveryTitle {
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+
+.liveTableHeader {
+  padding-bottom: 4px;
+}
+
 .metricCard {
   height: 100%;
 }
 
-.performancePanel {
+.tableWrap {
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 18px;
   overflow: hidden;
+  background: rgba(248, 250, 252, 0.74);
+}
+
+.dataTable {
+  width: 100%;
+  min-width: 1280px;
+  table-layout: fixed;
+}
+
+.liveCampaignTable {
+  min-width: 1110px;
+}
+
+.liveAdsetTable {
+  min-width: 1640px;
+}
+
+.liveAdTable {
+  min-width: 1580px;
+}
+
+.dataTable th,
+.dataTable td {
+  padding: 10px 18px;
+  vertical-align: middle;
+}
+
+.dataTable th {
+  white-space: nowrap;
+}
+
+.dataTable td {
+  height: 46px;
+}
+
+.tableCellMuted {
+  color: #64748b;
+}
+
+.tableTruncatePrimary,
+.tableTruncateMuted {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tableTruncatePrimary {
+  width: 100%;
+  max-width: 100%;
+}
+
+.tableTruncateMuted {
+  width: 100%;
+  max-width: 100%;
+  color: #64748b;
+}
+
+.tableValueText {
+  display: block;
+  white-space: nowrap;
+  color: #64748b;
 }
 
 .metricValue {
   color: #0f172a;
+  font-size: 1.55rem;
   letter-spacing: -0.035em;
   line-height: 1;
 }
 
-.deltaPill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  width: fit-content;
-  padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 800;
+.chartSubSection {
+  padding-top: 16px;
+  border-top: 1px solid rgba(226, 232, 240, 0.88);
 }
 
-.deltaPositive {
-  color: #047857;
-  background: rgba(16, 185, 129, 0.12);
+.signalMeta {
+  font-weight: 700;
 }
 
-.deltaNegative {
-  color: #c2410c;
-  background: rgba(249, 115, 22, 0.13);
+.historyTooltipCard {
+  width: min(340px, calc(100vw - 48px));
+  max-width: min(340px, calc(100vw - 48px));
 }
 
-.deltaNeutral {
-  color: #64748b;
-  background: rgba(148, 163, 184, 0.14);
+.historyTooltipCopy {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
-.sectionHeader {
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.88);
+.historyTooltipSignal {
+  background: rgba(248, 250, 252, 0.94);
+  border-color: rgba(191, 219, 254, 0.9);
 }
 
-.softPanel {
-  background: rgba(248, 250, 252, 0.78);
+.approvalCard {
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96) 0%, rgba(239, 246, 255, 0.9) 100%);
+  border-color: rgba(191, 219, 254, 0.9);
 }
 
-.insightCard {
-  padding: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.92);
+.approvalMeta {
+  padding: 14px 16px;
+  border: 1px solid rgba(191, 219, 254, 0.9);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.86);
 }
 
-.campaignRow,
-.actionRow,
-.reportRow,
-.healthRow {
-  padding: 12px;
+.liveRow,
+.breakdownRow {
   border: 1px solid rgba(226, 232, 240, 0.92);
-  border-radius: 16px;
+  border-radius: 18px;
   background: rgba(248, 250, 252, 0.74);
 }
 
-.queueStatCard {
-  background: rgba(248, 250, 252, 0.74);
+.liveRow {
+  padding: 14px;
 }
 
-.queueSidebarPanel,
-.queueHighlightRow {
-  background: rgba(248, 250, 252, 0.74);
-}
-
-.calendarPanel {
-  overflow: hidden;
-}
-
-.calendarAgenda {
-  max-height: 440px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.calendarAgendaRow {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
-  gap: 12px;
-}
-
-.calendarAgendaDate {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
-
-.calendarAgendaDateValue {
-  font-size: 1.5rem;
-  line-height: 1;
-  letter-spacing: -0.04em;
-}
-
-.calendarAgendaBody {
-  min-width: 0;
-}
-
-.queueMiniRow {
+.breakdownRow {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid rgba(226, 232, 240, 0.92);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.88);
+  gap: 16px;
+  padding: 12px 14px;
 }
 
-.activitySection {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.activityRow {
-  background: rgba(248, 250, 252, 0.74);
-}
-
-.activityMetrics {
+.metricGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 14px;
-  min-width: 280px;
+  min-width: 420px;
+}
+
+.placementRow {
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.74);
+  padding: 12px 14px;
+}
+
+.placementRowHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.placementImageWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  background: rgba(255, 255, 255, 0.98);
+  flex-shrink: 0;
+}
+
+.placementBarTrack {
+  margin-top: 10px;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(226, 232, 240, 0.92);
+  overflow: hidden;
+}
+
+.placementBarFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
+}
+
+.stateMapWrap {
+  width: 100%;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.74);
+  padding: 12px;
+}
+
+.stateMapGrid {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  grid-template-rows: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.stateMapTile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.heatmapScrollArea {
+  width: 100%;
+}
+
+.heatmapGrid {
+  display: grid;
+  grid-template-columns: 40px repeat(24, 14px);
+  gap: 4px;
+  align-items: center;
+  min-width: 472px;
+}
+
+.heatmapCorner {
+  height: 12px;
+}
+
+.heatmapHourLabel {
+  line-height: 1;
+  min-width: 14px;
+}
+
+.heatmapDayLabel {
+  line-height: 1;
+}
+
+.heatmapCell {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(226, 232, 240, 0.94);
+  border-radius: 4px;
+}
+
+.emptyPanel {
+  border-color: rgba(226, 232, 240, 0.92);
+}
+
+.subSection {
+  padding-top: 4px;
+}
+
+@media (max-width: 1080px) {
+  .historyControlsRow {
+    justify-content: flex-start;
+  }
+
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 100%;
+  }
+
+  .breakdownRow {
+    flex-direction: column;
+  }
+
+  .placementRowHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .stateMapGrid {
+    gap: 4px;
+  }
 }
 
 @media (max-width: 760px) {
   .title {
-    font-size: 1.55rem;
+    font-size: 1.5rem;
   }
 
-  .calendarAgendaRow {
-    grid-template-columns: 1fr;
+  .metricValue {
+    font-size: 1.35rem;
   }
 
-  .activityMetrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    min-width: 100%;
+  .metricGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stateMapTile {
+    min-height: 22px;
+    font-size: 9px;
   }
 }

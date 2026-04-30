@@ -84,6 +84,7 @@ export interface AdAccountAggregatedMetrics {
   reach: number;
   leads: number;
   messages: number;
+  calls?: number;
   ctr: number;
   cpc: number;
   cpm: number;
@@ -99,6 +100,7 @@ export interface AdAccountTimeIncrementPoint {
   reach: number;
   leads: number;
   messages: number;
+  calls?: number;
   ctr: number;
   cpc: number;
   cpm: number;
@@ -122,6 +124,7 @@ export interface AdAccountDailyMetricsRow {
   inline_link_clicks: number;
   leads: number;
   messages: number;
+  calls?: number;
   currency_code: string | null;
 }
 

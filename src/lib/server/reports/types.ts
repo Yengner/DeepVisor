@@ -28,6 +28,7 @@ export interface ReportMetricTotals {
   linkClicks: number;
   leads: number;
   messages: number;
+  calls: number;
   conversion: number;
   conversionRate: number;
   costPerResult: number;

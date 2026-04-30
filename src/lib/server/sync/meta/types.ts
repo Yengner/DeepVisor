@@ -111,3 +111,56 @@ export interface MetaAdPerformanceSeed {
   messages: number;
   calls: number;
 }
+
+export interface MetaAudienceBreakdownSeed {
+  entityLevel: 'adset' | 'ad';
+  entityExternalId: string;
+  adsetExternalId: string;
+  adExternalId: string | null;
+  campaignExternalId: string | null;
+  day: string;
+  breakdownType: string;
+  dimension1Key: string;
+  dimension1Value: string;
+  dimension2Key: string;
+  dimension2Value: string;
+  publisherPlatform: string | null;
+  platformPosition: string | null;
+  impressionDevice: string | null;
+  currencyCode: string | null;
+  spend: number;
+  reach: number;
+  impressions: number;
+  clicks: number;
+  inlineLinkClicks: number;
+  leads: number;
+  messages: number;
+  calls: number;
+  actions: Json;
+  costPerActionType: Json;
+  raw: Json | null;
+}
+
+export interface MetaHourlyPerformanceSeed {
+  entityLevel: 'adset' | 'ad';
+  entityExternalId: string;
+  adsetExternalId: string;
+  adExternalId: string | null;
+  campaignExternalId: string | null;
+  day: string;
+  weekStart: string;
+  dayOfWeek: number;
+  hourOfDay: number;
+  advertiserTimeBucket: string;
+  timeBasis: 'advertiser';
+  currencyCode: string | null;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  inlineLinkClicks: number;
+  ctr: number;
+  cpc: number;
+  cpm: number;
+  actions: Json;
+  raw: Json | null;
+}
