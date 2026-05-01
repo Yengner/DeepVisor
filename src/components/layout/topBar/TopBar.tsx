@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/server/supabase/server';
 import TopBarClient from './TopBarClient';
 import type { Database } from '@/lib/shared/types/supabase';
 import { getCurrentSelection } from '@/lib/server/actions/app/selection';
+import { getUserNotifications } from '@/lib/server/actions/user/settings';
 
 type UserRow = Database['public']['Tables']['users']['Row'];
 
@@ -12,6 +13,7 @@ interface TopbarProps {
 
 export default async function Topbar({ user, businessId }: TopbarProps) {
   const supabase = await createServerClient();
+  const notifications = await getUserNotifications(user.id, 5);
 
   const { data: integrationRows, error: integrationError } = await supabase
     .from('platform_integrations')
@@ -94,6 +96,7 @@ export default async function Topbar({ user, businessId }: TopbarProps) {
         userInfo={user}
         platforms={platforms}
         adAccounts={adAccounts}
+        notifications={notifications}
         initialPlatformId={selectedPlatformId}
         initialAccountId={selectedAccountId}
       />

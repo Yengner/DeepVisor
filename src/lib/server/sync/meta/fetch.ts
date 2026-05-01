@@ -1067,12 +1067,15 @@ async function fetchMetaHourlyPerformanceSeedsByLevel(input: {
     'date_stop',
     'account_currency',
     'spend',
+    'reach',
     'impressions',
     'clicks',
     'inline_link_clicks',
     'cpc',
     'ctr',
     'cpm',
+    'actions',
+    'cost_per_action_type',
   ];
 
   console.info(`${META_HOURLY_DEBUG_PREFIX} fetch:start`, {
@@ -1185,13 +1188,18 @@ async function fetchMetaHourlyPerformanceSeedsByLevel(input: {
       timeBasis: 'advertiser',
       currencyCode: metrics.currencyCode,
       spend: metrics.spend,
+      reach: metrics.reach,
       impressions: metrics.impressions,
       clicks: metrics.clicks,
       inlineLinkClicks: metrics.inlineLinkClicks,
+      leads: metrics.leads,
+      messages: metrics.messages,
+      calls: metrics.calls,
       ctr: asNumber(row.ctr) || computeCtr(metrics.clicks, metrics.impressions),
       cpc: asNumber(row.cpc) || computeCpc(metrics.spend, metrics.clicks),
       cpm: asNumber(row.cpm) || computeCpm(metrics.spend, metrics.impressions),
       actions: (toJson(row.actions ?? []) ?? []) as Json,
+      costPerActionType: (toJson(row.cost_per_action_type ?? []) ?? []) as Json,
       raw: toJson(row),
     });
   }

@@ -820,6 +820,56 @@ function buildBreakdownChart(rows: ReportBreakdownRow[]): ReportBreakdownChartPo
   }));
 }
 
+function buildDemoRanking(
+  query: ReportQueryInput,
+  ads: DemoAd[],
+  breakdownRows: ReportBreakdownRow[]
+): ReportPayload['ranking'] {
+  if (query.scope !== 'adset' && query.scope !== 'ad') {
+    return {
+      sameAdsetAds: [],
+      topAdAccountAds: [],
+    };
+  }
+
+  const selectedAdsetIds =
+    query.scope === 'adset'
+      ? query.adsetIds
+      : Array.from(new Set(ads.map((ad) => ad.parentId)));
+  const sameAdsetAds = selectedAdsetIds.length
+    ? buildBreakdownRows(
+        {
+          ...query,
+          scope: 'adset',
+          adIds: [],
+        },
+        DEMO_ADS.filter((ad) => selectedAdsetIds.includes(ad.parentId))
+      )
+    : query.scope === 'adset'
+      ? breakdownRows
+      : [];
+
+  const adAccountIds =
+    query.adAccountIds.length > 0 ? query.adAccountIds : Array.from(new Set(ads.map((ad) => ad.adAccountId)));
+  const topAdAccountAds = adAccountIds.length
+    ? buildBreakdownRows(
+        {
+          ...query,
+          scope: 'adset',
+          adIds: [],
+          adsetIds: [],
+          campaignIds: [],
+        },
+        DEMO_ADS.filter((ad) => adAccountIds.includes(ad.adAccountId))
+      )
+    : [];
+
+  return {
+    sameAdsetAds,
+    topAdAccountAds,
+  };
+}
+
 function resolveScopeMeta(
   query: ReportQueryInput,
   businessName: string
@@ -953,6 +1003,7 @@ export function buildDemoReportPayload(
   const generatedAt = new Date().toISOString();
   const filterSummary = buildFilterSummary(query);
   const breakdownRows = buildBreakdownRows(query, ads);
+  const ranking = buildDemoRanking(query, ads, breakdownRows);
 
   return {
     query,
@@ -977,6 +1028,7 @@ export function buildDemoReportPayload(
       rows: breakdownRows,
       chart: buildBreakdownChart(breakdownRows),
     },
+    ranking,
     export: {
       title: scopeMeta.title,
       subtitle: scopeMeta.subtitle,

@@ -5,6 +5,7 @@ import {
   runBusinessAssessment,
   runMetaAdAccountAssessment,
   syncMetaAccountIntelligenceArtifacts,
+  syncMetaTrendIntelligenceArtifacts,
 } from '@/lib/server/intelligence';
 import { toIntegrationStatus } from '@/lib/server/integrations/normalizers';
 import {
@@ -303,6 +304,12 @@ export async function syncBusinessPlatform(input: {
         await syncMetaAccountIntelligenceArtifacts({
           supabase,
           assessment: adAccountAssessment,
+        });
+        await syncMetaTrendIntelligenceArtifacts({
+          supabase,
+          businessId: input.businessId,
+          platformIntegrationId: integration.id,
+          adAccountId: syncedAccount.id,
         });
         await runBusinessAssessment({
           supabase,

@@ -20,6 +20,10 @@ import {
   listLatestAdAccountAssessmentsForBusiness,
 } from './repositories/assessments';
 import {
+  listActiveTrendFindings,
+  toTrendFindingView,
+} from './repositories/trendFindings';
+import {
   runBusinessAssessment,
   runMetaAdAccountAssessment,
 } from './assessments/service';
@@ -496,6 +500,13 @@ export async function buildGlobalAiAssistantPayload(input: {
   const selectedAdAccount = selection.primaryAdAccountId
     ? adAccounts.find((account) => account.id === selection.primaryAdAccountId) ?? null
     : null;
+  const activeFindings =
+    selectedAdAccount?.id
+      ? await listActiveTrendFindings(supabase as any, {
+          businessId: input.businessId,
+          adAccountId: selectedAdAccount.id,
+        })
+      : [];
 
   return {
     businessId: input.businessId,
@@ -516,5 +527,6 @@ export async function buildGlobalAiAssistantPayload(input: {
     selectedAdAccountExternalId: selectedAdAccount?.externalAccountId ?? null,
     latestBusinessAssessment,
     latestSelectedAssessment,
+    activeFindings: activeFindings.map(toTrendFindingView),
   };
 }

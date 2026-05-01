@@ -1128,6 +1128,7 @@ export function buildDashboardPayload(input: {
   hasReportMetrics: boolean;
   liveToday?: DashboardLiveWindow | null;
   featuredAdsetHistory?: DashboardFeaturedAdsetHistory | null;
+  activeFindings?: DashboardPayload['activeFindings'];
 }): DashboardPayload {
   const platformConnected = Boolean(input.platform && input.platform.status === 'connected');
   const lastSyncedAt = input.adAccount?.last_synced ?? input.platform?.lastSyncedAt ?? null;
@@ -1163,6 +1164,7 @@ export function buildDashboardPayload(input: {
     },
     liveToday: input.liveToday ?? emptyLiveWindow(isMeta),
     featuredAdsetHistory: input.featuredAdsetHistory ?? emptyFeaturedAdsetHistory(isMeta),
+    activeFindings: input.activeFindings ?? [],
     syncCoverage: input.syncCoverage,
     platform: input.platform,
     adAccount: input.adAccount,

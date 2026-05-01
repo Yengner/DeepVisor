@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Card, Group, Table, Text } from "@mantine/core";
+import { Badge, Button, Card, Group, Table, Text } from "@mantine/core";
 import type { ReportBreakdownRow } from "@/lib/server/reports/types";
 
 interface PerformanceTableProps {
@@ -9,6 +9,22 @@ interface PerformanceTableProps {
   currencyCode: string | null;
   hideTitle?: boolean;
 }
+
+const REPORT_TABLE_COLUMN_WIDTHS = [
+  '280px',
+  '120px',
+  '140px',
+  '320px',
+  '170px',
+  '120px',
+  '110px',
+  '130px',
+  '110px',
+  '90px',
+  '120px',
+  '150px',
+  '150px',
+] as const;
 
 function formatCurrency(value: number, currencyCode: string | null) {
   if (!currencyCode || currencyCode === 'MIXED') {
@@ -65,8 +81,19 @@ export default function PerformanceTable({
         </Text>
       )}
 
-      <Table.ScrollContainer minWidth={1100}>
-        <Table striped highlightOnHover withTableBorder withColumnBorders>
+      <Table.ScrollContainer minWidth={2010}>
+        <Table
+          striped
+          highlightOnHover
+          withTableBorder
+          withColumnBorders
+          style={{ tableLayout: 'fixed', minWidth: 2010 }}
+        >
+          <colgroup>
+            {REPORT_TABLE_COLUMN_WIDTHS.map((width, index) => (
+              <col key={`${index}:${width}`} style={{ width }} />
+            ))}
+          </colgroup>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Entity</Table.Th>
@@ -81,12 +108,13 @@ export default function PerformanceTable({
               <Table.Th ta="right">CTR</Table.Th>
               <Table.Th ta="right">CPC</Table.Th>
               <Table.Th ta="right">Cost / Result</Table.Th>
+              <Table.Th ta="right">Report</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {rows.length === 0 ? (
               <Table.Tr>
-                <Table.Td colSpan={12}>
+                <Table.Td colSpan={13}>
                   <Text ta="center" c="dimmed" py="md">
                     No performance rows available for the selected filters.
                   </Text>
@@ -119,6 +147,11 @@ export default function PerformanceTable({
                     <Group gap={4}>
                       <Text size="sm">{row.primaryContext || '—'}</Text>
                     </Group>
+                    {row.creativeContext ? (
+                      <Text size="xs" c="dimmed">
+                        Creative: {row.creativeContext}
+                      </Text>
+                    ) : null}
                     <Text size="xs" c="dimmed">
                       {row.secondaryContext || '—'}
                     </Text>
@@ -131,6 +164,23 @@ export default function PerformanceTable({
                   <Table.Td ta="right">{row.ctr.toFixed(2)}%</Table.Td>
                   <Table.Td ta="right">{formatCurrency(row.cpc, currencyCode)}</Table.Td>
                   <Table.Td ta="right">{formatCurrency(row.costPerResult, currencyCode)}</Table.Td>
+                  <Table.Td ta="right">
+                    {row.drilldownHref ? (
+                      <Button
+                        component="a"
+                        href={row.drilldownHref}
+                        variant="light"
+                        size="xs"
+                        radius="xl"
+                      >
+                        {row.drilldownLabel ?? 'Open report'}
+                      </Button>
+                    ) : (
+                      <Text size="sm" c="dimmed">
+                        —
+                      </Text>
+                    )}
+                  </Table.Td>
                 </Table.Tr>
               ))
             )}

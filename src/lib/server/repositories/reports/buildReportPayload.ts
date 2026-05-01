@@ -4,6 +4,7 @@ import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { parseDailyMetricsRowsFromTimeIncrementMetrics } from '@/lib/server/repositories/ad_accounts/normalizers';
 import { derivePerformanceMetrics } from '@/lib/server/repositories/campaigns/normalizers';
 import { chunkArray } from '@/lib/server/repositories/utils';
+import { buildReportUrl } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
 import type {
   ReportBreakdownRow,
@@ -13,6 +14,7 @@ import type {
   ReportMetricTotals,
   ReportPayload,
   ReportQueryInput,
+  ReportRankingContext,
   ReportTimeSeriesPoint,
 } from '@/lib/server/reports/types';
 
@@ -93,7 +95,12 @@ type AdsetPerformanceRow = Pick<
 
 type AdDimRow = Pick<
   Database['public']['Tables']['ad_dims']['Row'],
-  'id' | 'ad_account_id' | 'adset_external_id' | 'external_id' | 'name' | 'status'
+  'id' | 'ad_account_id' | 'adset_external_id' | 'external_id' | 'name' | 'status' | 'creative_id'
+>;
+
+type AdCreativeRow = Pick<
+  Database['public']['Tables']['ad_creatives']['Row'],
+  'id' | 'platform_creative_id' | 'name' | 'headline' | 'primary_text' | 'description' | 'creative_type'
 >;
 
 type AdPerformanceRow = Pick<
@@ -563,7 +570,7 @@ async function listAdDims(
   for (const adAccountIdsChunk of chunkArray(input.adAccountIds, 100)) {
     let query = supabase
       .from('ad_dims')
-      .select('id, ad_account_id, adset_external_id, external_id, name, status')
+      .select('id, ad_account_id, adset_external_id, external_id, name, status, creative_id')
       .in('ad_account_id', adAccountIdsChunk);
 
     if (input.adsetExternalIds && input.adsetExternalIds.length > 0) {
@@ -581,6 +588,34 @@ async function listAdDims(
     }
 
     rows.push(...((data ?? []) as AdDimRow[]));
+  }
+
+  return rows;
+}
+
+async function listAdCreatives(
+  supabase: SupabaseClient,
+  input: {
+    platformCreativeIds: string[];
+  }
+): Promise<AdCreativeRow[]> {
+  if (input.platformCreativeIds.length === 0) {
+    return [];
+  }
+
+  const rows: AdCreativeRow[] = [];
+
+  for (const idsChunk of chunkArray(input.platformCreativeIds, 200)) {
+    const { data, error } = await supabase
+      .from('ad_creatives')
+      .select('id, platform_creative_id, name, headline, primary_text, description, creative_type')
+      .in('platform_creative_id', idsChunk);
+
+    if (error) {
+      throw error;
+    }
+
+    rows.push(...((data ?? []) as AdCreativeRow[]));
   }
 
   return rows;
@@ -784,6 +819,9 @@ function toBreakdownRow(input: {
   status: string | null;
   primaryContext: string | null;
   secondaryContext: string | null;
+  creativeContext?: string | null;
+  drilldownLabel?: string | null;
+  drilldownHref?: string | null;
   aggregate: EntityAggregate;
 }): ReportBreakdownRow {
   const derived = derivePerformanceMetrics({
@@ -803,6 +841,9 @@ function toBreakdownRow(input: {
     status: input.status,
     primaryContext: input.primaryContext,
     secondaryContext: input.secondaryContext,
+    creativeContext: input.creativeContext ?? null,
+    drilldownLabel: input.drilldownLabel ?? null,
+    drilldownHref: input.drilldownHref ?? null,
     spend: input.aggregate.spend,
     reach: input.aggregate.reach,
     impressions: input.aggregate.impressions,
@@ -821,6 +862,192 @@ function toBreakdownRow(input: {
     startDate: input.aggregate.startDate,
     endDate: input.aggregate.endDate,
   };
+}
+
+function buildCreativeContext(creative: AdCreativeRow | null | undefined): string | null {
+  if (!creative) {
+    return null;
+  }
+
+  return (
+    creative.headline ||
+    creative.name ||
+    creative.primary_text ||
+    creative.description ||
+    creative.creative_type ||
+    null
+  );
+}
+
+async function buildAdRows(
+  supabase: SupabaseClient,
+  input: {
+    query: ReportQueryInput;
+    context: FilterContext;
+    adAccountIds: string[];
+    adsetExternalIds?: string[];
+    externalIds?: string[];
+    includeAdReportLinks?: boolean;
+  }
+): Promise<ReportBreakdownRow[]> {
+  const adsetByExternalId = new Map(
+    input.context.adsets.map((adset) => [adset.external_id, adset] satisfies [string, AdsetDimRow])
+  );
+  const adsetNameById = new Map(
+    input.context.adsets.map((adset) => [adset.external_id, adset.name || 'Unnamed ad set'])
+  );
+  const campaignNameById = new Map(
+    input.context.campaigns.map((campaign) => [campaign.external_id, campaign.name || 'Unnamed campaign'])
+  );
+
+  const ads = await listAdDims(supabase, {
+    adAccountIds: input.adAccountIds,
+    adsetExternalIds: input.adsetExternalIds,
+    externalIds: input.externalIds,
+  });
+
+  if (ads.length === 0) {
+    return [];
+  }
+
+  const creatives = await listAdCreatives(supabase, {
+    platformCreativeIds: ads
+      .map((ad) => ad.creative_id)
+      .filter((value): value is string => Boolean(value)),
+  });
+  const creativeById = new Map(
+    creatives.map((creative) => [creative.platform_creative_id, creative] satisfies [string, AdCreativeRow])
+  );
+  const performanceRows = await listDailyRows<AdPerformanceRow>(supabase, {
+    table: 'ads_performance_daily',
+    idColumn: 'ad_id',
+    ids: ads.map((ad) => ad.id),
+    dateFrom: input.query.dateFrom,
+    dateTo: input.query.dateTo,
+    select:
+      'ad_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls',
+  });
+  const rowsByAdId = new Map<string, MetricsRow[]>();
+
+  for (const row of performanceRows) {
+    const rows = rowsByAdId.get(row.ad_id) ?? [];
+    rows.push({
+      day: row.day,
+      currency_code: row.currency_code,
+      spend: row.spend ?? 0,
+      reach: row.reach ?? 0,
+      impressions: row.impressions ?? 0,
+      clicks: row.clicks ?? 0,
+      inline_link_clicks: row.inline_link_clicks ?? 0,
+      leads: row.leads ?? 0,
+      messages: row.messages ?? 0,
+      calls: row.calls ?? 0,
+    });
+    rowsByAdId.set(row.ad_id, rows);
+  }
+
+  return ads
+    .map((ad) => {
+      const parentAdset = adsetByExternalId.get(ad.adset_external_id);
+      const campaignExternalId = parentAdset?.campaign_external_id ?? null;
+
+      return toBreakdownRow({
+        id: ad.external_id,
+        name: ad.name || 'Unnamed ad',
+        level: 'ad',
+        status: ad.status,
+        primaryContext: adsetNameById.get(ad.adset_external_id) ?? null,
+        secondaryContext: campaignExternalId ? campaignNameById.get(campaignExternalId) ?? null : null,
+        creativeContext: buildCreativeContext(
+          ad.creative_id ? creativeById.get(ad.creative_id) : null
+        ),
+        drilldownLabel: input.includeAdReportLinks ? 'Open ad report' : null,
+        drilldownHref:
+          input.includeAdReportLinks && campaignExternalId
+            ? buildNestedReportHref({
+                query: input.query,
+                scope: 'ad',
+                platformIntegrationId: input.query.platformIntegrationId,
+                adAccountIds: input.adAccountIds,
+                campaignIds: [campaignExternalId],
+                adsetIds: [ad.adset_external_id],
+                adIds: [ad.external_id],
+              })
+            : null,
+        aggregate: aggregateEntityMetrics(rowsByAdId.get(ad.id) ?? []),
+      });
+    })
+    .filter((row) => row.spend > 0 || row.impressions > 0 || row.conversion > 0)
+    .sort((left, right) => right.spend - left.spend || left.name.localeCompare(right.name));
+}
+
+async function buildRankingContext(
+  supabase: SupabaseClient,
+  input: {
+    query: ReportQueryInput;
+    context: FilterContext;
+    adAccountIds: string[];
+  }
+): Promise<ReportRankingContext> {
+  if (input.query.scope !== 'adset' && input.query.scope !== 'ad') {
+    return {
+      sameAdsetAds: [],
+      topAdAccountAds: [],
+    };
+  }
+
+  const sameAdsetExternalIds =
+    input.query.scope === 'adset'
+      ? input.query.adsetIds
+      : input.context.ads
+          .filter((ad) => input.query.adIds.includes(ad.external_id))
+          .map((ad) => ad.adset_external_id)
+          .filter(Boolean);
+
+  const sameAdsetAds = sameAdsetExternalIds.length
+    ? await buildAdRows(supabase, {
+        query: input.query,
+        context: input.context,
+        adAccountIds: input.adAccountIds,
+        adsetExternalIds: Array.from(new Set(sameAdsetExternalIds)),
+        includeAdReportLinks: true,
+      })
+    : [];
+
+  const topAdAccountAds = await buildAdRows(supabase, {
+    query: input.query,
+    context: input.context,
+    adAccountIds: input.adAccountIds,
+    includeAdReportLinks: true,
+  });
+
+  return {
+    sameAdsetAds,
+    topAdAccountAds,
+  };
+}
+
+function buildNestedReportHref(input: {
+  query: ReportQueryInput;
+  scope: 'campaign' | 'adset' | 'ad';
+  platformIntegrationId?: string | null;
+  adAccountIds: string[];
+  campaignIds?: string[];
+  adsetIds?: string[];
+  adIds?: string[];
+}): string {
+  return buildReportUrl({
+    scope: input.scope,
+    platformIntegrationId: input.platformIntegrationId,
+    adAccountIds: input.adAccountIds,
+    campaignIds: input.campaignIds,
+    adsetIds: input.adsetIds,
+    adIds: input.adIds,
+    dateFrom: input.query.dateFrom,
+    dateTo: input.query.dateTo,
+    groupBy: input.query.groupBy,
+    compareMode: input.query.compareMode,
+  });
 }
 
 async function buildTopLevelMetricsRows(
@@ -1027,6 +1254,14 @@ async function buildBreakdown(
           status: campaign.status,
           primaryContext: adAccountNameById.get(campaign.ad_account_id) ?? null,
           secondaryContext: campaign.objective,
+          drilldownLabel: 'Open campaign report',
+          drilldownHref: buildNestedReportHref({
+            query,
+            scope: 'campaign',
+            platformIntegrationId: query.platformIntegrationId,
+            adAccountIds: [campaign.ad_account_id],
+            campaignIds: [campaign.external_id],
+          }),
           aggregate: aggregateEntityMetrics(rowsByCampaignId.get(campaign.id) ?? []),
         })
       )
@@ -1088,6 +1323,15 @@ async function buildBreakdown(
           status: adset.status,
           primaryContext: campaignNameById.get(adset.campaign_external_id) ?? null,
           secondaryContext: adset.optimization_goal,
+          drilldownLabel: 'Open ad set report',
+          drilldownHref: buildNestedReportHref({
+            query,
+            scope: 'adset',
+            platformIntegrationId: query.platformIntegrationId,
+            adAccountIds,
+            campaignIds: [adset.campaign_external_id],
+            adsetIds: [adset.external_id],
+          }),
           aggregate: aggregateEntityMetrics(rowsByAdsetId.get(adset.id) ?? []),
         })
       )
@@ -1107,58 +1351,14 @@ async function buildBreakdown(
     };
   }
 
-  const ads = await listAdDims(supabase, {
+  const rows = await buildAdRows(supabase, {
+    query,
+    context,
     adAccountIds,
     adsetExternalIds: query.scope === 'adset' ? query.adsetIds : undefined,
     externalIds: query.scope === 'ad' ? query.adIds : undefined,
+    includeAdReportLinks: query.scope === 'adset',
   });
-  const performanceRows = await listDailyRows<AdPerformanceRow>(supabase, {
-    table: 'ads_performance_daily',
-    idColumn: 'ad_id',
-    ids: ads.map((ad) => ad.id),
-    dateFrom: query.dateFrom,
-    dateTo: query.dateTo,
-    select: 'ad_id, day, currency_code, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls',
-  });
-  const rowsByAdId = new Map<string, MetricsRow[]>();
-
-  for (const row of performanceRows) {
-    const rows = rowsByAdId.get(row.ad_id) ?? [];
-    rows.push({
-      day: row.day,
-      currency_code: row.currency_code,
-      spend: row.spend ?? 0,
-      reach: row.reach ?? 0,
-      impressions: row.impressions ?? 0,
-      clicks: row.clicks ?? 0,
-      inline_link_clicks: row.inline_link_clicks ?? 0,
-      leads: row.leads ?? 0,
-      messages: row.messages ?? 0,
-      calls: row.calls ?? 0,
-    });
-    rowsByAdId.set(row.ad_id, rows);
-  }
-
-  const rows = ads
-    .map((ad) =>
-      toBreakdownRow({
-        id: ad.external_id,
-        name: ad.name || 'Unnamed ad',
-        level: 'ad',
-        status: ad.status,
-        primaryContext: adsetNameById.get(ad.adset_external_id) ?? null,
-        secondaryContext:
-          query.scope === 'adset'
-            ? campaignNameById.get(
-                context.adsets.find((adset) => adset.external_id === ad.adset_external_id)
-                  ?.campaign_external_id ?? ''
-              ) ?? null
-            : null,
-        aggregate: aggregateEntityMetrics(rowsByAdId.get(ad.id) ?? []),
-      })
-    )
-    .filter((row) => row.spend > 0 || row.impressions > 0 || row.conversion > 0)
-    .sort((left, right) => right.spend - left.spend || left.name.localeCompare(right.name));
 
   return {
     title: query.scope === 'ad' ? 'Selected ads' : 'Ad breakdown',
@@ -1366,6 +1566,11 @@ export async function buildReportPayload(query: ReportQueryInput): Promise<Repor
   });
   const filterSummary = buildFilterSummary({ query, context });
   const breakdown = await buildBreakdown(supabase, query, context, adAccountIds);
+  const ranking = await buildRankingContext(supabase, {
+    query,
+    context,
+    adAccountIds,
+  });
   const generatedAt = new Date().toISOString();
 
   return {
@@ -1391,6 +1596,7 @@ export async function buildReportPayload(query: ReportQueryInput): Promise<Repor
       previousTotals,
     } satisfies ReportComparisonSummary,
     breakdown,
+    ranking,
     export: {
       title: title.title,
       subtitle: title.subtitle,

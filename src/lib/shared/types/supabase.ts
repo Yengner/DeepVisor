@@ -361,6 +361,96 @@ export type Database = {
         }
         Relationships: []
       }
+      trend_findings: {
+        Row: {
+          ad_account_id: string
+          ad_id: string | null
+          adset_id: string | null
+          business_id: string
+          campaign_id: string | null
+          confidence: string
+          converted_to_queue_at: string | null
+          created_at: string
+          dedupe_key: string
+          detected_at: string
+          dismissed_at: string | null
+          finding_type: string
+          first_detected_at: string
+          id: string
+          last_detected_at: string
+          metric_snapshot_json: Json
+          platform_integration_id: string
+          reason: string | null
+          recommended_action_json: Json
+          resolved_at: string | null
+          severity: string
+          snapshot_hash: string
+          source: string
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          ad_id?: string | null
+          adset_id?: string | null
+          business_id: string
+          campaign_id?: string | null
+          confidence?: string
+          converted_to_queue_at?: string | null
+          created_at?: string
+          dedupe_key: string
+          detected_at?: string
+          dismissed_at?: string | null
+          finding_type: string
+          first_detected_at?: string
+          id?: string
+          last_detected_at?: string
+          metric_snapshot_json?: Json
+          platform_integration_id: string
+          reason?: string | null
+          recommended_action_json?: Json
+          resolved_at?: string | null
+          severity?: string
+          snapshot_hash: string
+          source?: string
+          status?: string
+          summary: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          ad_id?: string | null
+          adset_id?: string | null
+          business_id?: string
+          campaign_id?: string | null
+          confidence?: string
+          converted_to_queue_at?: string | null
+          created_at?: string
+          dedupe_key?: string
+          detected_at?: string
+          dismissed_at?: string | null
+          finding_type?: string
+          first_detected_at?: string
+          id?: string
+          last_detected_at?: string
+          metric_snapshot_json?: Json
+          platform_integration_id?: string
+          reason?: string | null
+          recommended_action_json?: Json
+          resolved_at?: string | null
+          severity?: string
+          snapshot_hash?: string
+          source?: string
+          status?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -377,126 +467,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      account_intelligence_profiles: {
-        Row: {
-          active_days_count: number
-          ad_account_id: string
-          ads_count: number
-          adsets_count: number
-          best_ad_id: string | null
-          best_adset_id: string | null
-          best_campaign_id: string | null
-          best_historical_objective: string | null
-          best_recent_objective: string | null
-          business_id: string
-          campaigns_count: number
-          created_at: string
-          data_sufficiency_score: number | null
-          first_activity_date: string | null
-          generated_at: string
-          id: string
-          maturity_classification: string
-          primary_objective: string | null
-          recommendation_readiness: boolean
-          summary: Json
-          total_clicks: number
-          total_impressions: number
-          total_leads: number
-          total_spend: number
-          updated_at: string
-        }
-        Insert: {
-          active_days_count?: number
-          ad_account_id: string
-          ads_count?: number
-          adsets_count?: number
-          best_ad_id?: string | null
-          best_adset_id?: string | null
-          best_campaign_id?: string | null
-          best_historical_objective?: string | null
-          best_recent_objective?: string | null
-          business_id: string
-          campaigns_count?: number
-          created_at?: string
-          data_sufficiency_score?: number | null
-          first_activity_date?: string | null
-          generated_at?: string
-          id?: string
-          maturity_classification: string
-          primary_objective?: string | null
-          recommendation_readiness?: boolean
-          summary?: Json
-          total_clicks?: number
-          total_impressions?: number
-          total_leads?: number
-          total_spend?: number
-          updated_at?: string
-        }
-        Update: {
-          active_days_count?: number
-          ad_account_id?: string
-          ads_count?: number
-          adsets_count?: number
-          best_ad_id?: string | null
-          best_adset_id?: string | null
-          best_campaign_id?: string | null
-          best_historical_objective?: string | null
-          best_recent_objective?: string | null
-          business_id?: string
-          campaigns_count?: number
-          created_at?: string
-          data_sufficiency_score?: number | null
-          first_activity_date?: string | null
-          generated_at?: string
-          id?: string
-          maturity_classification?: string
-          primary_objective?: string | null
-          recommendation_readiness?: boolean
-          summary?: Json
-          total_clicks?: number
-          total_impressions?: number
-          total_leads?: number
-          total_spend?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "account_intelligence_profiles_ad_account_id_fkey"
-            columns: ["ad_account_id"]
-            isOneToOne: true
-            referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "account_intelligence_profiles_best_ad_id_fkey"
-            columns: ["best_ad_id"]
-            isOneToOne: false
-            referencedRelation: "ad_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "account_intelligence_profiles_best_adset_id_fkey"
-            columns: ["best_adset_id"]
-            isOneToOne: false
-            referencedRelation: "adset_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "account_intelligence_profiles_best_campaign_id_fkey"
-            columns: ["best_campaign_id"]
-            isOneToOne: false
-            referencedRelation: "campaign_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "account_intelligence_profiles_business_id_fkey"
-            columns: ["business_id"]
-            isOneToOne: false
-            referencedRelation: "business_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       account_sync_jobs: {
         Row: {
           actual_end_date: string | null
@@ -2050,12 +2020,14 @@ export type Database = {
           actions_json: Json
           ad_account_id: string
           ad_id: string | null
-          advertiser_time_bucket: string
           adset_id: string
+          advertiser_time_bucket: string
+          calls: number
           campaign_id: string | null
           clicks: number
           cpc: number
           cpm: number
+          cost_per_action_type_json: Json
           created_at: string
           ctr: number
           currency_code: string | null
@@ -2066,8 +2038,11 @@ export type Database = {
           hour_of_day: number
           impressions: number
           inline_link_clicks: number
+          leads: number
+          messages: number
           objective: string | null
           raw: Json | null
+          reach: number
           source: string
           spend: number
           time_basis: string
@@ -2078,12 +2053,14 @@ export type Database = {
           actions_json?: Json
           ad_account_id: string
           ad_id?: string | null
-          advertiser_time_bucket: string
           adset_id: string
+          advertiser_time_bucket: string
+          calls?: number
           campaign_id?: string | null
           clicks?: number
           cpc?: number
           cpm?: number
+          cost_per_action_type_json?: Json
           created_at?: string
           ctr?: number
           currency_code?: string | null
@@ -2094,8 +2071,11 @@ export type Database = {
           hour_of_day: number
           impressions?: number
           inline_link_clicks?: number
+          leads?: number
+          messages?: number
           objective?: string | null
           raw?: Json | null
+          reach?: number
           source?: string
           spend?: number
           time_basis?: string
@@ -2106,12 +2086,14 @@ export type Database = {
           actions_json?: Json
           ad_account_id?: string
           ad_id?: string | null
-          advertiser_time_bucket?: string
           adset_id?: string
+          advertiser_time_bucket?: string
+          calls?: number
           campaign_id?: string | null
           clicks?: number
           cpc?: number
           cpm?: number
+          cost_per_action_type_json?: Json
           created_at?: string
           ctr?: number
           currency_code?: string | null
@@ -2122,8 +2104,11 @@ export type Database = {
           hour_of_day?: number
           impressions?: number
           inline_link_clicks?: number
+          leads?: number
+          messages?: number
           objective?: string | null
           raw?: Json | null
+          reach?: number
           source?: string
           spend?: number
           time_basis?: string
@@ -2157,6 +2142,198 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_delivery_log: {
+        Row: {
+          business_id: string
+          channel: string
+          created_at: string
+          dedupe_key: string
+          id: string
+          payload_json: Json
+          sent_at: string | null
+          source_id: string | null
+          source_type: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          channel: string
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          payload_json?: Json
+          sent_at?: string | null
+          source_id?: string | null
+          source_type: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          channel?: string
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          payload_json?: Json
+          sent_at?: string | null
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_delivery_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_delivery_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          business_id: string
+          created_at: string
+          email_enabled: boolean
+          id: string
+          in_app_enabled: boolean
+          min_severity: string
+          quiet_hours_end: number | null
+          quiet_hours_start: number | null
+          report_ready_enabled: boolean
+          time_zone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          min_severity?: string
+          quiet_hours_end?: number | null
+          quiet_hours_start?: number | null
+          report_ready_enabled?: boolean
+          time_zone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          min_severity?: string
+          quiet_hours_end?: number | null
+          quiet_hours_start?: number | null
+          report_ready_enabled?: boolean
+          time_zone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          business_id: string
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          link: string | null
+          message: string
+          payload_json: Json
+          read: boolean
+          read_at: string | null
+          severity: string
+          source_id: string | null
+          source_type: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          link?: string | null
+          message: string
+          payload_json?: Json
+          read?: boolean
+          read_at?: string | null
+          severity?: string
+          source_id?: string | null
+          source_type?: string
+          title: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          link?: string | null
+          message?: string
+          payload_json?: Json
+          read?: boolean
+          read_at?: string | null
+          severity?: string
+          source_id?: string | null
+          source_type?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -2393,6 +2570,66 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      report_subscriptions: {
+        Row: {
+          business_id: string
+          cadence: string
+          created_at: string
+          email_enabled: boolean
+          id: string
+          in_app_enabled: boolean
+          is_enabled: boolean
+          last_sent_at: string | null
+          next_run_at: string | null
+          time_zone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          cadence?: string
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          is_enabled?: boolean
+          last_sent_at?: string | null
+          next_run_at?: string | null
+          time_zone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          cadence?: string
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          is_enabled?: boolean
+          last_sent_at?: string | null
+          next_run_at?: string | null
+          time_zone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_subscriptions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {

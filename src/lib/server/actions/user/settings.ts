@@ -1,13 +1,7 @@
-import { STATIC_NOTIFICATION_FEED, type NotificationFeedItem } from '@/lib/shared';
+import type { NotificationFeedItem } from '@/lib/shared';
+import { listNotifications } from '@/lib/server/intelligence/repositories/notifications';
 import type { AdAccountDetails } from "../../services/platforms/meta/types";
 import { createSupabaseClient } from "../../supabase/server";
-
-function getStaticNotifications(userId: string, limit: number): NotificationFeedItem[] {
-    return STATIC_NOTIFICATION_FEED.slice(0, limit).map((notification) => ({
-        ...notification,
-        user_id: userId,
-    }));
-}
 
 /**
  * 
@@ -18,21 +12,13 @@ function getStaticNotifications(userId: string, limit: number): NotificationFeed
 export async function getUserNotifications(userId: string, limit = 10): Promise<NotificationFeedItem[]> {
     try {
         const supabase = await createSupabaseClient();
-
-        const { data, error } = await supabase
-            .from('notifications')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(limit);
-
-        if (error || !data || data.length === 0) {
-            return getStaticNotifications(userId, limit);
-        }
-
-        return data;
-    } catch {
-        return getStaticNotifications(userId, limit);
+        return await listNotifications(supabase as any, {
+            userId,
+            limit,
+        });
+    } catch (error) {
+        console.error('Failed to load user notifications:', error);
+        return [];
     }
 }
 

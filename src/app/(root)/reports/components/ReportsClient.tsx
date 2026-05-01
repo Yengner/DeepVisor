@@ -14,6 +14,7 @@ import {
   Grid,
   Group,
   Loader,
+  Modal,
   Paper,
   Progress,
   SimpleGrid,
@@ -24,6 +25,7 @@ import {
 import {
   IconArrowDownRight,
   IconArrowUpRight,
+  IconChevronRight,
   IconProgressCheck,
   IconTimeline,
   IconTrendingDown,
@@ -32,6 +34,7 @@ import {
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
+import { buildReportUrl } from '@/lib/shared';
 import type {
   ReportBreakdownRow,
   ReportFilterOptions,
@@ -201,6 +204,14 @@ function scoreWeakestRow(row: ReportBreakdownRow) {
   );
 }
 
+function scoreRankedRow(row: ReportBreakdownRow) {
+  return scoreStrongestRow(row);
+}
+
+function dedupeRows(rows: ReportBreakdownRow[]) {
+  return Array.from(new Map(rows.map((row) => [row.id, row])).values());
+}
+
 function pickStrongestRow(rows: ReportBreakdownRow[]) {
   return [...rows]
     .filter((row) => row.spend > 0 || row.conversion > 0 || row.clicks > 0)
@@ -253,6 +264,117 @@ function getActiveFilterCount(payload: ReportPayload) {
   }
 
   return count;
+}
+
+type ReportBreadcrumbItem = {
+  label: string;
+  href: string | null;
+};
+
+function findFilterLabel(
+  options: Array<{ id: string; label: string }>,
+  id: string | null | undefined,
+  fallback: string
+) {
+  if (!id) {
+    return fallback;
+  }
+
+  return options.find((option) => option.id === id)?.label ?? fallback;
+}
+
+function buildReportBreadcrumbs(
+  payload: ReportPayload,
+  filterOptions: ReportFilterOptions
+): ReportBreadcrumbItem[] {
+  const items: ReportBreadcrumbItem[] = [];
+  const { query } = payload;
+
+  if (query.platformIntegrationId) {
+    items.push({
+      label: findFilterLabel(filterOptions.platforms, query.platformIntegrationId, 'Platform'),
+      href:
+        query.adAccountIds.length > 0 ||
+        query.campaignIds.length > 0 ||
+        query.adsetIds.length > 0 ||
+        query.adIds.length > 0
+          ? buildReportUrl({
+              scope: 'platform',
+              platformIntegrationId: query.platformIntegrationId,
+              dateFrom: query.dateFrom,
+              dateTo: query.dateTo,
+              groupBy: query.groupBy,
+              compareMode: query.compareMode,
+            })
+          : null,
+    });
+  }
+
+  if (query.adAccountIds.length === 1) {
+    items.push({
+      label: findFilterLabel(filterOptions.adAccounts, query.adAccountIds[0], 'Ad account'),
+      href:
+        query.campaignIds.length > 0 || query.adsetIds.length > 0 || query.adIds.length > 0
+          ? buildReportUrl({
+              scope: 'ad_account',
+              platformIntegrationId: query.platformIntegrationId,
+              adAccountIds: [query.adAccountIds[0]],
+              dateFrom: query.dateFrom,
+              dateTo: query.dateTo,
+              groupBy: query.groupBy,
+              compareMode: query.compareMode,
+            })
+          : null,
+    });
+  }
+
+  if (query.campaignIds.length === 1) {
+    items.push({
+      label: findFilterLabel(filterOptions.campaigns, query.campaignIds[0], 'Campaign'),
+      href:
+        query.adsetIds.length > 0 || query.adIds.length > 0
+          ? buildReportUrl({
+              scope: 'campaign',
+              platformIntegrationId: query.platformIntegrationId,
+              adAccountIds: query.adAccountIds,
+              campaignIds: [query.campaignIds[0]],
+              dateFrom: query.dateFrom,
+              dateTo: query.dateTo,
+              groupBy: query.groupBy,
+              compareMode: query.compareMode,
+            })
+          : null,
+    });
+  }
+
+  if (query.adsetIds.length === 1) {
+    items.push({
+      label: findFilterLabel(filterOptions.adsets, query.adsetIds[0], 'Ad set'),
+      href:
+        query.adIds.length > 0
+          ? buildReportUrl({
+              scope: 'adset',
+              platformIntegrationId: query.platformIntegrationId,
+              adAccountIds: query.adAccountIds,
+              campaignIds: query.campaignIds,
+              adsetIds: [query.adsetIds[0]],
+              dateFrom: query.dateFrom,
+              dateTo: query.dateTo,
+              groupBy: query.groupBy,
+              compareMode: query.compareMode,
+            })
+          : null,
+    });
+  }
+
+  if (query.adIds.length === 1) {
+    items.push({
+      label: findFilterLabel(filterOptions.ads, query.adIds[0], 'Ad'),
+      href: null,
+    });
+  }
+
+  return items;
 }
 
 function deriveInsight(payload: ReportPayload): ReportInsight {
@@ -425,57 +547,195 @@ function KpiCard({ kpi }: { kpi: ReportKpi }) {
   );
 }
 
-function MoverList({
-  title,
-  subtitle,
+function getRankTone(index: number, total: number) {
+  if (index === 0) {
+    return { color: 'teal', label: 'Top performer' };
+  }
+
+  if (index <= Math.max(1, Math.floor(total * 0.25))) {
+    return { color: 'blue', label: 'Leading' };
+  }
+
+  if (index >= Math.max(0, total - Math.max(1, Math.floor(total * 0.25)))) {
+    return { color: 'orange', label: 'Needs review' };
+  }
+
+  return { color: 'gray', label: 'Mid-pack' };
+}
+
+function RankedEntityBoard({
   rows,
-  tone,
   currencyCode,
+  sameAdsetRows,
+  topAdAccountRows,
+  scope,
 }: {
-  title: string;
-  subtitle: string;
   rows: ReportBreakdownRow[];
-  tone: 'good' | 'warning';
   currencyCode: string | null;
+  sameAdsetRows: ReportBreakdownRow[];
+  topAdAccountRows: ReportBreakdownRow[];
+  scope: ReportPayload['query']['scope'];
 }) {
-  const color = tone === 'good' ? 'teal' : 'orange';
+  const [fullRankingOpened, setFullRankingOpened] = useState(false);
+  const rankedRows = dedupeRows(rows)
+    .filter((row) => row.spend > 0 || row.conversion > 0 || row.clicks > 0)
+    .sort((left, right) => scoreRankedRow(right) - scoreRankedRow(left));
+  const rankedSameAdsetRows = dedupeRows(sameAdsetRows)
+    .filter((row) => row.spend > 0 || row.conversion > 0 || row.clicks > 0)
+    .sort((left, right) => scoreRankedRow(right) - scoreRankedRow(left));
+  const rankedAdAccountRows = dedupeRows(topAdAccountRows)
+    .filter((row) => row.spend > 0 || row.conversion > 0 || row.clicks > 0)
+    .sort((left, right) => scoreRankedRow(right) - scoreRankedRow(left));
+  const comparisonRows = rankedAdAccountRows.filter(
+    (row) =>
+      !(scope === 'adset' ? rankedRows : rankedSameAdsetRows).some(
+        (currentRow) => currentRow.id === row.id
+      )
+  );
+  const adsetRankingRows = scope === 'adset' ? rankedRows : rankedSameAdsetRows;
+  const showAdsetRanking = (scope === 'adset' || scope === 'ad') && adsetRankingRows.length > 0;
+  const showAdAccountComparison = (scope === 'adset' || scope === 'ad') && comparisonRows.length > 0;
+  const fullAdRankingRows =
+    rankedAdAccountRows.length > 0
+      ? rankedAdAccountRows
+      : showAdsetRanking
+        ? adsetRankingRows
+        : rankedRows;
+
+  const renderRankedRows = (inputRows: ReportBreakdownRow[]) =>
+    inputRows.map((row, index) => {
+      const tone = getRankTone(index, inputRows.length);
+
+      return (
+        <div key={row.id} className={classes.moverRow}>
+          <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Group gap={8} wrap="wrap">
+                <Badge color={tone.color} variant="light" radius="sm">
+                  #{index + 1}
+                </Badge>
+                <Text fw={800} lineClamp={1}>
+                  {row.name}
+                </Text>
+              </Group>
+              <Text size="sm" c="dimmed" mt={6}>
+                {formatEntityPerformance(row, currencyCode)}
+              </Text>
+              <Text size="xs" c="dimmed" mt={6} lineClamp={1}>
+                {row.creativeContext
+                  ? `Creative: ${row.creativeContext}`
+                  : row.primaryContext || row.secondaryContext
+                    ? [row.primaryContext, row.secondaryContext].filter(Boolean).join(' · ')
+                    : 'No extra context yet'}
+              </Text>
+            </div>
+            <Stack gap={6} align="flex-end">
+              <Badge color={tone.color} variant="light" radius="sm">
+                {tone.label}
+              </Badge>
+              <Badge color="gray" variant="light" radius="sm">
+                {getEntityLabel(row.level)}
+              </Badge>
+              {row.drilldownHref ? (
+                <Button
+                  component={Link}
+                  href={row.drilldownHref}
+                  variant="subtle"
+                  size="compact-xs"
+                  radius="xl"
+                >
+                  {row.drilldownLabel ?? 'Open report'}
+                </Button>
+              ) : null}
+            </Stack>
+          </Group>
+          <Group gap="xs" mt="sm" wrap="wrap">
+            <Badge variant="outline" color="gray" radius="sm">
+              {row.conversion.toLocaleString()} results
+            </Badge>
+            <Badge variant="outline" color="gray" radius="sm">
+              {formatCurrency(row.costPerResult, currencyCode, 2)} / result
+            </Badge>
+            <Badge variant="outline" color="gray" radius="sm">
+              {row.ctr.toFixed(2)}% CTR
+            </Badge>
+            <Badge variant="outline" color="gray" radius="sm">
+              {formatCurrency(row.spend, currencyCode, 2)} spend
+            </Badge>
+          </Group>
+        </div>
+      );
+    });
 
   return (
     <Paper withBorder radius="xl" p="md" className={classes.reportCard}>
+      <Modal
+        opened={fullRankingOpened}
+        onClose={() => setFullRankingOpened(false)}
+        title="Full ad ranking"
+        size="90%"
+        centered
+      >
+        <PerformanceTable
+          title="Full ad ranking"
+          rows={fullAdRankingRows}
+          currencyCode={currencyCode}
+          hideTitle
+        />
+      </Modal>
+
       <Group gap="sm" mb="md" className={classes.cardHeader}>
-        <ThemeIcon variant="light" color={color} radius="md">
-          {tone === 'good' ? <IconArrowUpRight size={18} /> : <IconTrendingDown size={18} />}
+        <ThemeIcon variant="light" color="blue" radius="md">
+          <IconTimeline size={18} />
         </ThemeIcon>
         <div>
-          <Text fw={800}>{title}</Text>
+          <Text fw={800}>Performance ranking</Text>
           <Text size="sm" c="dimmed">
-            {subtitle}
+            Highest to lowest with the closest creative comparisons first.
           </Text>
         </div>
       </Group>
       <Stack gap="sm">
-        {rows.length > 0 ? (
-          rows.map((row) => (
-            <div key={row.id} className={classes.moverRow}>
-              <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Text fw={800} lineClamp={1}>
-                    {row.name}
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    {tone === 'good'
-                      ? formatEntityPerformance(row, currencyCode)
-                      : row.conversion > 0
-                        ? `${formatCurrency(row.costPerResult, currencyCode, 2)} cost per result · ${row.ctr.toFixed(2)}% CTR`
-                        : `${formatCurrency(row.spend, currencyCode, 2)} spent without a recorded result`}
-                  </Text>
-                </div>
-                <Badge color={color} variant="light" radius="sm">
-                  {getEntityLabel(row.level)}
-                </Badge>
+        {rankedRows.length > 0 ? (
+          <>
+            {showAdsetRanking ? (
+              <>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={800} mt="sm">
+                  Ads in this ad set ranking
+                </Text>
+                {renderRankedRows(adsetRankingRows.slice(0, 4))}
+              </>
+            ) : (
+              <>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                  Current scope
+                </Text>
+                {renderRankedRows(rankedRows.slice(0, 4))}
+              </>
+            )}
+
+            {showAdAccountComparison ? (
+              <>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={800} mt="sm">
+                  Best ads in this ad account
+                </Text>
+                {renderRankedRows(comparisonRows.slice(0, 4))}
+              </>
+            ) : null}
+
+            {fullAdRankingRows.length > 0 ? (
+              <Group justify="flex-end" mt="sm">
+                <Button
+                  variant="light"
+                  radius="xl"
+                  size="xs"
+                  onClick={() => setFullRankingOpened(true)}
+                >
+                  Open full ad ranking
+                </Button>
               </Group>
-            </div>
-          ))
+            ) : null}
+          </>
         ) : (
           <Text size="sm" c="dimmed">
             No entity breakdown is available for the current filters.
@@ -621,10 +881,6 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
     () => [...payload.breakdown.rows].sort((left, right) => scoreStrongestRow(right) - scoreStrongestRow(left)).slice(0, 4),
     [payload.breakdown.rows]
   );
-  const weakestRows = useMemo(
-    () => [...payload.breakdown.rows].sort((left, right) => scoreWeakestRow(right) - scoreWeakestRow(left)).slice(0, 4),
-    [payload.breakdown.rows]
-  );
   const visibleFilterSummary = useMemo(
     () =>
       payload.export.filterSummary.filter((item) => {
@@ -649,6 +905,10 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
   const peakSpendPoint = useMemo(() => pickPeakPoint(payload.series, 'spend'), [payload.series]);
   const peakCtrPoint = useMemo(() => pickPeakPoint(payload.series, 'ctr'), [payload.series]);
   const strongestEntity = strongestRows[0] ?? null;
+  const breadcrumbs = useMemo(
+    () => buildReportBreadcrumbs(payload, filterOptions),
+    [filterOptions, payload]
+  );
 
   return (
     <Container fluid px={6} py={0} className={`${classes.page} reports-page-shell`}>
@@ -679,6 +939,36 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
           isDemo={isDemo}
           isPending={isPending}
         />
+
+        {breadcrumbs.length > 0 ? (
+          <Paper withBorder radius="xl" p="md" className={classes.breadcrumbCard}>
+            <Group gap="xs" wrap="wrap">
+              <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                Report path
+              </Text>
+              {breadcrumbs.map((item, index) => (
+                <Group key={`${item.label}:${index}`} gap="xs" wrap="nowrap">
+                  {index > 0 ? <IconChevronRight size={14} color="#94a3b8" /> : null}
+                  {item.href ? (
+                    <Button
+                      component={Link}
+                      href={item.href}
+                      variant="subtle"
+                      size="compact-xs"
+                      radius="xl"
+                    >
+                      {item.label}
+                    </Button>
+                  ) : (
+                    <Badge color="blue" variant="light" radius="sm">
+                      {item.label}
+                    </Badge>
+                  )}
+                </Group>
+              ))}
+            </Group>
+          </Paper>
+        ) : null}
 
         {payload.meta.syncCoverage?.historicalAnalysisPending ? (
           <Paper
@@ -985,26 +1275,13 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
           </Grid.Col>
         </Grid>
 
-        <Grid gutter="md" align="stretch">
-          <Grid.Col span={{ base: 12, xl: 6 }}>
-            <MoverList
-              title="Carrying the report"
-              subtitle="Highest-performing entities in the current scope"
-              rows={strongestRows}
-              tone="good"
-              currencyCode={payload.meta.currencyCode}
-            />
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, xl: 6 }}>
-            <MoverList
-              title="Slowing things down"
-              subtitle="Weak spots that need review before more budget is committed"
-              rows={weakestRows}
-              tone="warning"
-              currencyCode={payload.meta.currencyCode}
-            />
-          </Grid.Col>
-        </Grid>
+        <RankedEntityBoard
+          rows={payload.breakdown.rows}
+          currencyCode={payload.meta.currencyCode}
+          sameAdsetRows={payload.ranking.sameAdsetAds}
+          topAdAccountRows={payload.ranking.topAdAccountAds}
+          scope={payload.query.scope}
+        />
 
         <Card withBorder radius="xl" p="lg" className={`${classes.reportCard} ${classes.tableCard}`}>
           <Stack gap="md">

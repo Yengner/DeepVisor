@@ -23,7 +23,9 @@ import {
   IconInfoCircle,
   IconPlug,
 } from '@tabler/icons-react';
-import { STATIC_NOTIFICATION_FEED, formatDisplayDate, type NotificationFeedItem } from '@/lib/shared';
+import { formatDisplayDate, type NotificationFeedItem } from '@/lib/shared';
+import { getRequiredAppContext } from '@/lib/server/actions/app/context';
+import { getUserNotifications } from '@/lib/server/actions/user/settings';
 
 function formatRelativeTime(value: string | null): string {
   if (!value) {
@@ -184,8 +186,9 @@ function NotificationCard({ notification }: { notification: NotificationFeedItem
   );
 }
 
-export default function NotificationsPage() {
-  const notifications = STATIC_NOTIFICATION_FEED;
+export default async function NotificationsPage() {
+  const { user } = await getRequiredAppContext();
+  const notifications = await getUserNotifications(user.id, 50);
   const unreadCount = notifications.filter((notification) => !notification.read).length;
   const actionableCount = notifications.filter((notification) => Boolean(notification.link)).length;
   const typeCount = new Set(notifications.map((notification) => notification.type)).size;
@@ -197,13 +200,12 @@ export default function NotificationsPage() {
         <Group justify="space-between" align="flex-start" gap="lg" wrap="wrap">
           <div>
             <Badge variant="light" color="blue" mb="sm">
-              Static preview
+              Live inbox
             </Badge>
             <Title order={1}>Notifications</Title>
             <Text c="dimmed" size="lg" mt={8} maw={760}>
-              This page showcases the full notification center. Live delivery is not wired yet, so the
-              feed is static for now and is meant to show how DeepVisor will present reports, sync
-              updates, guardrails, and workflow prompts.
+              This feed now reflects real DeepVisor notices for the current workspace, including
+              trend findings, report-ready prompts, and workflow follow-up items.
             </Text>
           </div>
 
@@ -217,22 +219,11 @@ export default function NotificationsPage() {
           </Group>
         </Group>
 
-        <Alert
-          radius="lg"
-          variant="light"
-          color="blue"
-          icon={<IconInfoCircle size={16} />}
-          title="Current behavior"
-        >
-          The inbox below is static placeholder content. Once the live notifications pipeline is enabled,
-          this page can be switched to real user-specific events without changing the layout.
-        </Alert>
-
         <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }} spacing="md">
           <SummaryCard
             title="Feed Size"
             value={`${notifications.length}`}
-            detail="Static notifications currently shown on this page."
+            detail="Notifications currently available in the workspace feed."
             icon={<IconInbox size={18} />}
             color="blue"
           />
@@ -268,7 +259,7 @@ export default function NotificationsPage() {
                 </Text>
                 <Title order={3}>All notifications</Title>
                 <Text size="sm" c="dimmed" mt={4}>
-                  Ordered newest first, with direct links to the parts of the product each signal points to.
+                  Ordered newest first, with direct links back to the parts of the product each notice points to.
                 </Text>
               </div>
               <Badge color={unreadCount > 0 ? 'blue' : 'gray'} variant="light">
@@ -331,21 +322,21 @@ export default function NotificationsPage() {
                   <IconPlug size={16} />
                 </ThemeIcon>
                 <div>
-                  <Text fw={700}>Static preview notes</Text>
+                  <Text fw={700}>How to use this feed</Text>
                   <Text size="sm" c="dimmed">
-                    The current scaffold and next likely expansion points
+                    What these notices are meant to drive
                   </Text>
                 </div>
               </Group>
 
               <Stack gap="sm">
                 <Text size="sm" c="dimmed">
-                  This route is intentionally static right now, but it is already shaped for the final inbox:
+                  Use this page to review the current attention layer without leaving the workspace context:
                 </Text>
                 <Divider />
-                <Text size="sm">1. Summary metrics across unread, actions, and categories.</Text>
-                <Text size="sm">2. Full feed cards with timestamps, badges, and deep links.</Text>
-                <Text size="sm">3. Space for future filtering, read-state syncing, and notification preferences.</Text>
+                <Text size="sm">1. Trend findings and report-ready prompts land here first.</Text>
+                <Text size="sm">2. Calendar approvals and follow-up links stay directly actionable.</Text>
+                <Text size="sm">3. Notification and report preferences can be managed from Settings.</Text>
                 <Button component="a" href="/settings" variant="light" mt="sm">
                   Review settings
                 </Button>

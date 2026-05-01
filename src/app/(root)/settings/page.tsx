@@ -31,8 +31,15 @@ import {
   getUserNotifications,
   getUserSubscriptionTier,
 } from '@/lib/server/actions/user/settings';
+import {
+  getNotificationPreference,
+} from '@/lib/server/intelligence/repositories/notificationPreferences';
+import {
+  getReportSubscription,
+} from '@/lib/server/intelligence/repositories/reportSubscriptions';
 import { getAdAccountData, getBusinessAdAccountsRollup, getPlatformDetails } from '@/lib/server/data';
 import { createServerClient } from '@/lib/server/supabase/server';
+import IntelligencePreferencesCard from './components/IntelligencePreferencesCard';
 
 type BusinessProfileSettings = {
   business_name: string;
@@ -273,6 +280,8 @@ export default async function SettingsPage() {
     notificationsRaw,
     selectedPlatform,
     selectedAdAccount,
+    notificationPreference,
+    reportSubscription,
   ] = await Promise.all([
     supabase
       .from('business_profiles')
@@ -301,6 +310,14 @@ export default async function SettingsPage() {
           businessId
         )
       : Promise.resolve(null),
+    getNotificationPreference(supabase as any, {
+      businessId,
+      userId: user.id,
+    }),
+    getReportSubscription(supabase as any, {
+      businessId,
+      userId: user.id,
+    }),
   ]);
 
   const limits = await getTierLimits(subscriptionTier);
@@ -639,6 +656,11 @@ export default async function SettingsPage() {
           </Group>
 
           <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
+            <IntelligencePreferencesCard
+              initialNotificationPreference={notificationPreference}
+              initialReportSubscription={reportSubscription}
+            />
+
             <Paper withBorder radius="md" p="md">
               <Group gap="sm" mb="md">
                 <ThemeIcon variant="light" color="blue" radius="md">

@@ -2,6 +2,7 @@ import type {
   AdAccountData,
   PlatformDetails,
 } from '@/lib/server/data/types';
+import type { TrendFindingView } from '@/lib/server/intelligence/types';
 import type { SyncCoverage } from '@/lib/shared/types/integrations';
 
 export type DashboardState =
@@ -257,6 +258,7 @@ export interface DashboardPayload {
   viewContext: DashboardViewContext;
   liveToday: DashboardLiveWindow;
   featuredAdsetHistory: DashboardFeaturedAdsetHistory;
+  activeFindings: TrendFindingView[];
   syncCoverage: SyncCoverage | null;
   platform: PlatformDetails | null;
   adAccount: AdAccountData | null;

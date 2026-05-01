@@ -1,7 +1,7 @@
 'use client';
 
 import { clientHandleSignOut } from '@/lib/client';
-import { STATIC_NOTIFICATION_PREVIEW, type NotificationFeedItem } from '@/lib/shared';
+import { type NotificationFeedItem } from '@/lib/shared';
 import {
     Group,
     TextInput,
@@ -56,9 +56,7 @@ export default function TopBarClient({
 }: TopBarClientProps) {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
-    const [userNotifications, setUserNotifications] = useState<NotificationFeedItem[]>(
-        notifications.length > 0 ? notifications : STATIC_NOTIFICATION_PREVIEW
-    );
+    const [userNotifications, setUserNotifications] = useState<NotificationFeedItem[]>(notifications);
     const [notificationCount, setNotificationCount] = useState(0);
 
     // Calculate unread notification count

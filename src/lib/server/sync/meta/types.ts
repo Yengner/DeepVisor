@@ -155,12 +155,17 @@ export interface MetaHourlyPerformanceSeed {
   timeBasis: 'advertiser';
   currencyCode: string | null;
   spend: number;
+  reach: number;
   impressions: number;
   clicks: number;
   inlineLinkClicks: number;
+  leads: number;
+  messages: number;
+  calls: number;
   ctr: number;
   cpc: number;
   cpm: number;
   actions: Json;
+  costPerActionType: Json;
   raw: Json | null;
 }

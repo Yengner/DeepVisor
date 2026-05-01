@@ -42,8 +42,8 @@ type ThreadMessage = {
 const quickPrompts = [
   'What matters right now?',
   'What should I fix first?',
-  'What looks strong right now?',
-  'What should I watch this week?',
+  'What was my best ad creative?',
+  'What were my best months?',
 ];
 
 function createMessage(role: ThreadMessage['role'], text: string): ThreadMessage {
@@ -94,102 +94,10 @@ function initialAssistantMessage(payload: GlobalAiAssistantPayload): ThreadMessa
 
   return createMessage(
     'assistant',
-    payload.latestSelectedAssessment?.assessment.summary ??
-      'Your selected ad account is ready. Ask for a plain-English summary, top risks, or next steps.'
+    payload.activeFindings[0]?.summary ??
+      payload.latestSelectedAssessment?.assessment.summary ??
+      'Your selected ad account is ready. Ask about best ad creative, best months, top risks, or what matters right now.'
   );
-}
-
-function buildAssistantReply(
-  question: string,
-  payload: GlobalAiAssistantPayload
-): string {
-  const normalized = question.trim().toLowerCase();
-
-  if (payload.state === 'no_platform_connected') {
-    return 'Nothing is connected yet. Start in Integrations, connect Meta, and then choose the ad account you want this assistant to follow.';
-  }
-
-  if (payload.state === 'no_ad_account_selected') {
-    return 'Pick a primary ad account from the top bar or Integrations first. I stay limited to that selected account on purpose.';
-  }
-
-  if (payload.state === 'needs_assessment' || !payload.latestSelectedAssessment) {
-    return `This selected account still needs an assessment. Use "Refresh AI review" here, then I can answer with current strengths, risks, and next steps.`;
-  }
-
-  const assessment = payload.latestSelectedAssessment;
-  const digest = assessment.digest;
-  const summary = assessment.assessment.summary;
-  const topRisk = assessment.assessment.risks[0];
-  const topStrength = assessment.assessment.strengths[0];
-  const nextStep = assessment.assessment.nextSteps[0];
-  const bestCampaign = digest.topCampaigns[0];
-  const last30d = digest.weightedAverages.last30d;
-
-  if (normalized.includes('matter')) {
-    return [
-      summary,
-      topStrength ? `Strongest signal: ${topStrength}` : null,
-      topRisk ? `Biggest watchout: ${topRisk}` : null,
-      nextStep ? `Next move: ${nextStep}` : null,
-    ]
-      .filter((item): item is string => Boolean(item))
-      .join(' ');
-  }
-
-  if (
-    normalized.includes('fix') ||
-    normalized.includes('risk') ||
-    normalized.includes('wrong') ||
-    normalized.includes('problem')
-  ) {
-    return topRisk
-      ? `${topRisk} Start with this: ${nextStep ?? 'review the account in Calendar for the next concrete step.'}`
-      : `The main priority is to review the account state, currently marked ${formatStateLabel(assessment.state)}. ${nextStep ?? 'Open Calendar for the detailed breakdown.'}`;
-  }
-
-  if (
-    normalized.includes('strong') ||
-    normalized.includes('good') ||
-    normalized.includes('working') ||
-    normalized.includes('best')
-  ) {
-    return topStrength
-      ? `${topStrength} The account is currently classified as ${formatStateLabel(assessment.state)} with ${assessment.trackingConfidence} tracking confidence.`
-      : `The account is currently classified as ${formatStateLabel(assessment.state)}. Open Calendar if you want the full strengths breakdown.`;
-  }
-
-  if (
-    normalized.includes('spend') ||
-    normalized.includes('budget') ||
-    normalized.includes('cost') ||
-    normalized.includes('money')
-  ) {
-    return `In the last 30 days this account spent ${formatCurrency(last30d.spend)} and produced ${last30d.conversion.toLocaleString()} results. Current cost per result is ${last30d.conversion > 0 ? formatCurrency(last30d.costPerResult) : 'not available yet'}.`;
-  }
-
-  if (normalized.includes('campaign')) {
-    return bestCampaign
-      ? `${bestCampaign.name} is the strongest campaign right now with ${formatCurrency(bestCampaign.spend)} spend, ${bestCampaign.conversion.toLocaleString()} results, and ${formatPercent(bestCampaign.ctr)} CTR.`
-      : 'No standout campaign has been identified yet for this selected account.';
-  }
-
-  if (
-    normalized.includes('watch') ||
-    normalized.includes('week') ||
-    normalized.includes('alert') ||
-    normalized.includes('next')
-  ) {
-    return nextStep
-      ? `This week, watch ${topRisk ?? 'the main performance risks'} and start with: ${nextStep}`
-      : 'This week, stay focused on the selected account trend and the top campaign cards. The next concrete step will appear after the next assessment.';
-  }
-
-  if (normalized.includes('business') && payload.latestBusinessAssessment) {
-    return payload.latestBusinessAssessment.assessment.summary;
-  }
-
-  return `${summary}${nextStep ? ` Next, ${nextStep.charAt(0).toLowerCase()}${nextStep.slice(1)}` : ''}`;
 }
 
 export default function AiAssistantDrawer({ payload }: AiAssistantDrawerProps) {
@@ -201,6 +109,7 @@ export default function AiAssistantDrawer({ payload }: AiAssistantDrawerProps) {
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+  const [isAsking, setIsAsking] = useState(false);
   const [isRefreshing, startRefreshTransition] = useTransition();
 
   useEffect(() => {
@@ -209,19 +118,61 @@ export default function AiAssistantDrawer({ payload }: AiAssistantDrawerProps) {
     setDraft('');
   }, [payload.selectedAdAccountId, payload.latestSelectedAssessment?.id, payload.state]);
 
-  function submitQuestion(question: string) {
+  async function submitQuestion(question: string) {
     const trimmed = question.trim();
 
     if (!trimmed) {
       return;
     }
 
-    setMessages((current) => [
-      ...current,
-      createMessage('user', trimmed),
-      createMessage('assistant', buildAssistantReply(trimmed, payload)),
-    ]);
+    setMessages((current) => [...current, createMessage('user', trimmed)]);
     setDraft('');
+
+    if (!payload.selectedAdAccountId) {
+      setMessages((current) => [
+        ...current,
+        createMessage('assistant', 'Pick a primary ad account first so I can answer from the right account history.'),
+      ]);
+      return;
+    }
+
+    setIsAsking(true);
+
+    try {
+      const response = await fetch('/api/intelligence/assistant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: trimmed,
+          platformIntegrationId: payload.selectedPlatformIntegrationId,
+          adAccountId: payload.selectedAdAccountId,
+        }),
+      });
+      const body = await response.json().catch(() => ({}));
+
+      if (!response.ok || !body?.success) {
+        throw new Error(body?.error || 'Failed to answer this question.');
+      }
+
+      setMessages((current) => [
+        ...current,
+        createMessage('assistant', String(body.answer ?? 'No answer available right now.')),
+      ]);
+    } catch (error) {
+      setMessages((current) => [
+        ...current,
+        createMessage(
+          'assistant',
+          error instanceof Error
+            ? error.message
+            : 'DeepVisor could not answer that question right now.'
+        ),
+      ]);
+    } finally {
+      setIsAsking(false);
+    }
   }
 
   async function refreshAssessment() {
@@ -408,7 +359,7 @@ export default function AiAssistantDrawer({ payload }: AiAssistantDrawerProps) {
                     inner: { justifyContent: 'flex-start' },
                     label: { whiteSpace: 'normal', textAlign: 'left' },
                   }}
-                  onClick={() => submitQuestion(prompt)}
+                  onClick={() => void submitQuestion(prompt)}
                 >
                   {prompt}
                 </Button>
@@ -455,7 +406,7 @@ export default function AiAssistantDrawer({ payload }: AiAssistantDrawerProps) {
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              submitQuestion(draft);
+              void submitQuestion(draft);
             }}
           >
             <Stack gap="sm">
@@ -472,7 +423,7 @@ export default function AiAssistantDrawer({ payload }: AiAssistantDrawerProps) {
                   Stays limited to the selected ad account.
                 </Text>
                 <Button type="submit" leftSection={<IconSend size={16} />}>
-                  Send
+                  {isAsking ? 'Thinking...' : 'Send'}
                 </Button>
               </Group>
             </Stack>

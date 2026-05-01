@@ -43,6 +43,20 @@ export type AdAccountSignalType =
 
 export type AdAccountSignalSeverity = 'info' | 'warning' | 'critical';
 export type AdAccountSignalStatus = 'active' | 'accepted' | 'dismissed' | 'resolved';
+export type TrendFindingType =
+  | 'best_time_window'
+  | 'delivery_drop_vs_efficiency'
+  | 'efficiency_drop_vs_delivery'
+  | 'meaningful_crossover'
+  | 'sustained_divergence'
+  | 'stale_live_delivery';
+export type TrendFindingSeverity = 'info' | 'warning' | 'critical';
+export type TrendFindingConfidence = 'low' | 'medium' | 'high';
+export type TrendFindingStatus =
+  | 'active'
+  | 'dismissed'
+  | 'resolved'
+  | 'converted_to_queue';
 export type CalendarQueueSourceType = 'signal' | 'ai' | 'manual' | 'system';
 export type CalendarQueueItemType =
   | 'revive_campaign'
@@ -317,6 +331,135 @@ export interface AdAccountSignalView {
   actionHref: string | null;
 }
 
+export interface TrendFindingRecommendedAction {
+  type: CalendarQueueItemType;
+  label: string;
+  destination: 'campaign_draft' | 'dashboard' | 'calendar' | 'reports' | 'settings';
+  href: string | null;
+  reportHref?: string | null;
+  queueSuggested: boolean;
+  payload?: Record<string, unknown>;
+}
+
+export interface TrendFindingMetricSnapshot {
+  label?: string | null;
+  metricLabel?: string | null;
+  sourceWindow?: 'daily' | 'hourly' | 'hybrid';
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  spend?: number;
+  impressions?: number;
+  clicks?: number;
+  linkClicks?: number;
+  results?: number;
+  ctr?: number;
+  cpc?: number;
+  cpm?: number;
+  costPerResult?: number;
+  deliveryIndex?: number;
+  efficiencyIndex?: number;
+  gap?: number;
+  bestDayOfWeek?: number | null;
+  bestHourOfDay?: number | null;
+  bestHourRange?: string | null;
+  occurrenceCount?: number;
+  averageMetric?: number;
+  confidenceGateReason?: string | null;
+  [key: string]: unknown;
+}
+
+export interface TrendFindingDraft {
+  businessId: string;
+  platformIntegrationId: string;
+  adAccountId: string;
+  campaignId: string | null;
+  adsetId: string | null;
+  adId: string | null;
+  findingType: TrendFindingType;
+  severity: TrendFindingSeverity;
+  confidence: TrendFindingConfidence;
+  title: string;
+  summary: string;
+  reason: string | null;
+  metricSnapshot: TrendFindingMetricSnapshot;
+  recommendedAction: TrendFindingRecommendedAction | null;
+  snapshotHash: string;
+  dedupeKey: string;
+  detectedAt: string;
+}
+
+export interface TrendFinding extends TrendFindingDraft {
+  id: string;
+  status: TrendFindingStatus;
+  firstDetectedAt: string;
+  lastDetectedAt: string;
+  resolvedAt: string | null;
+  dismissedAt: string | null;
+  convertedToQueueAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TrendFindingView {
+  id: string;
+  findingType: TrendFindingType;
+  severity: TrendFindingSeverity;
+  confidence: TrendFindingConfidence;
+  status: TrendFindingStatus;
+  title: string;
+  summary: string;
+  reason: string | null;
+  adsetId: string | null;
+  campaignId: string | null;
+  detectedAt: string;
+  metricSnapshot: TrendFindingMetricSnapshot;
+  actionLabel: string | null;
+  actionHref: string | null;
+  reportHref: string | null;
+}
+
+export interface NotificationPreference {
+  id: string | null;
+  businessId: string;
+  userId: string;
+  inAppEnabled: boolean;
+  emailEnabled: boolean;
+  reportReadyEnabled: boolean;
+  minSeverity: TrendFindingSeverity;
+  quietHoursStart: number | null;
+  quietHoursEnd: number | null;
+  timeZone: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface ReportSubscriptionSetting {
+  id: string | null;
+  businessId: string;
+  userId: string;
+  isEnabled: boolean;
+  cadence: 'daily' | 'weekly' | 'monthly';
+  emailEnabled: boolean;
+  inAppEnabled: boolean;
+  timeZone: string | null;
+  lastSentAt: string | null;
+  nextRunAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface TrendFindingNotificationSummary {
+  findingId: string;
+  notificationCount: number;
+  emailQueuedCount: number;
+}
+
+export interface MetaTrendIntelligenceArtifacts {
+  findings: TrendFinding[];
+  notificationSummary: TrendFindingNotificationSummary[];
+  patternCount: number;
+}
+
 export interface CalendarQueueItemDraft {
   businessId: string;
   platformIntegrationId: string;
@@ -469,4 +612,5 @@ export interface GlobalAiAssistantPayload {
   selectedAdAccountExternalId: string | null;
   latestBusinessAssessment: BusinessAssessment | null;
   latestSelectedAssessment: AdAccountAssessment | null;
+  activeFindings: TrendFindingView[];
 }

@@ -20,6 +20,7 @@ import {
   Text,
   ThemeIcon,
 } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import {
   IconAlertCircle,
   IconChartBar,
@@ -178,6 +179,7 @@ type HeatmapCell = {
   hourOfDay: number;
   metricAverage: number;
   metricTotal: number;
+  results: number;
   clicks: number;
   linkClicks: number;
   spend: number;
@@ -217,6 +219,18 @@ const HOURLY_SIGNAL_MIN_CLICKS = 3;
 const HOURLY_SIGNAL_MIN_SPEND = 5;
 const EXPANDED_HOURLY_POINT_WIDTH = 28;
 const EXPANDED_HOURLY_MIN_WIDTH = 1400;
+const FEATURED_HISTORY_COLORS = {
+  spend: '#3448d4',
+  results: '#119b55',
+  clicks: '#0a7cf0',
+  linkClicks: '#0b87c9',
+  ctr: '#0c8a7b',
+  cpc: '#d86d12',
+  cpm: '#7a4fd6',
+  frequency: '#8a43c8',
+  deliveryIndex: '#165dff',
+  efficiencyIndex: '#0a9846',
+} as const;
 
 const US_STATE_TILES: StateTileDefinition[] = [
   { code: 'WA', name: 'Washington', col: 1, row: 1 },
@@ -557,14 +571,16 @@ function buildHourlyHeatmap(
     return null;
   }
 
-  const prefersLinkClicks = hourlyPoints.some((point) => point.inlineLinkClicks > 0);
-  const metricLabel = prefersLinkClicks ? 'Link clicks' : 'Clicks';
+  const prefersResults = hourlyPoints.some((point) => point.results > 0);
+  const prefersLinkClicks = !prefersResults && hourlyPoints.some((point) => point.inlineLinkClicks > 0);
+  const metricLabel = prefersResults ? 'Results' : prefersLinkClicks ? 'Link clicks' : 'Clicks';
   const aggregates = new Map<
     string,
     {
       dayOfWeek: number;
       hourOfDay: number;
       impressions: number;
+      results: number;
       clicks: number;
       linkClicks: number;
       spend: number;
@@ -578,6 +594,7 @@ function buildHourlyHeatmap(
       dayOfWeek: point.dayOfWeek,
       hourOfDay: point.hourOfDay,
       impressions: 0,
+      results: 0,
       clicks: 0,
       linkClicks: 0,
       spend: 0,
@@ -585,6 +602,7 @@ function buildHourlyHeatmap(
     };
 
     current.impressions += point.impressions;
+    current.results += point.results;
     current.clicks += point.clicks;
     current.linkClicks += point.inlineLinkClicks;
     current.spend += point.spend;
@@ -593,7 +611,11 @@ function buildHourlyHeatmap(
   }
 
   const cells = Array.from(aggregates.values()).map((aggregate) => {
-    const metricTotal = prefersLinkClicks ? aggregate.linkClicks : aggregate.clicks;
+    const metricTotal = prefersResults
+      ? aggregate.results
+      : prefersLinkClicks
+        ? aggregate.linkClicks
+        : aggregate.clicks;
     const metricAverage = aggregate.occurrences > 0 ? metricTotal / aggregate.occurrences : 0;
     const ctr = aggregate.impressions > 0 ? (aggregate.clicks / aggregate.impressions) * 100 : 0;
 
@@ -604,6 +626,7 @@ function buildHourlyHeatmap(
       hourOfDay: aggregate.hourOfDay,
       metricAverage,
       metricTotal,
+      results: aggregate.results,
       clicks: aggregate.clicks,
       linkClicks: aggregate.linkClicks,
       spend: aggregate.spend,
@@ -636,6 +659,7 @@ function buildHourlyHeatmap(
           hourOfDay,
           metricAverage: 0,
           metricTotal: 0,
+          results: 0,
           clicks: 0,
           linkClicks: 0,
           spend: 0,
@@ -736,7 +760,11 @@ function buildCombinedTrendSeries(input: {
   const deliveryValues =
     input.granularity === 'hourly'
       ? input.trendPoints.map(
-          (point) => point.spend * 0.4 + point.clicks * 0.35 + point.inlineLinkClicks * 0.25
+          (point) =>
+            point.spend * 0.3 +
+            point.results * 0.35 +
+            point.clicks * 0.2 +
+            point.inlineLinkClicks * 0.15
         )
       : input.trendPoints.map(
           (point) => point.spend * 0.35 + point.results * 0.4 + point.clicks * 0.25
@@ -1006,8 +1034,17 @@ function renderTrendTooltip(input: {
             return (
               <Group key={`${item.name ?? 'value'}:${value}`} justify="space-between" gap="md" wrap="nowrap">
                 <Group gap="xs" wrap="nowrap">
-                  <ThemeIcon color={color} variant="light" radius="xl" size="xs" />
-                  <Text size="sm" c="dimmed">
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 999,
+                      backgroundColor: color,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Text size="sm" fw={600}>
                     {item.name ?? 'Value'}
                   </Text>
                 </Group>
@@ -1021,18 +1058,18 @@ function renderTrendTooltip(input: {
 
         {input.signal ? (
           <Paper withBorder radius="md" p="xs" className={classes.historyTooltipSignal}>
-            <Badge color={signalSeverityColor(input.signal.severity)} variant="light" size="xs">
+            <Badge color={signalSeverityColor(input.signal.severity)} variant="filled" size="xs">
               {input.signal.title}
             </Badge>
             {input.signal.confidence === 'low' ? (
-              <Text size="xs" c="dimmed" mt={6} fw={700} className={classes.historyTooltipCopy}>
+              <Text size="xs" mt={6} fw={700} className={classes.historyTooltipCopy}>
                 Low-confidence hourly read
               </Text>
             ) : null}
-            <Text size="xs" c="dimmed" mt={6} className={classes.historyTooltipCopy}>
+            <Text size="xs" mt={6} className={classes.historyTooltipCopy}>
               {input.signal.description}
             </Text>
-            <Text size="xs" c="dimmed" mt={4} fw={700} className={classes.historyTooltipCopy}>
+            <Text size="xs" mt={4} fw={700} className={classes.historyTooltipCopy}>
               Gap {formatDecimal(input.signal.gap)} idx
             </Text>
           </Paper>
@@ -1198,12 +1235,18 @@ function SummaryCard({
 }) {
   return (
     <Paper withBorder radius="xl" p="md" className={classes.metricCard}>
-      <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
-        <div>
-          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+      <Group
+        justify="space-between"
+        align="flex-start"
+        gap="md"
+        wrap="nowrap"
+        className={classes.summaryMetricGroup}
+      >
+        <div className={classes.summaryMetricBody}>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={800} className={classes.summaryLabel}>
             {label}
           </Text>
-          <Text fw={900} mt={8} className={classes.metricValue}>
+          <Text fw={900} mt={8} className={`${classes.metricValue} ${classes.summaryValue}`}>
             {value}
           </Text>
           {detail ? (
@@ -1212,7 +1255,7 @@ function SummaryCard({
             </Text>
           ) : null}
         </div>
-        <ThemeIcon variant="light" color="blue" radius="md">
+        <ThemeIcon variant="light" color="blue" radius="md" className={classes.summaryMetricIcon}>
           <Icon size={18} />
         </ThemeIcon>
       </Group>
@@ -1822,9 +1865,9 @@ function buildTrendChartConfig(input: {
           'CPM ($)': Number(point.cpm.toFixed(2)),
         })),
         series: [
-          { name: 'CTR (%)', color: 'teal.8' },
-          { name: 'CPC ($)', color: 'orange.8' },
-          { name: 'CPM ($)', color: 'grape.8', strokeDasharray: '6 4' },
+          { name: 'CTR (%)', color: FEATURED_HISTORY_COLORS.ctr },
+          { name: 'CPC ($)', color: FEATURED_HISTORY_COLORS.cpc },
+          { name: 'CPM ($)', color: FEATURED_HISTORY_COLORS.cpm, strokeDasharray: '6 4' },
         ],
         title: 'CTR, CPC, and CPM by hour',
         description:
@@ -1835,7 +1878,11 @@ function buildTrendChartConfig(input: {
 
     if (input.trendMode === 'combined') {
       const deliveryValues = input.trendPoints.map(
-        (point) => point.spend * 0.4 + point.clicks * 0.35 + point.inlineLinkClicks * 0.25
+        (point) =>
+          point.spend * 0.3 +
+          point.results * 0.35 +
+          point.clicks * 0.2 +
+          point.inlineLinkClicks * 0.15
       );
       const efficiencyValues = input.trendPoints.map((point) => {
         const ctrScore = point.ctr;
@@ -1855,8 +1902,8 @@ function buildTrendChartConfig(input: {
           'Efficiency index': normalizedEfficiency[index] ?? 0,
         })),
         series: [
-          { name: 'Delivery index', color: 'blue.8' },
-          { name: 'Efficiency index', color: 'green.8' },
+          { name: 'Delivery index', color: FEATURED_HISTORY_COLORS.deliveryIndex },
+          { name: 'Efficiency index', color: FEATURED_HISTORY_COLORS.efficiencyIndex },
         ],
         title: 'Hourly delivery and efficiency crossover',
         description:
@@ -1869,17 +1916,17 @@ function buildTrendChartConfig(input: {
       data: input.trendPoints.map((point) => ({
         label: point.label,
         'Spend ($)': Number(point.spend.toFixed(2)),
+        Results: point.results,
         Clicks: point.clicks,
-        'Link clicks': point.inlineLinkClicks,
       })),
       series: [
-        { name: 'Spend ($)', color: 'indigo.8' },
-        { name: 'Clicks', color: 'green.8' },
-        { name: 'Link clicks', color: 'blue.7', strokeDasharray: '6 4' },
+        { name: 'Spend ($)', color: FEATURED_HISTORY_COLORS.spend },
+        { name: 'Results', color: FEATURED_HISTORY_COLORS.results },
+        { name: 'Clicks', color: FEATURED_HISTORY_COLORS.clicks },
       ],
-      title: 'Spend, clicks, and link clicks by hour',
+      title: 'Spend, results, and clicks by hour',
       description:
-        'Advertiser-time delivery across the full synced hourly history for the featured ad set.',
+        'Advertiser-time delivery across the full synced hourly history for the featured ad set, including hourly action-derived results.',
       formatter: (value: number) => formatCompactNumber(value),
     };
   }
@@ -1893,9 +1940,9 @@ function buildTrendChartConfig(input: {
         Frequency: Number(point.frequency.toFixed(2)),
       })),
       series: [
-        { name: 'CTR (%)', color: 'teal.8' },
-        { name: 'CPC ($)', color: 'orange.8' },
-        { name: 'Frequency', color: 'grape.8', strokeDasharray: '6 4' },
+        { name: 'CTR (%)', color: FEATURED_HISTORY_COLORS.ctr },
+        { name: 'CPC ($)', color: FEATURED_HISTORY_COLORS.cpc },
+        { name: 'Frequency', color: FEATURED_HISTORY_COLORS.frequency, strokeDasharray: '6 4' },
       ],
       title: 'CTR, CPC, and frequency',
       description: 'Efficiency signals that show whether the featured ad set is getting cheaper and cleaner over time.',
@@ -1916,8 +1963,8 @@ function buildTrendChartConfig(input: {
         'Efficiency index': point.efficiencyIndex,
       })),
       series: [
-        { name: 'Delivery index', color: 'blue.8' },
-        { name: 'Efficiency index', color: 'green.8' },
+        { name: 'Delivery index', color: FEATURED_HISTORY_COLORS.deliveryIndex },
+        { name: 'Efficiency index', color: FEATURED_HISTORY_COLORS.efficiencyIndex },
       ],
       title: 'Delivery and efficiency crossover',
       description:
@@ -1934,9 +1981,9 @@ function buildTrendChartConfig(input: {
         Clicks: point.clicks,
       })),
       series: [
-        { name: 'Spend ($)', color: 'indigo.8' },
-        { name: 'Results', color: 'green.8' },
-        { name: 'Clicks', color: 'blue.7', strokeDasharray: '6 4' },
+        { name: 'Spend ($)', color: FEATURED_HISTORY_COLORS.spend },
+        { name: 'Results', color: FEATURED_HISTORY_COLORS.results },
+        { name: 'Clicks', color: FEATURED_HISTORY_COLORS.clicks, strokeDasharray: '6 4' },
       ],
     title: 'Spend, results, and clicks',
     description: 'Delivery volume for the featured ad set from first delivery through today.',
@@ -1945,6 +1992,7 @@ function buildTrendChartConfig(input: {
 }
 
 export default function DashboardClient({ payload }: DashboardClientProps) {
+  const isPhone = useMediaQuery('(max-width: 48em)');
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [trendMode, setTrendMode] = useState<TrendMode>('delivery');
@@ -1962,12 +2010,22 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     status: 'idle',
     message: null,
   });
+  const [findingActionState, setFindingActionState] = useState<{
+    status: 'idle' | 'approving' | 'approved' | 'dismissing' | 'dismissed' | 'error';
+    message: string | null;
+    findingId: string | null;
+  }>({
+    status: 'idle',
+    message: null,
+    findingId: null,
+  });
   const expandedHourlyViewportRef = useRef<HTMLDivElement>(null);
 
   const stateMeta = stateContent(payload.state);
   const liveWindow = payload.liveToday;
   const liveSummary = payload.liveToday.summary;
   const liveComparisons = payload.liveToday.comparisons;
+  const activeFindings = payload.activeFindings;
   const featuredPlatformBreakdowns = payload.featuredAdsetHistory.platformBreakdowns;
   const featuredAudienceBreakdowns = payload.featuredAdsetHistory.audienceBreakdowns;
   const dailyTrendPoints = payload.featuredAdsetHistory.dailyTrend;
@@ -1980,6 +2038,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
       : hourlyTrendPoints;
   const trendPoints = historyGranularity === 'hourly' ? selectedHourlyTrendPoints : dailyTrendPoints;
   const featuredAdset = payload.featuredAdsetHistory.adset;
+  const primaryActiveFinding = activeFindings[0] ?? null;
   const isMeta = payload.platform?.vendor === 'meta';
   const dailyHistoryRangeLabel = formatDateSpan(
     payload.featuredAdsetHistory.dailyHistoryStartDate,
@@ -1991,6 +2050,12 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
   );
   const hasHourlyTrend = hourlyTrendPoints.length > 0;
   const hourlyTodayLabel = formatReadableDate(payload.featuredAdsetHistory.hourlyHistoryDate);
+  const featuredHistoryChartHeight = isPhone ? 360 : FEATURED_HISTORY_CHART_HEIGHT;
+  const deliverySurfaceChartHeight = isPhone ? 220 : DELIVERY_SURFACE_CHART_HEIGHT;
+  const audienceBreakdownChartHeight = isPhone ? 160 : AUDIENCE_BREAKDOWN_CHART_HEIGHT;
+  const trendYAxisWidth = isPhone ? 52 : 68;
+  const expandedHourlyPointWidth = isPhone ? 22 : EXPANDED_HOURLY_POINT_WIDTH;
+  const expandedHourlyMinWidth = isPhone ? 960 : EXPANDED_HOURLY_MIN_WIDTH;
 
   const trendChart = useMemo(
     () =>
@@ -2016,23 +2081,26 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
   const expandedHourlyChartWidth = useMemo(
     () =>
       isExpandedHourlyScrollable
-        ? Math.max(EXPANDED_HOURLY_MIN_WIDTH, trendChart.data.length * EXPANDED_HOURLY_POINT_WIDTH)
+        ? Math.max(expandedHourlyMinWidth, trendChart.data.length * expandedHourlyPointWidth)
         : null,
-    [isExpandedHourlyScrollable, trendChart.data.length]
+    [expandedHourlyMinWidth, expandedHourlyPointWidth, isExpandedHourlyScrollable, trendChart.data.length]
   );
   const trendXAxisProps = useMemo(() => {
     if (historyGranularity === 'hourly' && hourlyRangeMode === 'expanded') {
       return {
         interval: 0 as const,
-        minTickGap: 28,
-        tickMargin: 10,
+        minTickGap: isPhone ? 18 : 28,
+        tickMargin: isPhone ? 6 : 10,
         ticks: expandedHourlyTickValues,
         tickFormatter: (value: string) => formatExpandedHourlyAxisLabel(String(value)),
       };
     }
 
-    return undefined;
-  }, [expandedHourlyTickValues, historyGranularity, hourlyRangeMode]);
+    return {
+      minTickGap: historyGranularity === 'hourly' ? (isPhone ? 18 : 24) : isPhone ? 28 : 18,
+      tickMargin: isPhone ? 6 : 10,
+    };
+  }, [expandedHourlyTickValues, historyGranularity, hourlyRangeMode, isPhone]);
   const combinedTrendSignals = useMemo(
     () =>
       detectTrendSignals({
@@ -2061,19 +2129,45 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     [primaryCombinedTrendSignal, featuredAdset]
   );
   const trendReferenceLines = useMemo(
-    () =>
-      trendMode === 'combined' && primaryCombinedTrendSignal
-        ? [
-            {
-              x: primaryCombinedTrendSignal.dateLabel,
-              color: signalSeverityColor(primaryCombinedTrendSignal.severity),
-              label: primaryCombinedTrendSignal.markerLabel,
-              labelPosition: 'insideTop' as const,
-              strokeDasharray: '4 4',
-            },
-          ]
-        : undefined,
-    [primaryCombinedTrendSignal, trendMode]
+    () => {
+      const lines: Array<{
+        x: string;
+        color: string;
+        label?: string;
+        labelPosition: 'insideTop';
+        strokeDasharray: string;
+      }> = [];
+
+      if (trendMode === 'combined' && primaryCombinedTrendSignal) {
+        lines.push({
+          x: primaryCombinedTrendSignal.dateLabel,
+          color: signalSeverityColor(primaryCombinedTrendSignal.severity),
+          label: isPhone ? undefined : primaryCombinedTrendSignal.markerLabel,
+          labelPosition: 'insideTop',
+          strokeDasharray: '4 4',
+        });
+      }
+
+      const findingLabel =
+        primaryActiveFinding?.metricSnapshot.sourceWindow === 'daily' &&
+        historyGranularity === 'day' &&
+        typeof primaryActiveFinding.metricSnapshot.label === 'string'
+          ? formatReadableDateLabel(primaryActiveFinding.metricSnapshot.label)
+          : null;
+
+      if (trendMode === 'combined' && findingLabel) {
+        lines.push({
+          x: findingLabel,
+          color: signalSeverityColor(primaryActiveFinding.severity),
+          label: isPhone ? undefined : primaryActiveFinding.title,
+          labelPosition: 'insideTop',
+          strokeDasharray: '2 6',
+        });
+      }
+
+      return lines.length > 0 ? lines : undefined;
+    },
+    [historyGranularity, isPhone, primaryActiveFinding, primaryCombinedTrendSignal, trendMode]
   );
   const trendTooltipProps = useMemo(
     () => ({
@@ -2165,6 +2259,14 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
       message: null,
     });
   }, [calendarSuggestion?.dedupeKey]);
+
+  useEffect(() => {
+    setFindingActionState({
+      status: 'idle',
+      message: null,
+      findingId: null,
+    });
+  }, [primaryActiveFinding?.id]);
 
   useEffect(() => {
     setHourlyRangeMode('today');
@@ -2285,6 +2387,86 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     }
   }
 
+  async function handleApproveFinding(findingId: string) {
+    setFindingActionState({
+      status: 'approving',
+      message: null,
+      findingId,
+    });
+
+    try {
+      const response = await fetch(`/api/intelligence/findings/${findingId}/approve`, {
+        method: 'POST',
+      });
+      const result = (await response.json()) as {
+        success?: boolean;
+        created?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Unable to approve the finding.');
+      }
+
+      setFindingActionState({
+        status: 'approved',
+        findingId,
+        message:
+          result.created === false
+            ? 'This finding is already represented in the calendar queue.'
+            : 'Finding sent to the calendar queue.',
+      });
+      router.refresh();
+    } catch (error) {
+      setFindingActionState({
+        status: 'error',
+        findingId,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Unable to approve this finding right now.',
+      });
+    }
+  }
+
+  async function handleDismissFinding(findingId: string) {
+    setFindingActionState({
+      status: 'dismissing',
+      message: null,
+      findingId,
+    });
+
+    try {
+      const response = await fetch(`/api/intelligence/findings/${findingId}/dismiss`, {
+        method: 'POST',
+      });
+      const result = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Unable to dismiss the finding.');
+      }
+
+      setFindingActionState({
+        status: 'dismissed',
+        findingId,
+        message: 'Finding dismissed for now.',
+      });
+      router.refresh();
+    } catch (error) {
+      setFindingActionState({
+        status: 'error',
+        findingId,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Unable to dismiss this finding right now.',
+      });
+    }
+  }
+
   return (
     <Container fluid px={6} py={0} className={`${classes.page} dashboard-page-shell`}>
       <Stack gap="md" className={classes.shell}>
@@ -2376,7 +2558,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
 
               </div>
 
-              <Group gap="sm" wrap="wrap">
+              <Group gap="sm" wrap="wrap" className={classes.topBarActions}>
                 <Button
                   onClick={handleRefresh}
                   leftSection={<IconRefresh size={16} />}
@@ -2491,7 +2673,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                           style={{ width: expandedHourlyChartWidth ?? undefined }}
                         >
                           <LineChart
-                            h={FEATURED_HISTORY_CHART_HEIGHT}
+                            h={featuredHistoryChartHeight}
                             data={trendChart.data}
                             dataKey="label"
                             type="default"
@@ -2501,7 +2683,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                             strokeWidth={4}
                             gridAxis="xy"
                             strokeDasharray="4 4"
-                            yAxisProps={{ width: 68 }}
+                            yAxisProps={{ width: trendYAxisWidth }}
                             xAxisProps={trendXAxisProps}
                             tooltipProps={trendTooltipProps}
                             dotProps={{
@@ -2529,7 +2711,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                       </ScrollArea>
                     ) : (
                       <LineChart
-                        h={FEATURED_HISTORY_CHART_HEIGHT}
+                        h={featuredHistoryChartHeight}
                         data={trendChart.data}
                         dataKey="label"
                         type="default"
@@ -2539,7 +2721,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                         strokeWidth={4}
                         gridAxis="xy"
                         strokeDasharray="4 4"
-                        yAxisProps={{ width: 68 }}
+                        yAxisProps={{ width: trendYAxisWidth }}
                         xAxisProps={trendXAxisProps}
                         tooltipProps={trendTooltipProps}
                         dotProps={{
@@ -2568,7 +2750,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                     <Stack
                       justify="center"
                       align="center"
-                      h={FEATURED_HISTORY_CHART_HEIGHT}
+                      h={featuredHistoryChartHeight}
                       gap="xs"
                     >
                       <Text fw={800}>No live ad set history yet</Text>
@@ -2625,7 +2807,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                         ) : null}
                       </div>
                     </Group>
-                    <Group gap="xs" wrap="wrap">
+                    <Group gap="xs" wrap="wrap" className={classes.surfacePanelActions}>
                       <Button
                         size="xs"
                         radius="xl"
@@ -2804,7 +2986,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                           </Group>
                         </Stack>
                       ) : (
-                        <Stack justify="center" align="center" h={DELIVERY_SURFACE_CHART_HEIGHT} gap="xs">
+                        <Stack justify="center" align="center" h={deliverySurfaceChartHeight} gap="xs">
                           <Text fw={800}>
                             {isMeta
                               ? 'Regional state rows are still syncing'
@@ -2820,7 +3002,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                     ) : featuredPlatformBreakdowns.state === 'available' &&
                       activeSurfaceChart.data.length > 0 ? (
                       <BarChart
-                        h={DELIVERY_SURFACE_CHART_HEIGHT}
+                        h={deliverySurfaceChartHeight}
                         data={activeSurfaceChart.data}
                         dataKey="segment"
                         withLegend={activeSurfaceChart.withLegend}
@@ -2829,7 +3011,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                         tickLine="y"
                       />
                     ) : (
-                      <Stack justify="center" align="center" h={DELIVERY_SURFACE_CHART_HEIGHT} gap="xs">
+                      <Stack justify="center" align="center" h={deliverySurfaceChartHeight} gap="xs">
                         <Text fw={800}>
                           {isMeta
                             ? surfacePanelMode === 'device'
@@ -2857,7 +3039,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                       {featuredAudienceBreakdowns.state === 'available' &&
                       audienceChart.data.length > 0 ? (
                         <BarChart
-                          h={AUDIENCE_BREAKDOWN_CHART_HEIGHT}
+                          h={audienceBreakdownChartHeight}
                           type={audienceChart.type}
                           data={audienceChart.data}
                           dataKey="segment"
@@ -2886,7 +3068,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
               </Grid.Col>
             </Grid>
 
-            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3, xl: 6 }} spacing="md">
+            <SimpleGrid cols={{ base: 2, sm: 2, lg: 3, xl: 6 }} spacing="md">
               <SummaryCard
                 label="Live campaigns"
                 value={formatNumber(liveSummary.liveCampaignCount)}
@@ -2924,6 +3106,55 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                 icon={IconLink}
               />
             </SimpleGrid>
+
+            {activeFindings.length > 0 ? (
+              <Paper withBorder radius="xl" p="md">
+                <Stack gap="sm">
+                  <Group justify="space-between" align="flex-start" gap="sm" wrap="wrap">
+                    <div>
+                      <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                        Active findings
+                      </Text>
+                      <Text fw={800}>
+                        DeepVisor is actively watching {activeFindings.length} saved trend
+                        {activeFindings.length === 1 ? '' : 's'} for this account.
+                      </Text>
+                    </div>
+                    <Button
+                      size="xs"
+                      radius="xl"
+                      variant="light"
+                      leftSection={<IconRefresh size={14} />}
+                      onClick={() => {
+                        void fetch('/api/intelligence/findings/run', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            platformIntegrationId: payload.selection.selectedPlatformIntegrationId,
+                            adAccountId: payload.selection.selectedAdAccountId,
+                          }),
+                        }).then(() => router.refresh());
+                      }}
+                    >
+                      Refresh findings
+                    </Button>
+                  </Group>
+
+                  <Group gap="xs" wrap="wrap">
+                    {activeFindings.slice(0, 4).map((finding) => (
+                      <Badge
+                        key={finding.id}
+                        color={signalSeverityColor(finding.severity)}
+                        variant="light"
+                        radius="sm"
+                      >
+                        {finding.title}
+                      </Badge>
+                    ))}
+                  </Group>
+                </Stack>
+              </Paper>
+            ) : null}
           </Stack>
         </Card>
 
@@ -2949,252 +3180,288 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                     <LiveDeliverySectionHeader
                       title="Campaign containers"
                     />
-                    <div className={classes.tableWrap}>
-                      <ScrollArea>
-                        <Table
-                          striped
-                          highlightOnHover
-                          withTableBorder
-                          className={`${classes.dataTable} ${classes.liveCampaignTable}`}
-                        >
-                          <colgroup>
-                            <col style={{ width: '260px' }} />
-                            <col style={{ width: '130px' }} />
-                            <col style={{ width: '170px' }} />
-                            <col style={{ width: '110px' }} />
-                            <col style={{ width: '110px' }} />
-                            <col style={{ width: '90px' }} />
-                            <col style={{ width: '120px' }} />
-                            <col style={{ width: '120px' }} />
-                          </colgroup>
-                          <Table.Thead>
-                            <Table.Tr>
-                              <Table.Th>Campaign</Table.Th>
-                              <Table.Th>Status</Table.Th>
-                              <Table.Th>Objective</Table.Th>
-                              <Table.Th ta="right">Spend</Table.Th>
-                              <Table.Th ta="right">Results</Table.Th>
-                              <Table.Th ta="right">CTR</Table.Th>
-                              <Table.Th ta="right">Live ad sets</Table.Th>
-                              <Table.Th ta="right">Live ads</Table.Th>
-                            </Table.Tr>
-                          </Table.Thead>
-                          <Table.Tbody>
-                            {liveWindow.campaigns.map((campaign) => (
-                              <Table.Tr key={campaign.id}>
-                                <Table.Td>
-                                  <Text fw={700} className={classes.tableTruncatePrimary}>
-                                    {campaign.name}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <TableStatusBadge status={campaign.status} />
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text className={classes.tableValueText}>
-                                    {campaign.objective ? formatStatusLabel(campaign.objective) : '—'}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td ta="right">
-                                  {formatCurrency(campaign.spend, payload.viewContext.currencyCode)}
-                                </Table.Td>
-                                <Table.Td ta="right">{formatNumber(campaign.results)}</Table.Td>
-                                <Table.Td ta="right">{formatRate(campaign.ctr)}</Table.Td>
-                                <Table.Td ta="right">{formatNumber(campaign.adsetCount)}</Table.Td>
-                                <Table.Td ta="right">{formatNumber(campaign.adCount)}</Table.Td>
+                    {isPhone ? (
+                      <Stack gap="sm">
+                        {liveWindow.campaigns.map((campaign) => (
+                          <CampaignLiveRow
+                            key={campaign.id}
+                            campaign={campaign}
+                            currencyCode={payload.viewContext.currencyCode}
+                          />
+                        ))}
+                      </Stack>
+                    ) : (
+                      <div className={classes.tableWrap}>
+                        <ScrollArea>
+                          <Table
+                            striped
+                            highlightOnHover
+                            withTableBorder
+                            className={`${classes.dataTable} ${classes.liveCampaignTable}`}
+                          >
+                            <colgroup>
+                              <col style={{ width: '260px' }} />
+                              <col style={{ width: '130px' }} />
+                              <col style={{ width: '170px' }} />
+                              <col style={{ width: '110px' }} />
+                              <col style={{ width: '110px' }} />
+                              <col style={{ width: '90px' }} />
+                              <col style={{ width: '120px' }} />
+                              <col style={{ width: '120px' }} />
+                            </colgroup>
+                            <Table.Thead>
+                              <Table.Tr>
+                                <Table.Th>Campaign</Table.Th>
+                                <Table.Th>Status</Table.Th>
+                                <Table.Th>Objective</Table.Th>
+                                <Table.Th ta="right">Spend</Table.Th>
+                                <Table.Th ta="right">Results</Table.Th>
+                                <Table.Th ta="right">CTR</Table.Th>
+                                <Table.Th ta="right">Live ad sets</Table.Th>
+                                <Table.Th ta="right">Live ads</Table.Th>
                               </Table.Tr>
-                            ))}
-                          </Table.Tbody>
-                        </Table>
-                      </ScrollArea>
-                    </div>
+                            </Table.Thead>
+                            <Table.Tbody>
+                              {liveWindow.campaigns.map((campaign) => (
+                                <Table.Tr key={campaign.id}>
+                                  <Table.Td>
+                                    <Text fw={700} className={classes.tableTruncatePrimary}>
+                                      {campaign.name}
+                                    </Text>
+                                  </Table.Td>
+                                  <Table.Td>
+                                    <TableStatusBadge status={campaign.status} />
+                                  </Table.Td>
+                                  <Table.Td>
+                                    <Text className={classes.tableValueText}>
+                                      {campaign.objective ? formatStatusLabel(campaign.objective) : '—'}
+                                    </Text>
+                                  </Table.Td>
+                                  <Table.Td ta="right">
+                                    {formatCurrency(campaign.spend, payload.viewContext.currencyCode)}
+                                  </Table.Td>
+                                  <Table.Td ta="right">{formatNumber(campaign.results)}</Table.Td>
+                                  <Table.Td ta="right">{formatRate(campaign.ctr)}</Table.Td>
+                                  <Table.Td ta="right">{formatNumber(campaign.adsetCount)}</Table.Td>
+                                  <Table.Td ta="right">{formatNumber(campaign.adCount)}</Table.Td>
+                                </Table.Tr>
+                              ))}
+                            </Table.Tbody>
+                          </Table>
+                        </ScrollArea>
+                      </div>
+                    )}
                   </Stack>
 
                   <Stack gap="xs" className={classes.subSection}>
                     <LiveDeliverySectionHeader
                       title="Ad set comparison"
                     />
-                    <div className={classes.tableWrap}>
-                      <ScrollArea>
-                        <Table
-                          striped
-                          highlightOnHover
-                          withTableBorder
-                          className={`${classes.dataTable} ${classes.liveAdsetTable}`}
-                        >
-                          <colgroup>
-                            <col style={{ width: '260px' }} />
-                            <col style={{ width: '220px' }} />
-                            <col style={{ width: '130px' }} />
-                            <col style={{ width: '170px' }} />
-                            <col style={{ width: '120px' }} />
-                            <col style={{ width: '110px' }} />
-                            <col style={{ width: '100px' }} />
-                            <col style={{ width: '140px' }} />
-                            <col style={{ width: '130px' }} />
-                            <col style={{ width: '150px' }} />
-                            <col style={{ width: '110px' }} />
-                          </colgroup>
-                          <Table.Thead>
-                            <Table.Tr>
-                              <Table.Th>Ad set</Table.Th>
-                              <Table.Th>Campaign</Table.Th>
-                              <Table.Th>Status</Table.Th>
-                              <Table.Th>Goal</Table.Th>
-                              <Table.Th ta="right">Spend</Table.Th>
-                              <Table.Th ta="right">Results</Table.Th>
-                              <Table.Th ta="right">CTR</Table.Th>
-                              <Table.Th ta="right">Cost / result</Table.Th>
-                              <Table.Th>Platform</Table.Th>
-                              <Table.Th>Placement</Table.Th>
-                              <Table.Th ta="right">Live ads</Table.Th>
-                            </Table.Tr>
-                          </Table.Thead>
-                          <Table.Tbody>
-                            {liveComparisons.adsets.map((item) => (
-                              <Table.Tr key={item.id}>
-                                <Table.Td>
-                                  <Text fw={700} className={classes.tableTruncatePrimary}>
-                                    {item.name}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td className={classes.tableCellMuted}>
-                                  <Text className={classes.tableTruncateMuted}>
-                                    {item.campaignName ?? '—'}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <TableStatusBadge status={item.status} />
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text className={classes.tableValueText}>
-                                    {item.optimizationGoal
-                                      ? formatStatusLabel(item.optimizationGoal)
-                                      : '—'}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td ta="right">
-                                  {formatCurrency(item.spend, payload.viewContext.currencyCode)}
-                                </Table.Td>
-                                <Table.Td ta="right">{formatNumber(item.results)}</Table.Td>
-                                <Table.Td ta="right">{formatRate(item.ctr)}</Table.Td>
-                                <Table.Td ta="right">
-                                  {item.results > 0
-                                    ? formatCurrency(
-                                        item.costPerResult,
-                                        payload.viewContext.currencyCode,
-                                        2
-                                      )
-                                    : '—'}
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text className={classes.tableValueText}>
-                                    {item.topPublisherPlatform ?? '—'}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text className={classes.tableValueText}>
-                                    {item.topPlacement ?? '—'}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td ta="right">{formatNumber(item.adCount)}</Table.Td>
+                    {isPhone ? (
+                      <Stack gap="sm">
+                        {liveComparisons.adsets.map((item) => (
+                          <AdsetComparisonRow
+                            key={item.id}
+                            item={item}
+                            currencyCode={payload.viewContext.currencyCode}
+                          />
+                        ))}
+                      </Stack>
+                    ) : (
+                      <div className={classes.tableWrap}>
+                        <ScrollArea>
+                          <Table
+                            striped
+                            highlightOnHover
+                            withTableBorder
+                            className={`${classes.dataTable} ${classes.liveAdsetTable}`}
+                          >
+                            <colgroup>
+                              <col style={{ width: '260px' }} />
+                              <col style={{ width: '220px' }} />
+                              <col style={{ width: '130px' }} />
+                              <col style={{ width: '170px' }} />
+                              <col style={{ width: '120px' }} />
+                              <col style={{ width: '110px' }} />
+                              <col style={{ width: '100px' }} />
+                              <col style={{ width: '140px' }} />
+                              <col style={{ width: '130px' }} />
+                              <col style={{ width: '150px' }} />
+                              <col style={{ width: '110px' }} />
+                            </colgroup>
+                            <Table.Thead>
+                              <Table.Tr>
+                                <Table.Th>Ad set</Table.Th>
+                                <Table.Th>Campaign</Table.Th>
+                                <Table.Th>Status</Table.Th>
+                                <Table.Th>Goal</Table.Th>
+                                <Table.Th ta="right">Spend</Table.Th>
+                                <Table.Th ta="right">Results</Table.Th>
+                                <Table.Th ta="right">CTR</Table.Th>
+                                <Table.Th ta="right">Cost / result</Table.Th>
+                                <Table.Th>Platform</Table.Th>
+                                <Table.Th>Placement</Table.Th>
+                                <Table.Th ta="right">Live ads</Table.Th>
                               </Table.Tr>
-                            ))}
-                          </Table.Tbody>
-                        </Table>
-                      </ScrollArea>
-                    </div>
+                            </Table.Thead>
+                            <Table.Tbody>
+                              {liveComparisons.adsets.map((item) => (
+                                <Table.Tr key={item.id}>
+                                  <Table.Td>
+                                    <Text fw={700} className={classes.tableTruncatePrimary}>
+                                      {item.name}
+                                    </Text>
+                                  </Table.Td>
+                                  <Table.Td className={classes.tableCellMuted}>
+                                    <Text className={classes.tableTruncateMuted}>
+                                      {item.campaignName ?? '—'}
+                                    </Text>
+                                  </Table.Td>
+                                  <Table.Td>
+                                    <TableStatusBadge status={item.status} />
+                                  </Table.Td>
+                                  <Table.Td>
+                                    <Text className={classes.tableValueText}>
+                                      {item.optimizationGoal
+                                        ? formatStatusLabel(item.optimizationGoal)
+                                        : '—'}
+                                    </Text>
+                                  </Table.Td>
+                                  <Table.Td ta="right">
+                                    {formatCurrency(item.spend, payload.viewContext.currencyCode)}
+                                  </Table.Td>
+                                  <Table.Td ta="right">{formatNumber(item.results)}</Table.Td>
+                                  <Table.Td ta="right">{formatRate(item.ctr)}</Table.Td>
+                                  <Table.Td ta="right">
+                                    {item.results > 0
+                                      ? formatCurrency(
+                                          item.costPerResult,
+                                          payload.viewContext.currencyCode,
+                                          2
+                                        )
+                                      : '—'}
+                                  </Table.Td>
+                                  <Table.Td>
+                                    <Text className={classes.tableValueText}>
+                                      {item.topPublisherPlatform ?? '—'}
+                                    </Text>
+                                  </Table.Td>
+                                  <Table.Td>
+                                    <Text className={classes.tableValueText}>
+                                      {item.topPlacement ?? '—'}
+                                    </Text>
+                                  </Table.Td>
+                                  <Table.Td ta="right">{formatNumber(item.adCount)}</Table.Td>
+                                </Table.Tr>
+                              ))}
+                            </Table.Tbody>
+                          </Table>
+                        </ScrollArea>
+                      </div>
+                    )}
                   </Stack>
 
                   <Stack gap="xs" className={classes.subSection}>
                     <LiveDeliverySectionHeader
                       title="Ad comparison"
                     />
-                    <div className={classes.tableWrap}>
-                      <ScrollArea>
-                        <Table
-                          striped
-                          highlightOnHover
-                          withTableBorder
-                          className={`${classes.dataTable} ${classes.liveAdTable}`}
-                        >
-                          <colgroup>
-                            <col style={{ width: '260px' }} />
-                            <col style={{ width: '220px' }} />
-                            <col style={{ width: '220px' }} />
-                            <col style={{ width: '130px' }} />
-                            <col style={{ width: '120px' }} />
-                            <col style={{ width: '110px' }} />
-                            <col style={{ width: '100px' }} />
-                            <col style={{ width: '140px' }} />
-                            <col style={{ width: '130px' }} />
-                            <col style={{ width: '150px' }} />
-                          </colgroup>
-                          <Table.Thead>
-                            <Table.Tr>
-                              <Table.Th>Ad</Table.Th>
-                              <Table.Th>Campaign</Table.Th>
-                              <Table.Th>Ad set</Table.Th>
-                              <Table.Th>Status</Table.Th>
-                              <Table.Th ta="right">Spend</Table.Th>
-                              <Table.Th ta="right">Results</Table.Th>
-                              <Table.Th ta="right">CTR</Table.Th>
-                              <Table.Th ta="right">Cost / result</Table.Th>
-                              <Table.Th>Platform</Table.Th>
-                              <Table.Th>Placement</Table.Th>
-                            </Table.Tr>
-                          </Table.Thead>
-                          <Table.Tbody>
-                            {liveComparisons.ads.map((item) => (
-                              <Table.Tr key={item.id}>
-                                <Table.Td>
-                                  <Text fw={700} className={classes.tableTruncatePrimary}>
-                                    {item.name}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td className={classes.tableCellMuted}>
-                                  <Text className={classes.tableTruncateMuted}>
-                                    {item.campaignName ?? '—'}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td className={classes.tableCellMuted}>
-                                  <Text className={classes.tableTruncateMuted}>
-                                    {item.adsetName ?? '—'}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <TableStatusBadge status={item.status} />
-                                </Table.Td>
-                                <Table.Td ta="right">
-                                  {formatCurrency(item.spend, payload.viewContext.currencyCode)}
-                                </Table.Td>
-                                <Table.Td ta="right">{formatNumber(item.results)}</Table.Td>
-                                <Table.Td ta="right">{formatRate(item.ctr)}</Table.Td>
-                                <Table.Td ta="right">
-                                  {item.results > 0
-                                    ? formatCurrency(
-                                        item.costPerResult,
-                                        payload.viewContext.currencyCode,
-                                        2
-                                      )
-                                    : '—'}
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text className={classes.tableValueText}>
-                                    {item.topPublisherPlatform ?? '—'}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text className={classes.tableValueText}>
-                                    {item.topPlacement ?? '—'}
-                                  </Text>
-                                </Table.Td>
+                    {isPhone ? (
+                      <Stack gap="sm">
+                        {liveComparisons.ads.map((item) => (
+                          <AdComparisonRow
+                            key={item.id}
+                            item={item}
+                            currencyCode={payload.viewContext.currencyCode}
+                          />
+                        ))}
+                      </Stack>
+                    ) : (
+                      <div className={classes.tableWrap}>
+                        <ScrollArea>
+                          <Table
+                            striped
+                            highlightOnHover
+                            withTableBorder
+                            className={`${classes.dataTable} ${classes.liveAdTable}`}
+                          >
+                            <colgroup>
+                              <col style={{ width: '260px' }} />
+                              <col style={{ width: '220px' }} />
+                              <col style={{ width: '220px' }} />
+                              <col style={{ width: '130px' }} />
+                              <col style={{ width: '120px' }} />
+                              <col style={{ width: '110px' }} />
+                              <col style={{ width: '100px' }} />
+                              <col style={{ width: '140px' }} />
+                              <col style={{ width: '130px' }} />
+                              <col style={{ width: '150px' }} />
+                            </colgroup>
+                            <Table.Thead>
+                              <Table.Tr>
+                                <Table.Th>Ad</Table.Th>
+                                <Table.Th>Campaign</Table.Th>
+                                <Table.Th>Ad set</Table.Th>
+                                <Table.Th>Status</Table.Th>
+                                <Table.Th ta="right">Spend</Table.Th>
+                                <Table.Th ta="right">Results</Table.Th>
+                                <Table.Th ta="right">CTR</Table.Th>
+                                <Table.Th ta="right">Cost / result</Table.Th>
+                                <Table.Th>Platform</Table.Th>
+                                <Table.Th>Placement</Table.Th>
                               </Table.Tr>
-                            ))}
-                          </Table.Tbody>
-                        </Table>
-                      </ScrollArea>
-                    </div>
+                            </Table.Thead>
+                            <Table.Tbody>
+                              {liveComparisons.ads.map((item) => (
+                                <Table.Tr key={item.id}>
+                                  <Table.Td>
+                                    <Text fw={700} className={classes.tableTruncatePrimary}>
+                                      {item.name}
+                                    </Text>
+                                  </Table.Td>
+                                  <Table.Td className={classes.tableCellMuted}>
+                                    <Text className={classes.tableTruncateMuted}>
+                                      {item.campaignName ?? '—'}
+                                    </Text>
+                                  </Table.Td>
+                                  <Table.Td className={classes.tableCellMuted}>
+                                    <Text className={classes.tableTruncateMuted}>
+                                      {item.adsetName ?? '—'}
+                                    </Text>
+                                  </Table.Td>
+                                  <Table.Td>
+                                    <TableStatusBadge status={item.status} />
+                                  </Table.Td>
+                                  <Table.Td ta="right">
+                                    {formatCurrency(item.spend, payload.viewContext.currencyCode)}
+                                  </Table.Td>
+                                  <Table.Td ta="right">{formatNumber(item.results)}</Table.Td>
+                                  <Table.Td ta="right">{formatRate(item.ctr)}</Table.Td>
+                                  <Table.Td ta="right">
+                                    {item.results > 0
+                                      ? formatCurrency(
+                                          item.costPerResult,
+                                          payload.viewContext.currencyCode,
+                                          2
+                                        )
+                                      : '—'}
+                                  </Table.Td>
+                                  <Table.Td>
+                                    <Text className={classes.tableValueText}>
+                                      {item.topPublisherPlatform ?? '—'}
+                                    </Text>
+                                  </Table.Td>
+                                  <Table.Td>
+                                    <Text className={classes.tableValueText}>
+                                      {item.topPlacement ?? '—'}
+                                    </Text>
+                                  </Table.Td>
+                                </Table.Tr>
+                              ))}
+                            </Table.Tbody>
+                          </Table>
+                        </ScrollArea>
+                      </div>
+                    )}
                   </Stack>
                 </Stack>
               </Card>
@@ -3206,12 +3473,110 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                   <Group justify="space-between" align="flex-start" className={classes.sectionHeader}>
                     <div>
                       <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                        Calendar approvals
+                        Active finding
                       </Text>
                     </div>
                   </Group>
 
-                  {calendarSuggestion && primaryCombinedTrendSignal ? (
+                  {primaryActiveFinding ? (
+                    <Paper withBorder radius="xl" p="md" className={classes.approvalCard}>
+                      <Stack gap="md">
+                        <Group justify="space-between" align="flex-start" gap="sm" wrap="wrap">
+                          <div>
+                            <Group gap="xs" wrap="wrap" mb={8}>
+                              <Badge
+                                color={signalSeverityColor(primaryActiveFinding.severity)}
+                                variant="light"
+                              >
+                                {primaryActiveFinding.title}
+                              </Badge>
+                              <Badge color="gray" variant="outline">
+                                {primaryActiveFinding.confidence} confidence
+                              </Badge>
+                            </Group>
+                            <Text fw={800}>{primaryActiveFinding.summary}</Text>
+                            {primaryActiveFinding.reason ? (
+                              <Text size="sm" c="dimmed" mt={6}>
+                                {primaryActiveFinding.reason}
+                              </Text>
+                            ) : null}
+                          </div>
+                          <ThemeIcon
+                            color={signalSeverityColor(primaryActiveFinding.severity)}
+                            variant="light"
+                            radius="xl"
+                            size="lg"
+                          >
+                            <IconCalendarEvent size={18} />
+                          </ThemeIcon>
+                        </Group>
+
+                        <div className={classes.approvalMeta}>
+                          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                            Detection point
+                          </Text>
+                          <Text fw={700}>
+                            {String(primaryActiveFinding.metricSnapshot.label ?? 'Saved trend finding')}
+                          </Text>
+                          <Text size="sm" c="dimmed" mt={4}>
+                            Approve this finding to move its recommended next step into the calendar
+                            queue, or dismiss it if you do not want DeepVisor to keep surfacing it
+                            right now.
+                          </Text>
+                        </div>
+
+                        {findingActionState.message &&
+                        findingActionState.findingId === primaryActiveFinding.id ? (
+                          <Alert
+                            color={findingActionState.status === 'error' ? 'red' : 'green'}
+                            radius="lg"
+                            icon={<IconAlertCircle size={16} />}
+                          >
+                            {findingActionState.message}
+                          </Alert>
+                        ) : null}
+
+                        <Group gap="sm" wrap="wrap">
+                          <Button
+                            radius="xl"
+                            onClick={() => void handleApproveFinding(primaryActiveFinding.id)}
+                            loading={
+                              findingActionState.status === 'approving' &&
+                              findingActionState.findingId === primaryActiveFinding.id
+                            }
+                            disabled={
+                              findingActionState.status === 'approved' &&
+                              findingActionState.findingId === primaryActiveFinding.id
+                            }
+                          >
+                            {findingActionState.status === 'approved' &&
+                            findingActionState.findingId === primaryActiveFinding.id
+                              ? 'Added to calendar'
+                              : primaryActiveFinding.actionLabel ?? 'Send to calendar'}
+                          </Button>
+                          <Button
+                            radius="xl"
+                            variant="default"
+                            onClick={() => void handleDismissFinding(primaryActiveFinding.id)}
+                            loading={
+                              findingActionState.status === 'dismissing' &&
+                              findingActionState.findingId === primaryActiveFinding.id
+                            }
+                          >
+                            Dismiss
+                          </Button>
+                          <Button
+                            component={Link}
+                            href={primaryActiveFinding.reportHref ?? primaryActiveFinding.actionHref ?? '/reports'}
+                            radius="xl"
+                            variant="light"
+                          >
+                            View report
+                          </Button>
+                        </Group>
+                      </Stack>
+                    </Paper>
+                  ) : calendarSuggestion && primaryCombinedTrendSignal ? (
                     <Paper withBorder radius="xl" p="md" className={classes.approvalCard}>
                       <Stack gap="md">
                         <Group justify="space-between" align="flex-start" gap="sm" wrap="wrap">
@@ -3291,12 +3656,12 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                     <Paper withBorder radius="xl" p="md" className={classes.emptyPanel}>
                       <Text fw={700}>
                         {trendPoints.length > 1
-                          ? 'No calendar approval suggestion yet'
+                          ? 'No active finding yet'
                           : 'Waiting for enough chart history'}
                       </Text>
                       <Text size="sm" c="dimmed" mt={6}>
                         {trendPoints.length > 1
-                          ? 'Once the combined chart sees a meaningful crossover or divergence, DeepVisor will surface the suggested next move here for approval.'
+                          ? 'Once the sync pipeline detects a meaningful timing or efficiency change, DeepVisor will surface the saved finding here.'
                           : 'DeepVisor needs at least a small sequence of featured ad set history points before it can suggest a calendar action from the chart.'}
                       </Text>
                     </Paper>

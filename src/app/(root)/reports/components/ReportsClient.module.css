@@ -8,7 +8,8 @@
 
 .headerCard,
 .reportCard,
-.kpiCard {
+.kpiCard,
+.breadcrumbCard {
   background: rgba(255, 255, 255, 0.97);
 }
 
@@ -27,6 +28,10 @@
   border: 1px solid var(--platform-border);
   border-radius: 18px;
   background: rgba(248, 250, 252, 0.88);
+}
+
+.breadcrumbCard {
+  border-color: var(--platform-border);
 }
 
 .kpiCard {

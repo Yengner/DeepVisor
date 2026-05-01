@@ -60,6 +60,14 @@
   gap: 8px;
 }
 
+.topBarActions {
+  min-width: 0;
+}
+
+.surfacePanelActions {
+  min-width: 0;
+}
+
 .historyChartScrollArea {
   width: 100%;
 }
@@ -85,6 +93,27 @@
 
 .metricCard {
   height: 100%;
+}
+
+.summaryMetricGroup {
+  height: 100%;
+}
+
+.summaryMetricBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.summaryLabel {
+  line-height: 1.25;
+}
+
+.summaryValue {
+  overflow-wrap: anywhere;
+}
+
+.summaryMetricIcon {
+  flex-shrink: 0;
 }
 
 .tableWrap {
@@ -174,17 +203,21 @@
 .historyTooltipCard {
   width: min(340px, calc(100vw - 48px));
   max-width: min(340px, calc(100vw - 48px));
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(203, 213, 225, 1);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.18);
 }
 
 .historyTooltipCopy {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
+  color: #334155;
 }
 
 .historyTooltipSignal {
-  background: rgba(248, 250, 252, 0.94);
-  border-color: rgba(191, 219, 254, 0.9);
+  background: rgba(248, 250, 252, 1);
+  border-color: rgba(191, 219, 254, 1);
 }
 
 .approvalCard {
@@ -358,16 +391,83 @@
 }
 
 @media (max-width: 760px) {
+  .surfaceToolbar {
+    padding-bottom: 12px;
+  }
+
   .title {
     font-size: 1.5rem;
+  }
+
+  .topBarActions {
+    width: 100%;
+  }
+
+  .topBarActions :global(.mantine-Button-root) {
+    flex: 1 1 0;
+    min-width: calc(50% - 6px);
+  }
+
+  .historyHeader {
+    padding-bottom: 12px;
+  }
+
+  .historyControlsRow {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .historyControlsRow :global(.mantine-SegmentedControl-root) {
+    width: 100%;
+  }
+
+  .surfacePanelActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+  }
+
+  .surfacePanelActions :global(.mantine-Button-root) {
+    width: 100%;
   }
 
   .metricValue {
     font-size: 1.35rem;
   }
 
+  .summaryLabel {
+    font-size: 10px;
+  }
+
+  .summaryValue {
+    margin-top: 6px;
+    font-size: 1.1rem;
+    line-height: 1.1;
+  }
+
+  .summaryMetricIcon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .tableWrap {
+    border-radius: 14px;
+  }
+
+  .liveRow {
+    padding: 12px;
+  }
+
   .metricGrid {
     grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .heatmapGrid {
+    grid-template-columns: 32px repeat(24, 12px);
+    min-width: 380px;
   }
 
   .stateMapTile {

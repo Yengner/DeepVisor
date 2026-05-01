@@ -5,6 +5,11 @@ import { createServerClient } from '@/lib/server/supabase/server';
 import { getAdAccountData, getPlatformDetails } from '@/lib/server/data';
 import { getAdAccountSyncCoverage } from '@/lib/server/repositories/ad_accounts/syncState';
 import {
+  listActiveTrendFindings,
+  toTrendFindingView,
+} from '@/lib/server/intelligence/repositories/trendFindings';
+import type { TrendFindingView } from '@/lib/server/intelligence/types';
+import {
   buildAudienceBreakdowns,
   buildDashboardLiveWindow,
   buildDashboardPayload,
@@ -235,9 +240,13 @@ async function getFeaturedAdsetHourlyHistory(input: {
     | 'day'
     | 'hour_of_day'
     | 'spend'
+    | 'reach'
     | 'impressions'
     | 'clicks'
     | 'inline_link_clicks'
+    | 'leads'
+    | 'messages'
+    | 'calls'
     | 'ctr'
     | 'cpc'
     | 'cpm'
@@ -247,7 +256,7 @@ async function getFeaturedAdsetHourlyHistory(input: {
     const { data, error } = await input.supabase
       .from('meta_hourly_performance')
       .select(
-        'day, hour_of_day, spend, impressions, clicks, inline_link_clicks, ctr, cpc, cpm'
+        'day, hour_of_day, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls, ctr, cpc, cpm'
       )
       .eq('ad_account_id', input.adAccountId)
       .eq('adset_id', input.adsetInternalId)
@@ -280,9 +289,13 @@ async function getFeaturedAdsetHourlyHistory(input: {
       day: string;
       hour: number;
       spend: number;
+      reach: number;
       impressions: number;
       clicks: number;
       inlineLinkClicks: number;
+      leads: number;
+      messages: number;
+      calls: number;
     }
   >();
 
@@ -298,15 +311,23 @@ async function getFeaturedAdsetHourlyHistory(input: {
       day,
       hour,
       spend: 0,
+      reach: 0,
       impressions: 0,
       clicks: 0,
       inlineLinkClicks: 0,
+      leads: 0,
+      messages: 0,
+      calls: 0,
     };
 
     current.spend += row.spend ?? 0;
+    current.reach += row.reach ?? 0;
     current.impressions += row.impressions ?? 0;
     current.clicks += row.clicks ?? 0;
     current.inlineLinkClicks += row.inline_link_clicks ?? 0;
+    current.leads += row.leads ?? 0;
+    current.messages += row.messages ?? 0;
+    current.calls += row.calls ?? 0;
     aggregatedRows.set(key, current);
   }
 
@@ -321,15 +342,20 @@ async function getFeaturedAdsetHourlyHistory(input: {
       day: string;
       hour: number;
       spend: number;
+      reach: number;
       impressions: number;
       clicks: number;
       inlineLinkClicks: number;
+      leads: number;
+      messages: number;
+      calls: number;
     },
     label: string
   ): DashboardHourlyTrendRow => {
     const ctr = row.impressions > 0 ? (row.clicks / row.impressions) * 100 : 0;
     const cpc = row.clicks > 0 ? row.spend / row.clicks : 0;
     const cpm = row.impressions > 0 ? (row.spend / row.impressions) * 1000 : 0;
+    const results = row.leads + row.messages + row.calls;
 
     return {
       label,
@@ -339,16 +365,16 @@ async function getFeaturedAdsetHourlyHistory(input: {
         : new Date(`${row.day}T00:00:00Z`).getUTCDay() - 1,
       hourOfDay: row.hour,
       spend: Number(row.spend.toFixed(2)),
-      results: 0,
+      results,
       clicks: row.clicks,
       inlineLinkClicks: row.inlineLinkClicks,
       impressions: row.impressions,
-      reach: 0,
+      reach: row.reach,
       ctr: Number(ctr.toFixed(2)),
       cpc: Number(cpc.toFixed(2)),
       cpm: Number(cpm.toFixed(2)),
       frequency: 0,
-      costPerResult: 0,
+      costPerResult: results > 0 ? Number((row.spend / results).toFixed(2)) : 0,
     };
   };
 
@@ -358,9 +384,13 @@ async function getFeaturedAdsetHourlyHistory(input: {
     day: string;
     hour: number;
     spend: number;
+    reach: number;
     impressions: number;
     clicks: number;
     inlineLinkClicks: number;
+    leads: number;
+    messages: number;
+    calls: number;
   }> = [];
 
   if (hourlyHistoryStartDate && hourlyHistoryEndDate) {
@@ -376,9 +406,13 @@ async function getFeaturedAdsetHourlyHistory(input: {
             day: cursor,
             hour,
             spend: 0,
+            reach: 0,
             impressions: 0,
             clicks: 0,
             inlineLinkClicks: 0,
+            leads: 0,
+            messages: 0,
+            calls: 0,
           }
         );
       }
@@ -794,6 +828,7 @@ export default async function MainDashboardPage() {
 
   let syncCoverage = null;
   let hasReportMetrics = false;
+  let activeFindings: TrendFindingView[] = [];
   const isMeta = platform?.vendor === 'meta';
   let liveToday = buildDashboardLiveWindow({
     isMeta,
@@ -949,6 +984,13 @@ export default async function MainDashboardPage() {
           hourlyHistoryDate: featuredHourlyHistory.hourlyHistoryEndDate,
         };
       }
+
+      activeFindings = (
+        await listActiveTrendFindings(adminSupabase as any, {
+          businessId,
+          adAccountId: adAccount.id,
+        })
+      ).map(toTrendFindingView);
     } catch (error) {
       console.error('Failed to fetch live dashboard snapshot:', error);
     }
@@ -964,6 +1006,7 @@ export default async function MainDashboardPage() {
     hasReportMetrics,
     liveToday,
     featuredAdsetHistory,
+    activeFindings,
   });
 
   return <DashboardClient payload={payload} />;

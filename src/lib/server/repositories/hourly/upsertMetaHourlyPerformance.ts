@@ -23,13 +23,18 @@ export interface UpsertMetaHourlyPerformanceInput {
   objective: string | null;
   source: string;
   spend: number;
+  reach: number;
   impressions: number;
   clicks: number;
   inlineLinkClicks: number;
+  leads: number;
+  messages: number;
+  calls: number;
   ctr: number;
   cpc: number;
   cpm: number;
   actionsJson: Json;
+  costPerActionTypeJson: Json;
   raw: Json | null;
   syncedAt: string;
 }
@@ -79,13 +84,18 @@ export async function upsertMetaHourlyPerformance(
         objective: input.objective,
         source: input.source,
         spend: input.spend,
+        reach: input.reach,
         impressions: input.impressions,
         clicks: input.clicks,
         inline_link_clicks: input.inlineLinkClicks,
+        leads: input.leads,
+        messages: input.messages,
+        calls: input.calls,
         ctr: input.ctr,
         cpc: input.cpc,
         cpm: input.cpm,
         actions_json: input.actionsJson,
+        cost_per_action_type_json: input.costPerActionTypeJson,
         raw: input.raw,
         created_at: input.syncedAt,
         updated_at: input.syncedAt,

@@ -68,6 +68,9 @@ export interface ReportBreakdownRow extends ReportMetricTotals {
   status: string | null;
   primaryContext: string | null;
   secondaryContext: string | null;
+  creativeContext?: string | null;
+  drilldownLabel?: string | null;
+  drilldownHref?: string | null;
   startDate: string | null;
   endDate: string | null;
 }
@@ -78,6 +81,11 @@ export interface ReportBreakdownChartPoint {
   spend: number;
   conversion: number;
   clicks: number;
+}
+
+export interface ReportRankingContext {
+  sameAdsetAds: ReportBreakdownRow[];
+  topAdAccountAds: ReportBreakdownRow[];
 }
 
 export interface ReportComparisonSummary {
@@ -116,6 +124,7 @@ export interface ReportPayload {
     rows: ReportBreakdownRow[];
     chart: ReportBreakdownChartPoint[];
   };
+  ranking: ReportRankingContext;
   export: ReportExportMetadata;
 }
 
