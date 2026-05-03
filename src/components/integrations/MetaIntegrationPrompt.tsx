@@ -1,7 +1,7 @@
 'use client';
 
 import { Alert, Avatar, Badge, Button, Card, Group, Paper, Stack, Text } from '@mantine/core';
-import { IconBrandFacebook, IconCheck, IconInfoCircle, IconPlus } from '@tabler/icons-react';
+import { IconBrandMeta, IconCheck, IconInfoCircle, IconPlus } from '@tabler/icons-react';
 
 type MetaIntegrationPromptProps = {
   connected: boolean;
@@ -24,7 +24,7 @@ export default function MetaIntegrationPrompt({
         <Stack>
           <Group>
             <Avatar color="blue" radius="xl" size="lg">
-              <IconBrandFacebook size={24} />
+              <IconBrandMeta size={24} />
             </Avatar>
             <div>
               <Text fw={700} size="lg">Meta Business Manager</Text>

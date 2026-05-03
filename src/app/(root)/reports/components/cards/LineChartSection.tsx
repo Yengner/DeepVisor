@@ -2,6 +2,7 @@
 
 import { BarChart, LineChart } from "@mantine/charts";
 import { Card, Grid, Group, Stack, Text } from "@mantine/core";
+import { CHART_METRIC_COLORS } from "@/lib/shared";
 import type { ReportBreakdownChartPoint, ReportTimeSeriesPoint } from "@/lib/server/reports/types";
 
 interface LineChartSectionProps {
@@ -68,9 +69,9 @@ export default function LineChartSection({
               data={trendData}
               dataKey="label"
               series={[
-                { name: 'Spend', color: 'blue.6' },
-                { name: 'Results', color: 'green.6' },
-                { name: 'Clicks', color: 'orange.6' },
+                { name: 'Spend', color: CHART_METRIC_COLORS.spend },
+                { name: 'Results', color: CHART_METRIC_COLORS.results },
+                { name: 'Clicks', color: CHART_METRIC_COLORS.clicks },
               ]}
               curveType="linear"
               withLegend

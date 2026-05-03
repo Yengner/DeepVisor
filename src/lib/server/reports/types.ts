@@ -84,8 +84,27 @@ export interface ReportBreakdownChartPoint {
 }
 
 export interface ReportRankingContext {
+  topAdAccountCampaigns: ReportBreakdownRow[];
+  sameCampaignAdsets: ReportBreakdownRow[];
+  topAdAccountAdsets: ReportBreakdownRow[];
   sameAdsetAds: ReportBreakdownRow[];
   topAdAccountAds: ReportBreakdownRow[];
+}
+
+export interface ReportActiveDatePoint {
+  date: string;
+  activeEntityCount: number;
+}
+
+export interface ReportActiveDateContext {
+  scope: 'campaign' | 'adset' | 'ad';
+  label: string;
+  entityLabel: string;
+  totalEntities: number;
+  totalActiveDays: number;
+  startDate: string | null;
+  endDate: string | null;
+  days: ReportActiveDatePoint[];
 }
 
 export interface ReportComparisonSummary {
@@ -125,6 +144,7 @@ export interface ReportPayload {
     chart: ReportBreakdownChartPoint[];
   };
   ranking: ReportRankingContext;
+  activeDates: ReportActiveDateContext | null;
   export: ReportExportMetadata;
 }
 

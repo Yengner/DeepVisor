@@ -5,7 +5,7 @@ import {
     Badge, ThemeIcon, Container, Group
 } from '@mantine/core';
 import {
-    IconBrandFacebook, IconBrandGoogle, IconBrandTiktok,
+    IconBrandGoogle, IconBrandMeta, IconBrandTiktok,
     IconChevronRight
 } from '@tabler/icons-react';
 import { showError } from '@/lib/client/toasts';
@@ -54,7 +54,7 @@ export default function PlatformSelector({
                         {/* Meta (Facebook/Instagram) */}
                         <PlatformCard
                             id="meta"
-                            icon={<IconBrandFacebook size={24} />}
+                            icon={<IconBrandMeta size={24} />}
                             title="Meta Ads"
                             description="Facebook, Instagram, WhatsApp, Messenger"
                             color="blue"

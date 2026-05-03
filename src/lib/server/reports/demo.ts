@@ -1,4 +1,5 @@
 import type {
+  ReportActiveDateContext,
   ReportBreakdownChartPoint,
   ReportBreakdownRow,
   ReportFilterOptions,
@@ -820,51 +821,196 @@ function buildBreakdownChart(rows: ReportBreakdownRow[]): ReportBreakdownChartPo
   }));
 }
 
+function buildDemoActiveDateContext(
+  query: ReportQueryInput,
+  ads: DemoAd[]
+): ReportActiveDateContext | null {
+  const isCampaignLevelScope =
+    query.scope === 'business' ||
+    query.scope === 'platform' ||
+    query.scope === 'ad_account' ||
+    query.scope === 'campaign';
+
+  if (!isCampaignLevelScope && query.scope !== 'adset' && query.scope !== 'ad') {
+    return null;
+  }
+
+  if (query.scope === 'campaign' && query.campaignIds.length === 0) {
+    return null;
+  }
+
+  if (query.scope === 'adset' && query.adsetIds.length === 0) {
+    return null;
+  }
+
+  if (query.scope === 'ad' && query.adIds.length === 0) {
+    return null;
+  }
+
+  const totalEntities =
+    isCampaignLevelScope
+      ? new Set(ads.map((ad) => ad.campaignId)).size
+      : query.scope === 'adset'
+        ? new Set(ads.map((ad) => ad.parentId)).size
+        : ads.length;
+
+  if (totalEntities === 0) {
+    return null;
+  }
+
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const start = addDays(today, -179);
+  const days = enumerateDates(toIsoDate(start), toIsoDate(today)).map((date) => ({
+    date,
+    activeEntityCount: totalEntities,
+  }));
+
+  const activeDateScope: ReportActiveDateContext['scope'] = isCampaignLevelScope
+    ? 'campaign'
+    : query.scope === 'adset'
+      ? 'adset'
+      : 'ad';
+
+  return {
+    scope: activeDateScope,
+    label:
+      activeDateScope === 'campaign'
+        ? totalEntities === 1
+          ? 'Serving dates for this campaign'
+          : 'Serving dates for selected campaigns'
+        : activeDateScope === 'adset'
+          ? totalEntities === 1
+            ? 'Serving dates for this ad set'
+            : 'Serving dates for selected ad sets'
+          : totalEntities === 1
+            ? 'Serving dates for this ad'
+            : 'Serving dates for selected ads',
+    entityLabel:
+      activeDateScope === 'campaign'
+        ? totalEntities === 1
+          ? 'campaign'
+          : 'campaigns'
+        : activeDateScope === 'adset'
+          ? totalEntities === 1
+            ? 'ad set'
+            : 'ad sets'
+          : totalEntities === 1
+            ? 'ad'
+            : 'ads',
+    totalEntities,
+    totalActiveDays: days.length,
+    startDate: days[0]?.date ?? null,
+    endDate: days.at(-1)?.date ?? null,
+    days,
+  };
+}
+
 function buildDemoRanking(
   query: ReportQueryInput,
   ads: DemoAd[],
   breakdownRows: ReportBreakdownRow[]
 ): ReportPayload['ranking'] {
-  if (query.scope !== 'adset' && query.scope !== 'ad') {
-    return {
-      sameAdsetAds: [],
-      topAdAccountAds: [],
-    };
+  const selectedCampaignIds = new Set(query.campaignIds);
+  const selectedAdsetIds = new Set(query.adsetIds);
+  const adAccountIds =
+    query.adAccountIds.length > 0
+      ? query.adAccountIds
+      : Array.from(new Set(ads.map((ad) => ad.adAccountId)));
+  const accountAds = adAccountIds.length
+    ? DEMO_ADS.filter((ad) => adAccountIds.includes(ad.adAccountId))
+    : [];
+
+  if (query.scope === 'adset') {
+    DEMO_ADSETS.forEach((adset) => {
+      if (query.adsetIds.includes(adset.id)) {
+        selectedCampaignIds.add(adset.parentId);
+      }
+    });
   }
 
-  const selectedAdsetIds =
-    query.scope === 'adset'
-      ? query.adsetIds
-      : Array.from(new Set(ads.map((ad) => ad.parentId)));
-  const sameAdsetAds = selectedAdsetIds.length
+  if (query.scope === 'ad') {
+    ads.forEach((ad) => {
+      selectedAdsetIds.add(ad.parentId);
+      selectedCampaignIds.add(ad.campaignId);
+    });
+  }
+
+  const topAdAccountCampaigns =
+    query.scope === 'campaign' || query.scope === 'adset' || query.scope === 'ad'
+      ? buildBreakdownRows(
+          {
+            ...query,
+            scope: 'ad_account',
+            campaignIds: [],
+            adsetIds: [],
+            adIds: [],
+          },
+          accountAds
+        )
+      : [];
+
+  const sameCampaignAdsets =
+    selectedCampaignIds.size > 0
+      ? buildBreakdownRows(
+          {
+            ...query,
+            scope: 'campaign',
+            campaignIds: Array.from(selectedCampaignIds),
+            adsetIds: [],
+            adIds: [],
+          },
+          DEMO_ADS.filter((ad) => selectedCampaignIds.has(ad.campaignId))
+        )
+      : query.scope === 'campaign'
+        ? breakdownRows
+        : [];
+
+  const topAdAccountAdsets =
+    query.scope === 'campaign' || query.scope === 'adset' || query.scope === 'ad'
+      ? buildBreakdownRows(
+          {
+            ...query,
+            scope: 'campaign',
+            campaignIds: [],
+            adsetIds: [],
+            adIds: [],
+          },
+          accountAds
+        )
+      : [];
+
+  const sameAdsetAds = selectedAdsetIds.size
     ? buildBreakdownRows(
         {
           ...query,
           scope: 'adset',
           adIds: [],
         },
-        DEMO_ADS.filter((ad) => selectedAdsetIds.includes(ad.parentId))
+        DEMO_ADS.filter((ad) => selectedAdsetIds.has(ad.parentId))
       )
     : query.scope === 'adset'
       ? breakdownRows
       : [];
 
-  const adAccountIds =
-    query.adAccountIds.length > 0 ? query.adAccountIds : Array.from(new Set(ads.map((ad) => ad.adAccountId)));
-  const topAdAccountAds = adAccountIds.length
-    ? buildBreakdownRows(
-        {
-          ...query,
-          scope: 'adset',
-          adIds: [],
-          adsetIds: [],
-          campaignIds: [],
-        },
-        DEMO_ADS.filter((ad) => adAccountIds.includes(ad.adAccountId))
-      )
-    : [];
+  const topAdAccountAds =
+    adAccountIds.length && (query.scope === 'adset' || query.scope === 'ad')
+      ? buildBreakdownRows(
+          {
+            ...query,
+            scope: 'adset',
+            adIds: [],
+            adsetIds: [],
+            campaignIds: [],
+          },
+          DEMO_ADS.filter((ad) => adAccountIds.includes(ad.adAccountId))
+        )
+      : [];
 
   return {
+    topAdAccountCampaigns,
+    sameCampaignAdsets,
+    topAdAccountAdsets,
     sameAdsetAds,
     topAdAccountAds,
   };
@@ -1004,6 +1150,7 @@ export function buildDemoReportPayload(
   const filterSummary = buildFilterSummary(query);
   const breakdownRows = buildBreakdownRows(query, ads);
   const ranking = buildDemoRanking(query, ads, breakdownRows);
+  const activeDates = buildDemoActiveDateContext(query, ads);
 
   return {
     query,
@@ -1029,6 +1176,7 @@ export function buildDemoReportPayload(
       chart: buildBreakdownChart(breakdownRows),
     },
     ranking,
+    activeDates,
     export: {
       title: scopeMeta.title,
       subtitle: scopeMeta.subtitle,

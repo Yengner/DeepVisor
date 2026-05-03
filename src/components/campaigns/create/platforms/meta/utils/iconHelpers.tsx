@@ -1,6 +1,6 @@
 import {
   IconTarget,
-  IconBrandFacebook,
+  IconBrandMeta,
   IconUsers,
   IconPhoto,
   IconClipboardCheck,
@@ -27,7 +27,7 @@ export function getStepIcon(step: number): React.ReactNode {
     case 2: return <IconUsers size={22} />; // Ad Set (Audience targeting)
     case 3: return <IconPhoto size={22} />; // Creative Assets
     case 4: return <IconClipboardCheck size={22} />; // Review
-    default: return <IconBrandFacebook size={22} />;
+    default: return <IconBrandMeta size={22} />;
   }
 }
 

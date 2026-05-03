@@ -6,7 +6,7 @@ import {
     Center, TextInput, Select, Grid, Loader, Alert
 } from '@mantine/core';
 import {
-    IconPhoto, IconUpload, IconBrandFacebook, IconSearch, IconChartBar,
+    IconPhoto, IconUpload, IconBrandMeta, IconSearch, IconChartBar,
     IconBuildingStore, IconSettings, IconTarget, IconMessageCircle
 } from '@tabler/icons-react';
 import { useState, useMemo } from 'react';
@@ -444,7 +444,7 @@ export default function CreativeAssetsStep({
                             <Group mb="md" justify="apart">
                                 <Title order={4}>Ad Preview</Title>
                                 <ThemeIcon size="md" radius="md" color="blue" variant="light">
-                                    <IconBrandFacebook size={18} />
+                                    <IconBrandMeta size={18} />
                                 </ThemeIcon>
                             </Group>
 

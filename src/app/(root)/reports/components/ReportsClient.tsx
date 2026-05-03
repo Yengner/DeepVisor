@@ -6,6 +6,7 @@ import '@mantine/dates/styles.css';
 
 import { BarChart, LineChart } from '@mantine/charts';
 import {
+  Accordion,
   Badge,
   Button,
   Card,
@@ -34,7 +35,7 @@ import {
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
-import { buildReportUrl } from '@/lib/shared';
+import { buildReportUrl, CHART_METRIC_COLORS, formatChartDateLabel } from '@/lib/shared';
 import type {
   ReportBreakdownRow,
   ReportFilterOptions,
@@ -91,21 +92,6 @@ const staticChannelSignals = [
   },
 ] as const;
 
-type ReportInsight = {
-  summary: string;
-  strongestLabel: string;
-  strongestDetail: string;
-  weakestLabel: string;
-  weakestDetail: string;
-  momentumLabel: string;
-  momentumDetail: string;
-  recommendationLabel: string;
-  recommendationDetail: string;
-  worked: string[];
-  watch: string[];
-  nextMoves: string[];
-};
-
 function resolveScope(params: URLSearchParams) {
   if (params.get('ad_id')) {
     return 'ad';
@@ -156,17 +142,6 @@ function formatSignedPercent(value: number | null) {
   return value >= 0 ? `+${rounded}%` : `-${rounded}%`;
 }
 
-function formatDateLabel(value: string | null) {
-  if (!value) {
-    return 'this period';
-  }
-
-  return new Date(`${value}T00:00:00`).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
 function formatEntityPerformance(row: ReportBreakdownRow, currencyCode: string | null) {
   if (row.conversion > 0) {
     return `${row.conversion.toLocaleString()} results at ${formatCurrency(row.costPerResult, currencyCode, 2)} per result`;
@@ -185,6 +160,18 @@ function getEntityLabel(level: ReportBreakdownRow['level']) {
   }
 
   return 'Ad';
+}
+
+function getEntityPluralLabel(level: ReportBreakdownRow['level']) {
+  if (level === 'campaign') {
+    return 'Campaigns';
+  }
+
+  if (level === 'adset') {
+    return 'Ad sets';
+  }
+
+  return 'Ads';
 }
 
 function scoreStrongestRow(row: ReportBreakdownRow) {
@@ -212,6 +199,12 @@ function dedupeRows(rows: ReportBreakdownRow[]) {
   return Array.from(new Map(rows.map((row) => [row.id, row])).values());
 }
 
+function rankBreakdownRows(rows: ReportBreakdownRow[]) {
+  return dedupeRows(rows)
+    .filter((row) => row.spend > 0 || row.conversion > 0 || row.clicks > 0)
+    .sort((left, right) => scoreRankedRow(right) - scoreRankedRow(left));
+}
+
 function pickStrongestRow(rows: ReportBreakdownRow[]) {
   return [...rows]
     .filter((row) => row.spend > 0 || row.conversion > 0 || row.clicks > 0)
@@ -222,18 +215,6 @@ function pickWeakestRow(rows: ReportBreakdownRow[]) {
   return [...rows]
     .filter((row) => row.spend > 0 || row.clicks > 0)
     .sort((left, right) => scoreWeakestRow(right) - scoreWeakestRow(left))[0] ?? null;
-}
-
-function pickPositiveKpi(kpis: ReportKpi[]) {
-  return [...kpis]
-    .filter((kpi) => kpi.deltaPercent != null)
-    .sort((left, right) => (right.deltaPercent ?? 0) - (left.deltaPercent ?? 0))[0] ?? null;
-}
-
-function pickNegativeKpi(kpis: ReportKpi[]) {
-  return [...kpis]
-    .filter((kpi) => kpi.deltaPercent != null)
-    .sort((left, right) => (left.deltaPercent ?? 0) - (right.deltaPercent ?? 0))[0] ?? null;
 }
 
 function pickPeakPoint(series: ReportTimeSeriesPoint[], key: keyof ReportTimeSeriesPoint) {
@@ -377,148 +358,6 @@ function buildReportBreadcrumbs(
   return items;
 }
 
-function deriveInsight(payload: ReportPayload): ReportInsight {
-  const strongestRow = pickStrongestRow(payload.breakdown.rows);
-  const weakestRow = pickWeakestRow(payload.breakdown.rows);
-  const positiveKpi = pickPositiveKpi(payload.kpis);
-  const negativeKpi = pickNegativeKpi(payload.kpis);
-  const peakResultsPoint = pickPeakPoint(payload.series, 'conversion');
-  const peakSpendPoint = pickPeakPoint(payload.series, 'spend');
-  const entityLabel = strongestRow ? getEntityLabel(strongestRow.level) : payload.meta.scopeLabel;
-
-  const strongestLabel = strongestRow
-    ? `Strongest ${entityLabel.toLowerCase()}`
-    : `Strongest ${payload.meta.scopeLabel.toLowerCase()}`;
-  const strongestDetail = strongestRow
-    ? `${strongestRow.name} is leading with ${formatEntityPerformance(
-        strongestRow,
-        payload.meta.currencyCode
-      )}.`
-    : 'There is not enough breakdown data yet to name a clear winner.';
-
-  const weakestLabel = weakestRow
-    ? `Needs attention: ${weakestRow.name}`
-    : 'Needs attention';
-  const weakestDetail = weakestRow
-    ? weakestRow.conversion > 0
-      ? `${weakestRow.name} is the weakest current mover with ${formatCurrency(
-          weakestRow.costPerResult,
-          payload.meta.currencyCode,
-          2
-        )} cost per result and ${weakestRow.ctr.toFixed(2)}% CTR.`
-      : `${weakestRow.name} has already spent ${formatCurrency(
-          weakestRow.spend,
-          payload.meta.currencyCode,
-          2
-        )} without a recorded result.`
-    : 'No weak entity stands out yet.';
-
-  const momentumLabel = positiveKpi
-    ? `${positiveKpi.label} ${positiveKpi.deltaPercent && positiveKpi.deltaPercent >= 0 ? 'improved' : 'changed'}`
-    : 'Trend signal';
-  const momentumDetail = positiveKpi
-    ? `${positiveKpi.label} moved ${formatSignedPercent(positiveKpi.deltaPercent)} compared with the previous period.`
-    : peakResultsPoint
-      ? `Peak results landed around ${peakResultsPoint.label}.`
-      : 'Comparison signals will appear when more reporting history is available.';
-
-  let recommendationLabel = 'Recommended next move';
-  let recommendationDetail = 'Keep monitoring the current mix until clearer movement appears.';
-
-  if (strongestRow && weakestRow && strongestRow.id !== weakestRow.id) {
-    recommendationLabel = `Shift attention toward ${strongestRow.name}`;
-    recommendationDetail =
-      weakestRow.conversion === 0
-        ? `Keep leaning into ${strongestRow.name} while reworking or pausing ${weakestRow.name} before it absorbs more spend.`
-        : `Use ${strongestRow.name} as the benchmark and review why ${weakestRow.name} is lagging on cost per result and click-through rate.`;
-  } else if (negativeKpi?.key === 'ctr') {
-    recommendationDetail =
-      'Click-through rate is the clearest drag right now. Refresh creative or messaging before adding more budget.';
-  } else if (negativeKpi?.key === 'costPerResult') {
-    recommendationDetail =
-      'Cost per result is slipping. Tighten targeting and pause the weakest segments before scaling.';
-  } else if (strongestRow) {
-    recommendationDetail = `Keep building around ${strongestRow.name} while you watch for fatigue across the rest of the mix.`;
-  }
-
-  const summaryParts = [
-    strongestRow
-      ? `${strongestRow.name} is currently the clearest performer, producing ${formatEntityPerformance(
-          strongestRow,
-          payload.meta.currencyCode
-        )}.`
-      : `${payload.meta.title} does not have enough entity-level activity yet to name a clear winner.`,
-    weakestRow
-      ? weakestRow.conversion > 0
-        ? `${weakestRow.name} is the soft spot with ${formatCurrency(
-            weakestRow.costPerResult,
-            payload.meta.currencyCode,
-            2
-          )} cost per result.`
-        : `${weakestRow.name} is spending without converting.`
-      : null,
-    peakResultsPoint
-      ? `The strongest results point landed around ${peakResultsPoint.label}.`
-      : peakSpendPoint
-        ? `Spend peaked around ${peakSpendPoint.label}.`
-        : null,
-  ].filter(Boolean);
-
-  const worked = [
-    strongestRow
-      ? `${strongestRow.name} is setting the pace with ${formatEntityPerformance(
-          strongestRow,
-          payload.meta.currencyCode
-        )}.`
-      : null,
-    positiveKpi
-      ? `${positiveKpi.label} moved ${formatSignedPercent(positiveKpi.deltaPercent)} versus the previous period.`
-      : null,
-    peakResultsPoint
-      ? `${formatDateLabel(peakResultsPoint.startDate)} was the strongest point for results in this range.`
-      : null,
-  ].filter((item): item is string => Boolean(item));
-
-  const watch = [
-    weakestRow
-      ? weakestRow.conversion > 0
-        ? `${weakestRow.name} is underperforming relative to the rest of the mix.`
-        : `${weakestRow.name} has spend with no recorded result yet.`
-      : null,
-    negativeKpi
-      ? `${negativeKpi.label} moved ${formatSignedPercent(negativeKpi.deltaPercent)} and is the clearest negative trend.`
-      : null,
-    peakSpendPoint && peakResultsPoint && peakSpendPoint.key !== peakResultsPoint.key
-      ? `Spend peaked around ${peakSpendPoint.label}, but results peaked at a different time.`
-      : null,
-  ].filter((item): item is string => Boolean(item));
-
-  const nextMoves = [
-    recommendationDetail,
-    strongestRow && weakestRow && strongestRow.id !== weakestRow.id
-      ? `Compare ${strongestRow.name} and ${weakestRow.name} before approving the next queue items in Calendar.`
-      : null,
-    payload.query.compareMode === 'none'
-      ? 'Turn on previous-period comparison when you want a clearer trend read.'
-      : null,
-  ].filter((item): item is string => Boolean(item));
-
-  return {
-    summary: summaryParts.join(' '),
-    strongestLabel,
-    strongestDetail,
-    weakestLabel,
-    weakestDetail,
-    momentumLabel,
-    momentumDetail,
-    recommendationLabel,
-    recommendationDetail,
-    worked,
-    watch,
-    nextMoves,
-  };
-}
-
 function KpiCard({ kpi }: { kpi: ReportKpi }) {
   const deltaClass =
     kpi.deltaPercent == null
@@ -563,51 +402,185 @@ function getRankTone(index: number, total: number) {
   return { color: 'gray', label: 'Mid-pack' };
 }
 
+type RankingSection = {
+  title: string;
+  rows: ReportBreakdownRow[];
+};
+
+type RankingGroup = {
+  key: ReportBreakdownRow['level'];
+  level: ReportBreakdownRow['level'];
+  title: string;
+  sections: RankingSection[];
+  fullRows: ReportBreakdownRow[];
+};
+
+function getFullRankingTitle(level: ReportBreakdownRow['level']) {
+  return `Full ${getEntityLabel(level).toLowerCase()} ranking`;
+}
+
+function getAccountRankingTitle(
+  level: ReportBreakdownRow['level'],
+  query: ReportPayload['query']
+) {
+  const accountLabel = query.adAccountIds.length === 1 ? 'this ad account' : 'selected accounts';
+  return `Best ${getEntityPluralLabel(level).toLowerCase()} in ${accountLabel}`;
+}
+
+function getParentRankingTitle(
+  level: ReportBreakdownRow['level'],
+  query: ReportPayload['query']
+) {
+  if (level === 'adset') {
+    const parentLabel = query.campaignIds.length > 1 ? 'these campaigns' : 'this campaign';
+    return `Ad sets in ${parentLabel} ranking`;
+  }
+
+  if (level === 'ad') {
+    const parentLabel = query.adsetIds.length > 1 ? 'these ad sets' : 'this ad set';
+    return `Ads in ${parentLabel} ranking`;
+  }
+
+  return 'Campaign ranking';
+}
+
+function getRankingLevelOrder(level: ReportBreakdownRow['level']) {
+  if (level === 'campaign') {
+    return 0;
+  }
+
+  if (level === 'adset') {
+    return 1;
+  }
+
+  return 2;
+}
+
+function shouldCollapseParentRankingGroup(
+  groupLevel: ReportBreakdownRow['level'],
+  currentLevel: ReportBreakdownRow['level'] | null
+) {
+  if (!currentLevel) {
+    return false;
+  }
+
+  const currentLevelOrder = getRankingLevelOrder(currentLevel);
+  if (currentLevelOrder === 0) {
+    return false;
+  }
+
+  return getRankingLevelOrder(groupLevel) < currentLevelOrder;
+}
+
+function buildRankingGroup(input: {
+  level: ReportBreakdownRow['level'];
+  primaryTitle: string;
+  primaryRows: ReportBreakdownRow[];
+  comparisonTitle?: string;
+  comparisonRows?: ReportBreakdownRow[];
+}): RankingGroup | null {
+  const primaryRows = input.primaryRows;
+  const comparisonSourceRows = input.comparisonRows ?? [];
+  const primaryIds = new Set(primaryRows.map((row) => row.id));
+  const comparisonRows = comparisonSourceRows.filter((row) => !primaryIds.has(row.id));
+  const sections: RankingSection[] = [];
+  const fullRows = comparisonSourceRows.length > 0 ? comparisonSourceRows : primaryRows;
+
+  if (primaryRows.length > 0) {
+    sections.push({
+      title: input.primaryTitle,
+      rows: primaryRows,
+    });
+  }
+
+  if (comparisonRows.length > 0 && input.comparisonTitle) {
+    sections.push({
+      title: input.comparisonTitle,
+      rows: comparisonRows,
+    });
+  }
+
+  if (sections.length === 0 || fullRows.length === 0) {
+    return null;
+  }
+
+  return {
+    key: input.level,
+    level: input.level,
+    title: `${getEntityLabel(input.level)} ranking`,
+    sections,
+    fullRows,
+  };
+}
+
 function RankedEntityBoard({
   rows,
   currencyCode,
-  sameAdsetRows,
-  topAdAccountRows,
-  scope,
+  ranking,
+  query,
 }: {
   rows: ReportBreakdownRow[];
   currencyCode: string | null;
-  sameAdsetRows: ReportBreakdownRow[];
-  topAdAccountRows: ReportBreakdownRow[];
-  scope: ReportPayload['query']['scope'];
+  ranking: ReportPayload['ranking'];
+  query: ReportPayload['query'];
 }) {
-  const [fullRankingOpened, setFullRankingOpened] = useState(false);
-  const rankedRows = dedupeRows(rows)
-    .filter((row) => row.spend > 0 || row.conversion > 0 || row.clicks > 0)
-    .sort((left, right) => scoreRankedRow(right) - scoreRankedRow(left));
-  const rankedSameAdsetRows = dedupeRows(sameAdsetRows)
-    .filter((row) => row.spend > 0 || row.conversion > 0 || row.clicks > 0)
-    .sort((left, right) => scoreRankedRow(right) - scoreRankedRow(left));
-  const rankedAdAccountRows = dedupeRows(topAdAccountRows)
-    .filter((row) => row.spend > 0 || row.conversion > 0 || row.clicks > 0)
-    .sort((left, right) => scoreRankedRow(right) - scoreRankedRow(left));
-  const comparisonRows = rankedAdAccountRows.filter(
-    (row) =>
-      !(scope === 'adset' ? rankedRows : rankedSameAdsetRows).some(
-        (currentRow) => currentRow.id === row.id
-      )
+  const [openedRankingKey, setOpenedRankingKey] = useState<ReportBreakdownRow['level'] | null>(null);
+  const [openedCollapsedRankingKeys, setOpenedCollapsedRankingKeys] = useState<
+    ReportBreakdownRow['level'][]
+  >([]);
+  const rankedRows = rankBreakdownRows(rows);
+  const currentLevel = rankedRows[0]?.level ?? null;
+  const campaignRows = rankBreakdownRows(
+    currentLevel === 'campaign' ? rankedRows : ranking.topAdAccountCampaigns
   );
-  const adsetRankingRows = scope === 'adset' ? rankedRows : rankedSameAdsetRows;
-  const showAdsetRanking = (scope === 'adset' || scope === 'ad') && adsetRankingRows.length > 0;
-  const showAdAccountComparison = (scope === 'adset' || scope === 'ad') && comparisonRows.length > 0;
-  const fullAdRankingRows =
-    rankedAdAccountRows.length > 0
-      ? rankedAdAccountRows
-      : showAdsetRanking
-        ? adsetRankingRows
-        : rankedRows;
+  const adsetPrimaryRows = rankBreakdownRows(
+    currentLevel === 'adset' ? rankedRows : ranking.sameCampaignAdsets
+  );
+  const adsetComparisonRows = rankBreakdownRows(ranking.topAdAccountAdsets);
+  const adPrimaryRows = rankBreakdownRows(
+    currentLevel === 'ad' ? rankedRows : ranking.sameAdsetAds
+  );
+  const adComparisonRows = rankBreakdownRows(ranking.topAdAccountAds);
+  const rankingGroups = [
+    buildRankingGroup({
+      level: 'campaign',
+      primaryTitle: currentLevel === 'campaign' ? 'Ranked campaigns' : getAccountRankingTitle('campaign', query),
+      primaryRows: campaignRows,
+    }),
+    buildRankingGroup({
+      level: 'adset',
+      primaryTitle: getParentRankingTitle('adset', query),
+      primaryRows: adsetPrimaryRows,
+      comparisonTitle: getAccountRankingTitle('adset', query),
+      comparisonRows: adsetComparisonRows,
+    }),
+    buildRankingGroup({
+      level: 'ad',
+      primaryTitle: getParentRankingTitle('ad', query),
+      primaryRows: adPrimaryRows,
+      comparisonTitle: getAccountRankingTitle('ad', query),
+      comparisonRows: adComparisonRows,
+    }),
+  ].filter((group): group is RankingGroup => Boolean(group));
+  const activeRankingGroup =
+    rankingGroups.find((group) => group.key === openedRankingKey) ?? null;
+  const collapsedRankingGroups = rankingGroups.filter((group) =>
+    shouldCollapseParentRankingGroup(group.level, currentLevel)
+  );
+  const visibleRankingGroups = rankingGroups.filter(
+    (group) => !shouldCollapseParentRankingGroup(group.level, currentLevel)
+  );
+
+  useEffect(() => {
+    setOpenedCollapsedRankingKeys([]);
+  }, [currentLevel, rankingGroups.map((group) => group.key).join('|')]);
 
   const renderRankedRows = (inputRows: ReportBreakdownRow[]) =>
-    inputRows.map((row, index) => {
+    inputRows.slice(0, 4).map((row, index) => {
       const tone = getRankTone(index, inputRows.length);
 
       return (
-        <div key={row.id} className={classes.moverRow}>
+        <div key={`${row.level}:${row.id}`} className={classes.moverRow}>
           <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
             <div style={{ flex: 1, minWidth: 0 }}>
               <Group gap={8} wrap="wrap">
@@ -667,21 +640,47 @@ function RankedEntityBoard({
       );
     });
 
+  const renderRankingGroupContent = (group: RankingGroup) => (
+    <Stack gap="sm">
+      {group.sections.map((section) => (
+        <Stack key={`${group.key}:${section.title}`} gap="sm">
+          <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+            {section.title}
+          </Text>
+          {renderRankedRows(section.rows)}
+        </Stack>
+      ))}
+      <Group justify="flex-end">
+        <Button
+          variant="light"
+          radius="xl"
+          size="xs"
+          onClick={() => setOpenedRankingKey(group.key)}
+        >
+          Open {getFullRankingTitle(group.level).toLowerCase()}
+        </Button>
+      </Group>
+    </Stack>
+  );
+
   return (
     <Paper withBorder radius="xl" p="md" className={classes.reportCard}>
       <Modal
-        opened={fullRankingOpened}
-        onClose={() => setFullRankingOpened(false)}
-        title="Full ad ranking"
+        opened={Boolean(activeRankingGroup)}
+        onClose={() => setOpenedRankingKey(null)}
+        title={activeRankingGroup ? getFullRankingTitle(activeRankingGroup.level) : 'Full ranking'}
         size="90%"
         centered
       >
-        <PerformanceTable
-          title="Full ad ranking"
-          rows={fullAdRankingRows}
-          currencyCode={currencyCode}
-          hideTitle
-        />
+        {activeRankingGroup ? (
+          <PerformanceTable
+            title={getFullRankingTitle(activeRankingGroup.level)}
+            rows={activeRankingGroup.fullRows}
+            currencyCode={currencyCode}
+            hideTitle
+            showRanking
+          />
+        ) : null}
       </Modal>
 
       <Group gap="sm" mb="md" className={classes.cardHeader}>
@@ -691,50 +690,60 @@ function RankedEntityBoard({
         <div>
           <Text fw={800}>Performance ranking</Text>
           <Text size="sm" c="dimmed">
-            Highest to lowest with the closest creative comparisons first.
+            Highest to lowest for campaigns, ad sets, and ads in the current filters.
           </Text>
         </div>
       </Group>
       <Stack gap="sm">
-        {rankedRows.length > 0 ? (
+        {rankingGroups.length > 0 ? (
           <>
-            {showAdsetRanking ? (
-              <>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={800} mt="sm">
-                  Ads in this ad set ranking
-                </Text>
-                {renderRankedRows(adsetRankingRows.slice(0, 4))}
-              </>
-            ) : (
-              <>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                  Current scope
-                </Text>
-                {renderRankedRows(rankedRows.slice(0, 4))}
-              </>
-            )}
-
-            {showAdAccountComparison ? (
-              <>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={800} mt="sm">
-                  Best ads in this ad account
-                </Text>
-                {renderRankedRows(comparisonRows.slice(0, 4))}
-              </>
+            {collapsedRankingGroups.length > 0 ? (
+              <Accordion
+                multiple
+                radius="lg"
+                variant="separated"
+                value={openedCollapsedRankingKeys}
+                onChange={(value) =>
+                  setOpenedCollapsedRankingKeys(value as ReportBreakdownRow['level'][])
+                }
+                className={classes.rankingAccordion}
+              >
+                {collapsedRankingGroups.map((group) => (
+                  <Accordion.Item
+                    key={group.key}
+                    value={group.key}
+                    className={classes.rankingAccordionItem}
+                  >
+                    <Accordion.Control className={classes.rankingAccordionControl}>
+                      <Group justify="space-between" align="center" gap="sm" wrap="wrap">
+                        <Text fw={800}>{group.title}</Text>
+                        <Group gap="xs" wrap="wrap">
+                          <Badge color="gray" variant="outline" radius="sm">
+                            Previous level
+                          </Badge>
+                          <Badge color="gray" variant="light" radius="sm">
+                            {group.fullRows.length.toLocaleString()} ranked
+                          </Badge>
+                        </Group>
+                      </Group>
+                    </Accordion.Control>
+                    <Accordion.Panel>{renderRankingGroupContent(group)}</Accordion.Panel>
+                  </Accordion.Item>
+                ))}
+              </Accordion>
             ) : null}
 
-            {fullAdRankingRows.length > 0 ? (
-              <Group justify="flex-end" mt="sm">
-                <Button
-                  variant="light"
-                  radius="xl"
-                  size="xs"
-                  onClick={() => setFullRankingOpened(true)}
-                >
-                  Open full ad ranking
-                </Button>
-              </Group>
-            ) : null}
+            {visibleRankingGroups.map((group) => (
+              <Stack key={group.key} gap="sm">
+                <Group justify="space-between" align="center" gap="sm" wrap="wrap">
+                  <Text fw={800}>{group.title}</Text>
+                  <Badge color="gray" variant="light" radius="sm">
+                    {group.fullRows.length.toLocaleString()} ranked
+                  </Badge>
+                </Group>
+                {renderRankingGroupContent(group)}
+              </Stack>
+            ))}
           </>
         ) : (
           <Text size="sm" c="dimmed">
@@ -857,7 +866,7 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
   const storyData = useMemo(
     () =>
       payload.series.map((point) => ({
-        label: point.label,
+        label: formatChartDateLabel(point.label),
         Spend: Number(point.spend.toFixed(2)),
         Results: point.conversion,
         Clicks: point.clicks,
@@ -867,15 +876,36 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
   const efficiencyTrendData = useMemo(
     () =>
       payload.series.map((point) => ({
-        label: point.label,
+        label: formatChartDateLabel(point.label),
         CTR: Number(point.ctr.toFixed(2)),
-        'Conversion rate': Number(point.conversionRate.toFixed(2)),
-        Frequency: Number(point.frequency.toFixed(2)),
+        CPC: Number(point.cpc.toFixed(2)),
+        CPM: Number(point.cpm.toFixed(2)),
       })),
     [payload.series]
   );
+  const reportTrendXAxisProps = useMemo(
+    () => ({
+      minTickGap: 20,
+      tickMargin: 10,
+      padding: {
+        left: 18,
+        right: 30,
+      },
+    }),
+    []
+  );
+  const reportTrendChartProps = useMemo(
+    () => ({
+      margin: {
+        top: 8,
+        right: 32,
+        bottom: 8,
+        left: 8,
+      },
+    }),
+    []
+  );
 
-  const insight = useMemo(() => deriveInsight(payload), [payload]);
   const activeFilterCount = useMemo(() => getActiveFilterCount(payload), [payload]);
   const strongestRows = useMemo(
     () => [...payload.breakdown.rows].sort((left, right) => scoreStrongestRow(right) - scoreStrongestRow(left)).slice(0, 4),
@@ -1042,10 +1072,12 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
                     h={340}
                     data={storyData}
                     dataKey="label"
+                    xAxisProps={reportTrendXAxisProps}
+                    lineChartProps={reportTrendChartProps}
                     series={[
-                      { name: 'Spend', color: 'blue.6' },
-                      { name: 'Results', color: 'teal.6' },
-                      { name: 'Clicks', color: 'orange.6' },
+                      { name: 'Spend', color: CHART_METRIC_COLORS.spend },
+                      { name: 'Results', color: CHART_METRIC_COLORS.results },
+                      { name: 'Clicks', color: CHART_METRIC_COLORS.clicks },
                     ]}
                     curveType="linear"
                     withLegend
@@ -1068,11 +1100,11 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
                       Quality trend
                     </Text>
                     <Text fw={800} mt={4}>
-                      CTR, conversion rate, and frequency over time
+                      CTR, CPC, and CPM over time
                     </Text>
                     <Text size="sm" c="dimmed" mt={4}>
-                      This makes it easier to spot fatigue, weaker traffic quality, or periods where
-                      delivery improved without simply spending more.
+                      This makes it easier to spot weaker click quality, rising acquisition cost, or
+                      periods where efficiency improved without simply spending more.
                     </Text>
                   </div>
                   <Badge variant="light" color="gray" radius="sm">
@@ -1086,10 +1118,12 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
                       h={220}
                       data={efficiencyTrendData}
                       dataKey="label"
+                      xAxisProps={reportTrendXAxisProps}
+                      lineChartProps={reportTrendChartProps}
                       series={[
-                        { name: 'CTR', color: 'violet.6' },
-                        { name: 'Conversion rate', color: 'teal.6' },
-                        { name: 'Frequency', color: 'orange.6' },
+                        { name: 'CTR', color: CHART_METRIC_COLORS.ctr },
+                        { name: 'CPC', color: CHART_METRIC_COLORS.cpc },
+                        { name: 'CPM', color: CHART_METRIC_COLORS.cpm },
                       ]}
                       curveType="linear"
                       withLegend
@@ -1105,15 +1139,6 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
                     </Stack>
                   )}
                 </div>
-              </Paper>
-
-              <Paper withBorder radius="lg" p="md" className={classes.insightBlock}>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                  Report read
-                </Text>
-                <Text size="sm" mt={6}>
-                  {insight.summary}
-                </Text>
               </Paper>
 
               <div className={classes.timelineSnapshotGrid}>
@@ -1278,9 +1303,8 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
         <RankedEntityBoard
           rows={payload.breakdown.rows}
           currencyCode={payload.meta.currencyCode}
-          sameAdsetRows={payload.ranking.sameAdsetAds}
-          topAdAccountRows={payload.ranking.topAdAccountAds}
-          scope={payload.query.scope}
+          ranking={payload.ranking}
+          query={payload.query}
         />
 
         <Card withBorder radius="xl" p="lg" className={`${classes.reportCard} ${classes.tableCard}`}>

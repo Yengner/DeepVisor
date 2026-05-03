@@ -839,6 +839,7 @@ export default async function MainDashboardPage() {
     adsetDimensions: [],
     adDimensions: [],
   });
+  let liveLifetime = liveToday;
   let featuredAdsetHistory: DashboardFeaturedAdsetHistory = {
     adset: null,
     dailyTrend: [],
@@ -889,6 +890,32 @@ export default async function MainDashboardPage() {
 
       liveToday = todaySnapshot.liveWindow;
 
+      const lifetimeStartDate = coverage?.coverageStartDate ?? null;
+      const lifetimeEndDate = coverage?.coverageEndDate ?? latestDeliveryDay ?? accountDayRange.dateTo;
+
+      if (lifetimeStartDate && lifetimeEndDate) {
+        const lifetimeSnapshot = await buildDashboardLiveWindowSnapshot({
+          businessId,
+          platformIntegrationId: selectedPlatformId,
+          adAccountId: adAccount.id,
+          dateFrom: lifetimeStartDate,
+          dateTo: lifetimeEndDate,
+          groupBy: 'week',
+          supabase: adminSupabase,
+          isMeta,
+        });
+
+        liveLifetime = lifetimeSnapshot.liveWindow;
+        hasReportMetrics =
+          hasReportMetrics ||
+          lifetimeSnapshot.report.summary.spend > 0 ||
+          lifetimeSnapshot.report.summary.impressions > 0 ||
+          lifetimeSnapshot.report.summary.conversion > 0 ||
+          hasMeaningfulReportRows(lifetimeSnapshot.report.breakdown.rows);
+      }
+
+      let fallbackLiveWindow: typeof liveToday | null = null;
+
       if (
         !liveToday.hasLiveDelivery &&
         latestDeliveryDay &&
@@ -913,11 +940,18 @@ export default async function MainDashboardPage() {
           hasMeaningfulReportRows(fallbackSnapshot.report.breakdown.rows);
 
         if (fallbackSnapshot.liveWindow.hasLiveDelivery) {
-          liveToday = fallbackSnapshot.liveWindow;
+          fallbackLiveWindow = fallbackSnapshot.liveWindow;
         }
       }
 
-      const featuredAdset = liveToday.comparisons.adsets[0] ?? liveToday.adsets[0] ?? null;
+      const featuredAdset =
+        liveToday.comparisons.adsets[0] ??
+        liveToday.adsets[0] ??
+        liveLifetime.comparisons.adsets[0] ??
+        liveLifetime.adsets[0] ??
+        fallbackLiveWindow?.comparisons.adsets[0] ??
+        fallbackLiveWindow?.adsets[0] ??
+        null;
 
       if (featuredAdset?.internalId) {
         const historyStartDate =
@@ -1005,6 +1039,7 @@ export default async function MainDashboardPage() {
     syncCoverage,
     hasReportMetrics,
     liveToday,
+    liveLifetime,
     featuredAdsetHistory,
     activeFindings,
   });

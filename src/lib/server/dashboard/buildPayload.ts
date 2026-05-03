@@ -1127,6 +1127,7 @@ export function buildDashboardPayload(input: {
   syncCoverage: DashboardPayload['syncCoverage'];
   hasReportMetrics: boolean;
   liveToday?: DashboardLiveWindow | null;
+  liveLifetime?: DashboardLiveWindow | null;
   featuredAdsetHistory?: DashboardFeaturedAdsetHistory | null;
   activeFindings?: DashboardPayload['activeFindings'];
 }): DashboardPayload {
@@ -1163,6 +1164,7 @@ export function buildDashboardPayload(input: {
       canRefresh: platformConnected,
     },
     liveToday: input.liveToday ?? emptyLiveWindow(isMeta),
+    liveLifetime: input.liveLifetime ?? emptyLiveWindow(isMeta),
     featuredAdsetHistory: input.featuredAdsetHistory ?? emptyFeaturedAdsetHistory(isMeta),
     activeFindings: input.activeFindings ?? [],
     syncCoverage: input.syncCoverage,

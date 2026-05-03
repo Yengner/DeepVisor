@@ -257,6 +257,7 @@ export interface DashboardPayload {
   };
   viewContext: DashboardViewContext;
   liveToday: DashboardLiveWindow;
+  liveLifetime: DashboardLiveWindow;
   featuredAdsetHistory: DashboardFeaturedAdsetHistory;
   activeFindings: TrendFindingView[];
   syncCoverage: SyncCoverage | null;

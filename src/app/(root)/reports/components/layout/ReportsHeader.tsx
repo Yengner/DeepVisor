@@ -61,6 +61,23 @@ function normalizePickerDate(value: Date | string | null): Date | null {
   return typeof value === 'string' ? parseLocalDate(value) : value;
 }
 
+function formatReadableDate(value: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const date = parseLocalDate(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
 function presetRange(preset: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -96,6 +113,20 @@ function presetRange(preset: string) {
   };
 }
 
+function resolveActivePreset(dateFrom: string, dateTo: string): string | null {
+  const presetValues = ['7d', '30d', '90d', 'mtd', 'qtd', 'ytd'];
+
+  for (const preset of presetValues) {
+    const range = presetRange(preset);
+
+    if (range.dateFrom === dateFrom && range.dateTo === dateTo) {
+      return preset;
+    }
+  }
+
+  return null;
+}
+
 export default function ReportsHeader({
   payload,
   exportLinks,
@@ -113,6 +144,14 @@ export default function ReportsHeader({
     [payload.query.dateFrom, payload.query.dateTo]
   );
   const [draftRange, setDraftRange] = useState<[Date | null, Date | null]>(rangeValue);
+  const activeDateCountByIso = useMemo(
+    () => new Map((payload.activeDates?.days ?? []).map((item) => [item.date, item.activeEntityCount])),
+    [payload.activeDates]
+  );
+  const activePreset = useMemo(
+    () => resolveActivePreset(payload.query.dateFrom, payload.query.dateTo),
+    [payload.query.dateFrom, payload.query.dateTo]
+  );
 
   useEffect(() => {
     setDraftRange(rangeValue);
@@ -127,11 +166,39 @@ export default function ReportsHeader({
     { value: 'ytd', label: 'YTD' },
   ];
 
+  const activeDateSummary = payload.activeDates
+    ? `${formatReadableDate(payload.activeDates.startDate) ?? 'Unknown'} through ${
+        formatReadableDate(payload.activeDates.endDate) ?? 'Unknown'
+      }`
+    : null;
+
+  const formatActiveEntityLabel = (count: number) => {
+    if (!payload.activeDates) {
+      return 'entities';
+    }
+
+    if (payload.activeDates.scope === 'campaign') {
+      return count === 1 ? 'campaign' : 'campaigns';
+    }
+
+    if (payload.activeDates.scope === 'adset') {
+      return count === 1 ? 'ad set' : 'ad sets';
+    }
+
+    return count === 1 ? 'ad' : 'ads';
+  };
+
   return (
-    <Card p={{ base: 'md', md: 'lg' }} radius="xl" withBorder className={classes.headerCard}>
-      <Stack gap="md">
-        <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
-          <div>
+    <Card p={{ base: 'sm', md: 'md' }} radius="xl" withBorder className={classes.headerCard}>
+      <Stack gap="sm">
+        <Group
+          justify="space-between"
+          align="flex-start"
+          gap="md"
+          wrap="wrap"
+          className={classes.headerTopRow}
+        >
+          <div className={classes.headerMeta}>
             <Group gap="xs" align="center" wrap="wrap">
               <Badge color="gray" variant="light" size="md">
                 {payload.meta.businessName}
@@ -157,12 +224,9 @@ export default function ReportsHeader({
             <Text fw={900} size="1.65rem" mt="xs" className={classes.headerTitle}>
               {payload.meta.title}
             </Text>
-            <Text size="sm" mt={4} className="app-platform-page-subtle">
-              Generated {new Date(payload.meta.generatedAt).toLocaleString()}
-            </Text>
           </div>
 
-          <Group gap="sm" wrap="wrap">
+          <Group gap="xs" wrap="wrap" className={classes.headerActions}>
             <Button
               leftSection={<IconAdjustmentsHorizontal size={16} />}
               radius="xl"
@@ -206,91 +270,156 @@ export default function ReportsHeader({
           </Group>
         </Group>
 
-        <Group align="flex-end" gap="sm" wrap="wrap" className={classes.controlBar}>
-          <Group gap="xs" wrap="wrap">
-            {presets.map((preset) => (
-              <Button
-                key={preset.value}
-                radius="xl"
-                size="xs"
-                variant="light"
-                color="gray"
-                onClick={() => {
-                  const range = presetRange(preset.value);
-                  setDraftRange([parseLocalDate(range.dateFrom), parseLocalDate(range.dateTo)]);
+        <div className={classes.controlBar}>
+          <div className={classes.controlField}>
+            <Text size="xs" fw={700} className={classes.controlLabel}>
+              Quick Range
+            </Text>
+            <div className={classes.presetRail}>
+              {presets.map((preset) => {
+                const isActive = activePreset === preset.value;
+
+                return (
+                  <Button
+                    key={preset.value}
+                    radius="xl"
+                    size="xs"
+                    variant={isActive ? 'filled' : 'light'}
+                    color={isActive ? 'blue' : 'gray'}
+                    className={classes.presetButton}
+                    onClick={() => {
+                      const range = presetRange(preset.value);
+                      setDraftRange([parseLocalDate(range.dateFrom), parseLocalDate(range.dateTo)]);
+                      onUpdate((params) => {
+                        params.set('date_from', range.dateFrom);
+                        params.set('date_to', range.dateTo);
+                      });
+                    }}
+                  >
+                    {preset.label}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className={classes.controlField}>
+            <Text size="xs" fw={700} className={classes.controlLabel}>
+              Date Range
+            </Text>
+            <DatePickerInput
+              type="range"
+              value={draftRange}
+              onChange={(value) => {
+                const start = normalizePickerDate(value[0]);
+                const end = normalizePickerDate(value[1]);
+
+                setDraftRange([start, end]);
+
+                if (!start || !end) {
+                  return;
+                }
+
+                onUpdate((params) => {
+                  params.set('date_from', toIsoDate(start));
+                  params.set('date_to', toIsoDate(end));
+                });
+              }}
+              aria-label="Date range"
+              valueFormat="MMM D, YYYY"
+              radius="md"
+              size="sm"
+              placeholder="Select date range"
+              className={classes.controlInput}
+              getDayProps={(date) => {
+                const isoDate = toIsoDate(date);
+                const activeCount = activeDateCountByIso.get(isoDate) ?? 0;
+
+                if (activeCount === 0) {
+                  return {};
+                }
+
+                return {
+                  title: `${activeCount} selected ${formatActiveEntityLabel(activeCount)} serving`,
+                  style: {
+                    boxShadow: 'inset 0 0 0 1px rgba(249, 115, 22, 0.38)',
+                  },
+                };
+              }}
+              renderDay={(date) => {
+                const isoDate = toIsoDate(date);
+                const activeCount = activeDateCountByIso.get(isoDate) ?? 0;
+                const resolvedDate = normalizePickerDate(date);
+
+                return (
+                  <div className={classes.reportCalendarDay}>
+                    <span>{resolvedDate?.getDate() ?? ''}</span>
+                    {activeCount > 0 ? <span className={classes.reportCalendarDayDot} /> : null}
+                  </div>
+                );
+              }}
+            />
+          </div>
+
+          <div className={classes.controlField}>
+            <Text size="xs" fw={700} className={classes.controlLabel}>
+              Group By
+            </Text>
+            <Select
+              aria-label="Group by"
+              value={payload.query.groupBy}
+              onChange={(value) => {
+                if (!value) {
+                  return;
+                }
+
+                onUpdate((params) => {
+                  params.set('group_by', value);
+                });
+              }}
+              data={[
+                { value: 'day', label: 'Day' },
+                { value: 'week', label: 'Week' },
+                { value: 'month', label: 'Month' },
+              ]}
+              radius="md"
+              size="sm"
+              className={classes.groupBySelect}
+            />
+          </div>
+
+          <div className={classes.controlField}>
+            <Text size="xs" fw={700} className={classes.controlLabel}>
+              Compare
+            </Text>
+            <div className={classes.compareField}>
+              <Switch
+                label="Previous period"
+                checked={payload.query.compareMode === 'previous_period'}
+                onChange={(event) => {
                   onUpdate((params) => {
-                    params.set('date_from', range.dateFrom);
-                    params.set('date_to', range.dateTo);
+                    params.set(
+                      'compare',
+                      event.currentTarget.checked ? 'previous_period' : 'none'
+                    );
                   });
                 }}
-              >
-                {preset.label}
-              </Button>
-            ))}
-          </Group>
+                color="blue"
+                size="md"
+              />
+            </div>
+          </div>
 
-          <DatePickerInput
-            type="range"
-            value={draftRange}
-            onChange={(value) => {
-              const start = normalizePickerDate(value[0]);
-              const end = normalizePickerDate(value[1]);
-
-              setDraftRange([start, end]);
-
-              if (!start || !end) {
-                return;
-              }
-
-              onUpdate((params) => {
-                params.set('date_from', toIsoDate(start));
-                params.set('date_to', toIsoDate(end));
-              });
-            }}
-            valueFormat="MMM D, YYYY"
-            radius="md"
-            size="sm"
-            placeholder="Select date range"
-            style={{ minWidth: 260 }}
-          />
-
-          <Select
-            label="Group by"
-            value={payload.query.groupBy}
-            onChange={(value) => {
-              if (!value) {
-                return;
-              }
-
-              onUpdate((params) => {
-                params.set('group_by', value);
-              });
-            }}
-            data={[
-              { value: 'day', label: 'Day' },
-              { value: 'week', label: 'Week' },
-              { value: 'month', label: 'Month' },
-            ]}
-            radius="md"
-            size="sm"
-            style={{ minWidth: 120 }}
-          />
-
-          <Switch
-            label="Compare previous period"
-            checked={payload.query.compareMode === 'previous_period'}
-            onChange={(event) => {
-              onUpdate((params) => {
-                params.set(
-                  'compare',
-                  event.currentTarget.checked ? 'previous_period' : 'none'
-                );
-              });
-            }}
-            color="blue"
-            size="md"
-          />
-        </Group>
+          {payload.activeDates ? (
+            <Group gap="xs" wrap="wrap" className={classes.activeDatesHint}>
+              <span className={classes.activeDatesLegendDot} />
+              <Text size="xs" c="dimmed">
+                {payload.activeDates.label}. {payload.activeDates.totalActiveDays.toLocaleString()} active
+                day{payload.activeDates.totalActiveDays === 1 ? '' : 's'} across {activeDateSummary}.
+              </Text>
+            </Group>
+          ) : null}
+        </div>
       </Stack>
     </Card>
   );

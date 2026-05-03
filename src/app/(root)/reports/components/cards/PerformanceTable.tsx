@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge, Button, Card, Group, Table, Text } from "@mantine/core";
+import { IconStarFilled } from "@tabler/icons-react";
 import type { ReportBreakdownRow } from "@/lib/server/reports/types";
 
 interface PerformanceTableProps {
@@ -8,6 +9,7 @@ interface PerformanceTableProps {
   rows: ReportBreakdownRow[];
   currencyCode: string | null;
   hideTitle?: boolean;
+  showRanking?: boolean;
 }
 
 const REPORT_TABLE_COLUMN_WIDTHS = [
@@ -25,6 +27,7 @@ const REPORT_TABLE_COLUMN_WIDTHS = [
   '150px',
   '150px',
 ] as const;
+const RANKED_REPORT_TABLE_COLUMN_WIDTHS = ['110px', ...REPORT_TABLE_COLUMN_WIDTHS] as const;
 
 function formatCurrency(value: number, currencyCode: string | null) {
   if (!currencyCode || currencyCode === 'MIXED') {
@@ -72,7 +75,11 @@ export default function PerformanceTable({
   rows,
   currencyCode,
   hideTitle = false,
+  showRanking = false,
 }: PerformanceTableProps) {
+  const columnWidths = showRanking ? RANKED_REPORT_TABLE_COLUMN_WIDTHS : REPORT_TABLE_COLUMN_WIDTHS;
+  const tableMinWidth = showRanking ? 2120 : 2010;
+
   return (
     <Card withBorder p="md" radius="lg">
       {hideTitle ? null : (
@@ -81,21 +88,22 @@ export default function PerformanceTable({
         </Text>
       )}
 
-      <Table.ScrollContainer minWidth={2010}>
+      <Table.ScrollContainer minWidth={tableMinWidth}>
         <Table
           striped
           highlightOnHover
           withTableBorder
           withColumnBorders
-          style={{ tableLayout: 'fixed', minWidth: 2010 }}
+          style={{ tableLayout: 'fixed', minWidth: tableMinWidth }}
         >
           <colgroup>
-            {REPORT_TABLE_COLUMN_WIDTHS.map((width, index) => (
+            {columnWidths.map((width, index) => (
               <col key={`${index}:${width}`} style={{ width }} />
             ))}
           </colgroup>
           <Table.Thead>
             <Table.Tr>
+              {showRanking ? <Table.Th ta="center">Rank</Table.Th> : null}
               <Table.Th>Entity</Table.Th>
               <Table.Th>Level</Table.Th>
               <Table.Th>Status</Table.Th>
@@ -114,75 +122,91 @@ export default function PerformanceTable({
           <Table.Tbody>
             {rows.length === 0 ? (
               <Table.Tr>
-                <Table.Td colSpan={13}>
+                <Table.Td colSpan={showRanking ? 14 : 13}>
                   <Text ta="center" c="dimmed" py="md">
                     No performance rows available for the selected filters.
                   </Text>
                 </Table.Td>
               </Table.Tr>
             ) : (
-              rows.map((row) => (
-                <Table.Tr key={row.id}>
-                  <Table.Td>
-                    <Text fw={700}>{row.name}</Text>
-                    <Text size="xs" c="dimmed">
-                      {row.id}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge variant="light" color={getLevelColor(row.level)}>
-                      {row.level}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    {row.status ? (
-                      <Badge variant="light" color="gray">
-                        {row.status}
-                      </Badge>
-                    ) : (
-                      '—'
-                    )}
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap={4}>
-                      <Text size="sm">{row.primaryContext || '—'}</Text>
-                    </Group>
-                    {row.creativeContext ? (
-                      <Text size="xs" c="dimmed">
-                        Creative: {row.creativeContext}
-                      </Text>
+              rows.map((row, index) => {
+                const rank = index + 1;
+
+                return (
+                  <Table.Tr key={row.id}>
+                    {showRanking ? (
+                      <Table.Td ta="center">
+                        <Badge
+                          variant="light"
+                          color={rank === 1 ? 'yellow' : 'gray'}
+                          radius="sm"
+                          leftSection={rank === 1 ? <IconStarFilled size={12} /> : null}
+                        >
+                          #{rank}
+                        </Badge>
+                      </Table.Td>
                     ) : null}
-                    <Text size="xs" c="dimmed">
-                      {row.secondaryContext || '—'}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>{formatDateWindow(row.startDate, row.endDate)}</Table.Td>
-                  <Table.Td ta="right">{formatCurrency(row.spend, currencyCode)}</Table.Td>
-                  <Table.Td ta="right">{row.conversion.toLocaleString()}</Table.Td>
-                  <Table.Td ta="right">{row.impressions.toLocaleString()}</Table.Td>
-                  <Table.Td ta="right">{row.clicks.toLocaleString()}</Table.Td>
-                  <Table.Td ta="right">{row.ctr.toFixed(2)}%</Table.Td>
-                  <Table.Td ta="right">{formatCurrency(row.cpc, currencyCode)}</Table.Td>
-                  <Table.Td ta="right">{formatCurrency(row.costPerResult, currencyCode)}</Table.Td>
-                  <Table.Td ta="right">
-                    {row.drilldownHref ? (
-                      <Button
-                        component="a"
-                        href={row.drilldownHref}
-                        variant="light"
-                        size="xs"
-                        radius="xl"
-                      >
-                        {row.drilldownLabel ?? 'Open report'}
-                      </Button>
-                    ) : (
-                      <Text size="sm" c="dimmed">
-                        —
+                    <Table.Td>
+                      <Text fw={700}>{row.name}</Text>
+                      <Text size="xs" c="dimmed">
+                        {row.id}
                       </Text>
-                    )}
-                  </Table.Td>
-                </Table.Tr>
-              ))
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge variant="light" color={getLevelColor(row.level)}>
+                        {row.level}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      {row.status ? (
+                        <Badge variant="light" color="gray">
+                          {row.status}
+                        </Badge>
+                      ) : (
+                        '—'
+                      )}
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap={4}>
+                        <Text size="sm">{row.primaryContext || '—'}</Text>
+                      </Group>
+                      {row.creativeContext ? (
+                        <Text size="xs" c="dimmed">
+                          Creative: {row.creativeContext}
+                        </Text>
+                      ) : null}
+                      <Text size="xs" c="dimmed">
+                        {row.secondaryContext || '—'}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>{formatDateWindow(row.startDate, row.endDate)}</Table.Td>
+                    <Table.Td ta="right">{formatCurrency(row.spend, currencyCode)}</Table.Td>
+                    <Table.Td ta="right">{row.conversion.toLocaleString()}</Table.Td>
+                    <Table.Td ta="right">{row.impressions.toLocaleString()}</Table.Td>
+                    <Table.Td ta="right">{row.clicks.toLocaleString()}</Table.Td>
+                    <Table.Td ta="right">{row.ctr.toFixed(2)}%</Table.Td>
+                    <Table.Td ta="right">{formatCurrency(row.cpc, currencyCode)}</Table.Td>
+                    <Table.Td ta="right">{formatCurrency(row.costPerResult, currencyCode)}</Table.Td>
+                    <Table.Td ta="right">
+                      {row.drilldownHref ? (
+                        <Button
+                          component="a"
+                          href={row.drilldownHref}
+                          variant="light"
+                          size="xs"
+                          radius="xl"
+                        >
+                          {row.drilldownLabel ?? 'Open report'}
+                        </Button>
+                      ) : (
+                        <Text size="sm" c="dimmed">
+                          —
+                        </Text>
+                      )}
+                    </Table.Td>
+                  </Table.Tr>
+                );
+              })
             )}
           </Table.Tbody>
         </Table>

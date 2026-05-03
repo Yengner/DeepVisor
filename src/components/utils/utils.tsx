@@ -1,4 +1,4 @@
-import { IconBrandFacebook, IconBrandGoogle, IconBrandLinkedin, IconBrandSnapchat, IconBrandTiktok, IconBrandTwitter } from "@tabler/icons-react";
+import { IconBrandGoogle, IconBrandLinkedin, IconBrandMeta, IconBrandSnapchat, IconBrandTiktok, IconBrandTwitter } from "@tabler/icons-react";
 import { JSX } from "react";
 import { FaFacebook, FaGithub, FaInstagram, FaLinkedin, FaThreads, FaTwitter, FaXTwitter, FaYoutube } from "react-icons/fa6";
 
@@ -36,9 +36,9 @@ export const getPlatformIconByName = (platformName: string): JSX.Element | null 
 
 export const getPlatformIcon = (platformName: string, size: number = 24, stroke?: number) => {
     switch (platformName?.toLowerCase()) {
-        case 'facebook':
         case 'meta':
-            return <IconBrandFacebook size={size} stroke={stroke} />;
+        case 'facebook':
+            return <IconBrandMeta size={size} stroke={stroke} />;
         case 'google':
             return <IconBrandGoogle size={24} stroke={stroke} />;
         case 'tiktok':

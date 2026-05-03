@@ -193,6 +193,108 @@ export function formatDisplayDate(value?: string | null): string {
     : '';
 }
 
+function formatUtcChartDateToken(
+  value: string,
+  options: Intl.DateTimeFormatOptions
+): string | null {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toLocaleDateString('en-US', {
+    ...options,
+    timeZone: 'UTC',
+  });
+}
+
+function formatUtcChartRangeLabel(startValue: string, endValue: string): string | null {
+  const start = new Date(`${startValue}T00:00:00Z`);
+  const end = new Date(`${endValue}T00:00:00Z`);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return null;
+  }
+
+  const sameYear = start.getUTCFullYear() === end.getUTCFullYear();
+  const sameMonth = sameYear && start.getUTCMonth() === end.getUTCMonth();
+
+  if (sameMonth) {
+    const startLabel = formatUtcChartDateToken(`${startValue}T00:00:00Z`, {
+      month: 'short',
+      day: 'numeric',
+    });
+
+    return startLabel ? `${startLabel} - ${end.getUTCDate()}, ${end.getUTCFullYear()}` : null;
+  }
+
+  if (sameYear) {
+    const startLabel = formatUtcChartDateToken(`${startValue}T00:00:00Z`, {
+      month: 'short',
+      day: 'numeric',
+    });
+    const endLabel = formatUtcChartDateToken(`${endValue}T00:00:00Z`, {
+      month: 'short',
+      day: 'numeric',
+    });
+
+    return startLabel && endLabel ? `${startLabel} - ${endLabel}, ${end.getUTCFullYear()}` : null;
+  }
+
+  const startLabel = formatUtcChartDateToken(`${startValue}T00:00:00Z`, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const endLabel = formatUtcChartDateToken(`${endValue}T00:00:00Z`, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  return startLabel && endLabel ? `${startLabel} - ${endLabel}` : null;
+}
+
+/**
+ * Formats chart bucket labels from reporting data into readable UI copy.
+ *
+ * Supports:
+ * - `YYYY-MM-DD` -> `Apr 26, 2026`
+ * - `YYYY-MM` -> `Apr 2026`
+ * - `YYYY-MM-DD - YYYY-MM-DD` -> `Apr 1 - 7, 2026`
+ *
+ * Any value that does not match one of those shapes is returned trimmed.
+ */
+export function formatChartDateLabel(value: string): string {
+  const trimmed = value.trim();
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return (
+      formatUtcChartDateToken(`${trimmed}T00:00:00Z`, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }) ?? trimmed
+    );
+  }
+
+  if (/^\d{4}-\d{2}$/.test(trimmed)) {
+    return (
+      formatUtcChartDateToken(`${trimmed}-01T00:00:00Z`, {
+        month: 'short',
+        year: 'numeric',
+      }) ?? trimmed
+    );
+  }
+
+  const rangeMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})\s*-\s*(\d{4}-\d{2}-\d{2})$/);
+  if (rangeMatch) {
+    return formatUtcChartRangeLabel(rangeMatch[1], rangeMatch[2]) ?? trimmed;
+  }
+
+  return trimmed;
+}
+
 /**
  * Formats a timestamp with both date and time for metadata and detail views.
  *
