@@ -936,8 +936,10 @@ function buildDemoRanking(
     });
   }
 
+  const isTopLevelReport =
+    query.scope === 'business' || query.scope === 'platform' || query.scope === 'ad_account';
   const topAdAccountCampaigns =
-    query.scope === 'campaign' || query.scope === 'adset' || query.scope === 'ad'
+    isTopLevelReport || query.scope === 'campaign' || query.scope === 'adset' || query.scope === 'ad'
       ? buildBreakdownRows(
           {
             ...query,
@@ -967,7 +969,7 @@ function buildDemoRanking(
         : [];
 
   const topAdAccountAdsets =
-    query.scope === 'campaign' || query.scope === 'adset' || query.scope === 'ad'
+    isTopLevelReport || query.scope === 'campaign' || query.scope === 'adset' || query.scope === 'ad'
       ? buildBreakdownRows(
           {
             ...query,
@@ -994,7 +996,7 @@ function buildDemoRanking(
       : [];
 
   const topAdAccountAds =
-    adAccountIds.length && (query.scope === 'adset' || query.scope === 'ad')
+    adAccountIds.length && (isTopLevelReport || query.scope === 'adset' || query.scope === 'ad')
       ? buildBreakdownRows(
           {
             ...query,
@@ -1151,6 +1153,7 @@ export function buildDemoReportPayload(
   const breakdownRows = buildBreakdownRows(query, ads);
   const ranking = buildDemoRanking(query, ads, breakdownRows);
   const activeDates = buildDemoActiveDateContext(query, ads);
+  const isMetaSurface = query.platformIntegrationId !== 'demo-platform-google';
 
   return {
     query,
@@ -1177,6 +1180,21 @@ export function buildDemoReportPayload(
     },
     ranking,
     activeDates,
+    surface: {
+      isMeta: isMetaSurface,
+      platformBreakdowns: {
+        state: isMetaSurface ? 'syncing' : 'unsupported',
+        publisherPlatforms: [],
+        placements: [],
+        impressionDevices: [],
+      },
+      audienceBreakdowns: {
+        state: isMetaSurface ? 'syncing' : 'unsupported',
+        ageGender: [],
+        geo: [],
+      },
+      hourlyTrendExpanded: [],
+    },
     export: {
       title: scopeMeta.title,
       subtitle: scopeMeta.subtitle,

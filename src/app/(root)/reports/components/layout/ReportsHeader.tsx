@@ -36,6 +36,8 @@ interface ReportsHeaderProps {
   isPending?: boolean;
 }
 
+type QuickRangePreset = '7d' | '30d' | '90d' | 'mtd' | 'qtd' | 'ytd' | 'max';
+
 function toIsoDate(date: Date | string): string {
   if (typeof date === 'string') {
     return date;
@@ -78,7 +80,14 @@ function formatReadableDate(value: string | null): string | null {
   });
 }
 
-function presetRange(preset: string) {
+function presetRange(
+  preset: QuickRangePreset,
+  maxRange: { dateFrom: string; dateTo: string } | null = null
+) {
+  if (preset === 'max') {
+    return maxRange;
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const from = new Date(today);
@@ -113,11 +122,19 @@ function presetRange(preset: string) {
   };
 }
 
-function resolveActivePreset(dateFrom: string, dateTo: string): string | null {
-  const presetValues = ['7d', '30d', '90d', 'mtd', 'qtd', 'ytd'];
+function resolveActivePreset(
+  dateFrom: string,
+  dateTo: string,
+  maxRange: { dateFrom: string; dateTo: string } | null
+): QuickRangePreset | null {
+  const presetValues: QuickRangePreset[] = ['max', '7d', '30d', '90d', 'mtd', 'qtd', 'ytd'];
 
   for (const preset of presetValues) {
-    const range = presetRange(preset);
+    const range = presetRange(preset, maxRange);
+
+    if (!range) {
+      continue;
+    }
 
     if (range.dateFrom === dateFrom && range.dateTo === dateTo) {
       return preset;
@@ -148,22 +165,33 @@ export default function ReportsHeader({
     () => new Map((payload.activeDates?.days ?? []).map((item) => [item.date, item.activeEntityCount])),
     [payload.activeDates]
   );
+  const maxRange = useMemo(() => {
+    if (!payload.activeDates?.startDate || !payload.activeDates.endDate) {
+      return null;
+    }
+
+    return {
+      dateFrom: payload.activeDates.startDate,
+      dateTo: payload.activeDates.endDate,
+    };
+  }, [payload.activeDates]);
   const activePreset = useMemo(
-    () => resolveActivePreset(payload.query.dateFrom, payload.query.dateTo),
-    [payload.query.dateFrom, payload.query.dateTo]
+    () => resolveActivePreset(payload.query.dateFrom, payload.query.dateTo, maxRange),
+    [maxRange, payload.query.dateFrom, payload.query.dateTo]
   );
 
   useEffect(() => {
     setDraftRange(rangeValue);
   }, [rangeValue]);
 
-  const presets = [
+  const presets: Array<{ value: QuickRangePreset; label: string }> = [
     { value: '7d', label: '7D' },
     { value: '30d', label: '30D' },
     { value: '90d', label: '90D' },
     { value: 'mtd', label: 'MTD' },
     { value: 'qtd', label: 'QTD' },
     { value: 'ytd', label: 'YTD' },
+    { value: 'max', label: 'Max' },
   ];
 
   const activeDateSummary = payload.activeDates
@@ -278,6 +306,7 @@ export default function ReportsHeader({
             <div className={classes.presetRail}>
               {presets.map((preset) => {
                 const isActive = activePreset === preset.value;
+                const range = presetRange(preset.value, maxRange);
 
                 return (
                   <Button
@@ -287,8 +316,12 @@ export default function ReportsHeader({
                     variant={isActive ? 'filled' : 'light'}
                     color={isActive ? 'blue' : 'gray'}
                     className={classes.presetButton}
+                    disabled={!range}
                     onClick={() => {
-                      const range = presetRange(preset.value);
+                      if (!range) {
+                        return;
+                      }
+
                       setDraftRange([parseLocalDate(range.dateFrom), parseLocalDate(range.dateTo)]);
                       onUpdate((params) => {
                         params.set('date_from', range.dateFrom);

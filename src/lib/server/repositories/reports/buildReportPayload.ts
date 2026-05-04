@@ -4,8 +4,16 @@ import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { parseDailyMetricsRowsFromTimeIncrementMetrics } from '@/lib/server/repositories/ad_accounts/normalizers';
 import { derivePerformanceMetrics } from '@/lib/server/repositories/campaigns/normalizers';
 import { chunkArray } from '@/lib/server/repositories/utils';
+import {
+  buildAudienceBreakdowns,
+  buildPlatformBreakdowns,
+} from '@/lib/server/dashboard/buildPayload';
 import { buildReportUrl } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
+import type {
+  DashboardAudienceMetricRow,
+  DashboardTrendPoint,
+} from '@/lib/server/dashboard/types';
 import type {
   ReportActiveDateContext,
   ReportBreakdownRow,
@@ -16,6 +24,7 @@ import type {
   ReportPayload,
   ReportQueryInput,
   ReportRankingContext,
+  ReportSurfaceContext,
   ReportTimeSeriesPoint,
 } from '@/lib/server/reports/types';
 
@@ -44,6 +53,14 @@ type PlatformRow = {
   platform_id: string;
   status: string;
   platforms: { key: string; name: string } | { key: string; name: string }[] | null;
+};
+
+type ReportPlatformOption = {
+  id: string;
+  platformId: string;
+  label: string;
+  status: string;
+  key: string | null;
 };
 
 type AdAccountRow = Pick<
@@ -152,12 +169,22 @@ type ActivityMetricsRow = {
 
 type FilterContext = {
   business: BusinessProfileRow;
-  platforms: Array<{ id: string; platformId: string; label: string; status: string }>;
+  platforms: ReportPlatformOption[];
   adAccounts: AdAccountRow[];
   campaigns: CampaignDimRow[];
   adsets: AdsetDimRow[];
   ads: AdDimRow[];
 };
+
+const REPORT_AUDIENCE_BREAKDOWN_TYPES = [
+  'publisher_platform',
+  'platform_position',
+  'age_gender',
+  'country',
+  'region',
+  'impression_device',
+  'dma',
+] as const;
 
 function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -498,6 +525,7 @@ async function getPlatforms(
       platformId: row.platform_id,
       label: platform?.name ?? platform?.key ?? 'Platform',
       status: row.status,
+      key: platform?.key ?? null,
     };
   });
 }
@@ -1001,7 +1029,7 @@ async function buildCampaignRows(
         status: campaign.status,
         primaryContext: adAccountNameById.get(campaign.ad_account_id) ?? null,
         secondaryContext: campaign.objective,
-        drilldownLabel: input.includeCampaignReportLinks ? 'Open campaign report' : null,
+        drilldownLabel: input.includeCampaignReportLinks ? 'Open' : null,
         drilldownHref: input.includeCampaignReportLinks
           ? buildNestedReportHref({
               query: input.query,
@@ -1079,7 +1107,7 @@ async function buildAdsetRows(
         status: adset.status,
         primaryContext: campaignNameById.get(adset.campaign_external_id) ?? null,
         secondaryContext: adset.optimization_goal,
-        drilldownLabel: input.includeAdsetReportLinks ? 'Open ad set report' : null,
+        drilldownLabel: input.includeAdsetReportLinks ? 'Open' : null,
         drilldownHref: input.includeAdsetReportLinks
           ? buildNestedReportHref({
               query: input.query,
@@ -1179,7 +1207,7 @@ async function buildAdRows(
         creativeContext: buildCreativeContext(
           ad.creative_id ? creativeById.get(ad.creative_id) : null
         ),
-        drilldownLabel: input.includeAdReportLinks ? 'Open ad report' : null,
+        drilldownLabel: input.includeAdReportLinks ? 'Open' : null,
         drilldownHref:
           input.includeAdReportLinks && campaignExternalId
             ? buildNestedReportHref({
@@ -1244,11 +1272,22 @@ async function buildRankingContext(
     }
   }
 
+  const isTopLevelReport =
+    input.query.scope === 'business' ||
+    input.query.scope === 'platform' ||
+    input.query.scope === 'ad_account';
   const shouldBuildCampaignRankings =
-    input.query.scope === 'campaign' || input.query.scope === 'adset' || input.query.scope === 'ad';
+    isTopLevelReport ||
+    input.query.scope === 'campaign' ||
+    input.query.scope === 'adset' ||
+    input.query.scope === 'ad';
   const shouldBuildAdsetRankings =
-    input.query.scope === 'campaign' || input.query.scope === 'adset' || input.query.scope === 'ad';
-  const shouldBuildAdRankings = input.query.scope === 'adset' || input.query.scope === 'ad';
+    isTopLevelReport ||
+    input.query.scope === 'campaign' ||
+    input.query.scope === 'adset' ||
+    input.query.scope === 'ad';
+  const shouldBuildAdRankings =
+    isTopLevelReport || input.query.scope === 'adset' || input.query.scope === 'ad';
 
   const [topAdAccountCampaigns, sameCampaignAdsets, topAdAccountAdsets] = await Promise.all([
     shouldBuildCampaignRankings
@@ -1901,6 +1940,371 @@ async function buildActiveDateContext(
   };
 }
 
+function isMetaAdAccount(context: FilterContext, account: AdAccountRow): boolean {
+  return context.platforms.some(
+    (platform) => platform.platformId === account.platform_id && platform.key === 'meta'
+  );
+}
+
+function resolveSurfaceEntityIds(input: {
+  query: ReportQueryInput;
+  context: FilterContext;
+  adAccountIds: string[];
+}): {
+  adsetInternalIds: string[];
+  adInternalIds: string[];
+  adScopeOnly: boolean;
+} {
+  const allowedAdAccounts = new Set(input.adAccountIds);
+  const campaignExternalIds = new Set(input.query.campaignIds);
+  const adsetExternalIds = new Set(input.query.adsetIds);
+  const adExternalIds = new Set(input.query.adIds);
+
+  const selectedAds =
+    input.query.scope === 'ad'
+      ? input.context.ads.filter(
+          (ad) => allowedAdAccounts.has(ad.ad_account_id) && adExternalIds.has(ad.external_id)
+        )
+      : [];
+
+  const selectedAdsetExternalIds =
+    input.query.scope === 'ad'
+      ? new Set(selectedAds.map((ad) => ad.adset_external_id))
+      : adsetExternalIds;
+
+  const adsets = input.context.adsets.filter((adset) => {
+    if (!allowedAdAccounts.has(adset.ad_account_id)) {
+      return false;
+    }
+
+    if (input.query.scope === 'campaign') {
+      return campaignExternalIds.has(adset.campaign_external_id);
+    }
+
+    if (input.query.scope === 'adset' || input.query.scope === 'ad') {
+      return selectedAdsetExternalIds.has(adset.external_id);
+    }
+
+    return true;
+  });
+
+  return {
+    adsetInternalIds: Array.from(new Set(adsets.map((adset) => adset.id))),
+    adInternalIds: Array.from(new Set(selectedAds.map((ad) => ad.id))),
+    adScopeOnly: input.query.scope === 'ad',
+  };
+}
+
+async function listReportAudienceRows(
+  supabase: SupabaseClient,
+  input: {
+    adsetInternalIds: string[];
+    adInternalIds: string[];
+    adScopeOnly: boolean;
+    dateFrom: string;
+    dateTo: string;
+  }
+): Promise<DashboardAudienceMetricRow[]> {
+  if (input.adsetInternalIds.length === 0) {
+    return [];
+  }
+
+  type AudienceBreakdownSelectRow = Pick<
+    Database['public']['Tables']['meta_audience_breakdowns_daily']['Row'],
+    | 'entity_level'
+    | 'adset_id'
+    | 'ad_id'
+    | 'breakdown_type'
+    | 'dimension_1_key'
+    | 'dimension_1_value'
+    | 'dimension_2_key'
+    | 'dimension_2_value'
+    | 'publisher_platform'
+    | 'platform_position'
+    | 'impression_device'
+    | 'spend'
+    | 'impressions'
+    | 'clicks'
+    | 'leads'
+    | 'messages'
+    | 'calls'
+  >;
+
+  const rows: AudienceBreakdownSelectRow[] = [];
+  const selectedAdIds = new Set(input.adInternalIds);
+
+  for (const chunk of chunkArray(input.adsetInternalIds, 200)) {
+    let query = supabase
+      .from('meta_audience_breakdowns_daily')
+      .select(
+        'entity_level, adset_id, ad_id, breakdown_type, dimension_1_key, dimension_1_value, dimension_2_key, dimension_2_value, publisher_platform, platform_position, impression_device, spend, impressions, clicks, leads, messages, calls'
+      )
+      .gte('day', input.dateFrom)
+      .lte('day', input.dateTo)
+      .in('adset_id', chunk)
+      .in('breakdown_type', [...REPORT_AUDIENCE_BREAKDOWN_TYPES]);
+
+    if (input.adScopeOnly) {
+      query = query.eq('entity_level', 'ad');
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    rows.push(...((data ?? []) as AudienceBreakdownSelectRow[]));
+  }
+
+  return rows
+    .filter((row) => {
+      if (!input.adScopeOnly) {
+        return true;
+      }
+
+      return Boolean(row.ad_id && selectedAdIds.has(row.ad_id));
+    })
+    .map((row) => ({
+      entityLevel: (row.entity_level === 'ad' ? 'ad' : 'adset') as 'ad' | 'adset',
+      adsetInternalId: row.adset_id,
+      adInternalId: row.ad_id,
+      breakdownType: row.breakdown_type,
+      dimension1Key: row.dimension_1_key,
+      dimension1Value: row.dimension_1_value,
+      dimension2Key: row.dimension_2_key,
+      dimension2Value: row.dimension_2_value,
+      publisherPlatform: row.publisher_platform,
+      platformPosition: row.platform_position,
+      impressionDevice: row.impression_device,
+      spend: row.spend ?? 0,
+      impressions: row.impressions ?? 0,
+      clicks: row.clicks ?? 0,
+      leads: row.leads ?? 0,
+      messages: row.messages ?? 0,
+      calls: row.calls ?? 0,
+    }))
+    .filter(
+      (row) =>
+        row.dimension1Value.trim().length > 0 &&
+        (row.spend > 0 ||
+          row.impressions > 0 ||
+          row.clicks > 0 ||
+          row.leads > 0 ||
+          row.messages > 0 ||
+          row.calls > 0)
+    );
+}
+
+async function listReportHourlyTrendRows(
+  supabase: SupabaseClient,
+  input: {
+    adsetInternalIds: string[];
+    adInternalIds: string[];
+    adScopeOnly: boolean;
+    dateFrom: string;
+    dateTo: string;
+  }
+): Promise<DashboardTrendPoint[]> {
+  if (input.adsetInternalIds.length === 0) {
+    return [];
+  }
+
+  type HourlySelectRow = Pick<
+    Database['public']['Tables']['meta_hourly_performance']['Row'],
+    | 'day'
+    | 'hour_of_day'
+    | 'entity_level'
+    | 'ad_id'
+    | 'spend'
+    | 'reach'
+    | 'impressions'
+    | 'clicks'
+    | 'inline_link_clicks'
+    | 'leads'
+    | 'messages'
+    | 'calls'
+  >;
+
+  const selectedAdIds = new Set(input.adInternalIds);
+  const fetchRows = async (entityLevel: 'adset' | 'ad') => {
+    const rows: HourlySelectRow[] = [];
+
+    for (const chunk of chunkArray(input.adsetInternalIds, 200)) {
+      const { data, error } = await supabase
+        .from('meta_hourly_performance')
+        .select(
+          'day, hour_of_day, entity_level, ad_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls'
+        )
+        .gte('day', input.dateFrom)
+        .lte('day', input.dateTo)
+        .eq('time_basis', 'advertiser')
+        .eq('entity_level', entityLevel)
+        .in('adset_id', chunk)
+        .order('day', { ascending: true })
+        .order('hour_of_day', { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      rows.push(...((data ?? []) as HourlySelectRow[]));
+    }
+
+    return rows;
+  };
+
+  const primaryRows = await fetchRows(input.adScopeOnly ? 'ad' : 'adset');
+  const rows = !input.adScopeOnly && primaryRows.length === 0 ? await fetchRows('ad') : primaryRows;
+
+  const scopedRows = input.adScopeOnly
+    ? rows.filter((row) => Boolean(row.ad_id && selectedAdIds.has(row.ad_id)))
+    : rows;
+  const aggregated = new Map<
+    string,
+    {
+      day: string;
+      hour: number;
+      spend: number;
+      reach: number;
+      impressions: number;
+      clicks: number;
+      inlineLinkClicks: number;
+      leads: number;
+      messages: number;
+      calls: number;
+    }
+  >();
+
+  for (const row of scopedRows) {
+    const day = row.day;
+    const hour = row.hour_of_day ?? -1;
+
+    if (!day || hour < 0 || hour > 23) {
+      continue;
+    }
+
+    const key = `${day}:${hour}`;
+    const current = aggregated.get(key) ?? {
+      day,
+      hour,
+      spend: 0,
+      reach: 0,
+      impressions: 0,
+      clicks: 0,
+      inlineLinkClicks: 0,
+      leads: 0,
+      messages: 0,
+      calls: 0,
+    };
+
+    current.spend += row.spend ?? 0;
+    current.reach += row.reach ?? 0;
+    current.impressions += row.impressions ?? 0;
+    current.clicks += row.clicks ?? 0;
+    current.inlineLinkClicks += row.inline_link_clicks ?? 0;
+    current.leads += row.leads ?? 0;
+    current.messages += row.messages ?? 0;
+    current.calls += row.calls ?? 0;
+    aggregated.set(key, current);
+  }
+
+  return Array.from(aggregated.values())
+    .sort((left, right) => left.day.localeCompare(right.day) || left.hour - right.hour)
+    .map((row) => {
+      const results = row.leads + row.messages + row.calls;
+      const ctr = row.impressions > 0 ? (row.clicks / row.impressions) * 100 : 0;
+      const cpc = row.clicks > 0 ? row.spend / row.clicks : 0;
+      const cpm = row.impressions > 0 ? (row.spend / row.impressions) * 1000 : 0;
+      const day = new Date(`${row.day}T00:00:00Z`);
+      const utcDay = Number.isNaN(day.getTime()) ? null : day.getUTCDay();
+
+      return {
+        label: `${row.day} · ${row.hour}`,
+        dayKey: row.day,
+        dayOfWeek: utcDay == null ? null : utcDay === 0 ? 6 : utcDay - 1,
+        hourOfDay: row.hour,
+        spend: Number(row.spend.toFixed(2)),
+        results,
+        clicks: row.clicks,
+        inlineLinkClicks: row.inlineLinkClicks,
+        impressions: row.impressions,
+        reach: row.reach,
+        ctr: Number(ctr.toFixed(2)),
+        cpc: Number(cpc.toFixed(2)),
+        cpm: Number(cpm.toFixed(2)),
+        frequency: 0,
+        costPerResult: results > 0 ? Number((row.spend / results).toFixed(2)) : 0,
+      } satisfies DashboardTrendPoint;
+    });
+}
+
+async function buildSurfaceContext(
+  supabase: SupabaseClient,
+  input: {
+    query: ReportQueryInput;
+    context: FilterContext;
+    adAccounts: AdAccountRow[];
+    hasReportDelivery: boolean;
+  }
+): Promise<ReportSurfaceContext> {
+  const metaAdAccountIds = input.adAccounts
+    .filter((account) => isMetaAdAccount(input.context, account))
+    .map((account) => account.id);
+  const isMeta = metaAdAccountIds.length > 0;
+
+  if (!isMeta) {
+    return {
+      isMeta: false,
+      platformBreakdowns: buildPlatformBreakdowns({
+        isMeta: false,
+        hasLiveDelivery: false,
+        audienceRows: [],
+      }),
+      audienceBreakdowns: buildAudienceBreakdowns({
+        isMeta: false,
+        hasLiveDelivery: false,
+        audienceRows: [],
+      }),
+      hourlyTrendExpanded: [],
+    };
+  }
+
+  const entityIds = resolveSurfaceEntityIds({
+    query: input.query,
+    context: input.context,
+    adAccountIds: metaAdAccountIds,
+  });
+
+  const [audienceRows, hourlyTrendExpanded] = await Promise.all([
+    listReportAudienceRows(supabase, {
+      ...entityIds,
+      dateFrom: input.query.dateFrom,
+      dateTo: input.query.dateTo,
+    }),
+    listReportHourlyTrendRows(supabase, {
+      ...entityIds,
+      dateFrom: input.query.dateFrom,
+      dateTo: input.query.dateTo,
+    }),
+  ]);
+
+  return {
+    isMeta: true,
+    platformBreakdowns: buildPlatformBreakdowns({
+      isMeta: true,
+      hasLiveDelivery: input.hasReportDelivery,
+      audienceRows,
+    }),
+    audienceBreakdowns: buildAudienceBreakdowns({
+      isMeta: true,
+      hasLiveDelivery: input.hasReportDelivery,
+      audienceRows,
+    }),
+    hourlyTrendExpanded,
+  };
+}
+
 export async function getReportFilterOptions(query: ReportQueryInput): Promise<ReportFilterOptions> {
   const supabase = await createSupabaseClient();
   const context = await getFilterContext(supabase, query);
@@ -1971,6 +2375,16 @@ export async function buildReportPayload(query: ReportQueryInput): Promise<Repor
     adAccountIds,
   });
   const activeDates = await buildActiveDateContext(supabase, query, adAccountIds);
+  const surface = await buildSurfaceContext(supabase, {
+    query,
+    context,
+    adAccounts,
+    hasReportDelivery:
+      summary.spend > 0 ||
+      summary.impressions > 0 ||
+      summary.clicks > 0 ||
+      summary.conversion > 0,
+  });
   const generatedAt = new Date().toISOString();
 
   return {
@@ -1998,6 +2412,7 @@ export async function buildReportPayload(query: ReportQueryInput): Promise<Repor
     breakdown,
     ranking,
     activeDates,
+    surface,
     export: {
       title: title.title,
       subtitle: title.subtitle,

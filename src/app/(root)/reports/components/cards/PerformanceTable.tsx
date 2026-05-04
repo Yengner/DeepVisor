@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Button, Card, Group, Table, Text } from "@mantine/core";
+import { Badge, Button, Card, Table, Text } from "@mantine/core";
 import { IconStarFilled } from "@tabler/icons-react";
 import type { ReportBreakdownRow } from "@/lib/server/reports/types";
 
@@ -13,19 +13,19 @@ interface PerformanceTableProps {
 }
 
 const REPORT_TABLE_COLUMN_WIDTHS = [
-  '280px',
-  '120px',
-  '140px',
-  '320px',
-  '170px',
-  '120px',
+  '260px',
+  '92px',
+  '112px',
+  '230px',
+  '160px',
   '110px',
-  '130px',
-  '110px',
-  '90px',
-  '120px',
-  '150px',
-  '150px',
+  '96px',
+  '116px',
+  '88px',
+  '78px',
+  '100px',
+  '126px',
+  '126px',
 ] as const;
 const RANKED_REPORT_TABLE_COLUMN_WIDTHS = ['110px', ...REPORT_TABLE_COLUMN_WIDTHS] as const;
 
@@ -51,11 +51,59 @@ function formatDateWindow(startDate: string | null, endDate: string | null) {
     return '—';
   }
 
-  if (startDate && endDate && startDate !== endDate) {
-    return `${startDate} to ${endDate}`;
+  const startLabel = formatReportDate(startDate);
+  const endLabel = formatReportDate(endDate);
+
+  if (startDate && endDate && startDate !== endDate && startLabel && endLabel) {
+    return formatReportDateRange(startDate, endDate);
   }
 
-  return startDate ?? endDate ?? '—';
+  return startLabel ?? endLabel ?? '—';
+}
+
+function formatReportDate(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+function formatReportDateRange(startDate: string, endDate: string) {
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return `${formatReportDate(startDate) ?? startDate} - ${formatReportDate(endDate) ?? endDate}`;
+  }
+
+  const sameYear = start.getUTCFullYear() === end.getUTCFullYear();
+  const sameMonth = sameYear && start.getUTCMonth() === end.getUTCMonth();
+  const startMonth = start.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+  const endMonth = end.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+  const startDay = start.getUTCDate();
+  const endDay = end.getUTCDate();
+  const endYear = end.getUTCFullYear();
+
+  if (sameMonth) {
+    return `${startMonth} ${startDay} - ${endDay}, ${endYear}`;
+  }
+
+  if (sameYear) {
+    return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${endYear}`;
+  }
+
+  return `${formatReportDate(startDate)} - ${formatReportDate(endDate)}`;
 }
 
 function getLevelColor(level: ReportBreakdownRow['level']) {
@@ -70,6 +118,25 @@ function getLevelColor(level: ReportBreakdownRow['level']) {
   return 'teal';
 }
 
+function getContextLines(row: ReportBreakdownRow) {
+  if (row.level === 'campaign') {
+    return row.secondaryContext ? [`Objective: ${row.secondaryContext}`] : [];
+  }
+
+  if (row.level === 'adset') {
+    return [
+      row.primaryContext ? `Campaign: ${row.primaryContext}` : null,
+      row.secondaryContext ? `Goal: ${row.secondaryContext}` : null,
+    ].filter((value): value is string => Boolean(value));
+  }
+
+  return [
+    row.primaryContext ? `Ad set: ${row.primaryContext}` : null,
+    row.secondaryContext ? `Campaign: ${row.secondaryContext}` : null,
+    row.creativeContext ? `Creative: ${row.creativeContext}` : null,
+  ].filter((value): value is string => Boolean(value));
+}
+
 export default function PerformanceTable({
   title,
   rows,
@@ -78,10 +145,10 @@ export default function PerformanceTable({
   showRanking = false,
 }: PerformanceTableProps) {
   const columnWidths = showRanking ? RANKED_REPORT_TABLE_COLUMN_WIDTHS : REPORT_TABLE_COLUMN_WIDTHS;
-  const tableMinWidth = showRanking ? 2120 : 2010;
+  const tableMinWidth = columnWidths.reduce((sum, width) => sum + Number(width.replace('px', '')), 0);
 
   return (
-    <Card withBorder p="md" radius="lg">
+    <Card withBorder p="sm" radius="lg">
       {hideTitle ? null : (
         <Text fw={700} size="lg" mb="md">
           {title}
@@ -94,6 +161,8 @@ export default function PerformanceTable({
           highlightOnHover
           withTableBorder
           withColumnBorders
+          verticalSpacing="xs"
+          horizontalSpacing="sm"
           style={{ tableLayout: 'fixed', minWidth: tableMinWidth }}
         >
           <colgroup>
@@ -131,6 +200,8 @@ export default function PerformanceTable({
             ) : (
               rows.map((row, index) => {
                 const rank = index + 1;
+                const contextLines = getContextLines(row);
+                const dateWindow = formatDateWindow(row.startDate, row.endDate);
 
                 return (
                   <Table.Tr key={row.id}>
@@ -147,9 +218,8 @@ export default function PerformanceTable({
                       </Table.Td>
                     ) : null}
                     <Table.Td>
-                      <Text fw={700}>{row.name}</Text>
-                      <Text size="xs" c="dimmed">
-                        {row.id}
+                      <Text fw={700} lineClamp={1} title={row.name}>
+                        {row.name}
                       </Text>
                     </Table.Td>
                     <Table.Td>
@@ -167,19 +237,23 @@ export default function PerformanceTable({
                       )}
                     </Table.Td>
                     <Table.Td>
-                      <Group gap={4}>
-                        <Text size="sm">{row.primaryContext || '—'}</Text>
-                      </Group>
-                      {row.creativeContext ? (
+                      {contextLines.length > 0 ? (
+                        contextLines.slice(0, 2).map((line) => (
+                          <Text key={line} size="xs" c="dimmed" lineClamp={1} title={line}>
+                            {line}
+                          </Text>
+                        ))
+                      ) : (
                         <Text size="xs" c="dimmed">
-                          Creative: {row.creativeContext}
+                          —
                         </Text>
-                      ) : null}
-                      <Text size="xs" c="dimmed">
-                        {row.secondaryContext || '—'}
+                      )}
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" lineClamp={1} title={dateWindow}>
+                        {dateWindow}
                       </Text>
                     </Table.Td>
-                    <Table.Td>{formatDateWindow(row.startDate, row.endDate)}</Table.Td>
                     <Table.Td ta="right">{formatCurrency(row.spend, currencyCode)}</Table.Td>
                     <Table.Td ta="right">{row.conversion.toLocaleString()}</Table.Td>
                     <Table.Td ta="right">{row.impressions.toLocaleString()}</Table.Td>
@@ -196,7 +270,7 @@ export default function PerformanceTable({
                           size="xs"
                           radius="xl"
                         >
-                          {row.drilldownLabel ?? 'Open report'}
+                          {row.drilldownLabel ?? 'Open'}
                         </Button>
                       ) : (
                         <Text size="sm" c="dimmed">

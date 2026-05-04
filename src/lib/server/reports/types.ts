@@ -1,4 +1,9 @@
 import type { SyncCoverage } from '@/lib/shared/types/integrations';
+import type {
+  DashboardAudienceBreakdowns,
+  DashboardPlatformBreakdowns,
+  DashboardTrendPoint,
+} from '@/lib/server/dashboard/types';
 
 export type ReportScope = 'business' | 'platform' | 'ad_account' | 'campaign' | 'adset' | 'ad';
 
@@ -123,6 +128,13 @@ export interface ReportExportMetadata {
   }>;
 }
 
+export interface ReportSurfaceContext {
+  isMeta: boolean;
+  platformBreakdowns: DashboardPlatformBreakdowns;
+  audienceBreakdowns: DashboardAudienceBreakdowns;
+  hourlyTrendExpanded: DashboardTrendPoint[];
+}
+
 export interface ReportPayload {
   query: ReportQueryInput;
   meta: {
@@ -145,6 +157,7 @@ export interface ReportPayload {
   };
   ranking: ReportRankingContext;
   activeDates: ReportActiveDateContext | null;
+  surface: ReportSurfaceContext;
   export: ReportExportMetadata;
 }
 
