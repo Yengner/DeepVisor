@@ -1,6 +1,7 @@
 'use client';
 
-import { Card, MultiSelect, Select, Stack, Text } from '@mantine/core';
+import { useEffect, useMemo, useState } from 'react';
+import { Button, Card, Group, MultiSelect, Select, Stack, Text } from '@mantine/core';
 import type { ReportFilterOptions, ReportQueryInput } from '@/lib/server/reports/types';
 
 interface ReportsSidebarProps {
@@ -14,17 +15,55 @@ export default function ReportsSidebar({
   filterOptions,
   onUpdate,
 }: ReportsSidebarProps) {
-  const adAccountOptions = filterOptions.adAccounts.filter((option) =>
-    !query.platformIntegrationId || option.parentId === query.platformIntegrationId
+  const [draftPlatformIntegrationId, setDraftPlatformIntegrationId] = useState<string | null>(
+    query.platformIntegrationId ?? null
   );
-  const campaignOptions = filterOptions.campaigns.filter((option) =>
-    query.adAccountIds.length === 0 || query.adAccountIds.includes(option.parentId || '')
+  const [draftAdAccountIds, setDraftAdAccountIds] = useState<string[]>(query.adAccountIds);
+  const [draftCampaignIds, setDraftCampaignIds] = useState<string[]>(query.campaignIds);
+  const [draftAdsetIds, setDraftAdsetIds] = useState<string[]>(query.adsetIds);
+  const [draftAdIds, setDraftAdIds] = useState<string[]>(query.adIds);
+
+  useEffect(() => {
+    setDraftPlatformIntegrationId(query.platformIntegrationId ?? null);
+    setDraftAdAccountIds(query.adAccountIds);
+    setDraftCampaignIds(query.campaignIds);
+    setDraftAdsetIds(query.adsetIds);
+    setDraftAdIds(query.adIds);
+  }, [
+    query.adAccountIds,
+    query.adIds,
+    query.adsetIds,
+    query.campaignIds,
+    query.platformIntegrationId,
+  ]);
+
+  const adAccountOptions = useMemo(
+    () =>
+      filterOptions.adAccounts.filter((option) =>
+        !draftPlatformIntegrationId || option.parentId === draftPlatformIntegrationId
+      ),
+    [draftPlatformIntegrationId, filterOptions.adAccounts]
   );
-  const adsetOptions = filterOptions.adsets.filter((option) =>
-    query.campaignIds.length === 0 || query.campaignIds.includes(option.parentId || '')
+  const campaignOptions = useMemo(
+    () =>
+      filterOptions.campaigns.filter((option) =>
+        draftAdAccountIds.length === 0 || draftAdAccountIds.includes(option.parentId || '')
+      ),
+    [draftAdAccountIds, filterOptions.campaigns]
   );
-  const adOptions = filterOptions.ads.filter((option) =>
-    query.adsetIds.length === 0 || query.adsetIds.includes(option.parentId || '')
+  const adsetOptions = useMemo(
+    () =>
+      filterOptions.adsets.filter((option) =>
+        draftCampaignIds.length === 0 || draftCampaignIds.includes(option.parentId || '')
+      ),
+    [draftCampaignIds, filterOptions.adsets]
+  );
+  const adOptions = useMemo(
+    () =>
+      filterOptions.ads.filter((option) =>
+        draftAdsetIds.length === 0 || draftAdsetIds.includes(option.parentId || '')
+      ),
+    [draftAdsetIds, filterOptions.ads]
   );
 
   return (
@@ -42,24 +81,17 @@ export default function ReportsSidebar({
           placeholder="All platforms"
           searchable
           clearable
-          value={query.platformIntegrationId}
+          value={draftPlatformIntegrationId}
           data={filterOptions.platforms.map((option) => ({
             value: option.id,
             label: option.label,
           }))}
           onChange={(value) => {
-            onUpdate((params) => {
-              if (!value) {
-                params.delete('platform_integration_id');
-              } else {
-                params.set('platform_integration_id', value);
-              }
-
-              params.delete('ad_account_id');
-              params.delete('campaign_id');
-              params.delete('adset_id');
-              params.delete('ad_id');
-            });
+            setDraftPlatformIntegrationId(value);
+            setDraftAdAccountIds([]);
+            setDraftCampaignIds([]);
+            setDraftAdsetIds([]);
+            setDraftAdIds([]);
           }}
         />
 
@@ -67,23 +99,16 @@ export default function ReportsSidebar({
           label="Ad accounts"
           placeholder="All ad accounts"
           searchable
-          value={query.adAccountIds}
+          value={draftAdAccountIds}
           data={adAccountOptions.map((option) => ({
             value: option.id,
             label: option.label,
           }))}
           onChange={(value) => {
-            onUpdate((params) => {
-              if (value.length === 0) {
-                params.delete('ad_account_id');
-              } else {
-                params.set('ad_account_id', value.join(','));
-              }
-
-              params.delete('campaign_id');
-              params.delete('adset_id');
-              params.delete('ad_id');
-            });
+            setDraftAdAccountIds(value);
+            setDraftCampaignIds([]);
+            setDraftAdsetIds([]);
+            setDraftAdIds([]);
           }}
         />
 
@@ -91,22 +116,15 @@ export default function ReportsSidebar({
           label="Campaigns"
           placeholder="All campaigns"
           searchable
-          value={query.campaignIds}
+          value={draftCampaignIds}
           data={campaignOptions.map((option) => ({
             value: option.id,
             label: option.label,
           }))}
           onChange={(value) => {
-            onUpdate((params) => {
-              if (value.length === 0) {
-                params.delete('campaign_id');
-              } else {
-                params.set('campaign_id', value.join(','));
-              }
-
-              params.delete('adset_id');
-              params.delete('ad_id');
-            });
+            setDraftCampaignIds(value);
+            setDraftAdsetIds([]);
+            setDraftAdIds([]);
           }}
         />
 
@@ -114,21 +132,14 @@ export default function ReportsSidebar({
           label="Ad sets"
           placeholder="All ad sets"
           searchable
-          value={query.adsetIds}
+          value={draftAdsetIds}
           data={adsetOptions.map((option) => ({
             value: option.id,
             label: option.label,
           }))}
           onChange={(value) => {
-            onUpdate((params) => {
-              if (value.length === 0) {
-                params.delete('adset_id');
-              } else {
-                params.set('adset_id', value.join(','));
-              }
-
-              params.delete('ad_id');
-            });
+            setDraftAdsetIds(value);
+            setDraftAdIds([]);
           }}
         />
 
@@ -136,21 +147,67 @@ export default function ReportsSidebar({
           label="Ads"
           placeholder="All ads"
           searchable
-          value={query.adIds}
+          value={draftAdIds}
           data={adOptions.map((option) => ({
             value: option.id,
             label: option.label,
           }))}
-          onChange={(value) => {
-            onUpdate((params) => {
-              if (value.length === 0) {
-                params.delete('ad_id');
-              } else {
-                params.set('ad_id', value.join(','));
-              }
-            });
-          }}
+          onChange={setDraftAdIds}
         />
+
+        <Group justify="space-between" gap="sm" mt="xs">
+          <Button
+            variant="default"
+            radius="xl"
+            onClick={() => {
+              setDraftPlatformIntegrationId(null);
+              setDraftAdAccountIds([]);
+              setDraftCampaignIds([]);
+              setDraftAdsetIds([]);
+              setDraftAdIds([]);
+            }}
+          >
+            Clear
+          </Button>
+          <Button
+            radius="xl"
+            onClick={() => {
+              onUpdate((params) => {
+                if (draftPlatformIntegrationId) {
+                  params.set('platform_integration_id', draftPlatformIntegrationId);
+                } else {
+                  params.delete('platform_integration_id');
+                }
+
+                if (draftAdAccountIds.length > 0) {
+                  params.set('ad_account_id', draftAdAccountIds.join(','));
+                } else {
+                  params.delete('ad_account_id');
+                }
+
+                if (draftCampaignIds.length > 0) {
+                  params.set('campaign_id', draftCampaignIds.join(','));
+                } else {
+                  params.delete('campaign_id');
+                }
+
+                if (draftAdsetIds.length > 0) {
+                  params.set('adset_id', draftAdsetIds.join(','));
+                } else {
+                  params.delete('adset_id');
+                }
+
+                if (draftAdIds.length > 0) {
+                  params.set('ad_id', draftAdIds.join(','));
+                } else {
+                  params.delete('ad_id');
+                }
+              });
+            }}
+          >
+            Apply filters
+          </Button>
+        </Group>
       </Stack>
     </Card>
   );
