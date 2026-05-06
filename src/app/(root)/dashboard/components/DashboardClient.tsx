@@ -37,6 +37,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ReferenceDot } from 'recharts';
 import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { CHART_METRIC_COLORS, formatChartDateLabel, formatRetryDelay } from '@/lib/shared';
 import type {
@@ -47,6 +48,7 @@ import type {
   DashboardAudienceSlice,
   DashboardPlatformSlice,
   DashboardState,
+  DashboardTrendPoint,
 } from '../types';
 import classes from './DashboardClient.module.css';
 
@@ -118,6 +120,15 @@ type TrendChartConfig = {
   title: string;
   description: string;
   formatter: (value: number) => string;
+};
+
+type TrendPointIndicator = {
+  key: string;
+  x: string;
+  y: number;
+  color: string;
+  label: string;
+  detail: string;
 };
 
 type CombinedTrendPoint = {
@@ -736,6 +747,46 @@ function normalizeTrendSeries(values: number[]): number[] {
   return values.map((value) => Number(((value / baseline) * 100).toFixed(1)));
 }
 
+function isTrendPointLater(candidate: DashboardTrendPoint, current: DashboardTrendPoint): boolean {
+  if (candidate.dayKey && current.dayKey) {
+    if (candidate.dayKey !== current.dayKey) {
+      return candidate.dayKey > current.dayKey;
+    }
+
+    return (candidate.hourOfDay ?? -1) > (current.hourOfDay ?? -1);
+  }
+
+  return candidate.label > current.label;
+}
+
+function pickMaxTrendPoint(
+  points: DashboardTrendPoint[],
+  key: keyof DashboardTrendPoint
+): DashboardTrendPoint | null {
+  let best: DashboardTrendPoint | null = null;
+
+  for (const point of points) {
+    const value = Number(point[key]);
+
+    if (!Number.isFinite(value) || value <= 0) {
+      continue;
+    }
+
+    if (!best) {
+      best = point;
+      continue;
+    }
+
+    const bestValue = Number(best[key]);
+
+    if (value > bestValue || (value === bestValue && isTrendPointLater(point, best))) {
+      best = point;
+    }
+  }
+
+  return best;
+}
+
 function buildCombinedTrendSeries(input: {
   granularity: HistoryGranularity;
   trendPoints: DashboardPayload['featuredAdsetHistory']['dailyTrend'];
@@ -992,6 +1043,7 @@ function renderTrendTooltip(input: {
   series: TrendChartConfig['series'];
   formatter: (value: number) => string;
   signal: TrendSignal | null;
+  indicators: TrendPointIndicator[];
 }) {
   if (!input.label || !input.payload || input.payload.length === 0) {
     return null;
@@ -1055,6 +1107,36 @@ function renderTrendTooltip(input: {
             <Text size="xs" mt={4} fw={700} className={classes.historyTooltipCopy}>
               Gap {formatDecimal(input.signal.gap)} idx
             </Text>
+          </Paper>
+        ) : null}
+
+        {input.indicators.length > 0 ? (
+          <Paper withBorder radius="md" p="xs" className={classes.historyTooltipSignal}>
+            <Stack gap={6}>
+              {input.indicators.map((indicator) => (
+                <Group key={indicator.key} gap={6} wrap="nowrap" align="flex-start">
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 999,
+                      backgroundColor: indicator.color,
+                      flexShrink: 0,
+                      marginTop: 4,
+                    }}
+                  />
+                  <div>
+                    <Text size="xs" fw={800} className={classes.historyTooltipCopy}>
+                      {indicator.label}
+                    </Text>
+                    <Text size="xs" className={classes.historyTooltipCopy}>
+                      {indicator.detail}
+                    </Text>
+                  </div>
+                </Group>
+              ))}
+            </Stack>
           </Paper>
         ) : null}
       </Stack>
@@ -1813,7 +1895,7 @@ function buildTrendChartConfig(input: {
         series: [
           { name: 'CTR (%)', color: FEATURED_HISTORY_COLORS.ctr },
           { name: 'CPC ($)', color: FEATURED_HISTORY_COLORS.cpc },
-          { name: 'CPM ($)', color: FEATURED_HISTORY_COLORS.cpm, strokeDasharray: '6 4' },
+          { name: 'CPM ($)', color: FEATURED_HISTORY_COLORS.cpm },
         ],
         title: 'CTR, CPC, and CPM by hour',
         description:
@@ -1888,7 +1970,7 @@ function buildTrendChartConfig(input: {
       series: [
         { name: 'CTR (%)', color: FEATURED_HISTORY_COLORS.ctr },
         { name: 'CPC ($)', color: FEATURED_HISTORY_COLORS.cpc },
-        { name: 'CPM ($)', color: FEATURED_HISTORY_COLORS.cpm, strokeDasharray: '6 4' },
+        { name: 'CPM ($)', color: FEATURED_HISTORY_COLORS.cpm },
       ],
       title: 'CTR, CPC, and CPM',
       description: 'Efficiency signals that show whether the featured ad set is getting cheaper and cleaner over time.',
@@ -1929,7 +2011,7 @@ function buildTrendChartConfig(input: {
       series: [
         { name: 'Spend ($)', color: FEATURED_HISTORY_COLORS.spend },
         { name: 'Results', color: FEATURED_HISTORY_COLORS.results },
-        { name: 'Clicks', color: FEATURED_HISTORY_COLORS.clicks, strokeDasharray: '6 4' },
+        { name: 'Clicks', color: FEATURED_HISTORY_COLORS.clicks },
       ],
     title: 'Spend, results, and clicks',
     description: 'Delivery volume for the featured ad set from first delivery through today.',
@@ -2078,6 +2160,127 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     () => selectPrimaryTrendSignal(combinedTrendSignals),
     [combinedTrendSignals]
   );
+  const trendPointIndicators = useMemo<TrendPointIndicator[]>(() => {
+    const indicators: TrendPointIndicator[] = [];
+
+    if (trendMode === 'combined') {
+      return [];
+    }
+
+    if (historyGranularity === 'day') {
+      if (trendMode === 'delivery') {
+        const topResultsPoint = pickMaxTrendPoint(dailyTrendPoints, 'results');
+        const topSpendPoint = pickMaxTrendPoint(dailyTrendPoints, 'spend');
+
+        if (topResultsPoint) {
+          indicators.push({
+            key: `day-results-indicator:${topResultsPoint.label}`,
+            x: formatChartDateLabel(topResultsPoint.label),
+            y: topResultsPoint.results,
+            color: FEATURED_HISTORY_COLORS.results,
+            label: 'Highest results',
+            detail: 'Strongest daily results point in the full featured ad set history.',
+          });
+        }
+
+        if (topSpendPoint) {
+          indicators.push({
+            key: `day-spend-indicator:${topSpendPoint.label}`,
+            x: formatChartDateLabel(topSpendPoint.label),
+            y: Number(topSpendPoint.spend.toFixed(2)),
+            color: FEATURED_HISTORY_COLORS.spend,
+            label: 'Highest spend',
+            detail: 'Largest daily spend point in the full featured ad set history.',
+          });
+        }
+      }
+
+      if (trendMode === 'efficiency') {
+        const topCtrPoint = pickMaxTrendPoint(dailyTrendPoints, 'ctr');
+
+        if (topCtrPoint) {
+          indicators.push({
+            key: `day-ctr-indicator:${topCtrPoint.label}`,
+            x: formatChartDateLabel(topCtrPoint.label),
+            y: Number(topCtrPoint.ctr.toFixed(2)),
+            color: FEATURED_HISTORY_COLORS.ctr,
+            label: 'Best CTR',
+            detail: 'Highest daily click-through rate point in the full featured ad set history.',
+          });
+        }
+      }
+
+      return indicators;
+    }
+
+    const findVisibleHourlyPoint = (target: DashboardTrendPoint | null) => {
+      if (!target) {
+        return null;
+      }
+
+      return trendPoints.find(
+        (point) => point.dayKey === target.dayKey && point.hourOfDay === target.hourOfDay
+      ) ?? null;
+    };
+
+    if (trendMode === 'delivery') {
+      const topResultsPoint = pickMaxTrendPoint(hourlyTrendExpandedPoints, 'results');
+      const visibleResultsPoint = findVisibleHourlyPoint(topResultsPoint);
+      const topSpendPoint = pickMaxTrendPoint(hourlyTrendExpandedPoints, 'spend');
+      const visibleSpendPoint = findVisibleHourlyPoint(topSpendPoint);
+
+      if (visibleResultsPoint) {
+        indicators.push({
+          key: `hourly-results-indicator:${visibleResultsPoint.dayKey ?? visibleResultsPoint.label}:${visibleResultsPoint.hourOfDay ?? 'na'}`,
+          x: visibleResultsPoint.label,
+          y: visibleResultsPoint.results,
+          color: FEATURED_HISTORY_COLORS.results,
+          label: 'Highest results',
+          detail: 'Strongest hourly results point in the full synced hourly history.',
+        });
+      }
+
+      if (visibleSpendPoint) {
+        indicators.push({
+          key: `hourly-spend-indicator:${visibleSpendPoint.dayKey ?? visibleSpendPoint.label}:${visibleSpendPoint.hourOfDay ?? 'na'}`,
+          x: visibleSpendPoint.label,
+          y: Number(visibleSpendPoint.spend.toFixed(2)),
+          color: FEATURED_HISTORY_COLORS.spend,
+          label: 'Highest spend',
+          detail: 'Largest hourly spend point in the full synced hourly history.',
+        });
+      }
+    }
+
+    if (trendMode === 'efficiency') {
+      const topCtrPoint = pickMaxTrendPoint(hourlyTrendExpandedPoints, 'ctr');
+      const visibleCtrPoint = findVisibleHourlyPoint(topCtrPoint);
+
+      if (visibleCtrPoint) {
+        indicators.push({
+          key: `hourly-ctr-indicator:${visibleCtrPoint.dayKey ?? visibleCtrPoint.label}:${visibleCtrPoint.hourOfDay ?? 'na'}`,
+          x: visibleCtrPoint.label,
+          y: Number(visibleCtrPoint.ctr.toFixed(2)),
+          color: FEATURED_HISTORY_COLORS.ctr,
+          label: 'Best CTR',
+          detail: 'Highest hourly click-through rate point in the full synced hourly history.',
+        });
+      }
+    }
+
+    return indicators;
+  }, [dailyTrendPoints, historyGranularity, hourlyTrendExpandedPoints, trendMode, trendPoints]);
+  const trendPointIndicatorsByLabel = useMemo(() => {
+    const indicatorsByLabel = new Map<string, TrendPointIndicator[]>();
+
+    for (const indicator of trendPointIndicators) {
+      const current = indicatorsByLabel.get(indicator.x) ?? [];
+      current.push(indicator);
+      indicatorsByLabel.set(indicator.x, current);
+    }
+
+    return indicatorsByLabel;
+  }, [trendPointIndicators]);
   const trendReferenceLines = useMemo(
     () => {
       const lines: Array<{
@@ -2137,9 +2340,13 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
             trendMode === 'combined' && typeof label === 'string'
               ? combinedSignalByLabel.get(label) ?? null
               : null,
+          indicators:
+            typeof label === 'string'
+              ? trendPointIndicatorsByLabel.get(label) ?? []
+              : [],
         }),
     }),
-    [combinedSignalByLabel, trendChart.formatter, trendChart.series, trendMode]
+    [combinedSignalByLabel, trendChart.formatter, trendChart.series, trendMode, trendPointIndicatorsByLabel]
   );
 
   const audienceChart = useMemo(
@@ -2394,6 +2601,9 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
             color={refreshFeedback.type === 'success' ? 'green' : 'red'}
             icon={<IconRefresh size={16} />}
             radius="lg"
+            withCloseButton
+            closeButtonLabel="Dismiss sync notification"
+            onClose={() => setRefreshFeedback(null)}
           >
             {refreshFeedback.message}
           </Alert>
@@ -2715,7 +2925,21 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                               valueFormatter={(value) =>
                                 typeof value === 'number' ? trendChart.formatter(value) : String(value)
                               }
-                            />
+                            >
+                              {trendPointIndicators.map((indicator) => (
+                                <ReferenceDot
+                                  key={indicator.key}
+                                  x={indicator.x}
+                                  y={indicator.y}
+                                  yAxisId="left"
+                                  r={8}
+                                  fill="#ffffff"
+                                  stroke={indicator.color}
+                                  strokeWidth={3}
+                                  isFront
+                                />
+                              ))}
+                            </LineChart>
                           </div>
                         </ScrollArea>
                       ) : (
@@ -2754,7 +2978,21 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                           valueFormatter={(value) =>
                             typeof value === 'number' ? trendChart.formatter(value) : String(value)
                           }
-                        />
+                        >
+                          {trendPointIndicators.map((indicator) => (
+                            <ReferenceDot
+                              key={indicator.key}
+                              x={indicator.x}
+                              y={indicator.y}
+                              yAxisId="left"
+                              r={8}
+                              fill="#ffffff"
+                              stroke={indicator.color}
+                              strokeWidth={3}
+                              isFront
+                            />
+                          ))}
+                        </LineChart>
                       )
                     ) : (
                       <Stack

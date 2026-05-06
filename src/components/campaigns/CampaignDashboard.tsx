@@ -128,6 +128,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   const [selectedAdSetId, setSelectedAdSetId] = useState<string | null>(
     initialSelection?.adsetId ?? null
   );
+  const [selectedAdId, setSelectedAdId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>(
     (initialSelection?.tab as TabKey) || 'campaigns'
   );
@@ -318,7 +319,12 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
 
     previousCampaignIdRef.current = selectedCampaignId;
     setSelectedAdSetId(null);
+    setSelectedAdId(null);
   }, [selectedCampaignId]);
+
+  useEffect(() => {
+    setSelectedAdId(null);
+  }, [selectedAdSetId]);
 
   useEffect(() => {
     if (activeTab !== 'adsets') return;
@@ -444,6 +450,9 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
             icon={<IconRefresh size={16} />}
             radius={0}
             className={classes.feedback}
+            withCloseButton
+            closeButtonLabel="Dismiss sync notification"
+            onClose={() => setRefreshFeedback(null)}
           >
             {refreshFeedback.message}
           </Alert>
@@ -630,6 +639,8 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                     );
                   }}
                   onDeleteCampaign={(id) => setCampaignData((previous) => previous.filter((campaign) => campaign.id !== id))}
+                  platformIntegrationId={platform.id}
+                  adAccountId={adAccountId}
                   platformColor={platformColor}
                   fillHeight
                 />
@@ -645,6 +656,8 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                     onSelectAdSet={setSelectedAdSetId}
                     onOpenAdSet={handleOpenAdSet}
                     selectedAdSetId={selectedAdSetId}
+                    platformIntegrationId={platform.id}
+                    adAccountId={adAccountId}
                     platformColor={platformColor}
                     fillHeight
                   />
@@ -658,6 +671,10 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                   <AdsTable
                     ads={adsByAdset[selectedAdSetId] ?? []}
                     loading={adsLoading}
+                    selectedAdId={selectedAdId}
+                    onSelectAd={setSelectedAdId}
+                    platformIntegrationId={platform.id}
+                    adAccountId={adAccountId}
                     platformColor={platformColor}
                     fillHeight
                   />

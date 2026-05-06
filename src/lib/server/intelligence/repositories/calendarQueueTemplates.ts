@@ -116,6 +116,40 @@ export async function listCalendarQueueTemplates(
   return ((data ?? []) as QueueTemplateRow[]).map(mapQueueTemplateRow);
 }
 
+export async function listActiveCalendarQueueTemplatesForProcessing(
+  supabase: IntelligenceClient,
+  input: {
+    currentDay: string;
+    windowStartDay: string;
+    businessId?: string | null;
+    adAccountId?: string | null;
+  }
+): Promise<CalendarQueueTemplate[]> {
+  let query = (supabase as any)
+    .from('calendar_queue_templates')
+    .select('*')
+    .eq('status', 'active')
+    .lte('start_date', input.currentDay)
+    .or(`end_date.is.null,end_date.gte.${input.windowStartDay}`)
+    .order('created_at', { ascending: true });
+
+  if (input.businessId) {
+    query = query.eq('business_id', input.businessId);
+  }
+
+  if (input.adAccountId) {
+    query = query.eq('ad_account_id', input.adAccountId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as QueueTemplateRow[]).map(mapQueueTemplateRow);
+}
+
 export async function createCalendarQueueTemplate(
   supabase: IntelligenceClient,
   draft: CalendarQueueTemplateDraft

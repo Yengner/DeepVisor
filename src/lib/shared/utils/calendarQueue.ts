@@ -1,4 +1,4 @@
-export type CalendarQueueStatus = 'draft' | 'ready' | 'approved';
+export type CalendarQueueStatus = 'draft' | 'ready' | 'approved' | 'in_progress' | 'completed';
 export type CalendarQueueSource = 'manual' | 'agent' | 'automatic';
 export type CalendarQueueWorkflowKind =
   | 'revive_workflow'
@@ -64,6 +64,7 @@ export interface CalendarQueuePreviewItem {
   isRecurring?: boolean;
   recurringTemplateId?: string | null;
   recurringTemplateType?: CalendarQueueTemplateType | null;
+  templateOccurrenceKey?: string | null;
 }
 
 type CalendarQueueSeedTemplate = Omit<CalendarQueuePreviewItem, 'id' | 'day'>;
@@ -117,6 +118,15 @@ function parseTimeOfDayToMinutes(value: string): number {
   }
 
   return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function normalizeTimeOfDay(value: string): string {
+  const [hours = '09', minutes = '00', seconds = '00'] = value.split(':');
+  return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}`;
+}
+
+function templateOccurrenceKey(template: CalendarQueueTemplate, day: Date): string {
+  return `calendar-template:${template.id}:${toIsoDay(day)}:${normalizeTimeOfDay(template.timeOfDay)}`;
 }
 
 export function compareCalendarQueuePreviewItems(
@@ -224,6 +234,7 @@ export function buildRecurringCalendarQueuePreviewItems(
         isRecurring: true,
         recurringTemplateId: template.id,
         recurringTemplateType: template.templateType,
+        templateOccurrenceKey: templateOccurrenceKey(template, cursor),
       });
     }
   }

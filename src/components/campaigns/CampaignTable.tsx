@@ -9,17 +9,18 @@ import {
   Switch,
   Table,
   Text,
-  ThemeIcon,
   Tooltip,
 } from '@mantine/core';
 import {
   IconChartBar,
   IconCheck,
+  IconCircle,
   IconDots,
   IconPencil,
   IconTrash,
 } from '@tabler/icons-react';
 import StatusBadge from './StatusBadge';
+import { buildEntityReportUrl } from './reportLinks';
 
 interface CampaignTableProps {
   campaigns: FormattedCampaign[];
@@ -28,6 +29,8 @@ interface CampaignTableProps {
   onOpenCampaign?: (campaignId: string) => void;
   onToggleCampaign: (campaignId: string, newStatus: boolean) => void;
   onDeleteCampaign: (campaignId: string) => void;
+  platformIntegrationId?: string | null;
+  adAccountId?: string | null;
   platformColor?: string;
   fillHeight?: boolean;
 }
@@ -45,6 +48,8 @@ export default function CampaignTable({
   onOpenCampaign,
   onToggleCampaign,
   onDeleteCampaign,
+  platformIntegrationId,
+  adAccountId,
   platformColor = 'dark',
   fillHeight = false,
 }: CampaignTableProps) {
@@ -74,7 +79,7 @@ export default function CampaignTable({
       >
         <Table.Thead>
           <Table.Tr>
-            <Table.Th />
+            <Table.Th style={{ width: 64, minWidth: 64, textAlign: 'center' }}>Select</Table.Th>
             <Table.Th style={{ width: 320, maxWidth: 320 }}>Campaign</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Status</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Objective</Table.Th>
@@ -123,6 +128,14 @@ export default function CampaignTable({
               const selected = selectedCampaignId === campaign.id;
               const rowBg = selected ? `var(--mantine-color-${platformColor}-1)` : 'transparent';
               const stickyCellBg = selected ? `var(--mantine-color-${platformColor}-1)` : BG;
+              const reportHref = buildEntityReportUrl({
+                scope: 'campaign',
+                platformIntegrationId,
+                adAccountId,
+                campaignId: campaign.id,
+                startDate: campaign.startDate,
+                endDate: campaign.endDate,
+              });
 
               return (
                 <Table.Tr
@@ -131,12 +144,28 @@ export default function CampaignTable({
                   onClick={() => onSelectCampaign(campaign.id)}
                   onDoubleClick={() => onOpenCampaign?.(campaign.id)}
                 >
-                  <Table.Td>
-                    {selected && (
-                      <ThemeIcon radius="xl" size="sm" color={platformColor}>
-                        <IconCheck size={14} />
-                      </ThemeIcon>
-                    )}
+                  <Table.Td ta="center">
+                    <Tooltip
+                      label={selected ? 'Selected campaign' : 'Select campaign'}
+                      withArrow
+                      withinPortal
+                      openDelay={150}
+                    >
+                      <ActionIcon
+                        aria-label={selected ? 'Selected campaign' : 'Select campaign'}
+                        variant={selected ? 'filled' : 'default'}
+                        color={selected ? platformColor : 'gray'}
+                        radius="xl"
+                        size="sm"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onSelectCampaign(campaign.id);
+                        }}
+                        onDoubleClick={(event) => event.stopPropagation()}
+                      >
+                        {selected ? <IconCheck size={14} /> : <IconCircle size={13} />}
+                      </ActionIcon>
+                    </Tooltip>
                   </Table.Td>
 
                   <Table.Td style={{ width: 320, maxWidth: 320 }}>
@@ -267,7 +296,7 @@ export default function CampaignTable({
                         <Menu.Item
                           leftSection={<IconChartBar size={16} />}
                           component="a"
-                          href={`/campaigns/${campaign.id}/analytics`}
+                          href={reportHref}
                           onClick={(event) => event.stopPropagation()}
                         >
                           View Analytics

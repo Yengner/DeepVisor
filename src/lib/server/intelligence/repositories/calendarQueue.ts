@@ -5,6 +5,7 @@ import type {
   CalendarQueueChildBlueprint,
   CalendarQueueItem,
   CalendarQueueItemDraft,
+  CalendarQueueStatus,
 } from '../types';
 
 type IntelligenceClient = SupabaseClient<Database>;
@@ -267,6 +268,141 @@ export async function createCalendarQueueItem(
   }
 
   return mapQueueRow(data as QueueRow);
+}
+
+export async function createCalendarQueueItemWithStatus(
+  supabase: IntelligenceClient,
+  input: CalendarQueueItemDraft,
+  status: CalendarQueueStatus
+): Promise<CalendarQueueItem> {
+  const timestamp = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('calendar_queue_items')
+    .insert({
+      ...toQueueInsert(input, timestamp),
+      status,
+    } satisfies QueueInsert)
+    .select('*')
+    .single();
+
+  if (error || !data) {
+    throw error ?? new Error('Failed to insert calendar queue item');
+  }
+
+  return mapQueueRow(data as QueueRow);
+}
+
+export async function listDueCalendarQueueItems(
+  supabase: IntelligenceClient,
+  input: {
+    nowIso: string;
+    limit: number;
+    businessId?: string | null;
+    adAccountId?: string | null;
+  }
+): Promise<CalendarQueueItem[]> {
+  let query = supabase
+    .from('calendar_queue_items')
+    .select('*')
+    .in('status', ['approved', 'scheduled'])
+    .not('scheduled_for', 'is', null)
+    .lte('scheduled_for', input.nowIso)
+    .is('completed_at', null)
+    .is('dismissed_at', null)
+    .order('scheduled_for', { ascending: true })
+    .limit(input.limit);
+
+  if (input.businessId) {
+    query = query.eq('business_id', input.businessId);
+  }
+
+  if (input.adAccountId) {
+    query = query.eq('ad_account_id', input.adAccountId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as QueueRow[]).map(mapQueueRow);
+}
+
+export async function claimCalendarQueueItemForProcessing(
+  supabase: IntelligenceClient,
+  input: {
+    queueItemId: string;
+    timestamp: string;
+  }
+): Promise<CalendarQueueItem | null> {
+  const { data, error } = await supabase
+    .from('calendar_queue_items')
+    .update({
+      status: 'in_progress',
+      updated_at: input.timestamp,
+    } satisfies QueueUpdate)
+    .eq('id', input.queueItemId)
+    .in('status', ['approved', 'scheduled'])
+    .is('completed_at', null)
+    .is('dismissed_at', null)
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ? mapQueueRow(data as QueueRow) : null;
+}
+
+export async function completeCalendarQueueItem(
+  supabase: IntelligenceClient,
+  input: {
+    queueItemId: string;
+    timestamp: string;
+    payload: Record<string, unknown>;
+  }
+): Promise<CalendarQueueItem> {
+  const { data, error } = await supabase
+    .from('calendar_queue_items')
+    .update({
+      status: 'completed',
+      completed_at: input.timestamp,
+      payload_json: input.payload as QueueUpdate['payload_json'],
+      updated_at: input.timestamp,
+    } satisfies QueueUpdate)
+    .eq('id', input.queueItemId)
+    .select('*')
+    .single();
+
+  if (error || !data) {
+    throw error ?? new Error('Failed to complete calendar queue item');
+  }
+
+  return mapQueueRow(data as QueueRow);
+}
+
+export async function releaseCalendarQueueItemAfterFailure(
+  supabase: IntelligenceClient,
+  input: {
+    queueItemId: string;
+    timestamp: string;
+    payload: Record<string, unknown>;
+  }
+): Promise<void> {
+  const { error } = await supabase
+    .from('calendar_queue_items')
+    .update({
+      status: 'scheduled',
+      payload_json: input.payload as QueueUpdate['payload_json'],
+      updated_at: input.timestamp,
+    } satisfies QueueUpdate)
+    .eq('id', input.queueItemId);
+
+  if (error) {
+    throw error;
+  }
 }
 
 /**

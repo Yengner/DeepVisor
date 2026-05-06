@@ -255,9 +255,10 @@
 .chartAnnotationChip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  width: fit-content;
-  padding: 4px 8px;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
   border: 1px solid rgba(226, 232, 240, 0.92);
   border-radius: 999px;
   background: rgba(248, 250, 252, 0.76);

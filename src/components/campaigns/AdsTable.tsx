@@ -20,6 +20,8 @@ import {
 } from '@mantine/core';
 import {
   IconChartBar,
+  IconCheck,
+  IconCircle,
   IconDots,
   IconEye,
   IconPencil,
@@ -27,6 +29,7 @@ import {
   IconTrash,
 } from '@tabler/icons-react';
 import StatusBadge from './StatusBadge';
+import { buildEntityReportUrl } from './reportLinks';
 
 const BG = 'var(--mantine-color-body)';
 const BORDER = 'var(--mantine-color-gray-3)';
@@ -47,6 +50,11 @@ const fmtPct = (n?: number) => {
 interface AdsTableProps {
   ads?: AdLifetimeRow[];
   loading?: boolean;
+  selectedAdId?: string | null;
+  onSelectAd?: (id: string) => void;
+  onOpenAd?: (id: string) => void;
+  platformIntegrationId?: string | null;
+  adAccountId?: string | null;
   platformColor?: string;
   fillHeight?: boolean;
 }
@@ -54,6 +62,11 @@ interface AdsTableProps {
 export default function AdsTable({
   ads = [],
   loading = false,
+  selectedAdId,
+  onSelectAd,
+  onOpenAd,
+  platformIntegrationId,
+  adAccountId,
   platformColor = 'dark',
   fillHeight = false,
 }: AdsTableProps) {
@@ -63,7 +76,6 @@ export default function AdsTable({
   const rows = ads.length;
   const tableHeight = Math.min(rows, maxRowsBeforeScroll) * rowH + headerH + 8;
   const scrollHeight = fillHeight ? '100%' : rows > maxRowsBeforeScroll ? tableHeight : undefined;
-  const stickyCellBg = BG;
 
   if (loading) {
     return (
@@ -96,7 +108,7 @@ export default function AdsTable({
       >
         <Table.Thead>
           <Table.Tr>
-            <Table.Th style={{ width: 40 }} />
+            <Table.Th style={{ width: 64, minWidth: 64, textAlign: 'center' }}>Select</Table.Th>
             <Table.Th style={{ width: 340, maxWidth: 340 }}>Ad Name</Table.Th>
             <Table.Th style={{ width: 60, textAlign: 'center', whiteSpace: 'nowrap' }}>Preview</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Status</Table.Th>
@@ -149,6 +161,19 @@ export default function AdsTable({
               const conversions = leads + messages;
               const raw = asRecord(ad.raw_data);
               const creative = asRecord(raw.creative);
+              const isSelected = selectedAdId === id;
+              const rowBg = isSelected ? `var(--mantine-color-${platformColor}-1)` : 'transparent';
+              const stickyCellBg = isSelected ? `var(--mantine-color-${platformColor}-1)` : BG;
+              const reportHref = buildEntityReportUrl({
+                scope: 'ad',
+                platformIntegrationId,
+                adAccountId,
+                campaignId: ad.campaign_id,
+                adsetId: ad.adset_id,
+                adId: id,
+                startDate: ad.start_date,
+                endDate: ad.end_date,
+              });
               const previewImage =
                 asString(creative.image_url) ||
                 asString(creative.video_url) ||
@@ -156,8 +181,36 @@ export default function AdsTable({
                 null;
 
               return (
-                <Table.Tr key={id} style={{ cursor: 'pointer' }}>
-                  <Table.Td />
+                <Table.Tr
+                  key={id}
+                  style={{ background: rowBg, cursor: onSelectAd ? 'pointer' : 'default' }}
+                  onClick={() => onSelectAd?.(id)}
+                  onDoubleClick={() => onOpenAd?.(id)}
+                >
+                  <Table.Td ta="center">
+                    <Tooltip
+                      label={isSelected ? 'Selected ad' : 'Select ad'}
+                      withArrow
+                      withinPortal
+                      openDelay={150}
+                    >
+                      <ActionIcon
+                        aria-label={isSelected ? 'Selected ad' : 'Select ad'}
+                        variant={isSelected ? 'filled' : 'default'}
+                        color={isSelected ? platformColor : 'gray'}
+                        radius="xl"
+                        size="sm"
+                        disabled={!onSelectAd}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onSelectAd?.(id);
+                        }}
+                        onDoubleClick={(event) => event.stopPropagation()}
+                      >
+                        {isSelected ? <IconCheck size={14} /> : <IconCircle size={13} />}
+                      </ActionIcon>
+                    </Tooltip>
+                  </Table.Td>
                   <Table.Td style={{ width: 340, maxWidth: 340 }}>
                     <Tooltip
                       label={ad.name ?? '—'}
@@ -246,7 +299,12 @@ export default function AdsTable({
                           <Menu.Item leftSection={<IconPencil size={16} />}>
                             Edit Ad
                           </Menu.Item>
-                          <Menu.Item leftSection={<IconChartBar size={16} />}>
+                          <Menu.Item
+                            leftSection={<IconChartBar size={16} />}
+                            component="a"
+                            href={reportHref}
+                            onClick={(event) => event.stopPropagation()}
+                          >
                             View Analytics
                           </Menu.Item>
                           <Divider />

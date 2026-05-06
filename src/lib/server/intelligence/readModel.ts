@@ -2,6 +2,7 @@ import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  asRecord,
   compareCalendarQueuePreviewItems,
   type CalendarQueuePreviewItem,
 } from '@/lib/shared';
@@ -51,8 +52,11 @@ function previewStatus(
   switch (status) {
     case 'approved':
     case 'scheduled':
-    case 'in_progress':
       return 'approved';
+    case 'in_progress':
+      return 'in_progress';
+    case 'completed':
+      return 'completed';
     case 'ready':
       return 'ready';
     default:
@@ -125,6 +129,15 @@ function toClockTime(value: string): string {
 
 function mapQueuePreviewItem(item: CalendarQueueItem): CalendarQueuePreviewItem {
   const defaults = defaultTime(item.itemType);
+  const payload = asRecord(item.payload);
+  const recurringTemplateId =
+    typeof payload.templateId === 'string' ? payload.templateId : null;
+  const recurringTemplateType =
+    typeof payload.templateType === 'string'
+      ? (payload.templateType as CalendarQueuePreviewItem['recurringTemplateType'])
+      : null;
+  const templateOccurrenceKey =
+    typeof payload.templateOccurrenceKey === 'string' ? payload.templateOccurrenceKey : null;
 
   return {
     id: item.id,
@@ -146,6 +159,10 @@ function mapQueuePreviewItem(item: CalendarQueueItem): CalendarQueuePreviewItem 
     childBlueprints: item.childBlueprints ?? [],
     children: [],
     isParent: item.parentQueueItemId == null,
+    isRecurring: Boolean(recurringTemplateId),
+    recurringTemplateId,
+    recurringTemplateType,
+    templateOccurrenceKey,
   };
 }
 
@@ -195,7 +212,7 @@ export async function getMetaAccountIntelligenceReadModel(
   ]);
 
   const visibleQueueItems = groupQueuePreviewItems(
-    queueItems.filter((item) => item.status !== 'dismissed' && item.status !== 'completed')
+    queueItems.filter((item) => item.status !== 'dismissed')
   );
 
   return {

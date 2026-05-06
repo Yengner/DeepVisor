@@ -12,11 +12,11 @@ import {
   Switch,
   Table,
   Text,
-  ThemeIcon,
   Tooltip,
 } from '@mantine/core';
-import { IconCheck, IconDots, IconPencil, IconTrash } from '@tabler/icons-react';
+import { IconChartBar, IconCheck, IconCircle, IconDots, IconPencil, IconTrash } from '@tabler/icons-react';
 import StatusBadge from './StatusBadge';
+import { buildEntityReportUrl } from './reportLinks';
 
 const BG = 'var(--mantine-color-body)';
 const BORDER = 'var(--mantine-color-gray-3)';
@@ -30,6 +30,8 @@ interface AdSetTableProps {
   onSelectAdSet?: (id: string) => void;
   onOpenAdSet?: (id: string) => void;
   selectedAdSetId?: string | null;
+  platformIntegrationId?: string | null;
+  adAccountId?: string | null;
   platformColor?: string;
   fillHeight?: boolean;
 }
@@ -40,6 +42,8 @@ export default function AdSetTable({
   onSelectAdSet,
   onOpenAdSet,
   selectedAdSetId,
+  platformIntegrationId,
+  adAccountId,
   platformColor = 'dark',
   fillHeight = false,
 }: AdSetTableProps) {
@@ -87,7 +91,7 @@ export default function AdSetTable({
       >
         <Table.Thead>
           <Table.Tr>
-            <Table.Th style={{ width: 40 }} />
+            <Table.Th style={{ width: 64, minWidth: 64, textAlign: 'center' }}>Select</Table.Th>
             <Table.Th style={{ width: 320, maxWidth: 320 }}>Ad Set</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Status</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Objective</Table.Th>
@@ -148,6 +152,15 @@ export default function AdSetTable({
               const linkClicks = Number(adSet.link_clicks || 0);
               const leads = Number(adSet.leads || 0);
               const messages = Number(adSet.messages || 0);
+              const reportHref = buildEntityReportUrl({
+                scope: 'adset',
+                platformIntegrationId,
+                adAccountId,
+                campaignId: adSet.campaign_id,
+                adsetId: adSet.id,
+                startDate: adSet.start_date,
+                endDate: adSet.end_date,
+              });
 
               return (
                 <Table.Tr
@@ -156,12 +169,29 @@ export default function AdSetTable({
                   onClick={() => handleRowClick(adSet.id)}
                   onDoubleClick={() => onOpenAdSet?.(adSet.id)}
                 >
-                  <Table.Td>
-                    {isSelected && (
-                      <ThemeIcon radius="xl" size="sm" color={platformColor}>
-                        <IconCheck size={14} />
-                      </ThemeIcon>
-                    )}
+                  <Table.Td ta="center">
+                    <Tooltip
+                      label={isSelected ? 'Selected ad set' : 'Select ad set'}
+                      withArrow
+                      withinPortal
+                      openDelay={150}
+                    >
+                      <ActionIcon
+                        aria-label={isSelected ? 'Selected ad set' : 'Select ad set'}
+                        variant={isSelected ? 'filled' : 'default'}
+                        color={isSelected ? platformColor : 'gray'}
+                        radius="xl"
+                        size="sm"
+                        disabled={!onSelectAdSet}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onSelectAdSet?.(adSet.id);
+                        }}
+                        onDoubleClick={(event) => event.stopPropagation()}
+                      >
+                        {isSelected ? <IconCheck size={14} /> : <IconCircle size={13} />}
+                      </ActionIcon>
+                    </Tooltip>
                   </Table.Td>
 
                   <Table.Td style={{ width: 320, maxWidth: 320 }}>
@@ -252,6 +282,14 @@ export default function AdSetTable({
                           onClick={(event) => event.stopPropagation()}
                         >
                           Edit Ad Set
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconChartBar size={16} />}
+                          component="a"
+                          href={reportHref}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          View Analytics
                         </Menu.Item>
                         <Menu.Divider />
                         <Menu.Item

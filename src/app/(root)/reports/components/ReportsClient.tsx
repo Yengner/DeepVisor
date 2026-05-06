@@ -68,7 +68,6 @@ type TimelineAnnotation = {
   chartLabel: string;
   value: number;
   label: string;
-  headline: string;
   detail: string;
   color: string;
 };
@@ -495,7 +494,7 @@ function pickWeakestRow(rows: ReportBreakdownRow[]) {
     .sort((left, right) => scoreWeakestRow(right) - scoreWeakestRow(left))[0] ?? null;
 }
 
-function pickPeakPoint(series: ReportTimeSeriesPoint[], key: keyof ReportTimeSeriesPoint) {
+function pickMaxPoint(series: ReportTimeSeriesPoint[], key: keyof ReportTimeSeriesPoint) {
   return [...series].sort((left, right) => Number(right[key]) - Number(left[key]))[0] ?? null;
 }
 
@@ -1936,22 +1935,19 @@ function ReportChartTooltip({
       </Stack>
 
       {matchingAnnotations.length > 0 ? (
-        <Stack gap={6} mt={6} pt={6} className={classes.reportAnnotationTooltip}>
+        <Stack gap={5} mt={6} pt={6} className={classes.reportAnnotationTooltip}>
           {matchingAnnotations.map((annotation) => (
-            <div key={annotation.key} className={classes.reportAnnotationTooltipItem}>
-              <Group gap={6} wrap="nowrap">
-                <span className={classes.chartAnnotationDot} style={{ backgroundColor: annotation.color }} />
-                <Text size="xs" c="dimmed" tt="uppercase" fw={850}>
+            <Group key={annotation.key} gap={6} wrap="nowrap" align="flex-start">
+              <span className={classes.chartAnnotationDot} style={{ backgroundColor: annotation.color, marginTop: 4 }} />
+              <div>
+                <Text size="xs" fw={850}>
                   {annotation.label}
                 </Text>
-              </Group>
-              <Text size="xs" fw={850} mt={3}>
-                {annotation.headline}
-              </Text>
-              <Text size="xs" c="dimmed" mt={1} className={classes.reportAnnotationTooltipDetail}>
-                {annotation.detail}
-              </Text>
-            </div>
+                <Text size="xs" c="dimmed" className={classes.reportAnnotationTooltipDetail}>
+                  {annotation.detail}
+                </Text>
+              </div>
+            </Group>
           ))}
         </Stack>
       ) : null}
@@ -1967,9 +1963,8 @@ function AnnotationLegend({ annotations }: { annotations: TimelineAnnotation[] }
   return (
     <Group gap={8} wrap="wrap" className={classes.chartAnnotationLegend}>
       {annotations.map((annotation) => (
-        <span key={annotation.key} className={classes.chartAnnotationChip}>
+        <span key={annotation.key} className={classes.chartAnnotationChip} aria-hidden="true">
           <span className={classes.chartAnnotationDot} style={{ backgroundColor: annotation.color }} />
-          {annotation.label}
         </span>
       ))}
     </Group>
@@ -2071,58 +2066,55 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
   );
   const hasTrendData = storyData.length > 0;
   const hasEfficiencyTrendData = efficiencyTrendData.length > 0;
-  const peakResultsPoint = useMemo(
-    () => pickPeakPoint(payload.series, 'conversion'),
+  const topResultsPoint = useMemo(
+    () => pickMaxPoint(payload.series, 'conversion'),
     [payload.series]
   );
-  const peakSpendPoint = useMemo(() => pickPeakPoint(payload.series, 'spend'), [payload.series]);
-  const peakCtrPoint = useMemo(() => pickPeakPoint(payload.series, 'ctr'), [payload.series]);
+  const topSpendPoint = useMemo(() => pickMaxPoint(payload.series, 'spend'), [payload.series]);
+  const topCtrPoint = useMemo(() => pickMaxPoint(payload.series, 'ctr'), [payload.series]);
   const timelineAnnotations = useMemo<TimelineAnnotation[]>(() => {
     const annotations: TimelineAnnotation[] = [];
 
-    if (peakResultsPoint) {
+    if (topResultsPoint) {
       annotations.push({
-        key: `results-${peakResultsPoint.label}`,
-        chartLabel: formatChartDateLabel(peakResultsPoint.label),
-        value: peakResultsPoint.conversion,
-        label: 'Peak results',
-        headline: `${peakResultsPoint.conversion.toLocaleString()} results`,
-        detail: 'Strongest results window in this range.',
+        key: `results-${topResultsPoint.label}`,
+        chartLabel: formatChartDateLabel(topResultsPoint.label),
+        value: topResultsPoint.conversion,
+        label: 'Highest results',
+        detail: 'Strongest results point in the selected range.',
         color: CHART_METRIC_COLORS.results,
       });
     }
 
-    if (peakSpendPoint) {
+    if (topSpendPoint) {
       annotations.push({
-        key: `spend-${peakSpendPoint.label}`,
-        chartLabel: formatChartDateLabel(peakSpendPoint.label),
-        value: Number(peakSpendPoint.spend.toFixed(2)),
-        label: 'Spend peak',
-        headline: formatCurrency(peakSpendPoint.spend, payload.meta.currencyCode, 2),
-        detail: 'Highest spend load across the selected period.',
+        key: `spend-${topSpendPoint.label}`,
+        chartLabel: formatChartDateLabel(topSpendPoint.label),
+        value: Number(topSpendPoint.spend.toFixed(2)),
+        label: 'Highest spend',
+        detail: 'Largest spend point in the selected range.',
         color: CHART_METRIC_COLORS.spend,
       });
     }
 
     return annotations;
-  }, [payload.meta.currencyCode, peakResultsPoint, peakSpendPoint]);
+  }, [topResultsPoint, topSpendPoint]);
   const qualityAnnotations = useMemo<TimelineAnnotation[]>(() => {
-    if (!peakCtrPoint) {
+    if (!topCtrPoint) {
       return [];
     }
 
     return [
       {
-        key: `ctr-${peakCtrPoint.label}`,
-        chartLabel: formatChartDateLabel(peakCtrPoint.label),
-        value: Number(peakCtrPoint.ctr.toFixed(2)),
-        label: 'Best traffic quality',
-        headline: `${peakCtrPoint.ctr.toFixed(2)}% CTR`,
-        detail: `${peakCtrPoint.conversionRate.toFixed(2)}% CVR in the best click quality window.`,
+        key: `ctr-${topCtrPoint.label}`,
+        chartLabel: formatChartDateLabel(topCtrPoint.label),
+        value: Number(topCtrPoint.ctr.toFixed(2)),
+        label: 'Best CTR',
+        detail: 'Highest click-through rate point in the selected range.',
         color: CHART_METRIC_COLORS.ctr,
       },
     ];
-  }, [peakCtrPoint]);
+  }, [topCtrPoint]);
   const timelineTooltipProps = useMemo(
     () => ({
       content: (props: ReportTooltipContentProps) => (

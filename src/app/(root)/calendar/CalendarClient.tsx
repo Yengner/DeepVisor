@@ -68,6 +68,50 @@ const DRAG_SNAP_MINUTES = 15;
 const INITIAL_WEEK_SCROLL_HOUR = 13;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const DEV_QUEUE_TOOL_ENABLED = process.env.NODE_ENV !== 'production';
+
+type DevQueueItemType =
+  | 'review_report'
+  | 'investigate_efficiency'
+  | 'refresh_creative'
+  | 'launch_test'
+  | 'fix_tracking'
+  | 'revive_campaign';
+type DevQueuePriority = 'low' | 'medium' | 'high' | 'critical';
+
+const DEV_QUEUE_ITEM_TYPE_OPTIONS: Array<{ value: DevQueueItemType; label: string }> = [
+  { value: 'review_report', label: 'Report review' },
+  { value: 'investigate_efficiency', label: 'Efficiency review' },
+  { value: 'refresh_creative', label: 'Creative refresh' },
+  { value: 'launch_test', label: 'Launch test' },
+  { value: 'fix_tracking', label: 'Fix tracking' },
+  { value: 'revive_campaign', label: 'Revive campaign' },
+];
+
+const DEV_QUEUE_PRIORITY_OPTIONS: Array<{ value: DevQueuePriority; label: string }> = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'critical', label: 'Critical' },
+];
+
+type DevCalendarQueueResponse = {
+  error?: string;
+  queueItem?: {
+    id?: string;
+    title?: string;
+    scheduledFor?: string | null;
+  };
+  queueItems?: QueueItem[];
+  result?: {
+    materializedCount: number;
+    processedCount: number;
+    notificationCount: number;
+    skippedCount: number;
+    failedCount: number;
+    errors: string[];
+  };
+};
 
 function toIsoDay(date: Date): string {
   const next = new Date(date);
@@ -288,6 +332,10 @@ function updateQueueItemTree(
 
 function queueStatusColor(status: QueueStatus): string {
   switch (status) {
+    case 'completed':
+      return 'gray';
+    case 'in_progress':
+      return 'yellow';
     case 'approved':
       return 'green';
     case 'ready':
@@ -303,6 +351,10 @@ function queueStatusLabel(status: QueueStatus): string {
       return 'Needs approval';
     case 'draft':
       return 'Needs review';
+    case 'in_progress':
+      return 'Running';
+    case 'completed':
+      return 'Completed';
     default:
       return 'Approved';
   }
@@ -443,7 +495,7 @@ const QUEUE_TEMPLATE_TYPE_OPTIONS: Array<{
     cadenceLabel: 'Report cadence',
     timeLabel: 'Report start time',
     helperCopy:
-      'DeepVisor will start generating this report at the selected time. No duration is needed for report queues.',
+      'DeepVisor will run this queue at the selected time and notify the workspace when the report window is ready.',
     defaultDurationMinutes: 30,
     showDuration: false,
   },
@@ -828,6 +880,14 @@ export default function CalendarClient({
   const [rebuildingQueue, setRebuildingQueue] = useState(false);
   const [showAllQueueTemplates, setShowAllQueueTemplates] = useState(false);
   const [currentTimestamp, setCurrentTimestamp] = useState(() => new Date());
+  const [devQueueItemType, setDevQueueItemType] = useState<DevQueueItemType>('review_report');
+  const [devQueuePriority, setDevQueuePriority] = useState<DevQueuePriority>('medium');
+  const [devScheduledOffsetMinutes, setDevScheduledOffsetMinutes] = useState(0);
+  const [devProcessOffsetMinutes, setDevProcessOffsetMinutes] = useState(0);
+  const [devQueueToolLoading, setDevQueueToolLoading] = useState<'create' | 'process' | null>(
+    null
+  );
+  const [devQueueSummary, setDevQueueSummary] = useState<string | null>(null);
   const [templateForm, setTemplateForm] = useState<QueueTemplateFormState>(() =>
     buildDefaultTemplateForm(startOfDay(new Date()))
   );
@@ -868,13 +928,26 @@ export default function CalendarClient({
       end: candidates[candidates.length - 1] ?? today,
     };
   }, [monthDays, weekDays, today]);
+  const persistedTemplateOccurrenceKeys = useMemo(() => {
+    const keys = new Set<string>();
+    flattenQueueItems(queueItems).forEach((item) => {
+      if (item.templateOccurrenceKey) {
+        keys.add(item.templateOccurrenceKey);
+      }
+    });
+    return keys;
+  }, [queueItems]);
   const recurringQueueItems = useMemo(
     () =>
       buildRecurringCalendarQueuePreviewItems(queueTemplates, {
         rangeStart: recurringRange.start,
         rangeEnd: recurringRange.end,
-      }),
-    [queueTemplates, recurringRange]
+      }).filter(
+        (item) =>
+          !item.templateOccurrenceKey ||
+          !persistedTemplateOccurrenceKeys.has(item.templateOccurrenceKey)
+      ),
+    [persistedTemplateOccurrenceKeys, queueTemplates, recurringRange]
   );
   const visibleCalendarDayKeys = useMemo(
     () => (planView === 'weekly' ? weekDayKeys : monthDayKeys),
@@ -898,8 +971,10 @@ export default function CalendarClient({
     () => ({
       total: flatQueueItems.length,
       ready: flatQueueItems.filter((item) => item.status === 'ready').length,
-      approved: flatQueueItems.filter((item) => item.status === 'approved').length,
-      draft: flatQueueItems.filter((item) => item.status === 'draft').length,
+      approved: flatQueueItems.filter(
+        (item) => item.status === 'approved' || item.status === 'in_progress'
+      ).length,
+      completed: flatQueueItems.filter((item) => item.status === 'completed').length,
     }),
     [flatQueueItems]
   );
@@ -1035,7 +1110,7 @@ export default function CalendarClient({
 
     try {
       const body = {
-        platformIntegrationId: workspace.selection.platformIntegrationId ?? null,
+        platformIntegrationId: selectedPlatformIntegrationId,
         adAccountId: workspace.selectedAdAccountId,
         templateType: templateForm.templateType,
         title: templateForm.title.trim(),
@@ -1155,6 +1230,117 @@ export default function CalendarClient({
       toast.error(error instanceof Error ? error.message : 'Unable to rebuild queue.');
     } finally {
       setRebuildingQueue(false);
+    }
+  }
+
+  async function callDevQueueTool(body: Record<string, unknown>) {
+    console.groupCollapsed('[calendar queue dev] request');
+    console.info('payload', body);
+    console.groupEnd();
+
+    const response = await fetch('/api/calendar/queue/dev', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    const payload = (await response.json()) as DevCalendarQueueResponse;
+
+    if (!response.ok) {
+      console.error('[calendar queue dev] failed response', {
+        status: response.status,
+        payload,
+      });
+      throw new Error(payload.error ?? 'Calendar queue dev tool failed.');
+    }
+
+    console.groupCollapsed('[calendar queue dev] success response');
+    console.info('status', response.status);
+    console.info('payload', payload);
+    console.groupEnd();
+
+    if (Array.isArray(payload.queueItems)) {
+      setQueueItems(payload.queueItems);
+    }
+
+    return payload;
+  }
+
+  async function handleCreateDevQueueItem() {
+    if (!workspace.selectedAdAccountId || !selectedPlatformIntegrationId) {
+      toast.error('Select an ad account before testing queue creation.');
+      return;
+    }
+
+    setDevQueueToolLoading('create');
+
+    try {
+      const payload = await callDevQueueTool({
+        action: 'create_and_process',
+        platformIntegrationId: selectedPlatformIntegrationId,
+        adAccountId: workspace.selectedAdAccountId,
+        itemType: devQueueItemType,
+        priority: devQueuePriority,
+        scheduledOffsetMinutes: devScheduledOffsetMinutes,
+      });
+      const title = payload.queueItem?.title ?? 'Test queue';
+      const result = payload.result;
+
+      if (payload.queueItem?.id) {
+        setSelectedCalendarItemId(payload.queueItem.id);
+      }
+
+      if (payload.queueItem?.scheduledFor) {
+        setCalendarCursor(startOfDay(new Date(payload.queueItem.scheduledFor)));
+      }
+
+      if (result) {
+        const summary = `Created and ran ${title}. Processed ${result.processedCount}, notifications ${result.notificationCount}, failed ${result.failedCount}.`;
+        setDevQueueSummary(summary);
+        toast.success(summary);
+        return;
+      }
+
+      setDevQueueSummary(`Created: ${title}`);
+      toast.success('Test queue created');
+    } catch (error) {
+      console.error('[calendar queue dev] create and run failed', error);
+      toast.error(error instanceof Error ? error.message : 'Unable to create and run test queue.');
+    } finally {
+      setDevQueueToolLoading(null);
+    }
+  }
+
+  async function handleProcessDevQueueItem() {
+    if (!workspace.selectedAdAccountId) {
+      toast.error('Select an ad account before processing queue items.');
+      return;
+    }
+
+    setDevQueueToolLoading('process');
+
+    try {
+      const payload = await callDevQueueTool({
+        action: 'process_due',
+        adAccountId: workspace.selectedAdAccountId,
+        processNowOffsetMinutes: devProcessOffsetMinutes,
+      });
+      const result = payload.result;
+
+      if (result) {
+        const summary = `Processed ${result.processedCount}, materialized ${result.materializedCount}, notifications ${result.notificationCount}, failed ${result.failedCount}`;
+        setDevQueueSummary(summary);
+        toast.success(summary);
+      } else {
+        setDevQueueSummary('Processor ran with no due items.');
+        toast.success('Processor ran');
+      }
+    } catch (error) {
+      console.error('[calendar queue dev] process failed', error);
+      toast.error(error instanceof Error ? error.message : 'Unable to process queue item.');
+    } finally {
+      setDevQueueToolLoading(null);
     }
   }
 
@@ -1462,7 +1648,11 @@ export default function CalendarClient({
             color="green"
             leftSection={<IconCheck size={15} />}
             loading={approvingItemId === item.id}
-            disabled={item.status === 'approved'}
+            disabled={
+              item.status === 'approved' ||
+              item.status === 'in_progress' ||
+              item.status === 'completed'
+            }
             onClick={() => handleApprove(item.id)}
           >
             {item.isParent ? 'Approve workflow' : 'Approve'}
@@ -1581,8 +1771,8 @@ export default function CalendarClient({
                     <span className={classes.topStatLabel}>Needs approval</span>
                   </div>
                   <div className={classes.topStat}>
-                    <span className={classes.topStatValue}>{queueCounts.draft}</span>
-                    <span className={classes.topStatLabel}>Drafts</span>
+                    <span className={classes.topStatValue}>{queueCounts.completed}</span>
+                    <span className={classes.topStatLabel}>Completed</span>
                   </div>
                   <div className={classes.topStat}>
                     <span className={classes.topStatValue}>{queueCounts.approved}</span>
@@ -1590,6 +1780,111 @@ export default function CalendarClient({
                   </div>
                 </div>
               </Paper>
+
+              {DEV_QUEUE_TOOL_ENABLED ? (
+                <Paper withBorder radius="xl" p="md" className={classes.topPanel}>
+                  <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                    <div>
+                      <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                        Dev queue tool
+                      </Text>
+                      <Text fw={700} mt={6}>
+                        Create and run instantly
+                      </Text>
+                    </div>
+                    <Badge color="yellow" variant="light">
+                      Dev
+                    </Badge>
+                  </Group>
+
+                  <Stack gap="xs" mt="md">
+                    <Select
+                      label="Queue type"
+                      size="xs"
+                      value={devQueueItemType}
+                      data={DEV_QUEUE_ITEM_TYPE_OPTIONS}
+                      onChange={(value) => {
+                        if (value) {
+                          setDevQueueItemType(value as DevQueueItemType);
+                        }
+                      }}
+                    />
+                    <Select
+                      label="Priority"
+                      size="xs"
+                      value={devQueuePriority}
+                      data={DEV_QUEUE_PRIORITY_OPTIONS}
+                      onChange={(value) => {
+                        if (value) {
+                          setDevQueuePriority(value as DevQueuePriority);
+                        }
+                      }}
+                    />
+                    <Group grow align="flex-start">
+                      <NumberInput
+                        label="Due offset"
+                        size="xs"
+                        suffix=" min"
+                        value={devScheduledOffsetMinutes}
+                        min={-1440}
+                        max={1440}
+                        step={1}
+                        onChange={(value) => setDevScheduledOffsetMinutes(Number(value) || 0)}
+                      />
+                      <NumberInput
+                        label="Run as offset"
+                        size="xs"
+                        suffix=" min"
+                        value={devProcessOffsetMinutes}
+                        min={-1440}
+                        max={1440}
+                        step={1}
+                        onChange={(value) => setDevProcessOffsetMinutes(Number(value) || 0)}
+                      />
+                    </Group>
+
+                    <Group gap="xs" grow>
+                      <Button
+                        radius="xl"
+                        size="xs"
+                        variant="light"
+                        leftSection={<IconPlus size={14} />}
+                        loading={devQueueToolLoading === 'create'}
+                        disabled={
+                          Boolean(devQueueToolLoading) ||
+                          !workspace.selectedAdAccountId ||
+                          !selectedPlatformIntegrationId
+                        }
+                        onClick={() => void handleCreateDevQueueItem()}
+                      >
+                        Create + run
+                      </Button>
+                      <Button
+                        radius="xl"
+                        size="xs"
+                        color="green"
+                        variant="light"
+                        leftSection={<IconRefresh size={14} />}
+                        loading={devQueueToolLoading === 'process'}
+                        disabled={Boolean(devQueueToolLoading) || !workspace.selectedAdAccountId}
+                        onClick={() => void handleProcessDevQueueItem()}
+                      >
+                        Run one
+                      </Button>
+                    </Group>
+
+                    {devQueueSummary ? (
+                      <Text size="xs" c="dimmed">
+                        {devQueueSummary}
+                      </Text>
+                    ) : (
+                      <Text size="xs" c="dimmed">
+                        Create + run writes a scheduled item, runs that exact item, and logs the response in the browser console.
+                      </Text>
+                    )}
+                  </Stack>
+                </Paper>
+              ) : null}
 
               <Paper withBorder radius="xl" p="md" className={classes.topPanel}>
                 <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
