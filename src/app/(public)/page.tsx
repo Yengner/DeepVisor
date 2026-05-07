@@ -45,10 +45,12 @@ const productSurfaces = [
 ];
 
 const intelligenceAnswers = [
+  "What worked?",
+  "What did not work?",
   "Which campaigns are driving the most qualified calls and quote requests right now?",
   "Which service line, audience, or campaign is producing the best cost per lead?",
   "What changed during the selected timeline that affected booked-job potential?",
-  "What worked, what did not work, and why is lead quality shifting?",
+  "Why is lead quality shifting?",
   "What should be approved, modified, paused, or watched next without more platform digging?",
 ];
 
