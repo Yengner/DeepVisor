@@ -2,6 +2,14 @@ import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { asRecord, type CalendarQueueTemplate, type CalendarQueueTemplateType } from '@/lib/shared';
+import { uploadArchivedReportPdf } from '@/lib/server/reports/pdf/archiveStorage';
+import { renderReportPdfBuffer } from '@/lib/server/reports/pdf/renderReportPdf';
+import type {
+  ReportCompareMode,
+  ReportGroupBy,
+  ReportQueryInput,
+  ReportScope,
+} from '@/lib/server/reports/types';
 import type { Database } from '@/lib/shared/types/supabase';
 import {
   claimCalendarQueueItemForProcessing,
@@ -55,6 +63,15 @@ type BusinessContext = {
   id: string;
   business_name: string;
   organization_id: string | null;
+};
+
+type CalendarQueueActionResult = {
+  link: string | null;
+  payload: Record<string, unknown>;
+  notificationCopy?: {
+    title: string;
+    message: string;
+  };
 };
 
 const DEFAULT_TIME_ZONE = 'America/New_York';
@@ -243,26 +260,163 @@ function formatScheduledAt(value: string | null, timeZone: string): string {
   });
 }
 
-function buildReportHref(item: CalendarQueueItem, scheduledAt: Date): string {
-  const baseHref = item.destinationHref || '/reports';
-  const url = new URL(baseHref, 'https://deepvisor.local');
+function numericPayloadValue(payload: Record<string, unknown>, key: string): number | null {
+  const value = payload[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function stringPayloadValue(payload: Record<string, unknown>, key: string): string | null {
+  const value = payload[key];
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
+function isReportScope(value: string | null): value is ReportScope {
+  return (
+    value === 'business' ||
+    value === 'platform' ||
+    value === 'ad_account' ||
+    value === 'campaign' ||
+    value === 'adset' ||
+    value === 'ad'
+  );
+}
+
+function isReportGroupBy(value: string | null): value is ReportGroupBy {
+  return value === 'day' || value === 'week' || value === 'month';
+}
+
+function isReportCompareMode(value: string | null): value is ReportCompareMode {
+  return value === 'none' || value === 'previous_period';
+}
+
+function inferReportScope(input: {
+  requestedScope: string | null;
+  campaignId: string | null;
+  adsetId: string | null;
+  adId: string | null;
+}): ReportScope {
+  if (isReportScope(input.requestedScope)) {
+    return input.requestedScope;
+  }
+
+  if (input.adId) {
+    return 'ad';
+  }
+
+  if (input.adsetId) {
+    return 'adset';
+  }
+
+  if (input.campaignId) {
+    return 'campaign';
+  }
+
+  return 'ad_account';
+}
+
+function formatReportScopeLabel(scope: ReportScope): string {
+  switch (scope) {
+    case 'business':
+      return 'Business';
+    case 'platform':
+      return 'Platform';
+    case 'campaign':
+      return 'Campaign';
+    case 'adset':
+      return 'Ad set';
+    case 'ad':
+      return 'Ad';
+    case 'ad_account':
+    default:
+      return 'Ad account';
+  }
+}
+
+function buildReportQueryFromQueueItem(
+  item: CalendarQueueItem,
+  scheduledAt: Date,
+  timeZone: string
+): ReportQueryInput {
   const payload = asRecord(item.payload);
-  const timeZone =
-    typeof payload.timeZone === 'string' && payload.timeZone.length > 0
-      ? payload.timeZone
-      : DEFAULT_TIME_ZONE;
   const dateTo = toZonedDateKey(scheduledAt, timeZone);
   const recurrenceType =
     typeof payload.recurrenceType === 'string' ? payload.recurrenceType : 'weekly';
-  const lookbackDays = recurrenceType === 'monthly' ? 30 : 7;
+  const lookbackDays = Math.max(
+    1,
+    Math.min(
+      numericPayloadValue(payload, 'lookbackDays') ??
+        (recurrenceType === 'monthly' ? 30 : 7),
+      366
+    )
+  );
+  const campaignId = stringPayloadValue(payload, 'campaignId');
+  const adsetId = stringPayloadValue(payload, 'adsetId');
+  const adId = stringPayloadValue(payload, 'adId');
+  const requestedScope = stringPayloadValue(payload, 'scope');
+  const groupBy = stringPayloadValue(payload, 'groupBy');
+  const compareMode = stringPayloadValue(payload, 'compareMode');
 
-  url.searchParams.set('ad_account_id', item.adAccountId);
-  url.searchParams.set('platform_integration_id', item.platformIntegrationId);
-  url.searchParams.set('date_to', dateTo);
-  url.searchParams.set('date_from', addDaysToDateKey(dateTo, -(lookbackDays - 1)));
-  url.searchParams.set('group_by', 'day');
+  return {
+    businessId: item.businessId,
+    scope: inferReportScope({
+      requestedScope,
+      campaignId,
+      adsetId,
+      adId,
+    }),
+    platformIntegrationId: item.platformIntegrationId,
+    adAccountIds: [item.adAccountId],
+    campaignIds: campaignId ? [campaignId] : [],
+    adsetIds: adsetId ? [adsetId] : [],
+    adIds: adId ? [adId] : [],
+    dateTo,
+    dateFrom: addDaysToDateKey(dateTo, -(lookbackDays - 1)),
+    groupBy: isReportGroupBy(groupBy) ? groupBy : 'day',
+    compareMode: isReportCompareMode(compareMode) ? compareMode : 'previous_period',
+  };
+}
 
-  return `${url.pathname}${url.search}`;
+function buildReportDownloadHref(query: ReportQueryInput): string {
+  const params = new URLSearchParams();
+
+  params.set('scope', query.scope);
+  params.set('date_from', query.dateFrom);
+  params.set('date_to', query.dateTo);
+  params.set('group_by', query.groupBy);
+
+  if (query.compareMode === 'previous_period') {
+    params.set('compare', 'previous_period');
+  }
+
+  if (query.platformIntegrationId) {
+    params.set('platform_integration_id', query.platformIntegrationId);
+  }
+
+  if (query.adAccountIds.length > 0) {
+    params.set('ad_account_id', query.adAccountIds.join(','));
+  }
+
+  if (query.campaignIds.length > 0) {
+    params.set('campaign_id', query.campaignIds.join(','));
+  }
+
+  if (query.adsetIds.length > 0) {
+    params.set('adset_id', query.adsetIds.join(','));
+  }
+
+  if (query.adIds.length > 0) {
+    params.set('ad_id', query.adIds.join(','));
+  }
+
+  return `/api/reports/pdf?${params.toString()}`;
+}
+
+function buildReportHref(item: CalendarQueueItem, scheduledAt: Date): string {
+  const payload = asRecord(item.payload);
+  const timeZone = stringPayloadValue(payload, 'timeZone') ?? DEFAULT_TIME_ZONE;
+  const query = buildReportQueryFromQueueItem(item, scheduledAt, timeZone);
+
+  return buildReportDownloadHref(query);
 }
 
 function buildActionHref(item: CalendarQueueItem): string | null {
@@ -432,6 +586,114 @@ async function getNotificationUserIds(
   }
 
   return userIds;
+}
+
+function formatDateRangeLabel(query: ReportQueryInput): string {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+  const start = formatter.format(parseDateKey(query.dateFrom));
+  const end = formatter.format(parseDateKey(query.dateTo));
+
+  return start === end ? start : `${start} - ${end}`;
+}
+
+async function runReportQueueAction(
+  supabase: IntelligenceClient,
+  item: CalendarQueueItem,
+  input: {
+    business: BusinessContext | null;
+    userIds: string[];
+    timeZone: string;
+    timestamp: string;
+  }
+): Promise<CalendarQueueActionResult> {
+  const scheduledAt = item.scheduledFor
+    ? new Date(item.scheduledFor)
+    : new Date(input.timestamp);
+  const query = buildReportQueryFromQueueItem(item, scheduledAt, input.timeZone);
+  const { buffer, payload, fileName } = await renderReportPdfBuffer({
+    query,
+    organizationName: input.business?.business_name ?? 'DeepVisor',
+    supabase,
+  });
+  const generatedReportHref = buildReportDownloadHref(query);
+  const archivedPdf = await uploadArchivedReportPdf(supabase, {
+    businessId: item.businessId,
+    queueItemId: item.id,
+    dateTo: query.dateTo,
+    fileName,
+    buffer,
+  });
+  const viewerHref = `/reports/archive/${item.id}`;
+  const pdfHref = `/api/reports/archive/${item.id}/pdf`;
+  const downloadHref = `${pdfHref}?download=1`;
+  const dateRange = formatDateRangeLabel(query);
+
+  console.info('[calendar queue] archived in-app report', {
+    queueItemId: item.id,
+    fileName,
+    dateFrom: query.dateFrom,
+    dateTo: query.dateTo,
+    storageBucket: archivedPdf.bucket,
+    storagePath: archivedPdf.path,
+    notificationUsers: input.userIds.length,
+  });
+
+  return {
+    link: viewerHref,
+    payload: {
+      type: 'report_pdf',
+      title: payload.export.title,
+      fileName,
+      reportHref: viewerHref,
+      viewerHref,
+      pdfHref,
+      downloadHref,
+      generatedReportHref,
+      storageBucket: archivedPdf.bucket,
+      storagePath: archivedPdf.path,
+      storageSizeBytes: archivedPdf.sizeBytes,
+      dateFrom: query.dateFrom,
+      dateTo: query.dateTo,
+      groupBy: query.groupBy,
+      scope: query.scope,
+      levelLabel: formatReportScopeLabel(query.scope),
+      generatedAt: input.timestamp,
+      summary: {
+        spend: payload.summary.spend,
+        results: payload.summary.conversion,
+        clicks: payload.summary.clicks,
+        ctr: payload.summary.ctr,
+        cpc: payload.summary.cpc,
+        costPerResult: payload.summary.costPerResult,
+      },
+    },
+    notificationCopy: {
+      title: `Report ready: ${item.title}`,
+      message: `${payload.export.title} is ready for ${dateRange}. Open the generated report PDF to review performance.`,
+    },
+  };
+}
+
+async function runCalendarQueueAction(
+  supabase: IntelligenceClient,
+  item: CalendarQueueItem,
+  input: {
+    business: BusinessContext | null;
+    userIds: string[];
+    timeZone: string;
+    timestamp: string;
+  }
+): Promise<CalendarQueueActionResult | null> {
+  if (item.itemType === 'review_report') {
+    return runReportQueueAction(supabase, item, input);
+  }
+
+  return null;
 }
 
 async function listExistingOccurrenceKeys(
@@ -649,13 +911,21 @@ async function processOneQueueItem(
       business,
       platformIntegrationId: claimed.platformIntegrationId,
     });
-    const href = buildActionHref(claimed);
-    const copy = buildNotificationCopy({
-      item: claimed,
-      accountName: account?.name ?? null,
-      timeZone,
-    });
     const dedupeKey = `calendar-queue:${claimed.id}:processed`;
+    const actionResult = await runCalendarQueueAction(supabase, claimed, {
+      business,
+      userIds,
+      timeZone,
+      timestamp: input.timestamp,
+    });
+    const href = actionResult?.link ?? buildActionHref(claimed);
+    const copy =
+      actionResult?.notificationCopy ??
+      buildNotificationCopy({
+        item: claimed,
+        accountName: account?.name ?? null,
+        timeZone,
+      });
     let notificationCount = 0;
 
     for (const userId of userIds) {
@@ -675,6 +945,7 @@ async function processOneQueueItem(
           adAccountId: claimed.adAccountId,
           scheduledFor: claimed.scheduledFor,
           completedAt: input.timestamp,
+          action: actionResult?.payload ?? null,
         },
       });
       await createOrUpdateDeliveryLog(supabase, {
@@ -689,6 +960,7 @@ async function processOneQueueItem(
         payload: {
           queueItemId: claimed.id,
           link: href,
+          action: actionResult?.payload ?? null,
         },
       });
       notificationCount += 1;
@@ -701,6 +973,7 @@ async function processOneQueueItem(
         processor: 'calendar_queue_processor',
         processedAt: input.timestamp,
         notificationUserIds: userIds,
+        action: actionResult?.payload ?? null,
       },
     };
 

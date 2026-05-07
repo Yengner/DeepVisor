@@ -45,7 +45,10 @@ export default function IntelligencePreferencesCard({
   initialNotificationPreference,
   initialReportSubscription,
 }: IntelligencePreferencesCardProps) {
-  const [notificationPreference, setNotificationPreference] = useState(initialNotificationPreference);
+  const [notificationPreference, setNotificationPreference] = useState({
+    ...initialNotificationPreference,
+    emailEnabled: false,
+  });
   const [reportSubscription, setReportSubscription] = useState(initialReportSubscription);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{
@@ -108,7 +111,8 @@ export default function IntelligencePreferencesCard({
         <div>
           <Text fw={700}>Intelligence delivery</Text>
           <Text size="sm" c="dimmed">
-            Control how DeepVisor sends trend alerts and report-ready notices.
+            Control in-app trend alerts and report-ready notices. Scheduled reports are archived
+            in Settings for now instead of being emailed.
           </Text>
         </div>
       </Group>
@@ -126,14 +130,10 @@ export default function IntelligencePreferencesCard({
             }
           />
           <Switch
-            label="Email notifications"
-            checked={notificationPreference.emailEnabled}
-            onChange={(event) =>
-              setNotificationPreference((current) => ({
-                ...current,
-                emailEnabled: event.currentTarget.checked,
-              }))
-            }
+            label="Email notifications paused"
+            description="Reports are saved in-app while email delivery is disabled."
+            checked={false}
+            disabled
           />
           <Switch
             label="Report-ready notices"

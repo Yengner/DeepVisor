@@ -884,6 +884,10 @@ export default function CalendarClient({
   const [devQueuePriority, setDevQueuePriority] = useState<DevQueuePriority>('medium');
   const [devScheduledOffsetMinutes, setDevScheduledOffsetMinutes] = useState(0);
   const [devProcessOffsetMinutes, setDevProcessOffsetMinutes] = useState(0);
+  const [devReportLookbackDays, setDevReportLookbackDays] = useState(7);
+  const [devReportCampaignId, setDevReportCampaignId] = useState('');
+  const [devReportAdsetId, setDevReportAdsetId] = useState('');
+  const [devReportAdId, setDevReportAdId] = useState('');
   const [devQueueToolLoading, setDevQueueToolLoading] = useState<'create' | 'process' | null>(
     null
   );
@@ -1283,6 +1287,10 @@ export default function CalendarClient({
         itemType: devQueueItemType,
         priority: devQueuePriority,
         scheduledOffsetMinutes: devScheduledOffsetMinutes,
+        reportLookbackDays: devReportLookbackDays,
+        reportCampaignId: devReportCampaignId.trim() || null,
+        reportAdsetId: devReportAdsetId.trim() || null,
+        reportAdId: devReportAdId.trim() || null,
       });
       const title = payload.queueItem?.title ?? 'Test queue';
       const result = payload.result;
@@ -1842,6 +1850,44 @@ export default function CalendarClient({
                         onChange={(value) => setDevProcessOffsetMinutes(Number(value) || 0)}
                       />
                     </Group>
+
+                    {devQueueItemType === 'review_report' ? (
+                      <Stack gap="xs">
+                        <Group grow align="flex-start">
+                          <NumberInput
+                            label="Report range"
+                            size="xs"
+                            suffix=" days"
+                            value={devReportLookbackDays}
+                            min={1}
+                            max={366}
+                            step={1}
+                            onChange={(value) => setDevReportLookbackDays(Number(value) || 7)}
+                          />
+                        </Group>
+                        <TextInput
+                          label="Campaign ID"
+                          size="xs"
+                          value={devReportCampaignId}
+                          placeholder="Optional"
+                          onChange={(event) => setDevReportCampaignId(event.currentTarget.value)}
+                        />
+                        <TextInput
+                          label="Ad set ID"
+                          size="xs"
+                          value={devReportAdsetId}
+                          placeholder="Optional"
+                          onChange={(event) => setDevReportAdsetId(event.currentTarget.value)}
+                        />
+                        <TextInput
+                          label="Ad ID"
+                          size="xs"
+                          value={devReportAdId}
+                          placeholder="Optional"
+                          onChange={(event) => setDevReportAdId(event.currentTarget.value)}
+                        />
+                      </Stack>
+                    ) : null}
 
                     <Group gap="xs" grow>
                       <Button

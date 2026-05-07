@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { processCalendarQueue } from '@/lib/server/intelligence/calendarQueueProcessor';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 
+export const runtime = 'nodejs';
+
 type ProcessCalendarQueueBody = {
   limit?: number;
   lookbackDays?: number;

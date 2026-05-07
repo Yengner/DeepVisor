@@ -1170,25 +1170,6 @@ async function syncFindingNotifications(
         notificationCount += 1;
       }
 
-      if (recipient.notificationPreference.emailEnabled) {
-        const emailDedupeKey = `email:trend-finding:${finding.dedupeKey}`;
-        await createOrUpdateDeliveryLog(supabase, {
-          businessId: input.businessId,
-          userId: recipient.userId,
-          channel: 'email',
-          sourceType: 'trend_finding',
-          sourceId: finding.id,
-          dedupeKey: emailDedupeKey,
-          status: 'queued',
-          payload: {
-            title: finding.title,
-            summary: finding.summary,
-            findingId: finding.id,
-          },
-        });
-        emailQueuedCount += 1;
-      }
-
       if (
         recipient.notificationPreference.reportReadyEnabled &&
         recipient.reportSubscription.isEnabled &&

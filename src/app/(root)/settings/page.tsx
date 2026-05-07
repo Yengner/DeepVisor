@@ -19,6 +19,8 @@ import {
   IconChartBar,
   IconClock,
   IconDatabase,
+  IconDownload,
+  IconFileAnalytics,
   IconLock,
   IconPlug,
   IconTargetArrow,
@@ -37,6 +39,10 @@ import {
 import {
   getReportSubscription,
 } from '@/lib/server/intelligence/repositories/reportSubscriptions';
+import {
+  listArchivedReports,
+  type ArchivedReport,
+} from '@/lib/server/intelligence/repositories/reportArchive';
 import { getAdAccountData, getBusinessAdAccountsRollup, getPlatformDetails } from '@/lib/server/data';
 import { createServerClient } from '@/lib/server/supabase/server';
 import IntelligencePreferencesCard from './components/IntelligencePreferencesCard';
@@ -92,6 +98,12 @@ type NotificationPreview = {
   type: string | null;
 };
 
+type ReportArchiveGroup = {
+  key: string;
+  label: string;
+  reports: ArchivedReport[];
+};
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
 }
@@ -121,6 +133,55 @@ function formatDateTime(value: string | null): string {
     hour: 'numeric',
     minute: '2-digit',
   });
+}
+
+function formatDateOnly(value: string | null): string {
+  if (!value) {
+    return 'Unscheduled';
+  }
+
+  const date = new Date(`${value.slice(0, 10)}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString('en-US', {
+    timeZone: 'UTC',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function formatReportWindow(report: ArchivedReport): string {
+  if (!report.dateFrom && !report.dateTo) {
+    return 'Window unavailable';
+  }
+
+  const start = formatDateOnly(report.dateFrom ?? report.dateTo);
+  const end = formatDateOnly(report.dateTo ?? report.dateFrom);
+
+  return start === end ? start : `${start} - ${end}`;
+}
+
+function formatCurrency(value: number | null): string {
+  if (typeof value !== 'number') {
+    return 'n/a';
+  }
+
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatNumber(value: number | null): string {
+  return typeof value === 'number' ? value.toLocaleString() : 'n/a';
+}
+
+function formatPercent(value: number | null): string {
+  return typeof value === 'number' ? `${value.toFixed(2)}%` : 'n/a';
 }
 
 function formatRelativeTime(value: string | null): string {
@@ -218,6 +279,35 @@ function normalizeNotification(value: unknown, index: number): NotificationPrevi
   };
 }
 
+function groupArchivedReports(reports: ArchivedReport[]): ReportArchiveGroup[] {
+  const groups = new Map<string, ReportArchiveGroup>();
+
+  for (const report of reports) {
+    const key = report.dateTo ?? report.generatedAt?.slice(0, 10) ?? 'unscheduled';
+    const existing =
+      groups.get(key) ??
+      ({
+        key,
+        label: formatDateOnly(key),
+        reports: [],
+      } satisfies ReportArchiveGroup);
+
+    existing.reports.push(report);
+    groups.set(key, existing);
+  }
+
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      reports: group.reports.sort(
+        (left, right) =>
+          left.title.localeCompare(right.title) ||
+          left.levelLabel.localeCompare(right.levelLabel)
+      ),
+    }))
+    .sort((left, right) => right.key.localeCompare(left.key));
+}
+
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
@@ -282,6 +372,7 @@ export default async function SettingsPage() {
     selectedAdAccount,
     notificationPreference,
     reportSubscription,
+    archivedReports,
   ] = await Promise.all([
     supabase
       .from('business_profiles')
@@ -317,6 +408,10 @@ export default async function SettingsPage() {
     getReportSubscription(supabase as any, {
       businessId,
       userId: user.id,
+    }),
+    listArchivedReports(supabase as any, {
+      businessId,
+      limit: 60,
     }),
   ]);
 
@@ -376,6 +471,7 @@ export default async function SettingsPage() {
     businessProfile.ad_goals?.length ? 'goals' : null,
     businessProfile.preferred_platforms?.length ? 'platforms' : null,
   ].filter(Boolean).length;
+  const archivedReportGroups = groupArchivedReports(archivedReports);
 
   return (
     <Container size="xl" pb="xl">
@@ -473,6 +569,9 @@ export default async function SettingsPage() {
           </Button>
           <Button component="a" href="#signals" variant="subtle" size="xs">
             Signals
+          </Button>
+          <Button component="a" href="#report-archive" variant="subtle" size="xs">
+            Reports
           </Button>
           <Button component="a" href="#connections" variant="subtle" size="xs">
             Connections
@@ -762,6 +861,132 @@ export default async function SettingsPage() {
               </Stack>
             </Paper>
           </SimpleGrid>
+        </Card>
+
+        <Card withBorder radius="lg" p="xl" id="report-archive">
+          <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
+            <div>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                Report archive
+              </Text>
+              <Title order={3}>Saved weekly reports</Title>
+              <Text size="sm" c="dimmed" mt={4}>
+                Completed report queue runs are stored here by reporting date, report name, and
+                reporting level.
+              </Text>
+            </div>
+            <Badge color={archivedReports.length > 0 ? 'blue' : 'gray'} variant="light">
+              {archivedReports.length} saved
+            </Badge>
+          </Group>
+
+          <Stack gap="md">
+            {archivedReportGroups.length > 0 ? (
+              archivedReportGroups.map((group) => (
+                <Paper key={group.key} withBorder radius="md" p="md">
+                  <Group justify="space-between" align="center" mb="sm" wrap="wrap">
+                    <Group gap="sm">
+                      <ThemeIcon variant="light" color="blue" radius="md">
+                        <IconFileAnalytics size={16} />
+                      </ThemeIcon>
+                      <div>
+                        <Text fw={700}>{group.label}</Text>
+                        <Text size="xs" c="dimmed">
+                          {group.reports.length} report
+                          {group.reports.length === 1 ? '' : 's'} completed
+                        </Text>
+                      </div>
+                    </Group>
+                  </Group>
+
+                  <Stack gap="xs">
+                    {group.reports.map((report) => (
+                      <Paper key={report.id} withBorder radius="md" p="sm">
+                        <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <Group gap="xs" mb={6} wrap="wrap">
+                              <Badge color="blue" variant="light">
+                                {report.levelLabel}
+                              </Badge>
+                              {report.adAccountName ? (
+                                <Badge color="gray" variant="outline">
+                                  {report.adAccountName}
+                                </Badge>
+                              ) : null}
+                              <Badge color="gray" variant="outline">
+                                {formatReportWindow(report)}
+                              </Badge>
+                              {report.storagePath ? (
+                                <Badge color="green" variant="light">
+                                  PDF stored
+                                </Badge>
+                              ) : null}
+                            </Group>
+                            <Text fw={700} size="sm" lineClamp={1}>
+                              {report.title}
+                            </Text>
+                            <Group gap="md" mt={6} wrap="wrap">
+                              <Text size="xs" c="dimmed">
+                                Spend {formatCurrency(report.summary.spend)}
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                Results {formatNumber(report.summary.results)}
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                CTR {formatPercent(report.summary.ctr)}
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                Cost/result {formatCurrency(report.summary.costPerResult)}
+                              </Text>
+                            </Group>
+                          </div>
+
+                          <Group gap="xs" wrap="nowrap">
+                            <Button
+                              component="a"
+                              href={report.viewerHref}
+                              radius="xl"
+                              size="xs"
+                              variant="light"
+                            >
+                              View
+                            </Button>
+                            {report.downloadHref ? (
+                              <Button
+                                component="a"
+                                href={report.downloadHref}
+                                radius="xl"
+                                size="xs"
+                                variant="default"
+                                leftSection={<IconDownload size={14} />}
+                              >
+                                Download
+                              </Button>
+                            ) : null}
+                          </Group>
+                        </Group>
+                      </Paper>
+                    ))}
+                  </Stack>
+                </Paper>
+              ))
+            ) : (
+              <Paper withBorder radius="md" p="md">
+                <Group gap="sm" align="flex-start">
+                  <ThemeIcon variant="light" color="gray" radius="md">
+                    <IconFileAnalytics size={16} />
+                  </ThemeIcon>
+                  <div>
+                    <Text fw={700}>No saved weekly reports yet</Text>
+                    <Text size="sm" c="dimmed" mt={4}>
+                      When a scheduled report queue runs, DeepVisor will save the generated report
+                      here for in-app access.
+                    </Text>
+                  </div>
+                </Group>
+              </Paper>
+            )}
+          </Stack>
         </Card>
 
         <Card withBorder radius="lg" p="xl" id="connections">

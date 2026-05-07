@@ -23,6 +23,10 @@ type DevCalendarQueueBody = {
   priority?: CalendarQueuePriority;
   scheduledOffsetMinutes?: number;
   processNowOffsetMinutes?: number;
+  reportLookbackDays?: number;
+  reportCampaignId?: string | null;
+  reportAdsetId?: string | null;
+  reportAdId?: string | null;
 };
 
 const ITEM_TYPE_LABELS: Record<CalendarQueueItemType, string> = {
@@ -64,6 +68,18 @@ function normalizeOffset(value: unknown, fallback: number): number {
   }
 
   return Math.max(-1440, Math.min(1440, Math.floor(value)));
+}
+
+function normalizeReportLookbackDays(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return 7;
+  }
+
+  return Math.max(1, Math.min(366, Math.floor(value)));
+}
+
+function normalizeOptionalString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
 
 function scheduledDateFromOffset(minutes: number): Date {
@@ -176,6 +192,30 @@ export async function POST(request: NextRequest) {
         hour: 'numeric',
         minute: '2-digit',
       });
+      const reportPayload: Record<string, unknown> =
+        itemType === 'review_report'
+          ? {
+              lookbackDays: normalizeReportLookbackDays(body.reportLookbackDays),
+            }
+          : {};
+      const reportCampaignId = normalizeOptionalString(body.reportCampaignId);
+      const reportAdsetId = normalizeOptionalString(body.reportAdsetId);
+      const reportAdId = normalizeOptionalString(body.reportAdId);
+
+      if (itemType === 'review_report') {
+        if (reportCampaignId) {
+          reportPayload.campaignId = reportCampaignId;
+        }
+
+        if (reportAdsetId) {
+          reportPayload.adsetId = reportAdsetId;
+        }
+
+        if (reportAdId) {
+          reportPayload.adId = reportAdId;
+        }
+      }
+
       const draft: CalendarQueueItemDraft = {
         businessId,
         platformIntegrationId,
@@ -187,7 +227,8 @@ export async function POST(request: NextRequest) {
         title: `Dev test: ${ITEM_TYPE_LABELS[itemType]} at ${timestampLabel}`,
         description:
           'Development-only queue item for testing the calendar processor one item at a time.',
-        destinationHref: itemType === 'review_report' ? '/reports?compare=previous_period' : '/calendar',
+        destinationHref:
+          itemType === 'review_report' ? '/reports?compare=previous_period' : '/calendar',
         scheduledFor: scheduledFor.toISOString(),
         dueDate: scheduledFor.toISOString().slice(0, 10),
         payload: {
@@ -195,6 +236,7 @@ export async function POST(request: NextRequest) {
           createdByUserId: user.id,
           scheduledOffsetMinutes: normalizeOffset(body.scheduledOffsetMinutes, 0),
           durationMinutes: 30,
+          ...reportPayload,
         },
       };
       const queueItem = await createCalendarQueueItemWithStatus(

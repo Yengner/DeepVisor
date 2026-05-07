@@ -2312,8 +2312,11 @@ export async function getReportFilterOptions(query: ReportQueryInput): Promise<R
   return buildFilterOptions(context);
 }
 
-export async function buildReportPayload(query: ReportQueryInput): Promise<ReportPayload> {
-  const supabase = await createSupabaseClient();
+export async function buildReportPayload(
+  query: ReportQueryInput,
+  supabaseOverride?: SupabaseClient
+): Promise<ReportPayload> {
+  const supabase = supabaseOverride ?? (await createSupabaseClient());
   const context = await getFilterContext(supabase, query);
   const adAccounts = context.adAccounts.filter((row) =>
     query.adAccountIds.length > 0 ? query.adAccountIds.includes(row.id) : true
