@@ -18,9 +18,10 @@ export function derivePerformanceMetrics(value: unknown): DerivedPerformanceMetr
   const clicks = asNumber(entity.clicks);
   const leads = asNumber(entity.leads);
   const messages = asNumber(entity.messages);
+  const calls = asNumber(entity.calls);
   const impressions = asNumber(entity.impressions);
   const reach = asNumber(entity.reach);
-  const conversion = asNumber(entity.conversion) || leads + messages;
+  const conversion = asNumber(entity.conversion) || leads + messages + calls;
 
   return {
     conversion,

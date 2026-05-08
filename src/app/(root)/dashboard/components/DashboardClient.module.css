@@ -147,8 +147,11 @@
 .servingPlatformRow {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   flex-wrap: nowrap;
+  width: 100%;
+  min-height: 32px;
 }
 
 .servingPlatformLogo {
@@ -165,6 +168,8 @@
 }
 
 .servingPlatformImage {
+  width: 26px;
+  height: 26px;
   object-fit: contain;
 }
 
@@ -402,11 +407,13 @@
 
 .heatmapGrid {
   display: grid;
-  grid-template-columns: 36px repeat(24, 13px);
-  column-gap: 2px;
-  row-gap: 7px;
+  grid-template-columns: 40px repeat(24, minmax(14px, 1fr));
+  column-gap: 3px;
+  row-gap: 8px;
   align-items: center;
-  min-width: 394px;
+  width: 100%;
+  min-width: 480px;
+  padding: 3px 2px 6px;
 }
 
 .heatmapCorner {
@@ -415,7 +422,7 @@
 
 .heatmapHourLabel {
   line-height: 1;
-  min-width: 13px;
+  min-width: 0;
 }
 
 .heatmapDayLabel {
@@ -423,10 +430,10 @@
 }
 
 .heatmapCell {
-  width: 13px;
-  height: 18px;
+  width: 100%;
+  height: 20px;
   border: 1px solid rgba(226, 232, 240, 0.94);
-  border-radius: 5px;
+  border-radius: 6px;
 }
 
 .emptyPanel {
@@ -538,17 +545,19 @@
   }
 
   .heatmapGrid {
-    grid-template-columns: 30px repeat(24, 11px);
-    min-width: 340px;
+    grid-template-columns: 32px repeat(24, minmax(12px, 1fr));
+    column-gap: 2px;
+    min-width: 370px;
   }
 
   .heatmapHourLabel {
-    min-width: 11px;
+    min-width: 0;
   }
 
   .heatmapCell {
-    width: 11px;
+    width: 100%;
     height: 16px;
+    border-radius: 5px;
   }
 
   .stateMapTile {

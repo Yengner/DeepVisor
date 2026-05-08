@@ -84,5 +84,6 @@ export function deriveSummaryMetricFields(totals: PerformanceSummaryTotals) {
     clicks: totals.clicks,
     leads: totals.leads,
     messages: totals.messages,
+    calls: totals.calls,
   });
 }

@@ -1300,7 +1300,13 @@ function ServingPlatformLogos({ labels }: { labels: string[] }) {
 
         return (
           <div key={label} className={classes.servingPlatformLogo} title={label}>
-            <Image src={imageSrc} alt={imageAlt} width={18} height={18} className={classes.servingPlatformImage} />
+            <Image
+              src={imageSrc}
+              alt={imageAlt}
+              width={26}
+              height={26}
+              className={classes.servingPlatformImage}
+            />
           </div>
         );
       })}

@@ -60,6 +60,8 @@ type HourlyHistoryResult = {
   hourlyHistoryEndDate: string | null;
 };
 
+type DashboardTimer = ReturnType<typeof createDashboardTimer>;
+
 const AUDIENCE_BREAKDOWN_TYPES = [
   'publisher_platform',
   'platform_position',
@@ -78,6 +80,91 @@ function addUtcDays(value: string, days: number): string {
   const date = new Date(`${value}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return formatUtcDate(date);
+}
+
+function nowMs(): number {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
+function createDashboardTimer() {
+  const enabled =
+    process.env.NODE_ENV !== 'production' || process.env.DASHBOARD_TIMING === '1';
+  const startedAt = nowMs();
+  let previousAt = startedAt;
+  const entries: Array<{ label: string; durationMs: number; elapsedMs: number }> = [];
+
+  function record(label: string, startAt: number) {
+    if (!enabled) {
+      return;
+    }
+
+    const finishedAt = nowMs();
+    const durationMs = Math.round(finishedAt - startAt);
+    const elapsedMs = Math.round(finishedAt - startedAt);
+    const sincePreviousMs = Math.round(finishedAt - previousAt);
+    previousAt = finishedAt;
+    entries.push({ label, durationMs, elapsedMs });
+    console.info(
+      `[dashboard:timing] ${label} ${durationMs}ms elapsed=${elapsedMs}ms since_previous=${sincePreviousMs}ms`
+    );
+  }
+
+  return {
+    async measure<T>(label: string, work: () => PromiseLike<T>): Promise<T> {
+      const startAt = nowMs();
+
+      try {
+        return await work();
+      } finally {
+        record(label, startAt);
+      }
+    },
+    measureSync<T>(label: string, work: () => T): T {
+      const startAt = nowMs();
+
+      try {
+        return work();
+      } finally {
+        record(label, startAt);
+      }
+    },
+    finish() {
+      if (!enabled) {
+        return;
+      }
+
+      const totalMs = Math.round(nowMs() - startedAt);
+      const slowest = [...entries]
+        .sort((left, right) => right.durationMs - left.durationMs)
+        .slice(0, 6)
+        .map((entry) => `${entry.label}=${entry.durationMs}ms`)
+        .join(', ');
+
+      console.info(
+        `[dashboard:timing] total ${totalMs}ms${slowest ? ` slowest: ${slowest}` : ''}`
+      );
+    },
+  };
+}
+
+function latestIsoDate(...values: Array<string | null | undefined>): string | null {
+  const dates = values.filter((value): value is string => Boolean(value));
+
+  if (dates.length === 0) {
+    return null;
+  }
+
+  return dates.sort((left, right) => left.localeCompare(right)).at(-1) ?? null;
+}
+
+function earliestIsoDate(...values: Array<string | null | undefined>): string | null {
+  const dates = values.filter((value): value is string => Boolean(value));
+
+  if (dates.length === 0) {
+    return null;
+  }
+
+  return dates.sort((left, right) => left.localeCompare(right))[0] ?? null;
 }
 
 function getCurrentUtcDayDateRange(): { dateFrom: string; dateTo: string } {
@@ -438,6 +525,7 @@ async function buildDashboardEntityRowsForWindow(input: {
   dateFrom: string;
   dateTo: string;
   groupBy: 'day' | 'week';
+  supabase: SupabaseClient<Database>;
   campaignRows: ReportBreakdownRow[];
 }): Promise<DashboardEntityRows> {
   const campaignIds = uniqueStrings(input.campaignRows.map((row) => row.id));
@@ -450,36 +538,51 @@ async function buildDashboardEntityRowsForWindow(input: {
     };
   }
 
-  const adsetReport = await buildReportPayload({
-    businessId: input.businessId,
-    scope: 'campaign',
-    platformIntegrationId: input.platformIntegrationId,
-    adAccountIds: [input.adAccountId],
-    campaignIds,
-    adsetIds: [],
-    adIds: [],
-    dateFrom: input.dateFrom,
-    dateTo: input.dateTo,
-    groupBy: input.groupBy,
-    compareMode: 'none',
-  });
+  const dashboardBreakdownOptions = {
+    includeMetrics: false,
+    includeBreakdown: true,
+    includeRanking: false,
+    includeActiveDates: false,
+    includeSurface: false,
+  };
+  const adsetReport = await buildReportPayload(
+    {
+      businessId: input.businessId,
+      scope: 'campaign',
+      platformIntegrationId: input.platformIntegrationId,
+      adAccountIds: [input.adAccountId],
+      campaignIds,
+      adsetIds: [],
+      adIds: [],
+      dateFrom: input.dateFrom,
+      dateTo: input.dateTo,
+      groupBy: input.groupBy,
+      compareMode: 'none',
+    },
+    input.supabase,
+    dashboardBreakdownOptions
+  );
 
   const adsetIds = uniqueStrings(adsetReport.breakdown.rows.map((row) => row.id));
   const adReport =
     adsetIds.length > 0
-      ? await buildReportPayload({
-          businessId: input.businessId,
-          scope: 'adset',
-          platformIntegrationId: input.platformIntegrationId,
-          adAccountIds: [input.adAccountId],
-          campaignIds: [],
-          adsetIds,
-          adIds: [],
-          dateFrom: input.dateFrom,
-          dateTo: input.dateTo,
-          groupBy: input.groupBy,
-          compareMode: 'none',
-        })
+      ? await buildReportPayload(
+          {
+            businessId: input.businessId,
+            scope: 'adset',
+            platformIntegrationId: input.platformIntegrationId,
+            adAccountIds: [input.adAccountId],
+            campaignIds: [],
+            adsetIds,
+            adIds: [],
+            dateFrom: input.dateFrom,
+            dateTo: input.dateTo,
+            groupBy: input.groupBy,
+            compareMode: 'none',
+          },
+          input.supabase,
+          dashboardBreakdownOptions
+        )
       : null;
 
   return {
@@ -490,6 +593,7 @@ async function buildDashboardEntityRowsForWindow(input: {
 }
 
 async function buildDashboardLiveWindowSnapshot(input: {
+  label: string;
   businessId: string;
   platformIntegrationId: string;
   adAccountId: string;
@@ -498,71 +602,69 @@ async function buildDashboardLiveWindowSnapshot(input: {
   groupBy: 'day' | 'week';
   supabase: SupabaseClient<Database>;
   isMeta: boolean;
+  timer: DashboardTimer;
 }): Promise<{
   report: ReportPayload;
   liveWindow: ReturnType<typeof buildDashboardLiveWindow>;
 }> {
-  const report = await buildReportPayload({
-    businessId: input.businessId,
-    scope: 'ad_account',
-    platformIntegrationId: input.platformIntegrationId,
-    adAccountIds: [input.adAccountId],
-    campaignIds: [],
-    adsetIds: [],
-    adIds: [],
-    dateFrom: input.dateFrom,
-    dateTo: input.dateTo,
-    groupBy: input.groupBy,
-    compareMode: 'none',
-  });
+  const report = await input.timer.measure(
+    `${input.label}: account report`,
+    () =>
+      buildReportPayload(
+        {
+          businessId: input.businessId,
+          scope: 'ad_account',
+          platformIntegrationId: input.platformIntegrationId,
+          adAccountIds: [input.adAccountId],
+          campaignIds: [],
+          adsetIds: [],
+          adIds: [],
+          dateFrom: input.dateFrom,
+          dateTo: input.dateTo,
+          groupBy: input.groupBy,
+          compareMode: 'none',
+        },
+        input.supabase,
+        {
+          includeBreakdown: true,
+          includeRanking: false,
+          includeActiveDates: false,
+          includeSurface: false,
+        }
+      )
+  );
 
-  const entityRows = await buildDashboardEntityRowsForWindow({
-    businessId: input.businessId,
-    platformIntegrationId: input.platformIntegrationId,
-    adAccountId: input.adAccountId,
-    dateFrom: input.dateFrom,
-    dateTo: input.dateTo,
-    groupBy: input.groupBy,
-    campaignRows: report.breakdown.rows,
-  });
+  const entityRows = await input.timer.measure(
+    `${input.label}: child entity rows`,
+    () =>
+      buildDashboardEntityRowsForWindow({
+        businessId: input.businessId,
+        platformIntegrationId: input.platformIntegrationId,
+        adAccountId: input.adAccountId,
+        dateFrom: input.dateFrom,
+        dateTo: input.dateTo,
+        groupBy: input.groupBy,
+        supabase: input.supabase,
+        campaignRows: report.breakdown.rows,
+      })
+  );
 
   const campaignExternalIds = uniqueStrings(entityRows.campaigns.map((row) => row.id));
   const adsetExternalIds = uniqueStrings(entityRows.adsets.map((row) => row.id));
   const adExternalIds = uniqueStrings(entityRows.ads.map((row) => row.id));
 
-  const [campaignDimensions, adsetDimensions, adDimensions] = await Promise.all([
-    listDashboardCampaignDimensions(input.supabase, input.adAccountId, campaignExternalIds),
-    listDashboardAdsetDimensions(input.supabase, input.adAccountId, adsetExternalIds),
-    listDashboardAdDimensions(input.supabase, input.adAccountId, adExternalIds),
-  ]);
+  const [campaignDimensions, adsetDimensions, adDimensions] = await input.timer.measure(
+    `${input.label}: dimensions`,
+    () =>
+      Promise.all([
+        listDashboardCampaignDimensions(input.supabase, input.adAccountId, campaignExternalIds),
+        listDashboardAdsetDimensions(input.supabase, input.adAccountId, adsetExternalIds),
+        listDashboardAdDimensions(input.supabase, input.adAccountId, adExternalIds),
+      ])
+  );
 
-  const baseLiveWindow = buildDashboardLiveWindow({
-    isMeta: input.isMeta,
-    campaignRows: entityRows.campaigns,
-    adsetRows: entityRows.adsets,
-    adRows: entityRows.ads,
-    campaignDimensions,
-    adsetDimensions,
-    adDimensions,
-  });
-
-  const audienceRows =
-    input.isMeta && baseLiveWindow.adsets.length > 0
-      ? await listDashboardAudienceRows(input.supabase, {
-          adAccountId: input.adAccountId,
-          adsetInternalIds: uniqueStrings(
-            baseLiveWindow.adsets
-              .map((adset) => adset.internalId ?? '')
-              .filter(Boolean)
-          ),
-          dateFrom: input.dateFrom,
-          dateTo: input.dateTo,
-        })
-      : [];
-
-  return {
-    report,
-    liveWindow: buildDashboardLiveWindow({
+  const baseLiveWindow = input.timer.measureSync(`${input.label}: build base live window`, () =>
+    buildDashboardLiveWindow({
       isMeta: input.isMeta,
       campaignRows: entityRows.campaigns,
       adsetRows: entityRows.adsets,
@@ -570,8 +672,41 @@ async function buildDashboardLiveWindowSnapshot(input: {
       campaignDimensions,
       adsetDimensions,
       adDimensions,
-      audienceRows,
-    }),
+    })
+  );
+
+  const audienceRows =
+    input.isMeta && baseLiveWindow.adsets.length > 0
+      ? await input.timer.measure(
+          `${input.label}: audience rows`,
+          () =>
+            listDashboardAudienceRows(input.supabase, {
+              adAccountId: input.adAccountId,
+              adsetInternalIds: uniqueStrings(
+                baseLiveWindow.adsets
+                  .map((adset) => adset.internalId ?? '')
+                  .filter(Boolean)
+              ),
+              dateFrom: input.dateFrom,
+              dateTo: input.dateTo,
+            })
+        )
+      : [];
+
+  return {
+    report,
+    liveWindow: input.timer.measureSync(`${input.label}: build final live window`, () =>
+      buildDashboardLiveWindow({
+        isMeta: input.isMeta,
+        campaignRows: entityRows.campaigns,
+        adsetRows: entityRows.adsets,
+        adRows: entityRows.ads,
+        campaignDimensions,
+        adsetDimensions,
+        adDimensions,
+        audienceRows,
+      })
+    ),
   };
 }
 
@@ -580,9 +715,10 @@ async function getFeaturedAdsetHistoryStartDate(
   adsetInternalId: string
 ): Promise<string | null> {
   const { data, error } = await supabase
-    .from('adsets_performance_daily')
+    .from('report_entity_daily_v')
     .select('day')
-    .eq('adset_id', adsetInternalId)
+    .eq('entity_level', 'adset')
+    .eq('entity_id', adsetInternalId)
     .or('spend.gt.0,impressions.gt.0')
     .order('day', { ascending: true })
     .limit(1)
@@ -593,6 +729,48 @@ async function getFeaturedAdsetHistoryStartDate(
   }
 
   return data?.day ?? null;
+}
+
+async function getAdAccountReportEntityDateBounds(
+  supabase: SupabaseClient<Database>,
+  adAccountId: string
+): Promise<{ startDate: string | null; endDate: string | null }> {
+  const deliveryFilter =
+    'spend.gt.0,impressions.gt.0,clicks.gt.0,inline_link_clicks.gt.0,leads.gt.0,messages.gt.0,calls.gt.0';
+
+  const [startResult, endResult] = await Promise.all([
+    supabase
+      .from('report_entity_daily_v')
+      .select('day')
+      .eq('ad_account_id', adAccountId)
+      .eq('entity_level', 'campaign')
+      .or(deliveryFilter)
+      .order('day', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('report_entity_daily_v')
+      .select('day')
+      .eq('ad_account_id', adAccountId)
+      .eq('entity_level', 'campaign')
+      .or(deliveryFilter)
+      .order('day', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  if (startResult.error) {
+    throw startResult.error;
+  }
+
+  if (endResult.error) {
+    throw endResult.error;
+  }
+
+  return {
+    startDate: startResult.data?.day ?? null,
+    endDate: endResult.data?.day ?? null,
+  };
 }
 
 async function listDashboardCampaignDimensions(
@@ -800,31 +978,39 @@ async function listDashboardAudienceRows(
 }
 
 export default async function MainDashboardPage() {
-  const supabase = await createServerClient();
-  const adminSupabase = createAdminClient();
-  const { user, businessId } = await getRequiredAppContext();
-  const { selectedPlatformId, selectedAdAccountId } = await resolveCurrentSelection(businessId);
-
-  const businessProfileResult = await supabase
-    .from('business_profiles')
-    .select('business_name')
-    .eq('id', businessId)
-    .maybeSingle();
+  const timer = createDashboardTimer();
+  const supabase = await timer.measure('create server client', createServerClient);
+  const adminSupabase = timer.measureSync('create admin client', createAdminClient);
+  const { user, businessId } = await timer.measure('required app context', getRequiredAppContext);
+  const [selection, businessProfileResult] = await Promise.all([
+    timer.measure('current selection', () => resolveCurrentSelection(businessId)),
+    timer.measure('business profile', () =>
+      supabase
+        .from('business_profiles')
+        .select('business_name')
+        .eq('id', businessId)
+        .maybeSingle()
+    ),
+  ]);
+  const { selectedPlatformId, selectedAdAccountId } = selection;
 
   const businessName =
     businessProfileResult.data?.business_name ||
     `${user.first_name} ${user.last_name}`.trim() ||
     'My Business';
 
-  const platform = selectedPlatformId
-    ? await getPlatformDetails(selectedPlatformId, businessId)
-    : null;
-
+  const [platform, selectedAdAccount] = await Promise.all([
+    selectedPlatformId
+      ? timer.measure('platform details', () => getPlatformDetails(selectedPlatformId, businessId))
+      : Promise.resolve(null),
+    selectedPlatformId && selectedAdAccountId
+      ? timer.measure('ad account data', () =>
+          getAdAccountData(selectedAdAccountId, selectedPlatformId, businessId)
+        )
+      : Promise.resolve(null),
+  ]);
   const platformConnected = Boolean(platform && platform.status === 'connected');
-  const adAccount =
-    selectedPlatformId && selectedAdAccountId && platformConnected
-      ? await getAdAccountData(selectedAdAccountId, selectedPlatformId, businessId)
-      : null;
+  const adAccount = platformConnected ? selectedAdAccount : null;
 
   let syncCoverage = null;
   let hasReportMetrics = false;
@@ -865,13 +1051,21 @@ export default async function MainDashboardPage() {
 
   if (adAccount?.id && platformConnected && selectedPlatformId) {
     try {
-      const coverage = await getAdAccountSyncCoverage(adminSupabase, adAccount.id);
-      syncCoverage = coverage;
-
       const accountDayRange = getCurrentAdAccountDayDateRange(adAccount.timezone);
-      const latestDeliveryDay = getLatestAdAccountDeliveryDay(adAccount, coverage?.coverageEndDate ?? null);
-
-      const todaySnapshot = await buildDashboardLiveWindowSnapshot({
+      const coveragePromise = timer.measure('sync coverage', () =>
+        getAdAccountSyncCoverage(adminSupabase, adAccount.id)
+      );
+      const reportEntityDateBoundsPromise = timer.measure('report entity date bounds', () =>
+        getAdAccountReportEntityDateBounds(adminSupabase, adAccount.id)
+      );
+      const activeFindingsPromise = timer.measure('active findings', () =>
+        listActiveTrendFindings(adminSupabase as any, {
+          businessId,
+          adAccountId: adAccount.id,
+        })
+      );
+      const todaySnapshotPromise = buildDashboardLiveWindowSnapshot({
+        label: 'today snapshot',
         businessId,
         platformIntegrationId: selectedPlatformId,
         adAccountId: adAccount.id,
@@ -880,7 +1074,15 @@ export default async function MainDashboardPage() {
         groupBy: 'day',
         supabase: adminSupabase,
         isMeta,
+        timer,
       });
+
+      const [coverage, reportEntityDateBounds, todaySnapshot] = await Promise.all([
+        coveragePromise,
+        reportEntityDateBoundsPromise,
+        todaySnapshotPromise,
+      ]);
+      syncCoverage = coverage;
 
       hasReportMetrics =
         todaySnapshot.report.summary.spend > 0 ||
@@ -890,11 +1092,23 @@ export default async function MainDashboardPage() {
 
       liveToday = todaySnapshot.liveWindow;
 
-      const lifetimeStartDate = coverage?.coverageStartDate ?? null;
-      const lifetimeEndDate = coverage?.coverageEndDate ?? latestDeliveryDay ?? accountDayRange.dateTo;
+      const latestDeliveryDay = getLatestAdAccountDeliveryDay(adAccount, coverage?.coverageEndDate ?? null);
+      const lifetimeStartDate = earliestIsoDate(
+        coverage?.coverageStartDate,
+        reportEntityDateBounds.startDate
+      );
+      const lifetimeEndDate =
+        latestIsoDate(
+          coverage?.coverageEndDate,
+          latestDeliveryDay,
+          reportEntityDateBounds.endDate,
+          accountDayRange.dateTo
+        ) ??
+        accountDayRange.dateTo;
 
       if (lifetimeStartDate && lifetimeEndDate) {
         const lifetimeSnapshot = await buildDashboardLiveWindowSnapshot({
+          label: 'lifetime snapshot',
           businessId,
           platformIntegrationId: selectedPlatformId,
           adAccountId: adAccount.id,
@@ -903,6 +1117,7 @@ export default async function MainDashboardPage() {
           groupBy: 'week',
           supabase: adminSupabase,
           isMeta,
+          timer,
         });
 
         liveLifetime = lifetimeSnapshot.liveWindow;
@@ -922,6 +1137,7 @@ export default async function MainDashboardPage() {
         latestDeliveryDay !== accountDayRange.dateFrom
       ) {
         const fallbackSnapshot = await buildDashboardLiveWindowSnapshot({
+          label: 'fallback snapshot',
           businessId,
           platformIntegrationId: selectedPlatformId,
           adAccountId: adAccount.id,
@@ -930,6 +1146,7 @@ export default async function MainDashboardPage() {
           groupBy: 'day',
           supabase: adminSupabase,
           isMeta,
+          timer,
         });
 
         hasReportMetrics =
@@ -954,47 +1171,57 @@ export default async function MainDashboardPage() {
         null;
 
       if (featuredAdset?.internalId) {
+        const featuredAdsetInternalId = featuredAdset.internalId;
         const historyStartDate =
-          (await getFeaturedAdsetHistoryStartDate(adminSupabase, featuredAdset.internalId)) ??
+          (await timer.measure('featured history start date', () =>
+            getFeaturedAdsetHistoryStartDate(adminSupabase, featuredAdsetInternalId)
+          )) ??
           accountDayRange.dateFrom;
         const historyEndDate = accountDayRange.dateTo;
 
-        const historyReport = await buildReportPayload({
-          businessId,
-          scope: 'adset',
-          platformIntegrationId: selectedPlatformId,
-          adAccountIds: [adAccount.id],
-          campaignIds: [],
-          adsetIds: [featuredAdset.id],
-          adIds: [],
-          dateFrom: historyStartDate,
-          dateTo: historyEndDate,
-          groupBy: 'day',
-          compareMode: 'none',
-        });
-
-        const featuredAudienceRows =
-          isMeta && featuredAdset.internalId
-            ? await listDashboardAudienceRows(adminSupabase, {
-                adAccountId: adAccount.id,
-                adsetInternalIds: [featuredAdset.internalId],
+        const [historyReport, featuredAudienceRows, featuredHourlyHistory] = await Promise.all([
+          timer.measure('featured history report', () =>
+            buildReportPayload(
+              {
+                businessId,
+                scope: 'adset',
+                platformIntegrationId: selectedPlatformId,
+                adAccountIds: [adAccount.id],
+                campaignIds: [],
+                adsetIds: [featuredAdset.id],
+                adIds: [],
                 dateFrom: historyStartDate,
                 dateTo: historyEndDate,
-              })
-            : [];
-        const featuredHourlyHistory =
-          featuredAdset.internalId
-            ? await getFeaturedAdsetHourlyHistory({
-                supabase: adminSupabase,
-                adAccountId: adAccount.id,
-                adsetInternalId: featuredAdset.internalId,
-              })
-            : {
-                points: [],
-                expandedPoints: [],
-                hourlyHistoryStartDate: null,
-                hourlyHistoryEndDate: null,
-              };
+                groupBy: 'day',
+                compareMode: 'none',
+              },
+              adminSupabase,
+              {
+                includeBreakdown: false,
+                includeRanking: false,
+                includeActiveDates: false,
+                includeSurface: false,
+              }
+            )
+          ),
+          isMeta
+            ? timer.measure('featured audience rows', () =>
+                listDashboardAudienceRows(adminSupabase, {
+                  adAccountId: adAccount.id,
+                  adsetInternalIds: [featuredAdsetInternalId],
+                  dateFrom: historyStartDate,
+                  dateTo: historyEndDate,
+                })
+              )
+            : Promise.resolve([]),
+          timer.measure('featured hourly history', () =>
+            getFeaturedAdsetHourlyHistory({
+              supabase: adminSupabase,
+              adAccountId: adAccount.id,
+              adsetInternalId: featuredAdsetInternalId,
+            })
+          ),
+        ]);
 
         featuredAdsetHistory = {
           adset: featuredAdset,
@@ -1019,30 +1246,29 @@ export default async function MainDashboardPage() {
         };
       }
 
-      activeFindings = (
-        await listActiveTrendFindings(adminSupabase as any, {
-          businessId,
-          adAccountId: adAccount.id,
-        })
-      ).map(toTrendFindingView);
+      activeFindings = (await activeFindingsPromise).map(toTrendFindingView);
     } catch (error) {
       console.error('Failed to fetch live dashboard snapshot:', error);
     }
   }
 
-  const payload = buildDashboardPayload({
-    businessName,
-    selectedPlatformIntegrationId: selectedPlatformId,
-    selectedAdAccountId,
-    platform,
-    adAccount,
-    syncCoverage,
-    hasReportMetrics,
-    liveToday,
-    liveLifetime,
-    featuredAdsetHistory,
-    activeFindings,
-  });
+  const payload = timer.measureSync('build dashboard payload', () =>
+    buildDashboardPayload({
+      businessName,
+      selectedPlatformIntegrationId: selectedPlatformId,
+      selectedAdAccountId,
+      platform,
+      adAccount,
+      syncCoverage,
+      hasReportMetrics,
+      liveToday,
+      liveLifetime,
+      featuredAdsetHistory,
+      activeFindings,
+    })
+  );
+
+  timer.finish();
 
   return <DashboardClient payload={payload} />;
 }
