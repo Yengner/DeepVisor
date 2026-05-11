@@ -1,6 +1,10 @@
 'use client';
 
-import { clientHandleSignOut } from '@/lib/client';
+import {
+    clientHandleSignOut,
+    markAllNotificationsAsReadClient,
+    markNotificationReadClient,
+} from '@/lib/client';
 import { type NotificationFeedItem } from '@/lib/shared';
 import {
     Group,
@@ -98,9 +102,13 @@ export default function TopBarClient({
 
     // Mark all notifications as read
     const markAllRead = () => {
+        const unreadIds = userNotifications
+            .filter((notification) => !notification.read)
+            .map((notification) => notification.id);
         setUserNotifications(prevNotifications =>
             prevNotifications.map(notification => ({ ...notification, read: true }))
         );
+        void markAllNotificationsAsReadClient(unreadIds);
     };
 
     const handleNotificationClick = (notification: NotificationFeedItem) => {
@@ -108,6 +116,7 @@ export default function TopBarClient({
             setUserNotifications(prev =>
                 prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
             );
+            void markNotificationReadClient(notification.id);
         }
 
         if (notification.link) {

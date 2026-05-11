@@ -3,10 +3,8 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 import OpenAI from 'openai';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import {
-  parseDailyMetricsRowsFromTimeIncrementMetrics,
-  type AdAccountDailyMetricsRow,
-} from '@/lib/server/repositories/ad_accounts/normalizers';
+import type { AdAccountDailyMetricsRow } from '@/lib/server/repositories/ad_accounts/normalizers';
+import { listAdAccountDailyMetricsRowsByAccount } from '@/lib/server/repositories/ad_accounts/getAdAccountPerformance';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { asNumber } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
@@ -54,14 +52,12 @@ type AdAccountRow = Pick<
   | 'external_account_id'
   | 'name'
   | 'status'
-  | 'aggregated_metrics'
-  | 'time_increment_metrics'
   | 'last_synced'
 >;
 
 type AdAccountDailyRow = AdAccountDailyMetricsRow;
 type LaunchDimensionRow = Pick<
-  Database['public']['Tables']['campaign_dims']['Row'],
+  Database['public']['Views']['campaign_dims']['Row'],
   'id' | 'created_time' | 'status'
 >;
 
@@ -889,9 +885,7 @@ async function getAdAccountRow(
 ): Promise<AdAccountRow> {
   const { data, error } = await supabase
     .from('ad_accounts')
-    .select(
-      'id, business_id, platform_id, external_account_id, name, status, aggregated_metrics, time_increment_metrics, last_synced'
-    )
+    .select('id, business_id, platform_id, external_account_id, name, status, last_synced')
     .eq('business_id', businessId)
     .eq('id', adAccountId)
     .single();
@@ -908,20 +902,12 @@ async function listAdAccountDailyRows(
   businessId: string,
   adAccountId: string
 ): Promise<AdAccountDailyRow[]> {
-  const { data, error } = await supabase
-    .from('ad_accounts')
-    .select('currency_code, time_increment_metrics')
-    .eq('business_id', businessId)
-    .eq('id', adAccountId)
-    .single();
-
-  if (error || !data) {
-    throw error ?? new Error('Ad account daily metrics not found');
-  }
-
-  return parseDailyMetricsRowsFromTimeIncrementMetrics(data.time_increment_metrics, {
-    currencyCode: data.currency_code,
-  });
+  return (
+    (await listAdAccountDailyMetricsRowsByAccount({
+      adAccountIds: [adAccountId],
+      supabase,
+    })).get(adAccountId) ?? []
+  );
 }
 
 async function listLaunchDimensions(

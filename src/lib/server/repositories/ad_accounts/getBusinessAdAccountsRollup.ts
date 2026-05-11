@@ -1,6 +1,7 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
 import type { BusinessAdAccountRollup } from '../types';
-import { parseAggregatedMetrics, sumAggregatedMetrics } from './normalizers';
+import { aggregateDailyMetricsRows, sumAggregatedMetrics } from './normalizers';
+import { listAdAccountDailyMetricsRowsByAccount } from './getAdAccountPerformance';
 
 function latestIso(current: string | null, candidate: string | null): string | null {
   if (!candidate) {
@@ -24,7 +25,7 @@ export async function getBusinessAdAccountsRollup(
 
   const { data, error } = await supabase
     .from('ad_accounts')
-    .select('id, platform_id, external_account_id, name, status, aggregated_metrics, last_synced')
+    .select('id, platform_id, external_account_id, name, status, last_synced')
     .eq('business_id', businessId);
 
   if (error) {
@@ -42,9 +43,14 @@ export async function getBusinessAdAccountsRollup(
   }
 
   let lastSyncedAt: string | null = null;
+  const adAccountIds = (data ?? []).map((row) => row.id);
+  const dailyRowsByAccount = await listAdAccountDailyMetricsRowsByAccount({
+    adAccountIds,
+    supabase,
+  });
 
   const accounts = (data ?? []).map((row) => {
-    const metrics = parseAggregatedMetrics(row.aggregated_metrics);
+    const metrics = aggregateDailyMetricsRows(dailyRowsByAccount.get(row.id) ?? []);
     lastSyncedAt = latestIso(lastSyncedAt, row.last_synced);
 
     return {

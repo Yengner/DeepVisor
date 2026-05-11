@@ -2,6 +2,10 @@ import 'server-only';
 
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import {
+  clampHistoryDays,
+  getOrCreateBusinessDataPolicy,
+} from '@/lib/server/repositories/business_data_policies/getBusinessDataPolicy';
+import {
   runBusinessAssessment,
   runMetaAdAccountAssessment,
   syncMetaAccountIntelligenceArtifacts,
@@ -225,9 +229,13 @@ export async function syncBusinessPlatform(input: {
   primaryExternalAccountId?: string | null;
 }): Promise<BusinessPlatformSyncSummary> {
   const startedAt = new Date().toISOString();
-  const backfillDays = resolveBackfillDays(input.trigger, input.backfillDays);
   const syncMode = input.syncMode ?? 'default';
   const supabase = createAdminClient();
+  const dataPolicy = await getOrCreateBusinessDataPolicy(supabase, input.businessId);
+  const backfillDays = clampHistoryDays(
+    resolveBackfillDays(input.trigger, input.backfillDays),
+    dataPolicy.daily_history_days
+  );
 
   const integration = await getBusinessPlatformIntegration({
     businessId: input.businessId,
@@ -268,6 +276,7 @@ export async function syncBusinessPlatform(input: {
               platformIntegrationId: integration.id,
               accessToken,
               backfillDays,
+              dataPolicy,
               syncedAt: startedAt,
               trigger: input.trigger,
               primaryExternalAccountId,

@@ -35,12 +35,12 @@ type BusinessProfileSeed = Pick<
 >;
 
 type CampaignSeedRow = Pick<
-  Database['public']['Tables']['campaign_dims']['Row'],
+  Database['public']['Views']['campaign_dims']['Row'],
   'id' | 'name' | 'objective' | 'raw'
 >;
 
 type AdsetSeedRow = Pick<
-  Database['public']['Tables']['adset_dims']['Row'],
+  Database['public']['Views']['adset_dims']['Row'],
   'id' | 'name' | 'optimization_goal' | 'raw'
 >;
 

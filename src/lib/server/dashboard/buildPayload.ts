@@ -13,6 +13,7 @@ import type {
   DashboardAudienceMetricRow,
   DashboardAudienceSlice,
   DashboardCampaignDimension,
+  DashboardEntitySchedule,
   DashboardLiveAdItem,
   DashboardLiveAdsetItem,
   DashboardLiveCampaignContainer,
@@ -58,6 +59,9 @@ type LiveAdSeed = {
   results: number;
   ctr: number;
   costPerResult: number;
+  schedule: DashboardEntitySchedule | null;
+  adsetSchedule: DashboardEntitySchedule | null;
+  campaignSchedule: DashboardEntitySchedule | null;
 };
 
 type LiveAdsetSeed = {
@@ -76,6 +80,8 @@ type LiveAdsetSeed = {
   ctr: number;
   costPerResult: number;
   adCount: number;
+  schedule: DashboardEntitySchedule | null;
+  campaignSchedule: DashboardEntitySchedule | null;
 };
 
 type BreakdownAggregationSeed = {
@@ -703,6 +709,7 @@ function emptyFeaturedAdsetHistory(isMeta: boolean): DashboardFeaturedAdsetHisto
     hourlyHistoryStartDate: null,
     hourlyHistoryEndDate: null,
     hourlyHistoryDate: null,
+    continuationSignal: null,
   };
 }
 
@@ -832,6 +839,7 @@ function enrichAdsWithBreakdowns(input: {
 
 export function buildDashboardLiveWindow(input: {
   isMeta: boolean;
+  windowMode?: 'live' | 'historical';
   campaignRows: ReportBreakdownRow[];
   adsetRows: ReportBreakdownRow[];
   adRows: ReportBreakdownRow[];
@@ -849,11 +857,16 @@ export function buildDashboardLiveWindow(input: {
     input.adsetDimensions.map((adset) => [adset.externalId, adset])
   );
   const adDimByExternalId = new Map(input.adDimensions.map((ad) => [ad.externalId, ad]));
+  const includeInactiveHistory = input.windowMode === 'historical';
 
   const candidateLiveAds: LiveAdSeed[] = [];
 
   for (const row of input.adRows) {
-    if (!isLikelyActiveStatus(row.status) || !hasLiveDeliveryMetrics(row)) {
+    if (!hasLiveDeliveryMetrics(row)) {
+      continue;
+    }
+
+    if (!includeInactiveHistory && !isLikelyActiveStatus(row.status)) {
       continue;
     }
 
@@ -887,6 +900,9 @@ export function buildDashboardLiveWindow(input: {
       results: potentialCustomersFromRow(row),
       ctr: row.ctr,
       costPerResult: computeCostPerResult(row.spend, potentialCustomersFromRow(row)),
+      schedule: adDim.schedule,
+      adsetSchedule: adsetDim.schedule,
+      campaignSchedule: campaignDim?.schedule ?? null,
     });
   }
 
@@ -901,14 +917,24 @@ export function buildDashboardLiveWindow(input: {
     const adsetRow = adsetRowByExternalId.get(adsetId);
     const adsetDim = adsetDimByExternalId.get(adsetId);
 
-    if (!adsetRow || !adsetDim || !isLikelyActiveStatus(adsetRow.status ?? adsetDim.status)) {
+    if (!adsetRow || !adsetDim) {
       return;
     }
 
     const campaignRow = campaignRowByExternalId.get(adsetDim.campaignExternalId);
     const campaignDim = campaignDimByExternalId.get(adsetDim.campaignExternalId);
 
-    if (!isLikelyActiveStatus(campaignRow?.status ?? campaignDim?.status)) {
+    if (
+      !includeInactiveHistory &&
+      !isLikelyActiveStatus(adsetRow.status ?? adsetDim.status)
+    ) {
+      return;
+    }
+
+    if (
+      !includeInactiveHistory &&
+      !isLikelyActiveStatus(campaignRow?.status ?? campaignDim?.status)
+    ) {
       return;
     }
 
@@ -921,7 +947,7 @@ export function buildDashboardLiveWindow(input: {
     }
 
     const adsetRow = adsetRowByExternalId.get(ad.adsetId);
-    return isLikelyActiveStatus(adsetRow?.status);
+    return includeInactiveHistory || isLikelyActiveStatus(adsetRow?.status);
   });
 
   if (liveAds.length === 0) {
@@ -969,6 +995,8 @@ export function buildDashboardLiveWindow(input: {
       ctr: computeCtr(clicks, impressions),
       costPerResult: computeCostPerResult(spend, results),
       adCount: ads.length,
+      schedule: adsetDim.schedule,
+      campaignSchedule: campaignDim?.schedule ?? null,
     });
   }
 
@@ -1011,6 +1039,7 @@ export function buildDashboardLiveWindow(input: {
         adsetCount: 0,
         adCount: 0,
         performanceIndex: 0,
+        schedule: campaignDim?.schedule ?? null,
       };
       current.spend += adset.spend;
       current.impressions += adset.impressions;
@@ -1058,6 +1087,9 @@ export function buildDashboardLiveWindow(input: {
     results: ad.results,
     ctr: ad.ctr,
     costPerResult: ad.costPerResult,
+    schedule: ad.schedule,
+    adsetSchedule: ad.adsetSchedule,
+    campaignSchedule: ad.campaignSchedule,
     performanceIndex: computePerformanceIndex({
       spend: ad.spend,
       conversion: ad.results,
@@ -1130,6 +1162,7 @@ export function buildDashboardPayload(input: {
   liveLifetime?: DashboardLiveWindow | null;
   featuredAdsetHistory?: DashboardFeaturedAdsetHistory | null;
   activeFindings?: DashboardPayload['activeFindings'];
+  dashboardNotifications?: DashboardPayload['dashboardNotifications'];
 }): DashboardPayload {
   const platformConnected = Boolean(input.platform && input.platform.status === 'connected');
   const lastSyncedAt = input.adAccount?.last_synced ?? input.platform?.lastSyncedAt ?? null;
@@ -1167,6 +1200,7 @@ export function buildDashboardPayload(input: {
     liveLifetime: input.liveLifetime ?? emptyLiveWindow(isMeta),
     featuredAdsetHistory: input.featuredAdsetHistory ?? emptyFeaturedAdsetHistory(isMeta),
     activeFindings: input.activeFindings ?? [],
+    dashboardNotifications: input.dashboardNotifications ?? [],
     syncCoverage: input.syncCoverage,
     platform: input.platform,
     adAccount: input.adAccount,

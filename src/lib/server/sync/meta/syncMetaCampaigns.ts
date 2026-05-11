@@ -9,6 +9,8 @@ type AdAccountRow = Database['public']['Tables']['ad_accounts']['Row'];
 
 export async function syncMetaCampaigns(input: {
   supabase: RepositoryClient;
+  businessId?: string;
+  platformIntegrationId?: string | null;
   adAccounts: AdAccountRow[];
   accessToken: string;
   syncedAt: string;
@@ -24,6 +26,9 @@ export async function syncMetaCampaigns(input: {
     campaignInputs.push(
       ...campaigns.map((campaign) => ({
         adAccountId: adAccount.id,
+        businessId: input.businessId ?? adAccount.business_id,
+        platformId: adAccount.platform_id,
+        platformIntegrationId: input.platformIntegrationId ?? null,
         externalId: campaign.externalId,
         name: campaign.name,
         objective: campaign.objective,

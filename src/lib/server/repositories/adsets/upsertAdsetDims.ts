@@ -1,16 +1,14 @@
 import type { Json } from '@/lib/shared/types/supabase';
-import type { Database } from '@/lib/shared/types/supabase';
-import {
-  buildScopedExternalKey,
-  chunkArray,
-  dedupeBy,
-  type RepositoryClient,
-} from '../utils';
+import type { RepositoryClient } from '../utils';
+import { upsertAdEntities } from '../ad_entities/upsertAdEntities';
+import { toAdsetCompatRow, type AdsetEntityRow } from '../ad_entities/types';
 
-type AdsetDimRow = Database['public']['Tables']['adset_dims']['Row'];
-type AdsetDimInsert = Database['public']['Tables']['adset_dims']['Insert'];
+export type AdsetDimRow = AdsetEntityRow;
 
 export interface UpsertAdsetDimInput {
+  businessId?: string;
+  platformId?: string;
+  platformIntegrationId?: string | null;
   adAccountId: string;
   campaignExternalId: string;
   campaignId: string | null;
@@ -30,120 +28,37 @@ export interface UpsertAdsetDimsResult {
   byExternalId: Map<string, AdsetDimRow>;
 }
 
-async function selectAdsetDims(
-  supabase: RepositoryClient,
-  input: { adAccountIds: string[]; externalIds: string[] }
-): Promise<AdsetDimRow[]> {
-  const rows: AdsetDimRow[] = [];
-
-  for (const adAccountIdsChunk of chunkArray(input.adAccountIds, 100)) {
-    for (const externalIdsChunk of chunkArray(input.externalIds, 250)) {
-      const { data, error } = await supabase
-        .from('adset_dims')
-        .select('*')
-        .in('ad_account_id', adAccountIdsChunk)
-        .in('external_id', externalIdsChunk);
-
-      if (error) {
-        throw error;
-      }
-
-      rows.push(...(data ?? []));
-    }
-  }
-
-  return rows;
-}
-
 export async function upsertAdsetDims(
   supabase: RepositoryClient,
   inputs: UpsertAdsetDimInput[]
 ): Promise<UpsertAdsetDimsResult> {
-  const normalizedInputs = dedupeBy(
-    inputs.filter((input) => input.adAccountId && input.externalId),
-    (input) => buildScopedExternalKey(input.adAccountId, input.externalId)
-  );
-
-  if (normalizedInputs.length === 0) {
-    return {
-      count: 0,
-      rows: [],
-      byExternalId: new Map(),
-    };
-  }
-
-  const adAccountIds = Array.from(new Set(normalizedInputs.map((input) => input.adAccountId)));
-  const externalIds = Array.from(new Set(normalizedInputs.map((input) => input.externalId)));
-  const existingRows = await selectAdsetDims(supabase, {
-    adAccountIds,
-    externalIds,
-  });
-  const existingByKey = new Map(
-    existingRows.map((row) => [
-      buildScopedExternalKey(row.ad_account_id, row.external_id),
-      row,
-    ] satisfies [string, AdsetDimRow])
-  );
-
-  const rowsToUpdate: AdsetDimInsert[] = [];
-  const rowsToInsert: AdsetDimInsert[] = [];
-
-  for (const input of normalizedInputs) {
-    const baseRow = {
-      ad_account_id: input.adAccountId,
-      campaign_external_id: input.campaignExternalId,
-      campaign_id: input.campaignId,
-      external_id: input.externalId,
-      name: input.name,
-      optimization_goal: input.optimizationGoal,
-      status: input.status,
-      created_time: input.createdTime,
-      updated_time: input.updatedTime,
-      raw: input.raw,
-      updated_at: input.syncedAt,
-    } satisfies AdsetDimInsert;
-
-    const existing = existingByKey.get(buildScopedExternalKey(input.adAccountId, input.externalId));
-    if (existing) {
-      rowsToUpdate.push({
-        id: existing.id,
-        ...baseRow,
-      });
-      continue;
-    }
-
-    rowsToInsert.push({
-      ...baseRow,
-      created_at: input.syncedAt,
-    });
-  }
-
-  for (const chunk of chunkArray(rowsToUpdate, 250)) {
-    const { error } = await supabase.from('adset_dims').upsert(chunk, { onConflict: 'id' });
-
-    if (error) {
-      throw error;
-    }
-  }
-
-  for (const chunk of chunkArray(rowsToInsert, 250)) {
-    const { error } = await supabase.from('adset_dims').insert(chunk);
-
-    if (error) {
-      throw error;
-    }
-  }
-
-  const rows = await selectAdsetDims(supabase, {
-    adAccountIds,
-    externalIds,
-  });
+  const rows = (
+    await upsertAdEntities(
+      supabase,
+      inputs.map((input) => ({
+        businessId: input.businessId,
+        platformId: input.platformId,
+        platformIntegrationId: input.platformIntegrationId,
+        adAccountId: input.adAccountId,
+        entityLevel: 'adset',
+        externalId: input.externalId,
+        parentId: input.campaignId,
+        parentExternalId: input.campaignExternalId,
+        campaignId: input.campaignId,
+        name: input.name,
+        optimizationGoal: input.optimizationGoal,
+        status: input.status,
+        createdTime: input.createdTime,
+        updatedTime: input.updatedTime,
+        raw: input.raw,
+        syncedAt: input.syncedAt,
+      }))
+    )
+  ).map(toAdsetCompatRow);
 
   return {
     count: rows.length,
     rows,
-    byExternalId: new Map(
-      rows.map((row) => [row.external_id, row] satisfies [string, AdsetDimRow])
-    ),
+    byExternalId: new Map(rows.map((row) => [row.external_id, row])),
   };
 }

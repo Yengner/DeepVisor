@@ -6,6 +6,10 @@ import {
   markAdAccountHistoricalSyncSucceeded,
   updateHistoricalSyncJobProgress,
 } from '@/lib/server/repositories/ad_accounts/syncState';
+import {
+  clampHistoryDays,
+  getOrCreateBusinessDataPolicy,
+} from '@/lib/server/repositories/business_data_policies/getBusinessDataPolicy';
 import { refreshMetaPerformanceSummaries, syncMetaPerformance } from '@/lib/server/sync/meta/syncMetaPerformance';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
 import {
@@ -13,8 +17,10 @@ import {
   runMetaAdAccountAssessment,
   syncMetaAccountIntelligenceArtifacts,
 } from '@/lib/server/intelligence';
+import type { AdDimRow } from '@/lib/server/repositories/ads/upsertAdDims';
+import type { AdsetDimRow } from '@/lib/server/repositories/adsets/upsertAdsetDims';
+import type { CampaignDimRow } from '@/lib/server/repositories/campaigns/upsertCampaignDims';
 import type { Database } from '@/lib/shared/types/supabase';
-import { FULL_HISTORY_BACKFILL_DAYS } from '../types';
 import { resolveMetaBackfillWindow } from './client';
 import { syncMetaAdCreatives } from './syncMetaAdCreatives';
 import { syncMetaAds } from './syncMetaAds';
@@ -23,9 +29,6 @@ import { syncMetaCampaigns } from './syncMetaCampaigns';
 
 type AccountSyncJobRow = Database['public']['Tables']['account_sync_jobs']['Row'];
 type AdAccountRow = Database['public']['Tables']['ad_accounts']['Row'];
-type CampaignDimRow = Database['public']['Tables']['campaign_dims']['Row'];
-type AdsetDimRow = Database['public']['Tables']['adset_dims']['Row'];
-type AdDimRow = Database['public']['Tables']['ad_dims']['Row'];
 
 type MetaFirstSyncResult = {
   adAccountId: string;
@@ -175,6 +178,8 @@ export async function processMetaFirstSyncJob(input: {
   });
   const campaigns = await syncMetaCampaigns({
     supabase: input.supabase,
+    businessId: input.job.business_id,
+    platformIntegrationId: input.job.platform_integration_id,
     adAccounts: historicalScope,
     accessToken: input.accessToken,
     syncedAt,
@@ -195,6 +200,8 @@ export async function processMetaFirstSyncJob(input: {
   });
   const adsets = await syncMetaAdsets({
     supabase: input.supabase,
+    businessId: input.job.business_id,
+    platformIntegrationId: input.job.platform_integration_id,
     adAccounts: historicalScope,
     campaignsByExternalId: campaigns.byExternalId,
     accessToken: input.accessToken,
@@ -217,6 +224,8 @@ export async function processMetaFirstSyncJob(input: {
   });
   const ads = await syncMetaAds({
     supabase: input.supabase,
+    businessId: input.job.business_id,
+    platformIntegrationId: input.job.platform_integration_id,
     adAccounts: historicalScope,
     campaignsByExternalId: campaigns.byExternalId,
     adsetsByExternalId: adsets.byExternalId,
@@ -265,7 +274,10 @@ export async function processMetaFirstSyncJob(input: {
     counts: dimensionCounts,
   });
 
-  const maxSupportedWindow = resolveMetaBackfillWindow(FULL_HISTORY_BACKFILL_DAYS);
+  const dataPolicy = await getOrCreateBusinessDataPolicy(input.supabase, input.job.business_id);
+  const maxSupportedWindow = resolveMetaBackfillWindow(
+    clampHistoryDays(dataPolicy.daily_history_days, dataPolicy.daily_history_days)
+  );
   const oldestCreatedDay = resolveOldestCreatedDay({
     campaigns: campaigns.rows,
     adsets: adsets.rows,
@@ -316,6 +328,7 @@ export async function processMetaFirstSyncJob(input: {
       adsByExternalId: ads.byExternalId,
       accessToken: input.accessToken,
       dateRange: window,
+      dataPolicy,
       refreshSummaries: false,
       syncedAt: new Date().toISOString(),
     });
@@ -372,9 +385,11 @@ export async function processMetaFirstSyncJob(input: {
 
   await refreshMetaPerformanceSummaries({
     supabase: input.supabase,
+    adAccounts: historicalScope,
     campaignsByExternalId: campaigns.byExternalId,
     adsetsByExternalId: adsets.byExternalId,
     adsByExternalId: ads.byExternalId,
+    accessToken: input.accessToken,
     syncedAt: new Date().toISOString(),
   });
 

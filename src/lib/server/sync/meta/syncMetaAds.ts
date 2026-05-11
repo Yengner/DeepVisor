@@ -1,16 +1,18 @@
 import 'server-only';
 
 import { upsertAdDims } from '@/lib/server/repositories/ads/upsertAdDims';
+import type { AdsetDimRow } from '@/lib/server/repositories/adsets/upsertAdsetDims';
+import type { CampaignDimRow } from '@/lib/server/repositories/campaigns/upsertCampaignDims';
 import type { Database } from '@/lib/shared/types/supabase';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
 import { fetchMetaAdSeeds } from './fetch';
 
 type AdAccountRow = Database['public']['Tables']['ad_accounts']['Row'];
-type CampaignDimRow = Database['public']['Tables']['campaign_dims']['Row'];
-type AdsetDimRow = Database['public']['Tables']['adset_dims']['Row'];
 
 export async function syncMetaAds(input: {
   supabase: RepositoryClient;
+  businessId?: string;
+  platformIntegrationId?: string | null;
   adAccounts: AdAccountRow[];
   campaignsByExternalId: Map<string, CampaignDimRow>;
   adsetsByExternalId: Map<string, AdsetDimRow>;
@@ -37,6 +39,9 @@ export async function syncMetaAds(input: {
 
           return {
             adAccountId: adAccount.id,
+            businessId: input.businessId ?? adAccount.business_id,
+            platformId: adAccount.platform_id,
+            platformIntegrationId: input.platformIntegrationId ?? null,
             adsetExternalId: ad.adsetExternalId!,
             adsetId: adset?.id ?? null,
             campaignId: adset?.campaign_id ?? campaign?.id ?? null,

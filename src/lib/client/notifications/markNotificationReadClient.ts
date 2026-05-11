@@ -7,7 +7,7 @@ export async function markNotificationReadClient(notificationId: string) {
 
         const { error } = await supabase
             .from('notifications')
-            .update({ read: true })
+            .update({ read: true, read_at: new Date().toISOString() })
             .eq('id', notificationId);
 
         if (error) throw error;

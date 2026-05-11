@@ -10,6 +10,7 @@ import type {
   MetaAudienceBreakdownSeed,
   MetaActionMetric,
   MetaAdPerformanceSeed,
+  MetaEntityPerformanceSummarySeed,
   MetaHourlyPerformanceSeed,
   MetaAdSeed,
   MetaAdsetPerformanceSeed,
@@ -24,6 +25,11 @@ type MetaCampaignNode = {
   objective?: string;
   status?: string;
   effective_status?: string;
+  start_time?: string;
+  stop_time?: string;
+  daily_budget?: string;
+  lifetime_budget?: string;
+  budget_remaining?: string;
   created_time?: string;
   updated_time?: string;
 };
@@ -35,6 +41,11 @@ type MetaAdsetNode = {
   optimization_goal?: string;
   status?: string;
   effective_status?: string;
+  start_time?: string;
+  end_time?: string;
+  daily_budget?: string;
+  lifetime_budget?: string;
+  budget_remaining?: string;
   created_time?: string;
   updated_time?: string;
 };
@@ -285,6 +296,31 @@ async function fetchMetaInsightsRows(input: {
   }
 
   return rows;
+}
+
+async function fetchMetaAggregateInsightsRows(input: {
+  accessToken: string;
+  adAccountExternalId: string;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
+  level: MetaInsightLevel;
+  fields: string[];
+  params?: Record<string, string | number | boolean | undefined>;
+}): Promise<MetaInsightRow[]> {
+  const range = input.dateRange ?? getBackfillDateRange(input.backfillDays ?? 10_000);
+  const sanitizedFields = sanitizeInsightsFields(input.fields);
+
+  return fetchMetaCollection<MetaInsightRow>({
+    path: `${input.adAccountExternalId}/insights`,
+    accessToken: input.accessToken,
+    params: {
+      level: input.level,
+      time_range: JSON.stringify(range),
+      fields: sanitizedFields.join(','),
+      limit: 500,
+      ...(input.params ?? {}),
+    },
+  });
 }
 
 function normalizeMetaAdCreativeSeed(creative: MetaAdCreativeNode): MetaAdCreativeSeed | null {
@@ -610,6 +646,11 @@ export async function fetchMetaCampaignSeeds(input: {
         'objective',
         'status',
         'effective_status',
+        'start_time',
+        'stop_time',
+        'daily_budget',
+        'lifetime_budget',
+        'budget_remaining',
         'created_time',
         'updated_time',
       ].join(','),
@@ -652,6 +693,11 @@ export async function fetchMetaAdsetSeeds(input: {
         'optimization_goal',
         'status',
         'effective_status',
+        'start_time',
+        'end_time',
+        'daily_budget',
+        'lifetime_budget',
+        'budget_remaining',
         'created_time',
         'updated_time',
       ].join(','),
@@ -921,11 +967,123 @@ export async function fetchMetaAdPerformanceSeeds(input: {
     .filter((row): row is MetaAdPerformanceSeed => row !== null);
 }
 
+const META_ENTITY_SUMMARY_FIELDS = [
+  'date_start',
+  'date_stop',
+  'account_currency',
+  'spend',
+  'reach',
+  'impressions',
+  'clicks',
+  'inline_link_clicks',
+  'actions',
+];
+
+function normalizeEntitySummarySeed(input: {
+  row: MetaInsightRow;
+  entityLevel: 'campaign' | 'adset' | 'ad';
+  entityExternalId: string;
+}): MetaEntityPerformanceSummarySeed {
+  const metrics = normalizeInsightMetrics(input.row);
+
+  return {
+    entityLevel: input.entityLevel,
+    entityExternalId: input.entityExternalId,
+    dateStart: asString(input.row.date_start) || null,
+    dateStop: asString(input.row.date_stop) || null,
+    currencyCode: metrics.currencyCode,
+    spend: metrics.spend,
+    reach: metrics.reach,
+    impressions: metrics.impressions,
+    clicks: metrics.clicks,
+    inlineLinkClicks: metrics.inlineLinkClicks,
+    leads: metrics.leads,
+    messages: metrics.messages,
+    calls: metrics.calls,
+  };
+}
+
+export async function fetchMetaCampaignPerformanceSummarySeeds(input: {
+  accessToken: string;
+  adAccountExternalId: string;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
+}): Promise<MetaEntityPerformanceSummarySeed[]> {
+  const insights = await fetchMetaAggregateInsightsRows({
+    accessToken: input.accessToken,
+    adAccountExternalId: input.adAccountExternalId,
+    backfillDays: input.backfillDays,
+    dateRange: input.dateRange,
+    level: 'campaign',
+    fields: ['campaign_id', ...META_ENTITY_SUMMARY_FIELDS],
+  });
+
+  return insights
+    .map((row) => {
+      const entityExternalId = asString(row.campaign_id);
+      return entityExternalId
+        ? normalizeEntitySummarySeed({ row, entityLevel: 'campaign', entityExternalId })
+        : null;
+    })
+    .filter((row): row is MetaEntityPerformanceSummarySeed => row !== null);
+}
+
+export async function fetchMetaAdsetPerformanceSummarySeeds(input: {
+  accessToken: string;
+  adAccountExternalId: string;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
+}): Promise<MetaEntityPerformanceSummarySeed[]> {
+  const insights = await fetchMetaAggregateInsightsRows({
+    accessToken: input.accessToken,
+    adAccountExternalId: input.adAccountExternalId,
+    backfillDays: input.backfillDays,
+    dateRange: input.dateRange,
+    level: 'adset',
+    fields: ['adset_id', ...META_ENTITY_SUMMARY_FIELDS],
+  });
+
+  return insights
+    .map((row) => {
+      const entityExternalId = asString(row.adset_id);
+      return entityExternalId
+        ? normalizeEntitySummarySeed({ row, entityLevel: 'adset', entityExternalId })
+        : null;
+    })
+    .filter((row): row is MetaEntityPerformanceSummarySeed => row !== null);
+}
+
+export async function fetchMetaAdPerformanceSummarySeeds(input: {
+  accessToken: string;
+  adAccountExternalId: string;
+  backfillDays?: number;
+  dateRange?: MetaDateRange;
+}): Promise<MetaEntityPerformanceSummarySeed[]> {
+  const insights = await fetchMetaAggregateInsightsRows({
+    accessToken: input.accessToken,
+    adAccountExternalId: input.adAccountExternalId,
+    backfillDays: input.backfillDays,
+    dateRange: input.dateRange,
+    level: 'ad',
+    fields: ['ad_id', ...META_ENTITY_SUMMARY_FIELDS],
+  });
+
+  return insights
+    .map((row) => {
+      const entityExternalId = asString(row.ad_id);
+      return entityExternalId
+        ? normalizeEntitySummarySeed({ row, entityLevel: 'ad', entityExternalId })
+        : null;
+    })
+    .filter((row): row is MetaEntityPerformanceSummarySeed => row !== null);
+}
+
 export async function fetchMetaAdsetAudienceBreakdownSeeds(input: {
   accessToken: string;
   adAccountExternalId: string;
   backfillDays?: number;
   dateRange?: MetaDateRange;
+  allowedBreakdowns?: string[];
 }): Promise<MetaAudienceBreakdownSeed[]> {
   return fetchMetaAudienceBreakdownSeedsByLevel({
     ...input,
@@ -938,6 +1096,7 @@ export async function fetchMetaAdAudienceBreakdownSeeds(input: {
   adAccountExternalId: string;
   backfillDays?: number;
   dateRange?: MetaDateRange;
+  allowedBreakdowns?: string[];
 }): Promise<MetaAudienceBreakdownSeed[]> {
   return fetchMetaAudienceBreakdownSeedsByLevel({
     ...input,
@@ -974,13 +1133,19 @@ async function fetchMetaAudienceBreakdownSeedsByLevel(input: {
   adAccountExternalId: string;
   backfillDays?: number;
   dateRange?: MetaDateRange;
+  allowedBreakdowns?: string[];
   level: 'adset' | 'ad';
 }): Promise<MetaAudienceBreakdownSeed[]> {
   const rows: MetaAudienceBreakdownSeed[] = [];
+  const allowedBreakdowns = new Set(input.allowedBreakdowns ?? []);
 
   for (const config of META_AUDIENCE_BREAKDOWN_CONFIGS) {
+    if (allowedBreakdowns.size > 0 && !allowedBreakdowns.has(config.breakdownType)) {
+      continue;
+    }
+
     try {
-      const insights = await fetchMetaInsightsRows({
+      const insights = await fetchMetaAggregateInsightsRows({
         accessToken: input.accessToken,
         adAccountExternalId: input.adAccountExternalId,
         backfillDays: input.backfillDays,
@@ -995,7 +1160,9 @@ async function fetchMetaAudienceBreakdownSeedsByLevel(input: {
       for (const row of insights) {
         const adsetExternalId = asString(row.adset_id);
         const adExternalId = asString(row.ad_id) || null;
-        const day = asString(row.date_start);
+        const dateStart = asString(row.date_start) || null;
+        const dateStop = asString(row.date_stop) || null;
+        const day = dateStop ?? dateStart ?? '';
         const dimension1Value = asString(
           asRecord(row)[config.dimension1Key]
         ).trim();
@@ -1016,6 +1183,8 @@ async function fetchMetaAudienceBreakdownSeedsByLevel(input: {
           adExternalId,
           campaignExternalId: asString(row.campaign_id) || null,
           day,
+          dateStart,
+          dateStop,
           breakdownType: config.breakdownType,
           dimension1Key: config.dimension1Key,
           dimension1Value,

@@ -49,6 +49,7 @@ export interface DashboardCampaignDimension {
   name: string | null;
   objective: string | null;
   status: string | null;
+  schedule: DashboardEntitySchedule | null;
 }
 
 export interface DashboardAdsetDimension {
@@ -58,6 +59,7 @@ export interface DashboardAdsetDimension {
   name: string | null;
   optimizationGoal: string | null;
   status: string | null;
+  schedule: DashboardEntitySchedule | null;
 }
 
 export interface DashboardAdDimension {
@@ -66,6 +68,39 @@ export interface DashboardAdDimension {
   adsetExternalId: string;
   name: string | null;
   status: string | null;
+  schedule: DashboardEntitySchedule | null;
+}
+
+export interface DashboardEntitySchedule {
+  startsAt: string | null;
+  endsAt: string | null;
+  endDate: string | null;
+  budgetType: 'daily' | 'lifetime' | 'unknown';
+  budgetAmount: number | null;
+  budgetRemaining: number | null;
+}
+
+export interface DashboardContinuationSignal {
+  entityLevel: 'campaign' | 'adset' | 'ad';
+  entityId: string;
+  entityName: string;
+  parentName: string | null;
+  endsAt: string;
+  endDate: string;
+  daysUntilEnd: number;
+  budgetType: DashboardEntitySchedule['budgetType'];
+  budgetAmount: number | null;
+  budgetRemaining: number | null;
+}
+
+export type DashboardSurfaceNotificationType = 'no_live_delivery' | 'campaign_ending';
+
+export interface DashboardSurfaceNotification {
+  id: string;
+  type: DashboardSurfaceNotificationType;
+  read: boolean;
+  title: string;
+  message: string;
 }
 
 export interface DashboardAudienceMetricRow {
@@ -103,6 +138,7 @@ export interface DashboardLiveCampaignContainer {
   adsetCount: number;
   adCount: number;
   performanceIndex: number;
+  schedule: DashboardEntitySchedule | null;
 }
 
 export interface DashboardLiveAdsetItem {
@@ -123,6 +159,8 @@ export interface DashboardLiveAdsetItem {
   performanceIndex: number;
   topPublisherPlatform: string | null;
   topPlacement: string | null;
+  schedule: DashboardEntitySchedule | null;
+  campaignSchedule: DashboardEntitySchedule | null;
 }
 
 export interface DashboardLiveAdItem {
@@ -143,6 +181,9 @@ export interface DashboardLiveAdItem {
   performanceIndex: number;
   topPublisherPlatform: string | null;
   topPlacement: string | null;
+  schedule: DashboardEntitySchedule | null;
+  adsetSchedule: DashboardEntitySchedule | null;
+  campaignSchedule: DashboardEntitySchedule | null;
 }
 
 export interface DashboardPlatformSlice {
@@ -247,6 +288,7 @@ export interface DashboardFeaturedAdsetHistory {
   hourlyHistoryStartDate: string | null;
   hourlyHistoryEndDate: string | null;
   hourlyHistoryDate: string | null;
+  continuationSignal: DashboardContinuationSignal | null;
 }
 
 export interface DashboardPayload {
@@ -260,7 +302,20 @@ export interface DashboardPayload {
   liveLifetime: DashboardLiveWindow;
   featuredAdsetHistory: DashboardFeaturedAdsetHistory;
   activeFindings: TrendFindingView[];
+  dashboardNotifications: DashboardSurfaceNotification[];
   syncCoverage: SyncCoverage | null;
   platform: PlatformDetails | null;
   adAccount: AdAccountData | null;
+}
+
+export interface DashboardBasePayload {
+  state: DashboardState;
+  selection: DashboardPayload['selection'];
+  viewContext: DashboardViewContext;
+  syncCoverage: SyncCoverage | null;
+  platform: PlatformDetails | null;
+  adAccount: AdAccountData | null;
+  isMeta: boolean;
+  platformConnected: boolean;
+  dashboardNotifications: DashboardSurfaceNotification[];
 }

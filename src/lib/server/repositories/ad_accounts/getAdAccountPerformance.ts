@@ -1,5 +1,4 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
-import type { Database } from '@/lib/shared/types/supabase';
 import { chunkArray, type RepositoryClient } from '../utils';
 import type {
   AdAccountDailyMetricsRow,
@@ -10,24 +9,23 @@ import {
   sortAndAggregateDailyMetricsRows,
 } from './normalizers';
 
-type CampaignDimRow = Pick<
-  Database['public']['Tables']['campaign_dims']['Row'],
-  'id' | 'ad_account_id'
->;
+type CampaignDimRow = {
+  id: string;
+  ad_account_id: string;
+};
 
-type CampaignPerformanceRow = Pick<
-  Database['public']['Tables']['campaigns_performance_daily']['Row'],
-  | 'campaign_id'
-  | 'day'
-  | 'currency_code'
-  | 'spend'
-  | 'reach'
-  | 'impressions'
-  | 'clicks'
-  | 'inline_link_clicks'
-  | 'leads'
-  | 'messages'
->;
+type CampaignPerformanceRow = {
+  campaign_id: string;
+  day: string;
+  currency_code: string | null;
+  spend: number | null;
+  reach: number | null;
+  impressions: number | null;
+  clicks: number | null;
+  inline_link_clicks: number | null;
+  leads: number | null;
+  messages: number | null;
+};
 
 async function listCampaignDimsByAdAccountIds(
   supabase: RepositoryClient,

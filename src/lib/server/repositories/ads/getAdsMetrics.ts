@@ -1,45 +1,53 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { formatDisplayDate } from '@/lib/shared';
-import type { Database } from '@/lib/shared/types/supabase';
+import type { Json } from '@/lib/shared/types/supabase';
 import { asRecord, asString } from '@/lib/shared/utils/format';
 import { derivePerformanceMetrics } from '../campaigns/normalizers';
 import { chunkArray } from '../utils';
 
 type SupabaseClient = Awaited<ReturnType<typeof createSupabaseClient>>;
 
-type AdDimRow = Pick<
-  Database['public']['Tables']['ad_dims']['Row'],
-  'id' | 'external_id' | 'adset_external_id' | 'name' | 'creative_id' | 'status' | 'raw' | 'created_time'
->;
+type AdDimRow = {
+  id: string;
+  external_id: string;
+  adset_external_id: string;
+  name: string | null;
+  creative_id: string | null;
+  status: string | null;
+  raw: Json | null;
+  created_time: string | null;
+};
 
-type AdPerformanceRow = Pick<
-  Database['public']['Tables']['ad_performance_summary']['Row'],
-  | 'ad_id'
-  | 'spend'
-  | 'reach'
-  | 'impressions'
-  | 'clicks'
-  | 'inline_link_clicks'
-  | 'leads'
-  | 'messages'
-  | 'first_day'
-  | 'last_day'
->;
+type AdPerformanceRow = {
+  ad_id: string;
+  spend: number | null;
+  reach: number | null;
+  impressions: number | null;
+  clicks: number | null;
+  inline_link_clicks: number | null;
+  leads: number | null;
+  messages: number | null;
+  first_day: string | null;
+  last_day: string | null;
+};
 
-type AdsetLookupRow = Pick<
-  Database['public']['Tables']['adset_dims']['Row'],
-  'external_id' | 'campaign_external_id' | 'name'
->;
+type AdsetLookupRow = {
+  external_id: string;
+  campaign_external_id: string;
+  name: string | null;
+};
 
-type CampaignLookupRow = Pick<
-  Database['public']['Tables']['campaign_dims']['Row'],
-  'external_id' | 'name'
->;
+type CampaignLookupRow = {
+  external_id: string;
+  name: string | null;
+};
 
-type AdsetDebugLookupRow = Pick<
-  Database['public']['Tables']['adset_dims']['Row'],
-  'id' | 'external_id' | 'campaign_external_id' | 'name'
->;
+type AdsetDebugLookupRow = {
+  id: string;
+  external_id: string;
+  campaign_external_id: string;
+  name: string | null;
+};
 
 export interface AdLifetimeRow {
   id: string;
@@ -66,7 +74,7 @@ export interface AdLifetimeRow {
   start_date: string;
   end_date: string;
   platform_name: 'meta' | 'google' | 'tiktok';
-  raw_data: Database['public']['Tables']['ad_dims']['Row']['raw'];
+  raw_data: Json | null;
   ad_format: string | null;
 }
 
@@ -173,7 +181,7 @@ async function listCampaignNames(input: {
   return campaignNameByExternalId;
 }
 
-function deriveAdFormat(raw: Database['public']['Tables']['ad_dims']['Row']['raw']): string | null {
+function deriveAdFormat(raw: Json | null): string | null {
   const rawRecord = asRecord(raw);
   const creative = asRecord(rawRecord.creative);
 

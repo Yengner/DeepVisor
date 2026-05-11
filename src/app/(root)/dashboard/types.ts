@@ -6,6 +6,8 @@ export type {
   DashboardAudienceSlice,
   DashboardCampaignDimension,
   DashboardCampaignSnapshotItem,
+  DashboardContinuationSignal,
+  DashboardEntitySchedule,
   DashboardFeaturedAdsetHistory,
   DashboardLiveAdItem,
   DashboardLiveAdsetItem,
@@ -17,6 +19,9 @@ export type {
   DashboardTrendPoint,
   DashboardLiveWindow,
   DashboardPayload,
+  DashboardSurfaceNotification,
+  DashboardSurfaceNotificationType,
+  DashboardBasePayload,
   DashboardState,
   DashboardViewContext,
 } from '@/lib/server/dashboard/types';

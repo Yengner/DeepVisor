@@ -8,9 +8,10 @@ import {
   failHistoricalSyncJob,
   markAdAccountHistoricalSyncSucceeded,
 } from '@/lib/server/repositories/ad_accounts/syncState';
+import type { BusinessDataPolicy } from '@/lib/server/repositories/business_data_policies/getBusinessDataPolicy';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
 import type { Database } from '@/lib/shared/types/supabase';
-import { FULL_HISTORY_BACKFILL_DAYS, RECENT_SEED_SYNC_DAYS } from '../types';
+import { RECENT_SEED_SYNC_DAYS } from '../types';
 import type { PlatformSyncMode, SyncTrigger } from '../types';
 import { resolveMetaBackfillWindow } from './client';
 import { syncMetaAdCreatives } from './syncMetaAdCreatives';
@@ -76,7 +77,7 @@ function resolvePerformanceWindow(input: {
   }
 
   if (input.syncMode === 'full_backfill') {
-    return resolveMetaBackfillWindow(FULL_HISTORY_BACKFILL_DAYS);
+    return resolveMetaBackfillWindow(input.backfillDays);
   }
 
   return resolveMetaBackfillWindow(input.backfillDays);
@@ -223,6 +224,7 @@ export async function syncMetaBusinessPlatform(input: {
   platformIntegrationId: string;
   accessToken: string;
   backfillDays: number;
+  dataPolicy?: Partial<BusinessDataPolicy>;
   syncedAt: string;
   trigger: SyncTrigger;
   primaryExternalAccountId: string;
@@ -274,6 +276,8 @@ export async function syncMetaBusinessPlatform(input: {
     const campaigns = await runMetaSyncStage('campaigns', () =>
       syncMetaCampaigns({
         supabase: input.supabase,
+        businessId: input.businessId,
+        platformIntegrationId: input.platformIntegrationId,
         adAccounts: historicalScope,
         accessToken: input.accessToken,
         syncedAt: input.syncedAt,
@@ -283,6 +287,8 @@ export async function syncMetaBusinessPlatform(input: {
     const adsets = await runMetaSyncStage('ad set', () =>
       syncMetaAdsets({
         supabase: input.supabase,
+        businessId: input.businessId,
+        platformIntegrationId: input.platformIntegrationId,
         adAccounts: historicalScope,
         campaignsByExternalId: campaigns.byExternalId,
         accessToken: input.accessToken,
@@ -293,6 +299,8 @@ export async function syncMetaBusinessPlatform(input: {
     const ads = await runMetaSyncStage('ad', () =>
       syncMetaAds({
         supabase: input.supabase,
+        businessId: input.businessId,
+        platformIntegrationId: input.platformIntegrationId,
         adAccounts: historicalScope,
         campaignsByExternalId: campaigns.byExternalId,
         adsetsByExternalId: adsets.byExternalId,
@@ -324,6 +332,7 @@ export async function syncMetaBusinessPlatform(input: {
         adsByExternalId: ads.byExternalId,
         accessToken: input.accessToken,
         backfillDays: performanceWindow.backfillDays,
+        dataPolicy: input.dataPolicy,
         syncedAt: input.syncedAt,
       })
     );

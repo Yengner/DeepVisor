@@ -38,6 +38,19 @@ type DeliveryLogRow = {
   updated_at: string;
 };
 
+type NotificationSurface = 'bell' | 'dashboard_banner' | 'both';
+
+function resolveNotificationSurface(row: Pick<NotificationRow, 'payload_json'>): NotificationSurface {
+  if (!row.payload_json || typeof row.payload_json !== 'object' || Array.isArray(row.payload_json)) {
+    return 'bell';
+  }
+
+  const surface = (row.payload_json as Record<string, unknown>).surface;
+  return surface === 'dashboard_banner' || surface === 'both' || surface === 'bell'
+    ? surface
+    : 'bell';
+}
+
 function mapNotificationRow(row: NotificationRow): NotificationFeedItem {
   return {
     id: row.id,
@@ -56,16 +69,20 @@ export async function listNotifications(
   input: {
     userId: string;
     limit?: number;
+    surface?: NotificationSurface | 'all';
   }
 ): Promise<NotificationFeedItem[]> {
+  const requestedSurface = input.surface ?? 'bell';
+  const limit = typeof input.limit === 'number' && input.limit > 0 ? input.limit : null;
+  const fetchLimit = limit && requestedSurface !== 'all' ? Math.min(limit * 4, 100) : limit;
   let query = (supabase as any)
     .from('notifications')
     .select('*')
     .eq('user_id', input.userId)
     .order('created_at', { ascending: false });
 
-  if (typeof input.limit === 'number' && input.limit > 0) {
-    query = query.limit(input.limit);
+  if (fetchLimit) {
+    query = query.limit(fetchLimit);
   }
 
   const { data, error } = await query;
@@ -74,7 +91,21 @@ export async function listNotifications(
     throw error;
   }
 
-  return ((data ?? []) as NotificationRow[]).map(mapNotificationRow);
+  const rows = ((data ?? []) as NotificationRow[]).filter((row) => {
+    if (requestedSurface === 'all') {
+      return true;
+    }
+
+    const rowSurface = resolveNotificationSurface(row);
+
+    if (requestedSurface === 'bell') {
+      return rowSurface === 'bell' || rowSurface === 'both';
+    }
+
+    return rowSurface === 'dashboard_banner' || rowSurface === 'both';
+  });
+
+  return rows.slice(0, limit ?? rows.length).map(mapNotificationRow);
 }
 
 export async function upsertNotification(
@@ -90,10 +121,12 @@ export async function upsertNotification(
     title: string;
     message: string;
     link: string | null;
+    surface?: NotificationSurface;
     payload?: Record<string, unknown>;
   }
 ): Promise<NotificationFeedItem> {
   const timestamp = new Date().toISOString();
+  const surface = input.surface ?? 'bell';
   const baseRow = {
     business_id: input.businessId,
     user_id: input.userId,
@@ -105,7 +138,10 @@ export async function upsertNotification(
     title: input.title,
     message: input.message,
     link: input.link,
-    payload_json: input.payload ?? {},
+    payload_json: {
+      ...(input.payload ?? {}),
+      surface,
+    },
     updated_at: timestamp,
   };
 
@@ -146,6 +182,35 @@ export async function upsertNotification(
   }
 
   return mapNotificationRow(data as NotificationRow);
+}
+
+export async function markNotificationRead(
+  supabase: IntelligenceClient,
+  input: {
+    businessId: string;
+    userId: string;
+    notificationId: string;
+  }
+): Promise<NotificationFeedItem | null> {
+  const timestamp = new Date().toISOString();
+  const { data, error } = await (supabase as any)
+    .from('notifications')
+    .update({
+      read: true,
+      read_at: timestamp,
+      updated_at: timestamp,
+    })
+    .eq('id', input.notificationId)
+    .eq('business_id', input.businessId)
+    .eq('user_id', input.userId)
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ? mapNotificationRow(data as NotificationRow) : null;
 }
 
 export async function createOrUpdateDeliveryLog(

@@ -112,6 +112,22 @@ export interface MetaAdPerformanceSeed {
   calls: number;
 }
 
+export interface MetaEntityPerformanceSummarySeed {
+  entityLevel: 'campaign' | 'adset' | 'ad';
+  entityExternalId: string;
+  dateStart: string | null;
+  dateStop: string | null;
+  currencyCode: string | null;
+  spend: number;
+  reach: number;
+  impressions: number;
+  clicks: number;
+  inlineLinkClicks: number;
+  leads: number;
+  messages: number;
+  calls: number;
+}
+
 export interface MetaAudienceBreakdownSeed {
   entityLevel: 'adset' | 'ad';
   entityExternalId: string;
@@ -119,6 +135,8 @@ export interface MetaAudienceBreakdownSeed {
   adExternalId: string | null;
   campaignExternalId: string | null;
   day: string;
+  dateStart: string | null;
+  dateStop: string | null;
   breakdownType: string;
   dimension1Key: string;
   dimension1Value: string;

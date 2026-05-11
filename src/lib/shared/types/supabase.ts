@@ -561,6 +561,137 @@ export type Database = {
           },
         ]
       }
+      ad_account_intelligence_snapshots: {
+        Row: {
+          ad_account_id: string
+          anomalies_json: Json
+          business_id: string
+          created_at: string
+          id: string
+          key_metrics_json: Json
+          losers_json: Json
+          period_end: string
+          period_start: string
+          recommendations_json: Json
+          snapshot_type: string
+          summary_text: string | null
+          winners_json: Json
+        }
+        Insert: {
+          ad_account_id: string
+          anomalies_json?: Json
+          business_id: string
+          created_at?: string
+          id?: string
+          key_metrics_json?: Json
+          losers_json?: Json
+          period_end: string
+          period_start: string
+          recommendations_json?: Json
+          snapshot_type: string
+          summary_text?: string | null
+          winners_json?: Json
+        }
+        Update: {
+          ad_account_id?: string
+          anomalies_json?: Json
+          business_id?: string
+          created_at?: string
+          id?: string
+          key_metrics_json?: Json
+          losers_json?: Json
+          period_end?: string
+          period_start?: string
+          recommendations_json?: Json
+          snapshot_type?: string
+          summary_text?: string | null
+          winners_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_account_intelligence_snapshots_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_account_intelligence_snapshots_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_account_performance_monthly: {
+        Row: {
+          ad_account_id: string
+          calls: number
+          clicks: number
+          cost_per_result: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string
+          ctr: number | null
+          frequency: number | null
+          impressions: number
+          inline_link_clicks: number
+          leads: number
+          messages: number
+          month_start: string
+          reach: number
+          spend: number
+          updated_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          calls?: number
+          clicks?: number
+          cost_per_result?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          frequency?: number | null
+          impressions?: number
+          inline_link_clicks?: number
+          leads?: number
+          messages?: number
+          month_start: string
+          reach?: number
+          spend?: number
+          updated_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          calls?: number
+          clicks?: number
+          cost_per_result?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          frequency?: number | null
+          impressions?: number
+          inline_link_clicks?: number
+          leads?: number
+          messages?: number
+          month_start?: string
+          reach?: number
+          spend?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_account_performance_monthly_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_account_sync_state: {
         Row: {
           ad_account_id: string
@@ -639,7 +770,6 @@ export type Database = {
       }
       ad_accounts: {
         Row: {
-          aggregated_metrics: Json | null
           business_id: string
           created_at: string
           currency_code: string | null
@@ -649,12 +779,10 @@ export type Database = {
           name: string | null
           platform_id: string
           status: string | null
-          time_increment_metrics: Json | null
           timezone: string | null
           updated_at: string
         }
         Insert: {
-          aggregated_metrics?: Json | null
           business_id: string
           created_at?: string
           currency_code?: string | null
@@ -664,12 +792,10 @@ export type Database = {
           name?: string | null
           platform_id: string
           status?: string | null
-          time_increment_metrics?: Json | null
           timezone?: string | null
           updated_at?: string
         }
         Update: {
-          aggregated_metrics?: Json | null
           business_id?: string
           created_at?: string
           currency_code?: string | null
@@ -679,7 +805,6 @@ export type Database = {
           name?: string | null
           platform_id?: string
           status?: string | null
-          time_increment_metrics?: Json | null
           timezone?: string | null
           updated_at?: string
         }
@@ -697,6 +822,196 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "platforms"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_audience_breakdowns_daily: {
+        Row: {
+          ad_account_id: string
+          breakdown_type: string
+          calls: number
+          clicks: number
+          created_at: string
+          currency_code: string | null
+          day: string
+          dimension_1_key: string
+          dimension_1_value: string
+          dimension_2_key: string
+          dimension_2_value: string
+          entity_id: string
+          entity_level: string
+          impression_device: string | null
+          impressions: number
+          inline_link_clicks: number
+          leads: number
+          messages: number
+          objective: string | null
+          platform_position: string | null
+          publisher_platform: string | null
+          reach: number
+          source: string
+          spend: number
+          updated_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          breakdown_type: string
+          calls?: number
+          clicks?: number
+          created_at?: string
+          currency_code?: string | null
+          day: string
+          dimension_1_key: string
+          dimension_1_value: string
+          dimension_2_key?: string
+          dimension_2_value?: string
+          entity_id: string
+          entity_level: string
+          impression_device?: string | null
+          impressions?: number
+          inline_link_clicks?: number
+          leads?: number
+          messages?: number
+          objective?: string | null
+          platform_position?: string | null
+          publisher_platform?: string | null
+          reach?: number
+          source?: string
+          spend?: number
+          updated_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          breakdown_type?: string
+          calls?: number
+          clicks?: number
+          created_at?: string
+          currency_code?: string | null
+          day?: string
+          dimension_1_key?: string
+          dimension_1_value?: string
+          dimension_2_key?: string
+          dimension_2_value?: string
+          entity_id?: string
+          entity_level?: string
+          impression_device?: string | null
+          impressions?: number
+          inline_link_clicks?: number
+          leads?: number
+          messages?: number
+          objective?: string | null
+          platform_position?: string | null
+          publisher_platform?: string | null
+          reach?: number
+          source?: string
+          spend?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
           },
         ]
       }
@@ -803,309 +1118,411 @@ export type Database = {
           },
         ]
       }
-      ad_dims: {
+      ad_entities: {
         Row: {
           ad_account_id: string
-          adset_external_id: string
           adset_id: string | null
+          business_id: string
           campaign_id: string | null
-          created_at: string | null
+          created_at: string
           created_time: string | null
-          creative_id: string | null
+          creative_external_id: string | null
+          entity_level: string
           external_id: string
           id: string
           name: string | null
-          raw: Json | null
+          objective: string | null
+          optimization_goal: string | null
+          parent_external_id: string | null
+          parent_id: string | null
+          platform_id: string
+          platform_integration_id: string | null
+          raw: Json
           status: string | null
-          updated_at: string | null
+          updated_at: string
           updated_time: string | null
         }
         Insert: {
           ad_account_id: string
-          adset_external_id: string
           adset_id?: string | null
+          business_id: string
           campaign_id?: string | null
-          created_at?: string | null
+          created_at?: string
           created_time?: string | null
-          creative_id?: string | null
+          creative_external_id?: string | null
+          entity_level: string
           external_id: string
           id?: string
           name?: string | null
-          raw?: Json | null
+          objective?: string | null
+          optimization_goal?: string | null
+          parent_external_id?: string | null
+          parent_id?: string | null
+          platform_id: string
+          platform_integration_id?: string | null
+          raw?: Json
           status?: string | null
-          updated_at?: string | null
+          updated_at?: string
           updated_time?: string | null
         }
         Update: {
           ad_account_id?: string
-          adset_external_id?: string
           adset_id?: string | null
+          business_id?: string
           campaign_id?: string | null
-          created_at?: string | null
+          created_at?: string
           created_time?: string | null
-          creative_id?: string | null
+          creative_external_id?: string | null
+          entity_level?: string
           external_id?: string
           id?: string
           name?: string | null
-          raw?: Json | null
+          objective?: string | null
+          optimization_goal?: string | null
+          parent_external_id?: string | null
+          parent_id?: string | null
+          platform_id?: string
+          platform_integration_id?: string | null
+          raw?: Json
           status?: string | null
-          updated_at?: string | null
+          updated_at?: string
           updated_time?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "ad_dims_ad_account_id_fkey"
+            foreignKeyName: "ad_entities_ad_account_id_fkey"
             columns: ["ad_account_id"]
             isOneToOne: false
             referencedRelation: "ad_accounts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_dims_adset_id_fkey"
+            foreignKeyName: "ad_entities_adset_id_fkey"
             columns: ["adset_id"]
             isOneToOne: false
-            referencedRelation: "adset_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ad_dims_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["adset_id"]
-          },
-          {
-            foreignKeyName: "ad_dims_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["adset_id"]
-          },
-          {
-            foreignKeyName: "ad_dims_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["entity_id"]
-          },
-          {
-            foreignKeyName: "ad_dims_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "campaign_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ad_dims_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "ad_dims_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "ad_dims_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_campaign_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "ad_dims_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_campaign_daily_v"
-            referencedColumns: ["entity_id"]
-          },
-        ]
-      }
-      ad_performance_summary: {
-        Row: {
-          ad_account_id: string
-          ad_id: string
-          adset_id: string | null
-          calls: number
-          campaign_id: string | null
-          clicks: number
-          cost_per_result: number | null
-          cpc: number | null
-          cpm: number | null
-          created_at: string
-          ctr: number | null
-          first_day: string | null
-          frequency: number | null
-          history_status: string
-          impressions: number
-          inline_link_clicks: number
-          last_day: string | null
-          leads: number
-          messages: number
-          reach: number
-          spend: number
-          summary_source: string
-          synced_at: string | null
-          updated_at: string
-        }
-        Insert: {
-          ad_account_id: string
-          ad_id: string
-          adset_id?: string | null
-          calls?: number
-          campaign_id?: string | null
-          clicks?: number
-          cost_per_result?: number | null
-          cpc?: number | null
-          cpm?: number | null
-          created_at?: string
-          ctr?: number | null
-          first_day?: string | null
-          frequency?: number | null
-          history_status?: string
-          impressions?: number
-          inline_link_clicks?: number
-          last_day?: string | null
-          leads?: number
-          messages?: number
-          reach?: number
-          spend?: number
-          summary_source?: string
-          synced_at?: string | null
-          updated_at?: string
-        }
-        Update: {
-          ad_account_id?: string
-          ad_id?: string
-          adset_id?: string | null
-          calls?: number
-          campaign_id?: string | null
-          clicks?: number
-          cost_per_result?: number | null
-          cpc?: number | null
-          cpm?: number | null
-          created_at?: string
-          ctr?: number | null
-          first_day?: string | null
-          frequency?: number | null
-          history_status?: string
-          impressions?: number
-          inline_link_clicks?: number
-          last_day?: string | null
-          leads?: number
-          messages?: number
-          reach?: number
-          spend?: number
-          summary_source?: string
-          synced_at?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ad_performance_summary_ad_account_id_fkey"
-            columns: ["ad_account_id"]
-            isOneToOne: false
-            referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ad_performance_summary_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: true
             referencedRelation: "ad_dims"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_performance_summary_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: true
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["ad_id"]
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_performance_summary_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: true
-            referencedRelation: "report_ad_daily_v"
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
             referencedColumns: ["entity_id"]
           },
           {
-            foreignKeyName: "ad_performance_summary_adset_id_fkey"
+            foreignKeyName: "ad_entities_adset_id_fkey"
             columns: ["adset_id"]
             isOneToOne: false
             referencedRelation: "adset_dims"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_performance_summary_adset_id_fkey"
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
             columns: ["adset_id"]
             isOneToOne: false
             referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["adset_id"]
+            referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_performance_summary_adset_id_fkey"
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
             columns: ["adset_id"]
             isOneToOne: false
             referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["adset_id"]
+            referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_performance_summary_adset_id_fkey"
+            foreignKeyName: "ad_entities_adset_id_fkey"
             columns: ["adset_id"]
             isOneToOne: false
             referencedRelation: "report_adset_daily_v"
             referencedColumns: ["entity_id"]
           },
           {
-            foreignKeyName: "ad_performance_summary_campaign_id_fkey"
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaign_dims"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_performance_summary_campaign_id_fkey"
+            foreignKeyName: "ad_entities_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "report_ad_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_performance_summary_campaign_id_fkey"
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "report_adset_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_performance_summary_campaign_id_fkey"
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "report_campaign_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_performance_summary_campaign_id_fkey"
+            foreignKeyName: "ad_entities_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "report_campaign_daily_v"
             referencedColumns: ["entity_id"]
           },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_platform_id_fkey"
+            columns: ["platform_id"]
+            isOneToOne: false
+            referencedRelation: "platforms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_platform_integration_id_fkey"
+            columns: ["platform_integration_id"]
+            isOneToOne: false
+            referencedRelation: "platform_integrations"
+            referencedColumns: ["id"]
+          },
         ]
       }
-      ads_performance_daily: {
+      ad_entity_performance_daily: {
         Row: {
-          ad_id: string
+          ad_account_id: string
           calls: number
           clicks: number
-          created_at: string | null
+          created_at: string
           currency_code: string | null
           day: string
+          entity_id: string
+          entity_level: string
           impressions: number
           inline_link_clicks: number
           leads: number
@@ -1115,15 +1532,17 @@ export type Database = {
           source: string
           spend: number
           status: string | null
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          ad_id: string
+          ad_account_id: string
           calls?: number
           clicks?: number
-          created_at?: string | null
+          created_at?: string
           currency_code?: string | null
           day: string
+          entity_id: string
+          entity_level: string
           impressions?: number
           inline_link_clicks?: number
           leads?: number
@@ -1133,153 +1552,505 @@ export type Database = {
           source?: string
           spend?: number
           status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          ad_id?: string
-          calls?: number
-          clicks?: number
-          created_at?: string | null
-          currency_code?: string | null
-          day?: string
-          impressions?: number
-          inline_link_clicks?: number
-          leads?: number
-          messages?: number
-          objective?: string | null
-          reach?: number
-          source?: string
-          spend?: number
-          status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ads_performance_daily_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "ad_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ads_performance_daily_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["ad_id"]
-          },
-          {
-            foreignKeyName: "ads_performance_daily_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["entity_id"]
-          },
-        ]
-      }
-      adset_dims: {
-        Row: {
-          ad_account_id: string
-          campaign_external_id: string
-          campaign_id: string | null
-          created_at: string | null
-          created_time: string | null
-          external_id: string
-          id: string
-          name: string | null
-          optimization_goal: string | null
-          raw: Json | null
-          status: string | null
-          updated_at: string | null
-          updated_time: string | null
-        }
-        Insert: {
-          ad_account_id: string
-          campaign_external_id: string
-          campaign_id?: string | null
-          created_at?: string | null
-          created_time?: string | null
-          external_id: string
-          id?: string
-          name?: string | null
-          optimization_goal?: string | null
-          raw?: Json | null
-          status?: string | null
-          updated_at?: string | null
-          updated_time?: string | null
+          updated_at?: string
         }
         Update: {
           ad_account_id?: string
-          campaign_external_id?: string
-          campaign_id?: string | null
-          created_at?: string | null
-          created_time?: string | null
-          external_id?: string
-          id?: string
-          name?: string | null
-          optimization_goal?: string | null
-          raw?: Json | null
+          calls?: number
+          clicks?: number
+          created_at?: string
+          currency_code?: string | null
+          day?: string
+          entity_id?: string
+          entity_level?: string
+          impressions?: number
+          inline_link_clicks?: number
+          leads?: number
+          messages?: number
+          objective?: string | null
+          reach?: number
+          source?: string
+          spend?: number
           status?: string | null
-          updated_at?: string | null
-          updated_time?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "adset_dims_ad_account_id_fkey"
+            foreignKeyName: "ad_entity_performance_daily_ad_account_id_fkey"
             columns: ["ad_account_id"]
             isOneToOne: false
             referencedRelation: "ad_accounts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "adset_dims_campaign_id_fkey"
-            columns: ["campaign_id"]
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "campaign_dims"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "adset_dims_campaign_id_fkey"
-            columns: ["campaign_id"]
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_ad_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "adset_dims_campaign_id_fkey"
-            columns: ["campaign_id"]
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_adset_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "adset_dims_campaign_id_fkey"
-            columns: ["campaign_id"]
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_campaign_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "adset_dims_campaign_id_fkey"
-            columns: ["campaign_id"]
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_campaign_daily_v"
             referencedColumns: ["entity_id"]
           },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
         ]
       }
-      adset_performance_summary: {
+      ad_entity_performance_hourly: {
         Row: {
           ad_account_id: string
-          adset_id: string
           calls: number
-          campaign_id: string | null
+          clicks: number
+          cpc: number
+          cpm: number
+          created_at: string
+          ctr: number
+          currency_code: string | null
+          day: string
+          day_of_week: number | null
+          entity_id: string
+          entity_level: string
+          hour_of_day: number
+          impressions: number
+          inline_link_clicks: number
+          leads: number
+          messages: number
+          objective: string | null
+          reach: number
+          source: string
+          spend: number
+          updated_at: string
+          week_start: string | null
+        }
+        Insert: {
+          ad_account_id: string
+          calls?: number
+          clicks?: number
+          cpc?: number
+          cpm?: number
+          created_at?: string
+          ctr?: number
+          currency_code?: string | null
+          day: string
+          day_of_week?: number | null
+          entity_id: string
+          entity_level: string
+          hour_of_day: number
+          impressions?: number
+          inline_link_clicks?: number
+          leads?: number
+          messages?: number
+          objective?: string | null
+          reach?: number
+          source?: string
+          spend?: number
+          updated_at?: string
+          week_start?: string | null
+        }
+        Update: {
+          ad_account_id?: string
+          calls?: number
+          clicks?: number
+          cpc?: number
+          cpm?: number
+          created_at?: string
+          ctr?: number
+          currency_code?: string | null
+          day?: string
+          day_of_week?: number | null
+          entity_id?: string
+          entity_level?: string
+          hour_of_day?: number
+          impressions?: number
+          inline_link_clicks?: number
+          leads?: number
+          messages?: number
+          objective?: string | null
+          reach?: number
+          source?: string
+          spend?: number
+          updated_at?: string
+          week_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_entity_performance_hourly_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+        ]
+      }
+      ad_entity_performance_monthly: {
+        Row: {
+          ad_account_id: string
+          calls: number
           clicks: number
           cost_per_result: number | null
           cpc: number | null
           cpm: number | null
           created_at: string
           ctr: number | null
+          entity_id: string
+          entity_level: string
+          frequency: number | null
+          impressions: number
+          inline_link_clicks: number
+          leads: number
+          messages: number
+          month_start: string
+          reach: number
+          spend: number
+          updated_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          calls?: number
+          clicks?: number
+          cost_per_result?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          entity_id: string
+          entity_level: string
+          frequency?: number | null
+          impressions?: number
+          inline_link_clicks?: number
+          leads?: number
+          messages?: number
+          month_start: string
+          reach?: number
+          spend?: number
+          updated_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          calls?: number
+          clicks?: number
+          cost_per_result?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          entity_id?: string
+          entity_level?: string
+          frequency?: number | null
+          impressions?: number
+          inline_link_clicks?: number
+          leads?: number
+          messages?: number
+          month_start?: string
+          reach?: number
+          spend?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_entity_performance_monthly_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+        ]
+      }
+      ad_entity_performance_summary: {
+        Row: {
+          ad_account_id: string
+          best_day: string | null
+          calls: number
+          clicks: number
+          cost_per_result: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string
+          ctr: number | null
+          entity_id: string
+          entity_level: string
           first_day: string | null
           frequency: number | null
           history_status: string
@@ -1293,18 +2064,20 @@ export type Database = {
           summary_source: string
           synced_at: string | null
           updated_at: string
+          worst_day: string | null
         }
         Insert: {
           ad_account_id: string
-          adset_id: string
+          best_day?: string | null
           calls?: number
-          campaign_id?: string | null
           clicks?: number
           cost_per_result?: number | null
           cpc?: number | null
           cpm?: number | null
           created_at?: string
           ctr?: number | null
+          entity_id: string
+          entity_level: string
           first_day?: string | null
           frequency?: number | null
           history_status?: string
@@ -1318,18 +2091,20 @@ export type Database = {
           summary_source?: string
           synced_at?: string | null
           updated_at?: string
+          worst_day?: string | null
         }
         Update: {
           ad_account_id?: string
-          adset_id?: string
+          best_day?: string | null
           calls?: number
-          campaign_id?: string | null
           clicks?: number
           cost_per_result?: number | null
           cpc?: number | null
           cpm?: number | null
           created_at?: string
           ctr?: number | null
+          entity_id?: string
+          entity_level?: string
           first_day?: string | null
           frequency?: number | null
           history_status?: string
@@ -1343,194 +2118,168 @@ export type Database = {
           summary_source?: string
           synced_at?: string | null
           updated_at?: string
+          worst_day?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "adset_performance_summary_ad_account_id_fkey"
+            foreignKeyName: "ad_entity_performance_summary_ad_account_id_fkey"
             columns: ["ad_account_id"]
             isOneToOne: false
             referencedRelation: "ad_accounts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "adset_performance_summary_adset_id_fkey"
-            columns: ["adset_id"]
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
             isOneToOne: true
             referencedRelation: "adset_dims"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "adset_performance_summary_adset_id_fkey"
-            columns: ["adset_id"]
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
             isOneToOne: true
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["adset_id"]
-          },
-          {
-            foreignKeyName: "adset_performance_summary_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: true
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["adset_id"]
-          },
-          {
-            foreignKeyName: "adset_performance_summary_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: true
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["entity_id"]
-          },
-          {
-            foreignKeyName: "adset_performance_summary_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
             referencedRelation: "campaign_dims"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "adset_performance_summary_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "adset_performance_summary_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "adset_performance_summary_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_campaign_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "adset_performance_summary_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_campaign_daily_v"
-            referencedColumns: ["entity_id"]
-          },
-        ]
-      }
-      adsets_performance_daily: {
-        Row: {
-          adset_id: string
-          calls: number
-          clicks: number
-          created_at: string | null
-          currency_code: string | null
-          day: string
-          impressions: number
-          inline_link_clicks: number
-          leads: number
-          messages: number
-          objective: string | null
-          reach: number
-          source: string | null
-          spend: number
-          status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          adset_id: string
-          calls?: number
-          clicks?: number
-          created_at?: string | null
-          currency_code?: string | null
-          day: string
-          impressions?: number
-          inline_link_clicks?: number
-          leads?: number
-          messages?: number
-          objective?: string | null
-          reach?: number
-          source?: string | null
-          spend?: number
-          status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          adset_id?: string
-          calls?: number
-          clicks?: number
-          created_at?: string | null
-          currency_code?: string | null
-          day?: string
-          impressions?: number
-          inline_link_clicks?: number
-          leads?: number
-          messages?: number
-          objective?: string | null
-          reach?: number
-          source?: string | null
-          spend?: number
-          status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "adsets_performance_daily_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "adset_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "adsets_performance_daily_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["adset_id"]
-          },
-          {
-            foreignKeyName: "adsets_performance_daily_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["adset_id"]
-          },
-          {
-            foreignKeyName: "adsets_performance_daily_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["entity_id"]
-          },
-        ]
-      }
-      billing_accounts: {
-        Row: {
-          created_at: string
-          id: string
-          stripe_customer_id: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          stripe_customer_id?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          stripe_customer_id?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "billing_accounts_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
             isOneToOne: true
-            referencedRelation: "users"
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+        ]
+      }
+      business_data_policies: {
+        Row: {
+          allow_ad_level_audience: boolean
+          allow_ad_level_hourly: boolean
+          allowed_breakdowns: string[]
+          audience_history_days: number
+          business_id: string
+          created_at: string
+          daily_history_days: number
+          hourly_history_days: number
+          id: string
+          manual_refresh_limit_per_day: number
+          max_ad_accounts: number
+          plan_key: string
+          updated_at: string
+        }
+        Insert: {
+          allow_ad_level_audience?: boolean
+          allow_ad_level_hourly?: boolean
+          allowed_breakdowns?: string[]
+          audience_history_days?: number
+          business_id: string
+          created_at?: string
+          daily_history_days?: number
+          hourly_history_days?: number
+          id?: string
+          manual_refresh_limit_per_day?: number
+          max_ad_accounts?: number
+          plan_key?: string
+          updated_at?: string
+        }
+        Update: {
+          allow_ad_level_audience?: boolean
+          allow_ad_level_hourly?: boolean
+          allowed_breakdowns?: string[]
+          audience_history_days?: number
+          business_id?: string
+          created_at?: string
+          daily_history_days?: number
+          hourly_history_days?: number
+          id?: string
+          manual_refresh_limit_per_day?: number
+          max_ad_accounts?: number
+          plan_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_data_policies_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "business_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1813,56 +2562,6 @@ export type Database = {
           },
         ]
       }
-      campaign_dims: {
-        Row: {
-          ad_account_id: string
-          created_at: string | null
-          created_time: string | null
-          external_id: string
-          id: string
-          name: string | null
-          objective: string | null
-          raw: Json | null
-          status: string | null
-          updated_at: string | null
-          updated_time: string | null
-        }
-        Insert: {
-          ad_account_id: string
-          created_at?: string | null
-          created_time?: string | null
-          external_id: string
-          id?: string
-          name?: string | null
-          objective?: string | null
-          raw?: Json | null
-          status?: string | null
-          updated_at?: string | null
-          updated_time?: string | null
-        }
-        Update: {
-          ad_account_id?: string
-          created_at?: string | null
-          created_time?: string | null
-          external_id?: string
-          id?: string
-          name?: string | null
-          objective?: string | null
-          raw?: Json | null
-          status?: string | null
-          updated_at?: string | null
-          updated_time?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "campaign_dims_ad_account_id_fkey"
-            columns: ["ad_account_id"]
-            isOneToOne: false
-            referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       campaign_drafts: {
         Row: {
           ad_account_id: string
@@ -1947,608 +2646,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      campaign_performance_summary: {
-        Row: {
-          ad_account_id: string
-          calls: number
-          campaign_id: string
-          clicks: number
-          cost_per_result: number | null
-          cpc: number | null
-          cpm: number | null
-          created_at: string
-          ctr: number | null
-          first_day: string | null
-          frequency: number | null
-          history_status: string
-          impressions: number
-          inline_link_clicks: number
-          last_day: string | null
-          leads: number
-          messages: number
-          reach: number
-          spend: number
-          summary_source: string
-          synced_at: string | null
-          updated_at: string
-        }
-        Insert: {
-          ad_account_id: string
-          calls?: number
-          campaign_id: string
-          clicks?: number
-          cost_per_result?: number | null
-          cpc?: number | null
-          cpm?: number | null
-          created_at?: string
-          ctr?: number | null
-          first_day?: string | null
-          frequency?: number | null
-          history_status?: string
-          impressions?: number
-          inline_link_clicks?: number
-          last_day?: string | null
-          leads?: number
-          messages?: number
-          reach?: number
-          spend?: number
-          summary_source?: string
-          synced_at?: string | null
-          updated_at?: string
-        }
-        Update: {
-          ad_account_id?: string
-          calls?: number
-          campaign_id?: string
-          clicks?: number
-          cost_per_result?: number | null
-          cpc?: number | null
-          cpm?: number | null
-          created_at?: string
-          ctr?: number | null
-          first_day?: string | null
-          frequency?: number | null
-          history_status?: string
-          impressions?: number
-          inline_link_clicks?: number
-          last_day?: string | null
-          leads?: number
-          messages?: number
-          reach?: number
-          spend?: number
-          summary_source?: string
-          synced_at?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "campaign_performance_summary_ad_account_id_fkey"
-            columns: ["ad_account_id"]
-            isOneToOne: false
-            referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "campaign_performance_summary_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: true
-            referencedRelation: "campaign_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "campaign_performance_summary_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: true
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "campaign_performance_summary_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: true
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "campaign_performance_summary_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: true
-            referencedRelation: "report_campaign_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "campaign_performance_summary_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: true
-            referencedRelation: "report_campaign_daily_v"
-            referencedColumns: ["entity_id"]
-          },
-        ]
-      }
-      campaigns_performance_daily: {
-        Row: {
-          calls: number
-          campaign_id: string
-          clicks: number
-          created_at: string | null
-          currency_code: string | null
-          day: string
-          entity_external_id: string
-          impressions: number
-          inline_link_clicks: number
-          leads: number
-          messages: number
-          objective: string | null
-          reach: number
-          source: string | null
-          spend: number
-          status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          calls?: number
-          campaign_id: string
-          clicks?: number
-          created_at?: string | null
-          currency_code?: string | null
-          day: string
-          entity_external_id: string
-          impressions?: number
-          inline_link_clicks?: number
-          leads?: number
-          messages?: number
-          objective?: string | null
-          reach?: number
-          source?: string | null
-          spend?: number
-          status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          calls?: number
-          campaign_id?: string
-          clicks?: number
-          created_at?: string | null
-          currency_code?: string | null
-          day?: string
-          entity_external_id?: string
-          impressions?: number
-          inline_link_clicks?: number
-          leads?: number
-          messages?: number
-          objective?: string | null
-          reach?: number
-          source?: string | null
-          spend?: number
-          status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "campaigns_performance_daily_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "campaign_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "campaigns_performance_daily_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "campaigns_performance_daily_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "campaigns_performance_daily_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_campaign_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "campaigns_performance_daily_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_campaign_daily_v"
-            referencedColumns: ["entity_id"]
-          },
-        ]
-      }
-      meta_audience_breakdowns_daily: {
-        Row: {
-          actions_json: Json
-          ad_account_id: string
-          ad_id: string | null
-          adset_id: string | null
-          breakdown_type: string
-          calls: number
-          campaign_id: string | null
-          clicks: number
-          cost_per_action_type_json: Json
-          created_at: string
-          currency_code: string | null
-          day: string
-          dimension_1_key: string
-          dimension_1_value: string
-          dimension_2_key: string
-          dimension_2_value: string
-          entity_id: string
-          entity_level: string
-          impression_device: string | null
-          impressions: number
-          inline_link_clicks: number
-          leads: number
-          messages: number
-          objective: string | null
-          platform_position: string | null
-          publisher_platform: string | null
-          raw: Json | null
-          reach: number
-          source: string
-          spend: number
-          updated_at: string
-        }
-        Insert: {
-          actions_json?: Json
-          ad_account_id: string
-          ad_id?: string | null
-          adset_id?: string | null
-          breakdown_type: string
-          calls?: number
-          campaign_id?: string | null
-          clicks?: number
-          cost_per_action_type_json?: Json
-          created_at?: string
-          currency_code?: string | null
-          day: string
-          dimension_1_key: string
-          dimension_1_value: string
-          dimension_2_key?: string
-          dimension_2_value?: string
-          entity_id: string
-          entity_level: string
-          impression_device?: string | null
-          impressions?: number
-          inline_link_clicks?: number
-          leads?: number
-          messages?: number
-          objective?: string | null
-          platform_position?: string | null
-          publisher_platform?: string | null
-          raw?: Json | null
-          reach?: number
-          source?: string
-          spend?: number
-          updated_at?: string
-        }
-        Update: {
-          actions_json?: Json
-          ad_account_id?: string
-          ad_id?: string | null
-          adset_id?: string | null
-          breakdown_type?: string
-          calls?: number
-          campaign_id?: string | null
-          clicks?: number
-          cost_per_action_type_json?: Json
-          created_at?: string
-          currency_code?: string | null
-          day?: string
-          dimension_1_key?: string
-          dimension_1_value?: string
-          dimension_2_key?: string
-          dimension_2_value?: string
-          entity_id?: string
-          entity_level?: string
-          impression_device?: string | null
-          impressions?: number
-          inline_link_clicks?: number
-          leads?: number
-          messages?: number
-          objective?: string | null
-          platform_position?: string | null
-          publisher_platform?: string | null
-          raw?: Json | null
-          reach?: number
-          source?: string
-          spend?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "meta_audience_breakdowns_daily_ad_account_id_fkey"
-            columns: ["ad_account_id"]
-            isOneToOne: false
-            referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meta_audience_breakdowns_daily_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "ad_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meta_audience_breakdowns_daily_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["ad_id"]
-          },
-          {
-            foreignKeyName: "meta_audience_breakdowns_daily_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["entity_id"]
-          },
-          {
-            foreignKeyName: "meta_audience_breakdowns_daily_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "adset_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meta_audience_breakdowns_daily_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["adset_id"]
-          },
-          {
-            foreignKeyName: "meta_audience_breakdowns_daily_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["adset_id"]
-          },
-          {
-            foreignKeyName: "meta_audience_breakdowns_daily_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["entity_id"]
-          },
-          {
-            foreignKeyName: "meta_audience_breakdowns_daily_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "campaign_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meta_audience_breakdowns_daily_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "meta_audience_breakdowns_daily_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "meta_audience_breakdowns_daily_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_campaign_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "meta_audience_breakdowns_daily_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_campaign_daily_v"
-            referencedColumns: ["entity_id"]
-          },
-        ]
-      }
-      meta_hourly_performance: {
-        Row: {
-          actions_json: Json
-          ad_account_id: string
-          ad_id: string | null
-          adset_id: string
-          advertiser_time_bucket: string
-          calls: number
-          campaign_id: string | null
-          clicks: number
-          cost_per_action_type_json: Json
-          cpc: number
-          cpm: number
-          created_at: string
-          ctr: number
-          currency_code: string | null
-          day: string
-          day_of_week: number
-          entity_id: string
-          entity_level: string
-          hour_of_day: number
-          impressions: number
-          inline_link_clicks: number
-          leads: number
-          messages: number
-          objective: string | null
-          raw: Json | null
-          reach: number
-          source: string
-          spend: number
-          time_basis: string
-          updated_at: string
-          week_start: string
-        }
-        Insert: {
-          actions_json?: Json
-          ad_account_id: string
-          ad_id?: string | null
-          adset_id: string
-          advertiser_time_bucket: string
-          calls?: number
-          campaign_id?: string | null
-          clicks?: number
-          cost_per_action_type_json?: Json
-          cpc?: number
-          cpm?: number
-          created_at?: string
-          ctr?: number
-          currency_code?: string | null
-          day: string
-          day_of_week: number
-          entity_id: string
-          entity_level: string
-          hour_of_day: number
-          impressions?: number
-          inline_link_clicks?: number
-          leads?: number
-          messages?: number
-          objective?: string | null
-          raw?: Json | null
-          reach?: number
-          source?: string
-          spend?: number
-          time_basis?: string
-          updated_at?: string
-          week_start: string
-        }
-        Update: {
-          actions_json?: Json
-          ad_account_id?: string
-          ad_id?: string | null
-          adset_id?: string
-          advertiser_time_bucket?: string
-          calls?: number
-          campaign_id?: string | null
-          clicks?: number
-          cost_per_action_type_json?: Json
-          cpc?: number
-          cpm?: number
-          created_at?: string
-          ctr?: number
-          currency_code?: string | null
-          day?: string
-          day_of_week?: number
-          entity_id?: string
-          entity_level?: string
-          hour_of_day?: number
-          impressions?: number
-          inline_link_clicks?: number
-          leads?: number
-          messages?: number
-          objective?: string | null
-          raw?: Json | null
-          reach?: number
-          source?: string
-          spend?: number
-          time_basis?: string
-          updated_at?: string
-          week_start?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "meta_hourly_performance_ad_account_id_fkey"
-            columns: ["ad_account_id"]
-            isOneToOne: false
-            referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meta_hourly_performance_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "ad_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meta_hourly_performance_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["ad_id"]
-          },
-          {
-            foreignKeyName: "meta_hourly_performance_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["entity_id"]
-          },
-          {
-            foreignKeyName: "meta_hourly_performance_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "adset_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meta_hourly_performance_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["adset_id"]
-          },
-          {
-            foreignKeyName: "meta_hourly_performance_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["adset_id"]
-          },
-          {
-            foreignKeyName: "meta_hourly_performance_adset_id_fkey"
-            columns: ["adset_id"]
-            isOneToOne: false
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["entity_id"]
-          },
-          {
-            foreignKeyName: "meta_hourly_performance_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "campaign_dims"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meta_hourly_performance_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_ad_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "meta_hourly_performance_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_adset_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "meta_hourly_performance_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_campaign_daily_v"
-            referencedColumns: ["campaign_id"]
-          },
-          {
-            foreignKeyName: "meta_hourly_performance_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "report_campaign_daily_v"
-            referencedColumns: ["entity_id"]
           },
         ]
       }
@@ -3037,59 +3134,6 @@ export type Database = {
           },
         ]
       }
-      subscriptions: {
-        Row: {
-          billing_account_id: string
-          created_at: string
-          id: string
-          invoice_url: string | null
-          last_payment_amount: number | null
-          last_payment_date: string | null
-          plan_tier: string
-          stripe_subscription_id: string | null
-          subscription_end: string | null
-          subscription_start: string | null
-          subscription_status: string
-          updated_at: string
-        }
-        Insert: {
-          billing_account_id: string
-          created_at?: string
-          id?: string
-          invoice_url?: string | null
-          last_payment_amount?: number | null
-          last_payment_date?: string | null
-          plan_tier?: string
-          stripe_subscription_id?: string | null
-          subscription_end?: string | null
-          subscription_start?: string | null
-          subscription_status?: string
-          updated_at?: string
-        }
-        Update: {
-          billing_account_id?: string
-          created_at?: string
-          id?: string
-          invoice_url?: string | null
-          last_payment_amount?: number | null
-          last_payment_date?: string | null
-          plan_tier?: string
-          stripe_subscription_id?: string | null
-          subscription_end?: string | null
-          subscription_start?: string | null
-          subscription_status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subscriptions_billing_account_id_fkey"
-            columns: ["billing_account_id"]
-            isOneToOne: false
-            referencedRelation: "billing_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       users: {
         Row: {
           created_at: string | null
@@ -3125,6 +3169,2231 @@ export type Database = {
       }
     }
     Views: {
+      ad_dims: {
+        Row: {
+          ad_account_id: string | null
+          adset_external_id: string | null
+          adset_id: string | null
+          campaign_id: string | null
+          created_at: string | null
+          created_time: string | null
+          creative_id: string | null
+          external_id: string | null
+          id: string | null
+          name: string | null
+          raw: Json | null
+          status: string | null
+          updated_at: string | null
+          updated_time: string | null
+        }
+        Insert: {
+          ad_account_id?: string | null
+          adset_external_id?: string | null
+          adset_id?: string | null
+          campaign_id?: string | null
+          created_at?: string | null
+          created_time?: string | null
+          creative_id?: string | null
+          external_id?: string | null
+          id?: string | null
+          name?: string | null
+          raw?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          updated_time?: string | null
+        }
+        Update: {
+          ad_account_id?: string | null
+          adset_external_id?: string | null
+          adset_id?: string | null
+          campaign_id?: string | null
+          created_at?: string | null
+          created_time?: string | null
+          creative_id?: string | null
+          external_id?: string | null
+          id?: string | null
+          name?: string | null
+          raw?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          updated_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_entities_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+        ]
+      }
+      ad_entity_report_daily_v: {
+        Row: {
+          ad_account_id: string | null
+          ad_external_id: string | null
+          ad_id: string | null
+          ad_name: string | null
+          adset_external_id: string | null
+          adset_id: string | null
+          adset_name: string | null
+          business_id: string | null
+          calls: number | null
+          campaign_external_id: string | null
+          campaign_id: string | null
+          campaign_name: string | null
+          clicks: number | null
+          cost_per_result: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string | null
+          ctr: number | null
+          currency_code: string | null
+          day: string | null
+          entity_external_id: string | null
+          entity_id: string | null
+          entity_level: string | null
+          entity_name: string | null
+          frequency: number | null
+          impressions: number | null
+          inline_link_clicks: number | null
+          leads: number | null
+          messages: number | null
+          objective: string | null
+          platform_id: string | null
+          reach: number | null
+          results: number | null
+          source: string | null
+          spend: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_accounts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_platform_id_fkey"
+            columns: ["platform_id"]
+            isOneToOne: false
+            referencedRelation: "platforms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_performance_summary: {
+        Row: {
+          ad_account_id: string | null
+          ad_id: string | null
+          adset_id: string | null
+          best_day: string | null
+          calls: number | null
+          campaign_id: string | null
+          clicks: number | null
+          cost_per_result: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string | null
+          ctr: number | null
+          first_day: string | null
+          frequency: number | null
+          history_status: string | null
+          impressions: number | null
+          inline_link_clicks: number | null
+          last_day: string | null
+          leads: number | null
+          messages: number | null
+          reach: number | null
+          spend: number | null
+          summary_source: string | null
+          synced_at: string | null
+          updated_at: string | null
+          worst_day: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+        ]
+      }
+      ads_performance_daily: {
+        Row: {
+          ad_id: string | null
+          calls: number | null
+          clicks: number | null
+          created_at: string | null
+          currency_code: string | null
+          day: string | null
+          impressions: number | null
+          inline_link_clicks: number | null
+          leads: number | null
+          messages: number | null
+          objective: string | null
+          reach: number | null
+          source: string | null
+          spend: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ad_id?: string | null
+          calls?: number | null
+          clicks?: number | null
+          created_at?: string | null
+          currency_code?: string | null
+          day?: string | null
+          impressions?: number | null
+          inline_link_clicks?: number | null
+          leads?: number | null
+          messages?: number | null
+          objective?: string | null
+          reach?: number | null
+          source?: string | null
+          spend?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ad_id?: string | null
+          calls?: number | null
+          clicks?: number | null
+          created_at?: string | null
+          currency_code?: string | null
+          day?: string | null
+          impressions?: number | null
+          inline_link_clicks?: number | null
+          leads?: number | null
+          messages?: number | null
+          objective?: string | null
+          reach?: number | null
+          source?: string | null
+          spend?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+        ]
+      }
+      adset_dims: {
+        Row: {
+          ad_account_id: string | null
+          campaign_external_id: string | null
+          campaign_id: string | null
+          created_at: string | null
+          created_time: string | null
+          external_id: string | null
+          id: string | null
+          name: string | null
+          optimization_goal: string | null
+          raw: Json | null
+          status: string | null
+          updated_at: string | null
+          updated_time: string | null
+        }
+        Insert: {
+          ad_account_id?: string | null
+          campaign_external_id?: string | null
+          campaign_id?: string | null
+          created_at?: string | null
+          created_time?: string | null
+          external_id?: string | null
+          id?: string | null
+          name?: string | null
+          optimization_goal?: string | null
+          raw?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          updated_time?: string | null
+        }
+        Update: {
+          ad_account_id?: string | null
+          campaign_external_id?: string | null
+          campaign_id?: string | null
+          created_at?: string | null
+          created_time?: string | null
+          external_id?: string | null
+          id?: string | null
+          name?: string | null
+          optimization_goal?: string | null
+          raw?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          updated_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_entities_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+        ]
+      }
+      adset_performance_summary: {
+        Row: {
+          ad_account_id: string | null
+          adset_id: string | null
+          best_day: string | null
+          calls: number | null
+          campaign_id: string | null
+          clicks: number | null
+          cost_per_result: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string | null
+          ctr: number | null
+          first_day: string | null
+          frequency: number | null
+          history_status: string | null
+          impressions: number | null
+          inline_link_clicks: number | null
+          last_day: string | null
+          leads: number | null
+          messages: number | null
+          reach: number | null
+          spend: number | null
+          summary_source: string | null
+          synced_at: string | null
+          updated_at: string | null
+          worst_day: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: true
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+        ]
+      }
+      adsets_performance_daily: {
+        Row: {
+          adset_id: string | null
+          calls: number | null
+          clicks: number | null
+          created_at: string | null
+          currency_code: string | null
+          day: string | null
+          impressions: number | null
+          inline_link_clicks: number | null
+          leads: number | null
+          messages: number | null
+          objective: string | null
+          reach: number | null
+          source: string | null
+          spend: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          adset_id?: string | null
+          calls?: number | null
+          clicks?: number | null
+          created_at?: string | null
+          currency_code?: string | null
+          day?: string | null
+          impressions?: number | null
+          inline_link_clicks?: number | null
+          leads?: number | null
+          messages?: number | null
+          objective?: string | null
+          reach?: number | null
+          source?: string | null
+          spend?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          adset_id?: string | null
+          calls?: number | null
+          clicks?: number | null
+          created_at?: string | null
+          currency_code?: string | null
+          day?: string | null
+          impressions?: number | null
+          inline_link_clicks?: number | null
+          leads?: number | null
+          messages?: number | null
+          objective?: string | null
+          reach?: number | null
+          source?: string | null
+          spend?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+        ]
+      }
+      campaign_dims: {
+        Row: {
+          ad_account_id: string | null
+          created_at: string | null
+          created_time: string | null
+          external_id: string | null
+          id: string | null
+          name: string | null
+          objective: string | null
+          raw: Json | null
+          status: string | null
+          updated_at: string | null
+          updated_time: string | null
+        }
+        Insert: {
+          ad_account_id?: string | null
+          created_at?: string | null
+          created_time?: string | null
+          external_id?: string | null
+          id?: string | null
+          name?: string | null
+          objective?: string | null
+          raw?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          updated_time?: string | null
+        }
+        Update: {
+          ad_account_id?: string | null
+          created_at?: string | null
+          created_time?: string | null
+          external_id?: string | null
+          id?: string | null
+          name?: string | null
+          objective?: string | null
+          raw?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          updated_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_entities_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_performance_summary: {
+        Row: {
+          ad_account_id: string | null
+          best_day: string | null
+          calls: number | null
+          campaign_id: string | null
+          clicks: number | null
+          cost_per_result: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string | null
+          ctr: number | null
+          first_day: string | null
+          frequency: number | null
+          history_status: string | null
+          impressions: number | null
+          inline_link_clicks: number | null
+          last_day: string | null
+          leads: number | null
+          messages: number | null
+          reach: number | null
+          spend: number | null
+          summary_source: string | null
+          synced_at: string | null
+          updated_at: string | null
+          worst_day: string | null
+        }
+        Insert: {
+          ad_account_id?: string | null
+          best_day?: string | null
+          calls?: number | null
+          campaign_id?: string | null
+          clicks?: number | null
+          cost_per_result?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          first_day?: string | null
+          frequency?: number | null
+          history_status?: string | null
+          impressions?: number | null
+          inline_link_clicks?: number | null
+          last_day?: string | null
+          leads?: number | null
+          messages?: number | null
+          reach?: number | null
+          spend?: number | null
+          summary_source?: string | null
+          synced_at?: string | null
+          updated_at?: string | null
+          worst_day?: string | null
+        }
+        Update: {
+          ad_account_id?: string | null
+          best_day?: string | null
+          calls?: number | null
+          campaign_id?: string | null
+          clicks?: number | null
+          cost_per_result?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          first_day?: string | null
+          frequency?: number | null
+          history_status?: string | null
+          impressions?: number | null
+          inline_link_clicks?: number | null
+          last_day?: string | null
+          leads?: number | null
+          messages?: number | null
+          reach?: number | null
+          spend?: number | null
+          summary_source?: string | null
+          synced_at?: string | null
+          updated_at?: string | null
+          worst_day?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_entity_performance_summary_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+        ]
+      }
+      campaigns_performance_daily: {
+        Row: {
+          calls: number | null
+          campaign_id: string | null
+          clicks: number | null
+          created_at: string | null
+          currency_code: string | null
+          day: string | null
+          impressions: number | null
+          inline_link_clicks: number | null
+          leads: number | null
+          messages: number | null
+          objective: string | null
+          reach: number | null
+          source: string | null
+          spend: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          calls?: number | null
+          campaign_id?: string | null
+          clicks?: number | null
+          created_at?: string | null
+          currency_code?: string | null
+          day?: string | null
+          impressions?: number | null
+          inline_link_clicks?: number | null
+          leads?: number | null
+          messages?: number | null
+          objective?: string | null
+          reach?: number | null
+          source?: string | null
+          spend?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          calls?: number | null
+          campaign_id?: string | null
+          clicks?: number | null
+          created_at?: string | null
+          currency_code?: string | null
+          day?: string | null
+          impressions?: number | null
+          inline_link_clicks?: number | null
+          leads?: number | null
+          messages?: number | null
+          objective?: string | null
+          reach?: number | null
+          source?: string | null
+          spend?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_entity_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+        ]
+      }
+      meta_audience_breakdowns_daily: {
+        Row: {
+          actions_json: Json | null
+          ad_account_id: string | null
+          ad_id: string | null
+          adset_id: string | null
+          breakdown_type: string | null
+          calls: number | null
+          campaign_id: string | null
+          clicks: number | null
+          cost_per_action_type_json: Json | null
+          created_at: string | null
+          currency_code: string | null
+          day: string | null
+          dimension_1_key: string | null
+          dimension_1_value: string | null
+          dimension_2_key: string | null
+          dimension_2_value: string | null
+          entity_id: string | null
+          entity_level: string | null
+          impression_device: string | null
+          impressions: number | null
+          inline_link_clicks: number | null
+          leads: number | null
+          messages: number | null
+          objective: string | null
+          platform_position: string | null
+          publisher_platform: string | null
+          raw: Json | null
+          reach: number | null
+          source: string | null
+          spend: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+        ]
+      }
+      meta_hourly_performance: {
+        Row: {
+          actions_json: Json | null
+          ad_account_id: string | null
+          ad_id: string | null
+          adset_id: string | null
+          advertiser_time_bucket: string | null
+          calls: number | null
+          campaign_id: string | null
+          clicks: number | null
+          cost_per_action_type_json: Json | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string | null
+          ctr: number | null
+          currency_code: string | null
+          day: string | null
+          day_of_week: number | null
+          entity_id: string | null
+          entity_level: string | null
+          hour_of_day: number | null
+          impressions: number | null
+          inline_link_clicks: number | null
+          leads: number | null
+          messages: number | null
+          objective: string | null
+          raw: Json | null
+          reach: number | null
+          source: string | null
+          spend: number | null
+          time_basis: string | null
+          updated_at: string | null
+          week_start: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+        ]
+      }
       report_ad_daily_v: {
         Row: {
           ad_account_id: string | null
@@ -3174,14 +5443,14 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_accounts_platform_id_fkey"
+            foreignKeyName: "ad_entities_platform_id_fkey"
             columns: ["platform_id"]
             isOneToOne: false
             referencedRelation: "platforms"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_dims_ad_account_id_fkey"
+            foreignKeyName: "ad_entity_performance_daily_ad_account_id_fkey"
             columns: ["ad_account_id"]
             isOneToOne: false
             referencedRelation: "ad_accounts"
@@ -3238,14 +5507,14 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_accounts_platform_id_fkey"
+            foreignKeyName: "ad_entities_platform_id_fkey"
             columns: ["platform_id"]
             isOneToOne: false
             referencedRelation: "platforms"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "adset_dims_ad_account_id_fkey"
+            foreignKeyName: "ad_entity_performance_daily_ad_account_id_fkey"
             columns: ["ad_account_id"]
             isOneToOne: false
             referencedRelation: "ad_accounts"
@@ -3302,14 +5571,14 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_accounts_platform_id_fkey"
+            foreignKeyName: "ad_entities_platform_id_fkey"
             columns: ["platform_id"]
             isOneToOne: false
             referencedRelation: "platforms"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "campaign_dims_ad_account_id_fkey"
+            foreignKeyName: "ad_entity_performance_daily_ad_account_id_fkey"
             columns: ["ad_account_id"]
             isOneToOne: false
             referencedRelation: "ad_accounts"
@@ -3357,7 +5626,29 @@ export type Database = {
           status: string | null
           updated_at: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ad_accounts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entities_platform_id_fkey"
+            columns: ["platform_id"]
+            isOneToOne: false
+            referencedRelation: "platforms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_daily_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

@@ -1,41 +1,43 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
-import type { Database } from '@/lib/shared/types/supabase';
 import { chunkArray } from '../utils';
 import { derivePerformanceMetrics } from './normalizers';
 
 type SupabaseClient = Awaited<ReturnType<typeof createSupabaseClient>>;
 
-type CampaignDimRow = Pick<
-  Database['public']['Tables']['campaign_dims']['Row'],
-  'id' | 'ad_account_id' | 'external_id' | 'name' | 'objective' | 'status' | 'created_time'
->;
+type CampaignDimRow = {
+  id: string;
+  ad_account_id: string;
+  external_id: string;
+  name: string | null;
+  objective: string | null;
+  status: string | null;
+  created_time: string | null;
+};
 
-type CampaignPerformanceRow = Pick<
-  Database['public']['Tables']['campaigns_performance_daily']['Row'],
-  | 'campaign_id'
-  | 'day'
-  | 'spend'
-  | 'reach'
-  | 'impressions'
-  | 'clicks'
-  | 'inline_link_clicks'
-  | 'leads'
-  | 'messages'
->;
+type CampaignPerformanceRow = {
+  campaign_id: string;
+  day: string;
+  spend: number | null;
+  reach: number | null;
+  impressions: number | null;
+  clicks: number | null;
+  inline_link_clicks: number | null;
+  leads: number | null;
+  messages: number | null;
+};
 
-type CampaignPerformanceSummaryRow = Pick<
-  Database['public']['Tables']['campaign_performance_summary']['Row'],
-  | 'campaign_id'
-  | 'spend'
-  | 'reach'
-  | 'impressions'
-  | 'clicks'
-  | 'inline_link_clicks'
-  | 'leads'
-  | 'messages'
-  | 'first_day'
-  | 'last_day'
->;
+type CampaignPerformanceSummaryRow = {
+  campaign_id: string;
+  spend: number | null;
+  reach: number | null;
+  impressions: number | null;
+  clicks: number | null;
+  inline_link_clicks: number | null;
+  leads: number | null;
+  messages: number | null;
+  first_day: string | null;
+  last_day: string | null;
+};
 
 export interface CampaignSummary {
   adAccountId: string;

@@ -88,37 +88,44 @@ function presetRange(
     return maxRange;
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const from = new Date(today);
+  const anchor = maxRange ? parseLocalDate(maxRange.dateTo) : new Date();
+  anchor.setHours(0, 0, 0, 0);
+  const from = new Date(anchor);
 
   switch (preset) {
     case '7d':
-      from.setDate(today.getDate() - 6);
+      from.setDate(anchor.getDate() - 6);
       break;
     case '30d':
-      from.setDate(today.getDate() - 29);
+      from.setDate(anchor.getDate() - 29);
       break;
     case '90d':
-      from.setDate(today.getDate() - 89);
+      from.setDate(anchor.getDate() - 89);
       break;
     case 'mtd':
       from.setDate(1);
       break;
     case 'qtd':
-      from.setMonth(Math.floor(today.getMonth() / 3) * 3, 1);
+      from.setMonth(Math.floor(anchor.getMonth() / 3) * 3, 1);
       break;
     case 'ytd':
       from.setMonth(0, 1);
       break;
     default:
-      from.setDate(today.getDate() - 29);
+      from.setDate(anchor.getDate() - 29);
       break;
   }
 
+  const resolvedDateFrom = maxRange && toIsoDate(from) < maxRange.dateFrom
+    ? maxRange.dateFrom
+    : toIsoDate(from);
+  const resolvedDateTo = maxRange && toIsoDate(anchor) > maxRange.dateTo
+    ? maxRange.dateTo
+    : toIsoDate(anchor);
+
   return {
-    dateFrom: toIsoDate(from),
-    dateTo: toIsoDate(today),
+    dateFrom: resolvedDateFrom,
+    dateTo: resolvedDateTo,
   };
 }
 
@@ -179,6 +186,10 @@ export default function ReportsHeader({
     () => resolveActivePreset(payload.query.dateFrom, payload.query.dateTo, maxRange),
     [maxRange, payload.query.dateFrom, payload.query.dateTo]
   );
+  const isAccountLevelReport = payload.query.scope === 'ad_account';
+  const reportDateSummary = `${formatReadableDate(payload.query.dateFrom) ?? 'Unknown'} through ${
+    formatReadableDate(payload.query.dateTo) ?? 'Unknown'
+  }`;
 
   useEffect(() => {
     setDraftRange(rangeValue);
@@ -187,10 +198,6 @@ export default function ReportsHeader({
   const presets: Array<{ value: QuickRangePreset; label: string }> = [
     { value: '7d', label: '7D' },
     { value: '30d', label: '30D' },
-    { value: '90d', label: '90D' },
-    { value: 'mtd', label: 'MTD' },
-    { value: 'qtd', label: 'QTD' },
-    { value: 'ytd', label: 'YTD' },
     { value: 'max', label: 'Max' },
   ];
 
@@ -240,13 +247,21 @@ export default function ReportsHeader({
                 </Badge>
               ) : null}
               <Badge
-                color={payload.query.compareMode === 'previous_period' ? 'teal' : 'gray'}
+                color={
+                  isAccountLevelReport
+                    ? 'blue'
+                    : payload.query.compareMode === 'previous_period'
+                      ? 'teal'
+                      : 'gray'
+                }
                 variant="light"
                 size="md"
               >
-                {payload.query.compareMode === 'previous_period'
-                  ? 'Comparing previous period'
-                  : 'Single range'}
+                {isAccountLevelReport
+                  ? 'Full account history'
+                  : payload.query.compareMode === 'previous_period'
+                    ? 'Comparing previous period'
+                    : 'Single range'}
               </Badge>
             </Group>
             <Text fw={900} size="1.65rem" mt="xs" className={classes.headerTitle}>
@@ -299,100 +314,120 @@ export default function ReportsHeader({
         </Group>
 
         <div className={classes.controlBar}>
-          <div className={classes.controlField}>
-            <Text size="xs" fw={700} className={classes.controlLabel}>
-              Quick Range
-            </Text>
-            <div className={classes.presetRail}>
-              {presets.map((preset) => {
-                const isActive = activePreset === preset.value;
-                const range = presetRange(preset.value, maxRange);
-
-                return (
-                  <Button
-                    key={preset.value}
-                    radius="xl"
-                    size="xs"
-                    variant={isActive ? 'filled' : 'light'}
-                    color={isActive ? 'blue' : 'gray'}
-                    className={classes.presetButton}
-                    disabled={!range}
-                    onClick={() => {
-                      if (!range) {
-                        return;
-                      }
-
-                      setDraftRange([parseLocalDate(range.dateFrom), parseLocalDate(range.dateTo)]);
-                      onUpdate((params) => {
-                        params.set('date_from', range.dateFrom);
-                        params.set('date_to', range.dateTo);
-                      });
-                    }}
-                  >
-                    {preset.label}
-                  </Button>
-                );
-              })}
+          {isAccountLevelReport ? (
+            <div className={classes.controlField}>
+              <Text size="xs" fw={700} className={classes.controlLabel}>
+                Range
+              </Text>
+              <div className={classes.compareField}>
+                <Text size="sm" fw={700}>
+                  Full account history · {reportDateSummary}
+                </Text>
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className={classes.controlField}>
+                <Text size="xs" fw={700} className={classes.controlLabel}>
+                  Quick Range
+                </Text>
+                <div className={classes.presetRail}>
+                  {presets.map((preset) => {
+                    const isActive = activePreset === preset.value;
+                    const range = presetRange(preset.value, maxRange);
 
-          <div className={classes.controlField}>
-            <Text size="xs" fw={700} className={classes.controlLabel}>
-              Date Range
-            </Text>
-            <DatePickerInput
-              type="range"
-              value={draftRange}
-              onChange={(value) => {
-                const start = normalizePickerDate(value[0]);
-                const end = normalizePickerDate(value[1]);
+                    return (
+                      <Button
+                        key={preset.value}
+                        radius="xl"
+                        size="xs"
+                        variant={isActive ? 'filled' : 'light'}
+                        color={isActive ? 'blue' : 'gray'}
+                        className={classes.presetButton}
+                        disabled={!range}
+                        onClick={() => {
+                          if (!range) {
+                            return;
+                          }
 
-                setDraftRange([start, end]);
+                          setDraftRange([
+                            parseLocalDate(range.dateFrom),
+                            parseLocalDate(range.dateTo),
+                          ]);
+                          onUpdate((params) => {
+                            params.set('date_from', range.dateFrom);
+                            params.set('date_to', range.dateTo);
+                          });
+                        }}
+                      >
+                        {preset.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
 
-                if (!start || !end) {
-                  return;
-                }
+              <div className={classes.controlField}>
+                <Text size="xs" fw={700} className={classes.controlLabel}>
+                  Date Range
+                </Text>
+                <DatePickerInput
+                  type="range"
+                  value={draftRange}
+                  onChange={(value) => {
+                    const start = normalizePickerDate(value[0]);
+                    const end = normalizePickerDate(value[1]);
 
-                onUpdate((params) => {
-                  params.set('date_from', toIsoDate(start));
-                  params.set('date_to', toIsoDate(end));
-                });
-              }}
-              aria-label="Date range"
-              valueFormat="MMM D, YYYY"
-              radius="md"
-              size="sm"
-              placeholder="Select date range"
-              className={classes.controlInput}
-              getDayProps={(date) => {
-                const isoDate = toIsoDate(date);
-                const activeCount = activeDateCountByIso.get(isoDate) ?? 0;
+                    setDraftRange([start, end]);
 
-                if (activeCount === 0) {
-                  return {};
-                }
+                    if (!start || !end) {
+                      return;
+                    }
 
-                return {
-                  title: `${activeCount} selected ${formatActiveEntityLabel(activeCount)} serving`,
-                  style: {
-                    boxShadow: 'inset 0 0 0 1px rgba(249, 115, 22, 0.38)',
-                  },
-                };
-              }}
-              renderDay={(date) => {
-                const isoDate = toIsoDate(date);
-                const activeCount = activeDateCountByIso.get(isoDate) ?? 0;
-                const resolvedDate = normalizePickerDate(date);
+                    onUpdate((params) => {
+                      params.set('date_from', toIsoDate(start));
+                      params.set('date_to', toIsoDate(end));
+                    });
+                  }}
+                  aria-label="Date range"
+                  valueFormat="MMM D, YYYY"
+                  radius="md"
+                  size="sm"
+                  placeholder="Select date range"
+                  className={classes.controlInput}
+                  minDate={maxRange ? parseLocalDate(maxRange.dateFrom) : undefined}
+                  maxDate={maxRange ? parseLocalDate(maxRange.dateTo) : undefined}
+                  getDayProps={(date) => {
+                    const isoDate = toIsoDate(date);
+                    const activeCount = activeDateCountByIso.get(isoDate) ?? 0;
 
-                return (
-                  <div className={classes.reportCalendarDay}>
-                    <span>{resolvedDate?.getDate() ?? ''}</span>
-                    {activeCount > 0 ? <span className={classes.reportCalendarDayDot} /> : null}
-                  </div>
-                );
-              }}
-            />
-          </div>
+                    if (activeCount === 0) {
+                      return {};
+                    }
+
+                    return {
+                      title: `${activeCount} selected ${formatActiveEntityLabel(activeCount)} serving`,
+                      style: {
+                        boxShadow: 'inset 0 0 0 1px rgba(249, 115, 22, 0.38)',
+                      },
+                    };
+                  }}
+                  renderDay={(date) => {
+                    const isoDate = toIsoDate(date);
+                    const activeCount = activeDateCountByIso.get(isoDate) ?? 0;
+                    const resolvedDate = normalizePickerDate(date);
+
+                    return (
+                      <div className={classes.reportCalendarDay}>
+                        <span>{resolvedDate?.getDate() ?? ''}</span>
+                        {activeCount > 0 ? <span className={classes.reportCalendarDayDot} /> : null}
+                      </div>
+                    );
+                  }}
+                />
+              </div>
+            </>
+          )}
 
           <div className={classes.controlField}>
             <Text size="xs" fw={700} className={classes.controlLabel}>
@@ -418,30 +453,33 @@ export default function ReportsHeader({
               radius="md"
               size="sm"
               className={classes.groupBySelect}
+              disabled={isAccountLevelReport}
             />
           </div>
 
-          <div className={classes.controlField}>
-            <Text size="xs" fw={700} className={classes.controlLabel}>
-              Compare
-            </Text>
-            <div className={classes.compareField}>
-              <Switch
-                label="Previous period"
-                checked={payload.query.compareMode === 'previous_period'}
-                onChange={(event) => {
-                  onUpdate((params) => {
-                    params.set(
-                      'compare',
-                      event.currentTarget.checked ? 'previous_period' : 'none'
-                    );
-                  });
-                }}
-                color="blue"
-                size="md"
-              />
+          {isAccountLevelReport ? null : (
+            <div className={classes.controlField}>
+              <Text size="xs" fw={700} className={classes.controlLabel}>
+                Compare
+              </Text>
+              <div className={classes.compareField}>
+                <Switch
+                  label="Previous period"
+                  checked={payload.query.compareMode === 'previous_period'}
+                  onChange={(event) => {
+                    onUpdate((params) => {
+                      params.set(
+                        'compare',
+                        event.currentTarget.checked ? 'previous_period' : 'none'
+                      );
+                    });
+                  }}
+                  color="blue"
+                  size="md"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {payload.activeDates ? (
             <Group gap="xs" wrap="wrap" className={classes.activeDatesHint}>

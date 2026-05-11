@@ -2,10 +2,10 @@ import { createSupabaseClient } from '@/lib/server/supabase/server';
 import type { AdAccountData } from '../types';
 import { toSupportedVendor } from '../platforms/normalizers';
 import {
-  parseAggregatedMetrics,
-  parseDailyMetricsRowsFromTimeIncrementMetrics,
-  parseTimeIncrementMetrics,
+  aggregateDailyMetricsRows,
+  buildTimeIncrementMetricsFromDailyRows,
 } from './normalizers';
+import { listAdAccountDailyMetricsRowsByAccount } from './getAdAccountPerformance';
 
 /**
  * @deprecated Prefer importing `getAdAccountData` from
@@ -58,7 +58,7 @@ export async function getAdAccountData(
   const { data: adAccount, error: adAccountError } = await supabase
     .from('ad_accounts')
     .select(
-      'id, business_id, platform_id, external_account_id, name, status, aggregated_metrics, time_increment_metrics, last_synced, created_at, updated_at, currency_code, timezone'
+      'id, business_id, platform_id, external_account_id, name, status, last_synced, created_at, updated_at, currency_code, timezone'
     )
     .eq('id', selectedAdAccountId)
     .eq('business_id', businessId)
@@ -75,14 +75,13 @@ export async function getAdAccountData(
   }
 
   const platformVendor = toSupportedVendor(platform?.key);
-  const aggregatedMetrics = parseAggregatedMetrics(adAccount.aggregated_metrics);
-  const timeIncrementMetrics = parseTimeIncrementMetrics(adAccount.time_increment_metrics);
-  const dailyMetrics = parseDailyMetricsRowsFromTimeIncrementMetrics(
-    adAccount.time_increment_metrics,
-    {
-      currencyCode: adAccount.currency_code,
-    }
-  );
+  const dailyMetrics =
+    (await listAdAccountDailyMetricsRowsByAccount({
+      adAccountIds: [adAccount.id],
+      supabase,
+    })).get(adAccount.id) ?? [];
+  const aggregatedMetrics = aggregateDailyMetricsRows(dailyMetrics);
+  const timeIncrementMetrics = buildTimeIncrementMetricsFromDailyRows(dailyMetrics);
 
   return {
     id: adAccount.id,

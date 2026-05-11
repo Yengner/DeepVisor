@@ -4,13 +4,13 @@ import { asRecord, asString, uniqueStrings } from '@/lib/shared';
 import type { Database, Json } from '@/lib/shared/types/supabase';
 import { upsertCreativeFeatureSnapshots } from '@/lib/server/repositories/ai/upsertCreativeFeatureSnapshots';
 import { upsertAdCreatives } from '@/lib/server/repositories/ad_creatives/upsertAdCreatives';
+import type { AdDimRow } from '@/lib/server/repositories/ads/upsertAdDims';
+import type { AdsetDimRow } from '@/lib/server/repositories/adsets/upsertAdsetDims';
+import type { CampaignDimRow } from '@/lib/server/repositories/campaigns/upsertCampaignDims';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
 import { fetchMetaAdCreativeSeeds } from './fetch';
 
 type AdAccountRow = Database['public']['Tables']['ad_accounts']['Row'];
-type CampaignDimRow = Database['public']['Tables']['campaign_dims']['Row'];
-type AdsetDimRow = Database['public']['Tables']['adset_dims']['Row'];
-type AdDimRow = Database['public']['Tables']['ad_dims']['Row'];
 type AdCreativeRow = Database['public']['Tables']['ad_creatives']['Row'];
 
 type CreativeAssociation = {

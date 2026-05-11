@@ -8,7 +8,9 @@ export {
 export { resolveDashboardState } from './state';
 export type {
   DashboardCampaignSnapshotItem,
+  DashboardContinuationSignal,
   DashboardCampaignDimension,
+  DashboardEntitySchedule,
   DashboardAdsetDimension,
   DashboardAdDimension,
   DashboardAudienceMetricRow,
@@ -25,6 +27,9 @@ export type {
   DashboardTrendPoint,
   DashboardLiveWindow,
   DashboardPayload,
+  DashboardSurfaceNotification,
+  DashboardSurfaceNotificationType,
+  DashboardBasePayload,
   DashboardState,
   DashboardViewContext,
 } from './types';

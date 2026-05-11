@@ -1,6 +1,8 @@
 import { cache } from 'react';
+import { redirect, unstable_rethrow } from 'next/navigation';
 import { getLoggedInUserOrRedirect } from '@/lib/server/actions/user/account';
-import { requireBusinessContextOrRedirect } from '@/lib/server/actions/business/context';
+import { getCachedOrganizationBusinessContext } from '@/lib/server/actions/business/context';
+import { createServerTimer } from '@/lib/server/timing';
 import type { Database } from '@/lib/shared/types/supabase';
 
 type OrganizationType = Database['public']['Enums']['organization_type'];
@@ -26,14 +28,34 @@ type RequiredAppContext = {
  */
 export const getRequiredAppContext = cache(
   async (requireOnboardingCompleted: boolean = true): Promise<RequiredAppContext> => {
-    const user = await getLoggedInUserOrRedirect();
-    const businessContext = await requireBusinessContextOrRedirect(user.id, {
-      requireOnboardingCompleted,
-    });
+    const timer = createServerTimer('context', { enabledEnvVar: 'CONTEXT_TIMING' });
+    try {
+      const user = await timer.measure('get logged in user', () => getLoggedInUserOrRedirect());
+      const businessContext = await timer.measure('cached organization business context', () =>
+        getCachedOrganizationBusinessContext(user.id)
+      );
 
-    return {
-      user,
-      ...businessContext,
-    };
+      if (requireOnboardingCompleted && !businessContext.onboarding.onboarding_completed) {
+        redirect('/onboarding');
+      }
+
+      const context = {
+        user,
+        ...businessContext,
+      };
+
+      timer.finish('required app context total');
+      return context;
+    } catch (error) {
+      unstable_rethrow(error);
+      console.error('Failed to resolve required app context:', error);
+      if (
+        error instanceof Error &&
+        error.message.includes('Partner organizations do not get an automatic business profile')
+      ) {
+        redirect('/onboarding');
+      }
+      redirect('/login');
+    }
   }
 );

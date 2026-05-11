@@ -1,8 +1,10 @@
 'use client';
 
 import '@mantine/charts/styles.css';
+import '@mantine/dates/styles.css';
 
 import { BarChart, ChartTooltip, LineChart } from '@mantine/charts';
+import { DatePicker } from '@mantine/dates';
 import {
   Alert,
   Badge,
@@ -12,11 +14,14 @@ import {
   Grid,
   Group,
   Indicator,
+  Modal,
+  NumberInput,
   Paper,
   Popover,
   ScrollArea,
   SegmentedControl,
   SimpleGrid,
+  Skeleton,
   Stack,
   Table,
   Text,
@@ -39,12 +44,21 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ReferenceDot } from 'recharts';
 import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import { CHART_METRIC_COLORS, formatChartDateLabel, formatRetryDelay } from '@/lib/shared';
+import {
+  buildReportUrl,
+  CHART_METRIC_COLORS,
+  formatChartDateLabel,
+  formatRetryDelay,
+} from '@/lib/shared';
 import type {
   DashboardLiveAdItem,
   DashboardLiveAdsetItem,
   DashboardLiveCampaignContainer,
+  DashboardBasePayload,
+  DashboardContinuationSignal,
+  DashboardEntitySchedule,
   DashboardPayload,
+  DashboardSurfaceNotification,
   DashboardAudienceSlice,
   DashboardPlatformSlice,
   DashboardState,
@@ -54,6 +68,19 @@ import classes from './DashboardClient.module.css';
 
 type DashboardClientProps = {
   payload: DashboardPayload;
+  variant?: 'full' | 'analytics';
+  sections?: {
+    featuredHistory?: boolean;
+    summaryCards?: boolean;
+    liveDeliveryTables?: boolean;
+    noLiveDeliveryAlert?: boolean;
+  };
+};
+
+type DashboardShellClientProps = {
+  basePayload: DashboardBasePayload;
+  children: ReactNode;
+  below?: ReactNode;
 };
 
 type TrendMode = 'delivery' | 'efficiency' | 'combined';
@@ -111,7 +138,7 @@ type MultiSeriesBarChartConfig = {
 };
 
 type TrendChartConfig = {
-  data: Record<string, string | number>[];
+  data: Record<string, string | number | null>[];
   series: {
     name: string;
     color: string;
@@ -492,6 +519,197 @@ function formatDateSpan(start: string | null, end: string | null): string | null
   }
 
   return startLabel ?? endLabel ?? null;
+}
+
+function addDaysToIsoDate(value: string, days: number): string | null {
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function daysBetweenIsoDates(fromDate: string, toDate: string): number {
+  const from = new Date(`${fromDate}T00:00:00Z`);
+  const to = new Date(`${toDate}T00:00:00Z`);
+
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+    return 0;
+  }
+
+  return Math.round((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000));
+}
+
+function getDateDayNumber(value: string): number {
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) ? 0 : date.getUTCDate();
+}
+
+function clampExtensionDays(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 14;
+  }
+
+  return Math.min(365, Math.max(1, Math.round(value)));
+}
+
+function getTrendPointDateKey(point: DashboardTrendPoint): string | null {
+  return point.dayKey ?? point.label.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? null;
+}
+
+function hasActiveDeliveryPoint(point: DashboardTrendPoint): boolean {
+  return (
+    point.spend > 0 ||
+    point.impressions > 0 ||
+    point.clicks > 0 ||
+    point.inlineLinkClicks > 0 ||
+    point.results > 0
+  );
+}
+
+function toUtcIsoDate(value: Date): string {
+  return value.toISOString().slice(0, 10);
+}
+
+function todayUtcIsoDate(): string {
+  return toUtcIsoDate(new Date());
+}
+
+function normalizeReportDate(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const isoDate = trimmed.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? null;
+
+  if (isoDate) {
+    return isoDate;
+  }
+
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? null : toUtcIsoDate(parsed);
+}
+
+function resolveReportDateRange(schedules: Array<DashboardEntitySchedule | null | undefined>): {
+  dateFrom: string | null;
+  dateTo: string;
+} {
+  const dateFrom =
+    schedules
+      .map((schedule) => normalizeReportDate(schedule?.startsAt))
+      .find((value): value is string => Boolean(value)) ?? null;
+  const endDate =
+    schedules
+      .map((schedule) => schedule?.endDate ?? normalizeReportDate(schedule?.endsAt))
+      .find((value): value is string => Boolean(value)) ?? null;
+  const today = todayUtcIsoDate();
+
+  return {
+    dateFrom,
+    dateTo: endDate && endDate <= today ? endDate : today,
+  };
+}
+
+function buildDashboardEntityReportHref(input: {
+  scope: 'campaign' | 'adset' | 'ad';
+  platformIntegrationId: string | null;
+  adAccountId: string | null;
+  campaignId?: string | null;
+  adsetId?: string | null;
+  adId?: string | null;
+  schedules: Array<DashboardEntitySchedule | null | undefined>;
+}): string {
+  const range = resolveReportDateRange(input.schedules);
+
+  return buildReportUrl({
+    scope: input.scope,
+    platformIntegrationId: input.platformIntegrationId,
+    adAccountIds: input.adAccountId ? [input.adAccountId] : [],
+    campaignIds: input.campaignId ? [input.campaignId] : [],
+    adsetIds: input.adsetId ? [input.adsetId] : [],
+    adIds: input.adId ? [input.adId] : [],
+    dateFrom: range.dateFrom,
+    dateTo: range.dateTo,
+    compareMode: 'none',
+  });
+}
+
+function buildDashboardAccountReportHref(payload: DashboardBasePayload | DashboardPayload): string {
+  const today = todayUtcIsoDate();
+  const dateTo = payload.syncCoverage?.coverageStartDate ?? today;
+  const adAccountId = payload.adAccount?.id ?? payload.selection.selectedAdAccountId;
+  const platformIntegrationId =
+    payload.platform?.id ?? payload.selection.selectedPlatformIntegrationId;
+
+  return buildReportUrl({
+    scope: adAccountId ? 'ad_account' : platformIntegrationId ? 'platform' : 'business',
+    platformIntegrationId,
+    adAccountIds: adAccountId ? [adAccountId] : [],
+    dateFrom: payload.syncCoverage?.coverageStartDate ?? null,
+    dateTo: dateTo <= today ? dateTo : today,
+    compareMode: 'none',
+  });
+}
+
+function formatContinuationEntityLevel(level: DashboardContinuationSignal['entityLevel']): string {
+  switch (level) {
+    case 'campaign':
+      return 'Campaign';
+    case 'adset':
+      return 'Ad set';
+    case 'ad':
+      return 'Ad';
+    default:
+      return 'Campaign';
+  }
+}
+
+function formatContinuationDays(daysUntilEnd: number): string {
+  if (daysUntilEnd < 0) {
+    return 'ended';
+  }
+
+  if (daysUntilEnd === 0) {
+    return 'ends today';
+  }
+
+  if (daysUntilEnd === 1) {
+    return 'ends tomorrow';
+  }
+
+  return `ends in ${daysUntilEnd} days`;
+}
+
+function formatContinuationBudgetType(
+  budgetType: DashboardContinuationSignal['budgetType']
+): string {
+  switch (budgetType) {
+    case 'daily':
+      return 'Daily budget';
+    case 'lifetime':
+      return 'Lifetime budget';
+    default:
+      return 'Budget';
+  }
+}
+
+function formatContinuationBudget(
+  signal: DashboardContinuationSignal,
+  currencyCode: string | null
+): string | null {
+  if (signal.budgetAmount == null) {
+    return null;
+  }
+
+  return `${formatContinuationBudgetType(signal.budgetType)} ${formatCurrency(
+    signal.budgetAmount,
+    currencyCode,
+    2
+  )}`;
 }
 
 function formatShortNumericDate(value: string | null | undefined): string | null {
@@ -1039,13 +1257,23 @@ function selectPrimaryTrendSignal(signals: TrendSignal[]): TrendSignal | null {
 
 function renderTrendTooltip(input: {
   label: string | undefined;
-  payload: Array<{ name?: string; value?: number | string; color?: string }> | undefined;
+  payload: Array<{ name?: string; value?: number | string | null; color?: string }> | undefined;
   series: TrendChartConfig['series'];
   formatter: (value: number) => string;
   signal: TrendSignal | null;
   indicators: TrendPointIndicator[];
+  continuationSignal: DashboardContinuationSignal | null;
+  continuationLabel: string | null;
+  currencyCode: string | null;
 }) {
-  if (!input.label || !input.payload || input.payload.length === 0) {
+  if (!input.label) {
+    return null;
+  }
+
+  const showContinuationTooltip =
+    Boolean(input.continuationSignal) && input.label === input.continuationLabel;
+
+  if ((!input.payload || input.payload.length === 0) && !showContinuationTooltip) {
     return null;
   }
 
@@ -1058,38 +1286,40 @@ function renderTrendTooltip(input: {
           {input.label}
         </Text>
 
-        <Stack gap={6}>
-          {input.payload.map((item) => {
-            const color = item.color || colorBySeriesName.get(item.name ?? '') || 'gray.6';
-            const value =
-              typeof item.value === 'number'
-                ? input.formatter(item.value)
-                : String(item.value ?? '—');
+        {input.payload && input.payload.length > 0 ? (
+          <Stack gap={6}>
+            {input.payload.map((item) => {
+              const color = item.color || colorBySeriesName.get(item.name ?? '') || 'gray.6';
+              const value =
+                typeof item.value === 'number'
+                  ? input.formatter(item.value)
+                  : String(item.value ?? '—');
 
-            return (
-              <Group key={`${item.name ?? 'value'}:${value}`} justify="space-between" gap="md" wrap="nowrap">
-                <Group gap="xs" wrap="nowrap">
-                  <div
-                    aria-hidden="true"
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: 999,
-                      backgroundColor: color,
-                      flexShrink: 0,
-                    }}
-                  />
-                  <Text size="sm" fw={600}>
-                    {item.name ?? 'Value'}
+              return (
+                <Group key={`${item.name ?? 'value'}:${value}`} justify="space-between" gap="md" wrap="nowrap">
+                  <Group gap="xs" wrap="nowrap">
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 999,
+                        backgroundColor: color,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <Text size="sm" fw={600}>
+                      {item.name ?? 'Value'}
+                    </Text>
+                  </Group>
+                  <Text size="sm" fw={700}>
+                    {value}
                   </Text>
                 </Group>
-                <Text size="sm" fw={700}>
-                  {value}
-                </Text>
-              </Group>
-            );
-          })}
-        </Stack>
+              );
+            })}
+          </Stack>
+        ) : null}
 
         {input.signal ? (
           <Paper withBorder radius="md" p="xs" className={classes.historyTooltipSignal}>
@@ -1107,6 +1337,30 @@ function renderTrendTooltip(input: {
             <Text size="xs" mt={4} fw={700} className={classes.historyTooltipCopy}>
               Gap {formatDecimal(input.signal.gap)} idx
             </Text>
+          </Paper>
+        ) : null}
+
+        {showContinuationTooltip && input.continuationSignal ? (
+          <Paper withBorder radius="md" p="xs" className={classes.historyTooltipSignal}>
+            <Stack gap={4}>
+              <Badge color="orange" variant="filled" size="xs">
+                {formatContinuationEntityLevel(input.continuationSignal.entityLevel)} ends
+              </Badge>
+              <Text size="xs" fw={800} className={classes.historyTooltipCopy}>
+                {formatReadableDate(input.continuationSignal.endDate) ??
+                  input.continuationSignal.endDate}
+              </Text>
+              <Text size="xs" className={classes.historyTooltipCopy}>
+                {formatContinuationDays(input.continuationSignal.daysUntilEnd)}.
+                {' '}
+                Review whether to extend the schedule and budget before this delivery window closes.
+              </Text>
+              {formatContinuationBudget(input.continuationSignal, input.currencyCode) ? (
+                <Text size="xs" fw={700} className={classes.historyTooltipCopy}>
+                  {formatContinuationBudget(input.continuationSignal, input.currencyCode)}
+                </Text>
+              ) : null}
+            </Stack>
           </Paper>
         ) : null}
 
@@ -1339,9 +1593,11 @@ function TableStatusBadge({ status }: { status: string | null | undefined }) {
 function CampaignLiveRow({
   campaign,
   currencyCode,
+  reportHref,
 }: {
   campaign: DashboardLiveCampaignContainer;
   currencyCode: string | null;
+  reportHref: string;
 }) {
   return (
     <Paper withBorder radius="xl" p="md" className={classes.liveRow}>
@@ -1370,6 +1626,16 @@ function CampaignLiveRow({
           <ComparisonMetric label="Live ad sets" value={formatNumber(campaign.adsetCount)} />
           <ComparisonMetric label="Live ads" value={formatNumber(campaign.adCount)} />
         </div>
+        <Button
+          component={Link}
+          href={reportHref}
+          size="xs"
+          radius="xl"
+          variant="light"
+          leftSection={<IconChartBar size={14} />}
+        >
+          View report
+        </Button>
       </Group>
     </Paper>
   );
@@ -1378,9 +1644,11 @@ function CampaignLiveRow({
 function AdsetComparisonRow({
   item,
   currencyCode,
+  reportHref,
 }: {
   item: DashboardLiveAdsetItem;
   currencyCode: string | null;
+  reportHref: string;
 }) {
   return (
     <Paper withBorder radius="xl" p="md" className={classes.liveRow}>
@@ -1420,6 +1688,16 @@ function AdsetComparisonRow({
           />
           <ComparisonMetric label="Live ads" value={formatNumber(item.adCount)} />
         </div>
+        <Button
+          component={Link}
+          href={reportHref}
+          size="xs"
+          radius="xl"
+          variant="light"
+          leftSection={<IconChartBar size={14} />}
+        >
+          View report
+        </Button>
       </Group>
     </Paper>
   );
@@ -1428,9 +1706,11 @@ function AdsetComparisonRow({
 function AdComparisonRow({
   item,
   currencyCode,
+  reportHref,
 }: {
   item: DashboardLiveAdItem;
   currencyCode: string | null;
+  reportHref: string;
 }) {
   return (
     <Paper withBorder radius="xl" p="md" className={classes.liveRow}>
@@ -1464,6 +1744,16 @@ function AdComparisonRow({
             value={item.results > 0 ? formatCurrency(item.costPerResult, currencyCode, 2) : '—'}
           />
         </div>
+        <Button
+          component={Link}
+          href={reportHref}
+          size="xs"
+          radius="xl"
+          variant="light"
+          leftSection={<IconChartBar size={14} />}
+        >
+          View report
+        </Button>
       </Group>
     </Paper>
   );
@@ -2025,7 +2315,237 @@ function buildTrendChartConfig(input: {
   };
 }
 
-export default function DashboardClient({ payload }: DashboardClientProps) {
+export function DashboardShellClient({ basePayload, children, below }: DashboardShellClientProps) {
+  const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshFeedback, setRefreshFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+  const stateMeta = stateContent(basePayload.state);
+  const reportsHref = buildDashboardAccountReportHref(basePayload);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    setRefreshFeedback(null);
+
+    try {
+      const response = await fetch('/api/sync/refresh', { method: 'POST' });
+      const result = (await response.json()) as {
+        success?: boolean;
+        refreshedCount?: number;
+        failedCount?: number;
+        message?: string;
+        retryAfterMs?: number;
+      };
+
+      if (!response.ok || !result.success) {
+        if (response.status === 429) {
+          throw new Error(result.message || formatRetryDelay(result.retryAfterMs));
+        }
+
+        throw new Error(result.message || 'Refresh failed');
+      }
+
+      router.refresh();
+      setRefreshFeedback({
+        type: 'success',
+        message: `Sync completed: ${result.refreshedCount ?? 0} updated, ${result.failedCount ?? 0} failed.`,
+      });
+    } catch (error) {
+      setRefreshFeedback({
+        type: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Sync failed. Check the integration status and try again.',
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  return (
+    <Container fluid px={6} py={0} className={`${classes.page} dashboard-page-shell`}>
+      <Stack gap="md" className={classes.shell}>
+        {refreshFeedback ? (
+          <Alert
+            color={refreshFeedback.type === 'success' ? 'green' : 'red'}
+            icon={<IconRefresh size={16} />}
+            radius="lg"
+            withCloseButton
+            closeButtonLabel="Dismiss sync notification"
+            onClose={() => setRefreshFeedback(null)}
+          >
+            {refreshFeedback.message}
+          </Alert>
+        ) : null}
+
+        {basePayload.syncCoverage?.historicalAnalysisPending ? (
+          <Alert
+            color={basePayload.syncCoverage.activeJobStatus === 'failed' ? 'red' : 'blue'}
+            radius="lg"
+            icon={<IconClock size={16} />}
+            title={
+              basePayload.syncCoverage.activeJobStatus === 'failed'
+                ? 'History sync needs attention'
+                : 'Recent data is ready while full history continues'
+            }
+          >
+            <Text size="sm">
+              {basePayload.syncCoverage.coverageStartDate && basePayload.syncCoverage.coverageEndDate
+                ? `Dashboard readings are using synced data from ${basePayload.syncCoverage.coverageStartDate} through ${basePayload.syncCoverage.coverageEndDate}.`
+                : 'DeepVisor is still filling the first historical sync for this account.'}
+            </Text>
+          </Alert>
+        ) : null}
+
+        {basePayload.state !== 'ready' ? (
+          <Alert
+            color={stateMeta.color}
+            radius="lg"
+            icon={<IconAlertCircle size={16} />}
+            title={stateMeta.title}
+          >
+            <Text size="sm">{stateMeta.description}</Text>
+            {basePayload.viewContext.platformError ? (
+              <Text size="sm" mt="sm">
+                {basePayload.viewContext.platformError}
+              </Text>
+            ) : null}
+            <Group gap="sm" mt="md">
+              <Button component={Link} href="/integration" size="xs" radius="xl" variant="light">
+                Manage integrations
+              </Button>
+              {basePayload.viewContext.canRefresh ? (
+                <Button
+                  size="xs"
+                  radius="xl"
+                  variant="subtle"
+                  onClick={handleRefresh}
+                  loading={refreshing}
+                >
+                  Refresh again
+                </Button>
+              ) : null}
+            </Group>
+          </Alert>
+        ) : null}
+
+        <Card withBorder radius="xl" p="lg" className={classes.topBar}>
+          <Stack gap="lg">
+            <Group
+              justify="space-between"
+              align="flex-start"
+              gap="md"
+              wrap="wrap"
+              className={classes.surfaceToolbar}
+            >
+              <div>
+                <Group gap="xs" wrap="wrap">
+                  <Badge variant="light" className="app-platform-page-badge">
+                    Dashboard
+                  </Badge>
+                  <Badge color={statusColor(basePayload.viewContext.platformStatus)} variant="light">
+                    {basePayload.viewContext.platformName ?? 'No platform selected'}
+                  </Badge>
+                  <Badge color={statusColor(basePayload.viewContext.adAccountStatus)} variant="outline">
+                    {basePayload.viewContext.adAccountName ?? 'No ad account selected'}
+                  </Badge>
+                </Group>
+                <Text fw={900} size="1.65rem" mt="sm" className={classes.title}>
+                  {basePayload.viewContext.adAccountName ?? 'Selected ad account'}
+                </Text>
+              </div>
+
+              <Group gap="sm" wrap="wrap" className={classes.topBarActions}>
+                <Button
+                  onClick={handleRefresh}
+                  leftSection={<IconRefresh size={16} />}
+                  loading={refreshing}
+                  disabled={!basePayload.viewContext.canRefresh}
+                  radius="xl"
+                  className="app-platform-page-action-primary"
+                >
+                  Refresh
+                </Button>
+                <Button
+                  component={Link}
+                  href={reportsHref}
+                  radius="xl"
+                  variant="default"
+                  className="app-platform-page-action-secondary"
+                >
+                  Reports
+                </Button>
+              </Group>
+            </Group>
+
+          </Stack>
+        </Card>
+        {children}
+        {below}
+      </Stack>
+    </Container>
+  );
+}
+
+export function FeaturedAdsetSkeleton() {
+  return (
+    <Grid gutter="md" align="stretch">
+      <Grid.Col span={{ base: 12, xl: 8 }}>
+        <Paper withBorder radius="xl" p="md" className={classes.chartPanel}>
+          <Stack gap="md">
+            <Skeleton height={26} width="40%" radius="md" />
+            <Skeleton height={330} radius="lg" />
+          </Stack>
+        </Paper>
+      </Grid.Col>
+      <Grid.Col span={{ base: 12, xl: 4 }}>
+        <Paper withBorder radius="xl" p="md" className={classes.chartPanel}>
+          <Stack gap="md">
+            <Skeleton height={26} width="55%" radius="md" />
+            <Skeleton height={220} radius="lg" />
+            <Skeleton height={160} radius="lg" />
+          </Stack>
+        </Paper>
+      </Grid.Col>
+    </Grid>
+  );
+}
+
+export function SummaryCardsSkeleton() {
+  return (
+    <SimpleGrid cols={{ base: 2, sm: 2, lg: 3, xl: 6 }} spacing="md">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <Paper key={index} withBorder radius="xl" p="md" className={classes.metricCard}>
+          <Stack gap="sm">
+            <Skeleton height={14} width="65%" radius="md" />
+            <Skeleton height={30} width="50%" radius="md" />
+          </Stack>
+        </Paper>
+      ))}
+    </SimpleGrid>
+  );
+}
+
+export function LiveDeliveryTablesSkeleton() {
+  return (
+    <Card withBorder radius="xl" p="lg" className={classes.panel}>
+      <Stack gap="md">
+        <Skeleton height={24} width="32%" radius="md" />
+        <Skeleton height={180} radius="lg" />
+        <Skeleton height={220} radius="lg" />
+      </Stack>
+    </Card>
+  );
+}
+
+export default function DashboardClient({
+  payload,
+  variant = 'full',
+  sections,
+}: DashboardClientProps) {
   const isPhone = useMediaQuery('(max-width: 48em)');
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
@@ -2035,14 +2555,51 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
   const [deliveryWindowMode, setDeliveryWindowMode] = useState<DeliveryWindowMode>('today');
   const [surfacePanelMode, setSurfacePanelMode] = useState<SurfacePanelMode>('platform');
   const [activeFindingsPopoverOpen, setActiveFindingsPopoverOpen] = useState(false);
+  const [extensionModalOpen, setExtensionModalOpen] = useState(false);
+  const [extensionDays, setExtensionDays] = useState(14);
+  const [localNoLiveDeliveryAlertVisible, setLocalNoLiveDeliveryAlertVisible] = useState(true);
+  const [localContinuationAlertVisible, setLocalContinuationAlertVisible] = useState(true);
+  const [dismissedDashboardNotificationIds, setDismissedDashboardNotificationIds] = useState<
+    Set<string>
+  >(
+    () =>
+      new Set(
+        payload.dashboardNotifications
+          .filter((notification) => notification.read)
+          .map((notification) => notification.id)
+      )
+  );
   const [refreshFeedback, setRefreshFeedback] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
   const expandedHourlyViewportRef = useRef<HTMLDivElement>(null);
   const activeFindingsCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const renderFullShell = variant === 'full';
+  const showFeaturedHistory = sections?.featuredHistory ?? true;
+  const showSummaryCards = sections?.summaryCards ?? true;
+  const showLiveDeliveryTables = sections?.liveDeliveryTables ?? true;
+  const showNoLiveDeliveryAlert = sections?.noLiveDeliveryAlert ?? renderFullShell;
+  const shouldRenderDashboardCard = renderFullShell || showFeaturedHistory || showSummaryCards;
+  const noLiveDeliveryNotification = payload.dashboardNotifications.find(
+    (notification) => notification.type === 'no_live_delivery'
+  );
+  const continuationNotification = payload.dashboardNotifications.find(
+    (notification) => notification.type === 'campaign_ending'
+  );
+  const noLiveDeliveryAlertVisible = noLiveDeliveryNotification
+    ? !dismissedDashboardNotificationIds.has(noLiveDeliveryNotification.id)
+    : localNoLiveDeliveryAlertVisible;
+  const continuationAlertVisible = continuationNotification
+    ? !dismissedDashboardNotificationIds.has(continuationNotification.id)
+    : localContinuationAlertVisible;
+  const selectedPlatformIntegrationId =
+    payload.platform?.id ?? payload.selection.selectedPlatformIntegrationId;
+  const selectedAdAccountId = payload.adAccount?.id ?? payload.selection.selectedAdAccountId;
+  const reportsHref = buildDashboardAccountReportHref(payload);
 
   const stateMeta = stateContent(payload.state);
+  const isMeta = payload.platform?.vendor === 'meta';
   const todayLiveWindow = payload.liveToday;
   const lifetimeLiveWindow = payload.liveLifetime;
   const activeDeliveryWindowMode =
@@ -2052,6 +2609,19 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
       : 'today';
   const liveWindow = activeDeliveryWindowMode === 'lifetime' ? lifetimeLiveWindow : todayLiveWindow;
   const liveSummary = liveWindow.summary;
+  const isLifetimeDeliveryWindow = activeDeliveryWindowMode === 'lifetime';
+  const summaryCampaignLabel = isLifetimeDeliveryWindow ? 'Campaigns' : 'Live campaigns';
+  const summaryAdsetLabel = isLifetimeDeliveryWindow ? 'Ad sets' : 'Live ad sets';
+  const summaryAdLabel = isLifetimeDeliveryWindow ? 'Ads' : 'Live ads';
+  const summaryPlatformLabel = isLifetimeDeliveryWindow ? 'Platforms' : 'Serving platforms';
+  const summaryPlatformValue =
+    liveSummary.servingPlatformLabels.length > 0
+      ? <ServingPlatformLogos labels={liveSummary.servingPlatformLabels} />
+      : isLifetimeDeliveryWindow && payload.viewContext.platformName
+        ? payload.viewContext.platformName
+        : isMeta
+          ? 'Syncing'
+          : 'Unavailable';
   const liveComparisons = liveWindow.comparisons;
   const activeFindings = payload.activeFindings;
   const featuredPlatformBreakdowns = payload.featuredAdsetHistory.platformBreakdowns;
@@ -2066,8 +2636,8 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
       : hourlyTrendPoints;
   const trendPoints = historyGranularity === 'hourly' ? selectedHourlyTrendPoints : dailyTrendPoints;
   const featuredAdset = payload.featuredAdsetHistory.adset;
+  const continuationSignal = payload.featuredAdsetHistory.continuationSignal;
   const primaryActiveFinding = activeFindings[0] ?? null;
-  const isMeta = payload.platform?.vendor === 'meta';
   const dailyHistoryRangeLabel = formatDateSpan(
     payload.featuredAdsetHistory.dailyHistoryStartDate,
     payload.featuredAdsetHistory.dailyHistoryEndDate
@@ -2095,23 +2665,72 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
       }),
     [trendMode, historyGranularity, trendPoints, payload.viewContext.currencyCode]
   );
+  const continuationEndLabel =
+    continuationSignal && historyGranularity === 'day'
+      ? formatChartDateLabel(continuationSignal.endDate)
+      : null;
+  const trendChartData = useMemo(() => {
+    if (!continuationSignal || historyGranularity !== 'day' || !continuationEndLabel) {
+      return trendChart.data;
+    }
+
+    if (trendChart.data.some((point) => point.label === continuationEndLabel)) {
+      return trendChart.data;
+    }
+
+    const insertIndex = dailyTrendPoints.findIndex(
+      (point) => point.label > continuationSignal.endDate
+    );
+    const markerPoint: Record<string, string | number | null> = { label: continuationEndLabel };
+
+    if (insertIndex < 0) {
+      return [...trendChart.data, markerPoint];
+    }
+
+    return [
+      ...trendChart.data.slice(0, insertIndex),
+      markerPoint,
+      ...trendChart.data.slice(insertIndex),
+    ];
+  }, [
+    continuationEndLabel,
+    continuationSignal,
+    dailyTrendPoints,
+    historyGranularity,
+    trendChart.data,
+  ]);
+  const activeDeliveryDateKeys = useMemo(() => {
+    const keys = new Set<string>();
+
+    for (const point of dailyTrendPoints) {
+      const dateKey = getTrendPointDateKey(point);
+
+      if (dateKey && hasActiveDeliveryPoint(point)) {
+        keys.add(dateKey);
+      }
+    }
+
+    return keys;
+  }, [dailyTrendPoints]);
+  const extensionPreviewEndDate =
+    continuationSignal ? addDaysToIsoDate(continuationSignal.endDate, extensionDays) : null;
   const expandedHourlyTickValues = useMemo(
     () =>
       historyGranularity === 'hourly' && hourlyRangeMode === 'expanded'
-        ? trendChart.data
+        ? trendChartData
             .map((point) => String(point.label ?? ''))
             .filter(isExpandedHourlyAnchor)
         : [],
-    [historyGranularity, hourlyRangeMode, trendChart.data]
+    [historyGranularity, hourlyRangeMode, trendChartData]
   );
   const isExpandedHourlyScrollable =
     historyGranularity === 'hourly' && hourlyRangeMode === 'expanded';
   const expandedHourlyChartWidth = useMemo(
     () =>
       isExpandedHourlyScrollable
-        ? Math.max(expandedHourlyMinWidth, trendChart.data.length * expandedHourlyPointWidth)
+        ? Math.max(expandedHourlyMinWidth, trendChartData.length * expandedHourlyPointWidth)
         : null,
-    [expandedHourlyMinWidth, expandedHourlyPointWidth, isExpandedHourlyScrollable, trendChart.data.length]
+    [expandedHourlyMinWidth, expandedHourlyPointWidth, isExpandedHourlyScrollable, trendChartData.length]
   );
   const trendXAxisProps = useMemo(() => {
     const axisPadding = {
@@ -2324,22 +2943,42 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
         });
       }
 
+      if (continuationSignal && historyGranularity === 'day' && continuationEndLabel) {
+        lines.push({
+          x: continuationEndLabel,
+          color: 'orange',
+          label: isPhone
+            ? undefined
+            : `${formatContinuationEntityLevel(continuationSignal.entityLevel)} ends`,
+          labelPosition: 'insideTop',
+          strokeDasharray: '3 5',
+        });
+      }
+
       return lines.length > 0 ? lines : undefined;
     },
-    [historyGranularity, isPhone, primaryActiveFinding, primaryCombinedTrendSignal, trendMode]
+    [
+      continuationEndLabel,
+      continuationSignal,
+      historyGranularity,
+      isPhone,
+      primaryActiveFinding,
+      primaryCombinedTrendSignal,
+      trendMode,
+    ]
   );
   const trendTooltipProps = useMemo(
     () => ({
       content: ({
         label,
-        payload,
+        payload: tooltipPayload,
       }: {
         label?: string;
-        payload?: Array<{ name?: string; value?: number | string; color?: string }>;
+        payload?: Array<{ name?: string; value?: number | string | null; color?: string }>;
       }) =>
         renderTrendTooltip({
           label,
-          payload,
+          payload: tooltipPayload,
           series: trendChart.series,
           formatter: trendChart.formatter,
           signal:
@@ -2350,9 +2989,21 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
             typeof label === 'string'
               ? trendPointIndicatorsByLabel.get(label) ?? []
               : [],
+          continuationSignal,
+          continuationLabel: continuationEndLabel,
+          currencyCode: payload.viewContext.currencyCode,
         }),
     }),
-    [combinedSignalByLabel, trendChart.formatter, trendChart.series, trendMode, trendPointIndicatorsByLabel]
+    [
+      combinedSignalByLabel,
+      continuationEndLabel,
+      continuationSignal,
+      payload.viewContext.currencyCode,
+      trendChart.formatter,
+      trendChart.series,
+      trendMode,
+      trendPointIndicatorsByLabel,
+    ]
   );
 
   const audienceChart = useMemo(
@@ -2518,6 +3169,14 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     setActiveFindingsPopoverOpen((opened) => !opened);
   }
 
+  function handleExtensionDateChange(value: string | null) {
+    if (!continuationSignal || !value) {
+      return;
+    }
+
+    setExtensionDays(clampExtensionDays(daysBetweenIsoDates(continuationSignal.endDate, value)));
+  }
+
   useEffect(() => {
     if (deliveryWindowMode === 'lifetime' && !lifetimeLiveWindow.hasLiveDelivery) {
       setDeliveryWindowMode('today');
@@ -2558,6 +3217,42 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
     },
     []
   );
+
+  useEffect(() => {
+    setDismissedDashboardNotificationIds((current) => {
+      const next = new Set(current);
+
+      for (const notification of payload.dashboardNotifications) {
+        if (notification.read) {
+          next.add(notification.id);
+        }
+      }
+
+      return next;
+    });
+  }, [payload.dashboardNotifications]);
+
+  function dismissDashboardNotification(
+    notification: DashboardSurfaceNotification | undefined,
+    fallback: () => void
+  ) {
+    if (!notification) {
+      fallback();
+      return;
+    }
+
+    setDismissedDashboardNotificationIds((current) => {
+      const next = new Set(current);
+      next.add(notification.id);
+      return next;
+    });
+
+    void fetch(`/api/notifications/${notification.id}/read`, {
+      method: 'POST',
+    }).catch((error) => {
+      console.error('Failed to persist dashboard notification dismissal:', error);
+    });
+  }
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -2615,7 +3310,139 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
           </Alert>
         ) : null}
 
-        {payload.syncCoverage?.historicalAnalysisPending ? (
+        {continuationSignal ? (
+          <Modal
+            opened={extensionModalOpen}
+            onClose={() => setExtensionModalOpen(false)}
+            title="Preview schedule extension"
+            radius="lg"
+            size="lg"
+            centered
+          >
+            <Stack gap="md">
+              <div>
+                <Badge color="orange" variant="light" radius="sm">
+                  Preview only
+                </Badge>
+                <Text fw={900} mt="sm">
+                  {continuationSignal.entityName}
+                </Text>
+                <Text size="sm" c="dimmed" mt={4}>
+                  {formatContinuationEntityLevel(continuationSignal.entityLevel)}{' '}
+                  {formatContinuationDays(continuationSignal.daysUntilEnd)} on{' '}
+                  {formatReadableDate(continuationSignal.endDate) ?? continuationSignal.endDate}.
+                </Text>
+              </div>
+
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                <Paper withBorder radius="lg" p="sm" className={classes.extensionCalendarPanel}>
+                  <DatePicker
+                    value={extensionPreviewEndDate}
+                    onChange={handleExtensionDateChange}
+                    defaultDate={continuationSignal.endDate}
+                    size="sm"
+                    getDayProps={(date) => {
+                      const isActiveDay = activeDeliveryDateKeys.has(date);
+                      const isEndDate = date === continuationSignal.endDate;
+                      const isBeforeOrCurrentEndDate = date <= continuationSignal.endDate;
+
+                      if (!isActiveDay && !isEndDate) {
+                        return { disabled: isBeforeOrCurrentEndDate };
+                      }
+
+                      return {
+                        disabled: isBeforeOrCurrentEndDate,
+                        title: isEndDate
+                          ? 'Current campaign end date'
+                          : 'Ad set had synced delivery on this date',
+                      };
+                    }}
+                    renderDay={(date) => {
+                      const isActiveDay = activeDeliveryDateKeys.has(date);
+                      const isEndDate = date === continuationSignal.endDate;
+                      const className = [
+                        classes.extensionCalendarDay,
+                        isActiveDay ? classes.extensionCalendarDayActive : '',
+                        isEndDate ? classes.extensionCalendarDayEnd : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ');
+
+                      return <div className={className}>{getDateDayNumber(date)}</div>;
+                    }}
+                  />
+                </Paper>
+
+                <Stack gap="md">
+                  <NumberInput
+                    label="Extend schedule by days"
+                    min={1}
+                    max={365}
+                    value={extensionDays}
+                    onChange={(value) => {
+                      const nextValue = typeof value === 'number' ? value : Number(value);
+                      setExtensionDays(clampExtensionDays(nextValue));
+                    }}
+                  />
+
+                  <Paper withBorder radius="lg" p="md">
+                    <Stack gap="xs">
+                      <Group justify="space-between" gap="md" wrap="nowrap">
+                        <Text size="sm" c="dimmed">
+                          Current end date
+                        </Text>
+                        <Text size="sm" fw={800} ta="right">
+                          {formatReadableDate(continuationSignal.endDate) ??
+                            continuationSignal.endDate}
+                        </Text>
+                      </Group>
+                      <Group justify="space-between" gap="md" wrap="nowrap">
+                        <Text size="sm" c="dimmed">
+                          Proposed end date
+                        </Text>
+                        <Text size="sm" fw={800} ta="right">
+                          {formatReadableDate(extensionPreviewEndDate) ??
+                            extensionPreviewEndDate ??
+                            '-'}
+                        </Text>
+                      </Group>
+                    </Stack>
+                  </Paper>
+
+                  <Group gap="md" wrap="wrap">
+                    <Group gap={6} wrap="nowrap">
+                      <span className={`${classes.extensionCalendarLegendSwatch} ${classes.extensionCalendarLegendActive}`} />
+                      <Text size="xs" c="dimmed">
+                        Active ad delivery
+                      </Text>
+                    </Group>
+                    <Group gap={6} wrap="nowrap">
+                      <span className={`${classes.extensionCalendarLegendSwatch} ${classes.extensionCalendarLegendEnd}`} />
+                      <Text size="xs" c="dimmed">
+                        Current end date
+                      </Text>
+                    </Group>
+                  </Group>
+                </Stack>
+              </SimpleGrid>
+
+              <Group justify="flex-end" gap="sm">
+                <Button
+                  variant="default"
+                  radius="xl"
+                  onClick={() => setExtensionModalOpen(false)}
+                >
+                  Close
+                </Button>
+                <Button radius="xl" color="orange" disabled>
+                  Preview only - no changes sent
+                </Button>
+              </Group>
+            </Stack>
+          </Modal>
+        ) : null}
+
+        {renderFullShell && payload.syncCoverage?.historicalAnalysisPending ? (
           <Alert
             color={payload.syncCoverage.activeJobStatus === 'failed' ? 'red' : 'blue'}
             radius="lg"
@@ -2634,7 +3461,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
           </Alert>
         ) : null}
 
-        {payload.state !== 'ready' ? (
+        {renderFullShell && payload.state !== 'ready' ? (
           <Alert
             color={stateMeta.color}
             radius="lg"
@@ -2666,55 +3493,126 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
           </Alert>
         ) : null}
 
-        <Card withBorder radius="xl" p="lg" className={classes.topBar}>
-          <Stack gap="lg">
-            <Group
-              justify="space-between"
-              align="flex-start"
-              gap="md"
-              wrap="wrap"
-              className={classes.surfaceToolbar}
-            >
+        {showNoLiveDeliveryAlert &&
+        payload.state === 'ready' &&
+        !todayLiveWindow.hasLiveDelivery &&
+        noLiveDeliveryAlertVisible ? (
+          <Alert
+            color="blue"
+            radius="lg"
+            icon={<IconAlertCircle size={16} />}
+            withCloseButton
+            closeButtonLabel="Dismiss live delivery notification"
+            onClose={() =>
+              dismissDashboardNotification(noLiveDeliveryNotification, () =>
+                setLocalNoLiveDeliveryAlertVisible(false)
+              )
+            }
+          >
+            <Text size="sm">
+              No live delivery was found today. This dashboard only shows campaigns, ad sets, and
+              ads that are active and actually serving right now.
+            </Text>
+          </Alert>
+        ) : null}
+
+        {showFeaturedHistory && continuationSignal && continuationAlertVisible ? (
+          <Alert
+            color="orange"
+            radius="lg"
+            icon={<IconClock size={16} />}
+            withCloseButton
+            closeButtonLabel="Dismiss campaign end notification"
+            onClose={() =>
+              dismissDashboardNotification(continuationNotification, () =>
+                setLocalContinuationAlertVisible(false)
+              )
+            }
+          >
+            <Group justify="space-between" align="center" gap="sm" wrap="wrap">
               <div>
-                <Group gap="xs" wrap="wrap">
-                  <Badge variant="light" className="app-platform-page-badge">
-                    Dashboard
-                  </Badge>
-                  <Badge color={statusColor(payload.viewContext.platformStatus)} variant="light">
-                    {payload.viewContext.platformName ?? 'No platform selected'}
-                  </Badge>
-                  <Badge color={statusColor(payload.viewContext.adAccountStatus)} variant="outline">
-                    {payload.viewContext.adAccountName ?? 'No ad account selected'}
-                  </Badge>
-                </Group>
-                <Text fw={900} size="1.65rem" mt="sm" className={classes.title}>
-                  {payload.viewContext.adAccountName ?? 'Selected ad account'}
+                <Text size="sm" fw={800}>
+                  {formatContinuationEntityLevel(continuationSignal.entityLevel)}{' '}
+                  {formatContinuationDays(continuationSignal.daysUntilEnd)} on{' '}
+                  {formatReadableDate(continuationSignal.endDate) ?? continuationSignal.endDate}
+                </Text>
+                <Text size="xs" c="dimmed" mt={3}>
+                  {continuationSignal.entityName}
+                  {continuationSignal.parentName ? ` | ${continuationSignal.parentName}` : ''}
+                  {formatContinuationBudget(continuationSignal, payload.viewContext.currencyCode)
+                    ? ` | ${formatContinuationBudget(
+                        continuationSignal,
+                        payload.viewContext.currencyCode
+                      )}`
+                    : ''}
                 </Text>
               </div>
-
-              <Group gap="sm" wrap="wrap" className={classes.topBarActions}>
-                <Button
-                  onClick={handleRefresh}
-                  leftSection={<IconRefresh size={16} />}
-                  loading={refreshing}
-                  disabled={!payload.viewContext.canRefresh}
-                  radius="xl"
-                  className="app-platform-page-action-primary"
-                >
-                  Refresh
-                </Button>
-                <Button
-                  component={Link}
-                  href="/reports"
-                  radius="xl"
-                  variant="default"
-                  className="app-platform-page-action-secondary"
-                >
-                  Reports
-                </Button>
-              </Group>
+              <Button
+                size="xs"
+                radius="xl"
+                color="orange"
+                variant="light"
+                onClick={() => setExtensionModalOpen(true)}
+              >
+                Review extension
+              </Button>
             </Group>
+          </Alert>
+        ) : null}
 
+        {shouldRenderDashboardCard ? (
+        <Card withBorder radius="xl" p="lg" className={classes.topBar}>
+          <Stack gap="lg">
+            {renderFullShell ? (
+              <Group
+                justify="space-between"
+                align="flex-start"
+                gap="md"
+                wrap="wrap"
+                className={classes.surfaceToolbar}
+              >
+                <div>
+                  <Group gap="xs" wrap="wrap">
+                    <Badge variant="light" className="app-platform-page-badge">
+                      Dashboard
+                    </Badge>
+                    <Badge color={statusColor(payload.viewContext.platformStatus)} variant="light">
+                      {payload.viewContext.platformName ?? 'No platform selected'}
+                    </Badge>
+                    <Badge color={statusColor(payload.viewContext.adAccountStatus)} variant="outline">
+                      {payload.viewContext.adAccountName ?? 'No ad account selected'}
+                    </Badge>
+                  </Group>
+                  <Text fw={900} size="1.65rem" mt="sm" className={classes.title}>
+                    {payload.viewContext.adAccountName ?? 'Selected ad account'}
+                  </Text>
+                </div>
+
+                <Group gap="sm" wrap="wrap" className={classes.topBarActions}>
+                  <Button
+                    onClick={handleRefresh}
+                    leftSection={<IconRefresh size={16} />}
+                    loading={refreshing}
+                    disabled={!payload.viewContext.canRefresh}
+                    radius="xl"
+                    className="app-platform-page-action-primary"
+                  >
+                    Refresh
+                  </Button>
+                  <Button
+                    component={Link}
+                    href={reportsHref}
+                    radius="xl"
+                    variant="default"
+                    className="app-platform-page-action-secondary"
+                  >
+                    Reports
+                  </Button>
+                </Group>
+              </Group>
+            ) : null}
+
+            {showFeaturedHistory ? (
             <Grid gutter="md" align="stretch">
               <Grid.Col span={{ base: 12, xl: 8 }}>
                 <Paper withBorder radius="xl" p="md" className={classes.chartPanel}>
@@ -2880,10 +3778,11 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                         {hourlyHistoryRangeLabel} · advertiser account time
                       </Text>
                     ) : null}
+
                   </Stack>
 
                   <div className={classes.historyChartBody}>
-                    {trendChart.data.length > 0 ? (
+                    {trendChartData.length > 0 ? (
                       isExpandedHourlyScrollable ? (
                         <ScrollArea
                           type="auto"
@@ -2898,7 +3797,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                           >
                             <LineChart
                               h={featuredHistoryChartHeight}
-                              data={trendChart.data}
+                              data={trendChartData}
                               dataKey="label"
                               lineChartProps={trendLineChartProps}
                               type="default"
@@ -2929,7 +3828,9 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                               referenceLines={trendReferenceLines}
                               series={trendChart.series}
                               valueFormatter={(value) =>
-                                typeof value === 'number' ? trendChart.formatter(value) : String(value)
+                                typeof value === 'number'
+                                  ? trendChart.formatter(value)
+                                  : String(value ?? '—')
                               }
                             >
                               {trendPointIndicators.map((indicator) => (
@@ -2951,7 +3852,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                       ) : (
                         <LineChart
                           h={featuredHistoryChartHeight}
-                          data={trendChart.data}
+                          data={trendChartData}
                           dataKey="label"
                           lineChartProps={trendLineChartProps}
                           type="default"
@@ -2982,7 +3883,9 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                           referenceLines={trendReferenceLines}
                           series={trendChart.series}
                           valueFormatter={(value) =>
-                            typeof value === 'number' ? trendChart.formatter(value) : String(value)
+                            typeof value === 'number'
+                              ? trendChart.formatter(value)
+                              : String(value ?? '—')
                           }
                         >
                           {trendPointIndicators.map((indicator) => (
@@ -3301,20 +4204,22 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                 </Paper>
               </Grid.Col>
             </Grid>
+            ) : null}
 
+            {showSummaryCards ? (
             <SimpleGrid cols={{ base: 2, sm: 2, lg: 3, xl: 6 }} spacing="md">
               <SummaryCard
-                label="Live campaigns"
+                label={summaryCampaignLabel}
                 value={formatNumber(liveSummary.liveCampaignCount)}
                 icon={IconUsers}
               />
               <SummaryCard
-                label="Live ad sets"
+                label={summaryAdsetLabel}
                 value={formatNumber(liveSummary.liveAdsetCount)}
                 icon={IconTargetArrow}
               />
               <SummaryCard
-                label="Live ads"
+                label={summaryAdLabel}
                 value={formatNumber(liveSummary.liveAdCount)}
                 icon={IconLink}
               />
@@ -3329,30 +4234,17 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                 icon={IconTargetArrow}
               />
               <SummaryCard
-                label="Serving platforms"
-                value={
-                  liveSummary.servingPlatformLabels.length > 0
-                    ? <ServingPlatformLogos labels={liveSummary.servingPlatformLabels} />
-                    : isMeta
-                      ? 'Syncing'
-                      : 'Unavailable'
-                }
+                label={summaryPlatformLabel}
+                value={summaryPlatformValue}
                 icon={IconLink}
               />
             </SimpleGrid>
+            ) : null}
           </Stack>
         </Card>
-
-        {payload.state === 'ready' && !todayLiveWindow.hasLiveDelivery ? (
-          <Alert color="blue" radius="lg" icon={<IconAlertCircle size={16} />}>
-            <Text size="sm">
-              No live delivery was found today. This dashboard only shows campaigns, ad sets, and
-              ads that are active and actually serving right now.
-            </Text>
-          </Alert>
         ) : null}
 
-        {payload.state === 'ready' && (todayLiveWindow.hasLiveDelivery || lifetimeLiveWindow.hasLiveDelivery) ? (
+        {showLiveDeliveryTables && payload.state === 'ready' && (todayLiveWindow.hasLiveDelivery || lifetimeLiveWindow.hasLiveDelivery) ? (
           <Card withBorder radius="xl" p="lg" className={classes.panel}>
             <Stack gap="md">
               <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
@@ -3389,13 +4281,24 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                 <LiveDeliverySectionHeader title="Campaign containers" />
                 {isPhone ? (
                   <Stack gap="sm">
-                    {liveWindow.campaigns.map((campaign) => (
-                      <CampaignLiveRow
-                        key={campaign.id}
-                        campaign={campaign}
-                        currencyCode={payload.viewContext.currencyCode}
-                      />
-                    ))}
+                    {liveWindow.campaigns.map((campaign) => {
+                      const reportHref = buildDashboardEntityReportHref({
+                        scope: 'campaign',
+                        platformIntegrationId: selectedPlatformIntegrationId,
+                        adAccountId: selectedAdAccountId,
+                        campaignId: campaign.id,
+                        schedules: [campaign.schedule],
+                      });
+
+                      return (
+                        <CampaignLiveRow
+                          key={campaign.id}
+                          campaign={campaign}
+                          currencyCode={payload.viewContext.currencyCode}
+                          reportHref={reportHref}
+                        />
+                      );
+                    })}
                   </Stack>
                 ) : (
                   <div className={classes.tableWrap}>
@@ -3415,6 +4318,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                           <col style={{ width: '80px' }} />
                           <col style={{ width: '100px' }} />
                           <col style={{ width: '90px' }} />
+                          <col style={{ width: '110px' }} />
                         </colgroup>
                         <Table.Thead>
                           <Table.Tr>
@@ -3436,44 +4340,68 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                             <Table.Th ta="right" className={classes.tableStatHeader}>
                               Live ads
                             </Table.Th>
+                            <Table.Th ta="right" className={classes.tableStatHeader}>
+                              Report
+                            </Table.Th>
                           </Table.Tr>
                         </Table.Thead>
                         <Table.Tbody>
-                          {liveWindow.campaigns.map((campaign) => (
-                            <Table.Tr key={campaign.id}>
-                              <Table.Td>
-                                <Text fw={700} className={classes.tableTruncatePrimary}>
-                                  {campaign.name}
-                                </Text>
-                              </Table.Td>
-                              <Table.Td>
-                                <TableStatusBadge status={campaign.status} />
-                              </Table.Td>
-                              <Table.Td>
-                                <Text className={classes.tableValueText}>
-                                  {campaign.objective ? formatStatusLabel(campaign.objective) : '—'}
-                                </Text>
-                              </Table.Td>
-                              <Table.Td
-                                ta="right"
-                                className={`${classes.tableMetricDivider} ${classes.tableStatCell}`}
-                              >
-                                {formatCurrency(campaign.spend, payload.viewContext.currencyCode)}
-                              </Table.Td>
-                              <Table.Td ta="right" className={classes.tableStatCell}>
-                                {formatNumber(campaign.results)}
-                              </Table.Td>
-                              <Table.Td ta="right" className={classes.tableStatCell}>
-                                {formatRate(campaign.ctr)}
-                              </Table.Td>
-                              <Table.Td ta="right" className={classes.tableStatCell}>
-                                {formatNumber(campaign.adsetCount)}
-                              </Table.Td>
-                              <Table.Td ta="right" className={classes.tableStatCell}>
-                                {formatNumber(campaign.adCount)}
-                              </Table.Td>
-                            </Table.Tr>
-                          ))}
+                          {liveWindow.campaigns.map((campaign) => {
+                            const reportHref = buildDashboardEntityReportHref({
+                              scope: 'campaign',
+                              platformIntegrationId: selectedPlatformIntegrationId,
+                              adAccountId: selectedAdAccountId,
+                              campaignId: campaign.id,
+                              schedules: [campaign.schedule],
+                            });
+
+                            return (
+                              <Table.Tr key={campaign.id}>
+                                <Table.Td>
+                                  <Text fw={700} className={classes.tableTruncatePrimary}>
+                                    {campaign.name}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <TableStatusBadge status={campaign.status} />
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text className={classes.tableValueText}>
+                                    {campaign.objective ? formatStatusLabel(campaign.objective) : '—'}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td
+                                  ta="right"
+                                  className={`${classes.tableMetricDivider} ${classes.tableStatCell}`}
+                                >
+                                  {formatCurrency(campaign.spend, payload.viewContext.currencyCode)}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  {formatNumber(campaign.results)}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  {formatRate(campaign.ctr)}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  {formatNumber(campaign.adsetCount)}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  {formatNumber(campaign.adCount)}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  <Button
+                                    component={Link}
+                                    href={reportHref}
+                                    size="xs"
+                                    radius="xl"
+                                    variant="subtle"
+                                  >
+                                    View
+                                  </Button>
+                                </Table.Td>
+                              </Table.Tr>
+                            );
+                          })}
                         </Table.Tbody>
                       </Table>
                     </ScrollArea>
@@ -3485,13 +4413,25 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                 <LiveDeliverySectionHeader title="Ad set comparison" />
                 {isPhone ? (
                   <Stack gap="sm">
-                    {liveComparisons.adsets.map((item) => (
-                      <AdsetComparisonRow
-                        key={item.id}
-                        item={item}
-                        currencyCode={payload.viewContext.currencyCode}
-                      />
-                    ))}
+                    {liveComparisons.adsets.map((item) => {
+                      const reportHref = buildDashboardEntityReportHref({
+                        scope: 'adset',
+                        platformIntegrationId: selectedPlatformIntegrationId,
+                        adAccountId: selectedAdAccountId,
+                        campaignId: item.campaignId,
+                        adsetId: item.id,
+                        schedules: [item.schedule, item.campaignSchedule],
+                      });
+
+                      return (
+                        <AdsetComparisonRow
+                          key={item.id}
+                          item={item}
+                          currencyCode={payload.viewContext.currencyCode}
+                          reportHref={reportHref}
+                        />
+                      );
+                    })}
                   </Stack>
                 ) : (
                   <div className={classes.tableWrap}>
@@ -3512,6 +4452,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                           <col style={{ width: '80px' }} />
                           <col style={{ width: '120px' }} />
                           <col style={{ width: '90px' }} />
+                          <col style={{ width: '110px' }} />
                         </colgroup>
                         <Table.Thead>
                           <Table.Tr>
@@ -3534,57 +4475,82 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                             <Table.Th ta="right" className={classes.tableStatHeader}>
                               Live ads
                             </Table.Th>
+                            <Table.Th ta="right" className={classes.tableStatHeader}>
+                              Report
+                            </Table.Th>
                           </Table.Tr>
                         </Table.Thead>
                         <Table.Tbody>
-                          {liveComparisons.adsets.map((item) => (
-                            <Table.Tr key={item.id}>
-                              <Table.Td>
-                                <Text fw={700} className={classes.tableTruncatePrimary}>
-                                  {item.name}
-                                </Text>
-                              </Table.Td>
-                              <Table.Td className={classes.tableCellMuted}>
-                                <Text className={classes.tableTruncateMuted}>
-                                  {item.campaignName ?? '—'}
-                                </Text>
-                              </Table.Td>
-                              <Table.Td>
-                                <TableStatusBadge status={item.status} />
-                              </Table.Td>
-                              <Table.Td>
-                                <Text className={classes.tableValueText}>
-                                  {item.optimizationGoal
-                                    ? formatStatusLabel(item.optimizationGoal)
+                          {liveComparisons.adsets.map((item) => {
+                            const reportHref = buildDashboardEntityReportHref({
+                              scope: 'adset',
+                              platformIntegrationId: selectedPlatformIntegrationId,
+                              adAccountId: selectedAdAccountId,
+                              campaignId: item.campaignId,
+                              adsetId: item.id,
+                              schedules: [item.schedule, item.campaignSchedule],
+                            });
+
+                            return (
+                              <Table.Tr key={item.id}>
+                                <Table.Td>
+                                  <Text fw={700} className={classes.tableTruncatePrimary}>
+                                    {item.name}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td className={classes.tableCellMuted}>
+                                  <Text className={classes.tableTruncateMuted}>
+                                    {item.campaignName ?? '—'}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <TableStatusBadge status={item.status} />
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text className={classes.tableValueText}>
+                                    {item.optimizationGoal
+                                      ? formatStatusLabel(item.optimizationGoal)
+                                      : '—'}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td
+                                  ta="right"
+                                  className={`${classes.tableMetricDivider} ${classes.tableStatCell}`}
+                                >
+                                  {formatCurrency(item.spend, payload.viewContext.currencyCode)}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  {formatNumber(item.results)}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  {formatRate(item.ctr)}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  {item.results > 0
+                                    ? formatCurrency(
+                                        item.costPerResult,
+                                        payload.viewContext.currencyCode,
+                                        2
+                                      )
                                     : '—'}
-                                </Text>
-                              </Table.Td>
-                              <Table.Td
-                                ta="right"
-                                className={`${classes.tableMetricDivider} ${classes.tableStatCell}`}
-                              >
-                                {formatCurrency(item.spend, payload.viewContext.currencyCode)}
-                              </Table.Td>
-                              <Table.Td ta="right" className={classes.tableStatCell}>
-                                {formatNumber(item.results)}
-                              </Table.Td>
-                              <Table.Td ta="right" className={classes.tableStatCell}>
-                                {formatRate(item.ctr)}
-                              </Table.Td>
-                              <Table.Td ta="right" className={classes.tableStatCell}>
-                                {item.results > 0
-                                  ? formatCurrency(
-                                      item.costPerResult,
-                                      payload.viewContext.currencyCode,
-                                      2
-                                    )
-                                  : '—'}
-                              </Table.Td>
-                              <Table.Td ta="right" className={classes.tableStatCell}>
-                                {formatNumber(item.adCount)}
-                              </Table.Td>
-                            </Table.Tr>
-                          ))}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  {formatNumber(item.adCount)}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  <Button
+                                    component={Link}
+                                    href={reportHref}
+                                    size="xs"
+                                    radius="xl"
+                                    variant="subtle"
+                                  >
+                                    View
+                                  </Button>
+                                </Table.Td>
+                              </Table.Tr>
+                            );
+                          })}
                         </Table.Tbody>
                       </Table>
                         </ScrollArea>
@@ -3598,13 +4564,26 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                     />
                     {isPhone ? (
                       <Stack gap="sm">
-                        {liveComparisons.ads.map((item) => (
-                          <AdComparisonRow
-                            key={item.id}
-                            item={item}
-                            currencyCode={payload.viewContext.currencyCode}
-                          />
-                        ))}
+                        {liveComparisons.ads.map((item) => {
+                          const reportHref = buildDashboardEntityReportHref({
+                            scope: 'ad',
+                            platformIntegrationId: selectedPlatformIntegrationId,
+                            adAccountId: selectedAdAccountId,
+                            campaignId: item.campaignId,
+                            adsetId: item.adsetId,
+                            adId: item.id,
+                            schedules: [item.schedule, item.adsetSchedule, item.campaignSchedule],
+                          });
+
+                          return (
+                            <AdComparisonRow
+                              key={item.id}
+                              item={item}
+                              currencyCode={payload.viewContext.currencyCode}
+                              reportHref={reportHref}
+                            />
+                          );
+                        })}
                       </Stack>
                     ) : (
                       <div className={classes.tableWrap}>
@@ -3624,6 +4603,7 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                               <col style={{ width: '90px' }} />
                               <col style={{ width: '80px' }} />
                               <col style={{ width: '120px' }} />
+                              <col style={{ width: '110px' }} />
                             </colgroup>
                             <Table.Thead>
                               <Table.Tr>
@@ -3643,52 +4623,82 @@ export default function DashboardClient({ payload }: DashboardClientProps) {
                                 <Table.Th ta="right" className={classes.tableStatHeader}>
                                   Cost / result
                                 </Table.Th>
+                                <Table.Th ta="right" className={classes.tableStatHeader}>
+                                  Report
+                                </Table.Th>
                               </Table.Tr>
                             </Table.Thead>
                             <Table.Tbody>
-                              {liveComparisons.ads.map((item) => (
-                                <Table.Tr key={item.id}>
-                                  <Table.Td>
-                                    <Text fw={700} className={classes.tableTruncatePrimary}>
-                                      {item.name}
-                                    </Text>
-                                  </Table.Td>
-                                  <Table.Td className={classes.tableCellMuted}>
-                                    <Text className={classes.tableTruncateMuted}>
-                                      {item.campaignName ?? '—'}
-                                    </Text>
-                                  </Table.Td>
-                                  <Table.Td className={classes.tableCellMuted}>
-                                    <Text className={classes.tableTruncateMuted}>
-                                      {item.adsetName ?? '—'}
-                                    </Text>
-                                  </Table.Td>
-                                  <Table.Td>
-                                    <TableStatusBadge status={item.status} />
-                                  </Table.Td>
-                                  <Table.Td
-                                    ta="right"
-                                    className={`${classes.tableMetricDivider} ${classes.tableStatCell}`}
-                                  >
-                                    {formatCurrency(item.spend, payload.viewContext.currencyCode)}
-                                  </Table.Td>
-                                  <Table.Td ta="right" className={classes.tableStatCell}>
-                                    {formatNumber(item.results)}
-                                  </Table.Td>
-                                  <Table.Td ta="right" className={classes.tableStatCell}>
-                                    {formatRate(item.ctr)}
-                                  </Table.Td>
-                                  <Table.Td ta="right" className={classes.tableStatCell}>
-                                    {item.results > 0
-                                      ? formatCurrency(
-                                          item.costPerResult,
-                                          payload.viewContext.currencyCode,
-                                          2
-                                        )
-                                      : '—'}
-                                  </Table.Td>
-                                </Table.Tr>
-                              ))}
+                              {liveComparisons.ads.map((item) => {
+                                const reportHref = buildDashboardEntityReportHref({
+                                  scope: 'ad',
+                                  platformIntegrationId: selectedPlatformIntegrationId,
+                                  adAccountId: selectedAdAccountId,
+                                  campaignId: item.campaignId,
+                                  adsetId: item.adsetId,
+                                  adId: item.id,
+                                  schedules: [
+                                    item.schedule,
+                                    item.adsetSchedule,
+                                    item.campaignSchedule,
+                                  ],
+                                });
+
+                                return (
+                                  <Table.Tr key={item.id}>
+                                    <Table.Td>
+                                      <Text fw={700} className={classes.tableTruncatePrimary}>
+                                        {item.name}
+                                      </Text>
+                                    </Table.Td>
+                                    <Table.Td className={classes.tableCellMuted}>
+                                      <Text className={classes.tableTruncateMuted}>
+                                        {item.campaignName ?? '—'}
+                                      </Text>
+                                    </Table.Td>
+                                    <Table.Td className={classes.tableCellMuted}>
+                                      <Text className={classes.tableTruncateMuted}>
+                                        {item.adsetName ?? '—'}
+                                      </Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                      <TableStatusBadge status={item.status} />
+                                    </Table.Td>
+                                    <Table.Td
+                                      ta="right"
+                                      className={`${classes.tableMetricDivider} ${classes.tableStatCell}`}
+                                    >
+                                      {formatCurrency(item.spend, payload.viewContext.currencyCode)}
+                                    </Table.Td>
+                                    <Table.Td ta="right" className={classes.tableStatCell}>
+                                      {formatNumber(item.results)}
+                                    </Table.Td>
+                                    <Table.Td ta="right" className={classes.tableStatCell}>
+                                      {formatRate(item.ctr)}
+                                    </Table.Td>
+                                    <Table.Td ta="right" className={classes.tableStatCell}>
+                                      {item.results > 0
+                                        ? formatCurrency(
+                                            item.costPerResult,
+                                            payload.viewContext.currencyCode,
+                                            2
+                                          )
+                                        : '—'}
+                                    </Table.Td>
+                                    <Table.Td ta="right" className={classes.tableStatCell}>
+                                      <Button
+                                        component={Link}
+                                        href={reportHref}
+                                        size="xs"
+                                        radius="xl"
+                                        variant="subtle"
+                                      >
+                                        View
+                                      </Button>
+                                    </Table.Td>
+                                  </Table.Tr>
+                                );
+                              })}
                             </Table.Tbody>
                           </Table>
                         </ScrollArea>

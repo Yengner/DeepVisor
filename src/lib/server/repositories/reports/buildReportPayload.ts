@@ -132,20 +132,34 @@ type AdAccountRow = Pick<
   platform_label?: string;
 };
 
-type CampaignDimRow = Pick<
-  Database['public']['Tables']['campaign_dims']['Row'],
-  'id' | 'ad_account_id' | 'external_id' | 'name' | 'objective' | 'status'
->;
+type CampaignDimRow = {
+  id: string;
+  ad_account_id: string;
+  external_id: string;
+  name: string | null;
+  objective: string | null;
+  status: string | null;
+};
 
-type AdsetDimRow = Pick<
-  Database['public']['Tables']['adset_dims']['Row'],
-  'id' | 'ad_account_id' | 'campaign_external_id' | 'external_id' | 'name' | 'optimization_goal' | 'status'
->;
+type AdsetDimRow = {
+  id: string;
+  ad_account_id: string;
+  campaign_external_id: string;
+  external_id: string;
+  name: string | null;
+  optimization_goal: string | null;
+  status: string | null;
+};
 
-type AdDimRow = Pick<
-  Database['public']['Tables']['ad_dims']['Row'],
-  'id' | 'ad_account_id' | 'adset_external_id' | 'external_id' | 'name' | 'status' | 'creative_id'
->;
+type AdDimRow = {
+  id: string;
+  ad_account_id: string;
+  adset_external_id: string;
+  external_id: string;
+  name: string | null;
+  status: string | null;
+  creative_id: string | null;
+};
 
 type AdCreativeRow = Pick<
   Database['public']['Tables']['ad_creatives']['Row'],
@@ -178,6 +192,55 @@ type ActivityMetricsRow = {
   calls: number;
 };
 
+type EntitySummaryRow = {
+  entity_id: string;
+  ad_account_id: string;
+  entity_level: 'campaign' | 'adset' | 'ad';
+  spend: number | string | null;
+  reach: number | string | null;
+  impressions: number | string | null;
+  clicks: number | string | null;
+  inline_link_clicks: number | string | null;
+  leads: number | string | null;
+  messages: number | string | null;
+  calls: number | string | null;
+  first_day: string | null;
+  last_day: string | null;
+};
+
+type EntitySummaryDateBoundsRow = {
+  first_day: string | null;
+  last_day: string | null;
+};
+
+type SummaryEntityRow = {
+  id: string;
+  ad_account_id: string;
+  entity_level: 'campaign' | 'adset' | 'ad';
+  external_id: string;
+  parent_external_id: string | null;
+  campaign_id: string | null;
+  adset_id: string | null;
+  name: string | null;
+  objective: string | null;
+  optimization_goal: string | null;
+  status: string | null;
+};
+
+type AccountMonthlyMetricRow = Pick<
+  Database['public']['Tables']['ad_account_performance_monthly']['Row'],
+  | 'ad_account_id'
+  | 'month_start'
+  | 'spend'
+  | 'reach'
+  | 'impressions'
+  | 'clicks'
+  | 'inline_link_clicks'
+  | 'leads'
+  | 'messages'
+  | 'calls'
+>;
+
 type FilterContext = {
   business: BusinessProfileRow;
   platforms: ReportPlatformOption[];
@@ -207,6 +270,79 @@ const REPORT_AUDIENCE_BREAKDOWN_TYPES = [
 
 function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+function addUtcDays(value: string, days: number): string {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return toIsoDate(date);
+}
+
+function monthEnd(value: string): string {
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(5, 7));
+
+  if (!Number.isFinite(year) || !Number.isFinite(month)) {
+    return value;
+  }
+
+  return toIsoDate(new Date(Date.UTC(year, month, 0)));
+}
+
+function minDate(current: string | null, candidate: string | null): string | null {
+  if (!candidate) {
+    return current;
+  }
+
+  if (!current || candidate < current) {
+    return candidate;
+  }
+
+  return current;
+}
+
+function maxDate(current: string | null, candidate: string | null): string | null {
+  if (!candidate) {
+    return current;
+  }
+
+  if (!current || candidate > current) {
+    return candidate;
+  }
+
+  return current;
+}
+
+function isLikelyActiveStatus(status: string | null | undefined): boolean {
+  const normalized = (status ?? '').trim().toLowerCase();
+
+  if (!normalized) {
+    return false;
+  }
+
+  if (
+    [
+      'paused',
+      'archived',
+      'completed',
+      'ended',
+      'disabled',
+      'inactive',
+      'deleted',
+      'removed',
+      'rejected',
+      'disapproved',
+      'error',
+      'failed',
+      'draft',
+    ].some((token) => normalized.includes(token))
+  ) {
+    return false;
+  }
+
+  return ['active', 'enabled', 'learning', 'limited', 'pending', 'review', 'running', 'serving'].some(
+    (token) => normalized.includes(token)
+  );
 }
 
 function formatDateRange(dateFrom: string, dateTo: string): string {
@@ -863,6 +999,398 @@ function aggregateFromBreakdownRow(row: ReportBreakdownRpcRow): EntityAggregate 
   };
 }
 
+async function listSummaryEntities(
+  supabase: SupabaseClient,
+  input: {
+    entityLevel: ReportBreakdownRow['level'];
+    adAccountIds: string[];
+    entityExternalIds?: string[];
+    campaignExternalIds?: string[];
+    adsetExternalIds?: string[];
+  }
+): Promise<SummaryEntityRow[]> {
+  const rows: SummaryEntityRow[] = [];
+  const entityExternalChunks = optionalChunks(input.entityExternalIds);
+  const campaignExternalChunks = optionalChunks(input.campaignExternalIds);
+  const adsetExternalChunks = optionalChunks(input.adsetExternalIds);
+  const client = supabase as any;
+
+  for (const adAccountIdsChunk of chunkArray(input.adAccountIds, 100)) {
+    for (const entityExternalIdsChunk of entityExternalChunks) {
+      for (const campaignExternalIdsChunk of campaignExternalChunks) {
+        for (const adsetExternalIdsChunk of adsetExternalChunks) {
+          let page = 0;
+          const pageSize = 1000;
+
+          while (true) {
+            let query = client
+              .from('ad_entities')
+              .select(
+                'id, ad_account_id, entity_level, external_id, parent_external_id, campaign_id, adset_id, name, objective, optimization_goal, status'
+              )
+              .eq('entity_level', input.entityLevel)
+              .in('ad_account_id', adAccountIdsChunk)
+              .order('name', { ascending: true });
+
+            if (entityExternalIdsChunk) {
+              query = query.in('external_id', entityExternalIdsChunk);
+            }
+
+            if (campaignExternalIdsChunk && input.entityLevel === 'adset') {
+              query = query.in('parent_external_id', campaignExternalIdsChunk);
+            }
+
+            if (adsetExternalIdsChunk && input.entityLevel === 'ad') {
+              query = query.in('parent_external_id', adsetExternalIdsChunk);
+            }
+
+            const { data, error } = await query.range(
+              page * pageSize,
+              page * pageSize + pageSize - 1
+            );
+
+            if (error) {
+              throw error;
+            }
+
+            const pageRows = (data ?? []) as SummaryEntityRow[];
+            rows.push(...pageRows);
+
+            if (pageRows.length < pageSize) {
+              break;
+            }
+
+            page += 1;
+          }
+        }
+      }
+    }
+  }
+
+  return rows;
+}
+
+async function listEntitySummaryRows(
+  supabase: SupabaseClient,
+  entityIds: string[]
+): Promise<EntitySummaryRow[]> {
+  if (entityIds.length === 0) {
+    return [];
+  }
+
+  const rows: EntitySummaryRow[] = [];
+  const client = supabase as any;
+
+  for (const entityIdsChunk of chunkArray(entityIds, 200)) {
+    const { data, error } = await client
+      .from('ad_entity_performance_summary')
+      .select(
+        'entity_id, ad_account_id, entity_level, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls, first_day, last_day'
+      )
+      .in('entity_id', entityIdsChunk);
+
+    if (error) {
+      throw error;
+    }
+
+    rows.push(...((data ?? []) as EntitySummaryRow[]));
+  }
+
+  return rows;
+}
+
+async function listParentSummaryEntities(
+  supabase: SupabaseClient,
+  entityIds: string[]
+): Promise<Map<string, SummaryEntityRow>> {
+  const parentById = new Map<string, SummaryEntityRow>();
+  const ids = Array.from(new Set(entityIds.filter(Boolean)));
+
+  if (ids.length === 0) {
+    return parentById;
+  }
+
+  const client = supabase as any;
+
+  for (const idsChunk of chunkArray(ids, 200)) {
+    const { data, error } = await client
+      .from('ad_entities')
+      .select(
+        'id, ad_account_id, entity_level, external_id, parent_external_id, campaign_id, adset_id, name, objective, optimization_goal, status'
+      )
+      .in('id', idsChunk);
+
+    if (error) {
+      throw error;
+    }
+
+    for (const row of (data ?? []) as SummaryEntityRow[]) {
+      parentById.set(row.id, row);
+    }
+  }
+
+  return parentById;
+}
+
+async function listSummaryBreakdownRows(
+  supabase: SupabaseClient,
+  input: {
+    entityLevel: ReportBreakdownRow['level'];
+    adAccountIds: string[];
+    entityExternalIds?: string[];
+    campaignExternalIds?: string[];
+    adsetExternalIds?: string[];
+    currencyCodeByAdAccountId: Map<string, string | null>;
+  }
+): Promise<ReportBreakdownRpcRow[]> {
+  const entities = await listSummaryEntities(supabase, input);
+
+  if (entities.length === 0) {
+    return [];
+  }
+
+  const [summaries, parentById] = await Promise.all([
+    listEntitySummaryRows(
+      supabase,
+      entities.map((entity) => entity.id)
+    ),
+    listParentSummaryEntities(
+      supabase,
+      entities.flatMap((entity) => [entity.campaign_id, entity.adset_id]).filter(Boolean) as string[]
+    ),
+  ]);
+  const summaryByEntityId = new Map(summaries.map((summary) => [summary.entity_id, summary]));
+
+  return entities.map((entity) => {
+    const summary = summaryByEntityId.get(entity.id);
+    const campaign = entity.campaign_id ? parentById.get(entity.campaign_id) ?? null : null;
+    const adset = entity.adset_id ? parentById.get(entity.adset_id) ?? null : null;
+    const campaignExternalId =
+      entity.entity_level === 'campaign'
+        ? entity.external_id
+        : campaign?.external_id ?? null;
+    const adsetExternalId =
+      entity.entity_level === 'adset'
+        ? entity.external_id
+        : adset?.external_id ?? null;
+
+    return {
+      entity_level: entity.entity_level,
+      entity_id: entity.id,
+      entity_external_id: entity.external_id,
+      ad_account_id: entity.ad_account_id,
+      campaign_external_id: campaignExternalId,
+      adset_external_id: adsetExternalId,
+      entity_name: entity.name,
+      campaign_name:
+        entity.entity_level === 'campaign'
+          ? entity.name
+          : campaign?.name ?? null,
+      adset_name:
+        entity.entity_level === 'adset'
+          ? entity.name
+          : adset?.name ?? null,
+      objective: entity.objective ?? campaign?.objective ?? null,
+      status: entity.status,
+      currency_code: input.currencyCodeByAdAccountId.get(entity.ad_account_id) ?? null,
+      start_date: summary?.first_day ?? null,
+      end_date: summary?.last_day ?? null,
+      spend: summary?.spend ?? 0,
+      reach: summary?.reach ?? 0,
+      impressions: summary?.impressions ?? 0,
+      clicks: summary?.clicks ?? 0,
+      inline_link_clicks: summary?.inline_link_clicks ?? 0,
+      leads: summary?.leads ?? 0,
+      messages: summary?.messages ?? 0,
+      calls: summary?.calls ?? 0,
+    } satisfies ReportBreakdownRpcRow;
+  });
+}
+
+async function getAdAccountSummaryDateBounds(
+  supabase: SupabaseClient,
+  adAccountIds: string[]
+): Promise<{ dateFrom: string | null; dateTo: string | null }> {
+  let dateFrom: string | null = null;
+  let dateTo: string | null = null;
+
+  if (adAccountIds.length === 0) {
+    return { dateFrom, dateTo };
+  }
+
+  const client = supabase as any;
+
+  for (const adAccountIdsChunk of chunkArray(adAccountIds, 100)) {
+    let page = 0;
+    const pageSize = 1000;
+
+    while (true) {
+      const { data, error } = await client
+        .from('ad_entity_performance_summary')
+        .select('first_day, last_day')
+        .in('ad_account_id', adAccountIdsChunk)
+        .range(page * pageSize, page * pageSize + pageSize - 1);
+
+      if (error) {
+        throw error;
+      }
+
+      const rows = (data ?? []) as EntitySummaryDateBoundsRow[];
+
+      for (const row of rows) {
+        dateFrom = minDate(dateFrom, row.first_day);
+        dateTo = maxDate(dateTo, row.last_day);
+      }
+
+      if (rows.length < pageSize) {
+        break;
+      }
+
+      page += 1;
+    }
+  }
+
+  return { dateFrom, dateTo };
+}
+
+async function buildAdAccountSummaryMetricRows(
+  supabase: SupabaseClient,
+  input: {
+    context: FilterContext;
+    adAccountIds: string[];
+    fallbackDay: string;
+  }
+): Promise<MetricsRow[]> {
+  const currencyCodeByAdAccountId = new Map(
+    input.context.adAccounts.map((account) => [account.id, account.currency_code])
+  );
+  let rows = await listSummaryBreakdownRows(supabase, {
+    entityLevel: 'campaign',
+    adAccountIds: input.adAccountIds,
+    currencyCodeByAdAccountId,
+  });
+
+  if (rows.length === 0) {
+    rows = await listSummaryBreakdownRows(supabase, {
+      entityLevel: 'adset',
+      adAccountIds: input.adAccountIds,
+      currencyCodeByAdAccountId,
+    });
+  }
+
+  if (rows.length === 0) {
+    rows = await listSummaryBreakdownRows(supabase, {
+      entityLevel: 'ad',
+      adAccountIds: input.adAccountIds,
+      currencyCodeByAdAccountId,
+    });
+  }
+
+  return rows.map((row) => ({
+    day: row.end_date ?? row.start_date ?? input.fallbackDay,
+    currency_code: row.currency_code ?? null,
+    spend: toNumber(row.spend),
+    reach: toNumber(row.reach),
+    impressions: toNumber(row.impressions),
+    clicks: toNumber(row.clicks),
+    inline_link_clicks: toNumber(row.inline_link_clicks),
+    leads: toNumber(row.leads),
+    messages: toNumber(row.messages),
+    calls: toNumber(row.calls),
+  }));
+}
+
+async function listAdAccountMonthlyMetricRows(
+  supabase: SupabaseClient,
+  input: {
+    context: FilterContext;
+    adAccountIds: string[];
+  }
+): Promise<MetricsRow[]> {
+  if (input.adAccountIds.length === 0) {
+    return [];
+  }
+
+  const rows: AccountMonthlyMetricRow[] = [];
+  const client = supabase as any;
+
+  for (const adAccountIdsChunk of chunkArray(input.adAccountIds, 100)) {
+    let page = 0;
+    const pageSize = 1000;
+
+    while (true) {
+      const { data, error } = await client
+        .from('ad_account_performance_monthly')
+        .select(
+          'ad_account_id, month_start, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls'
+        )
+        .in('ad_account_id', adAccountIdsChunk)
+        .order('month_start', { ascending: true })
+        .range(page * pageSize, page * pageSize + pageSize - 1);
+
+      if (error) {
+        throw error;
+      }
+
+      const pageRows = (data ?? []) as AccountMonthlyMetricRow[];
+      rows.push(...pageRows);
+
+      if (pageRows.length < pageSize) {
+        break;
+      }
+
+      page += 1;
+    }
+  }
+
+  const currencyCodeByAdAccountId = new Map(
+    input.context.adAccounts.map((account) => [account.id, account.currency_code])
+  );
+
+  return rows.map((row) => ({
+    day: row.month_start,
+    currency_code: currencyCodeByAdAccountId.get(row.ad_account_id) ?? null,
+    spend: toNumber(row.spend),
+    reach: toNumber(row.reach),
+    impressions: toNumber(row.impressions),
+    clicks: toNumber(row.clicks),
+    inline_link_clicks: toNumber(row.inline_link_clicks),
+    leads: toNumber(row.leads),
+    messages: toNumber(row.messages),
+    calls: toNumber(row.calls),
+  }));
+}
+
+async function buildAdAccountFullHistoryMetricRows(
+  supabase: SupabaseClient,
+  input: {
+    query: ReportQueryInput;
+    context: FilterContext;
+    adAccountIds: string[];
+    fallbackRows: MetricsRow[];
+  }
+): Promise<MetricsRow[]> {
+  const [monthlyRows, dailyRows] = await Promise.all([
+    listAdAccountMonthlyMetricRows(supabase, {
+      context: input.context,
+      adAccountIds: input.adAccountIds,
+    }),
+    listReportMetricRows(supabase, {
+      entityLevel: 'campaign',
+      adAccountIds: input.adAccountIds,
+      dateFrom: input.query.dateFrom,
+      dateTo: input.query.dateTo,
+    }),
+  ]);
+  const rows = [...monthlyRows, ...dailyRows];
+
+  if (rows.length > 0) {
+    return rows;
+  }
+
+  return input.fallbackRows;
+}
+
 function buildReportRpcArgs(input: {
   entityLevel: ReportEntityDailyRow['entity_level'];
   adAccountIds: string[];
@@ -1091,6 +1619,72 @@ async function listReportEntityDailyRows(
   return rows;
 }
 
+async function listRecentlyActiveEntityExternalIds(
+  supabase: SupabaseClient,
+  input: {
+    adAccountIds: string[];
+    entityLevel: ReportEntityDailyRow['entity_level'];
+    sinceDay: string;
+  }
+): Promise<Set<string>> {
+  const ids = new Set<string>();
+
+  if (input.adAccountIds.length === 0) {
+    return ids;
+  }
+
+  const deliveryFilter =
+    'spend.gt.0,impressions.gt.0,clicks.gt.0,inline_link_clicks.gt.0,leads.gt.0,messages.gt.0,calls.gt.0';
+
+  for (const adAccountIdsChunk of chunkArray(input.adAccountIds, 100)) {
+    let page = 0;
+    const pageSize = 1000;
+
+    while (true) {
+      const { data, error } = await supabase
+        .from('report_entity_daily_v')
+        .select('entity_external_id')
+        .eq('entity_level', input.entityLevel)
+        .in('ad_account_id', adAccountIdsChunk)
+        .gte('day', input.sinceDay)
+        .or(deliveryFilter)
+        .range(page * pageSize, page * pageSize + pageSize - 1);
+
+      if (error) {
+        throw error;
+      }
+
+      const pageRows = (data ?? []) as Array<{ entity_external_id: string | null }>;
+
+      for (const row of pageRows) {
+        if (row.entity_external_id) {
+          ids.add(row.entity_external_id);
+        }
+      }
+
+      if (pageRows.length < pageSize) {
+        break;
+      }
+
+      page += 1;
+    }
+  }
+
+  return ids;
+}
+
+function keepActiveRecentOrSelected(
+  row: { external_id: string; status: string | null },
+  selectedExternalIds: Set<string>,
+  recentExternalIds: Set<string>
+): boolean {
+  return (
+    selectedExternalIds.has(row.external_id) ||
+    recentExternalIds.has(row.external_id) ||
+    isLikelyActiveStatus(row.status)
+  );
+}
+
 async function getFilterContext(
   supabase: SupabaseClient,
   query: ReportQueryInput
@@ -1121,14 +1715,55 @@ async function getFilterContext(
         }),
       ])
     : [[], [], []];
+  const recentSinceDay = addUtcDays(toIsoDate(new Date()), -29);
+  const [recentCampaignExternalIds, recentAdsetExternalIds, recentAdExternalIds] =
+    allowedAdAccountIds.length
+      ? await Promise.all([
+          listRecentlyActiveEntityExternalIds(supabase, {
+            adAccountIds: allowedAdAccountIds,
+            entityLevel: 'campaign',
+            sinceDay: recentSinceDay,
+          }),
+          listRecentlyActiveEntityExternalIds(supabase, {
+            adAccountIds: allowedAdAccountIds,
+            entityLevel: 'adset',
+            sinceDay: recentSinceDay,
+          }),
+          listRecentlyActiveEntityExternalIds(supabase, {
+            adAccountIds: allowedAdAccountIds,
+            entityLevel: 'ad',
+            sinceDay: recentSinceDay,
+          }),
+        ])
+      : [new Set<string>(), new Set<string>(), new Set<string>()];
+  const selectedCampaignExternalIds = new Set(query.campaignIds);
+  const selectedAdsetExternalIds = new Set(query.adsetIds);
+  const selectedAdExternalIds = new Set(query.adIds);
+  const filteredAds = ads.filter((ad) =>
+    keepActiveRecentOrSelected(ad, selectedAdExternalIds, recentAdExternalIds)
+  );
+  const adsetExternalIdsNeededByAds = new Set(filteredAds.map((ad) => ad.adset_external_id));
+  const filteredAdsets = adsets.filter(
+    (adset) =>
+      adsetExternalIdsNeededByAds.has(adset.external_id) ||
+      keepActiveRecentOrSelected(adset, selectedAdsetExternalIds, recentAdsetExternalIds)
+  );
+  const campaignExternalIdsNeededByAdsets = new Set(
+    filteredAdsets.map((adset) => adset.campaign_external_id)
+  );
+  const filteredCampaigns = campaigns.filter(
+    (campaign) =>
+      campaignExternalIdsNeededByAdsets.has(campaign.external_id) ||
+      keepActiveRecentOrSelected(campaign, selectedCampaignExternalIds, recentCampaignExternalIds)
+  );
 
   return {
     business,
     platforms,
     adAccounts,
-    campaigns,
-    adsets,
-    ads,
+    campaigns: filteredCampaigns,
+    adsets: filteredAdsets,
+    ads: filteredAds,
   };
 }
 
@@ -1241,18 +1876,29 @@ async function buildCampaignRows(
     adAccountIds: string[];
     externalIds?: string[];
     includeCampaignReportLinks?: boolean;
+    useLifetimeSummary?: boolean;
   }
 ): Promise<ReportBreakdownRow[]> {
   const adAccountNameById = new Map(
     input.context.adAccounts.map((account) => [account.id, account.name || account.external_account_id])
   );
-  const rows = await listReportBreakdownRows(supabase, {
-    entityLevel: 'campaign',
-    adAccountIds: input.adAccountIds,
-    dateFrom: input.query.dateFrom,
-    dateTo: input.query.dateTo,
-    entityExternalIds: input.externalIds,
-  });
+  const currencyCodeByAdAccountId = new Map(
+    input.context.adAccounts.map((account) => [account.id, account.currency_code])
+  );
+  const rows = input.useLifetimeSummary
+    ? await listSummaryBreakdownRows(supabase, {
+        entityLevel: 'campaign',
+        adAccountIds: input.adAccountIds,
+        entityExternalIds: input.externalIds,
+        currencyCodeByAdAccountId,
+      })
+    : await listReportBreakdownRows(supabase, {
+        entityLevel: 'campaign',
+        adAccountIds: input.adAccountIds,
+        dateFrom: input.query.dateFrom,
+        dateTo: input.query.dateTo,
+        entityExternalIds: input.externalIds,
+      });
 
   if (rows.length === 0) {
     return [];
@@ -1293,19 +1939,31 @@ async function buildAdsetRows(
     campaignExternalIds?: string[];
     externalIds?: string[];
     includeAdsetReportLinks?: boolean;
+    useLifetimeSummary?: boolean;
   }
 ): Promise<ReportBreakdownRow[]> {
   const campaignNameById = new Map(
     input.context.campaigns.map((campaign) => [campaign.external_id, campaign.name || 'Unnamed campaign'])
   );
-  const rows = await listReportBreakdownRows(supabase, {
-    entityLevel: 'adset',
-    adAccountIds: input.adAccountIds,
-    dateFrom: input.query.dateFrom,
-    dateTo: input.query.dateTo,
-    campaignExternalIds: input.campaignExternalIds,
-    entityExternalIds: input.externalIds,
-  });
+  const currencyCodeByAdAccountId = new Map(
+    input.context.adAccounts.map((account) => [account.id, account.currency_code])
+  );
+  const rows = input.useLifetimeSummary
+    ? await listSummaryBreakdownRows(supabase, {
+        entityLevel: 'adset',
+        adAccountIds: input.adAccountIds,
+        campaignExternalIds: input.campaignExternalIds,
+        entityExternalIds: input.externalIds,
+        currencyCodeByAdAccountId,
+      })
+    : await listReportBreakdownRows(supabase, {
+        entityLevel: 'adset',
+        adAccountIds: input.adAccountIds,
+        dateFrom: input.query.dateFrom,
+        dateTo: input.query.dateTo,
+        campaignExternalIds: input.campaignExternalIds,
+        entityExternalIds: input.externalIds,
+      });
 
   if (rows.length === 0) {
     return [];
@@ -1351,6 +2009,7 @@ async function buildAdRows(
     adsetExternalIds?: string[];
     externalIds?: string[];
     includeAdReportLinks?: boolean;
+    useLifetimeSummary?: boolean;
   }
 ): Promise<ReportBreakdownRow[]> {
   const adsetByExternalId = new Map(
@@ -1363,14 +2022,25 @@ async function buildAdRows(
     input.context.campaigns.map((campaign) => [campaign.external_id, campaign.name || 'Unnamed campaign'])
   );
 
-  const rows = await listReportBreakdownRows(supabase, {
-    entityLevel: 'ad',
-    adAccountIds: input.adAccountIds,
-    dateFrom: input.query.dateFrom,
-    dateTo: input.query.dateTo,
-    adsetExternalIds: input.adsetExternalIds,
-    entityExternalIds: input.externalIds,
-  });
+  const currencyCodeByAdAccountId = new Map(
+    input.context.adAccounts.map((account) => [account.id, account.currency_code])
+  );
+  const rows = input.useLifetimeSummary
+    ? await listSummaryBreakdownRows(supabase, {
+        entityLevel: 'ad',
+        adAccountIds: input.adAccountIds,
+        adsetExternalIds: input.adsetExternalIds,
+        entityExternalIds: input.externalIds,
+        currencyCodeByAdAccountId,
+      })
+    : await listReportBreakdownRows(supabase, {
+        entityLevel: 'ad',
+        adAccountIds: input.adAccountIds,
+        dateFrom: input.query.dateFrom,
+        dateTo: input.query.dateTo,
+        adsetExternalIds: input.adsetExternalIds,
+        entityExternalIds: input.externalIds,
+      });
 
   if (rows.length === 0) {
     return [];
@@ -1475,6 +2145,7 @@ async function buildRankingContext(
     input.query.scope === 'business' ||
     input.query.scope === 'platform' ||
     input.query.scope === 'ad_account';
+  const useLifetimeSummary = input.query.scope === 'ad_account';
   const shouldBuildCampaignRankings =
     isTopLevelReport ||
     input.query.scope === 'campaign' ||
@@ -1495,6 +2166,7 @@ async function buildRankingContext(
           context: input.context,
           adAccountIds: input.adAccountIds,
           includeCampaignReportLinks: true,
+          useLifetimeSummary,
         })
       : Promise.resolve([]),
     shouldBuildAdsetRankings && selectedCampaignExternalIds.size > 0
@@ -1504,6 +2176,7 @@ async function buildRankingContext(
           adAccountIds: input.adAccountIds,
           campaignExternalIds: Array.from(selectedCampaignExternalIds),
           includeAdsetReportLinks: true,
+          useLifetimeSummary,
         })
       : Promise.resolve([]),
     shouldBuildAdsetRankings
@@ -1512,6 +2185,7 @@ async function buildRankingContext(
           context: input.context,
           adAccountIds: input.adAccountIds,
           includeAdsetReportLinks: true,
+          useLifetimeSummary,
         })
       : Promise.resolve([]),
   ]);
@@ -1542,6 +2216,7 @@ async function buildRankingContext(
           adAccountIds: input.adAccountIds,
           adsetExternalIds: Array.from(new Set(sameAdsetExternalIds)),
           includeAdReportLinks: true,
+          useLifetimeSummary,
         })
       : Promise.resolve([]),
     buildAdRows(supabase, {
@@ -1549,6 +2224,7 @@ async function buildRankingContext(
       context: input.context,
       adAccountIds: input.adAccountIds,
       includeAdReportLinks: true,
+      useLifetimeSummary,
     }),
   ]);
 
@@ -1629,6 +2305,7 @@ async function buildBreakdown(
       context,
       adAccountIds,
       includeCampaignReportLinks: true,
+      useLifetimeSummary: query.scope === 'ad_account',
     });
 
     return {
@@ -2053,7 +2730,7 @@ async function listReportAudienceRows(
   }
 
   type AudienceBreakdownSelectRow = Pick<
-    Database['public']['Tables']['meta_audience_breakdowns_daily']['Row'],
+    Database['public']['Views']['meta_audience_breakdowns_daily']['Row'],
     | 'entity_level'
     | 'adset_id'
     | 'ad_id'
@@ -2082,8 +2759,6 @@ async function listReportAudienceRows(
       .select(
         'entity_level, adset_id, ad_id, breakdown_type, dimension_1_key, dimension_1_value, dimension_2_key, dimension_2_value, publisher_platform, platform_position, impression_device, spend, impressions, clicks, leads, messages, calls'
       )
-      .gte('day', input.dateFrom)
-      .lte('day', input.dateTo)
       .in('adset_id', chunk)
       .in('breakdown_type', [...REPORT_AUDIENCE_BREAKDOWN_TYPES]);
 
@@ -2112,11 +2787,11 @@ async function listReportAudienceRows(
       entityLevel: (row.entity_level === 'ad' ? 'ad' : 'adset') as 'ad' | 'adset',
       adsetInternalId: row.adset_id,
       adInternalId: row.ad_id,
-      breakdownType: row.breakdown_type,
-      dimension1Key: row.dimension_1_key,
-      dimension1Value: row.dimension_1_value,
-      dimension2Key: row.dimension_2_key,
-      dimension2Value: row.dimension_2_value,
+      breakdownType: row.breakdown_type ?? '',
+      dimension1Key: row.dimension_1_key ?? '',
+      dimension1Value: row.dimension_1_value ?? '',
+      dimension2Key: row.dimension_2_key ?? '',
+      dimension2Value: row.dimension_2_value ?? '',
       publisherPlatform: row.publisher_platform,
       platformPosition: row.platform_position,
       impressionDevice: row.impression_device,
@@ -2154,7 +2829,7 @@ async function listReportHourlyTrendRows(
   }
 
   type HourlySelectRow = Pick<
-    Database['public']['Tables']['meta_hourly_performance']['Row'],
+    Database['public']['Views']['meta_hourly_performance']['Row'],
     | 'day'
     | 'hour_of_day'
     | 'entity_level'
@@ -2371,56 +3046,95 @@ export async function buildReportPayload(
     query.adAccountIds.length > 0 ? query.adAccountIds.includes(row.id) : true
   );
   const adAccountIds = adAccounts.map((row) => row.id);
+  const summaryBounds =
+    query.scope === 'ad_account'
+      ? await getAdAccountSummaryDateBounds(supabase, adAccountIds)
+      : { dateFrom: null, dateTo: null };
+  const effectiveQuery: ReportQueryInput =
+    query.scope === 'ad_account'
+      ? {
+          ...query,
+          dateFrom: summaryBounds.dateFrom ?? query.dateFrom,
+          dateTo: summaryBounds.dateTo ?? query.dateTo,
+          groupBy: 'month',
+          compareMode: 'none',
+        }
+      : query;
+  const accountSummaryRowsPromise =
+    includeMetrics && effectiveQuery.scope === 'ad_account'
+      ? buildAdAccountSummaryMetricRows(supabase, {
+          context,
+          adAccountIds,
+          fallbackDay: effectiveQuery.dateTo,
+        })
+      : Promise.resolve<MetricsRow[] | null>(null);
   const previousRange =
-    query.compareMode === 'previous_period' ? getPreviousPeriodRange(query) : null;
+    effectiveQuery.compareMode === 'previous_period' ? getPreviousPeriodRange(effectiveQuery) : null;
   const currentRowsPromise = includeMetrics
-    ? buildTopLevelMetricsRows(supabase, query, adAccountIds, query.dateFrom, query.dateTo)
+    ? effectiveQuery.scope === 'ad_account'
+      ? accountSummaryRowsPromise.then((accountSummaryRows) =>
+          buildAdAccountFullHistoryMetricRows(supabase, {
+            query: effectiveQuery,
+            context,
+            adAccountIds,
+            fallbackRows: accountSummaryRows ?? [],
+          })
+        )
+      : buildTopLevelMetricsRows(
+          supabase,
+          effectiveQuery,
+          adAccountIds,
+          effectiveQuery.dateFrom,
+          effectiveQuery.dateTo
+        )
     : Promise.resolve([]);
   const previousRowsPromise =
     includeMetrics && previousRange
       ? buildTopLevelMetricsRows(
           supabase,
-          query,
+          effectiveQuery,
           adAccountIds,
           previousRange.dateFrom,
           previousRange.dateTo
         )
       : Promise.resolve([]);
   const breakdownPromise = includeBreakdown
-    ? buildBreakdown(supabase, query, context, adAccountIds)
+    ? buildBreakdown(supabase, effectiveQuery, context, adAccountIds)
     : Promise.resolve(emptyReportBreakdown());
   const rankingPromise = includeRanking
     ? buildRankingContext(supabase, {
-        query,
+        query: effectiveQuery,
         context,
         adAccountIds,
       })
     : Promise.resolve(emptyReportRankingContext());
-  const activeDatesPromise = includeActiveDates
-    ? buildActiveDateContext(supabase, query, adAccountIds)
+  const activeDatesPromise = includeActiveDates && effectiveQuery.scope !== 'ad_account'
+    ? buildActiveDateContext(supabase, effectiveQuery, adAccountIds)
     : Promise.resolve(null);
 
-  const [currentRows, previousRows, breakdown, ranking, activeDates] = await Promise.all([
+  const [currentRows, previousRows, breakdown, ranking, activeDates, accountSummaryRows] = await Promise.all([
     currentRowsPromise,
     previousRowsPromise,
     breakdownPromise,
     rankingPromise,
     activeDatesPromise,
+    accountSummaryRowsPromise,
   ]);
 
-  const summary = sumMetrics(currentRows);
+  const summaryRows = accountSummaryRows && accountSummaryRows.length > 0 ? accountSummaryRows : currentRows;
+  const summary = sumMetrics(summaryRows);
   const previousTotals = previousRows.length > 0 ? sumMetrics(previousRows) : null;
-  const currencyCode = resolveCurrencyCode(currentRows);
+  const currencyCode = resolveCurrencyCode(summaryRows);
   const title = resolveTitle({
-    query,
+    query: effectiveQuery,
     context,
     adAccountIds,
   });
-  const filterSummary = buildFilterSummary({ query, context });
+  const filterSummary = buildFilterSummary({ query: effectiveQuery, context });
   const isMetaSurface = adAccounts.some((account) => isMetaAdAccount(context, account));
   const surface = includeSurface
     ? await buildSurfaceContext(supabase, {
-        query,
+        query: effectiveQuery,
         context,
         adAccounts,
         hasReportDelivery:
@@ -2433,7 +3147,7 @@ export async function buildReportPayload(
   const generatedAt = new Date().toISOString();
 
   return {
-    query,
+    query: effectiveQuery,
     meta: {
       businessName: context.business.business_name,
       title: title.title,
@@ -2448,7 +3162,7 @@ export async function buildReportPayload(
       previousTotals,
       currencyCode,
     }),
-    series: groupSeries(currentRows, query.groupBy),
+    series: groupSeries(currentRows, effectiveQuery.groupBy),
     comparison: {
       previousDateFrom: previousRange?.dateFrom ?? null,
       previousDateTo: previousRange?.dateTo ?? null,
