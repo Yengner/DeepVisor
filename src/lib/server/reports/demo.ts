@@ -1173,6 +1173,7 @@ export function buildDemoReportPayload(
       previousDateTo: previousRange?.dateTo ?? null,
       previousTotals,
     },
+    findings: [],
     breakdown: {
       title: resolveBreakdownTitle(query.scope),
       rows: breakdownRows,

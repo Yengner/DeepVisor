@@ -87,6 +87,7 @@ export default function CampaignTable({
             <Table.Th style={{ whiteSpace: 'nowrap' }}>End</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Spend</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Results</Table.Th>
+            <Table.Th style={{ whiteSpace: 'nowrap' }}>Cost/Result</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>CTR</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>CPC</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>CPM</Table.Th>
@@ -98,7 +99,6 @@ export default function CampaignTable({
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Messages</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Freq</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>CPL</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Cost/Msg</Table.Th>
             <Table.Th
               style={{
                 width: RIGHT_COL_WIDTH,
@@ -236,6 +236,7 @@ export default function CampaignTable({
                   </Table.Td>
                   <Table.Td><Text fw={500} size="sm">{fmt$(campaign.spend)}</Text></Table.Td>
                   <Table.Td><Text size="sm">{campaign.results}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.costPerResult}</Text></Table.Td>
                   <Table.Td><Text size="sm">{campaign.ctr != null ? `${campaign.ctr}%` : '0%'}</Text></Table.Td>
                   <Table.Td><Text size="sm">{campaign.cpc != null ? fmt$(campaign.cpc) : '—'}</Text></Table.Td>
                   <Table.Td><Text size="sm">{campaign.cpm != null ? fmt$(campaign.cpm) : '—'}</Text></Table.Td>
@@ -255,13 +256,6 @@ export default function CampaignTable({
                   <Table.Td>
                     <Text size="sm">
                       {Number(campaign.leads) > 0 ? fmt$(Number(campaign.spend || 0) / Number(campaign.leads)) : '$0.00'}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm">
-                      {Number(campaign.messages) > 0
-                        ? fmt$(Number(campaign.spend || 0) / Number(campaign.messages))
-                        : '$0.00'}
                     </Text>
                   </Table.Td>
 

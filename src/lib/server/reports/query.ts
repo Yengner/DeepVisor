@@ -88,11 +88,13 @@ export function parseReportQueryInput(
   const requestedScope = toArray(searchParams.scope)[0] as ReportScope | undefined;
   const dateFrom = toArray(searchParams.date_from)[0];
   const dateTo = toArray(searchParams.date_to)[0];
+  const requestedRangeMode = toArray(searchParams.range)[0];
 
   const normalizedDateFrom = dateFrom && isIsoDate(dateFrom) ? dateFrom : defaults.dateFrom;
   const normalizedDateTo = dateTo && isIsoDate(dateTo) ? dateTo : defaults.dateTo;
   const compare = toArray(searchParams.compare)[0];
   const groupBy = toArray(searchParams.group_by)[0] as ReportGroupBy | undefined;
+  const rangeMode = requestedRangeMode === 'max' ? 'max' : 'date_range';
 
   return {
     businessId,
@@ -115,12 +117,15 @@ export function parseReportQueryInput(
     dateFrom: normalizedDateFrom,
     dateTo: normalizedDateTo,
     groupBy:
-      groupBy && ['day', 'week', 'month'].includes(groupBy)
-        ? groupBy
-        : resolveDefaultGroupBy(normalizedDateFrom, normalizedDateTo),
+      rangeMode === 'max'
+        ? 'month'
+        : groupBy && ['day', 'week', 'month'].includes(groupBy)
+          ? groupBy
+          : resolveDefaultGroupBy(normalizedDateFrom, normalizedDateTo),
     compareMode:
-      compare === 'previous_period'
+      rangeMode === 'date_range' && compare === 'previous_period'
         ? ('previous_period' satisfies ReportCompareMode)
         : ('none' satisfies ReportCompareMode),
+    rangeMode,
   };
 }

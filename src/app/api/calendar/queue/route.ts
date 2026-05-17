@@ -41,7 +41,7 @@ async function validateAdAccountAccess(
 
 export async function POST(request: Request) {
   try {
-    const { businessId } = await getRequiredAppContext();
+    const { businessId, user } = await getRequiredAppContext();
     const supabase = createAdminClient();
     const body = (await request.json()) as CreateDashboardQueueBody;
 
@@ -67,6 +67,7 @@ export async function POST(request: Request) {
     const existingRows = await listCalendarQueueItems(supabase, {
       businessId,
       adAccountId: body.adAccountId,
+      userId: user.id,
     });
     const duplicate = existingRows.find(
       (item) =>
@@ -95,6 +96,8 @@ export async function POST(request: Request) {
       title: body.title,
       description: body.description ?? null,
       destinationHref: body.destinationHref ?? '/calendar',
+      createdByUserId: user.id,
+      updatedByUserId: user.id,
       payload: body.payload ?? {},
     };
 

@@ -18,7 +18,7 @@ export async function POST(
 ) {
   try {
     const { findingId } = await params;
-    const { businessId } = await getRequiredAppContext();
+    const { businessId, user } = await getRequiredAppContext();
     const supabase = createAdminClient();
     const finding = await getTrendFindingById(supabase, {
       businessId,
@@ -42,6 +42,7 @@ export async function POST(
     const queueItems = await listCalendarQueueItems(supabase, {
       businessId,
       adAccountId: finding.adAccountId,
+      userId: user.id,
     });
     const duplicate = queueItems.find(
       (item) =>
@@ -68,6 +69,8 @@ export async function POST(
         title: finding.title,
         description: finding.summary,
         destinationHref: finding.recommendedAction.href ?? '/calendar',
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
         payload: {
           trendFindingId: finding.id,
           trendFindingType: finding.findingType,

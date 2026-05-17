@@ -17,6 +17,8 @@ import {
   buildDefaultReportSubscription,
   getReportSubscription,
 } from '../repositories/reportSubscriptions';
+import { hasActiveReviewReportQueueItem } from '../repositories/calendarQueue';
+import { listActiveTrendFindings } from '../repositories/trendFindings';
 import { syncTrendFindings } from '../repositories/trendFindings';
 import type {
   MetaTrendIntelligenceArtifacts,
@@ -1292,5 +1294,39 @@ export async function syncMetaTrendIntelligenceArtifacts(input: {
     findings,
     notificationSummary,
     patternCount,
+    refreshMode: 'recomputed',
   };
+}
+
+export async function syncMetaTrendIntelligenceArtifactsForQueueState(input: {
+  supabase: IntelligenceClient;
+  businessId: string;
+  platformIntegrationId: string;
+  adAccountId: string;
+  forceRefresh?: boolean;
+}): Promise<MetaTrendIntelligenceArtifacts> {
+  if (input.forceRefresh) {
+    return syncMetaTrendIntelligenceArtifacts(input);
+  }
+
+  const hasReviewQueue = await hasActiveReviewReportQueueItem(input.supabase, {
+    businessId: input.businessId,
+    adAccountId: input.adAccountId,
+  });
+
+  if (!hasReviewQueue) {
+    const findings = await listActiveTrendFindings(input.supabase, {
+      businessId: input.businessId,
+      adAccountId: input.adAccountId,
+    });
+
+    return {
+      findings,
+      notificationSummary: [],
+      patternCount: 0,
+      refreshMode: 'stored',
+    };
+  }
+
+  return syncMetaTrendIntelligenceArtifacts(input);
 }

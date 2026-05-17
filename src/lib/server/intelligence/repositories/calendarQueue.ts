@@ -68,6 +68,8 @@ function toQueueInsert(
     materialized_from_blueprint_key: draft.materializedFromBlueprintKey ?? null,
     child_blueprints_json:
       (draft.childBlueprints ?? []) as unknown as QueueInsert['child_blueprints_json'],
+    created_by_user_id: draft.createdByUserId ?? null,
+    updated_by_user_id: draft.updatedByUserId ?? draft.createdByUserId ?? null,
     payload_json: draft.payload as QueueInsert['payload_json'],
     updated_at: timestamp,
   };
@@ -82,20 +84,51 @@ export async function listCalendarQueueItems(
   input: {
     businessId: string;
     adAccountId: string;
+    userId?: string | null;
   }
 ): Promise<CalendarQueueItem[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('calendar_queue_items')
     .select('*')
     .eq('business_id', input.businessId)
     .eq('ad_account_id', input.adAccountId)
     .order('created_at', { ascending: false });
 
+  if (input.userId) {
+    query = query.eq('created_by_user_id', input.userId);
+  }
+
+  const { data, error } = await query;
+
   if (error) {
     throw error;
   }
 
   return ((data ?? []) as QueueRow[]).map(mapQueueRow);
+}
+
+export async function hasActiveReviewReportQueueItem(
+  supabase: IntelligenceClient,
+  input: {
+    businessId: string;
+    adAccountId: string;
+  }
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('calendar_queue_items')
+    .select('id')
+    .eq('business_id', input.businessId)
+    .eq('ad_account_id', input.adAccountId)
+    .eq('item_type', 'review_report')
+    .in('status', ['ready', 'approved', 'scheduled', 'in_progress'])
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data?.id);
 }
 
 /**
@@ -116,6 +149,28 @@ export async function deleteSignalCalendarQueueItems(
     .eq('business_id', input.businessId)
     .eq('ad_account_id', input.adAccountId)
     .eq('source_type', 'signal')
+    .select('id');
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.isArray(data) ? data.length : 0;
+}
+
+export async function deleteAutomaticCalendarQueueItems(
+  supabase: IntelligenceClient,
+  input: {
+    businessId: string;
+    adAccountId: string;
+  }
+): Promise<number> {
+  const { data, error } = await supabase
+    .from('calendar_queue_items')
+    .delete()
+    .eq('business_id', input.businessId)
+    .eq('ad_account_id', input.adAccountId)
+    .in('source_type', ['signal', 'system'])
     .select('id');
 
   if (error) {

@@ -40,6 +40,8 @@ export interface CalendarQueueTemplate {
   startDate: string;
   endDate: string | null;
   status: 'active' | 'paused';
+  createdByUserId?: string | null;
+  updatedByUserId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -42,7 +42,6 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import type { BusinessIntelligenceWorkspace } from '@/lib/server/intelligence';
 import {
-  buildCalendarQueuePreviewItems,
   buildRecurringCalendarQueuePreviewItems,
   type CalendarQueuePreviewItem as QueueItem,
   type CalendarQueueSource as QueueSource,
@@ -861,11 +860,7 @@ export default function CalendarClient({
 }) {
   const router = useRouter();
   const weekScrollerRef = useRef<HTMLDivElement | null>(null);
-  const [queueItems, setQueueItems] = useState<QueueItem[]>(() =>
-    initialQueueItems.length > 0
-      ? initialQueueItems
-      : buildCalendarQueuePreviewItems(workspace.selectedAdAccountName)
-  );
+  const [queueItems, setQueueItems] = useState<QueueItem[]>(() => initialQueueItems);
   const [queueTemplates, setQueueTemplates] = useState<CalendarQueueTemplate[]>(
     initialQueueTemplates
   );
@@ -931,7 +926,7 @@ export default function CalendarClient({
       start: candidates[0] ?? today,
       end: candidates[candidates.length - 1] ?? today,
     };
-  }, [monthDays, weekDays, today]);
+  }, [monthDays, today, weekDays]);
   const persistedTemplateOccurrenceKeys = useMemo(() => {
     const keys = new Set<string>();
     flattenQueueItems(queueItems).forEach((item) => {
@@ -1196,7 +1191,7 @@ export default function CalendarClient({
 
   async function handleRebuildQueue() {
     if (!workspace.selectedAdAccountId || !selectedPlatformIntegrationId) {
-      toast.error('Select an ad account before rebuilding the queue.');
+      toast.error('Select an ad account before clearing automatic queue items.');
       return;
     }
 
@@ -1220,18 +1215,20 @@ export default function CalendarClient({
       };
 
       if (!response.ok || !Array.isArray(payload.queueItems)) {
-        throw new Error(payload.error ?? 'Unable to rebuild queue.');
+        throw new Error(payload.error ?? 'Unable to clear automatic queue items.');
       }
 
       setQueueItems(payload.queueItems);
       setSelectedCalendarItemId(null);
       toast.success(
         typeof payload.removedCount === 'number'
-          ? `Queue rebuilt. Cleared ${payload.removedCount} saved item${payload.removedCount === 1 ? '' : 's'}.`
-          : 'Queue rebuilt.'
+          ? `Cleared ${payload.removedCount} automatic item${payload.removedCount === 1 ? '' : 's'}.`
+          : 'Automatic queue items cleared.'
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to rebuild queue.');
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to clear automatic queue items.'
+      );
     } finally {
       setRebuildingQueue(false);
     }
@@ -1744,14 +1741,14 @@ export default function CalendarClient({
                 radius="xl"
                 size="sm"
                 fullWidth
-                variant="light"
-                color="violet"
+                variant="default"
+                color="gray"
                 leftSection={<IconRefresh size={16} />}
                 loading={rebuildingQueue}
                 disabled={!workspace.selectedAdAccountId || !selectedPlatformIntegrationId}
                 onClick={() => void handleRebuildQueue()}
               >
-                Rebuild automatic queue
+                Clear automatic items
               </Button>
 
               <MiniCalendar
@@ -1933,9 +1930,6 @@ export default function CalendarClient({
               ) : null}
 
               <Paper withBorder radius="xl" p="md" className={classes.topPanel}>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                  Focus
-                </Text>
                 <Text fw={700} mt={6}>
                   {calendarRangeLabel}
                 </Text>
@@ -1950,19 +1944,13 @@ export default function CalendarClient({
                 <Text size="sm" c="dimmed" mt="md">
                   Cursor {formatSidebarDayLabel(toIsoDay(calendarCursor))}
                 </Text>
-                <Text size="xs" c="dimmed" mt="xs">
-                  Testing tool: rebuilds the signal-generated queue for the selected ad account and clears old saved workflow items first.
-                </Text>
               </Paper>
 
               <Paper withBorder radius="xl" p="md" className={classes.topPanel}>
                 <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
                   <div>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                      Saved queues
-                    </Text>
                     <Text fw={700} mt={6}>
-                      Repeatable workflows
+                      Recurring queues
                     </Text>
                   </div>
                   {queueTemplates.length > 3 ? (
@@ -2051,7 +2039,7 @@ export default function CalendarClient({
                     ))
                   ) : (
                     <Text size="sm" c="dimmed">
-                      Create a weekly or monthly queue here for recurring reports, campaign reviews, budget checks, or creative refreshes.
+                      Create weekly or monthly queues for reports, campaign reviews, budget checks, or creative refreshes.
                     </Text>
                   )}
                 </Stack>

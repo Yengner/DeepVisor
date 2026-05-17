@@ -18,6 +18,7 @@ export async function POST(
       .select('id, business_id, ad_account_id')
       .eq('id', queueItemId)
       .eq('business_id', businessId)
+      .eq('created_by_user_id', user.id)
       .maybeSingle();
 
     if (queueError) {
@@ -36,6 +37,7 @@ export async function POST(
     const intelligence = await getMetaAccountIntelligenceReadModel(adminSupabase, {
       businessId,
       adAccountId: queueItem.ad_account_id,
+      userId: user.id,
     });
 
     return NextResponse.json({

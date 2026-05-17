@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
+import { syncMetaTrendIntelligenceArtifactsForQueueState } from '@/lib/server/intelligence/trends/service';
 import { createAdminClient } from '@/lib/server/supabase/admin';
-import {
-  syncMetaTrendIntelligenceArtifacts,
-} from '@/lib/server/intelligence';
 import { toTrendFindingView } from '@/lib/server/intelligence/repositories/trendFindings';
 
 type RunFindingsBody = {
@@ -62,15 +60,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await syncMetaTrendIntelligenceArtifacts({
+    const result = await syncMetaTrendIntelligenceArtifactsForQueueState({
       supabase,
       businessId,
       platformIntegrationId,
       adAccountId,
+      forceRefresh: true,
     });
 
     return NextResponse.json({
       success: true,
+      refreshMode: result.refreshMode,
       findings: result.findings.map(toTrendFindingView),
       notificationSummary: result.notificationSummary,
       patternCount: result.patternCount,

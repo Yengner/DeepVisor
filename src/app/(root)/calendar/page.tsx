@@ -40,7 +40,7 @@ export default async function CalendarPage({
 }: {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-    const { businessId } = await getRequiredAppContext();
+    const { businessId, user } = await getRequiredAppContext();
     const { selectedPlatformId, selectedAdAccountId } = await resolveCurrentSelection(businessId);
     const params = await searchParams;
 
@@ -63,6 +63,7 @@ export default async function CalendarPage({
         ? await getMetaAccountIntelligenceReadModel(adminSupabase, {
             businessId,
             adAccountId: workspace.selectedAdAccountId,
+            userId: user.id,
           })
         : { signals: [], queueItems: [] };
     const queueTemplates =
@@ -70,6 +71,7 @@ export default async function CalendarPage({
         ? await listCalendarQueueTemplates(adminSupabase, {
             businessId,
             adAccountId: workspace.selectedAdAccountId,
+            userId: user.id,
           })
         : [];
 

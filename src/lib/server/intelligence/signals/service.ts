@@ -2,6 +2,7 @@ import 'server-only';
 
 import { createServerClient } from '@/lib/server/supabase/server';
 import type { Database } from '@/lib/shared/types/supabase';
+import { isCalendarManualMode } from '../calendarMode';
 import {
   syncSignalCalendarQueueItems,
 } from '../repositories/calendarQueue';
@@ -697,11 +698,13 @@ export async function syncMetaAccountIntelligenceArtifacts(input: {
     sourceDigestHash: input.assessment.digest.digestHash,
     drafts: signalDrafts,
   });
-  const queueItems = await syncSignalCalendarQueueItems(supabase, {
-    businessId: input.assessment.businessId,
-    adAccountId: input.assessment.adAccountId,
-    drafts: buildQueueItemDraftsFromSignals(signals),
-  });
+  const queueItems = isCalendarManualMode()
+    ? []
+    : await syncSignalCalendarQueueItems(supabase, {
+        businessId: input.assessment.businessId,
+        adAccountId: input.assessment.adAccountId,
+        drafts: buildQueueItemDraftsFromSignals(signals),
+      });
 
   return {
     assessment: input.assessment,

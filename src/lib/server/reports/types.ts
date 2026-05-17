@@ -4,12 +4,15 @@ import type {
   DashboardPlatformBreakdowns,
   DashboardTrendPoint,
 } from '@/lib/server/dashboard/types';
+import type { TrendFindingView } from '@/lib/server/intelligence/types';
 
 export type ReportScope = 'business' | 'platform' | 'ad_account' | 'campaign' | 'adset' | 'ad';
 
 export type ReportGroupBy = 'day' | 'week' | 'month';
 
 export type ReportCompareMode = 'none' | 'previous_period';
+
+export type ReportRangeMode = 'date_range' | 'max';
 
 export interface ReportQueryInput {
   businessId: string;
@@ -23,6 +26,7 @@ export interface ReportQueryInput {
   dateTo: string;
   groupBy: ReportGroupBy;
   compareMode: ReportCompareMode;
+  rangeMode?: ReportRangeMode;
 }
 
 export interface ReportMetricTotals {
@@ -150,6 +154,7 @@ export interface ReportPayload {
   kpis: ReportKpi[];
   series: ReportTimeSeriesPoint[];
   comparison: ReportComparisonSummary;
+  findings: TrendFindingView[];
   breakdown: {
     title: string;
     rows: ReportBreakdownRow[];

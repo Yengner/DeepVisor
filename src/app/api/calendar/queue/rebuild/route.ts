@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
+import { isCalendarManualMode } from '@/lib/server/intelligence/calendarMode';
 import {
   getMetaAccountIntelligenceReadModel,
   runMetaAdAccountAssessment,
   syncMetaAccountIntelligenceArtifacts,
 } from '@/lib/server/intelligence';
-import { deleteSignalCalendarQueueItems } from '@/lib/server/intelligence/repositories/calendarQueue';
+import {
+  deleteAutomaticCalendarQueueItems,
+  deleteSignalCalendarQueueItems,
+} from '@/lib/server/intelligence/repositories/calendarQueue';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 
 export async function POST(request: NextRequest) {
   try {
-    const { businessId } = await getRequiredAppContext();
+    const { businessId, user } = await getRequiredAppContext();
     const adminSupabase = createAdminClient();
     const body = await request.json().catch(() => ({}));
     const adAccountId = typeof body?.adAccountId === 'string' ? body.adAccountId : null;
@@ -57,27 +61,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const assessment = await runMetaAdAccountAssessment({
-      supabase: adminSupabase,
-      businessId,
-      platformIntegrationId,
-      adAccountId,
-      trigger: 'manual',
-    });
+    let removedCount = 0;
 
-    const removedCount = await deleteSignalCalendarQueueItems(adminSupabase, {
-      businessId,
-      adAccountId,
-    });
+    if (isCalendarManualMode()) {
+      removedCount = await deleteAutomaticCalendarQueueItems(adminSupabase, {
+        businessId,
+        adAccountId,
+      });
+    } else {
+      const assessment = await runMetaAdAccountAssessment({
+        supabase: adminSupabase,
+        businessId,
+        platformIntegrationId,
+        adAccountId,
+        trigger: 'manual',
+      });
 
-    await syncMetaAccountIntelligenceArtifacts({
-      supabase: adminSupabase,
-      assessment,
-    });
+      removedCount = await deleteSignalCalendarQueueItems(adminSupabase, {
+        businessId,
+        adAccountId,
+      });
+
+      await syncMetaAccountIntelligenceArtifacts({
+        supabase: adminSupabase,
+        assessment,
+      });
+    }
 
     const intelligence = await getMetaAccountIntelligenceReadModel(adminSupabase, {
       businessId,
       adAccountId,
+      userId: user.id,
     });
 
     return NextResponse.json({

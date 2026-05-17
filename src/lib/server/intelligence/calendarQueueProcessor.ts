@@ -543,8 +543,13 @@ async function getNotificationUserIds(
   input: {
     business: BusinessContext | null;
     platformIntegrationId: string | null;
+    ownerUserId?: string | null;
   }
 ): Promise<string[]> {
+  if (input.ownerUserId) {
+    return [input.ownerUserId];
+  }
+
   const businessId = input.business?.id ?? null;
   if (businessId && cache.has(businessId)) {
     return cache.get(businessId) ?? [];
@@ -708,7 +713,6 @@ async function listExistingOccurrenceKeys(
   let query = supabase
     .from('calendar_queue_items')
     .select('payload_json')
-    .eq('source_type', 'system')
     .not('scheduled_for', 'is', null)
     .gte('scheduled_for', input.windowStartIso)
     .lte('scheduled_for', input.nowIso);
@@ -837,7 +841,7 @@ async function materializeDueTemplateOccurrences(
           platformIntegrationId,
           adAccountId: template.adAccountId,
           sourceSignalId: null,
-          sourceType: 'system',
+          sourceType: template.createdByUserId ? 'manual' : 'system',
           itemType: itemTypeForTemplate(template.templateType),
           priority: priorityForTemplate(template.templateType),
           title: template.title,
@@ -849,6 +853,8 @@ async function materializeDueTemplateOccurrences(
           workflowKey: null,
           materializedFromBlueprintKey: null,
           childBlueprints: [],
+          createdByUserId: template.createdByUserId ?? null,
+          updatedByUserId: template.createdByUserId ?? null,
           payload: {
             templateId: template.id,
             templateType: template.templateType,
@@ -910,6 +916,7 @@ async function processOneQueueItem(
     const userIds = await getNotificationUserIds(supabase, input.caches.users, {
       business,
       platformIntegrationId: claimed.platformIntegrationId,
+      ownerUserId: claimed.createdByUserId,
     });
     const dedupeKey = `calendar-queue:${claimed.id}:processed`;
     const actionResult = await runCalendarQueueAction(supabase, claimed, {

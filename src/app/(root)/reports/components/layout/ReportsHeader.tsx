@@ -134,7 +134,7 @@ function resolveActivePreset(
   dateTo: string,
   maxRange: { dateFrom: string; dateTo: string } | null
 ): QuickRangePreset | null {
-  const presetValues: QuickRangePreset[] = ['max', '7d', '30d', '90d', 'mtd', 'qtd', 'ytd'];
+  const presetValues: QuickRangePreset[] = ['7d', '30d', '90d', 'mtd', 'qtd', 'ytd'];
 
   for (const preset of presetValues) {
     const range = presetRange(preset, maxRange);
@@ -182,11 +182,27 @@ export default function ReportsHeader({
       dateTo: payload.activeDates.endDate,
     };
   }, [payload.activeDates]);
-  const activePreset = useMemo(
-    () => resolveActivePreset(payload.query.dateFrom, payload.query.dateTo, maxRange),
-    [maxRange, payload.query.dateFrom, payload.query.dateTo]
-  );
   const isAccountLevelReport = payload.query.scope === 'ad_account';
+  const isMaxRangeReport = payload.query.rangeMode === 'max';
+  const isSummaryRangeReport = isAccountLevelReport || isMaxRangeReport;
+  const quickRangeMaxRange = useMemo(
+    () =>
+      maxRange ??
+      (isMaxRangeReport
+        ? {
+            dateFrom: payload.query.dateFrom,
+            dateTo: payload.query.dateTo,
+          }
+        : null),
+    [isMaxRangeReport, maxRange, payload.query.dateFrom, payload.query.dateTo]
+  );
+  const activePreset = useMemo(
+    () =>
+      isMaxRangeReport
+        ? 'max'
+        : resolveActivePreset(payload.query.dateFrom, payload.query.dateTo, quickRangeMaxRange),
+    [isMaxRangeReport, quickRangeMaxRange, payload.query.dateFrom, payload.query.dateTo]
+  );
   const reportDateSummary = `${formatReadableDate(payload.query.dateFrom) ?? 'Unknown'} through ${
     formatReadableDate(payload.query.dateTo) ?? 'Unknown'
   }`;
@@ -248,7 +264,7 @@ export default function ReportsHeader({
               ) : null}
               <Badge
                 color={
-                  isAccountLevelReport
+                  isSummaryRangeReport
                     ? 'blue'
                     : payload.query.compareMode === 'previous_period'
                       ? 'teal'
@@ -259,6 +275,8 @@ export default function ReportsHeader({
               >
                 {isAccountLevelReport
                   ? 'Full account history'
+                  : isMaxRangeReport
+                    ? 'Max summary'
                   : payload.query.compareMode === 'previous_period'
                     ? 'Comparing previous period'
                     : 'Single range'}
@@ -334,7 +352,8 @@ export default function ReportsHeader({
                 <div className={classes.presetRail}>
                   {presets.map((preset) => {
                     const isActive = activePreset === preset.value;
-                    const range = presetRange(preset.value, maxRange);
+                    const range = presetRange(preset.value, quickRangeMaxRange);
+                    const isMaxPreset = preset.value === 'max';
 
                     return (
                       <Button
@@ -344,8 +363,26 @@ export default function ReportsHeader({
                         variant={isActive ? 'filled' : 'light'}
                         color={isActive ? 'blue' : 'gray'}
                         className={classes.presetButton}
-                        disabled={!range}
+                        disabled={!range && !isMaxPreset}
                         onClick={() => {
+                          if (isMaxPreset) {
+                            if (range) {
+                              setDraftRange([
+                                parseLocalDate(range.dateFrom),
+                                parseLocalDate(range.dateTo),
+                              ]);
+                            }
+
+                            onUpdate((params) => {
+                              params.set('range', 'max');
+                              params.delete('date_from');
+                              params.delete('date_to');
+                              params.delete('group_by');
+                              params.delete('compare');
+                            });
+                            return;
+                          }
+
                           if (!range) {
                             return;
                           }
@@ -355,6 +392,7 @@ export default function ReportsHeader({
                             parseLocalDate(range.dateTo),
                           ]);
                           onUpdate((params) => {
+                            params.delete('range');
                             params.set('date_from', range.dateFrom);
                             params.set('date_to', range.dateTo);
                           });
@@ -367,65 +405,68 @@ export default function ReportsHeader({
                 </div>
               </div>
 
-              <div className={classes.controlField}>
-                <Text size="xs" fw={700} className={classes.controlLabel}>
-                  Date Range
-                </Text>
-                <DatePickerInput
-                  type="range"
-                  value={draftRange}
-                  onChange={(value) => {
-                    const start = normalizePickerDate(value[0]);
-                    const end = normalizePickerDate(value[1]);
+              {!isMaxRangeReport ? (
+                <div className={classes.controlField}>
+                  <Text size="xs" fw={700} className={classes.controlLabel}>
+                    Date Range
+                  </Text>
+                  <DatePickerInput
+                    type="range"
+                    value={draftRange}
+                    onChange={(value) => {
+                      const start = normalizePickerDate(value[0]);
+                      const end = normalizePickerDate(value[1]);
 
-                    setDraftRange([start, end]);
+                      setDraftRange([start, end]);
 
-                    if (!start || !end) {
-                      return;
-                    }
+                      if (!start || !end) {
+                        return;
+                      }
 
-                    onUpdate((params) => {
-                      params.set('date_from', toIsoDate(start));
-                      params.set('date_to', toIsoDate(end));
-                    });
-                  }}
-                  aria-label="Date range"
-                  valueFormat="MMM D, YYYY"
-                  radius="md"
-                  size="sm"
-                  placeholder="Select date range"
-                  className={classes.controlInput}
-                  minDate={maxRange ? parseLocalDate(maxRange.dateFrom) : undefined}
-                  maxDate={maxRange ? parseLocalDate(maxRange.dateTo) : undefined}
-                  getDayProps={(date) => {
-                    const isoDate = toIsoDate(date);
-                    const activeCount = activeDateCountByIso.get(isoDate) ?? 0;
+                      onUpdate((params) => {
+                        params.delete('range');
+                        params.set('date_from', toIsoDate(start));
+                        params.set('date_to', toIsoDate(end));
+                      });
+                    }}
+                    aria-label="Date range"
+                    valueFormat="MMM D, YYYY"
+                    radius="md"
+                    size="sm"
+                    placeholder="Select date range"
+                    className={classes.controlInput}
+                    minDate={maxRange ? parseLocalDate(maxRange.dateFrom) : undefined}
+                    maxDate={maxRange ? parseLocalDate(maxRange.dateTo) : undefined}
+                    getDayProps={(date) => {
+                      const isoDate = toIsoDate(date);
+                      const activeCount = activeDateCountByIso.get(isoDate) ?? 0;
 
-                    if (activeCount === 0) {
-                      return {};
-                    }
+                      if (activeCount === 0) {
+                        return {};
+                      }
 
-                    return {
-                      title: `${activeCount} selected ${formatActiveEntityLabel(activeCount)} serving`,
-                      style: {
-                        boxShadow: 'inset 0 0 0 1px rgba(249, 115, 22, 0.38)',
-                      },
-                    };
-                  }}
-                  renderDay={(date) => {
-                    const isoDate = toIsoDate(date);
-                    const activeCount = activeDateCountByIso.get(isoDate) ?? 0;
-                    const resolvedDate = normalizePickerDate(date);
+                      return {
+                        title: `${activeCount} selected ${formatActiveEntityLabel(activeCount)} serving`,
+                        style: {
+                          boxShadow: 'inset 0 0 0 1px rgba(249, 115, 22, 0.38)',
+                        },
+                      };
+                    }}
+                    renderDay={(date) => {
+                      const isoDate = toIsoDate(date);
+                      const activeCount = activeDateCountByIso.get(isoDate) ?? 0;
+                      const resolvedDate = normalizePickerDate(date);
 
-                    return (
-                      <div className={classes.reportCalendarDay}>
-                        <span>{resolvedDate?.getDate() ?? ''}</span>
-                        {activeCount > 0 ? <span className={classes.reportCalendarDayDot} /> : null}
-                      </div>
-                    );
-                  }}
-                />
-              </div>
+                      return (
+                        <div className={classes.reportCalendarDay}>
+                          <span>{resolvedDate?.getDate() ?? ''}</span>
+                          {activeCount > 0 ? <span className={classes.reportCalendarDayDot} /> : null}
+                        </div>
+                      );
+                    }}
+                  />
+                </div>
+              ) : null}
             </>
           )}
 
@@ -453,11 +494,11 @@ export default function ReportsHeader({
               radius="md"
               size="sm"
               className={classes.groupBySelect}
-              disabled={isAccountLevelReport}
+              disabled={isSummaryRangeReport}
             />
           </div>
 
-          {isAccountLevelReport ? null : (
+          {isSummaryRangeReport ? null : (
             <div className={classes.controlField}>
               <Text size="xs" fw={700} className={classes.controlLabel}>
                 Compare

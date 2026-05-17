@@ -7,6 +7,7 @@ import {
   type CalendarQueuePreviewItem,
 } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
+import { isVisibleCalendarQueueSource } from './calendarMode';
 import { listCalendarQueueItems } from './repositories/calendarQueue';
 import { listActiveAdAccountSignals } from './repositories/signals';
 import type {
@@ -204,6 +205,7 @@ export async function getMetaAccountIntelligenceReadModel(
   input: {
     businessId: string;
     adAccountId: string;
+    userId?: string | null;
   }
 ): Promise<MetaAccountIntelligenceReadModel> {
   const [signals, queueItems] = await Promise.all([
@@ -212,7 +214,9 @@ export async function getMetaAccountIntelligenceReadModel(
   ]);
 
   const visibleQueueItems = groupQueuePreviewItems(
-    queueItems.filter((item) => item.status !== 'dismissed')
+    queueItems.filter(
+      (item) => item.status !== 'dismissed' && isVisibleCalendarQueueSource(item.sourceType)
+    )
   );
 
   return {

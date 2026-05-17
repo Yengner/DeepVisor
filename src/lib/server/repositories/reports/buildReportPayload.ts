@@ -3,6 +3,7 @@ import 'server-only';
 import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { derivePerformanceMetrics } from '@/lib/server/repositories/campaigns/normalizers';
 import { chunkArray } from '@/lib/server/repositories/utils';
+import { listActiveTrendFindingViews } from '@/lib/server/intelligence/repositories/trendFindings';
 import {
   buildAudienceBreakdowns,
   buildPlatformBreakdowns,
@@ -257,6 +258,10 @@ type BuildReportPayloadOptions = {
   includeActiveDates?: boolean;
   includeSurface?: boolean;
 };
+
+function isSummaryRangeReport(query: ReportQueryInput): boolean {
+  return query.scope === 'ad_account' || query.rangeMode === 'max';
+}
 
 const REPORT_AUDIENCE_BREAKDOWN_TYPES = [
   'publisher_platform',
@@ -1300,6 +1305,114 @@ async function buildAdAccountSummaryMetricRows(
   }));
 }
 
+function getSummaryMetricEntityLevel(query: ReportQueryInput): ReportBreakdownRow['level'] {
+  if (query.scope === 'ad') {
+    return 'ad';
+  }
+
+  if (query.scope === 'adset') {
+    return 'adset';
+  }
+
+  return 'campaign';
+}
+
+function getSummaryMetricFilters(query: ReportQueryInput): {
+  entityExternalIds?: string[];
+  campaignExternalIds?: string[];
+  adsetExternalIds?: string[];
+} {
+  if (query.scope === 'campaign') {
+    return {
+      entityExternalIds: query.campaignIds,
+    };
+  }
+
+  if (query.scope === 'adset') {
+    return {
+      entityExternalIds: query.adsetIds,
+      campaignExternalIds: query.campaignIds,
+    };
+  }
+
+  if (query.scope === 'ad') {
+    return {
+      entityExternalIds: query.adIds,
+      adsetExternalIds: query.adsetIds,
+    };
+  }
+
+  return {};
+}
+
+async function buildSummaryMetricRows(
+  supabase: SupabaseClient,
+  input: {
+    query: ReportQueryInput;
+    context: FilterContext;
+    adAccountIds: string[];
+    fallbackDay: string;
+  }
+): Promise<MetricsRow[]> {
+  const currencyCodeByAdAccountId = new Map(
+    input.context.adAccounts.map((account) => [account.id, account.currency_code])
+  );
+  const rows = await listSummaryBreakdownRows(supabase, {
+    entityLevel: getSummaryMetricEntityLevel(input.query),
+    adAccountIds: input.adAccountIds,
+    ...getSummaryMetricFilters(input.query),
+    currencyCodeByAdAccountId,
+  });
+
+  return rows.map((row) => ({
+    day: row.end_date ?? row.start_date ?? input.fallbackDay,
+    currency_code: row.currency_code ?? null,
+    spend: toNumber(row.spend),
+    reach: toNumber(row.reach),
+    impressions: toNumber(row.impressions),
+    clicks: toNumber(row.clicks),
+    inline_link_clicks: toNumber(row.inline_link_clicks),
+    leads: toNumber(row.leads),
+    messages: toNumber(row.messages),
+    calls: toNumber(row.calls),
+  }));
+}
+
+async function getReportSummaryDateBounds(
+  supabase: SupabaseClient,
+  input: {
+    query: ReportQueryInput;
+    context: FilterContext;
+    adAccountIds: string[];
+  }
+): Promise<{ dateFrom: string | null; dateTo: string | null }> {
+  if (input.query.scope === 'business' || input.query.scope === 'platform' || input.query.scope === 'ad_account') {
+    return getAdAccountSummaryDateBounds(supabase, input.adAccountIds);
+  }
+
+  const currencyCodeByAdAccountId = new Map(
+    input.context.adAccounts.map((account) => [account.id, account.currency_code])
+  );
+  const rows = await listSummaryBreakdownRows(supabase, {
+    entityLevel: getSummaryMetricEntityLevel(input.query),
+    adAccountIds: input.adAccountIds,
+    ...getSummaryMetricFilters(input.query),
+    currencyCodeByAdAccountId,
+  });
+
+  if (rows.length === 0) {
+    return getAdAccountSummaryDateBounds(supabase, input.adAccountIds);
+  }
+
+  return rows.reduce(
+    (bounds, row) => ({
+      dateFrom: minDate(bounds.dateFrom, row.start_date),
+      dateTo: maxDate(bounds.dateTo, row.end_date),
+    }),
+    { dateFrom: null, dateTo: null } as { dateFrom: string | null; dateTo: string | null }
+  );
+}
+
 async function listAdAccountMonthlyMetricRows(
   supabase: SupabaseClient,
   input: {
@@ -1687,7 +1800,10 @@ function keepActiveRecentOrSelected(
 
 async function getFilterContext(
   supabase: SupabaseClient,
-  query: ReportQueryInput
+  query: ReportQueryInput,
+  options: {
+    entityMode?: 'active_recent' | 'all';
+  } = {}
 ): Promise<FilterContext> {
   const [business, platforms, adAccounts] = await Promise.all([
     getBusinessProfile(supabase, query.businessId),
@@ -1715,6 +1831,18 @@ async function getFilterContext(
         }),
       ])
     : [[], [], []];
+
+  if (options.entityMode === 'all') {
+    return {
+      business,
+      platforms,
+      adAccounts,
+      campaigns,
+      adsets,
+      ads,
+    };
+  }
+
   const recentSinceDay = addUtcDays(toIsoDate(new Date()), -29);
   const [recentCampaignExternalIds, recentAdsetExternalIds, recentAdExternalIds] =
     allowedAdAccountIds.length
@@ -2145,7 +2273,7 @@ async function buildRankingContext(
     input.query.scope === 'business' ||
     input.query.scope === 'platform' ||
     input.query.scope === 'ad_account';
-  const useLifetimeSummary = input.query.scope === 'ad_account';
+  const useLifetimeSummary = isSummaryRangeReport(input.query);
   const shouldBuildCampaignRankings =
     isTopLevelReport ||
     input.query.scope === 'campaign' ||
@@ -2257,6 +2385,7 @@ function buildNestedReportHref(input: {
     dateTo: input.query.dateTo,
     groupBy: input.query.groupBy,
     compareMode: input.query.compareMode,
+    rangeMode: input.query.rangeMode,
   });
 }
 
@@ -2305,7 +2434,7 @@ async function buildBreakdown(
       context,
       adAccountIds,
       includeCampaignReportLinks: true,
-      useLifetimeSummary: query.scope === 'ad_account',
+      useLifetimeSummary: isSummaryRangeReport(query),
     });
 
     return {
@@ -2328,6 +2457,7 @@ async function buildBreakdown(
       adAccountIds,
       campaignExternalIds: query.campaignIds,
       includeAdsetReportLinks: true,
+      useLifetimeSummary: isSummaryRangeReport(query),
     });
 
     return {
@@ -2350,6 +2480,7 @@ async function buildBreakdown(
     adsetExternalIds: query.scope === 'adset' ? query.adsetIds : undefined,
     externalIds: query.scope === 'ad' ? query.adIds : undefined,
     includeAdReportLinks: query.scope === 'adset',
+    useLifetimeSummary: isSummaryRangeReport(query),
   });
 
   return {
@@ -2442,6 +2573,7 @@ function buildFilterSummary(input: {
   query: ReportQueryInput;
   context: FilterContext;
 }): Array<{ label: string; value: string }> {
+  const isSummaryRange = isSummaryRangeReport(input.query);
   const selectedPlatform = input.context.platforms.find(
     (item) => item.id === input.query.platformIntegrationId
   );
@@ -2460,16 +2592,21 @@ function buildFilterSummary(input: {
 
   return [
     {
-      label: 'Date range',
-      value: formatDateRange(input.query.dateFrom, input.query.dateTo),
+      label: 'Range',
+      value: isSummaryRange
+        ? `Max summary (${formatDateRange(input.query.dateFrom, input.query.dateTo)})`
+        : formatDateRange(input.query.dateFrom, input.query.dateTo),
     },
     {
       label: 'Compare',
-      value: input.query.compareMode === 'previous_period' ? 'Previous period' : 'None',
+      value:
+        !isSummaryRange && input.query.compareMode === 'previous_period'
+          ? 'Previous period'
+          : 'None',
     },
     {
       label: 'Grouping',
-      value: input.query.groupBy,
+      value: isSummaryRange ? 'Summary' : input.query.groupBy,
     },
     {
       label: 'Platform',
@@ -3041,44 +3178,60 @@ export async function buildReportPayload(
   const includeRanking = options.includeRanking ?? true;
   const includeActiveDates = options.includeActiveDates ?? true;
   const includeSurface = options.includeSurface ?? true;
-  const context = await getFilterContext(supabase, query);
+  const useSummaryMode = isSummaryRangeReport(query);
+  const context = await getFilterContext(supabase, query, {
+    entityMode: useSummaryMode ? 'all' : 'active_recent',
+  });
   const adAccounts = context.adAccounts.filter((row) =>
     query.adAccountIds.length > 0 ? query.adAccountIds.includes(row.id) : true
   );
   const adAccountIds = adAccounts.map((row) => row.id);
-  const summaryBounds =
-    query.scope === 'ad_account'
-      ? await getAdAccountSummaryDateBounds(supabase, adAccountIds)
-      : { dateFrom: null, dateTo: null };
+  const summaryBounds = useSummaryMode
+    ? await getReportSummaryDateBounds(supabase, {
+        query,
+        context,
+        adAccountIds,
+      })
+    : { dateFrom: null, dateTo: null };
   const effectiveQuery: ReportQueryInput =
-    query.scope === 'ad_account'
+    useSummaryMode
       ? {
           ...query,
           dateFrom: summaryBounds.dateFrom ?? query.dateFrom,
           dateTo: summaryBounds.dateTo ?? query.dateTo,
           groupBy: 'month',
           compareMode: 'none',
+          rangeMode: 'max',
         }
       : query;
-  const accountSummaryRowsPromise =
-    includeMetrics && effectiveQuery.scope === 'ad_account'
-      ? buildAdAccountSummaryMetricRows(supabase, {
-          context,
-          adAccountIds,
-          fallbackDay: effectiveQuery.dateTo,
-        })
+  const summaryRowsPromise =
+    includeMetrics && isSummaryRangeReport(effectiveQuery)
+      ? effectiveQuery.scope === 'ad_account'
+        ? buildAdAccountSummaryMetricRows(supabase, {
+            context,
+            adAccountIds,
+            fallbackDay: effectiveQuery.dateTo,
+          })
+        : buildSummaryMetricRows(supabase, {
+            query: effectiveQuery,
+            context,
+            adAccountIds,
+            fallbackDay: effectiveQuery.dateTo,
+          })
       : Promise.resolve<MetricsRow[] | null>(null);
   const previousRange =
     effectiveQuery.compareMode === 'previous_period' ? getPreviousPeriodRange(effectiveQuery) : null;
   const currentRowsPromise = includeMetrics
-    ? effectiveQuery.scope === 'ad_account'
-      ? accountSummaryRowsPromise.then((accountSummaryRows) =>
-          buildAdAccountFullHistoryMetricRows(supabase, {
-            query: effectiveQuery,
-            context,
-            adAccountIds,
-            fallbackRows: accountSummaryRows ?? [],
-          })
+    ? isSummaryRangeReport(effectiveQuery)
+      ? summaryRowsPromise.then((summaryMetricRows) =>
+          effectiveQuery.scope === 'ad_account'
+            ? buildAdAccountFullHistoryMetricRows(supabase, {
+                query: effectiveQuery,
+                context,
+                adAccountIds,
+                fallbackRows: summaryMetricRows ?? [],
+              })
+            : summaryMetricRows ?? []
         )
       : buildTopLevelMetricsRows(
           supabase,
@@ -3109,19 +3262,30 @@ export async function buildReportPayload(
       })
     : Promise.resolve(emptyReportRankingContext());
   const activeDatesPromise = includeActiveDates && effectiveQuery.scope !== 'ad_account'
+    && effectiveQuery.rangeMode !== 'max'
     ? buildActiveDateContext(supabase, effectiveQuery, adAccountIds)
     : Promise.resolve(null);
+  const findingsPromise =
+    adAccountIds.length === 1
+      ? listActiveTrendFindingViews(supabase as any, {
+          businessId: effectiveQuery.businessId,
+          adAccountId: adAccountIds[0],
+          dateFrom: effectiveQuery.rangeMode === 'max' ? null : effectiveQuery.dateFrom,
+          dateTo: effectiveQuery.rangeMode === 'max' ? null : effectiveQuery.dateTo,
+        })
+      : Promise.resolve([]);
 
-  const [currentRows, previousRows, breakdown, ranking, activeDates, accountSummaryRows] = await Promise.all([
+  const [currentRows, previousRows, breakdown, ranking, activeDates, summaryMetricRows, findings] = await Promise.all([
     currentRowsPromise,
     previousRowsPromise,
     breakdownPromise,
     rankingPromise,
     activeDatesPromise,
-    accountSummaryRowsPromise,
+    summaryRowsPromise,
+    findingsPromise,
   ]);
 
-  const summaryRows = accountSummaryRows && accountSummaryRows.length > 0 ? accountSummaryRows : currentRows;
+  const summaryRows = summaryMetricRows && summaryMetricRows.length > 0 ? summaryMetricRows : currentRows;
   const summary = sumMetrics(summaryRows);
   const previousTotals = previousRows.length > 0 ? sumMetrics(previousRows) : null;
   const currencyCode = resolveCurrencyCode(summaryRows);
@@ -3168,6 +3332,7 @@ export async function buildReportPayload(
       previousDateTo: previousRange?.dateTo ?? null,
       previousTotals,
     } satisfies ReportComparisonSummary,
+    findings,
     breakdown,
     ranking,
     activeDates,

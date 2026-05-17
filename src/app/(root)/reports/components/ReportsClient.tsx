@@ -72,6 +72,8 @@ type TimelineAnnotation = {
   color: string;
 };
 
+type FindingAnnotationBucket = 'timeline' | 'quality';
+
 type ReportTooltipPayloadItem = {
   name?: string | number;
   dataKey?: string | number;
@@ -98,6 +100,108 @@ const EFFICIENCY_TIMELINE_SERIES: ReportChartSeries[] = [
   { name: 'CPC', color: CHART_METRIC_COLORS.cpc },
   { name: 'CPM', color: CHART_METRIC_COLORS.cpm },
 ];
+
+const FINDING_ANNOTATION_COLORS = {
+  critical: '#e03131',
+  warning: '#f08c00',
+  info: '#1c7ed6',
+} as const;
+
+const FINDING_SHORT_LABELS = {
+  best_time_window: 'Best time',
+  delivery_drop_vs_efficiency: 'Delivery drop',
+  efficiency_drop_vs_delivery: 'Efficiency pressure',
+  meaningful_crossover: 'Trend crossover',
+  sustained_divergence: 'Sustained pressure',
+  stale_live_delivery: 'Weak live delivery',
+} as const;
+
+const TIMELINE_FINDING_TYPES = new Set([
+  'delivery_drop_vs_efficiency',
+  'meaningful_crossover',
+  'stale_live_delivery',
+]);
+
+function isIsoDateLabel(value: string | null | undefined) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function resolveFindingAnchorDate(finding: ReportPayload['findings'][number]) {
+  if (isIsoDateLabel(finding.metricSnapshot.periodEnd)) {
+    return finding.metricSnapshot.periodEnd;
+  }
+
+  if (isIsoDateLabel(finding.metricSnapshot.periodStart)) {
+    return finding.metricSnapshot.periodStart;
+  }
+
+  if (isIsoDateLabel(finding.metricSnapshot.label)) {
+    return finding.metricSnapshot.label;
+  }
+
+  if (isIsoDateLabel(finding.detectedAt.slice(0, 10))) {
+    return finding.detectedAt.slice(0, 10);
+  }
+
+  return null;
+}
+
+function findSeriesPointForDate(
+  series: ReportTimeSeriesPoint[],
+  targetDate: string | null | undefined
+) {
+  if (!targetDate) {
+    return null;
+  }
+
+  return (
+    series.find((point) => point.startDate <= targetDate && point.endDate >= targetDate) ??
+    series.find((point) => point.label === targetDate) ??
+    null
+  );
+}
+
+function resolveFindingAnnotationBucket(
+  finding: ReportPayload['findings'][number]
+): FindingAnnotationBucket {
+  return TIMELINE_FINDING_TYPES.has(finding.findingType) ? 'timeline' : 'quality';
+}
+
+function buildFindingAnnotation(
+  finding: ReportPayload['findings'][number],
+  series: ReportTimeSeriesPoint[]
+): { bucket: FindingAnnotationBucket; annotation: TimelineAnnotation } | null {
+  const targetDate = resolveFindingAnchorDate(finding);
+  const point = findSeriesPointForDate(series, targetDate);
+
+  if (!point || !targetDate) {
+    return null;
+  }
+
+  const bucket = resolveFindingAnnotationBucket(finding);
+  const value =
+    bucket === 'timeline'
+      ? point.conversion > 0
+        ? point.conversion
+        : Number(point.spend.toFixed(2))
+      : point.ctr > 0
+        ? Number(point.ctr.toFixed(2))
+        : point.cpc > 0
+          ? Number(point.cpc.toFixed(2))
+          : Number(point.cpm.toFixed(2));
+
+  return {
+    bucket,
+    annotation: {
+      key: `finding-${finding.id}`,
+      chartLabel: formatChartDateLabel(targetDate),
+      value,
+      label: FINDING_SHORT_LABELS[finding.findingType] ?? 'Finding',
+      detail: finding.summary,
+      color: FINDING_ANNOTATION_COLORS[finding.severity],
+    },
+  };
+}
 
 type SurfacePanelMode = 'platform' | 'device' | 'geo' | 'times';
 type AudienceChartType = 'default' | 'stacked';
@@ -478,7 +582,14 @@ function dedupeRows(rows: ReportBreakdownRow[]) {
 
 function rankBreakdownRows(rows: ReportBreakdownRow[]) {
   return dedupeRows(rows)
-    .filter((row) => row.spend > 0 || row.conversion > 0 || row.clicks > 0)
+    .filter(
+      (row) =>
+        row.spend > 0 ||
+        row.conversion > 0 ||
+        row.clicks > 0 ||
+        row.impressions > 0 ||
+        row.reach > 0
+    )
     .sort((left, right) => scoreRankedRow(right) - scoreRankedRow(left));
 }
 
@@ -997,6 +1108,7 @@ function buildReportBreadcrumbs(
               dateTo: query.dateTo,
               groupBy: query.groupBy,
               compareMode: query.compareMode,
+              rangeMode: query.rangeMode,
             })
           : null,
     });
@@ -1015,6 +1127,7 @@ function buildReportBreadcrumbs(
               dateTo: query.dateTo,
               groupBy: query.groupBy,
               compareMode: query.compareMode,
+              rangeMode: query.rangeMode,
             })
           : null,
     });
@@ -1034,6 +1147,7 @@ function buildReportBreadcrumbs(
               dateTo: query.dateTo,
               groupBy: query.groupBy,
               compareMode: query.compareMode,
+              rangeMode: query.rangeMode,
             })
           : null,
     });
@@ -1054,6 +1168,7 @@ function buildReportBreadcrumbs(
               dateTo: query.dateTo,
               groupBy: query.groupBy,
               compareMode: query.compareMode,
+              rangeMode: query.rangeMode,
             })
           : null,
     });
@@ -1397,6 +1512,7 @@ function RankedEntityBoard({
         {rankingGroups.length > 0 ? (
           <Accordion
             multiple
+            defaultValue={query.scope === 'ad_account' ? rankingGroups.map((group) => group.key) : undefined}
             radius="lg"
             variant="separated"
             className={classes.rankingAccordion}
@@ -2052,7 +2168,7 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
   const visibleFilterSummary = useMemo(
     () =>
       payload.export.filterSummary.filter((item) => {
-        if (item.label === 'Date range') {
+        if (item.label === 'Date range' || item.label === 'Range') {
           return true;
         }
 
@@ -2072,8 +2188,32 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
   );
   const topSpendPoint = useMemo(() => pickMaxPoint(payload.series, 'spend'), [payload.series]);
   const topCtrPoint = useMemo(() => pickMaxPoint(payload.series, 'ctr'), [payload.series]);
+  const persistedFindingAnnotations = useMemo(
+    () =>
+      payload.findings.slice(0, 6).reduce<{
+        timeline: TimelineAnnotation[];
+        quality: TimelineAnnotation[];
+      }>(
+        (accumulator, finding) => {
+          const mapped = buildFindingAnnotation(finding, payload.series);
+          if (!mapped) {
+            return accumulator;
+          }
+
+          if (mapped.bucket === 'timeline') {
+            accumulator.timeline.push(mapped.annotation);
+          } else {
+            accumulator.quality.push(mapped.annotation);
+          }
+
+          return accumulator;
+        },
+        { timeline: [], quality: [] }
+      ),
+    [payload.findings, payload.series]
+  );
   const timelineAnnotations = useMemo<TimelineAnnotation[]>(() => {
-    const annotations: TimelineAnnotation[] = [];
+    const annotations: TimelineAnnotation[] = [...persistedFindingAnnotations.timeline];
 
     if (topResultsPoint) {
       annotations.push({
@@ -2098,23 +2238,25 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
     }
 
     return annotations;
-  }, [topResultsPoint, topSpendPoint]);
+  }, [persistedFindingAnnotations.timeline, topResultsPoint, topSpendPoint]);
   const qualityAnnotations = useMemo<TimelineAnnotation[]>(() => {
+    const annotations: TimelineAnnotation[] = [...persistedFindingAnnotations.quality];
+
     if (!topCtrPoint) {
-      return [];
+      return annotations;
     }
 
-    return [
-      {
+    annotations.push({
         key: `ctr-${topCtrPoint.label}`,
         chartLabel: formatChartDateLabel(topCtrPoint.label),
         value: Number(topCtrPoint.ctr.toFixed(2)),
         label: 'Best CTR',
         detail: 'Highest click-through rate point in the selected range.',
         color: CHART_METRIC_COLORS.ctr,
-      },
-    ];
-  }, [topCtrPoint]);
+      });
+
+    return annotations;
+  }, [persistedFindingAnnotations.quality, topCtrPoint]);
   const timelineTooltipProps = useMemo(
     () => ({
       content: (props: ReportTooltipContentProps) => (
@@ -2264,10 +2406,16 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
                 </div>
                 <Group gap="xs" wrap="wrap">
                   <Badge variant="light" color="gray" radius="sm">
-                    Grouped by {payload.query.groupBy}
+                    {payload.query.rangeMode === 'max'
+                      ? 'Summary comparison'
+                      : `Grouped by ${payload.query.groupBy}`}
                   </Badge>
                   <Badge variant="light" color={payload.query.compareMode === 'previous_period' ? 'teal' : 'gray'} radius="sm">
-                    {payload.query.compareMode === 'previous_period' ? 'Previous period on' : 'No comparison'}
+                    {payload.query.rangeMode === 'max'
+                      ? 'Max summary'
+                      : payload.query.compareMode === 'previous_period'
+                        ? 'Previous period on'
+                        : 'No comparison'}
                   </Badge>
                 </Group>
               </Group>

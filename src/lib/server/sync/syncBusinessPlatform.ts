@@ -9,8 +9,8 @@ import {
   runBusinessAssessment,
   runMetaAdAccountAssessment,
   syncMetaAccountIntelligenceArtifacts,
-  syncMetaTrendIntelligenceArtifacts,
 } from '@/lib/server/intelligence';
+import { syncMetaTrendIntelligenceArtifactsForQueueState } from '@/lib/server/intelligence/trends/service';
 import { toIntegrationStatus } from '@/lib/server/integrations/normalizers';
 import {
   getPrimaryAdAccountSelection,
@@ -314,7 +314,7 @@ export async function syncBusinessPlatform(input: {
           supabase,
           assessment: adAccountAssessment,
         });
-        await syncMetaTrendIntelligenceArtifacts({
+        await syncMetaTrendIntelligenceArtifactsForQueueState({
           supabase,
           businessId: input.businessId,
           platformIntegrationId: integration.id,

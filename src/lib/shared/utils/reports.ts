@@ -1,6 +1,7 @@
 export type ReportUrlScope = 'business' | 'platform' | 'ad_account' | 'campaign' | 'adset' | 'ad';
 export type ReportUrlGroupBy = 'day' | 'week' | 'month';
 export type ReportUrlCompareMode = 'none' | 'previous_period';
+export type ReportUrlRangeMode = 'date_range' | 'max';
 
 export type BuildReportUrlInput = {
   scope?: ReportUrlScope | null;
@@ -13,6 +14,7 @@ export type BuildReportUrlInput = {
   dateTo?: string | null;
   groupBy?: ReportUrlGroupBy | null;
   compareMode?: ReportUrlCompareMode | null;
+  rangeMode?: ReportUrlRangeMode | null;
   demo?: boolean;
 };
 
@@ -89,19 +91,21 @@ export function buildReportUrl(input: BuildReportUrlInput): string {
     params.set('ad_id', adIds.join(','));
   }
 
-  if (input.dateFrom) {
+  if (input.rangeMode === 'max') {
+    params.set('range', 'max');
+  } else if (input.dateFrom) {
     params.set('date_from', input.dateFrom);
   }
 
-  if (input.dateTo) {
+  if (input.rangeMode !== 'max' && input.dateTo) {
     params.set('date_to', input.dateTo);
   }
 
-  if (input.groupBy) {
+  if (input.rangeMode !== 'max' && input.groupBy) {
     params.set('group_by', input.groupBy);
   }
 
-  if (input.compareMode && input.compareMode !== 'none') {
+  if (input.rangeMode !== 'max' && input.compareMode && input.compareMode !== 'none') {
     params.set('compare', input.compareMode);
   }
 

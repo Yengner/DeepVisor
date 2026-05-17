@@ -412,6 +412,11 @@ export interface TrendFindingView {
   adsetId: string | null;
   campaignId: string | null;
   detectedAt: string;
+  firstDetectedAt: string;
+  lastDetectedAt: string;
+  resolvedAt: string | null;
+  dismissedAt: string | null;
+  convertedToQueueAt: string | null;
   metricSnapshot: TrendFindingMetricSnapshot;
   actionLabel: string | null;
   actionHref: string | null;
@@ -458,6 +463,7 @@ export interface MetaTrendIntelligenceArtifacts {
   findings: TrendFinding[];
   notificationSummary: TrendFindingNotificationSummary[];
   patternCount: number;
+  refreshMode: 'recomputed' | 'stored';
 }
 
 export interface CalendarQueueItemDraft {
@@ -477,6 +483,8 @@ export interface CalendarQueueItemDraft {
   workflowKey?: CalendarQueueWorkflowKind | null;
   materializedFromBlueprintKey?: string | null;
   childBlueprints?: CalendarQueueChildBlueprint[];
+  createdByUserId?: string | null;
+  updatedByUserId?: string | null;
   payload: Record<string, unknown>;
 }
 

@@ -425,8 +425,7 @@ function normalizeInsightMetrics(row: MetaInsightRow) {
       'offsite_conversion.fb_pixel_lead',
     ]),
     messages: extractActionMetric(row.actions, [
-      'onsite_conversion.total_messaging_connection',
-      'onsite_conversion.messaging_first_reply',
+      'onsite_conversion.messaging_conversation_started_7d',
     ]),
     calls: extractActionMetric(row.actions, [
       'onsite_conversion.phone_call_click',

@@ -6,6 +6,7 @@ import '@mantine/dates/styles.css';
 import { BarChart, ChartTooltip, LineChart } from '@mantine/charts';
 import { DatePicker } from '@mantine/dates';
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -38,6 +39,7 @@ import {
   IconRefresh,
   IconTargetArrow,
   IconUsers,
+  IconX,
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -247,6 +249,15 @@ const MAJOR_DIVERGENCE_THRESHOLD = 15;
 const HOURLY_SIGNAL_MIN_IMPRESSIONS = 100;
 const HOURLY_SIGNAL_MIN_CLICKS = 3;
 const HOURLY_SIGNAL_MIN_SPEND = 5;
+const SCALE_PRESSURE_MIN_CONSECUTIVE_POINTS = 3;
+const SCALE_PRESSURE_MIN_DELIVERY_DELTA = 5;
+const SCALE_PRESSURE_MIN_EFFICIENCY_DELTA = 5;
+const SCALE_PRESSURE_DAILY_MIN_IMPRESSIONS = 750;
+const SCALE_PRESSURE_DAILY_MIN_CLICKS = 10;
+const SCALE_PRESSURE_DAILY_MIN_SPEND = 35;
+const SCALE_PRESSURE_HOURLY_MIN_IMPRESSIONS = 150;
+const SCALE_PRESSURE_HOURLY_MIN_CLICKS = 3;
+const SCALE_PRESSURE_HOURLY_MIN_SPEND = 10;
 const EXPANDED_HOURLY_POINT_WIDTH = 28;
 const EXPANDED_HOURLY_MIN_WIDTH = 1400;
 const FEATURED_HISTORY_COLORS = CHART_METRIC_COLORS;
@@ -1070,6 +1081,45 @@ function isLowConfidenceHourlyEfficiencyPoint(
   );
 }
 
+function hasMinimumScalePressureVolume(
+  point: DashboardPayload['featuredAdsetHistory']['dailyTrend'][number],
+  granularity: HistoryGranularity
+): boolean {
+  if (granularity === 'hourly') {
+    return (
+      point.impressions >= SCALE_PRESSURE_HOURLY_MIN_IMPRESSIONS &&
+      (point.clicks >= SCALE_PRESSURE_HOURLY_MIN_CLICKS ||
+        point.spend >= SCALE_PRESSURE_HOURLY_MIN_SPEND)
+    );
+  }
+
+  return (
+    point.impressions >= SCALE_PRESSURE_DAILY_MIN_IMPRESSIONS &&
+    (point.clicks >= SCALE_PRESSURE_DAILY_MIN_CLICKS ||
+      point.spend >= SCALE_PRESSURE_DAILY_MIN_SPEND)
+  );
+}
+
+function countConsecutiveScalePressurePoints(
+  combinedPoints: CombinedTrendPoint[],
+  startIndex: number
+): number {
+  let streak = 0;
+
+  for (let index = startIndex; index >= 0; index -= 1) {
+    const point = combinedPoints[index];
+    const gap = point.deliveryIndex - point.efficiencyIndex;
+
+    if (gap < MAJOR_DIVERGENCE_THRESHOLD) {
+      break;
+    }
+
+    streak += 1;
+  }
+
+  return streak;
+}
+
 function detectTrendSignals(input: {
   granularity: HistoryGranularity;
   trendPoints: DashboardPayload['featuredAdsetHistory']['dailyTrend'];
@@ -1086,11 +1136,18 @@ function detectTrendSignals(input: {
     const previous = combinedPoints[index - 1];
     const current = combinedPoints[index];
     const currentPoint = input.trendPoints[index];
+    const previousPoint = input.trendPoints[index - 1];
     const previousGap = Math.abs(previous.deliveryIndex - previous.efficiencyIndex);
     const gap = Math.abs(current.deliveryIndex - current.efficiencyIndex);
     const majorGap = gap >= MAJOR_DIVERGENCE_THRESHOLD;
     const lowConfidenceEfficiency =
       input.granularity === 'hourly' && isLowConfidenceHourlyEfficiencyPoint(currentPoint);
+    const deliveryDelta = current.deliveryIndex - previous.deliveryIndex;
+    const efficiencyDecline = previous.efficiencyIndex - current.efficiencyIndex;
+    const scalePressureVolumeQualified =
+      hasMinimumScalePressureVolume(currentPoint, input.granularity) &&
+      hasMinimumScalePressureVolume(previousPoint, input.granularity);
+    const scalePressureStreak = countConsecutiveScalePressurePoints(combinedPoints, index);
 
     if (
       previous.efficiencyIndex < previous.deliveryIndex &&
@@ -1159,7 +1216,10 @@ function detectTrendSignals(input: {
     if (
       current.efficiencyIndex < previous.efficiencyIndex &&
       current.deliveryIndex >= previous.deliveryIndex &&
-      gap >= DIVERGENCE_THRESHOLD
+      gap >= MAJOR_DIVERGENCE_THRESHOLD &&
+      deliveryDelta >= SCALE_PRESSURE_MIN_DELIVERY_DELTA &&
+      efficiencyDecline >= SCALE_PRESSURE_MIN_EFFICIENCY_DELTA &&
+      scalePressureVolumeQualified
     ) {
       signals.push({
         type: 'efficiency_drop_vs_delivery',
@@ -1183,10 +1243,18 @@ function detectTrendSignals(input: {
               combinedPoints[index - 2].deliveryIndex - combinedPoints[index - 2].efficiencyIndex
             )
           : 0;
-      const isFirstSustainedPoint = index === 1 || earlierGap < DIVERGENCE_THRESHOLD;
+      const efficiencyLeading = current.efficiencyIndex > current.deliveryIndex;
+      const isFirstSustainedPoint = efficiencyLeading
+        ? index === 1 || earlierGap < DIVERGENCE_THRESHOLD
+        : scalePressureStreak >= SCALE_PRESSURE_MIN_CONSECUTIVE_POINTS &&
+          (index === SCALE_PRESSURE_MIN_CONSECUTIVE_POINTS - 1 ||
+            combinedPoints[index - 1].deliveryIndex - combinedPoints[index - 1].efficiencyIndex <
+              MAJOR_DIVERGENCE_THRESHOLD);
 
       if (isFirstSustainedPoint) {
-        const efficiencyLeading = current.efficiencyIndex > current.deliveryIndex;
+        if (!efficiencyLeading && !scalePressureVolumeQualified) {
+          continue;
+        }
 
         signals.push({
           type: 'sustained_divergence',
@@ -1622,6 +1690,14 @@ function CampaignLiveRow({
         <div className={classes.metricGrid}>
           <ComparisonMetric label="Spend" value={formatCurrency(campaign.spend, currencyCode)} />
           <ComparisonMetric label="Results" value={formatNumber(campaign.results)} />
+          <ComparisonMetric
+            label="Cost/Result"
+            value={
+              campaign.results > 0
+                ? formatCurrency(campaign.costPerResult, currencyCode, 2)
+                : '—'
+            }
+          />
           <ComparisonMetric label="CTR" value={formatRate(campaign.ctr)} />
           <ComparisonMetric label="Live ad sets" value={formatNumber(campaign.adsetCount)} />
           <ComparisonMetric label="Live ads" value={formatNumber(campaign.adCount)} />
@@ -1681,11 +1757,11 @@ function AdsetComparisonRow({
         <div className={classes.metricGrid}>
           <ComparisonMetric label="Spend" value={formatCurrency(item.spend, currencyCode)} />
           <ComparisonMetric label="Results" value={formatNumber(item.results)} />
-          <ComparisonMetric label="CTR" value={formatRate(item.ctr)} />
           <ComparisonMetric
-            label="Cost / result"
+            label="Cost/Result"
             value={item.results > 0 ? formatCurrency(item.costPerResult, currencyCode, 2) : '—'}
           />
+          <ComparisonMetric label="CTR" value={formatRate(item.ctr)} />
           <ComparisonMetric label="Live ads" value={formatNumber(item.adCount)} />
         </div>
         <Button
@@ -1738,11 +1814,11 @@ function AdComparisonRow({
         <div className={classes.metricGrid}>
           <ComparisonMetric label="Spend" value={formatCurrency(item.spend, currencyCode)} />
           <ComparisonMetric label="Results" value={formatNumber(item.results)} />
-          <ComparisonMetric label="CTR" value={formatRate(item.ctr)} />
           <ComparisonMetric
-            label="Cost / result"
+            label="Cost/Result"
             value={item.results > 0 ? formatCurrency(item.costPerResult, currencyCode, 2) : '—'}
           />
+          <ComparisonMetric label="CTR" value={formatRate(item.ctr)} />
         </div>
         <Button
           component={Link}
@@ -2555,6 +2631,9 @@ export default function DashboardClient({
   const [deliveryWindowMode, setDeliveryWindowMode] = useState<DeliveryWindowMode>('today');
   const [surfacePanelMode, setSurfacePanelMode] = useState<SurfacePanelMode>('platform');
   const [activeFindingsPopoverOpen, setActiveFindingsPopoverOpen] = useState(false);
+  const [activeFindings, setActiveFindings] = useState(payload.activeFindings);
+  const [dismissingFindingIds, setDismissingFindingIds] = useState<Set<string>>(() => new Set());
+  const [dismissingAllFindings, setDismissingAllFindings] = useState(false);
   const [extensionModalOpen, setExtensionModalOpen] = useState(false);
   const [extensionDays, setExtensionDays] = useState(14);
   const [localNoLiveDeliveryAlertVisible, setLocalNoLiveDeliveryAlertVisible] = useState(true);
@@ -2623,7 +2702,6 @@ export default function DashboardClient({
           ? 'Syncing'
           : 'Unavailable';
   const liveComparisons = liveWindow.comparisons;
-  const activeFindings = payload.activeFindings;
   const featuredPlatformBreakdowns = payload.featuredAdsetHistory.platformBreakdowns;
   const featuredAudienceBreakdowns = payload.featuredAdsetHistory.audienceBreakdowns;
   const dailyTrendPoints = payload.featuredAdsetHistory.dailyTrend;
@@ -2920,7 +2998,7 @@ export default function DashboardClient({
         lines.push({
           x: primaryCombinedTrendSignal.dateLabel,
           color: signalSeverityColor(primaryCombinedTrendSignal.severity),
-          label: isPhone ? undefined : primaryCombinedTrendSignal.markerLabel,
+          label: undefined,
           labelPosition: 'insideTop',
           strokeDasharray: '4 4',
         });
@@ -2937,7 +3015,7 @@ export default function DashboardClient({
         lines.push({
           x: findingLabel,
           color: signalSeverityColor(primaryActiveFinding.severity),
-          label: isPhone ? undefined : primaryActiveFinding.title,
+          label: undefined,
           labelPosition: 'insideTop',
           strokeDasharray: '2 6',
         });
@@ -3145,6 +3223,102 @@ export default function DashboardClient({
     );
   }
 
+  async function dismissFinding(findingId: string) {
+    setDismissingFindingIds((current) => new Set(current).add(findingId));
+    setRefreshFeedback(null);
+
+    try {
+      const response = await fetch(`/api/intelligence/findings/${findingId}/dismiss`, {
+        method: 'POST',
+      });
+      const result = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to dismiss finding.');
+      }
+
+      setActiveFindings((current) => {
+        const next = current.filter((finding) => finding.id !== findingId);
+        if (next.length === 0) {
+          setActiveFindingsPopoverOpen(false);
+        }
+        return next;
+      });
+    } catch (error) {
+      console.error('Failed to dismiss active finding:', error);
+      setRefreshFeedback({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to dismiss finding.',
+      });
+    } finally {
+      setDismissingFindingIds((current) => {
+        const next = new Set(current);
+        next.delete(findingId);
+        return next;
+      });
+    }
+  }
+
+  async function dismissAllFindings() {
+    if (activeFindings.length === 0 || dismissingAllFindings) {
+      return;
+    }
+
+    const targetIds = activeFindings.map((finding) => finding.id);
+    setDismissingAllFindings(true);
+    setDismissingFindingIds(new Set(targetIds));
+    setRefreshFeedback(null);
+
+    try {
+      const results = await Promise.allSettled(
+        targetIds.map(async (findingId) => {
+          const response = await fetch(`/api/intelligence/findings/${findingId}/dismiss`, {
+            method: 'POST',
+          });
+          const result = (await response.json()) as {
+            success?: boolean;
+            error?: string;
+          };
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Failed to dismiss finding.');
+          }
+
+          return findingId;
+        })
+      );
+
+      const succeededIds = results
+        .filter((result): result is PromiseFulfilledResult<string> => result.status === 'fulfilled')
+        .map((result) => result.value);
+
+      if (succeededIds.length > 0) {
+        const succeededIdSet = new Set(succeededIds);
+        setActiveFindings((current) =>
+          current.filter((finding) => !succeededIdSet.has(finding.id))
+        );
+      }
+
+      if (succeededIds.length === targetIds.length) {
+        setActiveFindingsPopoverOpen(false);
+      } else {
+        throw new Error('Some findings could not be dismissed.');
+      }
+    } catch (error) {
+      console.error('Failed to dismiss all active findings:', error);
+      setRefreshFeedback({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to dismiss findings.',
+      });
+    } finally {
+      setDismissingAllFindings(false);
+      setDismissingFindingIds(new Set());
+    }
+  }
+
   function clearActiveFindingsCloseTimeout() {
     if (activeFindingsCloseTimeoutRef.current) {
       clearTimeout(activeFindingsCloseTimeoutRef.current);
@@ -3176,6 +3350,10 @@ export default function DashboardClient({
 
     setExtensionDays(clampExtensionDays(daysBetweenIsoDates(continuationSignal.endDate, value)));
   }
+
+  useEffect(() => {
+    setActiveFindings(payload.activeFindings);
+  }, [payload.activeFindings]);
 
   useEffect(() => {
     if (deliveryWindowMode === 'lifetime' && !lifetimeLiveWindow.hasLiveDelivery) {
@@ -3723,15 +3901,29 @@ export default function DashboardClient({
                               onMouseLeave={closeActiveFindingsPopoverSoon}
                             >
                               <Stack gap="sm">
-                                <div>
-                                  <Text size="sm" fw={800}>
-                                    Active findings
-                                  </Text>
-                                  <Text size="xs" c="dimmed" mt={4}>
-                                    DeepVisor is actively watching {activeFindings.length} saved trend
-                                    {activeFindings.length === 1 ? '' : 's'} for this account.
-                                  </Text>
-                                </div>
+                                <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                                  <div>
+                                    <Text size="sm" fw={800}>
+                                      Active findings
+                                    </Text>
+                                    <Text size="xs" c="dimmed" mt={4}>
+                                      DeepVisor is actively watching {activeFindings.length} saved trend
+                                      {activeFindings.length === 1 ? '' : 's'} for this account.
+                                    </Text>
+                                  </div>
+                                  <Button
+                                    size="compact-xs"
+                                    variant="subtle"
+                                    color="gray"
+                                    loading={dismissingAllFindings}
+                                    disabled={activeFindings.length === 0}
+                                    onClick={() => {
+                                      void dismissAllFindings();
+                                    }}
+                                  >
+                                    Mark all read
+                                  </Button>
+                                </Group>
 
                                 <Stack gap="xs">
                                   {activeFindings.map((finding) => {
@@ -3741,18 +3933,32 @@ export default function DashboardClient({
                                     return (
                                       <Paper key={finding.id} withBorder radius="md" p="sm">
                                         <Stack gap={6}>
-                                          <Group gap="xs" wrap="wrap">
-                                            <Badge
-                                              color={signalSeverityColor(finding.severity)}
-                                              variant="light"
-                                              radius="sm"
-                                              size="xs"
+                                          <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                                            <Group gap="xs" wrap="wrap" style={{ minWidth: 0 }}>
+                                              <Badge
+                                                color={signalSeverityColor(finding.severity)}
+                                                variant="light"
+                                                radius="sm"
+                                                size="xs"
+                                              >
+                                                {formatStatusLabel(finding.severity)}
+                                              </Badge>
+                                              <Text size="sm" fw={700} className={classes.activeFindingLine}>
+                                                {finding.title}
+                                              </Text>
+                                            </Group>
+                                            <ActionIcon
+                                              variant="subtle"
+                                              color="gray"
+                                              size="sm"
+                                              aria-label="Mark finding as read"
+                                              loading={dismissingFindingIds.has(finding.id)}
+                                              onClick={() => {
+                                                void dismissFinding(finding.id);
+                                              }}
                                             >
-                                              {formatStatusLabel(finding.severity)}
-                                            </Badge>
-                                            <Text size="sm" fw={700} className={classes.activeFindingLine}>
-                                              {finding.title}
-                                            </Text>
+                                              <IconX size={14} />
+                                            </ActionIcon>
                                           </Group>
                                           {(context || detectedDate) ? (
                                             <Text size="xs" c="dimmed">
@@ -4315,6 +4521,7 @@ export default function DashboardClient({
                           <col style={{ width: '150px' }} />
                           <col style={{ width: '100px' }} />
                           <col style={{ width: '90px' }} />
+                          <col style={{ width: '120px' }} />
                           <col style={{ width: '80px' }} />
                           <col style={{ width: '100px' }} />
                           <col style={{ width: '90px' }} />
@@ -4330,6 +4537,9 @@ export default function DashboardClient({
                             </Table.Th>
                             <Table.Th ta="right" className={classes.tableStatHeader}>
                               Results
+                            </Table.Th>
+                            <Table.Th ta="right" className={classes.tableStatHeader}>
+                              Cost/Result
                             </Table.Th>
                             <Table.Th ta="right" className={classes.tableStatHeader}>
                               CTR
@@ -4378,6 +4588,15 @@ export default function DashboardClient({
                                 </Table.Td>
                                 <Table.Td ta="right" className={classes.tableStatCell}>
                                   {formatNumber(campaign.results)}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  {campaign.results > 0
+                                    ? formatCurrency(
+                                        campaign.costPerResult,
+                                        payload.viewContext.currencyCode,
+                                        2
+                                      )
+                                    : '—'}
                                 </Table.Td>
                                 <Table.Td ta="right" className={classes.tableStatCell}>
                                   {formatRate(campaign.ctr)}
@@ -4467,10 +4686,10 @@ export default function DashboardClient({
                               Results
                             </Table.Th>
                             <Table.Th ta="right" className={classes.tableStatHeader}>
-                              CTR
+                              Cost/Result
                             </Table.Th>
                             <Table.Th ta="right" className={classes.tableStatHeader}>
-                              Cost / result
+                              CTR
                             </Table.Th>
                             <Table.Th ta="right" className={classes.tableStatHeader}>
                               Live ads
@@ -4523,9 +4742,6 @@ export default function DashboardClient({
                                   {formatNumber(item.results)}
                                 </Table.Td>
                                 <Table.Td ta="right" className={classes.tableStatCell}>
-                                  {formatRate(item.ctr)}
-                                </Table.Td>
-                                <Table.Td ta="right" className={classes.tableStatCell}>
                                   {item.results > 0
                                     ? formatCurrency(
                                         item.costPerResult,
@@ -4533,6 +4749,9 @@ export default function DashboardClient({
                                         2
                                       )
                                     : '—'}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  {formatRate(item.ctr)}
                                 </Table.Td>
                                 <Table.Td ta="right" className={classes.tableStatCell}>
                                   {formatNumber(item.adCount)}
@@ -4618,10 +4837,10 @@ export default function DashboardClient({
                                   Results
                                 </Table.Th>
                                 <Table.Th ta="right" className={classes.tableStatHeader}>
-                                  CTR
+                                  Cost/Result
                                 </Table.Th>
                                 <Table.Th ta="right" className={classes.tableStatHeader}>
-                                  Cost / result
+                                  CTR
                                 </Table.Th>
                                 <Table.Th ta="right" className={classes.tableStatHeader}>
                                   Report
@@ -4674,9 +4893,6 @@ export default function DashboardClient({
                                       {formatNumber(item.results)}
                                     </Table.Td>
                                     <Table.Td ta="right" className={classes.tableStatCell}>
-                                      {formatRate(item.ctr)}
-                                    </Table.Td>
-                                    <Table.Td ta="right" className={classes.tableStatCell}>
                                       {item.results > 0
                                         ? formatCurrency(
                                             item.costPerResult,
@@ -4684,6 +4900,9 @@ export default function DashboardClient({
                                             2
                                           )
                                         : '—'}
+                                    </Table.Td>
+                                    <Table.Td ta="right" className={classes.tableStatCell}>
+                                      {formatRate(item.ctr)}
                                     </Table.Td>
                                     <Table.Td ta="right" className={classes.tableStatCell}>
                                       <Button

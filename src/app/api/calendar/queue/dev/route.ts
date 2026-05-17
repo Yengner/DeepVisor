@@ -114,6 +114,7 @@ async function loadQueueItems(
   input: {
     businessId: string;
     adAccountId: string;
+    userId: string;
   }
 ) {
   const intelligence = await getMetaAccountIntelligenceReadModel(supabase, input);
@@ -231,6 +232,8 @@ export async function POST(request: NextRequest) {
           itemType === 'review_report' ? '/reports?compare=previous_period' : '/calendar',
         scheduledFor: scheduledFor.toISOString(),
         dueDate: scheduledFor.toISOString().slice(0, 10),
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
         payload: {
           devTool: true,
           createdByUserId: user.id,
@@ -268,6 +271,7 @@ export async function POST(request: NextRequest) {
       const queueItems = await loadQueueItems(adminSupabase, {
         businessId,
         adAccountId,
+        userId: user.id,
       });
 
       return NextResponse.json({
@@ -294,6 +298,7 @@ export async function POST(request: NextRequest) {
       const queueItems = await loadQueueItems(adminSupabase, {
         businessId,
         adAccountId,
+        userId: user.id,
       });
       console.info('[calendar queue dev] processed due item', result);
 

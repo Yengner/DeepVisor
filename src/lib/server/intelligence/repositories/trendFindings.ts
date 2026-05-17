@@ -146,6 +146,51 @@ export async function listActiveTrendFindings(
   return ((data ?? []) as TrendFindingRow[]).map(mapTrendFindingRow);
 }
 
+export async function listActiveTrendFindingViews(
+  supabase: IntelligenceClient,
+  input: {
+    businessId: string;
+    adAccountId: string;
+    findingTypes?: TrendFinding['findingType'][];
+    dateFrom?: string | null;
+    dateTo?: string | null;
+  }
+): Promise<TrendFindingView[]> {
+  const findings = await listActiveTrendFindings(supabase, {
+    businessId: input.businessId,
+    adAccountId: input.adAccountId,
+  });
+
+  return findings
+    .filter((finding) => {
+      if (input.findingTypes?.length && !input.findingTypes.includes(finding.findingType)) {
+        return false;
+      }
+
+      const periodStart =
+        typeof finding.metricSnapshot.periodStart === 'string'
+          ? finding.metricSnapshot.periodStart
+          : null;
+      const periodEnd =
+        typeof finding.metricSnapshot.periodEnd === 'string'
+          ? finding.metricSnapshot.periodEnd
+          : typeof finding.metricSnapshot.label === 'string'
+            ? finding.metricSnapshot.label
+            : null;
+
+      if (input.dateFrom && periodEnd && periodEnd < input.dateFrom) {
+        return false;
+      }
+
+      if (input.dateTo && periodStart && periodStart > input.dateTo) {
+        return false;
+      }
+
+      return true;
+    })
+    .map(toTrendFindingView);
+}
+
 export async function listTrendFindingsForBusiness(
   supabase: IntelligenceClient,
   input: {
@@ -362,6 +407,11 @@ export function toTrendFindingView(finding: TrendFinding): TrendFindingView {
     adsetId: finding.adsetId,
     campaignId: finding.campaignId,
     detectedAt: finding.detectedAt,
+    firstDetectedAt: finding.firstDetectedAt,
+    lastDetectedAt: finding.lastDetectedAt,
+    resolvedAt: finding.resolvedAt,
+    dismissedAt: finding.dismissedAt,
+    convertedToQueueAt: finding.convertedToQueueAt,
     metricSnapshot: finding.metricSnapshot,
     actionLabel: finding.recommendedAction?.label ?? null,
     actionHref: finding.recommendedAction?.href ?? null,

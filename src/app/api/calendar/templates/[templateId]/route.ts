@@ -37,7 +37,7 @@ export async function PATCH(
   context: { params: Promise<{ templateId: string }> }
 ) {
   try {
-    const { businessId } = await getRequiredAppContext();
+    const { businessId, user } = await getRequiredAppContext();
     const { templateId } = await context.params;
     const supabase = createAdminClient();
     const body = (await request.json()) as Partial<CalendarQueueTemplateDraft>;
@@ -57,7 +57,11 @@ export async function PATCH(
     const template = await updateCalendarQueueTemplate(supabase, {
       id: templateId,
       businessId,
-      patch: body,
+      userId: user.id,
+      patch: {
+        ...body,
+        updatedByUserId: user.id,
+      },
     });
 
     return NextResponse.json({ template });
@@ -75,13 +79,14 @@ export async function DELETE(
   context: { params: Promise<{ templateId: string }> }
 ) {
   try {
-    const { businessId } = await getRequiredAppContext();
+    const { businessId, user } = await getRequiredAppContext();
     const { templateId } = await context.params;
     const supabase = createAdminClient();
 
     await deleteCalendarQueueTemplate(supabase, {
       id: templateId,
       businessId,
+      userId: user.id,
     });
 
     return NextResponse.json({ success: true });

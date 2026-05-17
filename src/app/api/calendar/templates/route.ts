@@ -33,7 +33,7 @@ async function validateAdAccountAccess(
 
 export async function POST(request: Request) {
   try {
-    const { businessId } = await getRequiredAppContext();
+    const { businessId, user } = await getRequiredAppContext();
     const supabase = createAdminClient();
     const body = (await request.json()) as Partial<CalendarQueueTemplateDraft>;
 
@@ -65,6 +65,8 @@ export async function POST(request: Request) {
       startDate: body.startDate ?? new Date().toISOString().slice(0, 10),
       endDate: body.endDate ?? null,
       status: body.status ?? 'active',
+      createdByUserId: user.id,
+      updatedByUserId: user.id,
     });
 
     return NextResponse.json({ template });

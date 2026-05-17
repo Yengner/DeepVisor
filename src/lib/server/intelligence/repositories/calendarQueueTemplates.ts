@@ -25,6 +25,8 @@ type QueueTemplateRow = {
   start_date: string;
   end_date: string | null;
   status: 'active' | 'paused';
+  created_by_user_id: string | null;
+  updated_by_user_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -45,6 +47,8 @@ export type CalendarQueueTemplateDraft = {
   startDate: string;
   endDate: string | null;
   status: 'active' | 'paused';
+  createdByUserId?: string | null;
+  updatedByUserId?: string | null;
 };
 
 function mapQueueTemplateRow(row: QueueTemplateRow): CalendarQueueTemplate {
@@ -65,6 +69,8 @@ function mapQueueTemplateRow(row: QueueTemplateRow): CalendarQueueTemplate {
     startDate: row.start_date,
     endDate: row.end_date,
     status: row.status,
+    createdByUserId: row.created_by_user_id,
+    updatedByUserId: row.updated_by_user_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -87,6 +93,8 @@ function toInsert(draft: CalendarQueueTemplateDraft) {
     start_date: draft.startDate,
     end_date: draft.endDate,
     status: draft.status,
+    created_by_user_id: draft.createdByUserId ?? null,
+    updated_by_user_id: draft.updatedByUserId ?? draft.createdByUserId ?? null,
   };
 }
 
@@ -95,6 +103,7 @@ export async function listCalendarQueueTemplates(
   input: {
     businessId: string;
     adAccountId: string | null;
+    userId?: string | null;
   }
 ): Promise<CalendarQueueTemplate[]> {
   let query = (supabase as any)
@@ -105,6 +114,10 @@ export async function listCalendarQueueTemplates(
 
   if (input.adAccountId) {
     query = query.or(`ad_account_id.eq.${input.adAccountId},ad_account_id.is.null`);
+  }
+
+  if (input.userId) {
+    query = query.eq('created_by_user_id', input.userId);
   }
 
   const { data, error } = await query;
@@ -172,6 +185,7 @@ export async function updateCalendarQueueTemplate(
   input: {
     id: string;
     businessId: string;
+    userId?: string | null;
     patch: Partial<CalendarQueueTemplateDraft>;
   }
 ): Promise<CalendarQueueTemplate> {
@@ -190,14 +204,21 @@ export async function updateCalendarQueueTemplate(
     start_date: input.patch.startDate,
     end_date: input.patch.endDate,
     status: input.patch.status,
+    updated_by_user_id: input.patch.updatedByUserId,
     updated_at: new Date().toISOString(),
   };
 
-  const { data, error } = await (supabase as any)
+  let query = (supabase as any)
     .from('calendar_queue_templates')
     .update(patch)
     .eq('id', input.id)
-    .eq('business_id', input.businessId)
+    .eq('business_id', input.businessId);
+
+  if (input.userId) {
+    query = query.eq('created_by_user_id', input.userId);
+  }
+
+  const { data, error } = await query
     .select('*')
     .single();
 
@@ -213,13 +234,20 @@ export async function deleteCalendarQueueTemplate(
   input: {
     id: string;
     businessId: string;
+    userId?: string | null;
   }
 ): Promise<void> {
-  const { error } = await (supabase as any)
+  let query = (supabase as any)
     .from('calendar_queue_templates')
     .delete()
     .eq('id', input.id)
     .eq('business_id', input.businessId);
+
+  if (input.userId) {
+    query = query.eq('created_by_user_id', input.userId);
+  }
+
+  const { error } = await query;
 
   if (error) {
     throw error;
