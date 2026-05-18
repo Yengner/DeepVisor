@@ -124,6 +124,7 @@ export default async function CalendarPage({
         initialQueueItems={intelligence.queueItems}
         initialQueueTemplates={queueTemplates}
         campaignReviewOptions={campaignReviewOptions}
+        initialNowIso={new Date().toISOString()}
       />
     );
 }

@@ -5,6 +5,7 @@ import OpenAI from 'openai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { asRecord, buildReportUrl } from '@/lib/shared';
 import { isLikelyActiveStatus } from '@/lib/server/dashboard/buildPayload';
+import { getConfiguredOpenAIModel, supportsOpenAITemperature } from '@/lib/server/openai/config';
 import type { Database } from '@/lib/shared/types/supabase';
 import type {
   CalendarQueueItem,
@@ -548,9 +549,10 @@ async function generateNarrativeWithAI(input: {
 
   try {
     const client = new OpenAI({ apiKey });
+    const model = getConfiguredOpenAIModel();
     const completion = await client.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
-      temperature: 0.2,
+      model,
+      ...(supportsOpenAITemperature(model) ? { temperature: 0.2 } : {}),
       response_format: { type: 'json_object' },
       messages: [
         {

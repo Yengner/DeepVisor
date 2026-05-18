@@ -874,6 +874,7 @@ export default function CalendarClient({
   initialQueueItems,
   initialQueueTemplates,
   campaignReviewOptions,
+  initialNowIso,
 }: {
   workspace: BusinessIntelligenceWorkspace;
   initialQueueItems: QueueItem[];
@@ -886,15 +887,20 @@ export default function CalendarClient({
     spend: number;
     results: number;
   }>;
+  initialNowIso: string;
 }) {
   const router = useRouter();
+  const initialNow = useMemo(() => {
+    const parsed = new Date(initialNowIso);
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  }, [initialNowIso]);
   const weekScrollerRef = useRef<HTMLDivElement | null>(null);
   const [queueItems, setQueueItems] = useState<QueueItem[]>(() => initialQueueItems);
   const [queueTemplates, setQueueTemplates] = useState<CalendarQueueTemplate[]>(
     initialQueueTemplates
   );
   const [planView, setPlanView] = useState<'weekly' | 'monthly'>('weekly');
-  const [calendarCursor, setCalendarCursor] = useState<Date>(() => startOfDay(new Date()));
+  const [calendarCursor, setCalendarCursor] = useState<Date>(() => startOfDay(initialNow));
   const [selectedCalendarItemId, setSelectedCalendarItemId] = useState<string | null>(null);
   const [approvingItemId, setApprovingItemId] = useState<string | null>(null);
   const [weekScrollbarWidth, setWeekScrollbarWidth] = useState(0);
@@ -903,7 +909,7 @@ export default function CalendarClient({
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [rebuildingQueue, setRebuildingQueue] = useState(false);
   const [showAllQueueTemplates, setShowAllQueueTemplates] = useState(false);
-  const [currentTimestamp, setCurrentTimestamp] = useState(() => new Date());
+  const [currentTimestamp, setCurrentTimestamp] = useState(() => initialNow);
   const [devQueueItemType, setDevQueueItemType] = useState<DevQueueItemType>('review_report');
   const [devQueuePriority, setDevQueuePriority] = useState<DevQueuePriority>('medium');
   const [devScheduledOffsetMinutes, setDevScheduledOffsetMinutes] = useState(0);
@@ -917,7 +923,7 @@ export default function CalendarClient({
   );
   const [devQueueSummary, setDevQueueSummary] = useState<string | null>(null);
   const [templateForm, setTemplateForm] = useState<QueueTemplateFormState>(() =>
-    buildDefaultTemplateForm(startOfDay(new Date()))
+    buildDefaultTemplateForm(startOfDay(initialNow))
   );
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
 
@@ -943,7 +949,7 @@ export default function CalendarClient({
     [campaignReviewOptions]
   );
 
-  const today = useMemo(() => startOfDay(new Date()), []);
+  const today = useMemo(() => startOfDay(initialNow), [initialNow]);
   const weekStart = useMemo(() => startOfWeek(calendarCursor), [calendarCursor]);
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),

@@ -5,6 +5,7 @@ import OpenAI from 'openai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AdAccountDailyMetricsRow } from '@/lib/server/repositories/ad_accounts/normalizers';
 import { listAdAccountDailyMetricsRowsByAccount } from '@/lib/server/repositories/ad_accounts/getAdAccountPerformance';
+import { getConfiguredOpenAIModel, supportsOpenAITemperature } from '@/lib/server/openai/config';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { asNumber } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
@@ -708,9 +709,10 @@ async function generateAccountSummaryWithAI(input: {
 
   try {
     const client = new OpenAI({ apiKey });
+    const model = getConfiguredOpenAIModel();
     const completion = await client.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
-      temperature: 0.3,
+      model,
+      ...(supportsOpenAITemperature(model) ? { temperature: 0.3 } : {}),
       response_format: { type: 'json_object' },
       messages: [
         {
@@ -809,9 +811,10 @@ async function generateBusinessSummaryWithAI(
 
   try {
     const client = new OpenAI({ apiKey });
+    const model = getConfiguredOpenAIModel();
     const completion = await client.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
-      temperature: 0.3,
+      model,
+      ...(supportsOpenAITemperature(model) ? { temperature: 0.3 } : {}),
       response_format: { type: 'json_object' },
       messages: [
         {
