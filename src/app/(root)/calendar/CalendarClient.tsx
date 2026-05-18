@@ -71,6 +71,7 @@ const DEV_QUEUE_TOOL_ENABLED = process.env.NODE_ENV !== 'production';
 
 type DevQueueItemType =
   | 'review_report'
+  | 'campaign_review'
   | 'investigate_efficiency'
   | 'refresh_creative'
   | 'launch_test'
@@ -80,6 +81,7 @@ type DevQueuePriority = 'low' | 'medium' | 'high' | 'critical';
 
 const DEV_QUEUE_ITEM_TYPE_OPTIONS: Array<{ value: DevQueueItemType; label: string }> = [
   { value: 'review_report', label: 'Report review' },
+  { value: 'campaign_review', label: 'Campaign review' },
   { value: 'investigate_efficiency', label: 'Efficiency review' },
   { value: 'refresh_creative', label: 'Creative refresh' },
   { value: 'launch_test', label: 'Launch test' },
@@ -403,7 +405,10 @@ function queueItemEventClassName(item: QueueItem, isSelected: boolean): string {
 }
 
 function shouldShowQueueEndTime(item: QueueItem): boolean {
-  return !(item.isRecurring && item.recurringTemplateType === 'report');
+  return !(
+    item.isRecurring &&
+    (item.recurringTemplateType === 'report' || item.recurringTemplateType === 'campaign_review')
+  );
 }
 
 function weekEventStyle(item: QueueItem): CSSProperties {
@@ -453,6 +458,8 @@ type QueueTemplateFormState = {
   templateType: CalendarQueueTemplateType;
   title: string;
   description: string;
+  campaignReviewScope: 'active_recent' | 'specific_campaign';
+  campaignReviewCampaignExternalId: string;
   recurrenceType: CalendarQueueTemplateRecurrence;
   weekdays: string[];
   monthlyDay: number;
@@ -505,11 +512,11 @@ const QUEUE_TEMPLATE_TYPE_OPTIONS: Array<{
     titleLabel: 'Queue title',
     descriptionLabel: 'Review focus',
     cadenceLabel: 'Review cadence',
-    timeLabel: 'Start time',
+    timeLabel: 'Run time',
     helperCopy:
-      'Use this for repeating campaign checks, approvals, comparisons, or pacing reviews.',
-    defaultDurationMinutes: 45,
-    showDuration: true,
+      'DeepVisor will run this review at the selected time, generate findings, and notify the workspace.',
+    defaultDurationMinutes: 30,
+    showDuration: false,
   },
   {
     value: 'creative_refresh',
@@ -720,6 +727,8 @@ function buildDefaultTemplateForm(today: Date): QueueTemplateFormState {
     templateType: 'report',
     title: defaults.title,
     description: defaults.description,
+    campaignReviewScope: 'active_recent',
+    campaignReviewCampaignExternalId: '',
     recurrenceType: 'weekly',
     weekdays: [String(today.getDay())],
     monthlyDay: today.getDate(),
@@ -732,10 +741,21 @@ function buildDefaultTemplateForm(today: Date): QueueTemplateFormState {
 }
 
 function formStateFromTemplate(template: CalendarQueueTemplate): QueueTemplateFormState {
+  const campaignReview = (template.payloadJson.campaignReview &&
+    typeof template.payloadJson.campaignReview === 'object'
+    ? template.payloadJson.campaignReview
+    : {}) as Record<string, unknown>;
+
   return {
     templateType: template.templateType,
     title: template.title,
     description: template.description,
+    campaignReviewScope:
+      campaignReview.scope === 'specific_campaign' ? 'specific_campaign' : 'active_recent',
+    campaignReviewCampaignExternalId:
+      typeof campaignReview.campaignExternalId === 'string'
+        ? campaignReview.campaignExternalId
+        : '',
     recurrenceType: template.recurrenceType,
     weekdays: template.weekdays.map(String),
     monthlyDay: template.monthlyDay ?? 1,
@@ -853,10 +873,19 @@ export default function CalendarClient({
   workspace,
   initialQueueItems,
   initialQueueTemplates,
+  campaignReviewOptions,
 }: {
   workspace: BusinessIntelligenceWorkspace;
   initialQueueItems: QueueItem[];
   initialQueueTemplates: CalendarQueueTemplate[];
+  campaignReviewOptions: Array<{
+    campaignExternalId: string;
+    campaignInternalId: string;
+    campaignName: string;
+    status: string | null;
+    spend: number;
+    results: number;
+  }>;
 }) {
   const router = useRouter();
   const weekScrollerRef = useRef<HTMLDivElement | null>(null);
@@ -905,6 +934,14 @@ export default function CalendarClient({
   const selectedAccountSummary =
     workspace.selectedAdAccountName ||
     `${workspace.selection.adAccountIds.length} connected account${workspace.selection.adAccountIds.length === 1 ? '' : 's'}`;
+  const campaignReviewSelectData = useMemo(
+    () =>
+      campaignReviewOptions.map((campaign) => ({
+        value: campaign.campaignExternalId,
+        label: `${campaign.campaignName} · $${campaign.spend.toFixed(0)} · ${campaign.results} results`,
+      })),
+    [campaignReviewOptions]
+  );
 
   const today = useMemo(() => startOfDay(new Date()), []);
   const weekStart = useMemo(() => startOfWeek(calendarCursor), [calendarCursor]);
@@ -1108,6 +1145,14 @@ export default function CalendarClient({
     setSavingTemplate(true);
 
     try {
+      const selectedCampaign =
+        templateForm.templateType === 'campaign_review' &&
+        templateForm.campaignReviewScope === 'specific_campaign'
+          ? campaignReviewOptions.find(
+              (campaign) =>
+                campaign.campaignExternalId === templateForm.campaignReviewCampaignExternalId
+            ) ?? null
+          : null;
       const body = {
         platformIntegrationId: selectedPlatformIntegrationId,
         adAccountId: workspace.selectedAdAccountId,
@@ -1127,6 +1172,26 @@ export default function CalendarClient({
         startDate: templateForm.startDate,
         endDate: templateForm.isIndefinite ? null : templateForm.endDate || null,
         status: 'active' as const,
+        payloadJson:
+          templateForm.templateType === 'campaign_review'
+            ? {
+                campaignReview: {
+                  scope: templateForm.campaignReviewScope,
+                  campaignExternalId:
+                    templateForm.campaignReviewScope === 'specific_campaign'
+                      ? selectedCampaign?.campaignExternalId ?? null
+                      : null,
+                  campaignInternalId:
+                    templateForm.campaignReviewScope === 'specific_campaign'
+                      ? selectedCampaign?.campaignInternalId ?? null
+                      : null,
+                  campaignName:
+                    templateForm.campaignReviewScope === 'specific_campaign'
+                      ? selectedCampaign?.campaignName ?? null
+                      : null,
+                },
+              }
+            : {},
       };
 
       const response = await fetch(
@@ -2476,6 +2541,47 @@ export default function CalendarClient({
               }}
             />
 
+            {templateForm.templateType === 'campaign_review' ? (
+              <Stack gap="xs">
+                <SegmentedControl
+                  value={templateForm.campaignReviewScope}
+                  data={[
+                    { value: 'active_recent', label: 'Active recent campaigns' },
+                    { value: 'specific_campaign', label: 'Specific campaign' },
+                  ]}
+                  onChange={(value) => {
+                    setTemplateForm((current) => ({
+                      ...current,
+                      campaignReviewScope: value as QueueTemplateFormState['campaignReviewScope'],
+                    }));
+                  }}
+                />
+                {templateForm.campaignReviewScope === 'specific_campaign' ? (
+                  <Select
+                    label="Campaign to review"
+                    placeholder={
+                      campaignReviewSelectData.length > 0
+                        ? 'Choose a campaign'
+                        : 'No active recent campaigns found'
+                    }
+                    searchable
+                    data={campaignReviewSelectData}
+                    value={templateForm.campaignReviewCampaignExternalId || null}
+                    onChange={(value) => {
+                      setTemplateForm((current) => ({
+                        ...current,
+                        campaignReviewCampaignExternalId: value ?? '',
+                      }));
+                    }}
+                  />
+                ) : (
+                  <Text size="sm" c="dimmed">
+                    DeepVisor will review campaigns with spend, delivery, results, or active status in the last 30 days.
+                  </Text>
+                )}
+              </Stack>
+            ) : null}
+
             <Group grow align="flex-start">
               <Select
                 label={selectedTemplateOption.cadenceLabel}
@@ -2621,7 +2727,10 @@ export default function CalendarClient({
                   !templateForm.timeOfDay ||
                   (templateForm.recurrenceType === 'weekly' &&
                     templateForm.weekdays.length === 0) ||
-                  (!templateForm.isIndefinite && !templateForm.endDate)
+                  (!templateForm.isIndefinite && !templateForm.endDate) ||
+                  (templateForm.templateType === 'campaign_review' &&
+                    templateForm.campaignReviewScope === 'specific_campaign' &&
+                    !templateForm.campaignReviewCampaignExternalId)
                 }
                 onClick={() => void saveTemplate()}
               >

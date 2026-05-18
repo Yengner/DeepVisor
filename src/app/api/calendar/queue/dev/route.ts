@@ -36,6 +36,7 @@ const ITEM_TYPE_LABELS: Record<CalendarQueueItemType, string> = {
   launch_test: 'Launch test',
   fix_tracking: 'Fix tracking',
   review_report: 'Review report',
+  campaign_review: 'Campaign review',
 };
 
 function isDevRouteEnabled() {
@@ -48,7 +49,8 @@ function normalizeItemType(value: unknown): CalendarQueueItemType {
     value === 'investigate_efficiency' ||
     value === 'launch_test' ||
     value === 'fix_tracking' ||
-    value === 'review_report'
+    value === 'review_report' ||
+    value === 'campaign_review'
     ? value
     : 'review_report';
 }

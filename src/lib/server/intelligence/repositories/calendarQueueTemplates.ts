@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/shared/types/supabase';
+import { asRecord } from '@/lib/shared';
 import type {
   CalendarQueueTemplate,
   CalendarQueueTemplateRecurrence,
@@ -20,6 +21,7 @@ type QueueTemplateRow = {
   recurrence_type: CalendarQueueTemplateRecurrence;
   weekdays: number[] | null;
   monthly_day: number | null;
+  payload_json?: unknown;
   time_of_day: string;
   duration_minutes: number;
   start_date: string;
@@ -49,6 +51,7 @@ export type CalendarQueueTemplateDraft = {
   status: 'active' | 'paused';
   createdByUserId?: string | null;
   updatedByUserId?: string | null;
+  payloadJson?: Record<string, unknown>;
 };
 
 function mapQueueTemplateRow(row: QueueTemplateRow): CalendarQueueTemplate {
@@ -64,6 +67,7 @@ function mapQueueTemplateRow(row: QueueTemplateRow): CalendarQueueTemplate {
     recurrenceType: row.recurrence_type,
     weekdays: Array.isArray(row.weekdays) ? row.weekdays : [],
     monthlyDay: row.monthly_day,
+    payloadJson: asRecord(row.payload_json),
     timeOfDay: row.time_of_day,
     durationMinutes: row.duration_minutes,
     startDate: row.start_date,
@@ -88,6 +92,7 @@ function toInsert(draft: CalendarQueueTemplateDraft) {
     recurrence_type: draft.recurrenceType,
     weekdays: draft.weekdays,
     monthly_day: draft.monthlyDay,
+    payload_json: draft.payloadJson ?? {},
     time_of_day: draft.timeOfDay,
     duration_minutes: draft.durationMinutes,
     start_date: draft.startDate,
@@ -199,6 +204,7 @@ export async function updateCalendarQueueTemplate(
     recurrence_type: input.patch.recurrenceType,
     weekdays: input.patch.weekdays,
     monthly_day: input.patch.monthlyDay,
+    payload_json: input.patch.payloadJson,
     time_of_day: input.patch.timeOfDay,
     duration_minutes: input.patch.durationMinutes,
     start_date: input.patch.startDate,

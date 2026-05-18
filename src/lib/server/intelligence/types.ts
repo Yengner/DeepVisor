@@ -62,6 +62,7 @@ export type CalendarQueueItemType =
   | 'revive_campaign'
   | 'refresh_creative'
   | 'investigate_efficiency'
+  | 'campaign_review'
   | 'launch_test'
   | 'fix_tracking'
   | 'review_report';
@@ -344,7 +345,7 @@ export interface TrendFindingRecommendedAction {
 export interface TrendFindingMetricSnapshot {
   label?: string | null;
   metricLabel?: string | null;
-  sourceWindow?: 'daily' | 'hourly' | 'hybrid';
+  sourceWindow?: 'daily' | 'hourly' | 'hybrid' | 'campaign_review';
   periodStart?: string | null;
   periodEnd?: string | null;
   spend?: number;

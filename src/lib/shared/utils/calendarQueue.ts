@@ -37,6 +37,7 @@ export interface CalendarQueueTemplate {
   monthlyDay: number | null;
   timeOfDay: string;
   durationMinutes: number;
+  payloadJson: Record<string, unknown>;
   startDate: string;
   endDate: string | null;
   status: 'active' | 'paused';

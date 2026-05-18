@@ -67,6 +67,7 @@ export async function POST(request: Request) {
       status: body.status ?? 'active',
       createdByUserId: user.id,
       updatedByUserId: user.id,
+      payloadJson: body.payloadJson ?? {},
     });
 
     return NextResponse.json({ template });

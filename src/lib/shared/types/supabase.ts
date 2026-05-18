@@ -825,7 +825,7 @@ export type Database = {
           },
         ]
       }
-      ad_audience_breakdowns_daily: {
+      ad_audience_breakdowns_summary: {
         Row: {
           ad_account_id: string
           breakdown_type: string
@@ -833,16 +833,17 @@ export type Database = {
           clicks: number
           created_at: string
           currency_code: string | null
-          day: string
           dimension_1_key: string
           dimension_1_value: string
           dimension_2_key: string
           dimension_2_value: string
           entity_id: string
           entity_level: string
+          first_day: string | null
           impression_device: string | null
           impressions: number
           inline_link_clicks: number
+          last_day: string | null
           leads: number
           messages: number
           objective: string | null
@@ -851,6 +852,7 @@ export type Database = {
           reach: number
           source: string
           spend: number
+          synced_at: string | null
           updated_at: string
         }
         Insert: {
@@ -860,16 +862,17 @@ export type Database = {
           clicks?: number
           created_at?: string
           currency_code?: string | null
-          day: string
           dimension_1_key: string
           dimension_1_value: string
           dimension_2_key?: string
           dimension_2_value?: string
           entity_id: string
           entity_level: string
+          first_day?: string | null
           impression_device?: string | null
           impressions?: number
           inline_link_clicks?: number
+          last_day?: string | null
           leads?: number
           messages?: number
           objective?: string | null
@@ -878,6 +881,7 @@ export type Database = {
           reach?: number
           source?: string
           spend?: number
+          synced_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -887,16 +891,17 @@ export type Database = {
           clicks?: number
           created_at?: string
           currency_code?: string | null
-          day?: string
           dimension_1_key?: string
           dimension_1_value?: string
           dimension_2_key?: string
           dimension_2_value?: string
           entity_id?: string
           entity_level?: string
+          first_day?: string | null
           impression_device?: string | null
           impressions?: number
           inline_link_clicks?: number
+          last_day?: string | null
           leads?: number
           messages?: number
           objective?: string | null
@@ -905,109 +910,110 @@ export type Database = {
           reach?: number
           source?: string
           spend?: number
+          synced_at?: string | null
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_ad_account_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_ad_account_id_fkey"
             columns: ["ad_account_id"]
             isOneToOne: false
             referencedRelation: "ad_accounts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "ad_dims"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "ad_entities"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "ad_entity_report_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "ad_entity_report_daily_v"
             referencedColumns: ["entity_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "adset_dims"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "campaign_dims"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_ad_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_ad_daily_v"
             referencedColumns: ["entity_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_adset_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_adset_daily_v"
             referencedColumns: ["entity_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_campaign_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_campaign_daily_v"
             referencedColumns: ["entity_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_entity_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_entity_daily_v"
@@ -2482,6 +2488,7 @@ export type Database = {
           ad_account_id: string | null
           business_id: string
           created_at: string
+          created_by_user_id: string | null
           description: string | null
           destination_href: string | null
           duration_minutes: number
@@ -2496,12 +2503,14 @@ export type Database = {
           time_of_day: string
           title: string
           updated_at: string
+          updated_by_user_id: string | null
           weekdays: number[]
         }
         Insert: {
           ad_account_id?: string | null
           business_id: string
           created_at?: string
+          created_by_user_id?: string | null
           description?: string | null
           destination_href?: string | null
           duration_minutes?: number
@@ -2516,12 +2525,14 @@ export type Database = {
           time_of_day: string
           title: string
           updated_at?: string
+          updated_by_user_id?: string | null
           weekdays?: number[]
         }
         Update: {
           ad_account_id?: string | null
           business_id?: string
           created_at?: string
+          created_by_user_id?: string | null
           description?: string | null
           destination_href?: string | null
           duration_minutes?: number
@@ -2536,6 +2547,7 @@ export type Database = {
           time_of_day?: string
           title?: string
           updated_at?: string
+          updated_by_user_id?: string | null
           weekdays?: number[]
         }
         Relationships: [
@@ -2554,10 +2566,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "calendar_queue_templates_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "calendar_queue_templates_platform_integration_id_fkey"
             columns: ["platform_integration_id"]
             isOneToOne: false
             referencedRelation: "platform_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_queue_templates_updated_by_user_id_fkey"
+            columns: ["updated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -4934,9 +4960,11 @@ export type Database = {
           dimension_2_value: string | null
           entity_id: string | null
           entity_level: string | null
+          first_day: string | null
           impression_device: string | null
           impressions: number | null
           inline_link_clicks: number | null
+          last_day: string | null
           leads: number | null
           messages: number | null
           objective: string | null
@@ -4950,105 +4978,105 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_ad_account_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_ad_account_id_fkey"
             columns: ["ad_account_id"]
             isOneToOne: false
             referencedRelation: "ad_accounts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "ad_dims"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "ad_entities"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "ad_entity_report_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "ad_entity_report_daily_v"
             referencedColumns: ["entity_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "adset_dims"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "campaign_dims"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_ad_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_ad_daily_v"
             referencedColumns: ["entity_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_adset_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_adset_daily_v"
             referencedColumns: ["entity_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_campaign_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_campaign_daily_v"
             referencedColumns: ["entity_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_entity_daily_v"
             referencedColumns: ["campaign_id"]
           },
           {
-            foreignKeyName: "ad_audience_breakdowns_daily_entity_id_fkey"
+            foreignKeyName: "ad_audience_breakdowns_summary_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "report_entity_daily_v"
@@ -5796,6 +5824,7 @@ export type Database = {
           spend: number
         }[]
       }
+      invoke_process_calendar_queue_cron: { Args: never; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
       is_org_admin: { Args: { p_organization_id: string }; Returns: boolean }
       is_org_member: { Args: { p_organization_id: string }; Returns: boolean }

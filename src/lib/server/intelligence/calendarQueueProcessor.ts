@@ -195,6 +195,7 @@ function itemTypeForTemplate(templateType: CalendarQueueTemplateType): CalendarQ
     case 'creative_refresh':
       return 'refresh_creative';
     case 'campaign_review':
+      return 'campaign_review';
     case 'budget_review':
       return 'investigate_efficiency';
     case 'report':
@@ -215,6 +216,7 @@ function defaultDestinationForTemplate(templateType: CalendarQueueTemplateType):
     case 'creative_refresh':
       return '/campaigns/intelligence/create';
     case 'campaign_review':
+      return '/calendar';
     case 'budget_review':
       return '/dashboard';
     default:
@@ -243,6 +245,11 @@ function notificationTypeForItem(item: CalendarQueueItem): string {
   }
 
   return 'workflow';
+}
+
+function isCampaignReviewQueueItem(item: CalendarQueueItem): boolean {
+  const payload = asRecord(item.payload);
+  return item.itemType === 'campaign_review' || payload.templateType === 'campaign_review';
 }
 
 function formatScheduledAt(value: string | null, timeZone: string): string {
@@ -422,6 +429,10 @@ function buildReportHref(item: CalendarQueueItem, scheduledAt: Date): string {
 function buildActionHref(item: CalendarQueueItem): string | null {
   if (item.itemType === 'review_report') {
     return buildReportHref(item, item.scheduledFor ? new Date(item.scheduledFor) : new Date());
+  }
+
+  if (isCampaignReviewQueueItem(item)) {
+    return `/campaigns/reviews/${item.id}`;
   }
 
   return item.destinationHref ?? '/calendar';
@@ -694,8 +705,21 @@ async function runCalendarQueueAction(
     timestamp: string;
   }
 ): Promise<CalendarQueueActionResult | null> {
+  console.info('[calendar-queue:action] dispatch', {
+    queueItemId: item.id,
+    itemType: item.itemType,
+    businessId: item.businessId,
+    adAccountId: item.adAccountId,
+    scheduledFor: item.scheduledFor,
+  });
+
   if (item.itemType === 'review_report') {
     return runReportQueueAction(supabase, item, input);
+  }
+
+  if (isCampaignReviewQueueItem(item)) {
+    const { runCampaignReviewQueueAction } = await import('./campaignReviews/service');
+    return runCampaignReviewQueueAction(supabase, item, input);
   }
 
   return null;
@@ -856,6 +880,7 @@ async function materializeDueTemplateOccurrences(
           createdByUserId: template.createdByUserId ?? null,
           updatedByUserId: template.createdByUserId ?? null,
           payload: {
+            ...template.payloadJson,
             templateId: template.id,
             templateType: template.templateType,
             templateOccurrenceKey: occurrenceKey,
@@ -919,6 +944,15 @@ async function processOneQueueItem(
       ownerUserId: claimed.createdByUserId,
     });
     const dedupeKey = `calendar-queue:${claimed.id}:processed`;
+    console.info('[calendar-queue:processor] claimed item', {
+      queueItemId: claimed.id,
+      itemType: claimed.itemType,
+      status: claimed.status,
+      businessId: claimed.businessId,
+      adAccountId: claimed.adAccountId,
+      scheduledFor: claimed.scheduledFor,
+      createdByUserId: claimed.createdByUserId,
+    });
     const actionResult = await runCalendarQueueAction(supabase, claimed, {
       business,
       userIds,
@@ -988,6 +1022,17 @@ async function processOneQueueItem(
       queueItemId: claimed.id,
       timestamp: input.timestamp,
       payload,
+    });
+
+    console.info('[calendar-queue:processor] completed item', {
+      queueItemId: claimed.id,
+      itemType: claimed.itemType,
+      notificationCount,
+      actionType:
+        actionResult?.payload && typeof actionResult.payload.type === 'string'
+          ? actionResult.payload.type
+          : null,
+      href,
     });
 
     return {

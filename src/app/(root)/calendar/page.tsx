@@ -9,6 +9,8 @@ import {
 } from '@/lib/server/intelligence';
 import { listCalendarQueueTemplates } from '@/lib/server/intelligence/repositories/calendarQueueTemplates';
 import type { BusinessIntelligencePlanningScope } from '@/lib/server/intelligence';
+import { getCampaignSummaries } from '@/lib/server/repositories/campaigns/getCampaignSummaries';
+import { isLikelyActiveStatus } from '@/lib/server/dashboard/buildPayload';
 
 function parseScope(value: string | string[] | undefined): BusinessIntelligencePlanningScope | undefined {
     const raw = Array.isArray(value) ? value[0] : value;
@@ -74,6 +76,34 @@ export default async function CalendarPage({
             userId: user.id,
           })
         : [];
+    const campaignReviewOptions =
+      workspace.selectedAdAccountId
+        ? (
+            await getCampaignSummaries({
+              adAccountIds: [workspace.selectedAdAccountId],
+              windowDays: 30,
+              includeEmpty: false,
+              sort: 'spend',
+              limit: 200,
+              supabase: adminSupabase as any,
+            })
+          )
+            .filter(
+              (campaign) =>
+                campaign.spend > 0 ||
+                campaign.impressions > 0 ||
+                campaign.conversion > 0 ||
+                isLikelyActiveStatus(campaign.status)
+            )
+            .map((campaign) => ({
+              campaignExternalId: campaign.campaignId,
+              campaignInternalId: campaign.campaignInternalId,
+              campaignName: campaign.campaignName,
+              status: campaign.status,
+              spend: campaign.spend,
+              results: campaign.conversion,
+            }))
+        : [];
 
     if (workspace.platforms.length === 0) {
         return <EmptyCampaignState type="platform" />;
@@ -93,6 +123,7 @@ export default async function CalendarPage({
         workspace={workspace}
         initialQueueItems={intelligence.queueItems}
         initialQueueTemplates={queueTemplates}
+        campaignReviewOptions={campaignReviewOptions}
       />
     );
 }

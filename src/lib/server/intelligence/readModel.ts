@@ -81,6 +81,7 @@ function previewSource(
 function queueChannel(itemType: CalendarQueueItem['itemType']): string {
   switch (itemType) {
     case 'revive_campaign':
+    case 'campaign_review':
       return 'Campaigns';
     case 'refresh_creative':
       return 'Creative';
@@ -102,6 +103,8 @@ function defaultTime(itemType: CalendarQueueItem['itemType']): {
   switch (itemType) {
     case 'revive_campaign':
       return { time: '9:00 AM', durationMinutes: 60 };
+    case 'campaign_review':
+      return { time: '9:00 AM', durationMinutes: 30 };
     case 'refresh_creative':
       return { time: '11:00 AM', durationMinutes: 45 };
     case 'investigate_efficiency':

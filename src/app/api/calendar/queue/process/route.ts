@@ -73,18 +73,46 @@ function parseOptionalId(value: unknown): string | null {
 export async function POST(request: NextRequest) {
   const authError = assertAuthorized(request);
   if (authError) {
+    console.warn('[calendar-queue:process] unauthorized request', {
+      hasInternalApiKey: Boolean(request.headers.get('x-internal-api-key')),
+      hasAuthorization: Boolean(request.headers.get('authorization')),
+    });
     return authError;
   }
 
   try {
     const body = (await request.json().catch(() => ({}))) as ProcessCalendarQueueBody;
     const supabase = createAdminClient();
-    const result = await processCalendarQueue(supabase, {
+    const startedAt = Date.now();
+    const input = {
       limit: body.limit,
       lookbackDays: body.lookbackDays,
       businessId: parseOptionalId(body.businessId),
       adAccountId: parseOptionalId(body.adAccountId),
       now: parseNow(body.now),
+    };
+
+    console.info('[calendar-queue:process] start', {
+      limit: input.limit,
+      lookbackDays: input.lookbackDays,
+      businessScoped: Boolean(input.businessId),
+      adAccountScoped: Boolean(input.adAccountId),
+      hasNowOverride: Boolean(input.now),
+    });
+
+    const result = await processCalendarQueue(supabase, {
+      ...input,
+    });
+
+    console.info('[calendar-queue:process] complete', {
+      elapsedMs: Date.now() - startedAt,
+      success: result.success,
+      materializedCount: result.materializedCount,
+      processedCount: result.processedCount,
+      notificationCount: result.notificationCount,
+      skippedCount: result.skippedCount,
+      failedCount: result.failedCount,
+      errorCount: result.errors.length,
     });
 
     return NextResponse.json(result, {

@@ -234,6 +234,7 @@ export async function syncTrendFindings(
     businessId: string;
     adAccountId: string;
     drafts: TrendFindingDraft[];
+    resolveStale?: boolean;
   }
 ): Promise<TrendFinding[]> {
   const now = new Date().toISOString();
@@ -255,9 +256,12 @@ export async function syncTrendFindings(
   }
 
   const incomingKeys = new Set(input.drafts.map((draft) => draft.dedupeKey));
-  const staleIds = ((existingRows ?? []) as TrendFindingRow[])
-    .filter((row) => row.status === 'active' && !incomingKeys.has(row.dedupe_key))
-    .map((row) => row.id);
+  const staleIds =
+    input.resolveStale === false
+      ? []
+      : ((existingRows ?? []) as TrendFindingRow[])
+          .filter((row) => row.status === 'active' && !incomingKeys.has(row.dedupe_key))
+          .map((row) => row.id);
 
   if (staleIds.length > 0) {
     const { error: resolveError } = await (supabase as any)
