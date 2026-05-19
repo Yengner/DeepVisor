@@ -2,7 +2,7 @@ import 'server-only';
 
 export const DEFAULT_OPENAI_MODEL = 'gpt-5-mini';
 export const DEFAULT_OPENAI_FAST_MODEL = 'gpt-5.4-nano';
-export const DEFAULT_OPENAI_STRUCTURED_TIMEOUT_MS = 3500;
+export const DEFAULT_OPENAI_STRUCTURED_TIMEOUT_MS = 120000;
 
 export function getConfiguredOpenAIModel(): string {
   return process.env.OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL;

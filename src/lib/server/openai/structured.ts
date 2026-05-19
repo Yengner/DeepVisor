@@ -72,9 +72,20 @@ function safeErrorMessage(error: unknown): string {
 }
 
 function isAbortError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+
   return (
     error instanceof DOMException && error.name === 'AbortError'
-  ) || (error instanceof Error && error.name === 'AbortError');
+  ) || (
+    error instanceof Error &&
+    (error.name === 'AbortError' ||
+      error.name === 'APIUserAbortError' ||
+      error.name === 'TimeoutError' ||
+      message.includes('aborted') ||
+      message.includes('abort') ||
+      message.includes('timeout') ||
+      message.includes('timed out'))
+  );
 }
 
 async function recordAiGenerationRun(input: {
