@@ -57,6 +57,16 @@ type CalendarRenderItem = QueueItem & {
   originalItem: QueueItem;
 };
 
+type WeekEventLayout = {
+  lane: number;
+  laneCount: number;
+  overlapCount: number;
+};
+
+type WeekCalendarRenderItem = CalendarRenderItem & {
+  weekLayout: WeekEventLayout;
+};
+
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MINI_WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const WEEK_VIEW_START_HOUR = 0;
@@ -65,6 +75,7 @@ const WEEK_HOUR_HEIGHT = 56;
 const MONTH_VIEW_VISIBLE_ITEM_COUNT = 4;
 const DRAG_SNAP_MINUTES = 15;
 const INITIAL_WEEK_SCROLL_HOUR = 13;
+const SIGNIFICANT_WEEK_EVENT_OVERLAP_RATIO = 0.3;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DEV_QUEUE_TOOL_ENABLED = process.env.NODE_ENV !== 'production';
@@ -424,6 +435,162 @@ function weekEventStyle(item: QueueItem): CSSProperties {
   return {
     top,
     height,
+  };
+}
+
+function weekEventTimeWindow(item: QueueItem): { start: number; end: number } {
+  const gridStartMinutes = WEEK_VIEW_START_HOUR * 60;
+  const gridEndMinutes = WEEK_VIEW_END_HOUR * 60;
+  const rawStart = parseTimeToMinutes(item.time);
+  const rawEnd = rawStart + item.durationMinutes;
+  const start = Math.max(rawStart, gridStartMinutes);
+  const end = Math.min(Math.max(rawEnd, start + 30), gridEndMinutes);
+
+  return { start, end };
+}
+
+function weekEventOverlapRatio(left: QueueItem, right: QueueItem): number {
+  const leftWindow = weekEventTimeWindow(left);
+  const rightWindow = weekEventTimeWindow(right);
+  const overlap =
+    Math.min(leftWindow.end, rightWindow.end) - Math.max(leftWindow.start, rightWindow.start);
+
+  if (overlap <= 0) {
+    return 0;
+  }
+
+  const shortestDuration = Math.min(
+    leftWindow.end - leftWindow.start,
+    rightWindow.end - rightWindow.start
+  );
+
+  return shortestDuration > 0 ? overlap / shortestDuration : 0;
+}
+
+function hasSignificantWeekEventOverlap(left: QueueItem, right: QueueItem): boolean {
+  return weekEventOverlapRatio(left, right) > SIGNIFICANT_WEEK_EVENT_OVERLAP_RATIO;
+}
+
+function buildWeekCalendarRenderItems(items: CalendarRenderItem[]): WeekCalendarRenderItem[] {
+  const sortedItems = [...items].sort(compareQueueItems);
+  const adjacency = new Map<string, Set<string>>();
+  const itemByRenderId = new Map(sortedItems.map((item) => [item.renderId, item]));
+
+  sortedItems.forEach((item) => adjacency.set(item.renderId, new Set<string>()));
+
+  for (let leftIndex = 0; leftIndex < sortedItems.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < sortedItems.length; rightIndex += 1) {
+      const left = sortedItems[leftIndex];
+      const right = sortedItems[rightIndex];
+
+      if (!hasSignificantWeekEventOverlap(left, right)) {
+        continue;
+      }
+
+      adjacency.get(left.renderId)?.add(right.renderId);
+      adjacency.get(right.renderId)?.add(left.renderId);
+    }
+  }
+
+  const layouts = new Map<string, WeekEventLayout>(
+    sortedItems.map((item) => [
+      item.renderId,
+      {
+        lane: 0,
+        laneCount: 1,
+        overlapCount: adjacency.get(item.renderId)?.size ?? 0,
+      },
+    ])
+  );
+  const visited = new Set<string>();
+
+  sortedItems.forEach((root) => {
+    if (visited.has(root.renderId)) {
+      return;
+    }
+
+    const componentIds: string[] = [];
+    const stack = [root.renderId];
+    visited.add(root.renderId);
+
+    while (stack.length > 0) {
+      const currentId = stack.pop();
+      if (!currentId) {
+        continue;
+      }
+
+      componentIds.push(currentId);
+      adjacency.get(currentId)?.forEach((nextId) => {
+        if (!visited.has(nextId)) {
+          visited.add(nextId);
+          stack.push(nextId);
+        }
+      });
+    }
+
+    const componentItems = componentIds
+      .map((id) => itemByRenderId.get(id))
+      .filter((item): item is CalendarRenderItem => Boolean(item))
+      .sort(compareQueueItems);
+
+    if (componentItems.length <= 1) {
+      return;
+    }
+
+    const lanes: CalendarRenderItem[][] = [];
+
+    componentItems.forEach((item) => {
+      const laneIndex = lanes.findIndex((laneItems) =>
+        laneItems.every((laneItem) => !hasSignificantWeekEventOverlap(laneItem, item))
+      );
+      const nextLaneIndex = laneIndex >= 0 ? laneIndex : lanes.length;
+
+      if (!lanes[nextLaneIndex]) {
+        lanes[nextLaneIndex] = [];
+      }
+
+      lanes[nextLaneIndex].push(item);
+      layouts.set(item.renderId, {
+        lane: nextLaneIndex,
+        laneCount: lanes.length,
+        overlapCount: adjacency.get(item.renderId)?.size ?? 0,
+      });
+    });
+
+    componentItems.forEach((item) => {
+      const layout = layouts.get(item.renderId);
+      if (layout) {
+        layouts.set(item.renderId, {
+          ...layout,
+          laneCount: lanes.length,
+        });
+      }
+    });
+  });
+
+  return sortedItems.map((item) => ({
+    ...item,
+    weekLayout: layouts.get(item.renderId) ?? {
+      lane: 0,
+      laneCount: 1,
+      overlapCount: 0,
+    },
+  }));
+}
+
+function weekEventPositionStyle(item: WeekCalendarRenderItem): CSSProperties {
+  const style = weekEventStyle(item);
+  const { lane, laneCount } = item.weekLayout;
+
+  if (laneCount <= 1) {
+    return style;
+  }
+
+  return {
+    ...style,
+    left: `calc(6px + ${(lane * 100) / laneCount}%)`,
+    right: `calc(6px + ${((laneCount - lane - 1) * 100) / laneCount}%)`,
+    zIndex: 10 + lane,
   };
 }
 
@@ -1022,7 +1189,9 @@ export default function CalendarClient({
   );
 
   const weekItemsByDay = useMemo(() => {
-    const grouped = new Map<string, CalendarRenderItem[]>(weekDayKeys.map((day) => [day, []]));
+    const grouped = new Map<string, CalendarRenderItem[]>(
+      weekDayKeys.map((day) => [day, [] as CalendarRenderItem[]])
+    );
 
     renderedQueueItems.forEach((item) => {
       const bucket = grouped.get(item.day);
@@ -1032,8 +1201,14 @@ export default function CalendarClient({
       }
     });
 
-    grouped.forEach((items) => items.sort(compareQueueItems));
-    return grouped;
+    const laidOut = new Map<string, WeekCalendarRenderItem[]>(
+      weekDayKeys.map((day) => [day, [] as WeekCalendarRenderItem[]])
+    );
+    grouped.forEach((items, dayKey) => {
+      laidOut.set(dayKey, buildWeekCalendarRenderItems(items));
+    });
+
+    return laidOut;
   }, [renderedQueueItems, weekDayKeys]);
 
   const monthItemsByDay = useMemo(() => {
@@ -2293,13 +2468,27 @@ export default function CalendarClient({
                                       selectedCalendarItemId === item.id
                                     ),
                                     weekEventDensityClassName(density),
+                                    item.weekLayout.overlapCount > 0
+                                      ? classes.weekEventOverlapped
+                                      : '',
                                   ]
                                     .filter(Boolean)
                                     .join(' ')}
-                                  style={weekEventStyle(item)}
+                                  style={weekEventPositionStyle(item)}
                                   onClick={() => handleCalendarItemClick(item.id)}
-                                  title={`${item.title} · ${item.time}`}
+                                  title={`${item.title} · ${item.time}${
+                                    item.weekLayout.overlapCount > 0
+                                      ? ` · overlaps with ${item.weekLayout.overlapCount} queue${
+                                          item.weekLayout.overlapCount === 1 ? '' : 's'
+                                        }`
+                                      : ''
+                                  }`}
                                 >
+                                  {item.weekLayout.overlapCount > 0 ? (
+                                    <span className={classes.eventOverlapBadge}>
+                                      +{item.weekLayout.overlapCount}
+                                    </span>
+                                  ) : null}
                                   <span className={classes.eventTitle}>{item.title}</span>
                                   <span className={classes.eventTime}>
                                     {formatEventTimeRange(item)}

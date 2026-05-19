@@ -1,11 +1,10 @@
 import 'server-only';
 
 import { createHash } from 'crypto';
-import OpenAI from 'openai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { asRecord, buildReportUrl } from '@/lib/shared';
 import { isLikelyActiveStatus } from '@/lib/server/dashboard/buildPayload';
-import { getConfiguredOpenAIModel, supportsOpenAITemperature } from '@/lib/server/openai/config';
+import { runStructuredAI } from '@/lib/server/openai/structured';
 import type { Database } from '@/lib/shared/types/supabase';
 import type {
   CalendarQueueItem,
@@ -117,10 +116,15 @@ export type CampaignReviewResult = {
   scope: CampaignReviewScope;
   generatedAt: string;
   aiGenerated: boolean;
+  aiRunId: string | null;
+  promptVersion: string;
+  fallbackReason: string | null;
+  decisionSupportVersion: string;
   summary: string;
   highlights: string[];
   risks: string[];
   nextSteps: string[];
+  operatorNotes: string[];
   reviewedCampaignCount: number;
   unavailableCampaign: string | null;
   campaignRankings: ReviewEntity[];
@@ -132,6 +136,46 @@ export type CampaignReviewResult = {
 const RECENT_DAYS = 30;
 const MIN_WARNING_SPEND = 25;
 const MIN_CRITICAL_SPEND = 50;
+const CAMPAIGN_REVIEW_PROMPT_VERSION = 'campaign_review_decision_support_v1';
+const DECISION_SUPPORT_VERSION = 'deepvisor_decision_support_v1';
+
+type CampaignReviewNarrativePayload = Pick<
+  CampaignReviewResult,
+  'summary' | 'highlights' | 'risks' | 'nextSteps' | 'operatorNotes'
+>;
+
+type CampaignReviewNarrative = CampaignReviewNarrativePayload &
+  Pick<
+    CampaignReviewResult,
+    'aiGenerated' | 'aiRunId' | 'promptVersion' | 'fallbackReason'
+  >;
+
+const CAMPAIGN_REVIEW_NARRATIVE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['summary', 'highlights', 'risks', 'nextSteps', 'operatorNotes'],
+  properties: {
+    summary: {
+      type: 'string',
+    },
+    highlights: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+    risks: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+    nextSteps: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+    operatorNotes: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+  },
+} satisfies Record<string, unknown>;
 
 function toDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -486,14 +530,14 @@ function buildDeterministicNarrative(input: {
   campaigns: ReviewEntity[];
   findings: CampaignReviewFinding[];
   unavailableCampaign: string | null;
-}): Pick<CampaignReviewResult, 'summary' | 'highlights' | 'risks' | 'nextSteps' | 'aiGenerated'> {
+}): CampaignReviewNarrativePayload {
   if (input.unavailableCampaign) {
     return {
       summary: `The requested campaign could not be found, so DeepVisor did not generate optimization findings for it.`,
       highlights: [],
       risks: [`Campaign ${input.unavailableCampaign} is unavailable in the selected ad account.`],
       nextSteps: ['Confirm the campaign still exists, then update or recreate the campaign review queue.'],
-      aiGenerated: false,
+      operatorNotes: ['No platform-level campaign changes were executed.'],
     };
   }
 
@@ -533,76 +577,90 @@ function buildDeterministicNarrative(input: {
             'Watch for cost per result changes after the next sync.',
             'Use campaign reports for deeper ad set or ad-level checks.',
           ],
-    aiGenerated: false,
+    operatorNotes: [
+      'Deterministic thresholds generated the review findings.',
+      'No platform-level campaign changes were executed.',
+    ],
+  };
+}
+
+function stringListValue(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    : [];
+}
+
+function validateCampaignReviewNarrative(value: unknown): CampaignReviewNarrativePayload | null {
+  const record = asRecord(value);
+  const summary = typeof record.summary === 'string' ? record.summary.trim() : '';
+
+  if (!summary) {
+    return null;
+  }
+
+  return {
+    summary,
+    highlights: stringListValue(record.highlights).slice(0, 4),
+    risks: stringListValue(record.risks).slice(0, 4),
+    nextSteps: stringListValue(record.nextSteps).slice(0, 4),
+    operatorNotes: stringListValue(record.operatorNotes).slice(0, 4),
   };
 }
 
 async function generateNarrativeWithAI(input: {
+  supabase: IntelligenceClient;
+  businessId: string;
+  platformIntegrationId: string;
+  adAccountId: string;
+  queueItemId: string;
   campaigns: ReviewEntity[];
   findings: CampaignReviewFinding[];
-  fallback: Pick<CampaignReviewResult, 'summary' | 'highlights' | 'risks' | 'nextSteps' | 'aiGenerated'>;
-}): Promise<Pick<CampaignReviewResult, 'summary' | 'highlights' | 'risks' | 'nextSteps' | 'aiGenerated'>> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey || input.campaigns.length === 0) {
-    return input.fallback;
-  }
+  fallback: CampaignReviewNarrativePayload;
+}): Promise<CampaignReviewNarrative> {
+  const result = await runStructuredAI<CampaignReviewNarrativePayload>({
+    supabase: input.supabase,
+    businessId: input.businessId,
+    platformIntegrationId: input.platformIntegrationId,
+    adAccountId: input.adAccountId,
+    queueItemId: input.queueItemId,
+    sourceType: 'campaign_review',
+    sourceId: input.queueItemId,
+    promptVersion: CAMPAIGN_REVIEW_PROMPT_VERSION,
+    schemaName: 'campaign_review_narrative_v1',
+    schema: CAMPAIGN_REVIEW_NARRATIVE_SCHEMA,
+    systemPrompt:
+      'You are DeepVisor, an ad account decision-support analyst. Return only JSON matching the supplied schema. Use only the provided campaign review metrics and findings. Explain what matters and what to review next. Do not claim that any platform-level campaign change was executed. Do not recommend publishing, pausing, extending, or changing budgets without explicit approval.',
+    task: 'Summarize this campaign review for a small-business owner or operator.',
+    input: {
+      campaigns: input.campaigns.slice(0, 10).map((campaign) => ({
+        name: campaign.name,
+        status: campaign.status,
+        objective: campaign.objective,
+        recent: campaign.recent,
+        previous: campaign.previous,
+        lifetime: campaign.lifetime,
+      })),
+      findings: input.findings,
+      safety:
+        'All next steps must be review, approval, or draft-oriented. Do not imply platform changes were made.',
+    },
+    fallback: input.fallback,
+    validate: validateCampaignReviewNarrative,
+    skipReason: input.campaigns.length === 0 ? 'empty_campaign_review_scope' : null,
+    temperature: 0.2,
+    metadata: {
+      findingCount: input.findings.length,
+      reviewedCampaignCount: input.campaigns.length,
+    },
+  });
 
-  try {
-    const client = new OpenAI({ apiKey });
-    const model = getConfiguredOpenAIModel();
-    const completion = await client.chat.completions.create({
-      model,
-      ...(supportsOpenAITemperature(model) ? { temperature: 0.2 } : {}),
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are DeepVisor. Return only JSON with keys summary, highlights, risks, nextSteps. Use only the provided campaign review metrics and findings. Do not recommend direct platform changes as already executed.',
-        },
-        {
-          role: 'user',
-          content: JSON.stringify({
-            task: 'Summarize this campaign review for a dashboard operator.',
-            campaigns: input.campaigns.slice(0, 10).map((campaign) => ({
-              name: campaign.name,
-              status: campaign.status,
-              recent: campaign.recent,
-              previous: campaign.previous,
-              lifetime: campaign.lifetime,
-            })),
-            findings: input.findings,
-          }),
-        },
-      ],
-    });
-    const raw = completion.choices[0]?.message?.content;
-    if (!raw) {
-      return input.fallback;
-    }
-
-    const parsed = JSON.parse(raw) as Partial<CampaignReviewResult>;
-    if (typeof parsed.summary !== 'string') {
-      return input.fallback;
-    }
-
-    return {
-      summary: parsed.summary,
-      highlights: Array.isArray(parsed.highlights)
-        ? parsed.highlights.filter((item): item is string => typeof item === 'string')
-        : input.fallback.highlights,
-      risks: Array.isArray(parsed.risks)
-        ? parsed.risks.filter((item): item is string => typeof item === 'string')
-        : input.fallback.risks,
-      nextSteps: Array.isArray(parsed.nextSteps)
-        ? parsed.nextSteps.filter((item): item is string => typeof item === 'string')
-        : input.fallback.nextSteps,
-      aiGenerated: true,
-    };
-  } catch (error) {
-    console.error('Falling back to deterministic campaign review summary:', error);
-    return input.fallback;
-  }
+  return {
+    ...result.output,
+    aiGenerated: result.aiGenerated,
+    aiRunId: result.runId,
+    promptVersion: result.promptVersion,
+    fallbackReason: result.fallbackReason,
+  };
 }
 
 function toTrendFindingDraft(input: {
@@ -771,6 +829,11 @@ export async function buildCampaignReviewResult(
     unavailableCampaign,
   });
   const narrative = await generateNarrativeWithAI({
+    supabase,
+    businessId: input.businessId,
+    platformIntegrationId: input.platformIntegrationId,
+    adAccountId: input.adAccountId,
+    queueItemId: input.queueItemId,
     campaigns: selectedCampaigns,
     findings,
     fallback,
@@ -790,6 +853,7 @@ export async function buildCampaignReviewResult(
     reviewHref,
     scope: config.scope,
     generatedAt: input.generatedAt,
+    decisionSupportVersion: DECISION_SUPPORT_VERSION,
     ...narrative,
     reviewedCampaignCount: selectedCampaigns.length,
     unavailableCampaign,

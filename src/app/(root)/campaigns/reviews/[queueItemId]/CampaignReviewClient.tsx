@@ -293,6 +293,11 @@ export default function CampaignReviewClient({
               </Badge>
               <Badge variant="light">{review.scopeLabel}</Badge>
               {review.aiGenerated ? <Badge variant="light">AI summary</Badge> : null}
+              {!review.aiGenerated && review.fallbackReason ? (
+                <Badge color="gray" variant="light">
+                  Rules fallback
+                </Badge>
+              ) : null}
             </Group>
             <Title order={1}>Campaign review</Title>
             <Text c="dimmed">{review.title}</Text>
@@ -350,7 +355,13 @@ export default function CampaignReviewClient({
           <SummaryCard
             label="Review Mode"
             value={review.aiGenerated ? 'AI' : 'Rules'}
-            detail={review.aiGenerated ? 'AI narrative with deterministic thresholds.' : 'Deterministic thresholds and comparison stats.'}
+            detail={
+              review.aiGenerated
+                ? `AI narrative with deterministic thresholds.${review.promptVersion ? ` ${review.promptVersion}.` : ''}`
+                : review.fallbackReason
+                  ? `Fallback: ${review.fallbackReason}.`
+                  : 'Deterministic thresholds and comparison stats.'
+            }
             color="violet"
             icon={<IconSparkles size={18} />}
           />
@@ -373,7 +384,7 @@ export default function CampaignReviewClient({
               {review.summary ??
                 'This review has not produced a summary yet. Check back after the queue processor completes the run.'}
             </Text>
-            <SimpleGrid cols={{ base: 1, md: 3 }}>
+            <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }}>
               <TextList
                 title="Highlights"
                 items={review.highlights}
@@ -389,7 +400,22 @@ export default function CampaignReviewClient({
                 items={review.nextSteps}
                 empty="No next steps are available yet."
               />
+              <TextList
+                title="Operator notes"
+                items={review.operatorNotes}
+                empty="No operator notes are available yet."
+              />
             </SimpleGrid>
+            {review.aiRunId || review.decisionSupportVersion ? (
+              <Text size="xs" c="dimmed">
+                {[
+                  review.decisionSupportVersion ? `Decision support: ${review.decisionSupportVersion}` : null,
+                  review.aiRunId ? `AI run: ${review.aiRunId}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Text>
+            ) : null}
           </Stack>
         </Paper>
 

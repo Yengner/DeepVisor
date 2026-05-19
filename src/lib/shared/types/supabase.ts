@@ -14,6 +14,69 @@ export type Database = {
   }
   ai: {
     Tables: {
+      ai_generation_runs: {
+        Row: {
+          ad_account_id: string | null
+          business_id: string
+          created_at: string
+          error_message: string | null
+          fallback_reason: string | null
+          id: string
+          input_hash: string
+          latency_ms: number
+          metadata_json: Json
+          model: string
+          output_json: Json
+          platform_integration_id: string | null
+          prompt_version: string
+          queue_item_id: string | null
+          schema_name: string
+          source_id: string | null
+          source_type: string
+          status: string
+        }
+        Insert: {
+          ad_account_id?: string | null
+          business_id: string
+          created_at?: string
+          error_message?: string | null
+          fallback_reason?: string | null
+          id?: string
+          input_hash: string
+          latency_ms?: number
+          metadata_json?: Json
+          model: string
+          output_json?: Json
+          platform_integration_id?: string | null
+          prompt_version: string
+          queue_item_id?: string | null
+          schema_name: string
+          source_id?: string | null
+          source_type: string
+          status: string
+        }
+        Update: {
+          ad_account_id?: string | null
+          business_id?: string
+          created_at?: string
+          error_message?: string | null
+          fallback_reason?: string | null
+          id?: string
+          input_hash?: string
+          latency_ms?: number
+          metadata_json?: Json
+          model?: string
+          output_json?: Json
+          platform_integration_id?: string | null
+          prompt_version?: string
+          queue_item_id?: string | null
+          schema_name?: string
+          source_id?: string | null
+          source_type?: string
+          status?: string
+        }
+        Relationships: []
+      }
       agent_observations: {
         Row: {
           ad_account_id: string | null
@@ -2495,6 +2558,7 @@ export type Database = {
           end_date: string | null
           id: string
           monthly_day: number | null
+          payload_json: Json
           platform_integration_id: string | null
           recurrence_type: string
           start_date: string
@@ -2517,6 +2581,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           monthly_day?: number | null
+          payload_json?: Json
           platform_integration_id?: string | null
           recurrence_type: string
           start_date: string
@@ -2539,6 +2604,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           monthly_day?: number | null
+          payload_json?: Json
           platform_integration_id?: string | null
           recurrence_type?: string
           start_date?: string

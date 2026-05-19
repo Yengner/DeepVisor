@@ -3,6 +3,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/shared/types/supabase';
 import { listActiveTrendFindings } from '../repositories/trendFindings';
+import type { DecisionSupportContext } from '../decisionSupportContext';
 import type { AdAccountAssessment, TrendFinding } from '../types';
 
 type IntelligenceClient = SupabaseClient<Database>;
@@ -324,11 +325,16 @@ export async function answerAssistantQuestion(input: {
   adAccountId: string;
   question: string;
   latestSelectedAssessment: AdAccountAssessment | null;
+  decisionSupportContext?: DecisionSupportContext;
 }): Promise<string> {
-  const findings = await listActiveTrendFindings(input.supabase, {
-    businessId: input.businessId,
-    adAccountId: input.adAccountId,
-  });
+  const findings =
+    input.decisionSupportContext?.activeFindings ??
+    (await listActiveTrendFindings(input.supabase, {
+      businessId: input.businessId,
+      adAccountId: input.adAccountId,
+    }));
+  const latestAssessment =
+    input.decisionSupportContext?.latestAssessment ?? input.latestSelectedAssessment;
   const intent = classifyIntent(input.question);
 
   switch (intent) {
@@ -343,11 +349,11 @@ export async function answerAssistantQuestion(input: {
     case 'best_times':
       return getBestTimesAnswer(findings);
     case 'top_risks':
-      return getTopRisksAnswer(findings, input.latestSelectedAssessment);
+      return getTopRisksAnswer(findings, latestAssessment);
     case 'what_changed_recently':
       return getWhatChangedAnswer(findings);
     case 'what_matters_now':
     default:
-      return getWhatMattersNowAnswer(findings, input.latestSelectedAssessment);
+      return getWhatMattersNowAnswer(findings, latestAssessment);
   }
 }

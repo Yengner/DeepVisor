@@ -3,6 +3,7 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { buildGlobalAiAssistantPayload } from '@/lib/server/intelligence';
 import { answerAssistantQuestion } from '@/lib/server/intelligence/assistant/service';
+import { buildDecisionSupportContext } from '@/lib/server/intelligence/decisionSupportContext';
 
 type AssistantBody = {
   question?: string;
@@ -37,12 +38,18 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
+    const decisionSupportContext = await buildDecisionSupportContext(supabase, {
+      businessId,
+      adAccountId: payload.selectedAdAccountId,
+      latestAssessment: payload.latestSelectedAssessment,
+    });
     const answer = await answerAssistantQuestion({
       supabase,
       businessId,
       adAccountId: payload.selectedAdAccountId,
       question,
       latestSelectedAssessment: payload.latestSelectedAssessment,
+      decisionSupportContext,
     });
 
     return NextResponse.json({

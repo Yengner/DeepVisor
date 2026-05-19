@@ -56,6 +56,10 @@ export type CampaignReviewViewModel = {
   scope: 'active_recent' | 'specific_campaign' | 'unknown';
   scopeLabel: string;
   aiGenerated: boolean;
+  aiRunId: string | null;
+  promptVersion: string | null;
+  fallbackReason: string | null;
+  decisionSupportVersion: string | null;
   reviewedCampaignCount: number;
   unavailableCampaign: string | null;
   errorMessage: string | null;
@@ -63,6 +67,7 @@ export type CampaignReviewViewModel = {
   highlights: string[];
   risks: string[];
   nextSteps: string[];
+  operatorNotes: string[];
   findings: CampaignReviewFindingView[];
   campaignRankings: CampaignReviewEntityView[];
   adsetRankings: CampaignReviewEntityView[];

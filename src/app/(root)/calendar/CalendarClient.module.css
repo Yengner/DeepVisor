@@ -566,6 +566,11 @@
   border-color: rgba(255, 255, 255, 0.95);
 }
 
+.weekEventOverlapped {
+  border-color: rgba(255, 255, 255, 0.68);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
 .sourceManual {
   background: #2563eb;
 }
@@ -639,6 +644,22 @@
   color: rgba(255, 255, 255, 0.96);
 }
 
+.eventOverlapBadge {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+}
+
 .eventTitle {
   display: -webkit-box;
   max-width: 100%;
@@ -649,6 +670,12 @@
   text-overflow: ellipsis;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.weekEventOverlapped .eventTitle,
+.weekEventOverlapped .eventTime,
+.weekEventOverlapped .eventMeta {
+  max-width: calc(100% - 28px);
 }
 
 .eventMeta {
