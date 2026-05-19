@@ -146,6 +146,8 @@ serve(async (req) => {
       "x-internal-api-key": INTERNAL_API_KEY,
     },
     body: JSON.stringify({
+      mode: "deferred",
+      deferred: true,
       limit,
       lookbackDays,
       businessId,

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { processCalendarQueue } from '@/lib/server/intelligence/calendarQueueProcessor';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 
@@ -11,6 +11,8 @@ type ProcessCalendarQueueBody = {
   businessId?: string;
   adAccountId?: string;
   now?: string;
+  mode?: 'sync' | 'deferred';
+  deferred?: boolean;
 };
 
 function normalizeProcessLimit(value: unknown): number {
@@ -94,9 +96,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json().catch(() => ({}))) as ProcessCalendarQueueBody;
-    const supabase = createAdminClient();
     const startedAt = Date.now();
     const requestedLimit = body.limit;
+    const shouldDefer = body.deferred === true || body.mode === 'deferred';
     const input = {
       limit: normalizeProcessLimit(body.limit),
       lookbackDays: body.lookbackDays,
@@ -112,8 +114,58 @@ export async function POST(request: NextRequest) {
       businessScoped: Boolean(input.businessId),
       adAccountScoped: Boolean(input.adAccountId),
       hasNowOverride: Boolean(input.now),
+      mode: shouldDefer ? 'deferred' : 'sync',
     });
 
+    if (shouldDefer) {
+      after(async () => {
+        const deferredStartedAt = Date.now();
+
+        console.info('[calendar-queue:process] deferred start', {
+          limit: input.limit,
+          lookbackDays: input.lookbackDays,
+          businessScoped: Boolean(input.businessId),
+          adAccountScoped: Boolean(input.adAccountId),
+          hasNowOverride: Boolean(input.now),
+        });
+
+        try {
+          const deferredSupabase = createAdminClient();
+          const result = await processCalendarQueue(deferredSupabase, {
+            ...input,
+          });
+
+          console.info('[calendar-queue:process] deferred complete', {
+            elapsedMs: Date.now() - deferredStartedAt,
+            success: result.success,
+            materializedCount: result.materializedCount,
+            processedCount: result.processedCount,
+            notificationCount: result.notificationCount,
+            skippedCount: result.skippedCount,
+            failedCount: result.failedCount,
+            errorCount: result.errors.length,
+          });
+        } catch (error) {
+          console.error('[calendar-queue:process] deferred failed', error);
+        }
+      });
+
+      return NextResponse.json(
+        {
+          success: true,
+          accepted: true,
+          mode: 'deferred',
+          queuedAt: new Date().toISOString(),
+          limit: input.limit,
+          lookbackDays: input.lookbackDays ?? null,
+          businessId: input.businessId,
+          adAccountId: input.adAccountId,
+        },
+        { status: 202 }
+      );
+    }
+
+    const supabase = createAdminClient();
     const result = await processCalendarQueue(supabase, {
       ...input,
     });
