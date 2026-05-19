@@ -115,7 +115,10 @@ serve(async (req) => {
 
   const requestUrl = new URL(req.url);
   const jsonBody = await readJsonBody(req);
-  const limit = positiveNumber(requestUrl.searchParams.get("limit") ?? jsonBody.limit, 25);
+  const limit = Math.min(
+    positiveNumber(requestUrl.searchParams.get("limit") ?? jsonBody.limit, 1),
+    1,
+  );
   const lookbackDays = positiveNumber(
     requestUrl.searchParams.get("lookback_days") ??
       requestUrl.searchParams.get("lookbackDays") ??

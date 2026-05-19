@@ -75,7 +75,11 @@ type CalendarQueueSeedTemplate = Omit<CalendarQueuePreviewItem, 'id' | 'day'>;
 function toIsoDay(date: Date): string {
   const next = new Date(date);
   next.setHours(0, 0, 0, 0);
-  return next.toISOString().slice(0, 10);
+  return [
+    next.getFullYear(),
+    String(next.getMonth() + 1).padStart(2, '0'),
+    String(next.getDate()).padStart(2, '0'),
+  ].join('-');
 }
 
 function addDays(base: Date, days: number): Date {

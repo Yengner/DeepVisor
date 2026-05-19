@@ -119,6 +119,7 @@ export interface BusinessIntelligenceAdAccountSummary {
   platformId: string;
   platformIntegrationId: string | null;
   platformLabel: string;
+  timezone: string | null;
 }
 
 export interface BusinessIntelligenceSelection {

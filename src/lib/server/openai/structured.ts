@@ -4,7 +4,11 @@ import { createHash } from 'node:crypto';
 import OpenAI from 'openai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/shared/types/supabase';
-import { getConfiguredOpenAIModel, supportsOpenAITemperature } from './config';
+import {
+  getConfiguredOpenAIFastModel,
+  getConfiguredOpenAIStructuredTimeoutMs,
+  supportsOpenAITemperature,
+} from './config';
 
 type AiGenerationStatus = 'succeeded' | 'skipped' | 'failed' | 'invalid_output';
 
@@ -35,6 +39,8 @@ type RunStructuredAiInput<T> = {
   validate: (value: unknown) => T | null;
   skipReason?: string | null;
   temperature?: number;
+  model?: string;
+  timeoutMs?: number;
   metadata?: Record<string, unknown>;
 };
 
@@ -63,6 +69,12 @@ function safeErrorMessage(error: unknown): string {
   }
 
   return String(error).slice(0, 500);
+}
+
+function isAbortError(error: unknown): boolean {
+  return (
+    error instanceof DOMException && error.name === 'AbortError'
+  ) || (error instanceof Error && error.name === 'AbortError');
 }
 
 async function recordAiGenerationRun(input: {
@@ -124,7 +136,11 @@ async function recordAiGenerationRun(input: {
 export async function runStructuredAI<T>(
   input: RunStructuredAiInput<T>
 ): Promise<StructuredAiResult<T>> {
-  const model = getConfiguredOpenAIModel();
+  const model = input.model?.trim() || getConfiguredOpenAIFastModel();
+  const timeoutMs =
+    typeof input.timeoutMs === 'number' && Number.isFinite(input.timeoutMs) && input.timeoutMs > 0
+      ? Math.min(Math.floor(input.timeoutMs), 8000)
+      : getConfiguredOpenAIStructuredTimeoutMs();
   const inputHash = hashPayload(input.input);
   const startedAt = Date.now();
   const apiKey = process.env.OPENAI_API_KEY;
@@ -186,6 +202,8 @@ export async function runStructuredAI<T>(
 
   try {
     const client = new OpenAI({ apiKey });
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), timeoutMs);
     const completion = await client.chat.completions.create({
       model,
       ...(typeof input.temperature === 'number' && supportsOpenAITemperature(model)
@@ -212,7 +230,9 @@ export async function runStructuredAI<T>(
           }),
         },
       ],
-    } as any);
+    } as any, {
+      signal: abortController.signal,
+    } as any).finally(() => clearTimeout(timeout));
 
     const message = completion.choices[0]?.message as
       | { content?: string | null; refusal?: string | null }
@@ -260,9 +280,8 @@ export async function runStructuredAI<T>(
       output: input.fallback,
       aiGenerated: false,
       status: 'failed',
-      fallbackReason: 'api_error',
+      fallbackReason: isAbortError(error) ? 'timeout' : 'api_error',
       errorMessage: safeErrorMessage(error),
     });
   }
 }
-

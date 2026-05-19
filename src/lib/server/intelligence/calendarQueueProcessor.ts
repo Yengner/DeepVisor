@@ -860,6 +860,15 @@ async function materializeDueTemplateOccurrences(
           continue;
         }
 
+        console.info('[calendar-queue:templates] materializing occurrence', {
+          templateId: template.id,
+          dateKey,
+          timeOfDay: template.timeOfDay,
+          timeZone,
+          scheduledFor: scheduledFor.toISOString(),
+          dueDate: dateKey,
+        });
+
         const draft: CalendarQueueItemDraft = {
           businessId: template.businessId,
           platformIntegrationId,
@@ -884,6 +893,8 @@ async function materializeDueTemplateOccurrences(
             templateId: template.id,
             templateType: template.templateType,
             templateOccurrenceKey: occurrenceKey,
+            templateLocalDate: dateKey,
+            templateTimeOfDay: template.timeOfDay,
             recurrenceType: template.recurrenceType,
             timeZone,
             durationMinutes: template.durationMinutes,

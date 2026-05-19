@@ -3,6 +3,7 @@ import { processCalendarQueue } from '@/lib/server/intelligence/calendarQueuePro
 import { createAdminClient } from '@/lib/server/supabase/admin';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 type ProcessCalendarQueueBody = {
   limit?: number;
@@ -11,6 +12,17 @@ type ProcessCalendarQueueBody = {
   adAccountId?: string;
   now?: string;
 };
+
+function normalizeProcessLimit(value: unknown): number {
+  const numericValue =
+    typeof value === 'number' || typeof value === 'string' ? Number(value) : Number.NaN;
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return 1;
+  }
+
+  return Math.min(Math.floor(numericValue), 1);
+}
 
 function getRequestApiKey(request: NextRequest): string | null {
   const apiKeyHeader = request.headers.get('x-internal-api-key');
@@ -84,8 +96,9 @@ export async function POST(request: NextRequest) {
     const body = (await request.json().catch(() => ({}))) as ProcessCalendarQueueBody;
     const supabase = createAdminClient();
     const startedAt = Date.now();
+    const requestedLimit = body.limit;
     const input = {
-      limit: body.limit,
+      limit: normalizeProcessLimit(body.limit),
       lookbackDays: body.lookbackDays,
       businessId: parseOptionalId(body.businessId),
       adAccountId: parseOptionalId(body.adAccountId),
@@ -93,6 +106,7 @@ export async function POST(request: NextRequest) {
     };
 
     console.info('[calendar-queue:process] start', {
+      requestedLimit,
       limit: input.limit,
       lookbackDays: input.lookbackDays,
       businessScoped: Boolean(input.businessId),

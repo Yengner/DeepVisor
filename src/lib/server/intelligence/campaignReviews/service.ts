@@ -647,6 +647,7 @@ async function generateNarrativeWithAI(input: {
     fallback: input.fallback,
     validate: validateCampaignReviewNarrative,
     skipReason: input.campaigns.length === 0 ? 'empty_campaign_review_scope' : null,
+    timeoutMs: 2500,
     temperature: 0.2,
     metadata: {
       findingCount: input.findings.length,

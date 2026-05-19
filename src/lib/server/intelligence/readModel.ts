@@ -18,6 +18,8 @@ import type {
 
 type IntelligenceClient = SupabaseClient<Database>;
 
+const DEFAULT_QUEUE_TIME_ZONE = 'America/New_York';
+
 export interface MetaAccountIntelligenceReadModel {
   signals: AdAccountSignalView[];
   queueItems: CalendarQueuePreviewItem[];
@@ -119,13 +121,59 @@ function defaultTime(itemType: CalendarQueueItem['itemType']): {
   }
 }
 
-function toIsoDay(value: string): string {
-  return new Date(value).toISOString().slice(0, 10);
+function stringValue(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
 
-function toClockTime(value: string): string {
+function isDateKey(value: string | null): value is string {
+  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
+}
+
+function isTimeOfDay(value: string | null): value is string {
+  return Boolean(value && /^\d{2}:\d{2}(:\d{2})?$/.test(value));
+}
+
+function toZonedDateKey(value: string, timeZone: string): string {
   const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toLocaleDateString('en-CA', { timeZone });
+  }
+
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+function toClockTime(value: string, timeZone: string): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return defaultTime('review_report').time;
+  }
+
   return date.toLocaleTimeString('en-US', {
+    timeZone,
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function formatTimeOfDay(value: string): string {
+  const [hours = '09', minutes = '00'] = value.split(':');
+  const hour = Number(hours);
+  const minute = Number(minutes);
+
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
+    return defaultTime('review_report').time;
+  }
+
+  const date = new Date(Date.UTC(2000, 0, 1, hour, minute, 0));
+  return date.toLocaleTimeString('en-US', {
+    timeZone: 'UTC',
     hour: 'numeric',
     minute: '2-digit',
   });
@@ -134,6 +182,9 @@ function toClockTime(value: string): string {
 function mapQueuePreviewItem(item: CalendarQueueItem): CalendarQueuePreviewItem {
   const defaults = defaultTime(item.itemType);
   const payload = asRecord(item.payload);
+  const timeZone = stringValue(payload.timeZone) ?? DEFAULT_QUEUE_TIME_ZONE;
+  const templateLocalDate = stringValue(payload.templateLocalDate);
+  const templateTimeOfDay = stringValue(payload.templateTimeOfDay);
   const recurringTemplateId =
     typeof payload.templateId === 'string' ? payload.templateId : null;
   const recurringTemplateType =
@@ -147,8 +198,14 @@ function mapQueuePreviewItem(item: CalendarQueueItem): CalendarQueuePreviewItem 
     id: item.id,
     title: item.title,
     description: item.description ?? 'DeepVisor generated this queue item from the latest account signals.',
-    day: item.scheduledFor ? toIsoDay(item.scheduledFor) : toIsoDay(item.createdAt),
-    time: item.scheduledFor ? toClockTime(item.scheduledFor) : defaults.time,
+    day: isDateKey(templateLocalDate)
+      ? templateLocalDate
+      : item.dueDate ?? (item.scheduledFor ? toZonedDateKey(item.scheduledFor, timeZone) : toZonedDateKey(item.createdAt, timeZone)),
+    time: isTimeOfDay(templateTimeOfDay)
+      ? formatTimeOfDay(templateTimeOfDay)
+      : item.scheduledFor
+        ? toClockTime(item.scheduledFor, timeZone)
+        : defaults.time,
     durationMinutes:
       typeof item.payload.durationMinutes === 'number'
         ? item.payload.durationMinutes

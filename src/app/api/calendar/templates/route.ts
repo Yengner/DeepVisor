@@ -6,6 +6,33 @@ import {
   type CalendarQueueTemplateDraft,
 } from '@/lib/server/intelligence/repositories/calendarQueueTemplates';
 
+const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_OF_DAY_PATTERN = /^\d{2}:\d{2}(:\d{2})?$/;
+
+function localDateKey(date = new Date()): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+function normalizeDateKey(value: unknown, fallback: string): string {
+  return typeof value === 'string' && DATE_KEY_PATTERN.test(value) ? value : fallback;
+}
+
+function normalizeNullableDateKey(value: unknown): string | null {
+  return typeof value === 'string' && DATE_KEY_PATTERN.test(value) ? value : null;
+}
+
+function normalizeTimeOfDay(value: unknown): string {
+  if (typeof value !== 'string' || !TIME_OF_DAY_PATTERN.test(value)) {
+    return '09:00:00';
+  }
+
+  return value.length === 5 ? `${value}:00` : value;
+}
+
 async function validateAdAccountAccess(
   supabase: ReturnType<typeof createAdminClient>,
   input: {
@@ -36,6 +63,7 @@ export async function POST(request: Request) {
     const { businessId, user } = await getRequiredAppContext();
     const supabase = createAdminClient();
     const body = (await request.json()) as Partial<CalendarQueueTemplateDraft>;
+    const defaultStartDate = localDateKey();
 
     const hasAccess = await validateAdAccountAccess(supabase, {
       businessId,
@@ -60,10 +88,10 @@ export async function POST(request: Request) {
       recurrenceType: body.recurrenceType ?? 'weekly',
       weekdays: body.weekdays ?? [],
       monthlyDay: body.monthlyDay ?? null,
-      timeOfDay: body.timeOfDay ?? '09:00:00',
+      timeOfDay: normalizeTimeOfDay(body.timeOfDay),
       durationMinutes: body.durationMinutes ?? 45,
-      startDate: body.startDate ?? new Date().toISOString().slice(0, 10),
-      endDate: body.endDate ?? null,
+      startDate: normalizeDateKey(body.startDate, defaultStartDate),
+      endDate: normalizeNullableDateKey(body.endDate),
       status: body.status ?? 'active',
       createdByUserId: user.id,
       updatedByUserId: user.id,
