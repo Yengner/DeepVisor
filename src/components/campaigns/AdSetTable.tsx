@@ -17,6 +17,7 @@ import {
 import { IconChartBar, IconCheck, IconCircle, IconDots, IconPencil, IconTrash } from '@tabler/icons-react';
 import StatusBadge from './StatusBadge';
 import { buildEntityReportUrl } from './reportLinks';
+import classes from './CampaignDashboard.module.css';
 
 const BG = 'var(--mantine-color-body)';
 const BORDER = 'var(--mantine-color-gray-3)';
@@ -75,7 +76,115 @@ export default function AdSetTable({
   }
 
   return (
+    <>
+      <div className={classes.mobileEntityList}>
+        {adSets.length === 0 ? (
+          <Text ta="center" py="md" c="dimmed">
+            No ad sets found
+          </Text>
+        ) : (
+          adSets.map((adSet) => {
+            const isSelected = selectedAdSetId === adSet.id;
+            const status = (adSet.status || '').toString();
+            const spend = Number(adSet.spend || 0);
+            const ctr = adSet.ctr != null ? Number(adSet.ctr) : null;
+            const leads = Number(adSet.leads || 0);
+            const messages = Number(adSet.messages || 0);
+            const results = leads + messages;
+            const reportHref = buildEntityReportUrl({
+              scope: 'adset',
+              platformIntegrationId,
+              adAccountId,
+              campaignId: adSet.campaign_id,
+              adsetId: adSet.id,
+              startDate: adSet.start_date,
+              endDate: adSet.end_date,
+            });
+
+            return (
+              <div
+                key={adSet.id}
+                role="button"
+                tabIndex={0}
+                className={classes.mobileEntityCard}
+                data-selected={isSelected || undefined}
+                onClick={() => onSelectAdSet?.(adSet.id)}
+                onDoubleClick={() => onOpenAdSet?.(adSet.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onSelectAdSet?.(adSet.id);
+                  }
+                }}
+              >
+                <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                  <div className={classes.mobileEntityTitleBlock}>
+                    <Text fw={800} size="sm" lineClamp={2}>
+                      {adSet.name}
+                    </Text>
+                    <Group gap={6} mt={6} wrap="wrap">
+                      <StatusBadge status={status} />
+                      <Text size="xs" c="dimmed" lineClamp={1}>
+                        {adSet.optimization_goal || adSet.objective || 'Goal unavailable'}
+                      </Text>
+                    </Group>
+                  </div>
+                  <Menu position="bottom-end" withArrow offset={4}>
+                    <Menu.Target>
+                      <ActionIcon
+                        variant="light"
+                        color={platformColor}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <IconDots size={16} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item leftSection={<IconChartBar size={16} />} component="a" href={reportHref}>
+                        View Analytics
+                      </Menu.Item>
+                      <Menu.Item leftSection={<IconPencil size={16} />} component="a" href={`/adsets/${adSet.id}/edit`}>
+                        Edit Ad Set
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Group>
+
+                <div className={classes.mobileMetricGrid}>
+                  <div>
+                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
+                    <Text fw={800}>{fmt$(spend)}</Text>
+                  </div>
+                  <div>
+                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Results</Text>
+                    <Text fw={800}>{results}</Text>
+                  </div>
+                  <div>
+                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
+                    <Text fw={800}>{results > 0 ? fmt$(spend / results) : '$0.00'}</Text>
+                  </div>
+                  <div>
+                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>CTR</Text>
+                    <Text fw={800}>{ctr != null ? `${ctr}%` : '0%'}</Text>
+                  </div>
+                </div>
+
+                <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
+                  <Text size="xs" c="dimmed" lineClamp={1}>
+                    {adSet.start_date || '—'} - {adSet.end_date || 'Ongoing'}
+                  </Text>
+                  <Text component="a" href={reportHref} size="xs" fw={800} c={platformColor} onClick={(event) => event.stopPropagation()}>
+                    Report
+                  </Text>
+                </Group>
+              </div>
+            );
+          })
+        )}
+      </div>
+
     <ScrollArea
+      className={classes.desktopDataTable}
       h={scrollHeight}
       type="always"
       offsetScrollbars
@@ -313,5 +422,6 @@ export default function AdSetTable({
         </Table.Tbody>
       </Table>
     </ScrollArea>
+    </>
   );
 }

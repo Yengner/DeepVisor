@@ -543,6 +543,10 @@ function isActiveRecentCampaign(entity: ReviewEntity): boolean {
   return hasRecentDelivery || isLikelyActiveStatus(entity.status);
 }
 
+function hasRecentDelivery(entity: ReviewEntity): boolean {
+  return entity.recent.spend > 0 || entity.recent.impressions > 0 || entity.recent.results > 0;
+}
+
 function buildAccountAverages(campaigns: ReviewEntity[]): {
   costPerResult: number;
   ctr: number;
@@ -661,6 +665,42 @@ function buildCampaignFindings(input: {
   return findings;
 }
 
+function latestDay(campaigns: ReviewEntity[]): string | null {
+  return campaigns
+    .map((campaign) => campaign.lastDay)
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    .sort()
+    .at(-1) ?? null;
+}
+
+function buildReviewRiskStatements(input: {
+  campaigns: ReviewEntity[];
+  findings: CampaignReviewFinding[];
+  fallbackRisks?: string[];
+}): string[] {
+  if (input.findings.length > 0) {
+    return input.findings.slice(0, 3).map((finding) => finding.summary);
+  }
+
+  if (input.campaigns.length === 0) {
+    return input.fallbackRisks?.length
+      ? input.fallbackRisks.slice(0, 3)
+      : ['No reviewed campaigns were available for this queue scope.'];
+  }
+
+  if (!input.campaigns.some(hasRecentDelivery)) {
+    const lastDeliveryDay = latestDay(input.campaigns);
+
+    return [
+      lastDeliveryDay
+        ? `No recent campaign delivery was found in the reviewed scope. The latest synced delivery day is ${lastDeliveryDay}.`
+        : `No recent campaign delivery was found in the reviewed scope.`,
+    ];
+  }
+
+  return ['No material risks detected at the current campaign review thresholds.'];
+}
+
 function buildDeterministicNarrative(input: {
   campaigns: ReviewEntity[];
   findings: CampaignReviewFinding[];
@@ -696,10 +736,10 @@ function buildDeterministicNarrative(input: {
         ? `${highestSpend.name} has the highest recent spend at $${round(highestSpend.recent.spend)}.`
         : 'Recent spend is limited across the reviewed campaigns.',
     ],
-    risks:
-      input.findings.length > 0
-        ? input.findings.slice(0, 3).map((finding) => finding.summary)
-        : ['No warning or critical campaign review findings were generated.'],
+    risks: buildReviewRiskStatements({
+      campaigns: input.campaigns,
+      findings: input.findings,
+    }),
     nextSteps:
       input.findings.length > 0
         ? [
@@ -752,6 +792,11 @@ async function generateNarrativeWithAI(input: {
   findings: CampaignReviewFinding[];
   fallback: CampaignReviewNarrativePayload;
 }): Promise<CampaignReviewNarrative> {
+  const deterministicRisks = buildReviewRiskStatements({
+    campaigns: input.campaigns,
+    findings: input.findings,
+    fallbackRisks: input.fallback.risks,
+  });
   const result = await runStructuredAI<CampaignReviewNarrativePayload>({
     supabase: input.supabase,
     businessId: input.businessId,
@@ -764,17 +809,27 @@ async function generateNarrativeWithAI(input: {
     schemaName: 'campaign_review_narrative_v1',
     schema: CAMPAIGN_REVIEW_NARRATIVE_SCHEMA,
     systemPrompt:
-      'You are DeepVisor, an ad account decision-support analyst. Return only JSON matching the supplied schema. Use only the provided campaign review metrics and findings. Deterministic metrics decide what happened; you explain why it matters and what to review next. Assess efficiency using each entity resultInterpretation.primaryResultMetric. Do not invent tracking mismatch risks from zero non-primary dimensions such as leads, calls, or messages when primaryResultCount is non-zero. Do not claim that any platform-level campaign change was executed. Do not recommend publishing, pausing, extending, or changing budgets without explicit approval.',
+      'You are DeepVisor, an ad account decision-support analyst. Return only JSON matching the supplied schema. Use only the provided campaign review metrics and findings. Deterministic metrics decide what happened; you explain why it matters and what to review next. Assess efficiency using each entity resultInterpretation.primaryResultMetric. Do not invent tracking mismatch risks from zero non-primary dimensions such as leads, calls, or messages when primaryResultCount is non-zero. Risks must be concrete campaign-performance issues from provided findings or delivery inactivity, not generic caveats about conversation quality, purchases, qualified leads, attribution, or what the report cannot prove. Do not claim that any platform-level campaign change was executed. Do not recommend publishing, pausing, extending, or changing budgets without explicit approval.',
     task:
       'Summarize this campaign review for a small-business owner or operator. Keep the narrative focused on the primary result metric for each campaign, and only mention other outcome dimensions when they materially change the decision.',
     input: {
       campaigns: input.campaigns.slice(0, 8).map(compactEntityForNarrative),
       findings: input.findings,
       safety:
-        'All next steps must be review, approval, or draft-oriented. Do not imply platform changes were made. If primaryResultLabel is messages, describe results as messages instead of treating zero leads as a failure.',
+        'All next steps must be review, approval, or draft-oriented. Do not imply platform changes were made. If primaryResultLabel is messages, describe results as messages instead of treating zero leads as a failure. Use the supplied deterministicRiskStatements for risks; do not create extra risk caveats.',
+      deterministicRiskStatements: deterministicRisks,
     },
     fallback: input.fallback,
-    validate: validateCampaignReviewNarrative,
+    validate: (value) => {
+      const narrative = validateCampaignReviewNarrative(value);
+
+      return narrative
+        ? {
+            ...narrative,
+            risks: deterministicRisks,
+          }
+        : null;
+    },
     skipReason: input.campaigns.length === 0 ? 'empty_campaign_review_scope' : null,
     timeoutMs: 120000,
     temperature: 0.2,

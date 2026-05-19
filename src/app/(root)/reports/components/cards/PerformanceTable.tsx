@@ -1,8 +1,9 @@
-"use client";
+'use client';
 
-import { Badge, Button, Card, Table, Text } from "@mantine/core";
-import { IconStarFilled } from "@tabler/icons-react";
-import type { ReportBreakdownRow } from "@/lib/server/reports/types";
+import { Badge, Button, Card, Table, Text } from '@mantine/core';
+import { IconStarFilled } from '@tabler/icons-react';
+import type { ReportBreakdownRow } from '@/lib/server/reports/types';
+import classes from './PerformanceTable.module.css';
 
 interface PerformanceTableProps {
   title: string;
@@ -155,7 +156,105 @@ export default function PerformanceTable({
         </Text>
       )}
 
-      <Table.ScrollContainer minWidth={tableMinWidth}>
+      {rows.length === 0 ? (
+        <Text ta="center" c="dimmed" py="md" className={classes.mobileEmpty}>
+          No performance rows available for the selected filters.
+        </Text>
+      ) : (
+        <div className={classes.mobileCardList}>
+          {rows.map((row, index) => {
+            const rank = index + 1;
+            const contextLines = getContextLines(row);
+            const dateWindow = formatDateWindow(row.startDate, row.endDate);
+
+            return (
+              <article key={`${row.level}:${row.id}:${rank}`} className={classes.mobileCard}>
+                <div className={classes.mobileCardHeader}>
+                  <div className={classes.mobileTitleBlock}>
+                    <div className={classes.mobileBadgeRow}>
+                      {showRanking ? (
+                        <Badge
+                          variant="light"
+                          color={rank === 1 ? 'yellow' : 'gray'}
+                          radius="sm"
+                          leftSection={rank === 1 ? <IconStarFilled size={12} /> : null}
+                        >
+                          #{rank}
+                        </Badge>
+                      ) : null}
+                      <Badge variant="light" color={getLevelColor(row.level)} radius="sm">
+                        {row.level}
+                      </Badge>
+                      {row.status ? (
+                        <Badge variant="light" color="gray" radius="sm">
+                          {row.status}
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <Text fw={800} lineClamp={2} title={row.name}>
+                      {row.name}
+                    </Text>
+                    <Text size="xs" c="dimmed" lineClamp={1} title={dateWindow}>
+                      {dateWindow}
+                    </Text>
+                  </div>
+                  {row.drilldownHref ? (
+                    <Button
+                      component="a"
+                      href={row.drilldownHref}
+                      variant="light"
+                      size="xs"
+                      radius="xl"
+                    >
+                      {row.drilldownLabel ?? 'Open'}
+                    </Button>
+                  ) : null}
+                </div>
+
+                {contextLines.length > 0 ? (
+                  <div className={classes.mobileContext}>
+                    {contextLines.slice(0, 2).map((line) => (
+                      <Text key={line} size="xs" c="dimmed" lineClamp={1} title={line}>
+                        {line}
+                      </Text>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div className={classes.mobileMetricGrid}>
+                  <div>
+                    <Text size="xs" c="dimmed" fw={700}>
+                      Spend
+                    </Text>
+                    <Text fw={800}>{formatCurrency(row.spend, currencyCode)}</Text>
+                  </div>
+                  <div>
+                    <Text size="xs" c="dimmed" fw={700}>
+                      Results
+                    </Text>
+                    <Text fw={800}>{row.conversion.toLocaleString()}</Text>
+                  </div>
+                  <div>
+                    <Text size="xs" c="dimmed" fw={700}>
+                      Cost/result
+                    </Text>
+                    <Text fw={800}>{formatCurrency(row.costPerResult, currencyCode)}</Text>
+                  </div>
+                  <div>
+                    <Text size="xs" c="dimmed" fw={700}>
+                      CTR
+                    </Text>
+                    <Text fw={800}>{row.ctr.toFixed(2)}%</Text>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      <div className={classes.desktopTable}>
+        <Table.ScrollContainer minWidth={tableMinWidth}>
         <Table
           striped
           highlightOnHover
@@ -284,7 +383,8 @@ export default function PerformanceTable({
             )}
           </Table.Tbody>
         </Table>
-      </Table.ScrollContainer>
+        </Table.ScrollContainer>
+      </div>
     </Card>
   );
 }

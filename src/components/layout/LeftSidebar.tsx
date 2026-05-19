@@ -10,28 +10,18 @@ import {
   Divider,
 } from '@mantine/core';
 import {
-  IconHome2,
-  IconChartBar,
-  IconCalendarMonth,
-  IconPuzzle,
-  IconPresentation,
   IconSettings,
   IconLogout,
 } from '@tabler/icons-react';
 import { clientHandleSignOut } from '@/lib/client';
+import { isAppNavItemActive, primaryNavItems } from './navigation';
 
 const Sidebar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
-  const menuItems = [
-    { name: 'Home', icon: IconHome2, route: '/dashboard' },
-    { name: 'Calendar', icon: IconCalendarMonth, route: '/calendar' },
-    { name: 'Campaigns', icon: IconPresentation, route: '/campaigns' },
-    { name: 'Reports', icon: IconChartBar, route: '/reports' },
-    { name: 'Integration', icon: IconPuzzle, route: '/integration' },
-  ];
+  const menuItems = primaryNavItems;
 
   const handleNavigation = (route: string) => {
     router.push(route);
@@ -52,7 +42,7 @@ const Sidebar = () => {
     <div
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
-      className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 border-r border-gray-200 transition-all duration-500 ${isExpanded ? 'w-52' : 'w-16'}`}
+      className={`hidden md:block fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 border-r border-gray-200 transition-all duration-500 ${isExpanded ? 'w-52' : 'w-16'}`}
       style={{
         backgroundColor: sidebarBg,
         borderRightColor: 'var(--platform-border)',
@@ -72,18 +62,18 @@ const Sidebar = () => {
                     size={32}
                     variant="filled"
                     style={{
-                      backgroundColor: pathname === item.route ? activeColor : hoverColor,
-                      color: pathname === item.route ? '#ffffff' : iconInactiveColor,
+                      backgroundColor: isAppNavItemActive(pathname, item.route) ? activeColor : hoverColor,
+                      color: isAppNavItemActive(pathname, item.route) ? '#ffffff' : iconInactiveColor,
                       minWidth: 32,
                       minHeight: 32,
                     }}
                   >
-                    <item.icon size={21} stroke={1.5} color={pathname === item.route ? "#ffffff" : undefined} />
+                    <item.icon size={21} stroke={1.5} color={isAppNavItemActive(pathname, item.route) ? "#ffffff" : undefined} />
                   </ThemeIcon>
                 }
-                active={pathname === item.route}
+                active={isAppNavItemActive(pathname, item.route)}
                 onClick={() => handleNavigation(item.route)}
-                variant={pathname === item.route ? "filled" : "light"}
+                variant={isAppNavItemActive(pathname, item.route) ? "filled" : "light"}
                 styles={() => ({
                   root: {
                     '&[dataActive]': {
@@ -96,8 +86,8 @@ const Sidebar = () => {
                     padding: '12px 12px',
                   },
                   label: {
-                    color: pathname === item.route ? "#ffffff" : textColor,
-                    fontWeight: pathname === item.route ? 700 : 600,
+                    color: isAppNavItemActive(pathname, item.route) ? "#ffffff" : textColor,
+                    fontWeight: isAppNavItemActive(pathname, item.route) ? 700 : 600,
                     fontSize: 17
                   }
                 })}
@@ -116,16 +106,16 @@ const Sidebar = () => {
                     size={32}
                     variant="filled"
                     style={{
-                      backgroundColor: pathname === item.route ? activeColor : hoverColor,
-                      color: pathname === item.route ? '#ffffff' : iconInactiveColor,
+                      backgroundColor: isAppNavItemActive(pathname, item.route) ? activeColor : hoverColor,
+                      color: isAppNavItemActive(pathname, item.route) ? '#ffffff' : iconInactiveColor,
                       minWidth: 32,
                       minHeight: 32,
                     }}
                   >
-                      <item.icon size={21} stroke={1.5} color={pathname === item.route ? "#ffffff" : undefined} />
+                      <item.icon size={21} stroke={1.5} color={isAppNavItemActive(pathname, item.route) ? "#ffffff" : undefined} />
                     </ThemeIcon>
                   }
-                  active={pathname === item.route}
+                  active={isAppNavItemActive(pathname, item.route)}
                   onClick={() => handleNavigation(item.route)}
                   variant="subtle"
                   styles={(theme) => ({

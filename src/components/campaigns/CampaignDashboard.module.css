@@ -94,14 +94,54 @@
   padding: 12px 12px 18px;
 }
 
+.desktopDataTable {
+  display: block;
+}
+
+.mobileEntityList {
+  display: none;
+}
+
+.mobileEntityCard {
+  width: 100%;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(226, 232, 240, 0.94);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  text-align: left;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+}
+
+.mobileEntityCard[data-selected='true'] {
+  border-color: var(--platform-border-strong);
+  background: var(--platform-accent-soft);
+}
+
+.mobileEntityTitleBlock {
+  flex: 1;
+  min-width: 0;
+}
+
+.mobileMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(226, 232, 240, 0.86);
+}
+
 @media (max-width: 760px) {
   .pageShell {
     height: auto;
     min-height: calc(100dvh - 0.75rem);
+    padding: 0 10px;
   }
 
   .tableSurface {
     min-height: calc(100dvh - 0.75rem);
+    border-radius: 18px;
   }
 
   .tableHeader {
@@ -115,5 +155,46 @@
 
   .filterSelect {
     width: 100%;
+  }
+
+  .tabs :global(.mantine-Tabs-list) {
+    max-width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .filterBar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .searchInput {
+    flex-basis: auto;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .tableBody {
+    overflow: visible;
+  }
+
+  .tablePanel,
+  .tablePanelInner {
+    height: auto;
+    overflow: visible;
+  }
+
+  .tablePanelInner {
+    padding: 10px 10px 18px;
+  }
+
+  .desktopDataTable {
+    display: none;
+  }
+
+  .mobileEntityList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 }

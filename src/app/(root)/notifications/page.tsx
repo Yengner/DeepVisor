@@ -26,6 +26,7 @@ import {
 import { formatDisplayDate, type NotificationFeedItem } from '@/lib/shared';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { getUserNotifications } from '@/lib/server/actions/user/settings';
+import classes from './NotificationsPage.module.css';
 
 function formatRelativeTime(value: string | null): string {
   if (!value) {
@@ -135,7 +136,13 @@ function NotificationCard({ notification }: { notification: NotificationFeedItem
         backgroundColor: notification.read ? undefined : 'var(--mantine-color-blue-0)',
       }}
     >
-      <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
+      <Group
+        justify="space-between"
+        align="flex-start"
+        gap="md"
+        wrap="wrap"
+        className={classes.notificationRow}
+      >
         <div style={{ flex: 1, minWidth: 0 }}>
           <Group gap="xs" mb={6} wrap="wrap">
             {!notification.read ? (
@@ -176,6 +183,7 @@ function NotificationCard({ notification }: { notification: NotificationFeedItem
             href={notification.link}
             variant="light"
             size="xs"
+            className={classes.notificationAction}
             rightSection={<IconArrowRight size={14} />}
           >
             Open
@@ -195,7 +203,7 @@ export default async function NotificationsPage() {
   const newestDate = notifications[0]?.created_at ?? null;
 
   return (
-    <Container size="xl" py="md">
+    <Container size="xl" py="md" className={classes.page}>
       <Stack gap="xl">
         <Group justify="space-between" align="flex-start" gap="lg" wrap="wrap">
           <div>
@@ -209,7 +217,7 @@ export default async function NotificationsPage() {
             </Text>
           </div>
 
-          <Group gap="sm">
+          <Group gap="sm" className={classes.headerActions}>
             <Button component="a" href="/dashboard" variant="default">
               Dashboard
             </Button>
@@ -251,7 +259,7 @@ export default async function NotificationsPage() {
         </SimpleGrid>
 
         <SimpleGrid cols={{ base: 1, xl: 3 }} spacing="md" verticalSpacing="md">
-          <Card withBorder radius="lg" p="xl" style={{ gridColumn: 'span 2' }}>
+          <Card withBorder radius="lg" p="xl" className={classes.feedCard}>
             <Group justify="space-between" align="flex-start" mb="lg" wrap="wrap">
               <div>
                 <Text size="xs" c="dimmed" tt="uppercase" fw={700}>

@@ -310,11 +310,11 @@ function groupArchivedReports(reports: ArchivedReport[]): ReportArchiveGroup[] {
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
+    <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
       <Text size="sm" c="dimmed">
         {label}
       </Text>
-      <Text size="sm" fw={600} ta="right">
+      <Text size="sm" fw={600} ta="right" style={{ minWidth: 0 }}>
         {value}
       </Text>
     </Group>
@@ -902,7 +902,7 @@ export default async function SettingsPage() {
                   <Stack gap="xs">
                     {group.reports.map((report) => (
                       <Paper key={report.id} withBorder radius="md" p="sm">
-                        <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
+                        <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <Group gap="xs" mb={6} wrap="wrap">
                               <Badge color="blue" variant="light">
@@ -941,7 +941,7 @@ export default async function SettingsPage() {
                             </Group>
                           </div>
 
-                          <Group gap="xs" wrap="nowrap">
+                          <Group gap="xs" wrap="wrap">
                             <Button
                               component="a"
                               href={report.viewerHref}

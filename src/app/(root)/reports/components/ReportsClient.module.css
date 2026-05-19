@@ -404,6 +404,34 @@
 }
 
 @media (max-width: 760px) {
+  .headerActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+  }
+
+  .headerActions :global(.mantine-Button-root),
+  .headerActions :global(.mantine-ActionIcon-root) {
+    width: 100%;
+  }
+
+  .headerActions :global(.mantine-ActionIcon-root) {
+    min-width: 42px;
+  }
+
+  .headerTitle {
+    font-size: 1.35rem;
+    line-height: 1.12;
+  }
+
+  .reportCard,
+  .kpiCard,
+  .breadcrumbCard,
+  .headerCard {
+    border-radius: 18px;
+  }
+
   .controlBar {
     grid-template-columns: minmax(0, 1fr);
     border-radius: 14px;

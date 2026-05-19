@@ -29,6 +29,7 @@ import type {
   CampaignReviewFindingView,
   CampaignReviewViewModel,
 } from './types';
+import classes from './CampaignReviewClient.module.css';
 
 function formatDateTime(value: string | null): string {
   if (!value) {
@@ -234,7 +235,58 @@ function RankingTable({
         <Title order={3} size="h4">
           {title}
         </Title>
-        <Box style={{ overflowX: 'auto' }}>
+        <div className={classes.mobileRankingList}>
+          {rows.map((row, index) => (
+            <article
+              key={`mobile:${row.level}:${row.id ?? row.externalId ?? index}`}
+              className={classes.mobileRankingCard}
+            >
+              <Group gap="xs" wrap="wrap" mb="xs">
+                <Badge color="gray" variant="light" radius="sm">
+                  #{index + 1}
+                </Badge>
+                <Badge variant="light" radius="sm">
+                  {row.status ?? 'Unknown'}
+                </Badge>
+              </Group>
+              <Text fw={800} lineClamp={2}>
+                {row.name}
+              </Text>
+              {row.objective ? (
+                <Text size="xs" c="dimmed" mt={2} lineClamp={1}>
+                  {row.objective}
+                </Text>
+              ) : null}
+              <div className={classes.mobileMetricGrid}>
+                <div>
+                  <Text size="xs" c="dimmed" fw={700}>
+                    Recent spend
+                  </Text>
+                  <Text fw={800}>{formatCurrency(row.recent.spend)}</Text>
+                </div>
+                <div>
+                  <Text size="xs" c="dimmed" fw={700}>
+                    Results
+                  </Text>
+                  <Text fw={800}>{formatNumber(row.recent.results)}</Text>
+                </div>
+                <div>
+                  <Text size="xs" c="dimmed" fw={700}>
+                    Cost/result
+                  </Text>
+                  <Text fw={800}>{formatMetric(row.recent.costPerResult)}</Text>
+                </div>
+                <div>
+                  <Text size="xs" c="dimmed" fw={700}>
+                    Lifetime spend
+                  </Text>
+                  <Text fw={800}>{formatCurrency(row.lifetime.spend)}</Text>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+        <Box className={classes.desktopRankingTable} style={{ overflowX: 'auto' }}>
           <Table verticalSpacing="sm" style={{ minWidth: 720 }}>
             <Table.Thead>
               <Table.Tr>
@@ -283,7 +335,7 @@ export default function CampaignReviewClient({
   const failed = review.state === 'failed';
 
   return (
-    <Container size="xl" py="xl">
+    <Container size="xl" py="xl" className={classes.page}>
       <Stack gap="lg">
         <Group justify="space-between" align="flex-start" gap="lg" wrap="wrap">
           <Stack gap={6}>
@@ -302,7 +354,7 @@ export default function CampaignReviewClient({
             <Title order={1}>Campaign review</Title>
             <Text c="dimmed">{review.title}</Text>
           </Stack>
-          <Group gap="sm">
+          <Group gap="sm" className={classes.headerActions}>
             <Button component="a" href="/dashboard" variant="default">
               Dashboard
             </Button>

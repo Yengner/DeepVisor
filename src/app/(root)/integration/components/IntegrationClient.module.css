@@ -221,8 +221,19 @@
     display: none;
   }
 
+  .heroCard,
+  .guideCard {
+    border-radius: 20px;
+  }
+
   .heroSidebar {
     margin-top: 4px;
+  }
+
+  .heroContent :global(.mantine-Button-root),
+  .channelCard :global(.mantine-Button-root),
+  .detailHero :global(.mantine-Button-root) {
+    width: 100%;
   }
 
   .channelCard:hover,

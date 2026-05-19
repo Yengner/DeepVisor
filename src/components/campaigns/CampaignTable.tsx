@@ -21,6 +21,7 @@ import {
 } from '@tabler/icons-react';
 import StatusBadge from './StatusBadge';
 import { buildEntityReportUrl } from './reportLinks';
+import classes from './CampaignDashboard.module.css';
 
 interface CampaignTableProps {
   campaigns: FormattedCampaign[];
@@ -63,7 +64,134 @@ export default function CampaignTable({
   const scrollHeight = fillHeight ? '100%' : rows > maxRowsBeforeScroll ? tableHeight : undefined;
 
   return (
+    <>
+      <div className={classes.mobileEntityList}>
+        {campaigns.length === 0 ? (
+          <Text ta="center" py="md" c="dimmed">
+            No campaigns found
+          </Text>
+        ) : (
+          campaigns.map((campaign) => {
+            const selected = selectedCampaignId === campaign.id;
+            const reportHref = buildEntityReportUrl({
+              scope: 'campaign',
+              platformIntegrationId,
+              adAccountId,
+              campaignId: campaign.id,
+              startDate: campaign.startDate,
+              endDate: campaign.endDate,
+            });
+
+            return (
+              <div
+                key={campaign.id}
+                role="button"
+                tabIndex={0}
+                className={classes.mobileEntityCard}
+                data-selected={selected || undefined}
+                onClick={() => onSelectCampaign(campaign.id)}
+                onDoubleClick={() => onOpenCampaign?.(campaign.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onSelectCampaign(campaign.id);
+                  }
+                }}
+              >
+                <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                  <div className={classes.mobileEntityTitleBlock}>
+                    <Text fw={800} size="sm" lineClamp={2}>
+                      {campaign.name}
+                    </Text>
+                    <Group gap={6} mt={6} wrap="wrap">
+                      <StatusBadge status={campaign.status} />
+                      <Text size="xs" c="dimmed" lineClamp={1}>
+                        {campaign.objective || 'Objective unavailable'}
+                      </Text>
+                    </Group>
+                  </div>
+                  <Menu position="bottom-end" withArrow offset={4}>
+                    <Menu.Target>
+                      <ActionIcon
+                        variant="light"
+                        color={platformColor}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <IconDots size={16} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item
+                        leftSection={<IconChartBar size={16} />}
+                        component="a"
+                        href={reportHref}
+                      >
+                        View Analytics
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconPencil size={16} />}
+                        component="a"
+                        href={`/campaigns/${campaign.id}/edit`}
+                      >
+                        Edit Campaign
+                      </Menu.Item>
+                      <Menu.Divider />
+                      <Menu.Item
+                        color="red"
+                        leftSection={<IconTrash size={16} />}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onDeleteCampaign(campaign.id);
+                        }}
+                      >
+                        Delete Campaign
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Group>
+
+                <div className={classes.mobileMetricGrid}>
+                  <div>
+                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
+                    <Text fw={800}>{fmt$(campaign.spend)}</Text>
+                  </div>
+                  <div>
+                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Results</Text>
+                    <Text fw={800}>{campaign.results}</Text>
+                  </div>
+                  <div>
+                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
+                    <Text fw={800}>{campaign.costPerResult}</Text>
+                  </div>
+                  <div>
+                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>CTR</Text>
+                    <Text fw={800}>{campaign.ctr != null ? `${campaign.ctr}%` : '0%'}</Text>
+                  </div>
+                </div>
+
+                <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
+                  <Text size="xs" c="dimmed" lineClamp={1}>
+                    {campaign.startDate} - {campaign.endDate && campaign.endDate !== 'No End Date' ? campaign.endDate : 'Ongoing'}
+                  </Text>
+                  <Text
+                    component="a"
+                    href={reportHref}
+                    size="xs"
+                    fw={800}
+                    c={platformColor}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    Report
+                  </Text>
+                </Group>
+              </div>
+            );
+          })
+        )}
+      </div>
+
     <ScrollArea
+      className={classes.desktopDataTable}
       h={scrollHeight}
       type="always"
       style={{ borderRadius: 8, height: fillHeight ? '100%' : undefined }}
@@ -316,5 +444,6 @@ export default function CampaignTable({
         </Table.Tbody>
       </Table>
     </ScrollArea>
+    </>
   );
 }

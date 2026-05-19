@@ -380,6 +380,69 @@
   text-overflow: ellipsis;
 }
 
+.desktopCalendarGrid {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.desktopCalendarGrid > * {
+  width: 100%;
+}
+
+.mobileAgendaShell {
+  display: none;
+}
+
+.mobileAgendaDay {
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.mobileAgendaItem {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.94);
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.82);
+  text-align: left;
+}
+
+.mobileAgendaTime {
+  flex: 0 0 54px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mobileAgendaBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.mobileAgendaTitle,
+.mobileAgendaMeta {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobileAgendaTitle {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.mobileAgendaMeta {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .weekShell {
   display: flex;
   flex: 1;
@@ -984,6 +1047,28 @@
 }
 
 @media (max-width: 640px) {
+  .pageShell {
+    height: auto;
+    overflow: visible;
+  }
+
+  .calendarApp {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .sidebar {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .calendarShell {
+    height: auto;
+    overflow: visible;
+    border-radius: 20px;
+  }
+
   .templateTypeGrid {
     grid-template-columns: 1fr;
   }
@@ -999,6 +1084,17 @@
   .calendarRangeTitle {
     width: 100%;
     margin-left: 0;
+  }
+
+  .desktopCalendarGrid {
+    display: none;
+  }
+
+  .mobileAgendaShell {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
   }
 
   .topStats {

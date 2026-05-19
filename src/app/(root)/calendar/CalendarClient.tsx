@@ -1268,6 +1268,18 @@ export default function CalendarClient({
       weekDayKeys.flatMap((dayKey) => (weekItemsByDay.get(dayKey) ?? []).map((item) => ({ dayKey, item }))),
     [weekDayKeys, weekItemsByDay]
   );
+  const mobileAgendaItemsByDay = useMemo(
+    () =>
+      visibleCalendarDayKeys
+        .map((dayKey) => ({
+          dayKey,
+          items: renderedQueueItems
+            .filter((item) => item.day === dayKey)
+            .sort(compareQueueItems),
+        }))
+        .filter((group) => group.items.length > 0),
+    [renderedQueueItems, visibleCalendarDayKeys]
+  );
   const visibleQueueTemplates = useMemo(
     () => (showAllQueueTemplates ? queueTemplates : queueTemplates.slice(0, 2)),
     [queueTemplates, showAllQueueTemplates]
@@ -2355,6 +2367,75 @@ export default function CalendarClient({
               </Group>
             </div>
 
+            <div className={classes.mobileAgendaShell}>
+              {mobileAgendaItemsByDay.length > 0 ? (
+                mobileAgendaItemsByDay.map(({ dayKey, items }) => (
+                  <Paper key={dayKey} withBorder radius="xl" p="md" className={classes.mobileAgendaDay}>
+                    <Group justify="space-between" mb="sm">
+                      <Text fw={800}>{formatSidebarDayLabel(dayKey)}</Text>
+                      <Badge color="blue" variant="light">
+                        {items.length}
+                      </Badge>
+                    </Group>
+                    <Stack gap="xs">
+                      {items.map((item) => (
+                        <Popover
+                          key={item.renderId}
+                          opened={selectedCalendarItemId === item.id}
+                          onChange={(opened) => {
+                            if (!opened && selectedCalendarItemId === item.id) {
+                              setSelectedCalendarItemId(null);
+                            }
+                          }}
+                          position="bottom"
+                          offset={8}
+                          radius="18px"
+                          shadow="md"
+                          width="min(calc(100vw - 32px), 360px)"
+                          withinPortal
+                        >
+                          <Popover.Target>
+                            <button
+                              type="button"
+                              className={[
+                                classes.mobileAgendaItem,
+                                queueItemMarkerClassName(item),
+                                selectedCalendarItemId === item.id
+                                  ? classes.selectedMonthEvent
+                                  : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' ')}
+                              onClick={() => handleCalendarItemClick(item.id)}
+                            >
+                              <span className={classes.mobileAgendaTime}>{item.time}</span>
+                              <span className={classes.mobileAgendaBody}>
+                                <span className={classes.mobileAgendaTitle}>{item.title}</span>
+                                <span className={classes.mobileAgendaMeta}>
+                                  {item.channel} · {queueSourceLabel(item.source)}
+                                </span>
+                              </span>
+                            </button>
+                          </Popover.Target>
+                          <Popover.Dropdown className={classes.eventPopoverDropdown}>
+                            {renderCalendarItemPopoverContent(item.originalItem)}
+                          </Popover.Dropdown>
+                        </Popover>
+                      ))}
+                    </Stack>
+                  </Paper>
+                ))
+              ) : (
+                <div className={classes.emptyState}>
+                  <Text fw={700}>No queued work is scheduled in this range</Text>
+                  <Text size="sm" c="dimmed" mt={4}>
+                    Create a queue or move the calendar to another range.
+                  </Text>
+                </div>
+              )}
+            </div>
+
+          <div className={classes.desktopCalendarGrid}>
           {planView === 'weekly' ? (
             <div className={classes.weekShell} style={weekGridStyle}>
               <div className={classes.weekHeader}>
@@ -2633,6 +2714,7 @@ export default function CalendarClient({
               ) : null}
             </div>
           )}
+          </div>
         </section>
         </div>
         <Modal

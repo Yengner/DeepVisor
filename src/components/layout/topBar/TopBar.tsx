@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/server/supabase/server';
+import MobileAppChromeClient from '@/components/layout/MobileAppChromeClient';
 import TopBarClient from './TopBarClient';
 import type { Database } from '@/lib/shared/types/supabase';
 import { getCurrentSelection } from '@/lib/server/actions/app/selection';
@@ -92,7 +93,17 @@ export default async function Topbar({ user, businessId }: TopbarProps) {
 
   return (
     <div className="w-full h-full">
-      <TopBarClient
+      <div className="hidden h-full md:block">
+        <TopBarClient
+          userInfo={user}
+          platforms={platforms}
+          adAccounts={adAccounts}
+          notifications={notifications}
+          initialPlatformId={selectedPlatformId}
+          initialAccountId={selectedAccountId}
+        />
+      </div>
+      <MobileAppChromeClient
         userInfo={user}
         platforms={platforms}
         adAccounts={adAccounts}

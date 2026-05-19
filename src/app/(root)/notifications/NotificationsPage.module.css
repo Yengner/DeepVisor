@@ -1,0 +1,46 @@
+.page {
+  width: 100%;
+}
+
+.feedCard {
+  grid-column: span 2;
+}
+
+.notificationRow {
+  min-width: 0;
+}
+
+.notificationAction {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 760px) {
+  .page {
+    padding-inline: 10px;
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+
+  .headerActions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .headerActions :global(.mantine-Button-root) {
+    width: 100%;
+  }
+
+  .feedCard {
+    grid-column: 1 / -1;
+    padding: 16px;
+  }
+
+  .notificationRow {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .notificationAction {
+    width: 100%;
+  }
+}

@@ -17,6 +17,7 @@ interface PlatformAdAccountDropdownClientProps {
   }>;
   initialPlatformId?: string | null;
   initialAccountId?: string | null;
+  variant?: 'desktop' | 'compact' | 'drawer';
 }
 
 type WorkspaceOption = {
@@ -122,6 +123,7 @@ export default function PlatformAdAccountDropdownClient({
   adAccounts,
   initialPlatformId,
   initialAccountId,
+  variant = 'desktop',
 }: PlatformAdAccountDropdownClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -234,16 +236,20 @@ export default function PlatformAdAccountDropdownClient({
   const accentSoft = 'var(--platform-accent-soft)';
   const accentSoftStrong = 'var(--platform-accent-soft-strong)';
   const borderColor = 'var(--platform-border)';
+  const compact = variant === 'compact';
+  const drawer = variant === 'drawer';
+  const menuWidth = compact || drawer ? 'min(calc(100vw - 24px), 360px)' : 360;
 
   return (
-    <Menu shadow="md" width={360} position="bottom-start">
+    <Menu shadow="md" width={menuWidth} position={compact ? 'bottom' : 'bottom-start'}>
       <Menu.Target>
         <UnstyledButton
           disabled={isPending}
           style={{
-            minWidth: 290,
-            padding: '10px 14px',
-            borderRadius: 14,
+            width: compact || drawer ? '100%' : undefined,
+            minWidth: compact ? 0 : drawer ? '100%' : 290,
+            padding: compact ? '8px 10px' : '10px 14px',
+            borderRadius: compact ? 12 : 14,
             border: `1px solid ${borderColor}`,
             background: 'rgba(255, 255, 255, 0.78)',
             boxShadow: '0 6px 18px rgba(15, 23, 42, 0.04)',
@@ -252,7 +258,7 @@ export default function PlatformAdAccountDropdownClient({
           <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
             <Group align="center" wrap="nowrap" gap="sm">
               <ThemeIcon
-                size="lg"
+                size={compact ? 'md' : 'lg'}
                 radius="xl"
                 variant="filled"
                 style={{
@@ -264,12 +270,12 @@ export default function PlatformAdAccountDropdownClient({
                 {selectedIcon}
               </ThemeIcon>
 
-              <div style={{ minWidth: 0 }}>
-                <Group gap={6} wrap="wrap">
-                  <Text size="sm" fw={700} lineClamp={1}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <Group gap={6} wrap={compact ? 'nowrap' : 'wrap'}>
+                  <Text size={compact ? 'xs' : 'sm'} fw={700} lineClamp={1}>
                       {selectedOption.platformLabel}
                     </Text>
-                  {selectedOption.preview ? (
+                  {selectedOption.preview && !compact ? (
                     <Badge size="xs" color="gray" variant="light">
                       Preview
                     </Badge>
