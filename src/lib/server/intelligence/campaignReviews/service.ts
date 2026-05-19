@@ -18,6 +18,7 @@ type IntelligenceClient = SupabaseClient<Database>;
 type CampaignReviewScope = 'active_recent' | 'specific_campaign';
 
 type EntityLevel = 'campaign' | 'adset' | 'ad';
+type ResultMetricKey = 'leads' | 'messages' | 'calls' | 'results';
 
 type EntityRow = {
   id: string;
@@ -89,6 +90,7 @@ type ReviewEntity = {
   name: string;
   status: string | null;
   objective: string | null;
+  optimizationGoal: string | null;
   campaignId: string | null;
   adsetId: string | null;
   firstDay: string | null;
@@ -274,6 +276,138 @@ function performanceScore(entity: ReviewEntity): number {
   return resultScore + spendEfficiency + entity.recent.ctr - entity.recent.spend * 0.01;
 }
 
+function normalizedText(...values: Array<string | null | undefined>): string {
+  return values.filter(Boolean).join(' ').toLowerCase();
+}
+
+function resultMetricLabel(key: ResultMetricKey): string {
+  switch (key) {
+    case 'messages':
+      return 'messages';
+    case 'calls':
+      return 'calls';
+    case 'leads':
+      return 'leads';
+    case 'results':
+    default:
+      return 'tracked results';
+  }
+}
+
+function metricValue(metrics: Metrics, key: ResultMetricKey): number {
+  switch (key) {
+    case 'messages':
+      return metrics.messages;
+    case 'calls':
+      return metrics.calls;
+    case 'leads':
+      return metrics.leads;
+    case 'results':
+    default:
+      return metrics.results;
+  }
+}
+
+function inferPrimaryResultMetric(entity: ReviewEntity): ResultMetricKey {
+  const text = normalizedText(entity.name, entity.objective, entity.optimizationGoal);
+  const outcomeEntries: Array<[ResultMetricKey, number]> = [
+    ['messages', entity.recent.messages],
+    ['leads', entity.recent.leads],
+    ['calls', entity.recent.calls],
+  ];
+  const nonZeroOutcomes = outcomeEntries
+    .filter(([, value]) => value > 0)
+    .sort((left, right) => right[1] - left[1]);
+
+  if (
+    entity.recent.messages > 0 &&
+    (text.includes('message') ||
+      text.includes('messaging') ||
+      text.includes('whatsapp') ||
+      text.includes('conversation') ||
+      (entity.recent.leads === 0 && entity.recent.calls === 0))
+  ) {
+    return 'messages';
+  }
+
+  if (
+    entity.recent.calls > 0 &&
+    (text.includes('call') || (entity.recent.leads === 0 && entity.recent.messages === 0))
+  ) {
+    return 'calls';
+  }
+
+  if (entity.recent.leads > 0 && (text.includes('lead') || nonZeroOutcomes[0]?.[0] === 'leads')) {
+    return 'leads';
+  }
+
+  if (nonZeroOutcomes[0]) {
+    return nonZeroOutcomes[0][0];
+  }
+
+  if (text.includes('message') || text.includes('messaging') || text.includes('whatsapp')) {
+    return 'messages';
+  }
+
+  if (text.includes('call')) {
+    return 'calls';
+  }
+
+  if (text.includes('lead')) {
+    return 'leads';
+  }
+
+  return 'results';
+}
+
+function compactMetricsForNarrative(metrics: Metrics, primaryResultMetric: ResultMetricKey) {
+  const primaryResultCount = metricValue(metrics, primaryResultMetric);
+  const costPerPrimaryResult =
+    primaryResultCount > 0 ? round(metrics.spend / primaryResultCount, 2) : 0;
+
+  return {
+    spend: metrics.spend,
+    impressions: metrics.impressions,
+    reach: metrics.reach,
+    clicks: metrics.clicks,
+    linkClicks: metrics.linkClicks,
+    ctr: metrics.ctr,
+    cpc: metrics.cpc,
+    cpm: metrics.cpm,
+    frequency: metrics.frequency,
+    primaryResultMetric,
+    primaryResultLabel: resultMetricLabel(primaryResultMetric),
+    primaryResultCount,
+    costPerPrimaryResult,
+    totalTrackedResults: metrics.results,
+    outcomeBreakdown: {
+      leads: metrics.leads,
+      messages: metrics.messages,
+      calls: metrics.calls,
+    },
+  };
+}
+
+function compactEntityForNarrative(entity: ReviewEntity) {
+  const primaryResultMetric = inferPrimaryResultMetric(entity);
+
+  return {
+    name: entity.name,
+    status: entity.status,
+    objective: entity.objective,
+    optimizationGoal: entity.optimizationGoal,
+    resultInterpretation: {
+      primaryResultMetric,
+      primaryResultLabel: resultMetricLabel(primaryResultMetric),
+      rule:
+        'Assess efficiency using the primary result metric. Do not flag zero non-primary dimensions as tracking problems when primaryResultCount is non-zero.',
+    },
+    recent: compactMetricsForNarrative(entity.recent, primaryResultMetric),
+    previous: compactMetricsForNarrative(entity.previous, primaryResultMetric),
+    lifetime: compactMetricsForNarrative(entity.lifetime, primaryResultMetric),
+  };
+}
+
 function hashPayload(value: unknown): string {
   return createHash('sha1').update(JSON.stringify(value)).digest('hex');
 }
@@ -389,7 +523,8 @@ function buildReviewEntities(input: {
       level: entity.entity_level,
       name: entity.name ?? `Unnamed ${entity.entity_level}`,
       status: entity.status,
-      objective: entity.objective ?? entity.optimization_goal,
+      objective: entity.objective,
+      optimizationGoal: entity.optimization_goal,
       campaignId: entity.campaign_id,
       adsetId: entity.adset_id,
       firstDay: summary?.first_day ?? entity.created_time ?? null,
@@ -629,20 +764,14 @@ async function generateNarrativeWithAI(input: {
     schemaName: 'campaign_review_narrative_v1',
     schema: CAMPAIGN_REVIEW_NARRATIVE_SCHEMA,
     systemPrompt:
-      'You are DeepVisor, an ad account decision-support analyst. Return only JSON matching the supplied schema. Use only the provided campaign review metrics and findings. Explain what matters and what to review next. Do not claim that any platform-level campaign change was executed. Do not recommend publishing, pausing, extending, or changing budgets without explicit approval.',
-    task: 'Summarize this campaign review for a small-business owner or operator.',
+      'You are DeepVisor, an ad account decision-support analyst. Return only JSON matching the supplied schema. Use only the provided campaign review metrics and findings. Deterministic metrics decide what happened; you explain why it matters and what to review next. Assess efficiency using each entity resultInterpretation.primaryResultMetric. Do not invent tracking mismatch risks from zero non-primary dimensions such as leads, calls, or messages when primaryResultCount is non-zero. Do not claim that any platform-level campaign change was executed. Do not recommend publishing, pausing, extending, or changing budgets without explicit approval.',
+    task:
+      'Summarize this campaign review for a small-business owner or operator. Keep the narrative focused on the primary result metric for each campaign, and only mention other outcome dimensions when they materially change the decision.',
     input: {
-      campaigns: input.campaigns.slice(0, 10).map((campaign) => ({
-        name: campaign.name,
-        status: campaign.status,
-        objective: campaign.objective,
-        recent: campaign.recent,
-        previous: campaign.previous,
-        lifetime: campaign.lifetime,
-      })),
+      campaigns: input.campaigns.slice(0, 8).map(compactEntityForNarrative),
       findings: input.findings,
       safety:
-        'All next steps must be review, approval, or draft-oriented. Do not imply platform changes were made.',
+        'All next steps must be review, approval, or draft-oriented. Do not imply platform changes were made. If primaryResultLabel is messages, describe results as messages instead of treating zero leads as a failure.',
     },
     fallback: input.fallback,
     validate: validateCampaignReviewNarrative,
