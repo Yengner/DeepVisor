@@ -289,29 +289,6 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
     setPitchDetachedPlatforms(readPitchDetachedPlatforms());
   };
 
-  const handlePitchDetach = (platform: Platform) => {
-    if (platform.platformKey !== 'meta' || !platform.integrationId) {
-      toast.error('Pitch detach is currently set up for Meta only.');
-      return;
-    }
-
-    if (!confirm(`Pitch-detach ${platform.platformName}? This will not delete any synced data.`)) {
-      return;
-    }
-
-    upsertPitchDetachedPlatform({
-      platformId: platform.id,
-      platformKey: platform.platformKey,
-      platformName: platform.platformName,
-      integrationId: platform.integrationId,
-      primaryAdAccountExternalId: platform.primaryAdAccountExternalId,
-      primaryAdAccountName: platform.primaryAdAccountName,
-      detachedAt: new Date().toISOString(),
-    });
-    syncPitchDetachedState();
-    toast.success('Meta detached for the pitch. Synced data is preserved.');
-  };
-
   useEffect(() => {
     if (!selectedPlatform) {
       return;
@@ -527,11 +504,6 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                           {focusedPlatform.platformName}
                         </Badge>
                     ) : null}
-                    {focusedPlatformPitchDetached ? (
-                      <Badge color="violet" variant="light">
-                        Pitch detached
-                      </Badge>
-                    ) : null}
                   </Group>
 
                   <div>
@@ -583,16 +555,6 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                     >
                       {focusedPrimaryLabel}
                     </Button>
-                    {focusedPlatformConnected && focusedPlatform?.platformKey === 'meta' ? (
-                      <Button
-                        leftSection={<IconSettings size={16} />}
-                        variant="default"
-                        radius="xl"
-                        onClick={() => handlePitchDetach(focusedPlatform)}
-                      >
-                        Pitch detach
-                      </Button>
-                    ) : null}
                     {focusedPlatform ? (
                       <Button
                         leftSection={
@@ -994,14 +956,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                     Change ad account
                                   </Button>
                                 ) : null}
-                                {platform.platformKey === 'meta' ? (
-                                  <Button
-                                    variant="default"
-                                    onClick={() => handlePitchDetach(platform)}
-                                  >
-                                    Pitch detach
-                                  </Button>
-                                ) : null}
+  
                               </>
                             ) : canConnectNow ? (
                               <Button
@@ -1044,14 +999,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                 <Menu.Item onClick={() => setSelectedPlatform(platform)}>
                                   View details
                                 </Menu.Item>
-                                {platform.platformKey === 'meta' && !platform.pitchDetached ? (
-                                  <Menu.Item
-                                    leftSection={<IconClock size={14} />}
-                                    onClick={() => handlePitchDetach(platform)}
-                                  >
-                                    Pitch detach
-                                  </Menu.Item>
-                                ) : null}
+
                                 <Menu.Divider />
                                 <Menu.Item
                                   color="red"
@@ -1171,11 +1119,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                 >
                                   {getIntegrationStatusLabel(selectedPlatform.status)}
                                 </Badge>
-                                {selectedPlatform.pitchDetached ? (
-                                  <Badge color="violet" variant="light">
-                                    Pitch detached
-                                  </Badge>
-                                ) : null}
+                  
                               </Group>
                               <Text size="sm" maw={460}>
                                 {selectedPlatform.fullDescription ||
@@ -1330,14 +1274,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                   Change ad account
                                 </Button>
                               ) : null}
-                              {selectedPlatform.platformKey === 'meta' ? (
-                                <Button
-                                  variant="default"
-                                  onClick={() => handlePitchDetach(selectedPlatform)}
-                                >
-                                  Pitch detach
-                                </Button>
-                              ) : null}
+                  
                               <Button
                                 color="red"
                                 variant="light"

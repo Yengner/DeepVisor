@@ -34,6 +34,16 @@ type BusinessProfileRow = {
   business_name: string | null;
 };
 
+function isPlaceholderBusinessName(value: string | null | undefined): boolean {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return (
+    normalized === 'my business' ||
+    normalized === 'business setup' ||
+    normalized === 'new business' ||
+    normalized === 'untitled business'
+  );
+}
+
 type PlatformIntegrationRow = {
   id: string;
   platform_id: string;
@@ -175,8 +185,12 @@ async function loadBusinessHeader(
     });
   }
 
+  const businessName = (business as BusinessProfileRow | null)?.business_name ?? null;
+
   return {
-    businessName: (business as BusinessProfileRow | null)?.business_name ?? 'My Business',
+    businessName: businessName && !isPlaceholderBusinessName(businessName)
+      ? businessName
+      : 'Your business',
     platforms: mappedPlatforms,
     adAccounts: mappedAdAccounts,
   };

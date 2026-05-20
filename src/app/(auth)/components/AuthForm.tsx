@@ -1,6 +1,6 @@
 'use client';
 
-import { type CSSProperties, type FormEvent, useMemo, useState } from 'react';
+import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Anchor,
@@ -31,6 +31,7 @@ import {
   handleResendVerificationEmail,
   handleSignUp,
 } from '@/lib/server/actions/user/auth';
+import { createClient } from '@/lib/client/supabase/browser';
 import { ErrorCode } from '@/lib/shared/types/api';
 import classes from './AuthForm.module.css';
 
@@ -139,6 +140,7 @@ export default function AuthForm({ type }: AuthFormProps) {
   const [leadPreference, setLeadPreference] = useState('');
 
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showVerifyEmailButton, setShowVerifyEmailButton] = useState(false);
 
   const signupProgress = useMemo(
@@ -146,12 +148,74 @@ export default function AuthForm({ type }: AuthFormProps) {
     [signupStep]
   );
 
+  useEffect(() => {
+    const authError = new URLSearchParams(window.location.search).get('error');
+
+    if (type !== 'login' || !authError) return;
+
+    const message =
+      authError === 'google_oauth_failed'
+        ? 'Google sign-in was canceled or failed.'
+        : 'Google sign-in could not be completed. Please try again.';
+
+    toast.error(message);
+    router.replace('/login');
+  }, [router, type]);
+
   function goToNextStep() {
     setSignupStep((current) => Math.min(current + 1, 5) as SignupStep);
   }
 
   function goToPreviousStep() {
     setSignupStep((current) => Math.max(current - 1, 0) as SignupStep);
+  }
+
+  function saveSignupPreferences() {
+    if (type !== 'signup') return;
+
+    try {
+      window.localStorage.setItem(
+        'deepvisor_signup_preferences',
+        JSON.stringify({
+          situation,
+          goal,
+          leadPreference,
+        })
+      );
+    } catch {
+      // Signup preferences are nice-to-have client context only.
+    }
+  }
+
+  async function handleGoogleOAuth() {
+    setGoogleLoading(true);
+    setShowVerifyEmailButton(false);
+
+    try {
+      saveSignupPreferences();
+
+      const supabase = createClient();
+      const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent('/dashboard')}`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
+      });
+
+      if (error) {
+        toast.error(error.message || 'Google sign-in failed.');
+        setGoogleLoading(false);
+      }
+    } catch (err) {
+      console.error('Error starting Google sign-in:', err);
+      toast.error('Google sign-in failed. Please try again.');
+      setGoogleLoading(false);
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -198,18 +262,7 @@ export default function AuthForm({ type }: AuthFormProps) {
         return;
       }
 
-      try {
-        window.localStorage.setItem(
-          'deepvisor_signup_preferences',
-          JSON.stringify({
-            situation,
-            goal,
-            leadPreference,
-          })
-        );
-      } catch {
-        // Signup preferences are nice-to-have client context only.
-      }
+      saveSignupPreferences();
 
       const res = await handleSignUp(
         email,
@@ -266,6 +319,21 @@ export default function AuthForm({ type }: AuthFormProps) {
             Sign in to your account
           </Title>
 
+          <Stack gap="md" mb="md">
+            <Button
+              fullWidth
+              radius="xl"
+              size="md"
+              className={classes.googlePrimaryButton}
+              leftSection={<IconBrandGoogle size={18} />}
+              loading={googleLoading}
+              onClick={handleGoogleOAuth}
+            >
+              Continue with Google
+            </Button>
+            <Divider label="Or sign in with email" labelPosition="center" />
+          </Stack>
+
           <form onSubmit={handleSubmit}>
             <Stack>
               <TextInput
@@ -303,18 +371,6 @@ export default function AuthForm({ type }: AuthFormProps) {
               Resend verification email
             </Button>
           ) : null}
-
-          <Divider my="lg" label="Or continue with" labelPosition="center" />
-
-          <Group grow>
-            <Button
-              variant="outline"
-              leftSection={<IconBrandGoogle size={18} />}
-              onClick={() => toast.success('Google sign-in coming soon.')}
-            >
-              Google
-            </Button>
-          </Group>
 
           <Text mt="md">
             Don&apos;t have an account?{' '}
@@ -505,6 +561,20 @@ export default function AuthForm({ type }: AuthFormProps) {
                   Salon and business details come after signup.
                 </Text>
               </div>
+
+              <Button
+                fullWidth
+                radius="xl"
+                size="md"
+                className={classes.googlePrimaryButton}
+                leftSection={<IconBrandGoogle size={18} />}
+                loading={googleLoading}
+                onClick={handleGoogleOAuth}
+              >
+                Continue with Google
+              </Button>
+
+              <Divider label="Or sign up with email" labelPosition="center" />
 
               <form onSubmit={handleSubmit}>
                 <Stack>

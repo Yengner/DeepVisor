@@ -1,0 +1,104 @@
+.onboardingShell {
+  width: 100%;
+}
+
+.headerStack {
+  margin-bottom: 28px;
+}
+
+.pageTitle {
+  max-width: 760px;
+  margin-bottom: 8px;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.pageCopy {
+  max-width: 720px;
+  line-height: 1.55;
+}
+
+.progressColumn {
+  display: block;
+}
+
+.progressCard {
+  position: sticky;
+  top: 88px;
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.9), rgba(255, 255, 255, 0.96)),
+    radial-gradient(circle at 18% 0%, rgba(37, 99, 235, 0.16), transparent 34%);
+}
+
+.formCard {
+  overflow: visible;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+@media (max-width: 760px) {
+  .onboardingShell {
+    max-width: none;
+    padding: 14px 6px 104px !important;
+  }
+
+  .headerStack {
+    padding-inline: 6px;
+    margin-bottom: 14px;
+  }
+
+  .pageTitle {
+    font-size: 1.85rem;
+  }
+
+  .pageCopy {
+    font-size: 0.98rem;
+  }
+
+  .progressColumn {
+    display: none;
+  }
+
+  .formCard {
+    width: calc(100vw - 8px);
+    margin-inline: calc(50% - 50vw + 4px);
+    padding: 12px !important;
+    border-radius: 20px;
+  }
+
+  .formCard :global(.mantine-Stepper-steps) {
+    margin-bottom: 16px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .formCard :global(.mantine-Stepper-content) {
+    padding-top: 8px;
+  }
+
+  .formCard :global(.mantine-Card-root) {
+    padding: 14px !important;
+    border-radius: 16px;
+    overflow: visible;
+  }
+
+  .formCard :global(.mantine-Combobox-dropdown) {
+    width: 100% !important;
+    max-width: calc(100vw - 28px);
+    z-index: 30;
+  }
+
+  .formCard :global(.mantine-SimpleGrid-root) {
+    gap: 12px;
+  }
+
+  .formCard :global(.mantine-Input-input),
+  .formCard :global(.mantine-Textarea-input) {
+    min-height: 46px;
+    font-size: 16px;
+  }
+
+  .formCard :global(.mantine-Button-root) {
+    min-height: 44px;
+  }
+}

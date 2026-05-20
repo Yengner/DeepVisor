@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 const PUBLIC_ROUTES = new Set([
     '/privacy-policy',
+    '/terms-of-service',
 ]);
 
 function normalizePathname(pathname: string): string {

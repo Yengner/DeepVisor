@@ -2356,47 +2356,92 @@ export type Database = {
       business_profiles: {
         Row: {
           ad_goals: string[] | null
+          average_customer_value: string | null
+          booking_link: string | null
           business_name: string
+          business_location: string | null
           created_at: string
+          customer_radius: string | null
           description: string | null
           id: string
           industry: string | null
+          lead_quality_signal: string | null
+          lead_type: string | null
+          meta_ads_status: string | null
           monthly_budget: string | null
+          most_valuable_service: string | null
           onboarding_completed: boolean
           onboarding_step: number
           organization_id: string | null
           preferred_platforms: string[] | null
+          preferred_contact_method: string | null
+          primary_goal: string | null
+          promoted_services: string[] | null
+          recommendation_style: string | null
+          safety_preference: string | null
+          target_cost_per_lead: string | null
           updated_at: string
+          watch_signals: string[] | null
           website: string | null
         }
         Insert: {
           ad_goals?: string[] | null
+          average_customer_value?: string | null
+          booking_link?: string | null
           business_name: string
+          business_location?: string | null
           created_at?: string
+          customer_radius?: string | null
           description?: string | null
           id?: string
           industry?: string | null
+          lead_quality_signal?: string | null
+          lead_type?: string | null
+          meta_ads_status?: string | null
           monthly_budget?: string | null
+          most_valuable_service?: string | null
           onboarding_completed?: boolean
           onboarding_step?: number
           organization_id?: string | null
           preferred_platforms?: string[] | null
+          preferred_contact_method?: string | null
+          primary_goal?: string | null
+          promoted_services?: string[] | null
+          recommendation_style?: string | null
+          safety_preference?: string | null
+          target_cost_per_lead?: string | null
           updated_at?: string
+          watch_signals?: string[] | null
           website?: string | null
         }
         Update: {
           ad_goals?: string[] | null
+          average_customer_value?: string | null
+          booking_link?: string | null
           business_name?: string
+          business_location?: string | null
           created_at?: string
+          customer_radius?: string | null
           description?: string | null
           id?: string
           industry?: string | null
+          lead_quality_signal?: string | null
+          lead_type?: string | null
+          meta_ads_status?: string | null
           monthly_budget?: string | null
+          most_valuable_service?: string | null
           onboarding_completed?: boolean
           onboarding_step?: number
           organization_id?: string | null
           preferred_platforms?: string[] | null
+          preferred_contact_method?: string | null
+          primary_goal?: string | null
+          promoted_services?: string[] | null
+          recommendation_style?: string | null
+          safety_preference?: string | null
+          target_cost_per_lead?: string | null
           updated_at?: string
+          watch_signals?: string[] | null
           website?: string | null
         }
         Relationships: [

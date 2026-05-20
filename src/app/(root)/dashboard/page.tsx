@@ -1149,7 +1149,7 @@ async function getDashboardBasePayload(input: {
     ),
   ]);
   const { selectedPlatformId, selectedAdAccountId } = selection;
-  const businessName = cachedBusinessName || input.fallbackBusinessName || 'My Business';
+  const businessName = cachedBusinessName || input.fallbackBusinessName || 'Your business';
 
   const [platform, selectedAdAccount] = await Promise.all([
     selectedPlatformId
@@ -1906,7 +1906,7 @@ async function LiveDeliveryTablesSection(base: DashboardSectionProps) {
 export default async function MainDashboardPage() {
   const timer = createDashboardTimer();
   const { user, businessId } = await timer.measure('required app context', getRequiredAppContext);
-  const fallbackBusinessName = `${user.first_name} ${user.last_name}`.trim() || 'My Business';
+  const fallbackBusinessName = `${user.first_name} ${user.last_name}`.trim() || 'Your business';
   const base = await timer.measure('dashboard base payload', () =>
     getDashboardBasePayload({
       userId: user.id,

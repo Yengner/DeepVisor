@@ -48,6 +48,16 @@ function firstPlatform(value: PlatformJoin | PlatformJoin[]): PlatformJoin {
   return Array.isArray(value) ? value[0] ?? null : value;
 }
 
+function isPlaceholderBusinessName(value: string | null | undefined): boolean {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return (
+    normalized === 'my business' ||
+    normalized === 'business setup' ||
+    normalized === 'new business' ||
+    normalized === 'untitled business'
+  );
+}
+
 export function getCachedBusinessName(
   userId: string,
   businessId: string
@@ -65,7 +75,8 @@ export function getCachedBusinessName(
         throw error;
       }
 
-      return data?.business_name ?? null;
+      const businessName = data?.business_name ?? null;
+      return isPlaceholderBusinessName(businessName) ? null : businessName;
     },
     ['dashboard-business-name', userId, businessId],
     { revalidate: 60 }

@@ -7,7 +7,7 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
   return (
     <>
       <Header />
-      <main className="pt-14 pb-14 md:pt-14 md:pb-14 bg-gray-50">{children}</main>
+      <main className="bg-gray-50">{children}</main>
       <Footer />
     </>
   );

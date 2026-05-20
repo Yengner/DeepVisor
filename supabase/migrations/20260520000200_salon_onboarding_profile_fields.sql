@@ -1,0 +1,16 @@
+alter table if exists public.business_profiles
+  add column if not exists booking_link text,
+  add column if not exists business_location text,
+  add column if not exists customer_radius text,
+  add column if not exists promoted_services text[],
+  add column if not exists most_valuable_service text,
+  add column if not exists meta_ads_status text,
+  add column if not exists primary_goal text,
+  add column if not exists lead_type text,
+  add column if not exists preferred_contact_method text,
+  add column if not exists lead_quality_signal text,
+  add column if not exists average_customer_value text,
+  add column if not exists target_cost_per_lead text,
+  add column if not exists watch_signals text[],
+  add column if not exists recommendation_style text,
+  add column if not exists safety_preference text;

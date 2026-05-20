@@ -205,6 +205,20 @@
   background: rgba(248, 250, 252, 0.9);
 }
 
+.googlePrimaryButton {
+  min-height: 46px;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.googlePrimaryButton:hover {
+  background: #f8fafc;
+  border-color: rgba(37, 99, 235, 0.34);
+  color: #0f172a;
+}
+
 @keyframes welcomeWave {
   0%,
   100% {
@@ -281,7 +295,16 @@
   }
 
   .animatedWelcome {
-    font-size: clamp(3.2rem, 18vw, 5.2rem);
+    flex-wrap: nowrap;
+    gap: 0;
+    width: 100%;
+    overflow: visible;
+    white-space: nowrap;
+    font-size: clamp(2.75rem, 14.5vw, 4.15rem);
+  }
+
+  .animatedWelcome span {
+    flex: 0 0 auto;
   }
 
   .introTitle {

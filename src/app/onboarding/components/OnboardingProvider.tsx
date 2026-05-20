@@ -17,15 +17,19 @@ import {
   ThemeIcon,
 } from '@mantine/core';
 import BlockingTaskScreen from '@/components/ui/states/BlockingTaskScreen';
-import WelcomeStep from './steps/WelcomeStep';
 import toast from 'react-hot-toast';
 import PreferencesStep from './steps/PreferencesStep';
 import BusinessProfileStep from './steps/BusinessProfileStep';
-import CompletionStep from './steps/CompletionStep';
+import ReviewStartStep from './steps/ReviewStartStep';
 import { updateOnboardingProgress } from '@/lib/server/actions/business/onboarding';
 import { UserData } from './types';
 import { IconCheck, IconDeviceAnalytics, IconSettings, IconCircleCheck, IconClock } from '@tabler/icons-react';
 import type { Database } from '@/lib/shared/types/supabase';
+import classes from './OnboardingProvider.module.css';
+import {
+  DEFAULT_INTELLIGENCE_GOALS,
+  DEFAULT_WATCH_SIGNALS,
+} from '@/lib/shared/onboarding/salonProfile';
 
 type OrganizationType = Database['public']['Enums']['organization_type'];
 
@@ -42,7 +46,22 @@ export type OnboardingInitial = {
     industry: string | null;
     monthlyBudget: string | null;
     website: string | null;
+    bookingLink: string | null;
+    businessLocation: string | null;
+    customerRadius: string | null;
     description: string | null;
+    promotedServices: string[];
+    mostValuableService: string | null;
+    metaAdsStatus: string | null;
+    primaryGoal: string | null;
+    leadType: string | null;
+    preferredContactMethod: string | null;
+    leadQualitySignal: string | null;
+    averageCustomerValue: string | null;
+    targetCostPerLead: string | null;
+    watchSignals: string[];
+    recommendationStyle: string | null;
+    safetyPreference: string | null;
     adGoals: string[];
     preferredPlatforms: string[];
   };
@@ -54,13 +73,13 @@ type OnboardingProviderProps = {
 };
 
 export default function OnboardingProvider({ initial }: OnboardingProviderProps) {
-  const stepLabels = ['Welcome', 'Business', 'Intelligence'];
-  const stepDescription = ['What we need', 'Business context', 'Goals and signals'];
+  const stepLabels = ['Business Context', 'Intelligence Goals', 'Review & Start'];
+  const stepDescription = ['Business, services, budget', 'Goals, signals, guardrails', 'Confirm setup'];
   const totalSteps = stepLabels.length;
-  const clampStep = (step: number) => Math.min(Math.max(step, 0), totalSteps);
+  const clampStep = (step: number) => Math.min(Math.max(step, 0), totalSteps - 1);
 
   const [active, setActive] = useState(() => {
-    if (initial.completed) return totalSteps;
+    if (initial.completed) return totalSteps - 1;
     return clampStep(initial.step);
   });
   const [loading, setLoading] = useState(false);
@@ -73,7 +92,26 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
     industry: initial.businessData.industry ?? '',
     monthlyBudget: initial.businessData.monthlyBudget ?? '',
     website: initial.businessData.website ?? '',
+    bookingLink: initial.businessData.bookingLink ?? '',
+    businessLocation: initial.businessData.businessLocation ?? '',
+    customerRadius: initial.businessData.customerRadius ?? '',
     description: initial.businessData.description ?? '',
+    promotedServices: Array.isArray(initial.businessData.promotedServices)
+      ? initial.businessData.promotedServices
+      : [],
+    mostValuableService: initial.businessData.mostValuableService ?? '',
+    metaAdsStatus: initial.businessData.metaAdsStatus ?? '',
+    primaryGoal: initial.businessData.primaryGoal ?? DEFAULT_INTELLIGENCE_GOALS.primaryGoal,
+    leadType: initial.businessData.leadType ?? DEFAULT_INTELLIGENCE_GOALS.leadType,
+    preferredContactMethod: initial.businessData.preferredContactMethod ?? DEFAULT_INTELLIGENCE_GOALS.preferredContactMethod,
+    leadQualitySignal: initial.businessData.leadQualitySignal ?? DEFAULT_INTELLIGENCE_GOALS.leadQualitySignal,
+    averageCustomerValue: initial.businessData.averageCustomerValue ?? '',
+    targetCostPerLead: initial.businessData.targetCostPerLead ?? '',
+    watchSignals: Array.isArray(initial.businessData.watchSignals) && initial.businessData.watchSignals.length > 0
+      ? initial.businessData.watchSignals
+      : [...DEFAULT_WATCH_SIGNALS],
+    recommendationStyle: initial.businessData.recommendationStyle ?? DEFAULT_INTELLIGENCE_GOALS.recommendationStyle,
+    safetyPreference: initial.businessData.safetyPreference ?? DEFAULT_INTELLIGENCE_GOALS.safetyPreference,
     adGoals: Array.isArray(initial.businessData.adGoals) ? initial.businessData.adGoals : [],
     preferredPlatforms: Array.isArray(initial.businessData.preferredPlatforms)
       ? initial.businessData.preferredPlatforms
@@ -117,9 +155,8 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
 
   const nextStep = async () => {
     if (loading) return;
-    const nextStepIndex = active + 1;
 
-    if (nextStepIndex > totalSteps) {
+    if (active >= totalSteps - 1) {
       setLoading(true);
       const saved = await persistProgress(totalSteps, true);
       setLoading(false);
@@ -127,6 +164,7 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
       return;
     }
 
+    const nextStepIndex = active + 1;
     setActive(nextStepIndex);
     void persistProgress(Math.min(nextStepIndex, totalSteps), false);
   };
@@ -150,7 +188,7 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
     }, 800);
   };
 
-  const progressValue = Math.min(100, Math.round((Math.min(active, totalSteps) / totalSteps) * 100));
+  const progressValue = Math.min(100, Math.round(((Math.min(active, totalSteps - 1) + 1) / totalSteps) * 100));
   const autosaveLabel = isAutosaving
     ? 'Saving changes...'
     : lastSavedAt
@@ -158,22 +196,22 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
       : 'Autosave enabled';
 
   return (
-    <Container size="lg" className="py-10 relative">
+    <Container size="lg" className={`py-10 relative ${classes.onboardingShell}`}>
       <BlockingTaskScreen
         opened={loading}
         title="Finishing onboarding"
-        description="We are saving your setup and taking you to Integrations so you can connect a platform there."
+        description="We are saving your salon profile and preparing your DeepVisor dashboard."
       />
 
-      <Stack gap="lg" className="mb-8">
-        <Group justify="apart" align="flex-start">
+      <Stack gap="lg" className={classes.headerStack}>
+        <Group justify="space-between" align="flex-start">
           <div>
-            <Badge variant="light" color="blue" mb="sm">
-              Required setup
+            <Badge variant="light" color="blue" mb="sm" radius="xl">
+              Salon setup
             </Badge>
-            <Title order={1} className="text-3xl mb-2">Set up your account intelligence profile</Title>
-            <Text c="dimmed" size="lg">
-              Answer the core questions first. Platform connection happens after onboarding in Integrations.
+            <Title order={1} className={classes.pageTitle}>Set up your salon intelligence profile</Title>
+            <Text c="dimmed" size="lg" className={classes.pageCopy}>
+              Tell DeepVisor what services, leads, and outcomes matter before it reviews ad performance.
             </Text>
           </div>
           <Stack gap={4} align="flex-end">
@@ -187,15 +225,15 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
         </Group>
       </Stack>
 
-      <Grid gutter="lg">
-        <Grid.Col span={{ base: 12, md: 4 }}>
-          <Card shadow="sm" radius="lg" p="lg" withBorder>
+      <Grid gutter="lg" align="flex-start">
+        <Grid.Col span={{ base: 12, md: 4 }} className={classes.progressColumn}>
+          <Card shadow="sm" radius="xl" p="lg" withBorder className={classes.progressCard}>
             <Stack gap="md">
               <div>
                 <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
                   Progress
                 </Text>
-                <Group justify="apart" mt={4}>
+                <Group justify="space-between" mt={4}>
                   <Text fw={600}>{progressValue}% complete</Text>
                   <Text size="xs" c="dimmed">
                     ~3-5 min
@@ -216,7 +254,7 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
                       p="sm"
                       style={{ borderColor: isActive ? 'var(--mantine-color-blue-5)' : undefined }}
                     >
-                      <Group justify="apart" align="center">
+                      <Group justify="space-between" align="center">
                         <Group gap="xs">
                           <ThemeIcon
                             size="sm"
@@ -246,23 +284,11 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
         </Grid.Col>
 
         <Grid.Col span={{ base: 12, md: 8 }}>
-          <Card shadow="md" radius="lg" p="xl" withBorder>
+          <Card shadow="md" radius="xl" p="xl" withBorder className={classes.formCard}>
             <Stepper active={active} onStepClick={() => { }} size="sm">
               <Stepper.Step
                 label={stepLabels[0]}
                 description={stepDescription[0]}
-                icon={<IconCheck size={16} />}
-              >
-                <WelcomeStep
-                  onNext={nextStep}
-                  userData={userData}
-                  updateUserData={handleUpdateUserData}
-                />
-              </Stepper.Step>
-
-              <Stepper.Step
-                label={stepLabels[1]}
-                description={stepDescription[1]}
                 icon={<IconDeviceAnalytics size={16} />}
               >
                 <BusinessProfileStep
@@ -270,12 +296,13 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
                   onPrev={prevStep}
                   userData={userData}
                   updateUserData={handleUpdateUserData}
+                  showBack={false}
                 />
               </Stepper.Step>
 
               <Stepper.Step
-                label={stepLabels[2]}
-                description={stepDescription[2]}
+                label={stepLabels[1]}
+                description={stepDescription[1]}
                 icon={<IconSettings size={16} />}
               >
                 <PreferencesStep
@@ -286,9 +313,18 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
                 />
               </Stepper.Step>
 
-              <Stepper.Completed>
-                <CompletionStep onComplete={nextStep} userData={userData} />
-              </Stepper.Completed>
+              <Stepper.Step
+                label={stepLabels[2]}
+                description={stepDescription[2]}
+                icon={<IconCheck size={16} />}
+              >
+                <ReviewStartStep
+                  onComplete={nextStep}
+                  onPrev={prevStep}
+                  userData={userData}
+                  loading={loading}
+                />
+              </Stepper.Step>
             </Stepper>
           </Card>
         </Grid.Col>

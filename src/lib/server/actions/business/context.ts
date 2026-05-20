@@ -78,7 +78,7 @@ async function createDefaultBusinessContext(): Promise<{
   const supabase = await timer.measure('create server client: default business context', () =>
     createServerClient()
   );
-  const defaultBusinessName = 'My Business';
+  const defaultBusinessName = 'Business setup';
 
   // Organization creation and owner assignment live in one RPC so the database
   // owns the invariant that every new workspace has an owner membership.
