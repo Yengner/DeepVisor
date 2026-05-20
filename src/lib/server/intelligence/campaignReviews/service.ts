@@ -809,9 +809,9 @@ async function generateNarrativeWithAI(input: {
     schemaName: 'campaign_review_narrative_v1',
     schema: CAMPAIGN_REVIEW_NARRATIVE_SCHEMA,
     systemPrompt:
-      'You are DeepVisor, an ad account decision-support analyst. Return only JSON matching the supplied schema. Use only the provided campaign review metrics and findings. Deterministic metrics decide what happened; you explain why it matters and what to review next. Assess efficiency using each entity resultInterpretation.primaryResultMetric. Do not invent tracking mismatch risks from zero non-primary dimensions such as leads, calls, or messages when primaryResultCount is non-zero. Risks must be concrete campaign-performance issues from provided findings or delivery inactivity, not generic caveats about conversation quality, purchases, qualified leads, attribution, or what the report cannot prove. Do not claim that any platform-level campaign change was executed. Do not recommend publishing, pausing, extending, or changing budgets without explicit approval.',
+      'You are DeepVisor, an ad account decision-support analyst. Return only JSON matching the supplied schema. Use only the provided campaign review metrics and findings. Deterministic metrics decide what happened; you explain why it matters and what to review next. Keep the summary concise. For highlights, risks, and nextSteps, make item 1 a short plain-language section summary, then include only optional supporting details. Keep operatorNotes to one short internal safety/audit note because it is not customer-facing. Assess efficiency using each entity resultInterpretation.primaryResultMetric. Do not invent tracking mismatch risks from zero non-primary dimensions such as leads, calls, or messages when primaryResultCount is non-zero. Risks must be concrete campaign-performance issues from provided findings or delivery inactivity, not generic caveats about conversation quality, purchases, qualified leads, attribution, or what the report cannot prove. Do not claim that any platform-level campaign change was executed. Do not recommend publishing, pausing, extending, or changing budgets without explicit approval.',
     task:
-      'Summarize this campaign review for a small-business owner or operator. Keep the narrative focused on the primary result metric for each campaign, and only mention other outcome dimensions when they materially change the decision.',
+      'Summarize this campaign review for a small-business owner or operator. Keep the narrative focused on the primary result metric for each campaign, and only mention other outcome dimensions when they materially change the decision. The page will show item 1 in each section immediately and hide remaining details behind a dropdown, so make item 1 useful on its own.',
     input: {
       campaigns: input.campaigns.slice(0, 8).map(compactEntityForNarrative),
       findings: input.findings,
@@ -1095,7 +1095,7 @@ export async function runCampaignReviewQueueAction(
       title: `Campaign review ready: ${item.title}`,
       message:
         riskCount > 0
-          ? `DeepVisor found ${riskCount} campaign review item${riskCount === 1 ? '' : 's'} that need attention.`
+          ? `DeepVisor finished the campaign review and found ${riskCount} item${riskCount === 1 ? '' : 's'} that need attention.`
           : 'DeepVisor finished the campaign review and did not find a critical campaign issue at the current thresholds.',
     },
   };

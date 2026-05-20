@@ -296,6 +296,10 @@ function isReportCompareMode(value: string | null): value is ReportCompareMode {
   return value === 'none' || value === 'previous_period';
 }
 
+function isReportRangeMode(value: string | null): value is 'date_range' | 'max' {
+  return value === 'date_range' || value === 'max';
+}
+
 function inferReportScope(input: {
   requestedScope: string | null;
   campaignId: string | null;
@@ -362,15 +366,18 @@ function buildReportQueryFromQueueItem(
   const requestedScope = stringPayloadValue(payload, 'scope');
   const groupBy = stringPayloadValue(payload, 'groupBy');
   const compareMode = stringPayloadValue(payload, 'compareMode');
+  const rangeMode = stringPayloadValue(payload, 'rangeMode');
+  const inferredScope = inferReportScope({
+    requestedScope,
+    campaignId,
+    adsetId,
+    adId,
+  });
+  const isMaxRange = isReportRangeMode(rangeMode) && rangeMode === 'max';
 
   return {
     businessId: item.businessId,
-    scope: inferReportScope({
-      requestedScope,
-      campaignId,
-      adsetId,
-      adId,
-    }),
+    scope: inferredScope,
     platformIntegrationId: item.platformIntegrationId,
     adAccountIds: [item.adAccountId],
     campaignIds: campaignId ? [campaignId] : [],
@@ -378,8 +385,13 @@ function buildReportQueryFromQueueItem(
     adIds: adId ? [adId] : [],
     dateTo,
     dateFrom: addDaysToDateKey(dateTo, -(lookbackDays - 1)),
-    groupBy: isReportGroupBy(groupBy) ? groupBy : 'day',
-    compareMode: isReportCompareMode(compareMode) ? compareMode : 'previous_period',
+    groupBy: isMaxRange ? 'month' : isReportGroupBy(groupBy) ? groupBy : 'day',
+    compareMode: isMaxRange
+      ? 'none'
+      : isReportCompareMode(compareMode)
+        ? compareMode
+        : 'previous_period',
+    rangeMode: isReportRangeMode(rangeMode) ? rangeMode : 'date_range',
   };
 }
 
@@ -393,6 +405,10 @@ function buildReportDownloadHref(query: ReportQueryInput): string {
 
   if (query.compareMode === 'previous_period') {
     params.set('compare', 'previous_period');
+  }
+
+  if (query.rangeMode === 'max') {
+    params.set('range', 'max');
   }
 
   if (query.platformIntegrationId) {
@@ -644,7 +660,7 @@ async function runReportQueueAction(
     fileName,
     buffer,
   });
-  const viewerHref = `/reports/archive/${item.id}`;
+  const viewerHref = `/campaigns/reports/${item.id}`;
   const pdfHref = `/api/reports/archive/${item.id}/pdf`;
   const downloadHref = `${pdfHref}?download=1`;
   const dateRange = formatDateRangeLabel(query);
@@ -689,8 +705,8 @@ async function runReportQueueAction(
       },
     },
     notificationCopy: {
-      title: `Report ready: ${item.title}`,
-      message: `${payload.export.title} is ready for ${dateRange}. Open the generated report PDF to review performance.`,
+      title: `Campaign report ready: ${item.title}`,
+      message: `${payload.export.title} is ready for ${dateRange}. Open the campaign report page to review performance.`,
     },
   };
 }

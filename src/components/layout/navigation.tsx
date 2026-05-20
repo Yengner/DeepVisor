@@ -22,13 +22,13 @@ export const primaryNavItems: AppNavItem[] = [
   { name: 'Calendar', shortName: 'Calendar', icon: IconCalendarMonth, route: '/calendar' },
   { name: 'Campaigns', shortName: 'Campaigns', icon: IconPresentation, route: '/campaigns' },
   { name: 'Reports', shortName: 'Reports', icon: IconChartBar, route: '/reports' },
+  { name: 'Integration', shortName: 'Connect', icon: IconPuzzle, route: '/integration' },
 ];
 
 export const secondaryNavItems: AppNavItem[] = [
   { name: 'Settings', shortName: 'Settings', icon: IconSettings, route: '/settings' },
   { name: 'Profile', shortName: 'Profile', icon: IconUser, route: '/settings/profile' },
   { name: 'Notifications', shortName: 'Alerts', icon: IconBell, route: '/notifications' },
-  { name: 'Integration', shortName: 'Connect', icon: IconPuzzle, route: '/integration' },
 ];
 
 export const mobileBottomNavItems: AppNavItem[] = [

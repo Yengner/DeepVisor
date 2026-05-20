@@ -9,6 +9,28 @@ export type NotificationFeedItem = {
   link?: string | null;
 };
 
+export function formatNotificationPreviewMessage(message: string): string {
+  const normalized = message.trim().replace(/\s+/g, ' ');
+  const reviewMatch =
+    normalized.match(/found\s+(\d+)\s+campaign review item/i) ??
+    normalized.match(/campaign review.*found\s+(\d+)\s+item/i);
+
+  if (reviewMatch) {
+    const count = Number(reviewMatch[1]);
+    return `DeepVisor finished the campaign review. ${count} item${count === 1 ? '' : 's'} need review.`;
+  }
+
+  if (/deepvisor finished the campaign review/i.test(normalized)) {
+    if (/no critical|did not find/i.test(normalized)) {
+      return 'DeepVisor finished the campaign review. No critical issues found.';
+    }
+
+    return 'DeepVisor finished the campaign review.';
+  }
+
+  return normalized.length > 112 ? `${normalized.slice(0, 109)}...` : normalized;
+}
+
 export const STATIC_NOTIFICATION_FEED: NotificationFeedItem[] = [
   {
     id: 'notification-performance-brief',

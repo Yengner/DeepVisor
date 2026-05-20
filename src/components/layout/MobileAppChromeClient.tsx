@@ -34,7 +34,11 @@ import {
   markAllNotificationsAsReadClient,
   markNotificationReadClient,
 } from '@/lib/client';
-import { type NotificationFeedItem } from '@/lib/shared';
+import {
+  formatNotificationPreviewMessage,
+  formatRelativeTime,
+  type NotificationFeedItem,
+} from '@/lib/shared';
 import {
   isAppNavItemActive,
   mobileBottomNavItems,
@@ -59,23 +63,11 @@ type MobileAppChromeClientProps = {
 };
 
 function formatNotificationTime(value: string) {
-  const date = new Date(value);
-  const deltaMs = Date.now() - date.getTime();
-
-  if (!Number.isFinite(deltaMs)) {
-    return value;
-  }
-
-  const hours = Math.round(deltaMs / (60 * 60 * 1000));
-  if (hours < 1) {
-    return 'Now';
-  }
-
-  if (hours < 24) {
-    return `${hours}h`;
-  }
-
-  return `${Math.round(hours / 24)}d`;
+  return formatRelativeTime(value, {
+    emptyLabel: 'Recently',
+    futureLabel: 'Just now',
+    includeSeconds: true,
+  });
 }
 
 export default function MobileAppChromeClient({
@@ -234,8 +226,13 @@ export default function MobileAppChromeClient({
                           {formatNotificationTime(notification.created_at)}
                         </Text>
                       </Group>
-                      <Text size="xs" c="dimmed" lineClamp={2}>
-                        {notification.message}
+                      <Text
+                        size="xs"
+                        c="dimmed"
+                        lineClamp={2}
+                        title={notification.message}
+                      >
+                        {formatNotificationPreviewMessage(notification.message)}
                       </Text>
                     </Stack>
                   </Menu.Item>

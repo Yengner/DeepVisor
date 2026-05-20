@@ -180,6 +180,33 @@ export async function deleteAutomaticCalendarQueueItems(
   return Array.isArray(data) ? data.length : 0;
 }
 
+export async function deleteCalendarQueueItem(
+  supabase: IntelligenceClient,
+  input: {
+    id: string;
+    businessId: string;
+    userId?: string | null;
+  }
+): Promise<number> {
+  let query = supabase
+    .from('calendar_queue_items')
+    .delete()
+    .eq('id', input.id)
+    .eq('business_id', input.businessId);
+
+  if (input.userId) {
+    query = query.eq('created_by_user_id', input.userId);
+  }
+
+  const { data, error } = await query.select('id');
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.isArray(data) ? data.length : 0;
+}
+
 /**
  * Creates or updates workflow parent queue items for the current signal set.
  * Parent workflows that are no longer active are dismissed unless they have

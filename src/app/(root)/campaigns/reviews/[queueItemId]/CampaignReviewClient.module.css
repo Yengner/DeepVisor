@@ -32,6 +32,26 @@
   background: rgba(255, 255, 255, 0.92);
 }
 
+.insightSummaryCard {
+  height: 100%;
+  background: rgba(248, 250, 252, 0.72);
+}
+
+.insightDetails {
+  background: transparent;
+}
+
+.insightDetails :global(.mantine-Accordion-control) {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.insightDetails :global(.mantine-Accordion-panel) {
+  padding: 0 10px 10px;
+}
+
 @media (max-width: 760px) {
   .page {
     padding-inline: 10px;

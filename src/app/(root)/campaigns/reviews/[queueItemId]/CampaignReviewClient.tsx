@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Accordion,
   Alert,
   Badge,
   Box,
@@ -136,7 +137,7 @@ function SummaryCard({
   );
 }
 
-function TextList({
+function InsightSummarySection({
   title,
   items,
   empty,
@@ -145,21 +146,37 @@ function TextList({
   items: string[];
   empty: string;
 }) {
+  const [summary, ...details] = items;
+
   return (
-    <Stack gap="xs">
+    <Paper withBorder radius="md" p="md" className={classes.insightSummaryCard}>
       <Text fw={700}>{title}</Text>
-      {items.length > 0 ? (
-        items.map((item, index) => (
-          <Text key={`${title}-${index}-${item}`} size="sm">
-            {item}
-          </Text>
-        ))
+      {summary ? (
+        <Text size="sm" mt={6}>
+          {summary}
+        </Text>
       ) : (
         <Text size="sm" c="dimmed">
           {empty}
         </Text>
       )}
-    </Stack>
+      {details.length > 0 ? (
+        <Accordion variant="contained" radius="md" mt="sm" className={classes.insightDetails}>
+          <Accordion.Item value={title}>
+            <Accordion.Control>More details</Accordion.Control>
+            <Accordion.Panel>
+              <Stack gap="xs">
+                {details.map((item, index) => (
+                  <Text key={`${title}-${index}-${item}`} size="sm" c="dimmed">
+                    {item}
+                  </Text>
+                ))}
+              </Stack>
+            </Accordion.Panel>
+          </Accordion.Item>
+        </Accordion>
+      ) : null}
+    </Paper>
   );
 }
 
@@ -436,26 +453,21 @@ export default function CampaignReviewClient({
               {review.summary ??
                 'This review has not produced a summary yet. Check back after the queue processor completes the run.'}
             </Text>
-            <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }}>
-              <TextList
+            <SimpleGrid cols={{ base: 1, md: 3 }}>
+              <InsightSummarySection
                 title="Highlights"
                 items={review.highlights}
                 empty="No highlights are available yet."
               />
-              <TextList
+              <InsightSummarySection
                 title="Risks"
                 items={review.risks}
                 empty="No risks are available yet."
               />
-              <TextList
+              <InsightSummarySection
                 title="Next steps"
                 items={review.nextSteps}
                 empty="No next steps are available yet."
-              />
-              <TextList
-                title="Operator notes"
-                items={review.operatorNotes}
-                empty="No operator notes are available yet."
               />
             </SimpleGrid>
             {review.aiRunId || review.decisionSupportVersion ? (

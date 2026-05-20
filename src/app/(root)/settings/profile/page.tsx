@@ -34,6 +34,7 @@ import {
 } from '@/lib/server/actions/user/settings';
 import { getAdAccountData, getBusinessAdAccountsRollup, getPlatformDetails } from '@/lib/server/data';
 import { createServerClient } from '@/lib/server/supabase/server';
+import { formatNotificationPreviewMessage } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
 
 type BusinessProfilePreview = Pick<
@@ -842,8 +843,14 @@ export default async function ProfilePage() {
                           <Text fw={700} size="sm">
                             {notification.title}
                           </Text>
-                          <Text size="sm" c="dimmed" mt={4}>
-                            {notification.message}
+                          <Text
+                            size="sm"
+                            c="dimmed"
+                            mt={4}
+                            lineClamp={2}
+                            title={notification.message}
+                          >
+                            {formatNotificationPreviewMessage(notification.message)}
                           </Text>
                         </div>
                         <Text size="xs" c="dimmed">

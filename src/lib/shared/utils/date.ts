@@ -333,6 +333,7 @@ export interface RelativeTimeFormatOptions {
   invalidLabel?: string;
   futureLabel?: string;
   justNowLabel?: string;
+  includeSeconds?: boolean;
 }
 
 /**
@@ -351,6 +352,7 @@ export function formatRelativeTime(
     invalidLabel,
     futureLabel = 'Recently updated',
     justNowLabel = 'Just now',
+    includeSeconds = false,
   } = options;
 
   if (!value) {
@@ -375,6 +377,11 @@ export function formatRelativeTime(
 
   const minutes = Math.round(deltaMs / (60 * 1000));
   if (minutes < 1) {
+    if (includeSeconds) {
+      const seconds = Math.max(1, Math.round(deltaMs / 1000));
+      return `${seconds}s ago`;
+    }
+
     return justNowLabel;
   }
 

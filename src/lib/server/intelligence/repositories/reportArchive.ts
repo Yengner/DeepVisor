@@ -99,7 +99,7 @@ function mapReportArchiveRow(row: ReportArchiveRow): ArchivedReport | null {
   const level = isReportScope(scopeValue) ? scopeValue : 'unknown';
   const storedReportHref = asString(action.reportHref);
   const storagePath = asString(action.storagePath);
-  const viewerHref = asString(action.viewerHref) ?? `/reports/archive/${row.id}`;
+  const viewerHref = asString(action.viewerHref) ?? `/campaigns/reports/${row.id}`;
   const pdfHref = storagePath
     ? asString(action.pdfHref) ??
       (storedReportHref?.startsWith('/api/reports/archive/') ? storedReportHref : null) ??

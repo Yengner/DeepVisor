@@ -136,6 +136,15 @@ function templateOccurrenceKey(template: CalendarQueueTemplate, day: Date): stri
   return `calendar-template:${template.id}:${toIsoDay(day)}:${normalizeTimeOfDay(template.timeOfDay)}`;
 }
 
+function cancelledTemplateOccurrenceKeys(template: CalendarQueueTemplate): Set<string> {
+  const value = template.payloadJson.cancelledOccurrenceKeys;
+  return new Set(
+    Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === 'string')
+      : []
+  );
+}
+
 export function compareCalendarQueuePreviewItems(
   left: CalendarQueuePreviewItem,
   right: CalendarQueuePreviewItem
@@ -222,8 +231,14 @@ export function buildRecurringCalendarQueuePreviewItems(
     }
 
     const { destinationHref, channel } = queueTemplateDestinationAndChannel(template.templateType);
+    const cancelledOccurrenceKeys = cancelledTemplateOccurrenceKeys(template);
     for (let cursor = new Date(rangeStart); cursor <= rangeEnd; cursor = addDays(cursor, 1)) {
       if (!shouldRenderTemplateOnDay(template, cursor)) {
+        continue;
+      }
+
+      const occurrenceKey = templateOccurrenceKey(template, cursor);
+      if (cancelledOccurrenceKeys.has(occurrenceKey)) {
         continue;
       }
 
@@ -241,7 +256,7 @@ export function buildRecurringCalendarQueuePreviewItems(
         isRecurring: true,
         recurringTemplateId: template.id,
         recurringTemplateType: template.templateType,
-        templateOccurrenceKey: templateOccurrenceKey(template, cursor),
+        templateOccurrenceKey: occurrenceKey,
       });
     }
   }

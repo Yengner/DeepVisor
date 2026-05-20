@@ -44,6 +44,7 @@ import {
   type ArchivedReport,
 } from '@/lib/server/intelligence/repositories/reportArchive';
 import { getAdAccountData, getBusinessAdAccountsRollup, getPlatformDetails } from '@/lib/server/data';
+import { formatNotificationPreviewMessage } from '@/lib/shared';
 import { createServerClient } from '@/lib/server/supabase/server';
 import IntelligencePreferencesCard from './components/IntelligencePreferencesCard';
 
@@ -196,9 +197,19 @@ function formatRelativeTime(value: string | null): string {
     return 'Recently updated';
   }
 
-  const hours = Math.round(deltaMs / (60 * 60 * 1000));
+  const seconds = Math.max(1, Math.round(deltaMs / 1000));
+  if (seconds < 60) {
+    return `${seconds}s ago`;
+  }
+
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+
+  const hours = Math.round(minutes / 60);
   if (hours < 1) {
-    return 'Within the last hour';
+    return '1h ago';
   }
 
   if (hours < 24) {
@@ -794,8 +805,14 @@ export default async function SettingsPage() {
                           <Text fw={700} size="sm">
                             {notification.title}
                           </Text>
-                          <Text size="sm" c="dimmed" mt={4}>
-                            {notification.message}
+                          <Text
+                            size="sm"
+                            c="dimmed"
+                            mt={4}
+                            lineClamp={2}
+                            title={notification.message}
+                          >
+                            {formatNotificationPreviewMessage(notification.message)}
                           </Text>
                         </div>
                         <Text size="xs" c="dimmed">

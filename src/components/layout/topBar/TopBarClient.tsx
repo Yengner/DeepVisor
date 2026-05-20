@@ -5,7 +5,11 @@ import {
     markAllNotificationsAsReadClient,
     markNotificationReadClient,
 } from '@/lib/client';
-import { type NotificationFeedItem } from '@/lib/shared';
+import {
+    formatNotificationPreviewMessage,
+    formatRelativeTime,
+    type NotificationFeedItem,
+} from '@/lib/shared';
 import {
     Group,
     TextInput,
@@ -79,26 +83,12 @@ export default function TopBarClient({
     const textStrong = 'var(--platform-text-strong)';
     const notificationDropdownWidth = 380;
 
-    const formatNotificationTime = (value: string) => {
-        const date = new Date(value);
-        const deltaMs = Date.now() - date.getTime();
-
-        if (!Number.isFinite(deltaMs)) {
-            return value;
-        }
-
-        const hours = Math.round(deltaMs / (60 * 60 * 1000));
-        if (hours < 1) {
-            return 'Within the last hour';
-        }
-
-        if (hours < 24) {
-            return `${hours}h ago`;
-        }
-
-        const days = Math.round(hours / 24);
-        return `${days}d ago`;
-    };
+    const formatNotificationTime = (value: string) =>
+        formatRelativeTime(value, {
+            emptyLabel: 'Recently',
+            futureLabel: 'Just now',
+            includeSeconds: true,
+        });
 
     // Mark all notifications as read
     const markAllRead = () => {
@@ -302,8 +292,13 @@ export default function TopBarClient({
                                                         {formatNotificationTime(notification.created_at)}
                                                     </Text>
                                                 </Group>
-                                                <Text size="sm" c="dimmed" lineClamp={2}>
-                                                    {notification.message}
+                                                <Text
+                                                    size="sm"
+                                                    c="dimmed"
+                                                    lineClamp={2}
+                                                    title={notification.message}
+                                                >
+                                                    {formatNotificationPreviewMessage(notification.message)}
                                                 </Text>
                                             </div>
                                         </Menu.Item>

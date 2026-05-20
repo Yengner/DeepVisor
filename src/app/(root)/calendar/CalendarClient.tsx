@@ -75,7 +75,7 @@ const WEEK_HOUR_HEIGHT = 56;
 const MONTH_VIEW_VISIBLE_ITEM_COUNT = 4;
 const DRAG_SNAP_MINUTES = 15;
 const INITIAL_WEEK_SCROLL_HOUR = 13;
-const SIGNIFICANT_WEEK_EVENT_OVERLAP_RATIO = 0.3;
+const SIGNIFICANT_WEEK_EVENT_OVERLAP_RATIO = 0.15;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DEV_QUEUE_TOOL_ENABLED = process.env.NODE_ENV !== 'production';
@@ -91,7 +91,7 @@ type DevQueueItemType =
 type DevQueuePriority = 'low' | 'medium' | 'high' | 'critical';
 
 const DEV_QUEUE_ITEM_TYPE_OPTIONS: Array<{ value: DevQueueItemType; label: string }> = [
-  { value: 'review_report', label: 'Report review' },
+  { value: 'review_report', label: 'Campaign report' },
   { value: 'campaign_review', label: 'Campaign review' },
   { value: 'investigate_efficiency', label: 'Efficiency review' },
   { value: 'refresh_creative', label: 'Creative refresh' },
@@ -123,6 +123,20 @@ type DevCalendarQueueResponse = {
     failedCount: number;
     errors: string[];
   };
+};
+
+type CalendarQueueDeleteResponse = {
+  error?: string;
+  queueItems?: QueueItem[];
+  queueTemplates?: CalendarQueueTemplate[];
+};
+
+type RecurringDeleteTarget = {
+  itemId: string;
+  title: string;
+  recurringTemplateId: string;
+  occurrenceKey: string | null;
+  isPersisted: boolean;
 };
 
 function toIsoDay(date: Date): string {
@@ -655,6 +669,8 @@ type QueueTemplateFormState = {
   templateType: CalendarQueueTemplateType;
   title: string;
   description: string;
+  reportScope: 'active_recent' | 'this_week' | 'specific_campaign';
+  reportCampaignExternalId: string;
   campaignReviewScope: 'active_recent' | 'specific_campaign';
   campaignReviewCampaignExternalId: string;
   recurrenceType: CalendarQueueTemplateRecurrence;
@@ -691,14 +707,14 @@ const QUEUE_TEMPLATE_TYPE_OPTIONS: Array<{
 }> = [
   {
     value: 'report',
-    label: 'Report queue',
-    description: 'Schedule a weekly or monthly report run and review window.',
-    titleLabel: 'Report title',
-    descriptionLabel: 'What this report should cover',
+    label: 'Campaign report',
+    description: 'Schedule a weekly or monthly campaign report result page.',
+    titleLabel: 'Campaign report title',
+    descriptionLabel: 'What this campaign report should cover',
     cadenceLabel: 'Report cadence',
-    timeLabel: 'Report start time',
+    timeLabel: 'Run time',
     helperCopy:
-      'DeepVisor will run this queue at the selected time and notify the workspace when the report window is ready.',
+      'DeepVisor will run this queue at the selected time, create a campaign report page, and notify the workspace.',
     defaultDurationMinutes: 30,
     showDuration: false,
   },
@@ -890,8 +906,8 @@ function defaultTemplateCopy(templateType: CalendarQueueTemplateType): Pick<
   switch (templateType) {
     case 'report':
       return {
-        title: 'Weekly ads report review',
-        description: 'Review the latest performance report and queue any follow-up changes.',
+        title: 'Weekly campaign report',
+        description: 'Generate a campaign report page for the latest performance window.',
       };
     case 'campaign_review':
       return {
@@ -924,6 +940,8 @@ function buildDefaultTemplateForm(today: Date): QueueTemplateFormState {
     templateType: 'report',
     title: defaults.title,
     description: defaults.description,
+    reportScope: 'active_recent',
+    reportCampaignExternalId: '',
     campaignReviewScope: 'active_recent',
     campaignReviewCampaignExternalId: '',
     recurrenceType: 'weekly',
@@ -938,15 +956,28 @@ function buildDefaultTemplateForm(today: Date): QueueTemplateFormState {
 }
 
 function formStateFromTemplate(template: CalendarQueueTemplate): QueueTemplateFormState {
+  const campaignReport = (template.payloadJson.campaignReport &&
+    typeof template.payloadJson.campaignReport === 'object'
+    ? template.payloadJson.campaignReport
+    : {}) as Record<string, unknown>;
   const campaignReview = (template.payloadJson.campaignReview &&
     typeof template.payloadJson.campaignReview === 'object'
     ? template.payloadJson.campaignReview
     : {}) as Record<string, unknown>;
+  const reportScope =
+    campaignReport.scope === 'this_week' || campaignReport.scope === 'specific_campaign'
+      ? campaignReport.scope
+      : 'active_recent';
 
   return {
     templateType: template.templateType,
     title: template.title,
     description: template.description,
+    reportScope,
+    reportCampaignExternalId:
+      typeof campaignReport.campaignExternalId === 'string'
+        ? campaignReport.campaignExternalId
+        : '',
     campaignReviewScope:
       campaignReview.scope === 'specific_campaign' ? 'specific_campaign' : 'active_recent',
     campaignReviewCampaignExternalId:
@@ -1123,6 +1154,17 @@ export default function CalendarClient({
     buildDefaultTemplateForm(startOfDay(initialNow))
   );
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [deletingQueueId, setDeletingQueueId] = useState<string | null>(null);
+  const [recurringDeleteTarget, setRecurringDeleteTarget] =
+    useState<RecurringDeleteTarget | null>(null);
+
+  useEffect(() => {
+    setQueueItems(initialQueueItems);
+  }, [initialQueueItems]);
+
+  useEffect(() => {
+    setQueueTemplates(initialQueueTemplates);
+  }, [initialQueueTemplates]);
 
   const selectionRequiredPlatforms = workspace.platforms.filter((platform) => platform.selectionRequired);
   const selectedAdAccount = useMemo(
@@ -1417,13 +1459,32 @@ export default function CalendarClient({
 
     try {
       const selectedCampaign =
-        templateForm.templateType === 'campaign_review' &&
-        templateForm.campaignReviewScope === 'specific_campaign'
+        ((templateForm.templateType === 'campaign_review' &&
+          templateForm.campaignReviewScope === 'specific_campaign') ||
+          (templateForm.templateType === 'report' &&
+            templateForm.reportScope === 'specific_campaign'))
           ? campaignReviewOptions.find(
               (campaign) =>
-                campaign.campaignExternalId === templateForm.campaignReviewCampaignExternalId
+                campaign.campaignExternalId ===
+                (templateForm.templateType === 'report'
+                  ? templateForm.reportCampaignExternalId
+                  : templateForm.campaignReviewCampaignExternalId)
             ) ?? null
           : null;
+      const existingTemplatePayload =
+        editingTemplateId
+          ? queueTemplates.find((template) => template.id === editingTemplateId)?.payloadJson ?? {}
+          : {};
+      const preservedCancelledOccurrenceKeys = Array.isArray(
+        existingTemplatePayload.cancelledOccurrenceKeys
+      )
+        ? {
+            cancelledOccurrenceKeys:
+              existingTemplatePayload.cancelledOccurrenceKeys.filter(
+                (value): value is string => typeof value === 'string'
+              ),
+          }
+        : {};
       const body = {
         platformIntegrationId: selectedPlatformIntegrationId,
         adAccountId: workspace.selectedAdAccountId,
@@ -1444,8 +1505,44 @@ export default function CalendarClient({
         endDate: templateForm.isIndefinite ? null : templateForm.endDate || null,
         status: 'active' as const,
         payloadJson:
-          templateForm.templateType === 'campaign_review'
+          templateForm.templateType === 'report'
             ? {
+                ...preservedCancelledOccurrenceKeys,
+                campaignReport: {
+                  scope: templateForm.reportScope,
+                  campaignExternalId:
+                    templateForm.reportScope === 'specific_campaign'
+                      ? selectedCampaign?.campaignExternalId ?? null
+                      : null,
+                  campaignInternalId:
+                    templateForm.reportScope === 'specific_campaign'
+                      ? selectedCampaign?.campaignInternalId ?? null
+                      : null,
+                  campaignName:
+                    templateForm.reportScope === 'specific_campaign'
+                      ? selectedCampaign?.campaignName ?? null
+                      : null,
+                },
+                scope:
+                  templateForm.reportScope === 'specific_campaign'
+                    ? 'campaign'
+                    : 'ad_account',
+                campaignId:
+                  templateForm.reportScope === 'specific_campaign'
+                    ? selectedCampaign?.campaignExternalId ?? null
+                    : null,
+                lookbackDays:
+                  templateForm.reportScope === 'this_week'
+                    ? 7
+                    : templateForm.reportScope === 'active_recent'
+                      ? 30
+                      : null,
+                rangeMode:
+                  templateForm.reportScope === 'specific_campaign' ? 'max' : 'date_range',
+              }
+            : templateForm.templateType === 'campaign_review'
+            ? {
+                ...preservedCancelledOccurrenceKeys,
                 campaignReview: {
                   scope: templateForm.campaignReviewScope,
                   campaignExternalId:
@@ -1462,7 +1559,7 @@ export default function CalendarClient({
                       : null,
                 },
               }
-            : {},
+            : preservedCancelledOccurrenceKeys,
       };
 
       const response = await fetch(
@@ -1506,23 +1603,61 @@ export default function CalendarClient({
     }
   }
 
-  async function removeTemplate(templateId: string) {
-    try {
-      const response = await fetch(`/api/calendar/templates/${templateId}`, {
-        method: 'DELETE',
-      });
-      const payload = (await response.json()) as { error?: string };
+  function applyQueueDeletePayload(payload: CalendarQueueDeleteResponse) {
+    if (Array.isArray(payload.queueItems)) {
+      setQueueItems(payload.queueItems);
+    }
 
-      if (!response.ok) {
+    if (Array.isArray(payload.queueTemplates)) {
+      setQueueTemplates(payload.queueTemplates);
+    }
+
+    setSelectedCalendarItemId(null);
+    router.refresh();
+  }
+
+  async function deleteCalendarQueue(body: Record<string, unknown>, successMessage: string) {
+    if (!workspace.selectedAdAccountId) {
+      toast.error('Select an ad account before removing a queue.');
+      return;
+    }
+
+    setDeletingQueueId(String(body.queueItemId ?? body.recurringTemplateId ?? 'queue'));
+
+    try {
+      const response = await fetch('/api/calendar/queue', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          adAccountId: workspace.selectedAdAccountId,
+          ...body,
+        }),
+      });
+      const payload = (await response.json()) as CalendarQueueDeleteResponse;
+
+      if (!response.ok || !Array.isArray(payload.queueItems) || !Array.isArray(payload.queueTemplates)) {
         throw new Error(payload.error ?? 'Unable to delete queue.');
       }
 
-      setQueueTemplates((current) => current.filter((template) => template.id !== templateId));
-      setSelectedCalendarItemId(null);
-      toast.success('Queue removed');
+      applyQueueDeletePayload(payload);
+      toast.success(successMessage);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to delete queue.');
+    } finally {
+      setDeletingQueueId(null);
     }
+  }
+
+  async function removeTemplate(templateId: string) {
+    await deleteCalendarQueue(
+      {
+        recurringTemplateId: templateId,
+        deleteScope: 'all',
+      },
+      'Recurring queue removed'
+    );
   }
 
   async function handleRebuildQueue() {
@@ -1807,13 +1942,63 @@ export default function CalendarClient({
   function handleDelete(id: string) {
     const targetItem = flatQueueItems.find((item) => item.id === id) ?? null;
     if (targetItem?.recurringTemplateId) {
-      void removeTemplate(targetItem.recurringTemplateId);
+      setRecurringDeleteTarget({
+        itemId: targetItem.id,
+        title: targetItem.title,
+        recurringTemplateId: targetItem.recurringTemplateId,
+        occurrenceKey: targetItem.templateOccurrenceKey ?? null,
+        isPersisted: looksLikeUuid(targetItem.id),
+      });
+      return;
+    }
+
+    if (looksLikeUuid(id)) {
+      void deleteCalendarQueue(
+        {
+          queueItemId: id,
+        },
+        'Queue item removed'
+      );
       return;
     }
 
     setSelectedCalendarItemId((current) => (current === id ? null : current));
     updateQueueItem(id, () => null);
     toast.success('Queue item removed');
+  }
+
+  async function confirmDeleteRecurringOccurrence() {
+    if (!recurringDeleteTarget) {
+      return;
+    }
+
+    const target = recurringDeleteTarget;
+    setRecurringDeleteTarget(null);
+
+    if (!target.occurrenceKey) {
+      toast.error('This queue occurrence cannot be removed individually.');
+      return;
+    }
+
+    await deleteCalendarQueue(
+      {
+        queueItemId: target.isPersisted ? target.itemId : null,
+        recurringTemplateId: target.recurringTemplateId,
+        occurrenceKey: target.occurrenceKey,
+        deleteScope: 'one',
+      },
+      'This queue occurrence was removed'
+    );
+  }
+
+  async function confirmDeleteRecurringSeries() {
+    if (!recurringDeleteTarget) {
+      return;
+    }
+
+    const target = recurringDeleteTarget;
+    setRecurringDeleteTarget(null);
+    await removeTemplate(target.recurringTemplateId);
   }
 
   function handleAddQueueItem(title?: string) {
@@ -2022,6 +2207,7 @@ export default function CalendarClient({
             variant="light"
             color="red"
             leftSection={<IconTrash size={15} />}
+            loading={deletingQueueId === item.id || deletingQueueId === item.recurringTemplateId}
             onClick={() => handleDelete(item.id)}
           >
             {item.isRecurring ? 'Remove queue' : 'Remove'}
@@ -2045,6 +2231,51 @@ export default function CalendarClient({
       className={`${classes.pageShell} calendar-page-shell`}
     >
       <Stack gap="md" className={classes.pageStack}>
+        <Modal
+          opened={Boolean(recurringDeleteTarget)}
+          onClose={() => setRecurringDeleteTarget(null)}
+          title="Remove recurring queue"
+          centered
+          radius="lg"
+        >
+          <Stack gap="md">
+            <Text size="sm">
+              Do you want to remove only this scheduled occurrence of{' '}
+              <Text span fw={700}>
+                {recurringDeleteTarget?.title ?? 'this queue'}
+              </Text>
+              , or remove the entire recurring queue?
+            </Text>
+            <Group justify="flex-end" gap="sm">
+              <Button
+                variant="default"
+                radius="xl"
+                onClick={() => setRecurringDeleteTarget(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="light"
+                color="red"
+                radius="xl"
+                loading={Boolean(deletingQueueId)}
+                disabled={!recurringDeleteTarget?.occurrenceKey}
+                onClick={() => void confirmDeleteRecurringOccurrence()}
+              >
+                Just this one
+              </Button>
+              <Button
+                color="red"
+                radius="xl"
+                loading={Boolean(deletingQueueId)}
+                onClick={() => void confirmDeleteRecurringSeries()}
+              >
+                All recurring
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
+
         {selectionRequiredPlatforms.length > 0 ? (
           <Alert
             color="yellow"
@@ -2372,6 +2603,7 @@ export default function CalendarClient({
                               color="dark"
                               radius="xl"
                               aria-label={`Delete ${template.title}`}
+                              loading={deletingQueueId === template.id}
                               onClick={() => void removeTemplate(template.id)}
                               className={classes.templateActionButton}
                             >
@@ -2983,6 +3215,50 @@ export default function CalendarClient({
               </Stack>
             ) : null}
 
+            {templateForm.templateType === 'report' ? (
+              <Stack gap="xs">
+                <SegmentedControl
+                  value={templateForm.reportScope}
+                  data={[
+                    { value: 'active_recent', label: 'Active recent' },
+                    { value: 'this_week', label: 'This week' },
+                    { value: 'specific_campaign', label: 'Specific campaign' },
+                  ]}
+                  onChange={(value) => {
+                    setTemplateForm((current) => ({
+                      ...current,
+                      reportScope: value as QueueTemplateFormState['reportScope'],
+                    }));
+                  }}
+                />
+                {templateForm.reportScope === 'specific_campaign' ? (
+                  <Select
+                    label="Campaign to report"
+                    placeholder={
+                      campaignReviewSelectData.length > 0
+                        ? 'Choose a campaign'
+                        : 'No active recent campaigns found'
+                    }
+                    searchable
+                    data={campaignReviewSelectData}
+                    value={templateForm.reportCampaignExternalId || null}
+                    onChange={(value) => {
+                      setTemplateForm((current) => ({
+                        ...current,
+                        reportCampaignExternalId: value ?? '',
+                      }));
+                    }}
+                  />
+                ) : (
+                  <Text size="sm" c="dimmed">
+                    {templateForm.reportScope === 'this_week'
+                      ? 'DeepVisor will generate a 7-day campaign report for the selected ad account.'
+                      : 'DeepVisor will generate a 30-day campaign report focused on active recent campaigns.'}
+                  </Text>
+                )}
+              </Stack>
+            ) : null}
+
             <Group grow align="flex-start">
               <Select
                 label={selectedTemplateOption.cadenceLabel}
@@ -3129,6 +3405,9 @@ export default function CalendarClient({
                   (templateForm.recurrenceType === 'weekly' &&
                     templateForm.weekdays.length === 0) ||
                   (!templateForm.isIndefinite && !templateForm.endDate) ||
+                  (templateForm.templateType === 'report' &&
+                    templateForm.reportScope === 'specific_campaign' &&
+                    !templateForm.reportCampaignExternalId) ||
                   (templateForm.templateType === 'campaign_review' &&
                     templateForm.campaignReviewScope === 'specific_campaign' &&
                     !templateForm.campaignReviewCampaignExternalId)

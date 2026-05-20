@@ -35,7 +35,7 @@ const ITEM_TYPE_LABELS: Record<CalendarQueueItemType, string> = {
   investigate_efficiency: 'Investigate efficiency',
   launch_test: 'Launch test',
   fix_tracking: 'Fix tracking',
-  review_report: 'Review report',
+  review_report: 'Campaign report',
   campaign_review: 'Campaign review',
 };
 

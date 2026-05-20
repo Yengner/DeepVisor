@@ -259,3 +259,67 @@ export async function deleteCalendarQueueTemplate(
     throw error;
   }
 }
+
+export async function cancelCalendarQueueTemplateOccurrence(
+  supabase: IntelligenceClient,
+  input: {
+    id: string;
+    businessId: string;
+    occurrenceKey: string;
+    userId?: string | null;
+  }
+): Promise<CalendarQueueTemplate> {
+  let selectQuery = (supabase as any)
+    .from('calendar_queue_templates')
+    .select('*')
+    .eq('id', input.id)
+    .eq('business_id', input.businessId);
+
+  if (input.userId) {
+    selectQuery = selectQuery.eq('created_by_user_id', input.userId);
+  }
+
+  const { data: existing, error: selectError } = await selectQuery.maybeSingle();
+
+  if (selectError || !existing) {
+    throw selectError ?? new Error('Queue template was not found.');
+  }
+
+  const payloadJson = asRecord((existing as QueueTemplateRow).payload_json);
+  const cancelledOccurrenceKeys = Array.from(
+    new Set([
+      ...(Array.isArray(payloadJson.cancelledOccurrenceKeys)
+        ? payloadJson.cancelledOccurrenceKeys.filter(
+            (value): value is string => typeof value === 'string'
+          )
+        : []),
+      input.occurrenceKey,
+    ])
+  );
+  const patch = {
+    ...payloadJson,
+    cancelledOccurrenceKeys,
+  };
+
+  let updateQuery = (supabase as any)
+    .from('calendar_queue_templates')
+    .update({
+      payload_json: patch,
+      updated_by_user_id: input.userId ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.id)
+    .eq('business_id', input.businessId);
+
+  if (input.userId) {
+    updateQuery = updateQuery.eq('created_by_user_id', input.userId);
+  }
+
+  const { data, error } = await updateQuery.select('*').single();
+
+  if (error || !data) {
+    throw error ?? new Error('Failed to cancel queue occurrence.');
+  }
+
+  return mapQueueTemplateRow(data as QueueTemplateRow);
+}

@@ -23,35 +23,15 @@ import {
   IconInfoCircle,
   IconPlug,
 } from '@tabler/icons-react';
-import { formatDisplayDate, type NotificationFeedItem } from '@/lib/shared';
+import {
+  formatDisplayDate,
+  formatNotificationPreviewMessage,
+  formatRelativeTime,
+  type NotificationFeedItem,
+} from '@/lib/shared';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { getUserNotifications } from '@/lib/server/actions/user/settings';
 import classes from './NotificationsPage.module.css';
-
-function formatRelativeTime(value: string | null): string {
-  if (!value) {
-    return 'Recently';
-  }
-
-  const date = new Date(value);
-  const deltaMs = Date.now() - date.getTime();
-
-  if (!Number.isFinite(deltaMs)) {
-    return 'Recently';
-  }
-
-  const hours = Math.round(deltaMs / (60 * 60 * 1000));
-  if (hours < 1) {
-    return 'Within the last hour';
-  }
-
-  if (hours < 24) {
-    return `${hours}h ago`;
-  }
-
-  const days = Math.round(hours / 24);
-  return `${days}d ago`;
-}
 
 function formatDateTime(value: string | null): string {
   if (!value) {
@@ -160,8 +140,14 @@ function NotificationCard({ notification }: { notification: NotificationFeedItem
           </Group>
 
           <Text fw={700}>{notification.title}</Text>
-          <Text size="sm" c="dimmed" mt={4}>
-            {notification.message}
+          <Text
+            size="sm"
+            c="dimmed"
+            mt={4}
+            lineClamp={2}
+            title={notification.message}
+          >
+            {formatNotificationPreviewMessage(notification.message)}
           </Text>
 
           <Group gap="xs" mt="md" wrap="wrap">
@@ -172,7 +158,11 @@ function NotificationCard({ notification }: { notification: NotificationFeedItem
               -
             </Text>
             <Text size="xs" c="dimmed">
-              {formatRelativeTime(notification.created_at)}
+              {formatRelativeTime(notification.created_at, {
+                emptyLabel: 'Recently',
+                futureLabel: 'Just now',
+                includeSeconds: true,
+              })}
             </Text>
           </Group>
         </div>
@@ -252,7 +242,15 @@ export default async function NotificationsPage() {
           <SummaryCard
             title="Latest Update"
             value={newestDate ? formatDisplayDate(newestDate) : 'N/A'}
-            detail={newestDate ? formatRelativeTime(newestDate) : 'No notifications yet.'}
+            detail={
+              newestDate
+                ? formatRelativeTime(newestDate, {
+                    emptyLabel: 'Recently',
+                    futureLabel: 'Just now',
+                    includeSeconds: true,
+                  })
+                : 'No notifications yet.'
+            }
             icon={<IconCalendarTime size={18} />}
             color="teal"
           />
