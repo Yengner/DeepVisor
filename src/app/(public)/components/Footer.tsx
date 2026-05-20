@@ -36,6 +36,9 @@ const Footer: FC = () => {
                     <Link href="/privacy-policy" className="transition hover:text-white">
                         Privacy
                     </Link>
+                    <Link href="/terms-of-service" className="transition hover:text-white">
+                        Terms
+                    </Link>
                 </div>
             </Container>
         </footer>

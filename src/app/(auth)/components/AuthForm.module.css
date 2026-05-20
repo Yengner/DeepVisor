@@ -1,0 +1,306 @@
+.loginShell {
+  min-height: 68vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 16px;
+  background: #f8fafc;
+}
+
+.loginCard {
+  width: min(100%, 440px);
+}
+
+.signupShell {
+  position: relative;
+  min-height: calc(100vh - 112px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 560px);
+  gap: 28px;
+  align-items: stretch;
+  padding: 28px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 14%, rgba(37, 99, 235, 0.16), transparent 28%),
+    radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.16), transparent 30%),
+    linear-gradient(135deg, #f8fbff 0%, #eef6ff 46%, #fff8fb 100%);
+}
+
+.signupIntro {
+  position: relative;
+  min-height: 620px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(26px, 5vw, 74px);
+  border-radius: 32px;
+  overflow: hidden;
+  color: #071c3a;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.58)),
+    radial-gradient(circle at 28% 24%, rgba(59, 130, 246, 0.22), transparent 28%),
+    radial-gradient(circle at 72% 36%, rgba(16, 185, 129, 0.18), transparent 26%),
+    radial-gradient(circle at 38% 78%, rgba(249, 115, 22, 0.17), transparent 26%);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.12);
+}
+
+.salonBadge {
+  width: fit-content;
+  margin-bottom: 28px;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+}
+
+.animatedWelcome {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  font-size: clamp(3.8rem, 9vw, 8.6rem);
+  line-height: 0.86;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.animatedWelcome span {
+  display: inline-block;
+  color: transparent;
+  background:
+    linear-gradient(
+      120deg,
+      #2563eb,
+      #06b6d4,
+      #22c55e,
+      #f97316,
+      #ec4899,
+      #2563eb
+    );
+  background-size: 360% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation:
+    welcomeWave 2.8s ease-in-out infinite,
+    welcomeColor 5s linear infinite;
+  animation-delay: calc(var(--letter-index) * 90ms), 0ms;
+  filter: drop-shadow(0 12px 22px rgba(37, 99, 235, 0.12));
+}
+
+.introTitle {
+  max-width: 720px;
+  margin-top: 22px;
+  font-size: clamp(2rem, 4vw, 4.4rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.introCopy {
+  max-width: 660px;
+  margin-top: 20px;
+  font-size: clamp(1.02rem, 2vw, 1.28rem);
+  line-height: 1.7;
+  color: #475569;
+}
+
+.colorOrbit {
+  position: absolute;
+  inset: auto 34px 34px auto;
+  width: 190px;
+  height: 190px;
+  pointer-events: none;
+}
+
+.colorOrbit span {
+  position: absolute;
+  border-radius: 999px;
+  opacity: 0.78;
+  animation: orbitFloat 7s ease-in-out infinite;
+}
+
+.colorOrbit span:nth-child(1) {
+  width: 88px;
+  height: 88px;
+  top: 12px;
+  left: 18px;
+  background: #60a5fa;
+}
+
+.colorOrbit span:nth-child(2) {
+  width: 72px;
+  height: 72px;
+  top: 78px;
+  right: 10px;
+  background: #fb7185;
+  animation-delay: -1.6s;
+}
+
+.colorOrbit span:nth-child(3) {
+  width: 54px;
+  height: 54px;
+  bottom: 4px;
+  left: 56px;
+  background: #34d399;
+  animation-delay: -3.2s;
+}
+
+.flowCard {
+  align-self: center;
+  min-height: 620px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-color: rgba(148, 163, 184, 0.24);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+}
+
+.backButton {
+  width: fit-content;
+  margin-bottom: -6px;
+}
+
+.choiceButton {
+  min-height: 72px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  border-radius: 18px;
+  background: #ffffff;
+  color: #0f172a;
+  text-align: left;
+  font-weight: 800;
+  line-height: 1.25;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.choiceButton:hover,
+.choiceButton:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(37, 99, 235, 0.44);
+  box-shadow: 0 14px 32px rgba(37, 99, 235, 0.12);
+  outline: none;
+}
+
+.choiceButtonSelected {
+  border-color: rgba(37, 99, 235, 0.78);
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.96), rgba(236, 253, 245, 0.84));
+  color: #0b3b83;
+}
+
+.trustItem {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+@keyframes welcomeWave {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  45% {
+    transform: translateY(-12px) rotate(-1.5deg);
+  }
+}
+
+@keyframes welcomeColor {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 360% 50%;
+  }
+}
+
+@keyframes orbitFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(10px, -16px, 0) scale(1.06);
+  }
+}
+
+@media (max-width: 1080px) {
+  .signupShell {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .signupIntro,
+  .flowCard {
+    min-height: auto;
+  }
+
+  .signupIntro {
+    padding: 34px 24px 58px;
+  }
+
+  .colorOrbit {
+    width: 130px;
+    height: 130px;
+    right: 16px;
+    bottom: 14px;
+    transform: scale(0.72);
+    transform-origin: bottom right;
+  }
+}
+
+@media (max-width: 760px) {
+  .loginShell {
+    min-height: 62vh;
+    align-items: flex-start;
+    padding: 18px 10px 88px;
+  }
+
+  .signupShell {
+    min-height: calc(100vh - 92px);
+    gap: 12px;
+    padding: 10px 10px 96px;
+  }
+
+  .signupIntro {
+    border-radius: 24px;
+    padding: 28px 18px 52px;
+  }
+
+  .animatedWelcome {
+    font-size: clamp(3.2rem, 18vw, 5.2rem);
+  }
+
+  .introTitle {
+    font-size: clamp(2rem, 12vw, 3.3rem);
+  }
+
+  .introCopy {
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .flowCard {
+    border-radius: 24px;
+    padding: 18px;
+  }
+
+  .choiceButton {
+    min-height: 58px;
+    border-radius: 15px;
+    padding: 13px 14px;
+  }
+}

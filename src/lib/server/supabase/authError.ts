@@ -8,11 +8,49 @@ type SupabaseAuthErrorLike = {
     name?: string;
 }
 
+function duplicateAuthUserMessage(input: {
+    code?: string;
+    message: string;
+}): string | null {
+    const normalized = input.message.toLowerCase();
+
+    if (
+        input.code === 'phone_exists' ||
+        /\bphone\b/.test(normalized) && /(already|exists|registered|duplicate)/.test(normalized)
+    ) {
+        return 'Duplicate phone number found. Use a different phone number or log in.';
+    }
+
+    if (
+        input.code === 'email_exists' ||
+        /\bemail\b/.test(normalized) && /(already|exists|registered|duplicate)/.test(normalized)
+    ) {
+        return 'Duplicate email found. Use a different email or log in.';
+    }
+
+    if (
+        input.code === 'user_already_exists' ||
+        /(already|exists|registered|duplicate)/.test(normalized)
+    ) {
+        return 'Duplicate account found. Use a different email or phone number, or log in.';
+    }
+
+    return null;
+}
+
 export function fromSupabaseAuthError(e: unknown): ApiResponse<never> {
     const error = e as SupabaseAuthErrorLike;
     const message = error.message ?? 'Supabase authentication error.';
     const status = error.status;
     const code = error.code;
+    const duplicateMessage = duplicateAuthUserMessage({ code, message });
+
+    if (duplicateMessage) {
+        return fail(message, ErrorCode.CONFLICT, {
+            userMessage: duplicateMessage,
+            details: { status, code },
+        });
+    }
 
     // 429 Too many requests
     if (status === 429 || code === "over_request_rate_limit") {
@@ -55,8 +93,8 @@ export function fromSupabaseAuthError(e: unknown): ApiResponse<never> {
         case "email_exists":
         case "user_already_exists":
         case "phone_exists":
-            return fail(message, ErrorCode.VALIDATION_ERROR, {
-                userMessage: "An account with that information already exists.",
+            return fail(message, ErrorCode.CONFLICT, {
+                userMessage: "Duplicate account found. Use a different email or phone number, or log in.",
                 details: { status, code },
             });
 
