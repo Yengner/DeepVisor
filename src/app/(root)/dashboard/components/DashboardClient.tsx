@@ -2726,7 +2726,7 @@ export default function DashboardClient({
   );
   const hasHourlyTrend = hourlyTrendPoints.length > 0;
   const hourlyTodayLabel = formatReadableDate(payload.featuredAdsetHistory.hourlyHistoryDate);
-  const featuredHistoryChartHeight = isPhone ? 330 : FEATURED_HISTORY_CHART_HEIGHT;
+  const featuredHistoryChartHeight = isPhone ? 430 : FEATURED_HISTORY_CHART_HEIGHT;
   const deliverySurfaceChartHeight = isPhone ? 220 : DELIVERY_SURFACE_CHART_HEIGHT;
   const audienceBreakdownChartHeight = isPhone ? 160 : AUDIENCE_BREAKDOWN_CHART_HEIGHT;
   const trendYAxisWidth = isPhone ? 52 : 68;

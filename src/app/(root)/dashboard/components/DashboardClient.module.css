@@ -517,6 +517,29 @@
 }
 
 @media (max-width: 760px) {
+  .page {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: 0;
+  }
+
+  .topBar,
+  .panel,
+  .chartPanel,
+  .metricCard,
+  .emptyPanel {
+    background: rgba(255, 255, 255, 0.97);
+  }
+
+  .topBar {
+    padding-inline: 12px;
+  }
+
+  .chartPanel,
+  .panel {
+    padding-inline: 8px;
+  }
+
   .surfaceToolbar {
     padding-bottom: 12px;
   }
@@ -561,6 +584,19 @@
 
   .metricValue {
     font-size: 1.35rem;
+  }
+
+  .historyChartBody {
+    margin-inline: -8px;
+  }
+
+  .historyChartScrollArea {
+    margin-inline: -8px;
+    width: calc(100% + 16px);
+  }
+
+  .historyChartScrollableCanvas {
+    padding-inline: 0;
   }
 
   .summaryLabel {

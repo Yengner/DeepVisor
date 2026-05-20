@@ -137,11 +137,13 @@
     height: auto;
     min-height: calc(100dvh - 0.75rem);
     padding: 0 10px;
+    overflow: visible;
   }
 
   .tableSurface {
     min-height: calc(100dvh - 0.75rem);
     border-radius: 18px;
+    overflow: visible;
   }
 
   .tableHeader {
@@ -185,7 +187,7 @@
   }
 
   .tablePanelInner {
-    padding: 10px 10px 18px;
+    padding: 10px 10px calc(9rem + env(safe-area-inset-bottom));
   }
 
   .desktopDataTable {
@@ -196,5 +198,6 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding-bottom: calc(8rem + env(safe-area-inset-bottom));
   }
 }

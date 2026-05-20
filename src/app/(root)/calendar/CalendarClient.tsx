@@ -194,6 +194,32 @@ function formatWeekRangeLabel(days: Date[]): string {
   return `${start.toLocaleDateString('en-US', { month: 'short' })} ${start.getDate()}, ${start.getFullYear()} - ${end.toLocaleDateString('en-US', { month: 'short' })} ${end.getDate()}, ${end.getFullYear()}`;
 }
 
+function formatMobileMonthLabel(date: Date): string {
+  return date.toLocaleDateString('en-US', { month: 'long' });
+}
+
+function formatMobileWeekRangeLabel(weekStart: Date): string {
+  const start = startOfDay(weekStart);
+  const end = addDays(start, 6);
+  const startMonth = start.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+  const endMonth = end.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+
+  if (startMonth === endMonth) {
+    return `${startMonth} ${start.getDate()} - ${end.getDate()}`;
+  }
+
+  return `${startMonth} ${start.getDate()} - ${endMonth} ${end.getDate()}`;
+}
+
+function mobileDayParts(dayKey: string): { weekday: string; day: string } {
+  const date = new Date(`${dayKey}T00:00:00`);
+
+  return {
+    weekday: date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(),
+    day: String(date.getDate()),
+  };
+}
+
 function formatSidebarDayLabel(value: string): string {
   const date = new Date(`${value}T00:00:00`);
   return date.toLocaleDateString('en-US', {
@@ -1252,6 +1278,10 @@ export default function CalendarClient({
         : formatMonthYearLabel(monthStart),
     [monthStart, planView, weekDays]
   );
+  const mobileCalendarMonthLabel = useMemo(
+    () => formatMobileMonthLabel(monthStart),
+    [monthStart]
+  );
 
   const visibleCalendarItemCount = useMemo(
     () =>
@@ -1268,18 +1298,62 @@ export default function CalendarClient({
       weekDayKeys.flatMap((dayKey) => (weekItemsByDay.get(dayKey) ?? []).map((item) => ({ dayKey, item }))),
     [weekDayKeys, weekItemsByDay]
   );
-  const mobileAgendaItemsByDay = useMemo(
-    () =>
-      visibleCalendarDayKeys
-        .map((dayKey) => ({
+  const mobileScheduleWeekGroups = useMemo(() => {
+    const itemsByDay = new Map<string, CalendarRenderItem[]>();
+
+    renderedQueueItems.forEach((item) => {
+      const bucket = itemsByDay.get(item.day) ?? [];
+      bucket.push(item);
+      itemsByDay.set(item.day, bucket);
+    });
+
+    const groups = new Map<
+      string,
+      {
+        weekStart: Date;
+        label: string;
+        days: Array<{
+          dayKey: string;
+          date: Date;
+          isToday: boolean;
+          items: CalendarRenderItem[];
+        }>;
+      }
+    >();
+
+    monthDays
+      .filter((day) => isSameMonth(day, monthStart))
+      .forEach((date) => {
+        const dayKey = toIsoDay(date);
+        const dayItems = [...(itemsByDay.get(dayKey) ?? [])].sort(compareQueueItems);
+
+        if (dayItems.length === 0) {
+          return;
+        }
+
+        const weekStartDate = startOfWeek(date);
+        const weekKey = toIsoDay(weekStartDate);
+        const group =
+          groups.get(weekKey) ??
+          {
+            weekStart: weekStartDate,
+            label: formatMobileWeekRangeLabel(weekStartDate),
+            days: [],
+          };
+
+        group.days.push({
           dayKey,
-          items: renderedQueueItems
-            .filter((item) => item.day === dayKey)
-            .sort(compareQueueItems),
-        }))
-        .filter((group) => group.items.length > 0),
-    [renderedQueueItems, visibleCalendarDayKeys]
-  );
+          date,
+          isToday: isSameDay(date, today),
+          items: dayItems,
+        });
+        groups.set(weekKey, group);
+      });
+
+    return Array.from(groups.values()).sort(
+      (left, right) => left.weekStart.getTime() - right.weekStart.getTime()
+    );
+  }, [monthDays, monthStart, renderedQueueItems, today]);
   const visibleQueueTemplates = useMemo(
     () => (showAllQueueTemplates ? queueTemplates : queueTemplates.slice(0, 2)),
     [queueTemplates, showAllQueueTemplates]
@@ -1763,9 +1837,17 @@ export default function CalendarClient({
   }
 
   function shiftCalendar(direction: -1 | 1) {
-    setCalendarCursor((current) =>
-      planView === 'weekly' ? addDays(current, direction * 7) : addMonths(current, direction)
-    );
+    setCalendarCursor((current) => {
+      const shouldUseMobileScheduleNavigation =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(max-width: 760px)').matches;
+
+      if (shouldUseMobileScheduleNavigation) {
+        return addMonths(current, direction);
+      }
+
+      return planView === 'weekly' ? addDays(current, direction * 7) : addMonths(current, direction);
+    });
   }
 
   function shiftMiniCalendar(direction: -1 | 1) {
@@ -2334,11 +2416,12 @@ export default function CalendarClient({
                   <IconChevronRight size={16} />
                 </ActionIcon>
                 <Text className={classes.calendarRangeTitle} fw={800}>
-                  {calendarRangeLabel}
+                  <span className={classes.desktopRangeTitle}>{calendarRangeLabel}</span>
+                  <span className={classes.mobileRangeTitle}>{mobileCalendarMonthLabel}</span>
                 </Text>
               </div>
 
-              <Group gap="sm" wrap="nowrap" justify="flex-end">
+              <Group gap="sm" wrap="nowrap" justify="flex-end" className={classes.calendarViewSwitch}>
                 <SegmentedControl
                   value={planView}
                   onChange={(value) => setPlanView(value as 'weekly' | 'monthly')}
@@ -2367,69 +2450,98 @@ export default function CalendarClient({
               </Group>
             </div>
 
-            <div className={classes.mobileAgendaShell}>
-              {mobileAgendaItemsByDay.length > 0 ? (
-                mobileAgendaItemsByDay.map(({ dayKey, items }) => (
-                  <Paper key={dayKey} withBorder radius="xl" p="md" className={classes.mobileAgendaDay}>
-                    <Group justify="space-between" mb="sm">
-                      <Text fw={800}>{formatSidebarDayLabel(dayKey)}</Text>
-                      <Badge color="blue" variant="light">
-                        {items.length}
-                      </Badge>
-                    </Group>
-                    <Stack gap="xs">
-                      {items.map((item) => (
-                        <Popover
-                          key={item.renderId}
-                          opened={selectedCalendarItemId === item.id}
-                          onChange={(opened) => {
-                            if (!opened && selectedCalendarItemId === item.id) {
-                              setSelectedCalendarItemId(null);
-                            }
-                          }}
-                          position="bottom"
-                          offset={8}
-                          radius="18px"
-                          shadow="md"
-                          width="min(calc(100vw - 32px), 360px)"
-                          withinPortal
-                        >
-                          <Popover.Target>
-                            <button
-                              type="button"
-                              className={[
-                                classes.mobileAgendaItem,
-                                queueItemMarkerClassName(item),
-                                selectedCalendarItemId === item.id
-                                  ? classes.selectedMonthEvent
-                                  : '',
-                              ]
-                                .filter(Boolean)
-                                .join(' ')}
-                              onClick={() => handleCalendarItemClick(item.id)}
-                            >
-                              <span className={classes.mobileAgendaTime}>{item.time}</span>
-                              <span className={classes.mobileAgendaBody}>
-                                <span className={classes.mobileAgendaTitle}>{item.title}</span>
-                                <span className={classes.mobileAgendaMeta}>
-                                  {item.channel} · {queueSourceLabel(item.source)}
-                                </span>
+            <div className={classes.mobileScheduleShell}>
+              {mobileScheduleWeekGroups.length > 0 ? (
+                mobileScheduleWeekGroups.map((weekGroup) => (
+                  <section key={toIsoDay(weekGroup.weekStart)} className={classes.mobileScheduleWeek}>
+                    <Text className={classes.mobileScheduleWeekLabel}>
+                      {weekGroup.label}
+                    </Text>
+                    <Stack gap={0}>
+                      {weekGroup.days.map((day) => {
+                        const dayParts = mobileDayParts(day.dayKey);
+
+                        return (
+                          <div key={day.dayKey} className={classes.mobileScheduleDayRow}>
+                            <div className={classes.mobileScheduleDayRail}>
+                              <span
+                                className={[
+                                  classes.mobileScheduleWeekday,
+                                  day.isToday ? classes.mobileScheduleTodayText : '',
+                                ]
+                                  .filter(Boolean)
+                                  .join(' ')}
+                              >
+                                {dayParts.weekday}
                               </span>
-                            </button>
-                          </Popover.Target>
-                          <Popover.Dropdown className={classes.eventPopoverDropdown}>
-                            {renderCalendarItemPopoverContent(item.originalItem)}
-                          </Popover.Dropdown>
-                        </Popover>
-                      ))}
+                              <span
+                                className={[
+                                  classes.mobileScheduleDate,
+                                  day.isToday ? classes.mobileScheduleDateToday : '',
+                                ]
+                                  .filter(Boolean)
+                                  .join(' ')}
+                              >
+                                {dayParts.day}
+                              </span>
+                            </div>
+
+                            <div className={classes.mobileScheduleContent}>
+                              {day.items.map((item) => (
+                                <Popover
+                                  key={item.renderId}
+                                  opened={selectedCalendarItemId === item.id}
+                                  onChange={(opened) => {
+                                    if (!opened && selectedCalendarItemId === item.id) {
+                                      setSelectedCalendarItemId(null);
+                                    }
+                                  }}
+                                  position="bottom"
+                                  offset={8}
+                                  radius="18px"
+                                  shadow="md"
+                                  width="min(calc(100vw - 32px), 360px)"
+                                  withinPortal
+                                >
+                                  <Popover.Target>
+                                    <button
+                                      type="button"
+                                      className={[
+                                        classes.mobileScheduleEventCard,
+                                        queueItemMarkerClassName(item),
+                                        selectedCalendarItemId === item.id
+                                          ? classes.mobileScheduleSelected
+                                          : '',
+                                      ]
+                                        .filter(Boolean)
+                                        .join(' ')}
+                                      onClick={() => handleCalendarItemClick(item.id)}
+                                    >
+                                      <span className={classes.mobileScheduleEventTitle}>
+                                        {item.title}
+                                      </span>
+                                      <span className={classes.mobileScheduleEventTime}>
+                                        {formatEventTimeRange(item.originalItem)}
+                                      </span>
+                                    </button>
+                                  </Popover.Target>
+                                  <Popover.Dropdown className={classes.eventPopoverDropdown}>
+                                    {renderCalendarItemPopoverContent(item.originalItem)}
+                                  </Popover.Dropdown>
+                                </Popover>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </Stack>
-                  </Paper>
+                  </section>
                 ))
               ) : (
                 <div className={classes.emptyState}>
-                  <Text fw={700}>No queued work is scheduled in this range</Text>
+                  <Text fw={700}>No queued work is scheduled in this month</Text>
                   <Text size="sm" c="dimmed" mt={4}>
-                    Create a queue or move the calendar to another range.
+                    Create a queue or move to another month.
                   </Text>
                 </div>
               )}
@@ -2717,6 +2829,14 @@ export default function CalendarClient({
           </div>
         </section>
         </div>
+        <button
+          type="button"
+          className={classes.mobileCalendarFab}
+          aria-label="Create queue"
+          onClick={() => handleAddQueueItem()}
+        >
+          <IconPlus size={32} stroke={2.4} />
+        </button>
         <Modal
           opened={templateTypePickerOpened}
           onClose={() => setTemplateTypePickerOpened(false)}

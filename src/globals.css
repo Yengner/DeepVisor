@@ -219,11 +219,26 @@
     .app-platform-main:has(.reports-page-shell),
     .app-platform-main:has(.campaigns-page-shell) {
       padding: 0.5rem 0 5.5rem;
-      padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+      padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+    }
+
+    .app-platform-main:has(.calendar-page-shell) {
+      overflow-x: hidden;
+      overflow-y: hidden;
+      padding: 0;
+    }
+
+    .app-platform-main .dashboard-page-shell.mantine-Container-root {
+      padding-left: 0;
+      padding-right: 0;
     }
 
     .app-platform-main:has(.campaigns-page-shell) {
       overflow-y: auto;
+    }
+
+    .app-platform-main .mantine-Container-root {
+      padding-bottom: calc(7rem + env(safe-area-inset-bottom));
     }
   }
 
