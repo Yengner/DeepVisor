@@ -35,7 +35,7 @@ export async function POST(_request: NextRequest) {
       success: true,
       refreshedCount: result.refreshedCount,
       failedCount: result.failedCount,
-      message: 'Sync completed.',
+      message: result.refreshedCount > 0 ? 'Sync queued.' : 'No syncable Meta ad account found.',
     } satisfies RefreshIntegrationsResponse);
   } catch (error) {
     console.error('Sync refresh failed:', error);

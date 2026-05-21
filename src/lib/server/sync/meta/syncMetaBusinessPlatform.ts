@@ -7,6 +7,7 @@ import {
   ensureAdAccountSyncStates,
   failHistoricalSyncJob,
   markAdAccountHistoricalSyncSucceeded,
+  updateHistoricalSyncJobProgress,
 } from '@/lib/server/repositories/ad_accounts/syncState';
 import type { BusinessDataPolicy } from '@/lib/server/repositories/business_data_policies/getBusinessDataPolicy';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
@@ -270,6 +271,14 @@ export async function syncMetaBusinessPlatform(input: {
   });
 
   try {
+    await updateHistoricalSyncJobProgress(input.supabase, {
+      jobId: job.id,
+      stage: 'resolving_account',
+      message: 'Resolved selected Meta ad account.',
+      windowSince: performanceWindow.since,
+      windowUntil: performanceWindow.until,
+    });
+
     // Step 02: full historical sync for the selected primary account only.
     const historicalScope = [primaryAdAccount];
 
@@ -283,6 +292,14 @@ export async function syncMetaBusinessPlatform(input: {
         syncedAt: input.syncedAt,
       })
     );
+    await updateHistoricalSyncJobProgress(input.supabase, {
+      jobId: job.id,
+      stage: 'syncing_campaigns',
+      message: 'Synced campaign structure.',
+      counts: {
+        campaignsSynced: campaigns.count,
+      },
+    });
 
     const adsets = await runMetaSyncStage('ad set', () =>
       syncMetaAdsets({
@@ -295,6 +312,15 @@ export async function syncMetaBusinessPlatform(input: {
         syncedAt: input.syncedAt,
       })
     );
+    await updateHistoricalSyncJobProgress(input.supabase, {
+      jobId: job.id,
+      stage: 'syncing_adsets',
+      message: 'Synced ad set structure.',
+      counts: {
+        campaignsSynced: campaigns.count,
+        adsetsSynced: adsets.count,
+      },
+    });
 
     const ads = await runMetaSyncStage('ad', () =>
       syncMetaAds({
@@ -308,6 +334,16 @@ export async function syncMetaBusinessPlatform(input: {
         syncedAt: input.syncedAt,
       })
     );
+    await updateHistoricalSyncJobProgress(input.supabase, {
+      jobId: job.id,
+      stage: 'syncing_ads',
+      message: 'Synced ad structure.',
+      counts: {
+        campaignsSynced: campaigns.count,
+        adsetsSynced: adsets.count,
+        adsSynced: ads.count,
+      },
+    });
 
     const creatives = await runMetaSyncStage('creative', () =>
       syncMetaAdCreatives({
@@ -322,6 +358,17 @@ export async function syncMetaBusinessPlatform(input: {
         syncedAt: input.syncedAt,
       })
     );
+    await updateHistoricalSyncJobProgress(input.supabase, {
+      jobId: job.id,
+      stage: 'syncing_creatives',
+      message: 'Synced creative assets.',
+      counts: {
+        campaignsSynced: campaigns.count,
+        adsetsSynced: adsets.count,
+        adsSynced: ads.count,
+        creativesSynced: creatives.adCreatives,
+      },
+    });
 
     const performance = await runMetaSyncStage('performance', () =>
       syncMetaPerformance({
@@ -336,6 +383,28 @@ export async function syncMetaBusinessPlatform(input: {
         syncedAt: input.syncedAt,
       })
     );
+    const performanceRowsSynced =
+      performance.campaignPerformanceRows +
+      performance.adsetPerformanceRows +
+      performance.adPerformanceRows +
+      performance.metaHourlyPerformanceRows;
+    await updateHistoricalSyncJobProgress(input.supabase, {
+      jobId: job.id,
+      stage: 'syncing_performance_windows',
+      message: 'Synced recent performance.',
+      windowSince: performanceWindow.since,
+      windowUntil: performanceWindow.until,
+      windowsCompleted: 1,
+      actualStartDate: performance.firstActivityDate,
+      actualEndDate: performance.insightsSyncedThrough ?? performance.latestActivityDate,
+      counts: {
+        campaignsSynced: campaigns.count,
+        adsetsSynced: adsets.count,
+        adsSynced: ads.count,
+        creativesSynced: creatives.adCreatives,
+        performanceRowsSynced,
+      },
+    });
     const completedAt = new Date().toISOString();
 
     await Promise.all([
@@ -348,11 +417,7 @@ export async function syncMetaBusinessPlatform(input: {
         adsetsSynced: adsets.count,
         adsSynced: ads.count,
         creativesSynced: creatives.adCreatives,
-        performanceRowsSynced:
-          performance.campaignPerformanceRows +
-          performance.adsetPerformanceRows +
-          performance.adPerformanceRows +
-          performance.metaHourlyPerformanceRows,
+        performanceRowsSynced,
       }),
       markAdAccountHistoricalSyncSucceeded(input.supabase, {
         adAccountId: primaryAdAccount.id,

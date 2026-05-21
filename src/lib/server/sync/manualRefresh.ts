@@ -8,9 +8,11 @@ import {
   toSupportedIntegrationPlatform,
 } from '@/lib/shared';
 import { createAdminClient } from '@/lib/server/supabase/admin';
+import { createOrReuseQueuedSyncJob } from '@/lib/server/repositories/ad_accounts/syncState';
+import { getPrimaryAdAccountSelection } from '@/lib/server/integrations/service';
 import type { Database, Json } from '@/lib/shared/types/supabase';
 import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integrations';
-import { syncConnectedBusinessPlatforms } from './syncBusinessPlatform';
+import { resolveMetaBackfillWindow } from './meta/client';
 
 const RATE_LIMIT_DETAIL_KEY = 'manual_sync_rate_limit';
 const BASE_COOLDOWN_MS = 30_000;
@@ -206,6 +208,75 @@ async function persistRateLimitState(input: {
   }
 }
 
+async function enqueueManualRefreshJobs(integrations: IntegrationRow[]): Promise<{
+  queuedCount: number;
+  failedCount: number;
+}> {
+  const supabase = createAdminClient();
+  let queuedCount = 0;
+  let failedCount = 0;
+
+  for (const integration of integrations) {
+    const platform = Array.isArray(integration.platforms)
+      ? integration.platforms[0]
+      : integration.platforms;
+    const platformKey = toSupportedIntegrationPlatform(platform?.key);
+
+    if (platformKey !== 'meta') {
+      continue;
+    }
+
+    try {
+      const primarySelection = getPrimaryAdAccountSelection(integration.integration_details);
+      if (!primarySelection.externalAccountId) {
+        throw new Error('Meta integration has no selected ad account');
+      }
+
+      const { data: adAccount, error: adAccountError } = await supabase
+        .from('ad_accounts')
+        .select('id')
+        .eq('business_id', integration.business_id)
+        .eq('platform_id', integration.platform_id)
+        .eq('external_account_id', primarySelection.externalAccountId)
+        .maybeSingle();
+
+      if (adAccountError) {
+        throw adAccountError;
+      }
+
+      if (!adAccount?.id) {
+        throw new Error('Selected Meta ad account is not registered');
+      }
+
+      const syncWindow = resolveMetaBackfillWindow(30);
+      await createOrReuseQueuedSyncJob(supabase, {
+        businessId: integration.business_id,
+        platformIntegrationId: integration.id,
+        adAccountId: adAccount.id,
+        requestedStartDate: syncWindow.since,
+        requestedEndDate: syncWindow.until,
+        syncType: 'manual_refresh',
+        metadata: {
+          externalAccountId: primarySelection.externalAccountId,
+          queuedFrom: 'manual_refresh',
+          trigger: 'manual_refresh',
+          syncMode: 'default',
+          current_step: 'queued',
+          date_cursor: syncWindow.since,
+          attempt: 0,
+          last_processed_ids: {},
+        },
+      });
+      queuedCount += 1;
+    } catch (error) {
+      failedCount += 1;
+      console.error('Failed to enqueue manual Meta sync job:', error);
+    }
+  }
+
+  return { queuedCount, failedCount };
+}
+
 export async function runManualBusinessSync(input: {
   businessId: string;
   platformKey?: SupportedIntegrationPlatform;
@@ -232,15 +303,11 @@ export async function runManualBusinessSync(input: {
     requestedAt,
   });
 
-  const result = await syncConnectedBusinessPlatforms({
-    businessId: input.businessId,
-    trigger: 'manual_refresh',
-    platformKey: input.platformKey,
-  });
+  const result = await enqueueManualRefreshJobs(integrations);
 
   return {
     allowed: true,
-    refreshedCount: result.successCount,
+    refreshedCount: result.queuedCount,
     failedCount: result.failedCount,
   };
 }

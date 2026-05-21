@@ -65,7 +65,18 @@ type SearchDrivenFlow = {
   requiresAccountSelection: boolean;
   integrationId: string | null;
   externalAccountId: string | null;
+  syncJobId: string | null;
   autoSync: boolean;
+};
+
+type FirstSyncJobResponse = {
+  success?: boolean;
+  data?: {
+    job?: FirstSyncJobStatus | null;
+  };
+  error?: {
+    userMessage?: string;
+  };
 };
 
 function readFlowState(searchParams: { get: (key: string) => string | null }): SearchDrivenFlow {
@@ -75,6 +86,7 @@ function readFlowState(searchParams: { get: (key: string) => string | null }): S
     requiresAccountSelection: searchParams.get('requires_account_selection') === '1',
     integrationId: searchParams.get('integrationId'),
     externalAccountId: searchParams.get('externalAccountId'),
+    syncJobId: searchParams.get('sync_job_id'),
     autoSync: searchParams.get('auto_sync') === '1',
   };
 }
@@ -130,6 +142,38 @@ export default function MetaIntegrationFlow({
   const finishFlowWithSuccess = async () => {
     toast.success('Meta connected successfully.');
     await finishFlow(onConnected);
+  };
+
+  const loadAndTrackQueuedSyncJob = async (input: {
+    integrationId: string;
+    externalAccountId: string | null;
+    syncJobId: string;
+  }) => {
+    try {
+      const response = await fetch(`/api/integrations/meta/sync-jobs/${input.syncJobId}`);
+      const body = (await response.json().catch(() => ({}))) as FirstSyncJobResponse;
+
+      if (!response.ok || !body?.success || !body.data?.job) {
+        throw new Error(body?.error?.userMessage || 'Failed to load Meta sync job');
+      }
+
+      const job = body.data.job;
+      trackFirstSyncJob({
+        jobId: job.jobId,
+        integrationId: input.integrationId,
+        adAccountId: job.adAccountId,
+        externalAccountId: input.externalAccountId ?? '',
+        adAccountName: null,
+        platformKey: 'meta',
+        platformName: 'Meta',
+        job,
+      });
+      toast.success('Meta connected. Full history sync queued.');
+      await finishFlow(onConnected);
+    } catch (error) {
+      toast.success('Meta connected. Your sync job is queued.');
+      await finishFlow(onConnected);
+    }
   };
 
   const loadMetaAccountOptions = async (input: {
@@ -304,6 +348,15 @@ export default function MetaIntegrationFlow({
     if (flow.status === 'error') {
       toast.error('Failed to connect Meta. Please try again.');
       void finishFlow();
+      return;
+    }
+
+    if (flow.syncJobId && flow.integrationId) {
+      void loadAndTrackQueuedSyncJob({
+        integrationId: flow.integrationId,
+        externalAccountId: flow.externalAccountId,
+        syncJobId: flow.syncJobId,
+      });
       return;
     }
 

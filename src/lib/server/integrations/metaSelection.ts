@@ -2,11 +2,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { NextResponse } from 'next/server';
 import {
   buildFirstSyncJobStatus,
+  createOrReuseQueuedSyncJob,
   createOrReuseFirstSyncJob,
   getAdAccountSyncCoverage,
 } from '@/lib/server/repositories/ad_accounts/syncState';
 import type { Database } from '@/lib/shared/types/supabase';
-import { syncBusinessPlatform } from '@/lib/server/sync';
 import type { SyncTrigger } from '@/lib/server/sync/types';
 import { FULL_HISTORY_BACKFILL_DAYS } from '@/lib/server/sync/types';
 import { resolveMetaBackfillWindow } from '@/lib/server/sync/meta/client';
@@ -36,7 +36,7 @@ export type SyncSelectedMetaAdAccountResult = {
   adAccountName: string | null;
   syncCoverage: SyncCoverage | null;
   firstSyncJob: FirstSyncJobStatus | null;
-  counts: Awaited<ReturnType<typeof syncBusinessPlatform>>['counts'] | null;
+  counts: null;
   startedAt: string | null;
   completedAt: string | null;
 };
@@ -79,7 +79,7 @@ export async function syncSelectedMetaAdAccount(
     : syncedAccount?.ad_account_sync_state ?? null;
   let syncCoverage: SyncCoverage | null = null;
   let firstSyncJob: FirstSyncJobStatus | null = null;
-  let counts: Awaited<ReturnType<typeof syncBusinessPlatform>>['counts'] | null = null;
+  const counts = null;
   let startedAt: string | null = null;
   let completedAt: string | null = null;
 
@@ -100,18 +100,26 @@ export async function syncSelectedMetaAdAccount(
       syncCoverage = await getAdAccountSyncCoverage(input.supabase, syncedAccount.id);
       firstSyncJob = buildFirstSyncJobStatus(job, syncCoverage);
     } else {
-      const summary = await syncBusinessPlatform({
+      const syncWindow = resolveMetaBackfillWindow(input.backfillDays ?? 7);
+      await createOrReuseQueuedSyncJob(input.supabase, {
         businessId: input.businessId,
-        integrationId: input.integrationId,
-        trigger: input.trigger,
-        backfillDays: input.backfillDays ?? 7,
-        syncMode: 'default',
-        primaryExternalAccountId: input.externalAccountId,
+        platformIntegrationId: input.integrationId,
+        adAccountId: syncedAccount.id,
+        requestedStartDate: syncWindow.since,
+        requestedEndDate: syncWindow.until,
+        syncType: input.trigger === 'manual_refresh' ? 'manual_refresh' : 'incremental',
+        metadata: {
+          externalAccountId: input.externalAccountId,
+          queuedFrom: 'meta_selection',
+          trigger: input.trigger,
+          syncMode: 'default',
+          current_step: 'queued',
+          date_cursor: syncWindow.since,
+          attempt: 0,
+          last_processed_ids: {},
+        },
       });
       syncCoverage = await getAdAccountSyncCoverage(input.supabase, syncedAccount.id);
-      counts = summary.counts;
-      startedAt = summary.startedAt;
-      completedAt = summary.completedAt;
     }
   }
 

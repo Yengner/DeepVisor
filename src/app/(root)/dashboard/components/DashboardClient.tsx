@@ -2726,12 +2726,12 @@ export default function DashboardClient({
   );
   const hasHourlyTrend = hourlyTrendPoints.length > 0;
   const hourlyTodayLabel = formatReadableDate(payload.featuredAdsetHistory.hourlyHistoryDate);
-  const featuredHistoryChartHeight = isPhone ? 430 : FEATURED_HISTORY_CHART_HEIGHT;
-  const deliverySurfaceChartHeight = isPhone ? 220 : DELIVERY_SURFACE_CHART_HEIGHT;
-  const audienceBreakdownChartHeight = isPhone ? 160 : AUDIENCE_BREAKDOWN_CHART_HEIGHT;
-  const trendYAxisWidth = isPhone ? 52 : 68;
-  const expandedHourlyPointWidth = isPhone ? 22 : EXPANDED_HOURLY_POINT_WIDTH;
-  const expandedHourlyMinWidth = isPhone ? 960 : EXPANDED_HOURLY_MIN_WIDTH;
+  const featuredHistoryChartHeight = isPhone ? 520 : FEATURED_HISTORY_CHART_HEIGHT;
+  const deliverySurfaceChartHeight = isPhone ? 270 : DELIVERY_SURFACE_CHART_HEIGHT;
+  const audienceBreakdownChartHeight = isPhone ? 220 : AUDIENCE_BREAKDOWN_CHART_HEIGHT;
+  const trendYAxisWidth = isPhone ? 44 : 68;
+  const expandedHourlyPointWidth = isPhone ? 28 : EXPANDED_HOURLY_POINT_WIDTH;
+  const expandedHourlyMinWidth = isPhone ? 1120 : EXPANDED_HOURLY_MIN_WIDTH;
 
   const trendChart = useMemo(
     () =>
@@ -2812,8 +2812,8 @@ export default function DashboardClient({
   );
   const trendXAxisProps = useMemo(() => {
     const axisPadding = {
-      left: isPhone ? 14 : 18,
-      right: isPhone ? 22 : 30,
+      left: isPhone ? 8 : 18,
+      right: isPhone ? 10 : 30,
     };
 
     if (historyGranularity === 'hourly' && hourlyRangeMode === 'expanded') {
@@ -2833,13 +2833,29 @@ export default function DashboardClient({
       padding: axisPadding,
     };
   }, [expandedHourlyTickValues, historyGranularity, hourlyRangeMode, isPhone]);
+  const trendDotProps = useMemo(
+    () => ({
+      r: isPhone ? 4 : 3,
+      strokeWidth: isPhone ? 2.5 : 2,
+      fill: '#ffffff',
+    }),
+    [isPhone]
+  );
+  const trendActiveDotProps = useMemo(
+    () => ({
+      r: isPhone ? 8 : 5,
+      strokeWidth: isPhone ? 3 : 2,
+      fill: '#ffffff',
+    }),
+    [isPhone]
+  );
   const trendLineChartProps = useMemo(
     () => ({
       margin: {
-        top: 8,
-        right: isPhone ? 24 : 32,
-        bottom: 8,
-        left: isPhone ? 4 : 8,
+        top: isPhone ? 12 : 8,
+        right: isPhone ? 8 : 32,
+        bottom: isPhone ? 10 : 8,
+        left: isPhone ? 0 : 8,
       },
     }),
     [isPhone]
@@ -4016,16 +4032,8 @@ export default function DashboardClient({
                               yAxisProps={{ width: trendYAxisWidth }}
                               xAxisProps={trendXAxisProps}
                               tooltipProps={trendTooltipProps}
-                              dotProps={{
-                                r: 3,
-                                strokeWidth: 2,
-                                fill: '#ffffff',
-                              }}
-                              activeDotProps={{
-                                r: 5,
-                                strokeWidth: 2,
-                                fill: '#ffffff',
-                              }}
+                              dotProps={trendDotProps}
+                              activeDotProps={trendActiveDotProps}
                               lineProps={(series) => ({
                                 strokeDasharray: series.strokeDasharray,
                                 strokeLinecap: 'round',
@@ -4071,16 +4079,8 @@ export default function DashboardClient({
                           yAxisProps={{ width: trendYAxisWidth }}
                           xAxisProps={trendXAxisProps}
                           tooltipProps={trendTooltipProps}
-                          dotProps={{
-                            r: 3,
-                            strokeWidth: 2,
-                            fill: '#ffffff',
-                          }}
-                          activeDotProps={{
-                            r: 5,
-                            strokeWidth: 2,
-                            fill: '#ffffff',
-                          }}
+                          dotProps={trendDotProps}
+                          activeDotProps={trendActiveDotProps}
                           lineProps={(series) => ({
                             strokeDasharray: series.strokeDasharray,
                             strokeLinecap: 'round',

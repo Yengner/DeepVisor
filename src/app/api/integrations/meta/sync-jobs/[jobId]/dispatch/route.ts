@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { getAccountSyncJobById } from '@/lib/server/repositories/ad_accounts/syncState';
 import { createAdminClient } from '@/lib/server/supabase/admin';
-import { processMetaBackfillJobs } from '@/lib/server/sync/meta/processBackfillJobs';
 import { ErrorCode, fail, ok } from '@/lib/shared';
 
 /**
- * Best-effort dispatch for a queued first-sync job so the UI can nudge the background worker immediately.
+ * Acknowledges a queued first-sync job without starting long-running work in the Vercel request.
  *
- * The durable source of truth remains the queued job row in Postgres. If this dispatch attempt fails
- * or the runtime stops early, cron can still claim and finish the same job later.
+ * The durable source of truth is the queued job row in Postgres. The external sync worker/cron
+ * claims queued `account_sync_jobs`; this route intentionally does not run sync work after returning.
  *
  * @param _request - Next.js request object. Authorization is derived from the current business context.
  * @param context - Dynamic route params containing the queued first-sync job id.
@@ -38,15 +37,6 @@ export async function POST(
         fail('Meta first-sync job not found', ErrorCode.NOT_FOUND),
         { status: 404 }
       );
-    }
-
-    if (job.status === 'queued') {
-      void processMetaBackfillJobs({
-        limit: 1,
-        targetJobId: job.id,
-      }).catch((error) => {
-        console.error('Failed to dispatch Meta first-sync job:', error);
-      });
     }
 
     return NextResponse.json(

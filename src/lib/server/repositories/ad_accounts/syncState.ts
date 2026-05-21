@@ -33,6 +33,12 @@ type HistoricalSyncProgress = {
 type HistoricalSyncJobMetadata = {
   externalAccountId?: string | null;
   queuedFrom?: string | null;
+  trigger?: string | null;
+  syncMode?: string | null;
+  currentStep?: string | null;
+  dateCursor?: string | null;
+  attempt?: number;
+  lastProcessedIds?: Record<string, unknown>;
   progress?: Partial<HistoricalSyncProgress>;
 };
 
@@ -94,6 +100,12 @@ function parseHistoricalSyncJobMetadata(value: Json | null | undefined): Histori
   return {
     externalAccountId: asNullableString(metadata.externalAccountId),
     queuedFrom: asNullableString(metadata.queuedFrom),
+    trigger: asNullableString(metadata.trigger),
+    syncMode: asNullableString(metadata.syncMode),
+    currentStep: asNullableString(metadata.current_step ?? metadata.currentStep),
+    dateCursor: asNullableString(metadata.date_cursor ?? metadata.dateCursor),
+    attempt: asNonNegativeInteger(metadata.attempt, 0),
+    lastProcessedIds: asRecord(metadata.last_processed_ids ?? metadata.lastProcessedIds),
     progress: {
       stage,
       message: asNullableString(progress.message),
@@ -120,6 +132,12 @@ function serializeHistoricalSyncJobMetadata(
   return {
     ...(metadata.externalAccountId ? { externalAccountId: metadata.externalAccountId } : {}),
     ...(metadata.queuedFrom ? { queuedFrom: metadata.queuedFrom } : {}),
+    ...(metadata.trigger ? { trigger: metadata.trigger } : {}),
+    ...(metadata.syncMode ? { syncMode: metadata.syncMode } : {}),
+    ...(metadata.currentStep ? { current_step: metadata.currentStep } : {}),
+    ...(metadata.dateCursor ? { date_cursor: metadata.dateCursor } : {}),
+    ...(typeof metadata.attempt === 'number' ? { attempt: metadata.attempt } : {}),
+    ...(metadata.lastProcessedIds ? { last_processed_ids: metadata.lastProcessedIds } : {}),
     ...(metadata.progress
       ? {
           progress: {
@@ -361,6 +379,77 @@ export async function createOrReuseFirstSyncJob(
   return data as AccountSyncJobRow;
 }
 
+export async function createOrReuseQueuedSyncJob(
+  supabase: RepositoryClient,
+  input: {
+    businessId: string;
+    platformIntegrationId: string;
+    adAccountId: string;
+    requestedStartDate: string;
+    requestedEndDate: string;
+    syncType: HistoricalSyncType;
+    metadata?: Json;
+  }
+): Promise<AccountSyncJobRow> {
+  if (input.syncType === 'initial_historical') {
+    return createOrReuseFirstSyncJob(supabase, {
+      businessId: input.businessId,
+      platformIntegrationId: input.platformIntegrationId,
+      adAccountId: input.adAccountId,
+      requestedStartDate: input.requestedStartDate,
+      requestedEndDate: input.requestedEndDate,
+      metadata: input.metadata,
+    });
+  }
+
+  const existingJobs = await selectHistoricalSyncJobs(supabase, {
+    adAccountIds: [input.adAccountId],
+    syncTypes: [input.syncType],
+    statuses: ['queued', 'running'],
+  });
+  const existing = existingJobs[0] ?? null;
+
+  if (existing) {
+    return existing;
+  }
+
+  const metadata = parseHistoricalSyncJobMetadata(input.metadata);
+  metadata.currentStep = metadata.currentStep ?? 'queued';
+  metadata.dateCursor = metadata.dateCursor ?? input.requestedStartDate;
+  metadata.attempt = metadata.attempt ?? 0;
+  metadata.progress = {
+    ...(metadata.progress ?? {}),
+    stage: metadata.progress?.stage ?? 'resolving_account',
+    message: metadata.progress?.message ?? 'Queued for Meta account sync.',
+    windowSince: metadata.progress?.windowSince ?? input.requestedStartDate,
+    windowUntil: metadata.progress?.windowUntil ?? input.requestedEndDate,
+    windowsCompleted: metadata.progress?.windowsCompleted ?? 0,
+    counts: metadata.progress?.counts ?? DEFAULT_PROGRESS_COUNTS,
+    updatedAt: todayIso(),
+  };
+
+  const { data, error } = await supabase
+    .from('account_sync_jobs')
+    .insert({
+      business_id: input.businessId,
+      platform_integration_id: input.platformIntegrationId,
+      ad_account_id: input.adAccountId,
+      status: 'queued',
+      sync_type: input.syncType,
+      requested_start_date: input.requestedStartDate,
+      requested_end_date: input.requestedEndDate,
+      metadata: serializeHistoricalSyncJobMetadata(metadata),
+    })
+    .select('*')
+    .single();
+
+  if (error || !data) {
+    throw error ?? new Error('Failed to enqueue account sync job');
+  }
+
+  return data as AccountSyncJobRow;
+}
+
 export async function enqueueBackfillSyncJob(
   supabase: RepositoryClient,
   input: {
@@ -481,6 +570,11 @@ export async function updateHistoricalSyncJobProgress(
     resolveCountsFromJob(existing, metadata),
     input.counts
   );
+  metadata.currentStep =
+    input.stage !== undefined ? input.stage : metadata.currentStep ?? currentProgress.stage ?? null;
+  metadata.dateCursor =
+    input.windowSince !== undefined ? input.windowSince : metadata.dateCursor ?? currentProgress.windowSince ?? null;
+  metadata.attempt = metadata.attempt ?? 0;
 
   metadata.progress = {
     stage:
@@ -738,6 +832,8 @@ export async function completeHistoricalSyncJob(
   }
 
   const metadata = parseHistoricalSyncJobMetadata(existing.metadata);
+  metadata.currentStep = 'completed';
+  metadata.dateCursor = input.actualEndDate ?? metadata.dateCursor ?? null;
   metadata.progress = {
     ...(metadata.progress ?? {}),
     stage: 'completed',
@@ -792,6 +888,9 @@ export async function failHistoricalSyncJob(
   if (metadata?.progress) {
     metadata.progress.message = input.errorMessage;
     metadata.progress.updatedAt = input.failedAt;
+  }
+  if (metadata) {
+    metadata.currentStep = 'failed';
   }
 
   const [{ error: jobError }, { error: syncStateError }] = await Promise.all([

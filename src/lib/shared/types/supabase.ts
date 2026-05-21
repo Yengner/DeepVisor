@@ -14,6 +14,51 @@ export type Database = {
   }
   ai: {
     Tables: {
+      agent_observations: {
+        Row: {
+          ad_account_id: string | null
+          business_id: string
+          confidence_score: number | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          evidence_json: Json
+          id: string
+          observation_text: string
+          observation_type: string
+          source: string
+          title: string | null
+        }
+        Insert: {
+          ad_account_id?: string | null
+          business_id: string
+          confidence_score?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          evidence_json?: Json
+          id?: string
+          observation_text: string
+          observation_type: string
+          source?: string
+          title?: string | null
+        }
+        Update: {
+          ad_account_id?: string | null
+          business_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          evidence_json?: Json
+          id?: string
+          observation_text?: string
+          observation_type?: string
+          source?: string
+          title?: string | null
+        }
+        Relationships: []
+      }
       ai_generation_runs: {
         Row: {
           ad_account_id: string | null
@@ -74,51 +119,6 @@ export type Database = {
           source_id?: string | null
           source_type?: string
           status?: string
-        }
-        Relationships: []
-      }
-      agent_observations: {
-        Row: {
-          ad_account_id: string | null
-          business_id: string
-          confidence_score: number | null
-          created_at: string
-          entity_id: string | null
-          entity_type: string
-          evidence_json: Json
-          id: string
-          observation_text: string
-          observation_type: string
-          source: string
-          title: string | null
-        }
-        Insert: {
-          ad_account_id?: string | null
-          business_id: string
-          confidence_score?: number | null
-          created_at?: string
-          entity_id?: string | null
-          entity_type: string
-          evidence_json?: Json
-          id?: string
-          observation_text: string
-          observation_type: string
-          source?: string
-          title?: string | null
-        }
-        Update: {
-          ad_account_id?: string | null
-          business_id?: string
-          confidence_score?: number | null
-          created_at?: string
-          entity_id?: string | null
-          entity_type?: string
-          evidence_json?: Json
-          id?: string
-          observation_text?: string
-          observation_type?: string
-          source?: string
-          title?: string | null
         }
         Relationships: []
       }
@@ -624,69 +624,6 @@ export type Database = {
           },
         ]
       }
-      ad_account_intelligence_snapshots: {
-        Row: {
-          ad_account_id: string
-          anomalies_json: Json
-          business_id: string
-          created_at: string
-          id: string
-          key_metrics_json: Json
-          losers_json: Json
-          period_end: string
-          period_start: string
-          recommendations_json: Json
-          snapshot_type: string
-          summary_text: string | null
-          winners_json: Json
-        }
-        Insert: {
-          ad_account_id: string
-          anomalies_json?: Json
-          business_id: string
-          created_at?: string
-          id?: string
-          key_metrics_json?: Json
-          losers_json?: Json
-          period_end: string
-          period_start: string
-          recommendations_json?: Json
-          snapshot_type: string
-          summary_text?: string | null
-          winners_json?: Json
-        }
-        Update: {
-          ad_account_id?: string
-          anomalies_json?: Json
-          business_id?: string
-          created_at?: string
-          id?: string
-          key_metrics_json?: Json
-          losers_json?: Json
-          period_end?: string
-          period_start?: string
-          recommendations_json?: Json
-          snapshot_type?: string
-          summary_text?: string | null
-          winners_json?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ad_account_intelligence_snapshots_ad_account_id_fkey"
-            columns: ["ad_account_id"]
-            isOneToOne: false
-            referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ad_account_intelligence_snapshots_business_id_fkey"
-            columns: ["business_id"]
-            isOneToOne: false
-            referencedRelation: "business_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       ad_account_performance_monthly: {
         Row: {
           ad_account_id: string
@@ -751,6 +688,69 @@ export type Database = {
             columns: ["ad_account_id"]
             isOneToOne: false
             referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_account_intelligence_snapshots: {
+        Row: {
+          id: string
+          business_id: string
+          ad_account_id: string
+          snapshot_type: string
+          period_start: string
+          period_end: string
+          summary_text: string | null
+          winners_json: Json
+          losers_json: Json
+          anomalies_json: Json
+          recommendations_json: Json
+          key_metrics_json: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          ad_account_id: string
+          snapshot_type: string
+          period_start: string
+          period_end: string
+          summary_text?: string | null
+          winners_json?: Json
+          losers_json?: Json
+          anomalies_json?: Json
+          recommendations_json?: Json
+          key_metrics_json?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          ad_account_id?: string
+          snapshot_type?: string
+          period_start?: string
+          period_end?: string
+          summary_text?: string | null
+          winners_json?: Json
+          losers_json?: Json
+          anomalies_json?: Json
+          recommendations_json?: Json
+          key_metrics_json?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_account_intelligence_snapshots_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_account_intelligence_snapshots_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2358,8 +2358,8 @@ export type Database = {
           ad_goals: string[] | null
           average_customer_value: string | null
           booking_link: string | null
-          business_name: string
           business_location: string | null
+          business_name: string
           created_at: string
           customer_radius: string | null
           description: string | null
@@ -2373,8 +2373,8 @@ export type Database = {
           onboarding_completed: boolean
           onboarding_step: number
           organization_id: string | null
-          preferred_platforms: string[] | null
           preferred_contact_method: string | null
+          preferred_platforms: string[] | null
           primary_goal: string | null
           promoted_services: string[] | null
           recommendation_style: string | null
@@ -2388,8 +2388,8 @@ export type Database = {
           ad_goals?: string[] | null
           average_customer_value?: string | null
           booking_link?: string | null
-          business_name: string
           business_location?: string | null
+          business_name: string
           created_at?: string
           customer_radius?: string | null
           description?: string | null
@@ -2403,8 +2403,8 @@ export type Database = {
           onboarding_completed?: boolean
           onboarding_step?: number
           organization_id?: string | null
-          preferred_platforms?: string[] | null
           preferred_contact_method?: string | null
+          preferred_platforms?: string[] | null
           primary_goal?: string | null
           promoted_services?: string[] | null
           recommendation_style?: string | null
@@ -2418,8 +2418,8 @@ export type Database = {
           ad_goals?: string[] | null
           average_customer_value?: string | null
           booking_link?: string | null
-          business_name?: string
           business_location?: string | null
+          business_name?: string
           created_at?: string
           customer_radius?: string | null
           description?: string | null
@@ -2433,8 +2433,8 @@ export type Database = {
           onboarding_completed?: boolean
           onboarding_step?: number
           organization_id?: string | null
-          preferred_platforms?: string[] | null
           preferred_contact_method?: string | null
+          preferred_platforms?: string[] | null
           primary_goal?: string | null
           promoted_services?: string[] | null
           recommendation_style?: string | null
@@ -3278,7 +3278,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
-          phone_number: string
+          phone_number: string | null
           status: string | null
           updated_at: string | null
         }
@@ -3288,7 +3288,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
-          phone_number: string
+          phone_number?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -3298,7 +3298,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
-          phone_number?: string
+          phone_number?: string | null
           status?: string | null
           updated_at?: string | null
         }

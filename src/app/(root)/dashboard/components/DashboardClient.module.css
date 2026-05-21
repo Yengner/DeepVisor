@@ -518,9 +518,10 @@
 
 @media (max-width: 760px) {
   .page {
-    width: 100%;
-    max-width: 100%;
+    width: 100vw;
+    max-width: 100vw;
     margin-inline: 0;
+    overflow-x: hidden;
   }
 
   .topBar,
@@ -532,16 +533,39 @@
   }
 
   .topBar {
-    padding-inline: 12px;
+    width: 100%;
+    padding: 12px 4px !important;
+    border-radius: 18px;
   }
 
   .chartPanel,
   .panel {
-    padding-inline: 8px;
+    width: 100%;
+    padding: 12px 4px !important;
+    border-radius: 18px;
+  }
+
+  .metricCard {
+    padding: 12px !important;
+    border-radius: 16px;
+  }
+
+  .page :global(.mantine-Grid-root) {
+    --grid-gutter: 8px;
+  }
+
+  .page :global(.mantine-Grid-col) {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .page :global(.mantine-SimpleGrid-root) {
+    gap: 8px;
   }
 
   .surfaceToolbar {
     padding-bottom: 12px;
+    margin-inline: 4px;
   }
 
   .title {
@@ -559,6 +583,7 @@
 
   .historyHeader {
     padding-bottom: 12px;
+    margin-inline: 6px;
   }
 
   .historyControlsRow {
@@ -580,6 +605,7 @@
 
   .surfacePanelActions :global(.mantine-Button-root) {
     width: 100%;
+    min-height: 36px;
   }
 
   .metricValue {
@@ -587,16 +613,22 @@
   }
 
   .historyChartBody {
-    margin-inline: -8px;
+    margin-inline: -4px;
+    min-height: 520px;
   }
 
   .historyChartScrollArea {
-    margin-inline: -8px;
-    width: calc(100% + 16px);
+    margin-inline: -4px;
+    width: calc(100% + 8px);
   }
 
   .historyChartScrollableCanvas {
     padding-inline: 0;
+  }
+
+  .historyTooltipCard {
+    width: min(380px, calc(100vw - 16px));
+    max-width: min(380px, calc(100vw - 16px));
   }
 
   .summaryLabel {
@@ -619,7 +651,8 @@
   }
 
   .liveRow {
-    padding: 12px;
+    padding: 12px !important;
+    border-radius: 16px;
   }
 
   .metricGrid {
@@ -639,7 +672,7 @@
 
   .heatmapCell {
     width: 100%;
-    height: 16px;
+    height: 18px;
     border-radius: 5px;
   }
 

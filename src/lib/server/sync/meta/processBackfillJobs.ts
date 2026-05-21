@@ -69,7 +69,11 @@ async function processClaimedJob(jobId: string): Promise<{
       };
     }
 
-    if (job.sync_type !== 'backfill') {
+    if (
+      job.sync_type !== 'backfill' &&
+      job.sync_type !== 'incremental' &&
+      job.sync_type !== 'manual_refresh'
+    ) {
       throw new Error(`Unsupported historical sync type: ${job.sync_type}`);
     }
 
@@ -90,9 +94,9 @@ async function processClaimedJob(jobId: string): Promise<{
     await syncBusinessPlatform({
       businessId: job.business_id,
       integrationId: job.platform_integration_id,
-      trigger: 'cron',
-      backfillDays: FULL_HISTORY_BACKFILL_DAYS,
-      syncMode: 'full_backfill',
+      trigger: job.sync_type === 'manual_refresh' ? 'manual_refresh' : 'cron',
+      backfillDays: job.sync_type === 'backfill' ? FULL_HISTORY_BACKFILL_DAYS : undefined,
+      syncMode: job.sync_type === 'backfill' ? 'full_backfill' : 'default',
       primaryExternalAccountId: adAccount.external_account_id,
     });
 
@@ -100,7 +104,7 @@ async function processClaimedJob(jobId: string): Promise<{
       jobId: job.id,
       adAccountId: job.ad_account_id,
       status: 'completed',
-      message: 'Backfill completed.',
+      message: `${job.sync_type === 'backfill' ? 'Backfill' : 'Account sync'} completed.`,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Meta historical sync failed';
@@ -134,7 +138,7 @@ export async function processMetaBackfillJobs(input?: {
   if (input?.targetJobId) {
     const claimed = await claimHistoricalSyncJob(supabase, {
       jobId: input.targetJobId,
-      syncTypes: ['initial_historical', 'backfill'],
+      syncTypes: ['initial_historical', 'incremental', 'manual_refresh', 'backfill'],
     });
 
     if (claimed) {
@@ -151,7 +155,7 @@ export async function processMetaBackfillJobs(input?: {
 
   for (let index = 0; index < limit; index += 1) {
     const claimed = await claimHistoricalSyncJob(supabase, {
-      syncTypes: ['initial_historical', 'backfill'],
+      syncTypes: ['initial_historical', 'incremental', 'manual_refresh', 'backfill'],
     });
 
     if (!claimed) {
