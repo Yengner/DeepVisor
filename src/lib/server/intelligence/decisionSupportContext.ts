@@ -65,7 +65,7 @@ export async function buildDecisionSupportContext(
       .eq('item_type', 'campaign_review')
       .order('completed_at', { ascending: false, nullsFirst: false })
       .limit(limit),
-    supabase
+    (supabase as any)
       .from('ad_account_intelligence_snapshots')
       .select('id,snapshot_type,period_start,period_end,summary_text,created_at')
       .eq('business_id', input.businessId)
@@ -126,4 +126,3 @@ export async function buildDecisionSupportContext(
     })),
   };
 }
-

@@ -692,69 +692,6 @@ export type Database = {
           },
         ]
       }
-      ad_account_intelligence_snapshots: {
-        Row: {
-          id: string
-          business_id: string
-          ad_account_id: string
-          snapshot_type: string
-          period_start: string
-          period_end: string
-          summary_text: string | null
-          winners_json: Json
-          losers_json: Json
-          anomalies_json: Json
-          recommendations_json: Json
-          key_metrics_json: Json
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          business_id: string
-          ad_account_id: string
-          snapshot_type: string
-          period_start: string
-          period_end: string
-          summary_text?: string | null
-          winners_json?: Json
-          losers_json?: Json
-          anomalies_json?: Json
-          recommendations_json?: Json
-          key_metrics_json?: Json
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          business_id?: string
-          ad_account_id?: string
-          snapshot_type?: string
-          period_start?: string
-          period_end?: string
-          summary_text?: string | null
-          winners_json?: Json
-          losers_json?: Json
-          anomalies_json?: Json
-          recommendations_json?: Json
-          key_metrics_json?: Json
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ad_account_intelligence_snapshots_ad_account_id_fkey"
-            columns: ["ad_account_id"]
-            isOneToOne: false
-            referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ad_account_intelligence_snapshots_business_id_fkey"
-            columns: ["business_id"]
-            isOneToOne: false
-            referencedRelation: "business_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       ad_account_sync_state: {
         Row: {
           ad_account_id: string
@@ -5936,6 +5873,14 @@ export type Database = {
         }[]
       }
       invoke_process_calendar_queue_cron: { Args: never; Returns: undefined }
+      invoke_process_meta_backfill_job: {
+        Args: { target_job_id?: string }
+        Returns: number
+      }
+      invoke_process_meta_backfill_jobs_cron: {
+        Args: never
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
       is_org_admin: { Args: { p_organization_id: string }; Returns: boolean }
       is_org_member: { Args: { p_organization_id: string }; Returns: boolean }

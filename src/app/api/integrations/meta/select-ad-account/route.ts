@@ -8,6 +8,12 @@ import {
   applyAppSelectionCookies,
   syncSelectedMetaAdAccount,
 } from '@/lib/server/integrations/metaSelection';
+import {
+  buildFirstSyncJobStatus,
+  getAccountSyncJobById,
+  getAdAccountSyncCoverage,
+} from '@/lib/server/repositories/ad_accounts/syncState';
+import { processMetaBackfillJobs } from '@/lib/server/sync/meta/processBackfillJobs';
 import { ErrorCode, fail, ok } from '@/lib/shared';
 
 /**
@@ -107,13 +113,47 @@ export async function POST(request: NextRequest) {
       trigger: 'integration',
     });
 
+    let syncCoverage = result.syncCoverage;
+    let firstSyncJob = result.firstSyncJob;
+
+    if (firstSyncJob?.jobId && firstSyncJob.status !== 'completed') {
+      const syncResult = await processMetaBackfillJobs({
+        limit: 1,
+        targetJobId: firstSyncJob.jobId,
+      });
+      const processedJobResult =
+        syncResult.results.find((item) => item.jobId === firstSyncJob?.jobId) ?? null;
+
+      const latestJob = await getAccountSyncJobById(supabase, firstSyncJob.jobId);
+
+      if (result.adAccountId) {
+        syncCoverage = await getAdAccountSyncCoverage(supabase, result.adAccountId);
+      }
+
+      if (latestJob) {
+        firstSyncJob = buildFirstSyncJobStatus(latestJob, syncCoverage);
+      }
+
+      if (processedJobResult?.status === 'failed' || latestJob?.status === 'failed') {
+        throw new Error(
+          processedJobResult?.message ||
+            latestJob?.error_message ||
+            'Meta first sync failed'
+        );
+      }
+
+      if (!processedJobResult && latestJob?.status !== 'completed') {
+        throw new Error('Meta first sync is already running. Wait for it to finish and try again.');
+      }
+    }
+
     const response = NextResponse.json(
       ok({
         integrationId: result.integrationId,
         adAccountId: result.adAccountId,
         externalAccountId: result.externalAccountId,
-        syncCoverage: result.syncCoverage,
-        firstSyncJob: result.firstSyncJob,
+        syncCoverage,
+        firstSyncJob,
       })
     );
     applyAppSelectionCookies(response, {

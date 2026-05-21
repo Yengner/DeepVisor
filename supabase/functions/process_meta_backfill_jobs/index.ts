@@ -25,7 +25,6 @@ serve(async (req) => {
 
   const requestUrl = new URL(req.url);
   const limit = requestUrl.searchParams.get("limit") ?? "1";
-  const jobId = requestUrl.searchParams.get("job_id");
   const targetUrl = new URL("/api/integrations/meta/process-backfill-jobs", APP_BASE_URL);
 
   const resp = await fetch(targetUrl, {
@@ -36,7 +35,6 @@ serve(async (req) => {
     },
     body: JSON.stringify({
       limit: Number(limit) > 0 ? Number(limit) : 1,
-      jobId: jobId || undefined,
     }),
   });
 

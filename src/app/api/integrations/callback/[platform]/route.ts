@@ -3,9 +3,6 @@ import { createServerClient } from '@/lib/server/supabase/server';
 import { requireUserId } from '@/lib/server/actions/user/session';
 import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
 import {
-  createOrReuseFirstSyncJob,
-} from '@/lib/server/repositories/ad_accounts/syncState';
-import {
   exchangeMetaCodeForToken,
   fetchMetaAdAccountSnapshots,
   validateMetaAccessToken,
@@ -17,14 +14,10 @@ import {
   markIntegrationError,
   parseSupportedIntegrationPlatform,
   resolvePlatformByKey,
-  setPrimaryMetaAdAccount,
   sanitizeReturnTo,
   upsertPlatformIntegration,
 } from '@/lib/server/integrations/service';
-import { applyAppSelectionCookies } from '@/lib/server/integrations/metaSelection';
 import { discoverMetaAdAccounts } from '@/lib/server/sync/meta/discoverMetaAdAccounts';
-import { resolveMetaBackfillWindow } from '@/lib/server/sync/meta/client';
-import { FULL_HISTORY_BACKFILL_DAYS } from '@/lib/server/sync/types';
 import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integrations';
 
 /**
@@ -72,23 +65,6 @@ function redirectWithAccountSelection(input: {
   if (input.autoSync) {
     url.searchParams.set('auto_sync', '1');
   }
-  return NextResponse.redirect(url);
-}
-
-function redirectWithQueuedSync(input: {
-  requestUrl: string;
-  returnTo: '/onboarding' | '/integration';
-  platform: SupportedIntegrationPlatform;
-  integrationId: string;
-  externalAccountId: string;
-  syncJobId: string;
-}) {
-  const baseUrl = getBaseUrl(input.requestUrl);
-  const path = buildIntegrationResultPath(input.returnTo, input.platform, 'connected');
-  const url = new URL(path, baseUrl);
-  url.searchParams.set('integrationId', input.integrationId);
-  url.searchParams.set('externalAccountId', input.externalAccountId);
-  url.searchParams.set('sync_job_id', input.syncJobId);
   return NextResponse.redirect(url);
 }
 
@@ -179,7 +155,7 @@ export async function GET(
 
     // Run discovery for every successful Meta callback so both the multi-account
     // and single-account paths start from the same registered account state.
-    const discoveredAccounts = await discoverMetaAdAccounts({
+    await discoverMetaAdAccounts({
       supabase,
       businessId: businessContext.businessId,
       platformId: integrationPlatform.id,
@@ -196,51 +172,14 @@ export async function GET(
     }
 
     const selectedAccount = accessibleAccounts[0];
-    await setPrimaryMetaAdAccount(supabase, {
-      integrationId,
-      externalAccountId: selectedAccount.externalAccountId,
-      name: selectedAccount.name,
-    });
-
-    const selectedAdAccount =
-      discoveredAccounts.byExternalAccountId.get(selectedAccount.externalAccountId) ?? null;
-
-    if (!selectedAdAccount) {
-      throw new Error('Selected Meta ad account was not saved after discovery');
-    }
-
-    const fullHistoryWindow = resolveMetaBackfillWindow(FULL_HISTORY_BACKFILL_DAYS);
-    const job = await createOrReuseFirstSyncJob(supabase, {
-      businessId: businessContext.businessId,
-      platformIntegrationId: integrationId,
-      adAccountId: selectedAdAccount.id,
-      requestedStartDate: fullHistoryWindow.since,
-      requestedEndDate: fullHistoryWindow.until,
-      metadata: {
-        externalAccountId: selectedAccount.externalAccountId,
-        queuedFrom: 'meta_oauth_callback',
-        trigger: 'integration',
-        syncMode: 'seed_recent',
-        current_step: 'queued',
-        date_cursor: fullHistoryWindow.since,
-        attempt: 0,
-        last_processed_ids: {},
-      },
-    });
-    const response = redirectWithQueuedSync({
+    return redirectWithAccountSelection({
       requestUrl: request.url,
-      returnTo: '/integration',
+      returnTo,
       platform: platformKey,
       integrationId,
       externalAccountId: selectedAccount.externalAccountId,
-      syncJobId: job.id,
+      autoSync: true,
     });
-    applyAppSelectionCookies(response, {
-      platformIntegrationId: integrationId,
-      adAccountId: selectedAdAccount.id,
-    });
-
-    return response;
   } catch (error) {
     console.error('Integration callback failed:', error);
 

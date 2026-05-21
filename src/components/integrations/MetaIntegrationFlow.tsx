@@ -17,7 +17,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import type { FirstSyncJobStatus, SyncCoverage } from '@/lib/shared/types/integrations';
 import BlockingTaskScreen from '@/components/ui/states/BlockingTaskScreen';
-import { trackFirstSyncJob } from './firstSyncTracking';
 
 type MetaIntegrationFlowProps = {
   returnTo: '/onboarding' | '/integration';
@@ -65,18 +64,7 @@ type SearchDrivenFlow = {
   requiresAccountSelection: boolean;
   integrationId: string | null;
   externalAccountId: string | null;
-  syncJobId: string | null;
   autoSync: boolean;
-};
-
-type FirstSyncJobResponse = {
-  success?: boolean;
-  data?: {
-    job?: FirstSyncJobStatus | null;
-  };
-  error?: {
-    userMessage?: string;
-  };
 };
 
 function readFlowState(searchParams: { get: (key: string) => string | null }): SearchDrivenFlow {
@@ -86,7 +74,6 @@ function readFlowState(searchParams: { get: (key: string) => string | null }): S
     requiresAccountSelection: searchParams.get('requires_account_selection') === '1',
     integrationId: searchParams.get('integrationId'),
     externalAccountId: searchParams.get('externalAccountId'),
-    syncJobId: searchParams.get('sync_job_id'),
     autoSync: searchParams.get('auto_sync') === '1',
   };
 }
@@ -140,40 +127,8 @@ export default function MetaIntegrationFlow({
   };
 
   const finishFlowWithSuccess = async () => {
-    toast.success('Meta connected successfully.');
+    toast.success('Meta synced successfully.');
     await finishFlow(onConnected);
-  };
-
-  const loadAndTrackQueuedSyncJob = async (input: {
-    integrationId: string;
-    externalAccountId: string | null;
-    syncJobId: string;
-  }) => {
-    try {
-      const response = await fetch(`/api/integrations/meta/sync-jobs/${input.syncJobId}`);
-      const body = (await response.json().catch(() => ({}))) as FirstSyncJobResponse;
-
-      if (!response.ok || !body?.success || !body.data?.job) {
-        throw new Error(body?.error?.userMessage || 'Failed to load Meta sync job');
-      }
-
-      const job = body.data.job;
-      trackFirstSyncJob({
-        jobId: job.jobId,
-        integrationId: input.integrationId,
-        adAccountId: job.adAccountId,
-        externalAccountId: input.externalAccountId ?? '',
-        adAccountName: null,
-        platformKey: 'meta',
-        platformName: 'Meta',
-        job,
-      });
-      toast.success('Meta connected. Full history sync queued.');
-      await finishFlow(onConnected);
-    } catch (error) {
-      toast.success('Meta connected. Your sync job is queued.');
-      await finishFlow(onConnected);
-    }
   };
 
   const loadMetaAccountOptions = async (input: {
@@ -250,7 +205,7 @@ export default function MetaIntegrationFlow({
     setSubmittingAccountSelection(true);
     setSyncingTitle('Syncing your primary ad account');
     setSyncingDescription(
-      'DeepVisor is pulling your campaigns, ad sets, ads, creatives, and recent performance. This can take a minute.'
+      'DeepVisor is pulling campaigns, ad sets, ads, creatives, recent performance, audience data, summaries, and analysis. Keep this open until it finishes.'
     );
 
     try {
@@ -270,34 +225,7 @@ export default function MetaIntegrationFlow({
         throw new Error(body?.error?.userMessage || 'Failed to select Meta ad account');
       }
 
-      const firstSyncJob = body.data?.firstSyncJob ?? null;
       resetFlow();
-
-      if (firstSyncJob && body.data?.integrationId && body.data?.adAccountId && body.data.externalAccountId) {
-        trackFirstSyncJob({
-          jobId: firstSyncJob.jobId,
-          integrationId: body.data.integrationId,
-          adAccountId: body.data.adAccountId,
-          externalAccountId: body.data.externalAccountId,
-          adAccountName: accountOptions.find(
-            (option) => option.value === body.data?.externalAccountId
-          )?.label ?? null,
-          platformKey: 'meta',
-          platformName: 'Meta',
-          job: firstSyncJob,
-        });
-        toast.success('Meta connected. Full history sync started in the background.');
-        await finishFlow(onConnected);
-        return;
-      }
-
-      if (
-        body.data?.syncCoverage?.activeJobStatus === 'queued' ||
-        body.data?.syncCoverage?.activeJobStatus === 'running'
-      ) {
-        toast.success('Recent data is ready while a larger historical sync continues.');
-      }
-
       await finishFlowWithSuccess();
     } catch (error) {
       setSubmittingAccountSelection(false);
@@ -351,21 +279,12 @@ export default function MetaIntegrationFlow({
       return;
     }
 
-    if (flow.syncJobId && flow.integrationId) {
-      void loadAndTrackQueuedSyncJob({
-        integrationId: flow.integrationId,
-        externalAccountId: flow.externalAccountId,
-        syncJobId: flow.syncJobId,
-      });
-      return;
-    }
-
     if (flow.autoSync && flow.integrationId && flow.externalAccountId) {
       setAccountSelectionIntegrationId(flow.integrationId);
       setSelectedAccountExternalId(flow.externalAccountId);
       setAutoSyncRequested(true);
       setSyncingTitle('Checking your Meta ad account');
-      setSyncingDescription('We found your Meta ad account and are starting the first sync now.');
+      setSyncingDescription('We found your Meta ad account and are syncing it now.');
       void syncMetaAdAccount({
         integrationId: flow.integrationId,
         externalAccountId: flow.externalAccountId,
@@ -459,8 +378,8 @@ export default function MetaIntegrationFlow({
               <IconAlertCircle size={16} />
             </ThemeIcon>
             <Text size="xs" c="dimmed">
-              We only continue once one account is selected. Full history sync can keep running in
-              the background after that.
+              We only continue once one account is selected. This local sync waits until the
+              selected account is populated.
             </Text>
           </Group>
 
