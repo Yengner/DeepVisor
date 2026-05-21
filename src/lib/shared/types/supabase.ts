@@ -5769,6 +5769,12 @@ export type Database = {
         Args: { p_ad_account_id: string }
         Returns: boolean
       }
+      can_access_ad_account: {
+        Args: { p_ad_account_id: string }
+        Returns: boolean
+      }
+      can_access_business: { Args: { p_business_id: string }; Returns: boolean }
+      can_manage_business: { Args: { p_business_id: string }; Returns: boolean }
       claim_account_sync_job: {
         Args: { allowed_sync_types?: string[]; target_job_id?: string }
         Returns: {
