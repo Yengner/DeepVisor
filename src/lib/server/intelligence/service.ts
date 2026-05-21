@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { getTrailingUtcDateRange, uniqueStrings } from '@/lib/shared';
+import { createAdminClient } from '@/lib/server/supabase/admin';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { buildReportPayload } from '@/lib/server/repositories/reports/buildReportPayload';
 import type { ReportQueryInput } from '@/lib/server/reports/types';
@@ -436,7 +437,7 @@ export async function runBusinessIntelligenceAssessment(input: {
   defaultAdAccountId?: string | null;
   defaultPlatformIntegrationId?: string | null;
 }) {
-  const supabase = await createServerClient();
+  const supabase = createAdminClient();
   const { platforms, adAccounts } = await loadBusinessHeader(supabase, input.businessId);
   const selection = normalizeIntelligenceSelection({
     scope: input.scope,

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/server/supabase/server';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import {
   getBusinessIntegrationById,
 } from '@/lib/server/integrations/service';
+import { createAdminClient } from '@/lib/server/supabase/admin';
 import {
   applyAppSelectionCookies,
   syncSelectedMetaAdAccount,
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createServerClient();
+    const supabase = createAdminClient();
     const integration = await getBusinessIntegrationById(supabase, {
       businessId,
       integrationId,

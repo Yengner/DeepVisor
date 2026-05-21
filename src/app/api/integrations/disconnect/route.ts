@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/server/supabase/server';
 import { requireUserId } from '@/lib/server/actions/user/session';
 import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
 import { softDisconnectIntegration } from '@/lib/server/integrations/service';
+import { createAdminClient } from '@/lib/server/supabase/admin';
 import type {
   DisconnectIntegrationRequest,
   DisconnectIntegrationResponse,
@@ -18,11 +18,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const supabase = await createServerClient();
     const userId = await requireUserId();
     const context = await getOrCreateOrganizationBusinessContext(userId);
 
-    await softDisconnectIntegration(supabase, {
+    await softDisconnectIntegration(createAdminClient(), {
       integrationId: body.integrationId,
       businessId: context.businessId,
     });

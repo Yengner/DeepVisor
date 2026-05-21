@@ -100,10 +100,15 @@ async function createDefaultBusinessContext(): Promise<{
     getOrganizationById(organizationId)
   );
 
+  const adminSupabase = timer.measureSync(
+    'create admin client: default business profile',
+    createAdminClient
+  );
+
   const { data: business, error: businessError } = await timer.measure(
     'create default business profile',
     () =>
-      supabase
+      adminSupabase
         .from('business_profiles')
         .insert({
           organization_id: organization.id,
@@ -183,8 +188,8 @@ async function ensureBusinessProfileForOrganization(
     );
   }
 
-  const supabase = await timer.measure('create server client: ensure business profile', () =>
-    createServerClient()
+  const supabase = timer.measureSync('create admin client: ensure business profile', () =>
+    createAdminClient()
   );
 
   // Business organizations have a single primary business profile. We create it on demand

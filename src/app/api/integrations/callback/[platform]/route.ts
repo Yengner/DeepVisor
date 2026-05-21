@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/server/supabase/server';
 import { requireUserId } from '@/lib/server/actions/user/session';
 import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
 import {
@@ -18,6 +17,7 @@ import {
   upsertPlatformIntegration,
 } from '@/lib/server/integrations/service';
 import { discoverMetaAdAccounts } from '@/lib/server/sync/meta/discoverMetaAdAccounts';
+import { createAdminClient } from '@/lib/server/supabase/admin';
 import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integrations';
 
 /**
@@ -102,7 +102,7 @@ export async function GET(
   let integrationId: string | null = null;
 
   try {
-    const supabase = await createServerClient();
+    const supabase = createAdminClient();
     const userId = await requireUserId();
     const businessContext = await getOrCreateOrganizationBusinessContext(userId);
 
@@ -185,7 +185,7 @@ export async function GET(
 
     if (integrationId) {
       try {
-        const supabase = await createServerClient();
+        const supabase = createAdminClient();
         await markIntegrationError(
           supabase,
           integrationId,
