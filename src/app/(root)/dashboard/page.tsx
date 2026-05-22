@@ -1925,11 +1925,11 @@ export default async function MainDashboardPage() {
         </Suspense>
       }
     >
-      <Suspense key="featured-adset-history" fallback={<FeaturedAdsetSkeleton />}>
-        <FeaturedAdsetHistorySection {...base} />
-      </Suspense>
       <Suspense key="today-summary-cards" fallback={<SummaryCardsSkeleton />}>
         <TodaySnapshotSection {...base} />
+      </Suspense>
+      <Suspense key="featured-adset-history" fallback={<FeaturedAdsetSkeleton />}>
+        <FeaturedAdsetHistorySection {...base} />
       </Suspense>
     </DashboardShellClient>
   );

@@ -31,6 +31,8 @@ import {
 import { useMediaQuery } from '@mantine/hooks';
 import {
   IconAlertCircle,
+  IconArrowDownRight,
+  IconArrowUpRight,
   IconChartBar,
   IconChartLine,
   IconClock,
@@ -158,6 +160,20 @@ type TrendPointIndicator = {
   color: string;
   label: string;
   detail: string;
+};
+
+type SummaryDelta = {
+  direction: 'up' | 'down';
+  label: string;
+  suffix?: string;
+};
+
+type DataSummary = {
+  eyebrow: string;
+  label: string;
+  value: string;
+  detail?: string;
+  color?: string;
 };
 
 type CombinedTrendPoint = {
@@ -414,6 +430,23 @@ function formatCompactNumber(value: number): string {
     notation: 'compact',
     maximumFractionDigits: 1,
   }).format(Number.isFinite(value) ? value : 0);
+}
+
+function buildSummaryDelta(
+  current: number,
+  previous: number,
+  formatter: (value: number) => string
+): SummaryDelta | null {
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || current === previous) {
+    return null;
+  }
+
+  const delta = current - previous;
+
+  return {
+    direction: delta > 0 ? 'up' : 'down',
+    label: formatter(Math.abs(delta)),
+  };
 }
 
 function formatStatusLabel(value: string | null | undefined): string {
@@ -988,6 +1021,37 @@ function isTrendPointLater(candidate: DashboardTrendPoint, current: DashboardTre
   return candidate.label > current.label;
 }
 
+function getLatestTrendPointPair(points: DashboardTrendPoint[]): {
+  latest: DashboardTrendPoint;
+  previous: DashboardTrendPoint | null;
+} | null {
+  const sortedPoints = points
+    .filter((point) => point.dayKey || point.label)
+    .slice()
+    .sort((left, right) => {
+      if (isTrendPointLater(left, right)) {
+        return 1;
+      }
+
+      if (isTrendPointLater(right, left)) {
+        return -1;
+      }
+
+      return 0;
+    });
+
+  const latest = sortedPoints.at(-1);
+
+  if (!latest) {
+    return null;
+  }
+
+  return {
+    latest,
+    previous: sortedPoints.at(-2) ?? null,
+  };
+}
+
 function pickMaxTrendPoint(
   points: DashboardTrendPoint[],
   key: keyof DashboardTrendPoint
@@ -1023,31 +1087,31 @@ function buildCombinedTrendSeries(input: {
   const deliveryValues =
     input.granularity === 'hourly'
       ? input.trendPoints.map(
-          (point) =>
-            point.spend * 0.3 +
-            point.results * 0.35 +
-            point.clicks * 0.2 +
-            point.inlineLinkClicks * 0.15
-        )
+        (point) =>
+          point.spend * 0.3 +
+          point.results * 0.35 +
+          point.clicks * 0.2 +
+          point.inlineLinkClicks * 0.15
+      )
       : input.trendPoints.map(
-          (point) => point.spend * 0.35 + point.results * 0.4 + point.clicks * 0.25
-        );
+        (point) => point.spend * 0.35 + point.results * 0.4 + point.clicks * 0.25
+      );
   const efficiencyValues =
     input.granularity === 'hourly'
       ? input.trendPoints.map((point) => {
-          const ctrScore = point.ctr;
-          const cpcScore = point.cpc > 0 ? 100 / point.cpc : 0;
-          const cpmScore = point.cpm > 0 ? 100 / point.cpm : 0;
+        const ctrScore = point.ctr;
+        const cpcScore = point.cpc > 0 ? 100 / point.cpc : 0;
+        const cpmScore = point.cpm > 0 ? 100 / point.cpm : 0;
 
-          return ctrScore * 0.4 + cpcScore * 0.35 + cpmScore * 0.25;
-        })
+        return ctrScore * 0.4 + cpcScore * 0.35 + cpmScore * 0.25;
+      })
       : input.trendPoints.map((point) => {
-          const ctrScore = point.ctr;
-          const cpcScore = point.cpc > 0 ? 100 / point.cpc : 0;
-          const frequencyPenalty = point.frequency > 0 ? 100 / point.frequency : 0;
+        const ctrScore = point.ctr;
+        const cpcScore = point.cpc > 0 ? 100 / point.cpc : 0;
+        const frequencyPenalty = point.frequency > 0 ? 100 / point.frequency : 0;
 
-          return ctrScore * 0.45 + cpcScore * 0.35 + frequencyPenalty * 0.2;
-        });
+        return ctrScore * 0.45 + cpcScore * 0.35 + frequencyPenalty * 0.2;
+      });
 
   const normalizedDelivery = normalizeTrendSeries(deliveryValues);
   const normalizedEfficiency = normalizeTrendSeries(efficiencyValues);
@@ -1240,16 +1304,16 @@ function detectTrendSignals(input: {
       const earlierGap =
         index >= 2
           ? Math.abs(
-              combinedPoints[index - 2].deliveryIndex - combinedPoints[index - 2].efficiencyIndex
-            )
+            combinedPoints[index - 2].deliveryIndex - combinedPoints[index - 2].efficiencyIndex
+          )
           : 0;
       const efficiencyLeading = current.efficiencyIndex > current.deliveryIndex;
       const isFirstSustainedPoint = efficiencyLeading
         ? index === 1 || earlierGap < DIVERGENCE_THRESHOLD
         : scalePressureStreak >= SCALE_PRESSURE_MIN_CONSECUTIVE_POINTS &&
-          (index === SCALE_PRESSURE_MIN_CONSECUTIVE_POINTS - 1 ||
-            combinedPoints[index - 1].deliveryIndex - combinedPoints[index - 1].efficiencyIndex <
-              MAJOR_DIVERGENCE_THRESHOLD);
+        (index === SCALE_PRESSURE_MIN_CONSECUTIVE_POINTS - 1 ||
+          combinedPoints[index - 1].deliveryIndex - combinedPoints[index - 1].efficiencyIndex <
+          MAJOR_DIVERGENCE_THRESHOLD);
 
       if (isFirstSustainedPoint) {
         if (!efficiencyLeading && !scalePressureVolumeQualified) {
@@ -1319,7 +1383,7 @@ function selectPrimaryTrendSignal(signals: TrendSignal[]): TrendSignal | null {
       return candidate.gap > currentBest.gap ? candidate : currentBest;
     }
 
-  return candidate;
+    return candidate;
   }, null);
 }
 
@@ -1469,12 +1533,12 @@ function renderTrendTooltip(input: {
 function renderFilteredBarTooltip(input: {
   label: string | number | undefined;
   payload:
-    | Array<{
-        name?: string;
-        value?: number | string | null;
-        color?: string;
-      }>
-    | undefined;
+  | Array<{
+    name?: string;
+    value?: number | string | null;
+    color?: string;
+  }>
+  | undefined;
   series: Array<{ name: string; color?: string }>;
   formatter: (value: number) => string;
 }) {
@@ -1554,14 +1618,17 @@ function SummaryCard({
   label,
   value,
   detail,
+  delta,
   icon: Icon,
 }: {
   label: string;
   value: ReactNode;
   detail?: string | null;
+  delta?: SummaryDelta | null;
   icon: typeof IconUsers;
 }) {
   const isTextValue = typeof value === 'string' || typeof value === 'number';
+  const DeltaIcon = delta?.direction === 'down' ? IconArrowDownRight : IconArrowUpRight;
 
   return (
     <Paper withBorder radius="xl" p="md" className={classes.metricCard}>
@@ -1588,10 +1655,65 @@ function SummaryCard({
               {detail}
             </Text>
           ) : null}
+          {delta ? (
+            <Badge
+              mt={8}
+              size="sm"
+              radius="xl"
+              variant="light"
+              color={delta.direction === 'up' ? 'teal' : 'red'}
+              leftSection={<DeltaIcon size={12} />}
+              className={classes.summaryDelta}
+            >
+              {delta.direction === 'up' ? '+' : '-'}
+              {delta.label} {delta.suffix ?? 'today'}
+            </Badge>
+          ) : null}
         </div>
         <ThemeIcon variant="light" color="blue" radius="md" className={classes.summaryMetricIcon}>
           <Icon size={18} />
         </ThemeIcon>
+      </Group>
+    </Paper>
+  );
+}
+
+function DataSummaryBox({
+  summary,
+}: {
+  summary: DataSummary | null;
+}) {
+  if (!summary) {
+    return null;
+  }
+
+  return (
+    <Paper withBorder radius="lg" p="sm" className={classes.dataSummaryBox}>
+      <Group justify="space-between" gap="sm" wrap="nowrap">
+        <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
+          <span
+            className={classes.dataSummaryDot}
+            style={{ backgroundColor: summary.color ?? '#2563eb' }}
+          />
+          <div className={classes.dataSummaryText}>
+            <Text size="xs" fw={800} className={classes.dataSummaryLabel}>
+              {summary.label}
+            </Text>
+            {summary.detail ? (
+              <Text size="11px" c="dimmed" className={classes.dataSummaryDetail}>
+                {summary.detail}
+              </Text>
+            ) : null}
+          </div>
+        </Group>
+        <div className={classes.dataSummaryValueWrap}>
+          <Text size="10px" c="dimmed" tt="uppercase" fw={800}>
+            {summary.eyebrow}
+          </Text>
+          <Text size="sm" fw={900} className={classes.dataSummaryValue}>
+            {summary.value}
+          </Text>
+        </div>
       </Group>
     </Paper>
   );
@@ -1934,7 +2056,7 @@ function buildAgeGenderAudienceChart(input: {
 
   return {
     data,
-    title: 'Audience response by age and gender',
+    title: 'Audience response',
     type: 'stacked',
     series,
     formatter: (value: number) =>
@@ -2176,6 +2298,36 @@ function buildDevicePanelChart(input: {
   };
 }
 
+function pickTopChartSummary(
+  chart: Pick<MultiSeriesBarChartConfig | AudienceChartConfig, 'data' | 'series' | 'formatter'>,
+  eyebrow: string
+): DataSummary | null {
+  let topRow: Record<string, string | number> | null = null;
+  let topValue = 0;
+
+  for (const row of chart.data) {
+    const value = chart.series.reduce((total, seriesItem) => {
+      const rawValue = row[seriesItem.name];
+      return total + (typeof rawValue === 'number' && Number.isFinite(rawValue) ? rawValue : 0);
+    }, 0);
+
+    if (!topRow || value > topValue) {
+      topRow = row;
+      topValue = value;
+    }
+  }
+
+  if (!topRow || topValue <= 0) {
+    return null;
+  }
+
+  return {
+    eyebrow,
+    label: String(topRow.segment ?? 'Top segment'),
+    value: chart.formatter(topValue),
+  };
+}
+
 function normalizeStateCode(label: string): string | null {
   const normalized = label.trim().toLowerCase().replace(/\./g, '');
 
@@ -2374,17 +2526,17 @@ function buildTrendChartConfig(input: {
   }
 
   return {
-      data: input.trendPoints.map((point) => ({
-        label: formatChartDateLabel(point.label),
-        'Spend ($)': Number(point.spend.toFixed(2)),
-        Results: point.results,
-        Clicks: point.clicks,
-      })),
-      series: [
-        { name: 'Spend ($)', color: FEATURED_HISTORY_COLORS.spend },
-        { name: 'Results', color: FEATURED_HISTORY_COLORS.results },
-        { name: 'Clicks', color: FEATURED_HISTORY_COLORS.clicks },
-      ],
+    data: input.trendPoints.map((point) => ({
+      label: formatChartDateLabel(point.label),
+      'Spend ($)': Number(point.spend.toFixed(2)),
+      Results: point.results,
+      Clicks: point.clicks,
+    })),
+    series: [
+      { name: 'Spend ($)', color: FEATURED_HISTORY_COLORS.spend },
+      { name: 'Results', color: FEATURED_HISTORY_COLORS.results },
+      { name: 'Clicks', color: FEATURED_HISTORY_COLORS.clicks },
+    ],
     title: 'Spend, results, and clicks',
     description: 'Delivery volume for the featured ad set from first delivery through today.',
     formatter: (value: number) => formatCompactNumber(value),
@@ -2592,7 +2744,7 @@ export function FeaturedAdsetSkeleton() {
 
 export function SummaryCardsSkeleton() {
   return (
-    <SimpleGrid cols={{ base: 2, sm: 2, lg: 3, xl: 6 }} spacing="md">
+    <SimpleGrid cols={{ base: 3, sm: 3, lg: 3, xl: 6 }} spacing="md" className={classes.summaryCardsGrid}>
       {Array.from({ length: 6 }).map((_, index) => (
         <Paper key={index} withBorder radius="xl" p="md" className={classes.metricCard}>
           <Stack gap="sm">
@@ -2630,6 +2782,7 @@ export default function DashboardClient({
   const [hourlyRangeMode, setHourlyRangeMode] = useState<HourlyRangeMode>('today');
   const [deliveryWindowMode, setDeliveryWindowMode] = useState<DeliveryWindowMode>('today');
   const [surfacePanelMode, setSurfacePanelMode] = useState<SurfacePanelMode>('platform');
+  const [mobileHistoryModalOpen, setMobileHistoryModalOpen] = useState(false);
   const [activeFindingsPopoverOpen, setActiveFindingsPopoverOpen] = useState(false);
   const [activeFindings, setActiveFindings] = useState(payload.activeFindings);
   const [dismissingFindingIds, setDismissingFindingIds] = useState<Set<string>>(() => new Set());
@@ -2682,12 +2835,12 @@ export default function DashboardClient({
   const todayLiveWindow = payload.liveToday;
   const lifetimeLiveWindow = payload.liveLifetime;
   const activeDeliveryWindowMode =
-    (deliveryWindowMode === 'lifetime' && lifetimeLiveWindow.hasLiveDelivery) ||
-    (!todayLiveWindow.hasLiveDelivery && lifetimeLiveWindow.hasLiveDelivery)
+    deliveryWindowMode === 'lifetime' && lifetimeLiveWindow.hasLiveDelivery
       ? 'lifetime'
       : 'today';
   const liveWindow = activeDeliveryWindowMode === 'lifetime' ? lifetimeLiveWindow : todayLiveWindow;
   const liveSummary = liveWindow.summary;
+  const mobileLiveRowLimit = 3;
   const isLifetimeDeliveryWindow = activeDeliveryWindowMode === 'lifetime';
   const summaryCampaignLabel = isLifetimeDeliveryWindow ? 'Campaigns' : 'Live campaigns';
   const summaryAdsetLabel = isLifetimeDeliveryWindow ? 'Ad sets' : 'Live ad sets';
@@ -2726,10 +2879,11 @@ export default function DashboardClient({
   );
   const hasHourlyTrend = hourlyTrendPoints.length > 0;
   const hourlyTodayLabel = formatReadableDate(payload.featuredAdsetHistory.hourlyHistoryDate);
-  const featuredHistoryChartHeight = isPhone ? 520 : FEATURED_HISTORY_CHART_HEIGHT;
-  const deliverySurfaceChartHeight = isPhone ? 270 : DELIVERY_SURFACE_CHART_HEIGHT;
-  const audienceBreakdownChartHeight = isPhone ? 220 : AUDIENCE_BREAKDOWN_CHART_HEIGHT;
-  const trendYAxisWidth = isPhone ? 44 : 68;
+  const featuredHistoryChartHeight = isPhone ? 156 : FEATURED_HISTORY_CHART_HEIGHT;
+  const mobileHistoryModalChartHeight = 360;
+  const deliverySurfaceChartHeight = isPhone ? 160 : DELIVERY_SURFACE_CHART_HEIGHT;
+  const audienceBreakdownChartHeight = isPhone ? 150 : AUDIENCE_BREAKDOWN_CHART_HEIGHT;
+  const trendYAxisWidth = isPhone ? 34 : 68;
   const expandedHourlyPointWidth = isPhone ? 28 : EXPANDED_HOURLY_POINT_WIDTH;
   const expandedHourlyMinWidth = isPhone ? 1120 : EXPANDED_HOURLY_MIN_WIDTH;
 
@@ -2743,6 +2897,50 @@ export default function DashboardClient({
       }),
     [trendMode, historyGranularity, trendPoints, payload.viewContext.currencyCode]
   );
+  const mobilePreviewTrendChart = useMemo(
+    () =>
+      buildTrendChartConfig({
+        trendMode: 'delivery',
+        granularity: 'day',
+        trendPoints: dailyTrendPoints,
+        currencyCode: payload.viewContext.currencyCode,
+      }),
+    [dailyTrendPoints, payload.viewContext.currencyCode]
+  );
+  const latestDailyTrendPair = useMemo(
+    () => getLatestTrendPointPair(dailyTrendPoints),
+    [dailyTrendPoints]
+  );
+  const summarySpendDelta = activeDeliveryWindowMode === 'today' &&
+    liveSummary.spend > 0 &&
+    latestDailyTrendPair?.previous
+    ? buildSummaryDelta(
+      latestDailyTrendPair.latest.spend,
+      latestDailyTrendPair.previous.spend,
+      (value) => formatCurrency(value, payload.viewContext.currencyCode)
+    )
+    : null;
+  const summaryResultsDelta = activeDeliveryWindowMode === 'today' &&
+    liveSummary.primaryOutcomeValue > 0 &&
+    latestDailyTrendPair?.previous
+    ? buildSummaryDelta(
+      latestDailyTrendPair.latest.results,
+      latestDailyTrendPair.previous.results,
+      formatNumber
+    )
+    : null;
+  const mobileTrendDataSummary = latestDailyTrendPair
+    ? {
+      eyebrow: 'Latest day',
+      label: formatChartDateLabel(latestDailyTrendPair.latest.label),
+      value: formatNumber(latestDailyTrendPair.latest.results),
+      detail: `${formatCurrency(
+        latestDailyTrendPair.latest.spend,
+        payload.viewContext.currencyCode
+      )} spend · ${formatNumber(latestDailyTrendPair.latest.clicks)} clicks`,
+      color: FEATURED_HISTORY_COLORS.results,
+    }
+    : null;
   const continuationEndLabel =
     continuationSignal && historyGranularity === 'day'
       ? formatChartDateLabel(continuationSignal.endDate)
@@ -2796,8 +2994,8 @@ export default function DashboardClient({
     () =>
       historyGranularity === 'hourly' && hourlyRangeMode === 'expanded'
         ? trendChartData
-            .map((point) => String(point.label ?? ''))
-            .filter(isExpandedHourlyAnchor)
+          .map((point) => String(point.label ?? ''))
+          .filter(isExpandedHourlyAnchor)
         : [],
     [historyGranularity, hourlyRangeMode, trendChartData]
   );
@@ -2835,19 +3033,35 @@ export default function DashboardClient({
   }, [expandedHourlyTickValues, historyGranularity, hourlyRangeMode, isPhone]);
   const trendDotProps = useMemo(
     () => ({
-      r: isPhone ? 4 : 3,
-      strokeWidth: isPhone ? 2.5 : 2,
+      r: isPhone ? 0 : 3,
+      strokeWidth: isPhone ? 0 : 2,
       fill: '#ffffff',
     }),
     [isPhone]
   );
   const trendActiveDotProps = useMemo(
     () => ({
-      r: isPhone ? 8 : 5,
-      strokeWidth: isPhone ? 3 : 2,
+      r: isPhone ? 4 : 5,
+      strokeWidth: isPhone ? 2 : 2,
       fill: '#ffffff',
     }),
     [isPhone]
+  );
+  const modalTrendDotProps = useMemo(
+    () => ({
+      r: 3,
+      strokeWidth: 2,
+      fill: '#ffffff',
+    }),
+    []
+  );
+  const modalTrendActiveDotProps = useMemo(
+    () => ({
+      r: 6,
+      strokeWidth: 2,
+      fill: '#ffffff',
+    }),
+    []
   );
   const trendLineChartProps = useMemo(
     () => ({
@@ -3022,8 +3236,8 @@ export default function DashboardClient({
 
       const findingLabel =
         primaryActiveFinding?.metricSnapshot.sourceWindow === 'daily' &&
-        historyGranularity === 'day' &&
-        typeof primaryActiveFinding.metricSnapshot.label === 'string'
+          historyGranularity === 'day' &&
+          typeof primaryActiveFinding.metricSnapshot.label === 'string'
           ? formatChartDateLabel(primaryActiveFinding.metricSnapshot.label)
           : null;
 
@@ -3097,6 +3311,42 @@ export default function DashboardClient({
       trendChart.series,
       trendMode,
       trendPointIndicatorsByLabel,
+    ]
+  );
+  const mobilePreviewTrendTooltipProps = useMemo(
+    () => ({
+      allowEscapeViewBox: { x: true, y: true },
+      offset: 0,
+      position: { x: 18, y: featuredHistoryChartHeight + 8 },
+      wrapperStyle: {
+        maxWidth: 'min(248px, calc(100vw - 96px))',
+        outline: 'none',
+        zIndex: 4,
+      },
+      content: ({
+        label,
+        payload: tooltipPayload,
+      }: {
+        label?: string;
+        payload?: Array<{ name?: string; value?: number | string | null; color?: string }>;
+      }) =>
+        renderTrendTooltip({
+          label,
+          payload: tooltipPayload,
+          series: mobilePreviewTrendChart.series,
+          formatter: mobilePreviewTrendChart.formatter,
+          signal: null,
+          indicators: [],
+          continuationSignal: null,
+          continuationLabel: null,
+          currencyCode: payload.viewContext.currencyCode,
+        }),
+    }),
+    [
+      featuredHistoryChartHeight,
+      mobilePreviewTrendChart.formatter,
+      mobilePreviewTrendChart.series,
+      payload.viewContext.currencyCode,
     ]
   );
 
@@ -3195,6 +3445,41 @@ export default function DashboardClient({
         }),
     }),
     [audienceChart.formatter, audienceChart.series]
+  );
+  const surfaceDataSummary = useMemo<DataSummary | null>(() => {
+    if (surfacePanelMode === 'times') {
+      return hourlyHeatmap
+        ? {
+          eyebrow: 'Best time',
+          label: hourlyHeatmap.summarySlotLabel,
+          value: hourlyHeatmap.summaryDayLabel,
+          detail: `Best hour: ${hourlyHeatmap.summaryHourLabel}`,
+          color: '#2563eb',
+        }
+        : null;
+    }
+
+    if (surfacePanelMode === 'geo') {
+      const topState = regionStateMap.activeStates[0] ?? null;
+
+      return topState
+        ? {
+          eyebrow: 'Top geo',
+          label: topState.name,
+          value: topState.valueLabel,
+          color: '#2563eb',
+        }
+        : null;
+    }
+
+    return pickTopChartSummary(
+      activeSurfaceChart,
+      surfacePanelMode === 'device' ? 'Top device' : 'Top platform'
+    );
+  }, [activeSurfaceChart, hourlyHeatmap, regionStateMap.activeStates, surfacePanelMode]);
+  const audienceDataSummary = useMemo<DataSummary | null>(
+    () => pickTopChartSummary(audienceChart, 'Top audience'),
+    [audienceChart]
   );
 
   const activeFindingCampaignNameById = useMemo(() => {
@@ -3384,11 +3669,25 @@ export default function DashboardClient({
     ) {
       setDeliveryWindowMode('lifetime');
     }
-  }, [deliveryWindowMode, lifetimeLiveWindow.hasLiveDelivery, todayLiveWindow.hasLiveDelivery]);
-
+  }, [
+    deliveryWindowMode,
+    lifetimeLiveWindow.hasLiveDelivery,
+    todayLiveWindow.hasLiveDelivery,
+  ]);
+  
   useEffect(() => {
     setHourlyRangeMode('today');
   }, [featuredAdset?.id]);
+
+  useEffect(() => {
+    if (!isPhone) {
+      return;
+    }
+
+    setHistoryGranularity('day');
+    setTrendMode('delivery');
+    setHourlyRangeMode('today');
+  }, [isPhone]);
 
   useEffect(() => {
     if (!hasExpandedHourlyTrend && hourlyRangeMode === 'expanded') {
@@ -3636,6 +3935,199 @@ export default function DashboardClient({
           </Modal>
         ) : null}
 
+        <Modal
+          opened={mobileHistoryModalOpen}
+          onClose={() => setMobileHistoryModalOpen(false)}
+          title="Explore ad set history"
+          radius="lg"
+          size="xl"
+          fullScreen={isPhone}
+          centered={!isPhone}
+        >
+          <Stack gap="md" className={classes.mobileChartModalBody}>
+            <div>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                Featured ad set
+              </Text>
+              <Text fw={900}>{featuredAdset?.name ?? 'Waiting for a live ad set today'}</Text>
+              <Text size="sm" c="dimmed" mt={4}>
+                {trendChart.title}
+              </Text>
+            </div>
+
+            <div className={classes.historyControlsRow}>
+              <SegmentedControl
+                radius="xl"
+                size="xs"
+                value={historyGranularity}
+                onChange={(value) => setHistoryGranularity(value as HistoryGranularity)}
+                data={[
+                  { label: 'Day', value: 'day' },
+                  { label: 'Hourly', value: 'hourly', disabled: !hasHourlyTrend },
+                ]}
+              />
+              {historyGranularity === 'hourly' && hasExpandedHourlyTrend ? (
+                <SegmentedControl
+                  radius="xl"
+                  size="xs"
+                  value={hourlyRangeMode}
+                  onChange={(value) => setHourlyRangeMode(value as HourlyRangeMode)}
+                  data={[
+                    { label: 'Today', value: 'today' },
+                    { label: 'Full range', value: 'expanded' },
+                  ]}
+                />
+              ) : null}
+              <SegmentedControl
+                radius="xl"
+                size="xs"
+                value={trendMode}
+                onChange={(value) => setTrendMode(value as TrendMode)}
+                data={[
+                  { label: 'Delivery', value: 'delivery' },
+                  { label: 'Efficiency', value: 'efficiency' },
+                  { label: 'Combined', value: 'combined' },
+                ]}
+              />
+            </div>
+
+            {activeFindings.length > 0 ? (
+              <Paper withBorder radius="lg" p="sm" className={classes.historyTooltipSignal}>
+                <Group justify="space-between" gap="sm" wrap="nowrap">
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                      Active findings
+                    </Text>
+                    <Text size="sm" fw={800}>
+                      {activeFindings.length} saved trend{activeFindings.length === 1 ? '' : 's'} being watched
+                    </Text>
+                  </div>
+                  <Badge color="orange" variant="light" radius="xl">
+                    Live
+                  </Badge>
+                </Group>
+              </Paper>
+            ) : null}
+
+            <div className={classes.historyChartBody}>
+              {trendChartData.length > 0 ? (
+                isExpandedHourlyScrollable ? (
+                  <ScrollArea
+                    type="auto"
+                    scrollbars="x"
+                    offsetScrollbars="x"
+                    viewportRef={expandedHourlyViewportRef}
+                    className={classes.historyChartScrollArea}
+                  >
+                    <div
+                      className={classes.historyChartScrollableCanvas}
+                      style={{ width: expandedHourlyChartWidth ?? undefined }}
+                    >
+                      <LineChart
+                        h={mobileHistoryModalChartHeight}
+                        data={trendChartData}
+                        dataKey="label"
+                        lineChartProps={trendLineChartProps}
+                        type="default"
+                        curveType="monotone"
+                        withLegend
+                        withDots
+                        strokeWidth={4}
+                        gridAxis="x"
+                        strokeDasharray="4 4"
+                        yAxisProps={{ width: trendYAxisWidth }}
+                        xAxisProps={trendXAxisProps}
+                        tooltipProps={trendTooltipProps}
+                        dotProps={modalTrendDotProps}
+                        activeDotProps={modalTrendActiveDotProps}
+                        lineProps={(series) => ({
+                          strokeDasharray: series.strokeDasharray,
+                          strokeLinecap: 'round',
+                          strokeLinejoin: 'round',
+                        })}
+                        referenceLines={trendReferenceLines}
+                        series={trendChart.series}
+                        valueFormatter={(value) =>
+                          typeof value === 'number'
+                            ? trendChart.formatter(value)
+                            : String(value ?? '-')
+                        }
+                      >
+                        {trendPointIndicators.map((indicator) => (
+                          <ReferenceDot
+                            key={indicator.key}
+                            x={indicator.x}
+                            y={indicator.y}
+                            yAxisId="left"
+                            r={8}
+                            fill="#ffffff"
+                            stroke={indicator.color}
+                            strokeWidth={3}
+                            isFront
+                          />
+                        ))}
+                      </LineChart>
+                    </div>
+                  </ScrollArea>
+                ) : (
+                  <LineChart
+                    h={mobileHistoryModalChartHeight}
+                    data={trendChartData}
+                    dataKey="label"
+                    lineChartProps={trendLineChartProps}
+                    type="default"
+                    curveType="monotone"
+                    withLegend
+                    withDots
+                    strokeWidth={4}
+                    gridAxis="x"
+                    strokeDasharray="4 4"
+                    yAxisProps={{ width: trendYAxisWidth }}
+                    xAxisProps={trendXAxisProps}
+                    tooltipProps={trendTooltipProps}
+                    dotProps={modalTrendDotProps}
+                    activeDotProps={modalTrendActiveDotProps}
+                    lineProps={(series) => ({
+                      strokeDasharray: series.strokeDasharray,
+                      strokeLinecap: 'round',
+                      strokeLinejoin: 'round',
+                    })}
+                    referenceLines={trendReferenceLines}
+                    series={trendChart.series}
+                    valueFormatter={(value) =>
+                      typeof value === 'number' ? trendChart.formatter(value) : String(value ?? '-')
+                    }
+                  >
+                    {trendPointIndicators.map((indicator) => (
+                      <ReferenceDot
+                        key={indicator.key}
+                        x={indicator.x}
+                        y={indicator.y}
+                        yAxisId="left"
+                        r={8}
+                        fill="#ffffff"
+                        stroke={indicator.color}
+                        strokeWidth={3}
+                        isFront
+                      />
+                    ))}
+                  </LineChart>
+                )
+              ) : (
+                <Stack justify="center" align="center" h={mobileHistoryModalChartHeight} gap="xs">
+                  <Text fw={800}>No live ad set history yet</Text>
+                  <Text size="sm" c="dimmed" ta="center" maw={360}>
+                    Once a live ad set is serving today, this graph will show its synced delivery
+                    history.
+                  </Text>
+                </Stack>
+              )}
+            </div>
+
+            <DataSummaryBox summary={mobileTrendDataSummary} />
+          </Stack>
+        </Modal>
+
         {renderFullShell && payload.syncCoverage?.historicalAnalysisPending ? (
           <Alert
             color={payload.syncCoverage.activeJobStatus === 'failed' ? 'red' : 'blue'}
@@ -3688,9 +4180,9 @@ export default function DashboardClient({
         ) : null}
 
         {showNoLiveDeliveryAlert &&
-        payload.state === 'ready' &&
-        !todayLiveWindow.hasLiveDelivery &&
-        noLiveDeliveryAlertVisible ? (
+          payload.state === 'ready' &&
+          !todayLiveWindow.hasLiveDelivery &&
+          noLiveDeliveryAlertVisible ? (
           <Alert
             color="blue"
             radius="lg"
@@ -3735,9 +4227,9 @@ export default function DashboardClient({
                   {continuationSignal.parentName ? ` | ${continuationSignal.parentName}` : ''}
                   {formatContinuationBudget(continuationSignal, payload.viewContext.currencyCode)
                     ? ` | ${formatContinuationBudget(
-                        continuationSignal,
-                        payload.viewContext.currencyCode
-                      )}`
+                      continuationSignal,
+                      payload.viewContext.currencyCode
+                    )}`
                     : ''}
                 </Text>
               </div>
@@ -3755,268 +4247,434 @@ export default function DashboardClient({
         ) : null}
 
         {shouldRenderDashboardCard ? (
-        <Card withBorder radius="xl" p="lg" className={classes.topBar}>
-          <Stack gap="lg">
-            {renderFullShell ? (
-              <Group
-                justify="space-between"
-                align="flex-start"
-                gap="md"
-                wrap="wrap"
-                className={classes.surfaceToolbar}
-              >
-                <div>
-                  <Group gap="xs" wrap="wrap">
-                    <Badge variant="light" className="app-platform-page-badge">
-                      Dashboard
-                    </Badge>
-                    <Badge color={statusColor(payload.viewContext.platformStatus)} variant="light">
-                      {payload.viewContext.platformName ?? 'No platform selected'}
-                    </Badge>
-                    <Badge color={statusColor(payload.viewContext.adAccountStatus)} variant="outline">
-                      {payload.viewContext.adAccountName ?? 'No ad account selected'}
-                    </Badge>
-                  </Group>
-                  <Text fw={900} size="1.65rem" mt="sm" className={classes.title}>
-                    {payload.viewContext.adAccountName ?? 'Selected ad account'}
-                  </Text>
-                </div>
-
-                <Group gap="sm" wrap="wrap" className={classes.topBarActions}>
-                  <Button
-                    onClick={handleRefresh}
-                    leftSection={<IconRefresh size={16} />}
-                    loading={refreshing}
-                    disabled={!payload.viewContext.canRefresh}
-                    radius="xl"
-                    className="app-platform-page-action-primary"
-                  >
-                    Refresh
-                  </Button>
-                  <Button
-                    component={Link}
-                    href={reportsHref}
-                    radius="xl"
-                    variant="default"
-                    className="app-platform-page-action-secondary"
-                  >
-                    Reports
-                  </Button>
-                </Group>
-              </Group>
-            ) : null}
-
-            {showFeaturedHistory ? (
-            <Grid gutter="md" align="stretch">
-              <Grid.Col span={{ base: 12, xl: 8 }}>
-                <Paper withBorder radius="xl" p="md" className={classes.chartPanel}>
-                  <Stack gap="md" mb="md" className={classes.historyHeader}>
-                    <Group justify="space-between" align="flex-start" gap="sm" wrap="wrap">
-                      <Group gap="sm" wrap="nowrap" align="flex-start">
-                      <ThemeIcon color="blue" variant="light" radius="md">
-                        <IconChartLine size={18} />
-                      </ThemeIcon>
-                      <div className={classes.historyHeaderBody}>
-                        <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                          Featured ad set history
-                        </Text>
-                        <Text fw={800}>
-                          {featuredAdset?.name ?? 'Waiting for a live ad set today'}
-                        </Text>
-                        <Text size="sm" c="dimmed" mt={4}>
-                          {trendChart.title}
-                        </Text>
-                        {historyGranularity === 'day' && dailyHistoryRangeLabel ? (
-                          <Text size="sm" c="dimmed" mt={4}>
-                            {dailyHistoryRangeLabel}
-                          </Text>
-                        ) : null}
-                        {historyGranularity === 'hourly' && hourlyRangeMode === 'today' && hourlyTodayLabel ? (
-                          <Text size="sm" c="dimmed" mt={4}>
-                            {hourlyTodayLabel} · advertiser account time
-                          </Text>
-                        ) : null}
-                      </div>
-                      </Group>
-
-                      <Stack gap="xs" align="flex-end" className={classes.historyControlsPanel}>
-                        <div className={classes.historyControlsRow}>
-                          <SegmentedControl
-                            radius="xl"
-                            size="xs"
-                            value={historyGranularity}
-                            onChange={(value) => setHistoryGranularity(value as HistoryGranularity)}
-                            data={[
-                              { label: 'Day', value: 'day' },
-                              { label: 'Hourly', value: 'hourly', disabled: !hasHourlyTrend },
-                            ]}
-                          />
-                          {historyGranularity === 'hourly' && hasExpandedHourlyTrend ? (
-                            <SegmentedControl
-                              radius="xl"
-                              size="xs"
-                              value={hourlyRangeMode}
-                              onChange={(value) => setHourlyRangeMode(value as HourlyRangeMode)}
-                              data={[
-                                { label: 'Today', value: 'today' },
-                                { label: 'Full range', value: 'expanded' },
-                              ]}
-                            />
-                          ) : null}
-                          <SegmentedControl
-                            radius="xl"
-                            size="xs"
-                            value={trendMode}
-                            onChange={(value) => setTrendMode(value as TrendMode)}
-                            data={[
-                              { label: 'Delivery', value: 'delivery' },
-                              { label: 'Efficiency', value: 'efficiency' },
-                              { label: 'Combined', value: 'combined' },
-                            ]}
-                          />
-                        </div>
-
-                        {activeFindings.length > 0 ? (
-                          <Popover
-                            opened={activeFindingsPopoverOpen}
-                            onDismiss={() => setActiveFindingsPopoverOpen(false)}
-                            position="bottom-end"
-                            withArrow
-                            shadow="md"
-                            offset={8}
-                            radius="lg"
-                            withinPortal
-                          >
-                            <Popover.Target>
-                              <Indicator
-                                inline
-                                processing
-                                color="orange"
-                                size={10}
-                                offset={6}
-                                disabled={activeFindings.length === 0}
-                              >
-                                <Button
-                                  size="xs"
-                                  radius="xl"
-                                  variant="light"
-                                  color="orange"
-                                  leftSection={<IconAlertCircle size={14} />}
-                                  className={classes.activeFindingsTrigger}
-                                  onMouseEnter={openActiveFindingsPopover}
-                                  onMouseLeave={closeActiveFindingsPopoverSoon}
-                                  onClick={toggleActiveFindingsPopover}
-                                >
-                                  {activeFindings.length} active finding{activeFindings.length === 1 ? '' : 's'}
-                                </Button>
-                              </Indicator>
-                            </Popover.Target>
-                            <Popover.Dropdown
-                              className={classes.activeFindingsPopover}
-                              onMouseEnter={openActiveFindingsPopover}
-                              onMouseLeave={closeActiveFindingsPopoverSoon}
-                            >
-                              <Stack gap="sm">
-                                <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
-                                  <div>
-                                    <Text size="sm" fw={800}>
-                                      Active findings
-                                    </Text>
-                                    <Text size="xs" c="dimmed" mt={4}>
-                                      DeepVisor is actively watching {activeFindings.length} saved trend
-                                      {activeFindings.length === 1 ? '' : 's'} for this account.
-                                    </Text>
-                                  </div>
-                                  <Button
-                                    size="compact-xs"
-                                    variant="subtle"
-                                    color="gray"
-                                    loading={dismissingAllFindings}
-                                    disabled={activeFindings.length === 0}
-                                    onClick={() => {
-                                      void dismissAllFindings();
-                                    }}
-                                  >
-                                    Mark all read
-                                  </Button>
-                                </Group>
-
-                                <Stack gap="xs">
-                                  {activeFindings.map((finding) => {
-                                    const context = resolveFindingContext(finding);
-                                    const detectedDate = resolveFindingDate(finding);
-
-                                    return (
-                                      <Paper key={finding.id} withBorder radius="md" p="sm">
-                                        <Stack gap={6}>
-                                          <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
-                                            <Group gap="xs" wrap="wrap" style={{ minWidth: 0 }}>
-                                              <Badge
-                                                color={signalSeverityColor(finding.severity)}
-                                                variant="light"
-                                                radius="sm"
-                                                size="xs"
-                                              >
-                                                {formatStatusLabel(finding.severity)}
-                                              </Badge>
-                                              <Text size="sm" fw={700} className={classes.activeFindingLine}>
-                                                {finding.title}
-                                              </Text>
-                                            </Group>
-                                            <ActionIcon
-                                              variant="subtle"
-                                              color="gray"
-                                              size="sm"
-                                              aria-label="Mark finding as read"
-                                              loading={dismissingFindingIds.has(finding.id)}
-                                              onClick={() => {
-                                                void dismissFinding(finding.id);
-                                              }}
-                                            >
-                                              <IconX size={14} />
-                                            </ActionIcon>
-                                          </Group>
-                                          {(context || detectedDate) ? (
-                                            <Text size="xs" c="dimmed">
-                                              {[context, detectedDate].filter(Boolean).join(' | ')}
-                                            </Text>
-                                          ) : null}
-                                        </Stack>
-                                      </Paper>
-                                    );
-                                  })}
-                                </Stack>
-                              </Stack>
-                            </Popover.Dropdown>
-                          </Popover>
-                        ) : null}
-                      </Stack>
+          <Card withBorder radius="xl" p="lg" className={classes.topBar}>
+            <Stack gap="lg">
+              {renderFullShell ? (
+                <Group
+                  justify="space-between"
+                  align="flex-start"
+                  gap="md"
+                  wrap="wrap"
+                  className={classes.surfaceToolbar}
+                >
+                  <div>
+                    <Group gap="xs" wrap="wrap">
+                      <Badge variant="light" className="app-platform-page-badge">
+                        Dashboard
+                      </Badge>
+                      <Badge color={statusColor(payload.viewContext.platformStatus)} variant="light">
+                        {payload.viewContext.platformName ?? 'No platform selected'}
+                      </Badge>
+                      <Badge color={statusColor(payload.viewContext.adAccountStatus)} variant="outline">
+                        {payload.viewContext.adAccountName ?? 'No ad account selected'}
+                      </Badge>
                     </Group>
+                    <Text fw={900} size="1.65rem" mt="sm" className={classes.title}>
+                      {payload.viewContext.adAccountName ?? 'Selected ad account'}
+                    </Text>
+                  </div>
 
-                    {historyGranularity === 'hourly' &&
-                    hourlyRangeMode === 'expanded' &&
-                    hourlyHistoryRangeLabel ? (
-                      <Text size="sm" c="dimmed">
-                        {hourlyHistoryRangeLabel} · advertiser account time
+                  <Group gap="sm" wrap="wrap" className={classes.topBarActions}>
+                    <Button
+                      onClick={handleRefresh}
+                      leftSection={<IconRefresh size={16} />}
+                      loading={refreshing}
+                      disabled={!payload.viewContext.canRefresh}
+                      radius="xl"
+                      className="app-platform-page-action-primary"
+                    >
+                      Refresh
+                    </Button>
+                    <Button
+                      component={Link}
+                      href={reportsHref}
+                      radius="xl"
+                      variant="default"
+                      className="app-platform-page-action-secondary"
+                    >
+                      Reports
+                    </Button>
+                  </Group>
+                </Group>
+              ) : null}
+
+              {showSummaryCards ? (
+                <Stack gap="sm" className={classes.summaryCardsSection}>
+                  <Group justify="space-between" align="center" gap="sm" wrap="wrap">
+                    <div>
+                      <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                        Quick metrics
                       </Text>
-                    ) : null}
+                      <Text size="sm" c="dimmed">
+                        {activeDeliveryWindowMode === 'today'
+                          ? 'Today for the selected account'
+                          : 'Lifetime for the selected account'}
+                      </Text>
+                    </div>
+                    <SegmentedControl
+                      radius="xl"
+                      size="xs"
+                      value={activeDeliveryWindowMode}
+                      onChange={(value) => setDeliveryWindowMode(value as DeliveryWindowMode)}
+                      className={classes.summaryWindowControl}
+                      data={[
+                        {
+                          label: 'Today',
+                          value: 'today',
+                          disabled: !todayLiveWindow.hasLiveDelivery,
+                        },
+                        {
+                          label: 'Lifetime',
+                          value: 'lifetime',
+                          disabled: !lifetimeLiveWindow.hasLiveDelivery,
+                        },
+                      ]}
+                    />
+                  </Group>
+                  <SimpleGrid cols={{ base: 3, sm: 3, lg: 3, xl: 6 }} spacing="md" className={classes.summaryCardsGrid}>
+                    <SummaryCard
+                      label={summaryCampaignLabel}
+                      value={formatNumber(liveSummary.liveCampaignCount)}
+                      icon={IconUsers}
+                    />
+                    <SummaryCard
+                      label={summaryAdsetLabel}
+                      value={formatNumber(liveSummary.liveAdsetCount)}
+                      icon={IconTargetArrow}
+                    />
+                    <SummaryCard
+                      label={summaryAdLabel}
+                      value={formatNumber(liveSummary.liveAdCount)}
+                      icon={IconLink}
+                    />
+                    <SummaryCard
+                      label="Spend"
+                      value={formatCurrency(liveSummary.spend, payload.viewContext.currencyCode)}
+                      delta={summarySpendDelta}
+                      icon={IconCurrencyDollar}
+                    />
+                    <SummaryCard
+                      label={liveSummary.primaryOutcomeLabel}
+                      value={formatNumber(liveSummary.primaryOutcomeValue)}
+                      delta={summaryResultsDelta}
+                      icon={IconTargetArrow}
+                    />
+                    <SummaryCard
+                      label={summaryPlatformLabel}
+                      value={summaryPlatformValue}
+                      icon={IconLink}
+                    />
+                  </SimpleGrid>
+                </Stack>
+              ) : null}
 
-                  </Stack>
+              {showFeaturedHistory ? (
+                <Grid gutter="md" align="stretch">
+                  <Grid.Col span={{ base: 12, xl: 8 }}>
+                    <Paper withBorder radius="xl" p="md" className={`${classes.chartPanel} ${classes.featuredChartPanel}`}>
+                      <Stack gap="md" mb="md" className={classes.historyHeader}>
+                        <Group justify="space-between" align="flex-start" gap="sm" wrap="wrap">
+                          <Group gap="sm" wrap="nowrap" align="flex-start">
+                            <ThemeIcon color="blue" variant="light" radius="md">
+                              <IconChartLine size={18} />
+                            </ThemeIcon>
+                            <div className={classes.historyHeaderBody}>
+                              <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                                Featured ad set history
+                              </Text>
+                              <Text fw={800}>
+                                {featuredAdset?.name ?? 'Waiting for a live ad set today'}
+                              </Text>
+                              <Text size="sm" c="dimmed" mt={4}>
+                                {trendChart.title}
+                              </Text>
+                              {historyGranularity === 'day' && dailyHistoryRangeLabel ? (
+                                <Text size="sm" c="dimmed" mt={4}>
+                                  {dailyHistoryRangeLabel}
+                                </Text>
+                              ) : null}
+                              {historyGranularity === 'hourly' && hourlyRangeMode === 'today' && hourlyTodayLabel ? (
+                                <Text size="sm" c="dimmed" mt={4}>
+                                  {hourlyTodayLabel} · advertiser account time
+                                </Text>
+                              ) : null}
+                            </div>
+                          </Group>
 
-                  <div className={classes.historyChartBody}>
-                    {trendChartData.length > 0 ? (
-                      isExpandedHourlyScrollable ? (
-                        <ScrollArea
-                          type="auto"
-                          scrollbars="x"
-                          offsetScrollbars="x"
-                          viewportRef={expandedHourlyViewportRef}
-                          className={classes.historyChartScrollArea}
-                        >
-                          <div
-                            className={classes.historyChartScrollableCanvas}
-                            style={{ width: expandedHourlyChartWidth ?? undefined }}
-                          >
+                          {isPhone ? (
+                            <Button
+                              size="compact-xs"
+                              radius="xl"
+                              variant="default"
+                              className={classes.mobileExploreChartButton}
+                              onClick={() => setMobileHistoryModalOpen(true)}
+                            >
+                              Explore chart
+                            </Button>
+                          ) : (
+                            <Stack gap="xs" align="flex-end" className={classes.historyControlsPanel}>
+                              <div className={classes.historyControlsRow}>
+                                <SegmentedControl
+                                  radius="xl"
+                                  size="xs"
+                                  value={historyGranularity}
+                                  onChange={(value) => setHistoryGranularity(value as HistoryGranularity)}
+                                  data={[
+                                    { label: 'Day', value: 'day' },
+                                    { label: 'Hourly', value: 'hourly', disabled: !hasHourlyTrend },
+                                  ]}
+                                />
+                                {historyGranularity === 'hourly' && hasExpandedHourlyTrend ? (
+                                  <SegmentedControl
+                                    radius="xl"
+                                    size="xs"
+                                    value={hourlyRangeMode}
+                                    onChange={(value) => setHourlyRangeMode(value as HourlyRangeMode)}
+                                    data={[
+                                      { label: 'Today', value: 'today' },
+                                      { label: 'Full range', value: 'expanded' },
+                                    ]}
+                                  />
+                                ) : null}
+                                <SegmentedControl
+                                  radius="xl"
+                                  size="xs"
+                                  value={trendMode}
+                                  onChange={(value) => setTrendMode(value as TrendMode)}
+                                  data={[
+                                    { label: 'Delivery', value: 'delivery' },
+                                    { label: 'Efficiency', value: 'efficiency' },
+                                    { label: 'Combined', value: 'combined' },
+                                  ]}
+                                />
+                              </div>
+
+                              {activeFindings.length > 0 ? (
+                                <Popover
+                                  opened={activeFindingsPopoverOpen}
+                                  onDismiss={() => setActiveFindingsPopoverOpen(false)}
+                                  position="bottom-end"
+                                  withArrow
+                                  shadow="md"
+                                  offset={8}
+                                  radius="lg"
+                                  withinPortal
+                                >
+                                  <Popover.Target>
+                                    <Indicator
+                                      inline
+                                      processing
+                                      color="orange"
+                                      size={10}
+                                      offset={6}
+                                      disabled={activeFindings.length === 0}
+                                    >
+                                      <Button
+                                        size="xs"
+                                        radius="xl"
+                                        variant="light"
+                                        color="orange"
+                                        leftSection={<IconAlertCircle size={14} />}
+                                        className={classes.activeFindingsTrigger}
+                                        onMouseEnter={openActiveFindingsPopover}
+                                        onMouseLeave={closeActiveFindingsPopoverSoon}
+                                        onClick={toggleActiveFindingsPopover}
+                                      >
+                                        {activeFindings.length} active finding{activeFindings.length === 1 ? '' : 's'}
+                                      </Button>
+                                    </Indicator>
+                                  </Popover.Target>
+                                  <Popover.Dropdown
+                                    className={classes.activeFindingsPopover}
+                                    onMouseEnter={openActiveFindingsPopover}
+                                    onMouseLeave={closeActiveFindingsPopoverSoon}
+                                  >
+                                    <Stack gap="sm">
+                                      <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                                        <div>
+                                          <Text size="sm" fw={800}>
+                                            Active findings
+                                          </Text>
+                                          <Text size="xs" c="dimmed" mt={4}>
+                                            DeepVisor is actively watching {activeFindings.length} saved trend
+                                            {activeFindings.length === 1 ? '' : 's'} for this account.
+                                          </Text>
+                                        </div>
+                                        <Button
+                                          size="compact-xs"
+                                          variant="subtle"
+                                          color="gray"
+                                          loading={dismissingAllFindings}
+                                          disabled={activeFindings.length === 0}
+                                          onClick={() => {
+                                            void dismissAllFindings();
+                                          }}
+                                        >
+                                          Mark all read
+                                        </Button>
+                                      </Group>
+
+                                      <Stack gap="xs">
+                                        {activeFindings.map((finding) => {
+                                          const context = resolveFindingContext(finding);
+                                          const detectedDate = resolveFindingDate(finding);
+
+                                          return (
+                                            <Paper key={finding.id} withBorder radius="md" p="sm">
+                                              <Stack gap={6}>
+                                                <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                                                  <Group gap="xs" wrap="wrap" style={{ minWidth: 0 }}>
+                                                    <Badge
+                                                      color={signalSeverityColor(finding.severity)}
+                                                      variant="light"
+                                                      radius="sm"
+                                                      size="xs"
+                                                    >
+                                                      {formatStatusLabel(finding.severity)}
+                                                    </Badge>
+                                                    <Text size="sm" fw={700} className={classes.activeFindingLine}>
+                                                      {finding.title}
+                                                    </Text>
+                                                  </Group>
+                                                  <ActionIcon
+                                                    variant="subtle"
+                                                    color="gray"
+                                                    size="sm"
+                                                    aria-label="Mark finding as read"
+                                                    loading={dismissingFindingIds.has(finding.id)}
+                                                    onClick={() => {
+                                                      void dismissFinding(finding.id);
+                                                    }}
+                                                  >
+                                                    <IconX size={14} />
+                                                  </ActionIcon>
+                                                </Group>
+                                                {(context || detectedDate) ? (
+                                                  <Text size="xs" c="dimmed">
+                                                    {[context, detectedDate].filter(Boolean).join(' | ')}
+                                                  </Text>
+                                                ) : null}
+                                              </Stack>
+                                            </Paper>
+                                          );
+                                        })}
+                                      </Stack>
+                                    </Stack>
+                                  </Popover.Dropdown>
+                                </Popover>
+                              ) : null}
+                            </Stack>
+                          )}
+                        </Group>
+
+                        {historyGranularity === 'hourly' &&
+                          hourlyRangeMode === 'expanded' &&
+                          hourlyHistoryRangeLabel ? (
+                          <Text size="sm" c="dimmed">
+                            {hourlyHistoryRangeLabel} · advertiser account time
+                          </Text>
+                        ) : null}
+
+                      </Stack>
+
+                      <div className={classes.historyChartBody}>
+                        {isPhone && mobilePreviewTrendChart.data.length > 0 ? (
+                          <Stack gap="xs">
+                            <LineChart
+                              h={featuredHistoryChartHeight}
+                              data={mobilePreviewTrendChart.data}
+                              dataKey="label"
+                              lineChartProps={trendLineChartProps}
+                              type="default"
+                              curveType="monotone"
+                              withLegend={false}
+                              withDots={false}
+                              strokeWidth={3}
+                              gridAxis="x"
+                              strokeDasharray="4 4"
+                              yAxisProps={{ width: trendYAxisWidth }}
+                              xAxisProps={{
+                                minTickGap: 28,
+                                tickMargin: 6,
+                                padding: { left: 8, right: 10 },
+                              }}
+                              tooltipProps={mobilePreviewTrendTooltipProps}
+                              dotProps={trendDotProps}
+                              activeDotProps={trendActiveDotProps}
+                              lineProps={(series) => ({
+                                strokeDasharray: series.strokeDasharray,
+                                strokeLinecap: 'round',
+                                strokeLinejoin: 'round',
+                              })}
+                              series={mobilePreviewTrendChart.series}
+                              valueFormatter={(value) =>
+                                typeof value === 'number'
+                                  ? mobilePreviewTrendChart.formatter(value)
+                                  : String(value ?? '-')
+                              }
+                            />
+                            <DataSummaryBox summary={mobileTrendDataSummary} />
+                          </Stack>
+                        ) : trendChartData.length > 0 ? (
+                          isExpandedHourlyScrollable ? (
+                            <ScrollArea
+                              type="auto"
+                              scrollbars="x"
+                              offsetScrollbars="x"
+                              viewportRef={expandedHourlyViewportRef}
+                              className={classes.historyChartScrollArea}
+                            >
+                              <div
+                                className={classes.historyChartScrollableCanvas}
+                                style={{ width: expandedHourlyChartWidth ?? undefined }}
+                              >
+                                <LineChart
+                                  h={featuredHistoryChartHeight}
+                                  data={trendChartData}
+                                  dataKey="label"
+                                  lineChartProps={trendLineChartProps}
+                                  type="default"
+                                  curveType="monotone"
+                                  withLegend
+                                  withDots
+                                  strokeWidth={4}
+                                  gridAxis="x"
+                                  strokeDasharray="4 4"
+                                  yAxisProps={{ width: trendYAxisWidth }}
+                                  xAxisProps={trendXAxisProps}
+                                  tooltipProps={trendTooltipProps}
+                                  dotProps={trendDotProps}
+                                  activeDotProps={trendActiveDotProps}
+                                  lineProps={(series) => ({
+                                    strokeDasharray: series.strokeDasharray,
+                                    strokeLinecap: 'round',
+                                    strokeLinejoin: 'round',
+                                  })}
+                                  referenceLines={trendReferenceLines}
+                                  series={trendChart.series}
+                                  valueFormatter={(value) =>
+                                    typeof value === 'number'
+                                      ? trendChart.formatter(value)
+                                      : String(value ?? '—')
+                                  }
+                                >
+                                  {trendPointIndicators.map((indicator) => (
+                                    <ReferenceDot
+                                      key={indicator.key}
+                                      x={indicator.x}
+                                      y={indicator.y}
+                                      yAxisId="left"
+                                      r={8}
+                                      fill="#ffffff"
+                                      stroke={indicator.color}
+                                      strokeWidth={3}
+                                      isFront
+                                    />
+                                  ))}
+                                </LineChart>
+                              </div>
+                            </ScrollArea>
+                          ) : (
                             <LineChart
                               h={featuredHistoryChartHeight}
                               data={trendChartData}
@@ -4061,393 +4719,316 @@ export default function DashboardClient({
                                 />
                               ))}
                             </LineChart>
-                          </div>
-                        </ScrollArea>
-                      ) : (
-                        <LineChart
-                          h={featuredHistoryChartHeight}
-                          data={trendChartData}
-                          dataKey="label"
-                          lineChartProps={trendLineChartProps}
-                          type="default"
-                          curveType="monotone"
-                          withLegend
-                          withDots
-                          strokeWidth={4}
-                          gridAxis="x"
-                          strokeDasharray="4 4"
-                          yAxisProps={{ width: trendYAxisWidth }}
-                          xAxisProps={trendXAxisProps}
-                          tooltipProps={trendTooltipProps}
-                          dotProps={trendDotProps}
-                          activeDotProps={trendActiveDotProps}
-                          lineProps={(series) => ({
-                            strokeDasharray: series.strokeDasharray,
-                            strokeLinecap: 'round',
-                            strokeLinejoin: 'round',
-                          })}
-                          referenceLines={trendReferenceLines}
-                          series={trendChart.series}
-                          valueFormatter={(value) =>
-                            typeof value === 'number'
-                              ? trendChart.formatter(value)
-                              : String(value ?? '—')
-                          }
-                        >
-                          {trendPointIndicators.map((indicator) => (
-                            <ReferenceDot
-                              key={indicator.key}
-                              x={indicator.x}
-                              y={indicator.y}
-                              yAxisId="left"
-                              r={8}
-                              fill="#ffffff"
-                              stroke={indicator.color}
-                              strokeWidth={3}
-                              isFront
-                            />
-                          ))}
-                        </LineChart>
-                      )
-                    ) : (
-                      <Stack
-                        justify="center"
-                        align="center"
-                        h={featuredHistoryChartHeight}
-                        gap="xs"
-                      >
-                        <Text fw={800}>No live ad set history yet</Text>
-                        <Text size="sm" c="dimmed" ta="center" maw={360}>
-                          {historyGranularity === 'hourly'
-                            ? 'Hourly advertiser-time rows will appear here once the featured ad set has synced enough hourly performance to show its full active-time history.'
-                            : 'Once a live ad set is serving today, this graph will stay anchored on today and expand backward across that ad set&apos;s history.'}
-                        </Text>
-                        <Text size="sm" c="dimmed" ta="center" maw={360}>
-                          {trendChart.description}
-                        </Text>
-                      </Stack>
-                    )}
-                  </div>
-                </Paper>
-              </Grid.Col>
-
-              <Grid.Col span={{ base: 12, xl: 4 }}>
-                <Paper withBorder radius="xl" p="md" className={classes.chartPanel}>
-                  <Group justify="space-between" align="flex-start" gap="sm" mb="md" wrap="wrap">
-                    <Group gap="sm" wrap="nowrap">
-                      <ThemeIcon color="teal" variant="light" radius="md">
-                        <IconChartBar size={18} />
-                      </ThemeIcon>
-                      <div>
-                        <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                          Delivery surface graph
-                        </Text>
-                        <Text fw={800}>
-                          {surfacePanelMode === 'platform'
-                            ? platformPanelChart.title
-                            : surfacePanelMode === 'device'
-                              ? devicePanelChart.title
-                              : surfacePanelMode === 'times'
-                                ? hourlyHeatmap?.title ?? 'Best recurring click times'
-                                : regionStateMap.title}
-                        </Text>
-                      </div>
-                    </Group>
-                    <Group gap="xs" wrap="wrap" className={classes.surfacePanelActions}>
-                      <Button
-                        size="xs"
-                        radius="xl"
-                        variant={surfacePanelMode === 'platform' ? 'filled' : 'light'}
-                        onClick={() => setSurfacePanelMode('platform')}
-                      >
-                        Platforms
-                      </Button>
-                      <Button
-                        size="xs"
-                        radius="xl"
-                        variant={surfacePanelMode === 'device' ? 'filled' : 'light'}
-                        onClick={() => setSurfacePanelMode('device')}
-                      >
-                        Devices
-                      </Button>
-                      <Button
-                        size="xs"
-                        radius="xl"
-                        variant={surfacePanelMode === 'geo' ? 'filled' : 'light'}
-                        onClick={() => setSurfacePanelMode('geo')}
-                      >
-                        Geo
-                      </Button>
-                      <Button
-                        size="xs"
-                        radius="xl"
-                        variant={surfacePanelMode === 'times' ? 'filled' : 'light'}
-                        onClick={() => setSurfacePanelMode('times')}
-                      >
-                        Times
-                      </Button>
-                    </Group>
-                  </Group>
-
-                  <Stack gap="md">
-                    {surfacePanelMode === 'times' ? (
-                      hourlyHeatmap ? (
-                        <Stack gap="sm">
-                          <Group gap="xs" wrap="wrap">
-                            <Badge color="blue" variant="light" radius="sm">
-                              Best slot: {hourlyHeatmap.summarySlotLabel}
-                            </Badge>
-                            <Badge color="gray" variant="outline" radius="sm">
-                              Best day: {hourlyHeatmap.summaryDayLabel}
-                            </Badge>
-                            <Badge color="gray" variant="outline" radius="sm">
-                              Best hour: {hourlyHeatmap.summaryHourLabel}
-                            </Badge>
-                          </Group>
-
-                          <ScrollArea
-                            type="auto"
-                            scrollbars="x"
-                            offsetScrollbars="x"
-                            className={classes.heatmapScrollArea}
+                          )
+                        ) : (
+                          <Stack
+                            justify="center"
+                            align="center"
+                            h={featuredHistoryChartHeight}
+                            gap="xs"
                           >
-                            <div className={classes.heatmapGrid}>
-                              <div className={classes.heatmapCorner} />
-                              {hourlyHeatmap.hourLabels.map((label, index) => (
-                                <Text
-                                  key={`heatmap-hour-${index}`}
-                                  size="10px"
-                                  c="dimmed"
-                                  ta="center"
-                                  className={classes.heatmapHourLabel}
-                                >
-                                  {label}
-                                </Text>
-                              ))}
+                            <Text fw={800}>No live ad set history yet</Text>
+                            <Text size="sm" c="dimmed" ta="center" maw={360}>
+                              {historyGranularity === 'hourly'
+                                ? 'Hourly advertiser-time rows will appear here once the featured ad set has synced enough hourly performance to show its full active-time history.'
+                                : 'Once a live ad set is serving today, this graph will stay anchored on today and expand backward across that ad set&apos;s history.'}
+                            </Text>
+                            <Text size="sm" c="dimmed" ta="center" maw={360}>
+                              {trendChart.description}
+                            </Text>
+                          </Stack>
+                        )}
+                      </div>
+                    </Paper>
+                  </Grid.Col>
 
-                              {hourlyHeatmap.rows.map((row) => (
-                                <Fragment key={`heatmap-row-${row.dayOfWeek}`}>
-                                  <Text
-                                    size="10px"
-                                    fw={700}
-                                    c="dimmed"
-                                    className={classes.heatmapDayLabel}
+                  <Grid.Col span={{ base: 12, xl: 4 }}>
+                    <Paper withBorder radius="xl" p="md" className={classes.chartPanel}>
+                      <Group justify="space-between" align="flex-start" gap="sm" mb="md" wrap="wrap">
+                        <Group gap="sm" wrap="nowrap">
+                          <ThemeIcon color="teal" variant="light" radius="md">
+                            <IconChartBar size={18} />
+                          </ThemeIcon>
+                          <div>
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                              Delivery surface graph
+                            </Text>
+                            <Text fw={800}>
+                              {surfacePanelMode === 'platform'
+                                ? platformPanelChart.title
+                                : surfacePanelMode === 'device'
+                                  ? devicePanelChart.title
+                                  : surfacePanelMode === 'times'
+                                    ? hourlyHeatmap?.title ?? 'Best recurring click times'
+                                    : regionStateMap.title}
+                            </Text>
+                          </div>
+                        </Group>
+                        <Group gap="xs" wrap="wrap" className={classes.surfacePanelActions}>
+                          <Button
+                            size="xs"
+                            radius="xl"
+                            variant={surfacePanelMode === 'platform' ? 'filled' : 'light'}
+                            onClick={() => setSurfacePanelMode('platform')}
+                          >
+                            Platforms
+                          </Button>
+                          <Button
+                            size="xs"
+                            radius="xl"
+                            variant={surfacePanelMode === 'device' ? 'filled' : 'light'}
+                            onClick={() => setSurfacePanelMode('device')}
+                          >
+                            Devices
+                          </Button>
+                          <Button
+                            size="xs"
+                            radius="xl"
+                            variant={surfacePanelMode === 'geo' ? 'filled' : 'light'}
+                            onClick={() => setSurfacePanelMode('geo')}
+                          >
+                            Geo
+                          </Button>
+                          <Button
+                            size="xs"
+                            radius="xl"
+                            variant={surfacePanelMode === 'times' ? 'filled' : 'light'}
+                            onClick={() => setSurfacePanelMode('times')}
+                          >
+                            Times
+                          </Button>
+                        </Group>
+                      </Group>
+
+                      <Stack gap="md">
+                        <div className={classes.surfaceGraphGrid}>
+                          <div className={classes.surfaceGraphCard}>
+                            {surfacePanelMode === 'times' ? (
+                              hourlyHeatmap ? (
+                                <Stack gap="sm">
+                                  <Group gap="xs" wrap="wrap">
+                                    <Badge color="blue" variant="light" radius="sm">
+                                      Best slot: {hourlyHeatmap.summarySlotLabel}
+                                    </Badge>
+                                    <Badge color="gray" variant="outline" radius="sm">
+                                      Best day: {hourlyHeatmap.summaryDayLabel}
+                                    </Badge>
+                                    <Badge color="gray" variant="outline" radius="sm">
+                                      Best hour: {hourlyHeatmap.summaryHourLabel}
+                                    </Badge>
+                                  </Group>
+
+                                  <ScrollArea
+                                    type="auto"
+                                    scrollbars="x"
+                                    offsetScrollbars="x"
+                                    className={classes.heatmapScrollArea}
                                   >
-                                    {row.dayLabel}
+                                    <div className={classes.heatmapGrid}>
+                                      <div className={classes.heatmapCorner} />
+                                      {hourlyHeatmap.hourLabels.map((label, index) => (
+                                        <Text
+                                          key={`heatmap-hour-${index}`}
+                                          size="10px"
+                                          c="dimmed"
+                                          ta="center"
+                                          className={classes.heatmapHourLabel}
+                                        >
+                                          {label}
+                                        </Text>
+                                      ))}
+
+                                      {hourlyHeatmap.rows.map((row) => (
+                                        <Fragment key={`heatmap-row-${row.dayOfWeek}`}>
+                                          <Text
+                                            size="10px"
+                                            fw={700}
+                                            c="dimmed"
+                                            className={classes.heatmapDayLabel}
+                                          >
+                                            {row.dayLabel}
+                                          </Text>
+                                          {row.cells.map((cell) => (
+                                            <div
+                                              key={cell.key}
+                                              className={classes.heatmapCell}
+                                              style={{
+                                                backgroundColor:
+                                                  cell.metricAverage > 0
+                                                    ? `rgba(37, 99, 235, ${0.12 + cell.intensity * 0.76})`
+                                                    : 'rgba(241, 245, 249, 0.94)',
+                                                borderColor:
+                                                  cell.metricAverage > 0
+                                                    ? 'rgba(37, 99, 235, 0.28)'
+                                                    : 'rgba(226, 232, 240, 0.94)',
+                                              }}
+                                              title={`${cell.dayLabel} · ${formatHourLongLabel(
+                                                cell.hourOfDay
+                                              )}: avg ${formatDecimal(cell.metricAverage)} ${hourlyHeatmap.metricLabel
+                                                }/slot · total ${formatNumber(
+                                                  cell.metricTotal
+                                                )} · CTR ${formatRate(cell.ctr)} · Spend ${formatCurrency(
+                                                  cell.spend,
+                                                  payload.viewContext.currencyCode,
+                                                  2
+                                                )}`}
+                                            />
+                                          ))}
+                                        </Fragment>
+                                      ))}
+                                    </div>
+                                  </ScrollArea>
+                                </Stack>
+                              ) : (
+                                <Paper withBorder radius="xl" p="md" className={classes.emptyPanel}>
+                                  <Text fw={700}>
+                                    {hasHourlyTrend
+                                      ? 'Best times heatmap is still preparing'
+                                      : 'Hourly history is still syncing'}
                                   </Text>
-                                  {row.cells.map((cell) => (
-                                    <div
-                                      key={cell.key}
-                                      className={classes.heatmapCell}
-                                      style={{
-                                        backgroundColor:
-                                          cell.metricAverage > 0
-                                            ? `rgba(37, 99, 235, ${0.12 + cell.intensity * 0.76})`
-                                            : 'rgba(241, 245, 249, 0.94)',
-                                        borderColor:
-                                          cell.metricAverage > 0
-                                            ? 'rgba(37, 99, 235, 0.28)'
-                                            : 'rgba(226, 232, 240, 0.94)',
-                                      }}
-                                      title={`${cell.dayLabel} · ${formatHourLongLabel(
-                                        cell.hourOfDay
-                                      )}: avg ${formatDecimal(cell.metricAverage)} ${
-                                        hourlyHeatmap.metricLabel
-                                      }/slot · total ${formatNumber(
-                                        cell.metricTotal
-                                      )} · CTR ${formatRate(cell.ctr)} · Spend ${formatCurrency(
-                                        cell.spend,
-                                        payload.viewContext.currencyCode,
-                                        2
-                                      )}`}
-                                    />
-                                  ))}
-                                </Fragment>
-                              ))}
-                            </div>
-                          </ScrollArea>
-                        </Stack>
-                      ) : (
-                        <Paper withBorder radius="xl" p="md" className={classes.emptyPanel}>
-                          <Text fw={700}>
-                            {hasHourlyTrend
-                              ? 'Best times heatmap is still preparing'
-                              : 'Hourly history is still syncing'}
-                          </Text>
-                          <Text size="sm" c="dimmed" mt={6}>
-                            The heatmap will appear here once enough hourly advertiser-time rows
-                            exist for the featured ad set.
-                          </Text>
-                        </Paper>
-                      )
-                    ) : surfacePanelMode === 'geo' ? (
-                      featuredAudienceBreakdowns.state === 'available' &&
-                      regionStateMap.activeStates.length > 0 ? (
-                        <Stack gap="sm">
-                          <div className={classes.stateMapWrap}>
-                            <div className={classes.stateMapGrid}>
-                              {regionStateMap.states.map((state) => (
-                                <div
-                                  key={state.code}
-                                  className={classes.stateMapTile}
-                                  style={{
-                                    gridColumn: `${state.col}`,
-                                    gridRow: `${state.row}`,
-                                    backgroundColor: state.isActive
-                                      ? `rgba(37, 99, 235, ${0.18 + state.intensity * 0.68})`
-                                      : 'rgba(241, 245, 249, 0.96)',
-                                    borderColor: state.isActive
-                                      ? 'rgba(37, 99, 235, 0.42)'
-                                      : 'rgba(203, 213, 225, 0.9)',
-                                    color:
-                                      state.isActive && state.intensity > 0.45
-                                        ? '#ffffff'
-                                        : state.isActive
-                                          ? '#1d4ed8'
-                                          : '#64748b',
-                                  }}
-                                  title={
-                                    state.isActive
-                                      ? `${state.name}: ${state.valueLabel}`
-                                      : state.name
-                                  }
-                                >
-                                  {state.code}
-                                </div>
-                              ))}
-                            </div>
+                                  <Text size="sm" c="dimmed" mt={6}>
+                                    The heatmap will appear here once enough hourly advertiser-time rows
+                                    exist for the featured ad set.
+                                  </Text>
+                                </Paper>
+                              )
+                            ) : surfacePanelMode === 'geo' ? (
+                              featuredAudienceBreakdowns.state === 'available' &&
+                                regionStateMap.activeStates.length > 0 ? (
+                                <Stack gap="sm">
+                                  <div className={classes.stateMapWrap}>
+                                    <div className={classes.stateMapGrid}>
+                                      {regionStateMap.states.map((state) => (
+                                        <div
+                                          key={state.code}
+                                          className={classes.stateMapTile}
+                                          style={{
+                                            gridColumn: `${state.col}`,
+                                            gridRow: `${state.row}`,
+                                            backgroundColor: state.isActive
+                                              ? `rgba(37, 99, 235, ${0.18 + state.intensity * 0.68})`
+                                              : 'rgba(241, 245, 249, 0.96)',
+                                            borderColor: state.isActive
+                                              ? 'rgba(37, 99, 235, 0.42)'
+                                              : 'rgba(203, 213, 225, 0.9)',
+                                            color:
+                                              state.isActive && state.intensity > 0.45
+                                                ? '#ffffff'
+                                                : state.isActive
+                                                  ? '#1d4ed8'
+                                                  : '#64748b',
+                                          }}
+                                          title={
+                                            state.isActive
+                                              ? `${state.name}: ${state.valueLabel}`
+                                              : state.name
+                                          }
+                                        >
+                                          {state.code}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  <Group gap="xs" wrap="wrap">
+                                    {regionStateMap.activeStates.map((state) => (
+                                      <Badge key={state.code} color="blue" variant="light" radius="sm">
+                                        {state.name}: {state.valueLabel}
+                                      </Badge>
+                                    ))}
+                                  </Group>
+                                </Stack>
+                              ) : (
+                                <Stack justify="center" align="center" h={deliverySurfaceChartHeight} gap="xs">
+                                  <Text fw={800}>
+                                    {isMeta
+                                      ? 'Regional state rows are still syncing'
+                                      : 'Regional state map is currently Meta-only'}
+                                  </Text>
+                                  <Text size="sm" c="dimmed" ta="center" maw={320}>
+                                    {isMeta
+                                      ? 'DeepVisor will highlight state-level regions here once Meta region rows are available across the featured ad set history.'
+                                      : 'The geo state map is only wired for Meta right now.'}
+                                  </Text>
+                                </Stack>
+                              )
+                            ) : featuredPlatformBreakdowns.state === 'available' &&
+                              activeSurfaceChart.data.length > 0 ? (
+                              <BarChart
+                                h={deliverySurfaceChartHeight}
+                                data={activeSurfaceChart.data}
+                                dataKey="segment"
+                                withLegend={activeSurfaceChart.withLegend}
+                                series={activeSurfaceChart.series}
+                                tooltipProps={activeSurfaceTooltipProps}
+                                valueFormatter={activeSurfaceChart.formatter}
+                                tickLine="y"
+                              />
+                            ) : (
+                              <Stack justify="center" align="center" h={deliverySurfaceChartHeight} gap="xs">
+                                <Text fw={800}>
+                                  {isMeta
+                                    ? surfacePanelMode === 'device'
+                                      ? 'Device rows are still syncing'
+                                      : 'Platform rows are still syncing'
+                                    : 'This graph is currently Meta-only'}
+                                </Text>
+                                <Text size="sm" c="dimmed" ta="center" maw={320}>
+                                  {isMeta
+                                    ? surfacePanelMode === 'device'
+                                      ? 'Impression-device bars will appear here as Meta sync fills in the featured ad set history.'
+                                      : 'Publisher platform bars will appear here as Meta sync fills in the featured ad set history.'
+                                    : 'The top-right surface graph is only wired for Meta right now.'}
+                                </Text>
+                              </Stack>
+                            )}
+                            <DataSummaryBox summary={surfaceDataSummary} />
                           </div>
 
-                          <Group gap="xs" wrap="wrap">
-                            {regionStateMap.activeStates.map((state) => (
-                              <Badge key={state.code} color="blue" variant="light" radius="sm">
-                                {state.name}: {state.valueLabel}
-                              </Badge>
-                            ))}
-                          </Group>
-                        </Stack>
-                      ) : (
-                        <Stack justify="center" align="center" h={deliverySurfaceChartHeight} gap="xs">
-                          <Text fw={800}>
-                            {isMeta
-                              ? 'Regional state rows are still syncing'
-                              : 'Regional state map is currently Meta-only'}
-                          </Text>
-                          <Text size="sm" c="dimmed" ta="center" maw={320}>
-                            {isMeta
-                              ? 'DeepVisor will highlight state-level regions here once Meta region rows are available across the featured ad set history.'
-                              : 'The geo state map is only wired for Meta right now.'}
-                          </Text>
-                        </Stack>
-                      )
-                    ) : featuredPlatformBreakdowns.state === 'available' &&
-                      activeSurfaceChart.data.length > 0 ? (
-                      <BarChart
-                        h={deliverySurfaceChartHeight}
-                        data={activeSurfaceChart.data}
-                        dataKey="segment"
-                        withLegend={activeSurfaceChart.withLegend}
-                        series={activeSurfaceChart.series}
-                        tooltipProps={activeSurfaceTooltipProps}
-                        valueFormatter={activeSurfaceChart.formatter}
-                        tickLine="y"
-                      />
-                    ) : (
-                      <Stack justify="center" align="center" h={deliverySurfaceChartHeight} gap="xs">
-                        <Text fw={800}>
-                          {isMeta
-                            ? surfacePanelMode === 'device'
-                              ? 'Device rows are still syncing'
-                              : 'Platform rows are still syncing'
-                            : 'This graph is currently Meta-only'}
-                        </Text>
-                        <Text size="sm" c="dimmed" ta="center" maw={320}>
-                          {isMeta
-                            ? surfacePanelMode === 'device'
-                              ? 'Impression-device bars will appear here as Meta sync fills in the featured ad set history.'
-                              : 'Publisher platform bars will appear here as Meta sync fills in the featured ad set history.'
-                            : 'The top-right surface graph is only wired for Meta right now.'}
-                        </Text>
+                          <div className={`${classes.chartSubSection} ${classes.surfaceGraphCard}`}>
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={800} mb={6}>
+                              Audience breakdown
+                            </Text>
+                            <Text fw={700} mb="sm">
+                              {audienceChart.title}
+                            </Text>
+                            {featuredAudienceBreakdowns.state === 'available' &&
+                              audienceChart.data.length > 0 ? (
+                              <BarChart
+                                h={audienceBreakdownChartHeight}
+                                type={audienceChart.type}
+                                data={audienceChart.data}
+                                dataKey="segment"
+                                withLegend={audienceChart.series.length > 1}
+                                series={audienceChart.series}
+                                tooltipProps={audienceChartTooltipProps}
+                                valueFormatter={audienceChart.formatter}
+                                tickLine="y"
+                              />
+                            ) : (
+                              <Paper withBorder radius="xl" p="md" className={classes.emptyPanel}>
+                                <Text fw={700}>
+                                  {isMeta
+                                    ? 'Audience rows are still syncing'
+                                    : 'Audience graph is currently Meta-only'}
+                                </Text>
+                                <Text size="sm" c="dimmed" mt={6}>
+                                  {isMeta
+                                    ? 'Age and gender breakdowns will appear here as synced audience rows fill in for the featured ad set history.'
+                                    : 'The audience breakdown graph is only wired for Meta right now.'}
+                                </Text>
+                              </Paper>
+                            )}
+                            <DataSummaryBox summary={audienceDataSummary} />
+                          </div>
+                        </div>
                       </Stack>
-                    )}
-
-                    <div className={classes.chartSubSection}>
-                      <Text size="xs" c="dimmed" tt="uppercase" fw={800} mb={6}>
-                        Audience breakdown
-                      </Text>
-                      <Text fw={700} mb="sm">
-                        {audienceChart.title}
-                      </Text>
-                      {featuredAudienceBreakdowns.state === 'available' &&
-                      audienceChart.data.length > 0 ? (
-                        <BarChart
-                          h={audienceBreakdownChartHeight}
-                          type={audienceChart.type}
-                          data={audienceChart.data}
-                          dataKey="segment"
-                          withLegend={audienceChart.series.length > 1}
-                          series={audienceChart.series}
-                          tooltipProps={audienceChartTooltipProps}
-                          valueFormatter={audienceChart.formatter}
-                          tickLine="y"
-                        />
-                      ) : (
-                        <Paper withBorder radius="xl" p="md" className={classes.emptyPanel}>
-                          <Text fw={700}>
-                            {isMeta
-                              ? 'Audience rows are still syncing'
-                              : 'Audience graph is currently Meta-only'}
-                          </Text>
-                          <Text size="sm" c="dimmed" mt={6}>
-                            {isMeta
-                              ? 'Age and gender breakdowns will appear here as synced audience rows fill in for the featured ad set history.'
-                              : 'The audience breakdown graph is only wired for Meta right now.'}
-                          </Text>
-                        </Paper>
-                      )}
-                    </div>
-                  </Stack>
-                </Paper>
-              </Grid.Col>
-            </Grid>
-            ) : null}
-
-            {showSummaryCards ? (
-            <SimpleGrid cols={{ base: 2, sm: 2, lg: 3, xl: 6 }} spacing="md">
-              <SummaryCard
-                label={summaryCampaignLabel}
-                value={formatNumber(liveSummary.liveCampaignCount)}
-                icon={IconUsers}
-              />
-              <SummaryCard
-                label={summaryAdsetLabel}
-                value={formatNumber(liveSummary.liveAdsetCount)}
-                icon={IconTargetArrow}
-              />
-              <SummaryCard
-                label={summaryAdLabel}
-                value={formatNumber(liveSummary.liveAdCount)}
-                icon={IconLink}
-              />
-              <SummaryCard
-                label="Spend"
-                value={formatCurrency(liveSummary.spend, payload.viewContext.currencyCode)}
-                icon={IconCurrencyDollar}
-              />
-              <SummaryCard
-                label={liveSummary.primaryOutcomeLabel}
-                value={formatNumber(liveSummary.primaryOutcomeValue)}
-                icon={IconTargetArrow}
-              />
-              <SummaryCard
-                label={summaryPlatformLabel}
-                value={summaryPlatformValue}
-                icon={IconLink}
-              />
-            </SimpleGrid>
-            ) : null}
-          </Stack>
-        </Card>
+                    </Paper>
+                  </Grid.Col>
+                </Grid>
+              ) : null}
+            </Stack>
+          </Card>
         ) : null}
 
         {showLiveDeliveryTables && payload.state === 'ready' && (todayLiveWindow.hasLiveDelivery || lifetimeLiveWindow.hasLiveDelivery) ? (
@@ -4487,7 +5068,7 @@ export default function DashboardClient({
                 <LiveDeliverySectionHeader title="Campaign containers" />
                 {isPhone ? (
                   <Stack gap="sm">
-                    {liveWindow.campaigns.map((campaign) => {
+                    {liveWindow.campaigns.slice(0, mobileLiveRowLimit).map((campaign) => {
                       const reportHref = buildDashboardEntityReportHref({
                         scope: 'campaign',
                         platformIntegrationId: selectedPlatformIntegrationId,
@@ -4505,6 +5086,11 @@ export default function DashboardClient({
                         />
                       );
                     })}
+                    {liveWindow.campaigns.length > mobileLiveRowLimit ? (
+                      <Text size="xs" c="dimmed" ta="center">
+                        Showing top {mobileLiveRowLimit} of {formatNumber(liveWindow.campaigns.length)} campaigns.
+                      </Text>
+                    ) : null}
                   </Stack>
                 ) : (
                   <div className={classes.tableWrap}>
@@ -4592,10 +5178,10 @@ export default function DashboardClient({
                                 <Table.Td ta="right" className={classes.tableStatCell}>
                                   {campaign.results > 0
                                     ? formatCurrency(
-                                        campaign.costPerResult,
-                                        payload.viewContext.currencyCode,
-                                        2
-                                      )
+                                      campaign.costPerResult,
+                                      payload.viewContext.currencyCode,
+                                      2
+                                    )
                                     : '—'}
                                 </Table.Td>
                                 <Table.Td ta="right" className={classes.tableStatCell}>
@@ -4632,7 +5218,7 @@ export default function DashboardClient({
                 <LiveDeliverySectionHeader title="Ad set comparison" />
                 {isPhone ? (
                   <Stack gap="sm">
-                    {liveComparisons.adsets.map((item) => {
+                    {liveComparisons.adsets.slice(0, mobileLiveRowLimit).map((item) => {
                       const reportHref = buildDashboardEntityReportHref({
                         scope: 'adset',
                         platformIntegrationId: selectedPlatformIntegrationId,
@@ -4651,6 +5237,11 @@ export default function DashboardClient({
                         />
                       );
                     })}
+                    {liveComparisons.adsets.length > mobileLiveRowLimit ? (
+                      <Text size="xs" c="dimmed" ta="center">
+                        Showing top {mobileLiveRowLimit} of {formatNumber(liveComparisons.adsets.length)} ad sets.
+                      </Text>
+                    ) : null}
                   </Stack>
                 ) : (
                   <div className={classes.tableWrap}>
@@ -4744,10 +5335,10 @@ export default function DashboardClient({
                                 <Table.Td ta="right" className={classes.tableStatCell}>
                                   {item.results > 0
                                     ? formatCurrency(
-                                        item.costPerResult,
-                                        payload.viewContext.currencyCode,
-                                        2
-                                      )
+                                      item.costPerResult,
+                                      payload.viewContext.currencyCode,
+                                      2
+                                    )
                                     : '—'}
                                 </Table.Td>
                                 <Table.Td ta="right" className={classes.tableStatCell}>
@@ -4772,158 +5363,163 @@ export default function DashboardClient({
                           })}
                         </Table.Tbody>
                       </Table>
-                        </ScrollArea>
-                      </div>
-                    )}
+                    </ScrollArea>
+                  </div>
+                )}
+              </Stack>
+
+              <Stack gap="xs" className={classes.subSection}>
+                <LiveDeliverySectionHeader
+                  title="Ad comparison"
+                />
+                {isPhone ? (
+                  <Stack gap="sm">
+                    {liveComparisons.ads.slice(0, mobileLiveRowLimit).map((item) => {
+                      const reportHref = buildDashboardEntityReportHref({
+                        scope: 'ad',
+                        platformIntegrationId: selectedPlatformIntegrationId,
+                        adAccountId: selectedAdAccountId,
+                        campaignId: item.campaignId,
+                        adsetId: item.adsetId,
+                        adId: item.id,
+                        schedules: [item.schedule, item.adsetSchedule, item.campaignSchedule],
+                      });
+
+                      return (
+                        <AdComparisonRow
+                          key={item.id}
+                          item={item}
+                          currencyCode={payload.viewContext.currencyCode}
+                          reportHref={reportHref}
+                        />
+                      );
+                    })}
+                    {liveComparisons.ads.length > mobileLiveRowLimit ? (
+                      <Text size="xs" c="dimmed" ta="center">
+                        Showing top {mobileLiveRowLimit} of {formatNumber(liveComparisons.ads.length)} ads.
+                      </Text>
+                    ) : null}
                   </Stack>
+                ) : (
+                  <div className={classes.tableWrap}>
+                    <ScrollArea>
+                      <Table
+                        striped
+                        highlightOnHover
+                        withTableBorder
+                        className={`${classes.dataTable} ${classes.liveAdTable}`}
+                      >
+                        <colgroup>
+                          <col style={{ width: '220px' }} />
+                          <col style={{ width: '190px' }} />
+                          <col style={{ width: '190px' }} />
+                          <col style={{ width: '110px' }} />
+                          <col style={{ width: '100px' }} />
+                          <col style={{ width: '90px' }} />
+                          <col style={{ width: '80px' }} />
+                          <col style={{ width: '120px' }} />
+                          <col style={{ width: '110px' }} />
+                        </colgroup>
+                        <Table.Thead>
+                          <Table.Tr>
+                            <Table.Th>Ad</Table.Th>
+                            <Table.Th>Campaign</Table.Th>
+                            <Table.Th>Ad set</Table.Th>
+                            <Table.Th>Status</Table.Th>
+                            <Table.Th ta="right" className={`${classes.tableMetricDivider} ${classes.tableStatHeader}`}>
+                              Spend
+                            </Table.Th>
+                            <Table.Th ta="right" className={classes.tableStatHeader}>
+                              Results
+                            </Table.Th>
+                            <Table.Th ta="right" className={classes.tableStatHeader}>
+                              Cost/Result
+                            </Table.Th>
+                            <Table.Th ta="right" className={classes.tableStatHeader}>
+                              CTR
+                            </Table.Th>
+                            <Table.Th ta="right" className={classes.tableStatHeader}>
+                              Report
+                            </Table.Th>
+                          </Table.Tr>
+                        </Table.Thead>
+                        <Table.Tbody>
+                          {liveComparisons.ads.map((item) => {
+                            const reportHref = buildDashboardEntityReportHref({
+                              scope: 'ad',
+                              platformIntegrationId: selectedPlatformIntegrationId,
+                              adAccountId: selectedAdAccountId,
+                              campaignId: item.campaignId,
+                              adsetId: item.adsetId,
+                              adId: item.id,
+                              schedules: [
+                                item.schedule,
+                                item.adsetSchedule,
+                                item.campaignSchedule,
+                              ],
+                            });
 
-                  <Stack gap="xs" className={classes.subSection}>
-                    <LiveDeliverySectionHeader
-                      title="Ad comparison"
-                    />
-                    {isPhone ? (
-                      <Stack gap="sm">
-                        {liveComparisons.ads.map((item) => {
-                          const reportHref = buildDashboardEntityReportHref({
-                            scope: 'ad',
-                            platformIntegrationId: selectedPlatformIntegrationId,
-                            adAccountId: selectedAdAccountId,
-                            campaignId: item.campaignId,
-                            adsetId: item.adsetId,
-                            adId: item.id,
-                            schedules: [item.schedule, item.adsetSchedule, item.campaignSchedule],
-                          });
-
-                          return (
-                            <AdComparisonRow
-                              key={item.id}
-                              item={item}
-                              currencyCode={payload.viewContext.currencyCode}
-                              reportHref={reportHref}
-                            />
-                          );
-                        })}
-                      </Stack>
-                    ) : (
-                      <div className={classes.tableWrap}>
-                        <ScrollArea>
-                          <Table
-                            striped
-                            highlightOnHover
-                            withTableBorder
-                            className={`${classes.dataTable} ${classes.liveAdTable}`}
-                          >
-                            <colgroup>
-                              <col style={{ width: '220px' }} />
-                              <col style={{ width: '190px' }} />
-                              <col style={{ width: '190px' }} />
-                              <col style={{ width: '110px' }} />
-                              <col style={{ width: '100px' }} />
-                              <col style={{ width: '90px' }} />
-                              <col style={{ width: '80px' }} />
-                              <col style={{ width: '120px' }} />
-                              <col style={{ width: '110px' }} />
-                            </colgroup>
-                            <Table.Thead>
-                              <Table.Tr>
-                                <Table.Th>Ad</Table.Th>
-                                <Table.Th>Campaign</Table.Th>
-                                <Table.Th>Ad set</Table.Th>
-                                <Table.Th>Status</Table.Th>
-                                <Table.Th ta="right" className={`${classes.tableMetricDivider} ${classes.tableStatHeader}`}>
-                                  Spend
-                                </Table.Th>
-                                <Table.Th ta="right" className={classes.tableStatHeader}>
-                                  Results
-                                </Table.Th>
-                                <Table.Th ta="right" className={classes.tableStatHeader}>
-                                  Cost/Result
-                                </Table.Th>
-                                <Table.Th ta="right" className={classes.tableStatHeader}>
-                                  CTR
-                                </Table.Th>
-                                <Table.Th ta="right" className={classes.tableStatHeader}>
-                                  Report
-                                </Table.Th>
+                            return (
+                              <Table.Tr key={item.id}>
+                                <Table.Td>
+                                  <Text fw={700} className={classes.tableTruncatePrimary}>
+                                    {item.name}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td className={classes.tableCellMuted}>
+                                  <Text className={classes.tableTruncateMuted}>
+                                    {item.campaignName ?? '—'}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td className={classes.tableCellMuted}>
+                                  <Text className={classes.tableTruncateMuted}>
+                                    {item.adsetName ?? '—'}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <TableStatusBadge status={item.status} />
+                                </Table.Td>
+                                <Table.Td
+                                  ta="right"
+                                  className={`${classes.tableMetricDivider} ${classes.tableStatCell}`}
+                                >
+                                  {formatCurrency(item.spend, payload.viewContext.currencyCode)}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  {formatNumber(item.results)}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  {item.results > 0
+                                    ? formatCurrency(
+                                      item.costPerResult,
+                                      payload.viewContext.currencyCode,
+                                      2
+                                    )
+                                    : '—'}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  {formatRate(item.ctr)}
+                                </Table.Td>
+                                <Table.Td ta="right" className={classes.tableStatCell}>
+                                  <Button
+                                    component={Link}
+                                    href={reportHref}
+                                    size="xs"
+                                    radius="xl"
+                                    variant="subtle"
+                                  >
+                                    View
+                                  </Button>
+                                </Table.Td>
                               </Table.Tr>
-                            </Table.Thead>
-                            <Table.Tbody>
-                              {liveComparisons.ads.map((item) => {
-                                const reportHref = buildDashboardEntityReportHref({
-                                  scope: 'ad',
-                                  platformIntegrationId: selectedPlatformIntegrationId,
-                                  adAccountId: selectedAdAccountId,
-                                  campaignId: item.campaignId,
-                                  adsetId: item.adsetId,
-                                  adId: item.id,
-                                  schedules: [
-                                    item.schedule,
-                                    item.adsetSchedule,
-                                    item.campaignSchedule,
-                                  ],
-                                });
-
-                                return (
-                                  <Table.Tr key={item.id}>
-                                    <Table.Td>
-                                      <Text fw={700} className={classes.tableTruncatePrimary}>
-                                        {item.name}
-                                      </Text>
-                                    </Table.Td>
-                                    <Table.Td className={classes.tableCellMuted}>
-                                      <Text className={classes.tableTruncateMuted}>
-                                        {item.campaignName ?? '—'}
-                                      </Text>
-                                    </Table.Td>
-                                    <Table.Td className={classes.tableCellMuted}>
-                                      <Text className={classes.tableTruncateMuted}>
-                                        {item.adsetName ?? '—'}
-                                      </Text>
-                                    </Table.Td>
-                                    <Table.Td>
-                                      <TableStatusBadge status={item.status} />
-                                    </Table.Td>
-                                    <Table.Td
-                                      ta="right"
-                                      className={`${classes.tableMetricDivider} ${classes.tableStatCell}`}
-                                    >
-                                      {formatCurrency(item.spend, payload.viewContext.currencyCode)}
-                                    </Table.Td>
-                                    <Table.Td ta="right" className={classes.tableStatCell}>
-                                      {formatNumber(item.results)}
-                                    </Table.Td>
-                                    <Table.Td ta="right" className={classes.tableStatCell}>
-                                      {item.results > 0
-                                        ? formatCurrency(
-                                            item.costPerResult,
-                                            payload.viewContext.currencyCode,
-                                            2
-                                          )
-                                        : '—'}
-                                    </Table.Td>
-                                    <Table.Td ta="right" className={classes.tableStatCell}>
-                                      {formatRate(item.ctr)}
-                                    </Table.Td>
-                                    <Table.Td ta="right" className={classes.tableStatCell}>
-                                      <Button
-                                        component={Link}
-                                        href={reportHref}
-                                        size="xs"
-                                        radius="xl"
-                                        variant="subtle"
-                                      >
-                                        View
-                                      </Button>
-                                    </Table.Td>
-                                  </Table.Tr>
-                                );
-                              })}
-                            </Table.Tbody>
-                          </Table>
-                        </ScrollArea>
-                      </div>
-                    )}
-                  </Stack>
+                            );
+                          })}
+                        </Table.Tbody>
+                      </Table>
+                    </ScrollArea>
+                  </div>
+                )}
+              </Stack>
             </Stack>
           </Card>
         ) : null}

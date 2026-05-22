@@ -27,21 +27,21 @@ const quickWins = [
     icon: BarChart3,
   },
   {
-    title: "Skip agency-style confusion",
-    copy: "Weekly summaries explain what changed, what matters, and what to approve next in plain salon-owner language.",
-    icon: FileText,
+    title: "Use the ad-work calendar",
+    copy: "Schedule reports, campaign reviews, spend checks, and other queues whenever you want DeepVisor to run them.",
+    icon: CalendarCheck,
   },
 ];
 
 const testStats = [
   { label: "ROI target", value: "3x", note: "Built to help salons move toward stronger return from ad spend." },
   { label: "Monitoring", value: "24/7", note: "Always-on ad account watch for waste, fatigue, and lead shifts." },
-  { label: "Ad workload", value: "Easier", note: "Less Ads Manager digging, clearer next steps, and simpler approvals." },
+  { label: "Ad calendar", value: "Queued", note: "Schedule reports, campaign reviews, and follow-up checks when you want them." },
 ];
 
 const flowSteps = [
   "Connect Meta",
-  "DeepVisor simplifies the work",
+  "Schedule reports and reviews",
   "Waste and winners surface",
   "You approve next steps",
 ];
@@ -87,7 +87,8 @@ const SalonHero = () => {
               <p className="max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
                 DeepVisor connects to your Meta ads, monitors spend around the clock,
                 explains what is helping or hurting bookings, and turns paid-ad
-                management into simple next steps you can approve.
+                management into calendar queues, reports, and simple next steps you
+                can approve.
               </p>
             </div>
 
@@ -174,7 +175,7 @@ const SalonSignalBoard = () => {
             {[
               { title: "Cut weak boosted-post spend", meta: "Potential waste found", icon: ShieldCheck },
               { title: "Move budget toward rebooking offer", meta: "Better booking signal", icon: TrendingUp },
-              { title: "Send weekly ROI report", meta: "Owner summary ready", icon: CalendarCheck },
+              { title: "Run Friday campaign review", meta: "Calendar queue ready", icon: CalendarCheck },
             ].map((item) => {
               const Icon = item.icon;
               return (
@@ -257,7 +258,9 @@ const HowItWorks = () => {
             <p className="text-sm leading-7 text-slate-600 sm:text-base">
               The product is currently in testing. The goal is to help salon owners
               run paid ads with agency-level visibility and recommendations without
-              agency pricing or daily platform babysitting.
+              agency pricing or daily platform babysitting. The calendar is where
+              you can schedule reports, campaign reviews, spend checks, and other
+              queues whenever you want DeepVisor to work.
             </p>
             <Button asChild variant="soft" className="bg-white text-slate-900 shadow-sm hover:bg-blue-50">
               <Link href="/features">See the full feature plan</Link>
@@ -318,7 +321,8 @@ const TestingCTA = () => {
           <div className="grid gap-3 sm:grid-cols-2">
             {[
               { label: "Approval first", icon: LockKeyhole },
-              { label: "Weekly reports", icon: FileText },
+              { label: "Reports + reviews", icon: FileText },
+              { label: "Calendar queues", icon: CalendarCheck },
               { label: "Spend alerts", icon: Clock3 },
               { label: "Booking focus", icon: Sparkles },
             ].map((item) => {

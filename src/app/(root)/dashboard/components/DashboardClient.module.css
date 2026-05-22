@@ -43,6 +43,10 @@
   height: 100%;
 }
 
+.featuredChartPanel {
+  height: 100%;
+}
+
 .historyHeader {
   padding-bottom: 14px;
   border-bottom: 1px solid rgba(226, 232, 240, 0.88);
@@ -141,6 +145,7 @@
 
 .historyChartBody {
   padding-bottom: 14px;
+  overflow: visible;
 }
 
 .historyChartScrollableCanvas {
@@ -166,6 +171,18 @@
   height: 100%;
 }
 
+.summaryCardsGrid {
+  width: 100%;
+}
+
+.summaryCardsSection {
+  min-width: 0;
+}
+
+.summaryWindowControl {
+  flex-shrink: 0;
+}
+
 .summaryMetricGroup {
   height: 100%;
 }
@@ -176,10 +193,13 @@
 }
 
 .summaryLabel {
+  color: #475569;
+  font-weight: 900;
   line-height: 1.25;
 }
 
 .summaryValue {
+  font-weight: 950;
   overflow-wrap: anywhere;
 }
 
@@ -188,6 +208,16 @@
 }
 
 .summaryMetricIcon {
+  flex-shrink: 0;
+}
+
+.summaryDelta {
+  width: fit-content;
+  max-width: 100%;
+  text-transform: none;
+}
+
+.mobileExploreChartButton {
   flex-shrink: 0;
 }
 
@@ -310,6 +340,55 @@
 .chartSubSection {
   padding-top: 16px;
   border-top: 1px solid rgba(226, 232, 240, 0.88);
+}
+
+.surfaceGraphGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.surfaceGraphCard {
+  min-width: 0;
+}
+
+.dataSummaryBox {
+  margin-top: 8px;
+  border-color: rgba(226, 232, 240, 0.94);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.dataSummaryDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.dataSummaryText {
+  min-width: 0;
+}
+
+.dataSummaryLabel,
+.dataSummaryDetail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataSummaryValueWrap {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.dataSummaryValue {
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.mobileChartModalBody {
+  min-width: 0;
 }
 
 .signalMeta {
@@ -545,9 +624,14 @@
     border-radius: 18px;
   }
 
+  .featuredChartPanel {
+    padding: 10px 8px 8px !important;
+  }
+
   .metricCard {
-    padding: 12px !important;
-    border-radius: 16px;
+    min-height: 82px;
+    padding: 10px 8px !important;
+    border-radius: 14px;
   }
 
   .page :global(.mantine-Grid-root) {
@@ -582,8 +666,32 @@
   }
 
   .historyHeader {
-    padding-bottom: 12px;
-    margin-inline: 6px;
+    padding-bottom: 8px;
+    margin-inline: 2px;
+  }
+
+  .historyHeader :global(.mantine-ThemeIcon-root) {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+  }
+
+  .historyHeaderBody :global(.mantine-Text-root:nth-child(2)) {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.82rem;
+  }
+
+  .historyHeaderBody :global(.mantine-Text-root:nth-child(n+3)) {
+    display: none;
+  }
+
+  .mobileExploreChartButton {
+    min-height: 30px;
+    padding-inline: 12px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
   }
 
   .historyControlsRow {
@@ -598,28 +706,77 @@
 
   .surfacePanelActions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     width: 100%;
-    gap: 8px;
+    gap: 5px;
   }
 
   .surfacePanelActions :global(.mantine-Button-root) {
     width: 100%;
-    min-height: 36px;
+    min-height: 30px;
+    padding-inline: 6px;
+    font-size: 0.7rem;
+  }
+
+  .summaryCardsGrid {
+    gap: 7px !important;
+  }
+
+  .summaryCardsSection {
+    gap: 10px !important;
+  }
+
+  .summaryWindowControl {
+    width: 100%;
   }
 
   .metricValue {
-    font-size: 1.35rem;
+    font-size: 1.18rem;
   }
 
   .historyChartBody {
-    margin-inline: -4px;
-    min-height: 520px;
+    margin-inline: -2px;
+    min-height: 156px;
+    padding-bottom: 4px;
+    overflow: visible;
+  }
+
+  .featuredChartPanel .historyChartBody {
+    padding-bottom: 4px;
+  }
+
+  .surfaceGraphGrid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .chartSubSection {
+    padding-top: 12px;
+    border-top: 1px solid rgba(226, 232, 240, 0.88);
+  }
+
+  .chartSubSection :global(.mantine-Text-root) {
+    line-height: 1.15;
+  }
+
+  .dataSummaryBox {
+    width: min(338px, calc(100% - 24px));
+    margin: 4px auto 0;
+    padding: 8px 10px !important;
+    border-radius: 12px;
+  }
+
+  .dataSummaryLabel {
+    font-size: 0.76rem;
+  }
+
+  .dataSummaryValue {
+    font-size: 0.86rem;
   }
 
   .historyChartScrollArea {
-    margin-inline: -4px;
-    width: calc(100% + 8px);
+    margin-inline: -2px;
+    width: calc(100% + 4px);
   }
 
   .historyChartScrollableCanvas {
@@ -627,23 +784,60 @@
   }
 
   .historyTooltipCard {
-    width: min(380px, calc(100vw - 16px));
-    max-width: min(380px, calc(100vw - 16px));
+    width: min(248px, calc(100vw - 96px));
+    max-width: min(248px, calc(100vw - 96px));
+    padding: 8px !important;
+  }
+
+  .historyTooltipCard :global(.mantine-Text-root) {
+    font-size: 0.74rem;
+    line-height: 1.2;
+  }
+
+  .historyTooltipCard :global(.mantine-Stack-root) {
+    gap: 5px;
   }
 
   .summaryLabel {
     font-size: 10px;
+    letter-spacing: 0.04em;
   }
 
   .summaryValue {
     margin-top: 6px;
-    font-size: 1.1rem;
+    font-size: 1.18rem;
     line-height: 1.1;
   }
 
+  .summaryDelta {
+    height: 18px;
+    margin-top: 6px;
+    padding-inline: 6px;
+    font-size: 9px;
+  }
+
   .summaryMetricIcon {
-    width: 34px;
-    height: 34px;
+    display: none;
+  }
+
+  .summaryCustomValue {
+    margin-top: 8px;
+  }
+
+  .servingPlatformRow {
+    justify-content: flex-start;
+    gap: 4px;
+    min-height: 24px;
+  }
+
+  .servingPlatformLogo {
+    width: 23px;
+    height: 23px;
+  }
+
+  .servingPlatformImage {
+    width: 18px;
+    height: 18px;
   }
 
   .tableWrap {
@@ -651,13 +845,46 @@
   }
 
   .liveRow {
-    padding: 12px !important;
-    border-radius: 16px;
+    padding: 10px !important;
+    border-radius: 14px;
   }
 
   .metricGrid {
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 8px;
+  }
+
+  .liveRow .metricGrid > div:nth-child(n+3) {
+    display: none;
+  }
+
+  .liveRow :global(.mantine-Badge-root) {
+    height: 20px;
+    padding-inline: 7px;
+    font-size: 9px;
+  }
+
+  .liveRow :global(.mantine-Text-root) {
+    font-size: 0.78rem;
+    line-height: 1.2;
+  }
+
+  .liveRow :global(.mantine-Button-root) {
+    min-height: 28px;
+    padding-inline: 10px;
+    font-size: 0.72rem;
+  }
+
+  .liveDeliveryTitle {
+    font-size: 0.95rem;
+  }
+
+  .liveTableHeader {
+    padding-top: 4px;
+  }
+
+  .liveTableHeader :global(.mantine-Text-root) {
+    font-size: 10px;
   }
 
   .heatmapGrid {

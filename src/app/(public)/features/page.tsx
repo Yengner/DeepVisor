@@ -20,7 +20,7 @@ import { Badge, Button, Card, Container, Section } from "@/components/marketing"
 export const metadata: Metadata = {
   title: "How DeepVisor Makes Salon Paid Ads Easier",
   description:
-    "See how DeepVisor makes running salon paid ads easier by reducing wasted Meta spend, monitoring campaigns, sending reports, and simplifying next-step approvals.",
+    "See how DeepVisor makes running salon paid ads easier with calendar queues, campaign reviews, reports, wasted-spend monitoring, and simpler next-step approvals.",
 };
 
 const roiLevers = [
@@ -45,7 +45,7 @@ const featureRows = [
   { label: "24/7 ad monitoring", detail: "Watch spend, leads, and performance movement even when you are with clients.", icon: BellRing },
   { label: "Plain next steps", detail: "Turn confusing ad performance into simple recommendations you can approve or ignore.", icon: Sparkles },
   { label: "Salon-ready reports", detail: "Get plain-language summaries of what worked, what wasted spend, and what to do next.", icon: FileText },
-  { label: "Campaign calendar", detail: "Turn checks, reports, and recommendations into scheduled work instead of scattered notes.", icon: CalendarClock },
+  { label: "Campaign calendar", detail: "Schedule reports, campaign reviews, spend checks, and other ad-work queues whenever you want them.", icon: CalendarClock },
   { label: "Meta first", detail: "Testing starts with Facebook and Instagram ads because that is where many salons already spend.", icon: Megaphone },
   { label: "Owner approvals", detail: "Review next steps before any serious ad account action moves forward.", icon: ClipboardCheck },
   { label: "Agency-price alternative", detail: "DeepVisor is being shaped as software support for owners who cannot justify a full agency retainer.", icon: DollarSign },
@@ -54,7 +54,8 @@ const featureRows = [
 const roadmap = [
   "Better lead-quality signals for calls, forms, and messages",
   "Creative fatigue and offer testing recommendations",
-  "Weekly and monthly ROI reporting",
+  "On-demand and recurring campaign reviews from the calendar",
+  "Weekly and monthly ROI reporting queues",
   "Simpler paid-ad approvals and action queues",
   "More ad platform integrations after Meta",
 ];
@@ -90,7 +91,8 @@ const FeatureHero = () => {
               <p className="max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
                 DeepVisor is being tested with salon owners as a practical way to
                 simplify Meta ad management, explain performance, and recommend the
-                next move without making you pay agency prices.
+                next move without making you pay agency prices. The calendar lets
+                you choose when reports, campaign reviews, and other queues run.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -230,22 +232,24 @@ const ReportDemo = () => {
       <Container>
         <div className="grid gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
           <div className="space-y-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Reports without the agency meeting</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Calendar queues without the agency meeting</p>
             <h2 className="text-balance text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl">
-              The report should tell you where the money went and make the next ad decision easier.
+              Schedule reports and campaign reviews when you want answers.
             </h2>
             <p className="text-sm leading-7 text-slate-600 sm:text-base">
               Instead of waiting for a monthly call or digging through Ads Manager,
               salon owners should be able to see which ads created booking signal,
-              where spend was wasted, and which next steps need approval.
+              where spend was wasted, and which next steps need approval. The
+              calendar is where those reports, campaign reviews, and follow-up checks
+              become manageable queues.
             </p>
           </div>
 
           <Card className="border-slate-200 bg-white p-0 shadow-card">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Weekly salon report</p>
-                <h3 className="mt-1 text-xl font-semibold text-slate-950">Bookings, spend, and next steps</h3>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Calendar queue</p>
+                <h3 className="mt-1 text-xl font-semibold text-slate-950">Report + campaign review</h3>
               </div>
               <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
                 Ready
@@ -253,10 +257,10 @@ const ReportDemo = () => {
             </div>
             <div className="grid gap-0 md:grid-cols-2">
               {[
-                { label: "Best signal", value: "Retargeting color clients", note: "Healthier booking intent and lower lead cost." },
-                { label: "Waste risk", value: "Boosted broad promo", note: "Spend rose while quality softened." },
+                { label: "Queue type", value: "Campaign review", note: "Run it on demand or schedule it weekly." },
+                { label: "Report output", value: "Spend + bookings", note: "Summarize where money went and what changed." },
                 { label: "Next approval", value: "Shift 15% budget", note: "Move budget toward the better signal." },
-                { label: "Owner note", value: "Review this week", note: "Clear enough to act without an agency call." },
+                { label: "Owner control", value: "Adjust anytime", note: "Change timing, review queues, or skip work you do not need." },
               ].map((item) => (
                 <div key={item.label} className="border-b border-slate-200 p-5 odd:md:border-r md:[&:nth-last-child(-n+2)]:border-b-0">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
@@ -290,7 +294,9 @@ const RoadmapCTA = () => {
             <p className="text-sm leading-7 text-white/70 sm:text-base">
               DeepVisor is not promising magic. It is building a tighter system for
               protecting spend, explaining performance, and making paid-ad decisions
-              easier to understand and approve.
+              easier to understand and approve. Calendar queues are a major part of
+              that: schedule the reports, reviews, and checks you want instead of
+              waiting for someone else to run them.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Button asChild size="lg" variant="primary" className="from-signal via-amber-400 to-emerald-400 text-slate-950">
