@@ -1,160 +1,237 @@
+import Link from "next/link";
 import {
-  Activity,
-  CalendarDays,
-  Database,
+  ArrowRight,
+  BarChart3,
+  BellRing,
+  CalendarCheck,
+  CheckCircle2,
+  Clock3,
   FileText,
-  Layers,
-  Radar,
+  LockKeyhole,
+  Scissors,
   ShieldCheck,
   Sparkles,
-  Target,
+  TrendingUp,
 } from "lucide-react";
-import CTA from "./components/CTA";
-import Hero from "./components/Hero";
-import IntegrationsSection from "./components/IntegrationsSection";
 import { Badge, Button, Card, Container, Section } from "@/components/marketing";
 
-const SUPPORT_FORM_URL =
-  "https://docs.google.com/forms/d/e/1FAIpQLSdxmbkyvBibl1imDI5SNooRLFlPhEEwqq-yJ-H23MJESZSbpw/viewform?usp=dialog";
-
-const productSurfaces = [
+const quickWins = [
   {
-    title: "Dashboard",
-    description: "A daily read on lead volume, cost per quote, strongest service campaigns, weak spots, and the next thing to review.",
-    icon: Activity,
-    meta: "Today view",
+    title: "Make paid ads easier",
+    copy: "DeepVisor turns the daily ad work into clear alerts, recommendations, and approvals instead of another platform to babysit.",
+    icon: BellRing,
   },
   {
-    title: "Calendar",
-    description: "DeepVisor turns ad-platform work into queued actions so service owners can approve, modify, delete, or schedule it without living in Ads Manager.",
-    icon: CalendarDays,
-    meta: "Week + month",
+    title: "Know what to do next",
+    copy: "See which Meta ads are driving bookings, messages, calls, and lead forms, plus the next move to make.",
+    icon: BarChart3,
   },
   {
-    title: "Reports",
-    description: "Owner-ready reporting that combines leads, calls, quote-request performance, what changed, what worked, and what to do next.",
+    title: "Skip agency-style confusion",
+    copy: "Weekly summaries explain what changed, what matters, and what to approve next in plain salon-owner language.",
     icon: FileText,
-    meta: "Decision brief",
-  },
-  {
-    title: "Campaigns",
-    description: "A fuller table view for scanning campaign, ad set, and ad health without losing the context behind each lead metric.",
-    icon: Layers,
-    meta: "Performance table",
   },
 ];
 
-const intelligenceAnswers = [
-  "What worked?",
-  "What did not work?",
-  "Which campaigns are driving the most qualified calls and quote requests right now?",
-  "Which service line, audience, or campaign is producing the best cost per lead?",
-  "What changed during the selected timeline that affected booked-job potential?",
-  "Why is lead quality shifting?",
-  "What should be approved, modified, paused, or watched next without more platform digging?",
+const testStats = [
+  { label: "ROI target", value: "3x", note: "Built to help salons move toward stronger return from ad spend." },
+  { label: "Monitoring", value: "24/7", note: "Always-on ad account watch for waste, fatigue, and lead shifts." },
+  { label: "Ad workload", value: "Easier", note: "Less Ads Manager digging, clearer next steps, and simpler approvals." },
 ];
 
-const systemSteps = [
-  {
-    title: "Connect the account",
-    copy: "Meta is the current foundation. The goal is a simple operating layer for service businesses that rely on calls, forms, and quote requests.",
-    icon: Radar,
-  },
-  {
-    title: "Build account memory",
-    copy: "DeepVisor syncs account structure and performance history so future reads are based on what has actually produced leads, quotes, and booked jobs.",
-    icon: Database,
-  },
-  {
-    title: "Classify and explain",
-    copy: "The system identifies whether the account is new, weak-history, or mature, then explains the right recommendation style for a quote-driven service business.",
-    icon: ShieldCheck,
-  },
-  {
-    title: "Queue the work",
-    copy: "Recommendations become visible calendar work instead of vague advice. The owner can review before anything moves forward in the ad platform.",
-    icon: Sparkles,
-  },
-];
-
-const reportHighlights = [
-  { label: "Strongest service line", value: "Roof replacement leads", note: "Best quote volume and healthiest cost per lead this period." },
-  { label: "Strongest campaign", value: "High-intent quote machine", note: "Most qualified lead signal with stable booking efficiency." },
-  { label: "Needs attention", value: "Broad homeowner prospecting", note: "Traffic quality is softening and creative rotation is recommended." },
-  { label: "Next move", value: "Approve 3 queued items", note: "Tracking review, report run, and new lead-test launch." },
-];
-
-const useCases = [
-  {
-    title: "Home services",
-    description: "Roofing, HVAC, plumbing, and similar teams that need more qualified quote requests without constant ad-platform babysitting.",
-    bullets: ["Quote-focused reporting", "Weekly action queue", "Lead-cost visibility"],
-  },
-  {
-    title: "Dental and med spas",
-    description: "Local service businesses that depend on bookings, consultations, and a clear read on which campaigns are filling the pipeline.",
-    bullets: ["Consultation tracking", "Booked-call visibility", "Simple recommendations"],
-  },
-  {
-    title: "Legal and professional services",
-    description: "Teams that care about lead quality, intake efficiency, and knowing which campaigns deserve more budget.",
-    bullets: ["Lead-quality context", "Timeline analysis", "Approval workflow"],
-  },
-  {
-    title: "Founder-led local brands",
-    description: "Owners wearing too many hats who want cleaner decisions and fewer hours spent inside digital marketing tools.",
-    bullets: ["Owner-ready dashboard", "Less platform work", "Next-step queue"],
-  },
+const flowSteps = [
+  "Connect Meta",
+  "DeepVisor simplifies the work",
+  "Waste and winners surface",
+  "You approve next steps",
 ];
 
 export default function HomePage() {
   return (
     <>
-      <Hero />
-      <ProductSystem />
-      <IntegrationsSection />
-      <IntelligenceLoop />
-      <ReportPreview />
+      <SalonHero />
+      <QuickValue />
       <HowItWorks />
-      <UseCases />
-      <SupportSection />
-      <CTA />
+      <TestingCTA />
     </>
   );
 }
 
-const ProductSystem = () => {
+const SalonHero = () => {
   return (
-    <Section tone="light" id="product-system" className="border-b border-border py-12 sm:py-section-sm md:py-section">
-      <Container>
-        <div className="grid gap-8 lg:grid-cols-[0.86fr_1.14fr] lg:items-end">
-          <div className="space-y-4">
-            <Badge variant="accent" className="w-fit">
-              Product system
+    <Section
+      tone="light"
+      id="top"
+      className="relative overflow-hidden border-b border-blue-100 bg-[#f8fbff] py-10 sm:py-14 md:py-16"
+      aria-labelledby="salon-hero-title"
+    >
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(37,99,235,0.11),transparent_28%),linear-gradient(225deg,rgba(16,185,129,0.10),transparent_24%),linear-gradient(180deg,#ffffff_0%,#f7fbff_70%,#f8fbf7_100%)]"
+        aria-hidden="true"
+      />
+
+      <Container className="relative">
+        <div className="grid gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
+          <div className="space-y-6">
+            <Badge variant="accent" className="w-fit border-blue-200 bg-blue-50 text-blue-700">
+              Testing now with salon owners
             </Badge>
-            <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
-              One place to understand, plan, and report on lead-generation performance.
-            </h2>
-            <p className="text-sm leading-7 text-slate-600 sm:text-base">
-              DeepVisor is not meant to be another analytics wall. The app is built around the few surfaces a service business owner actually needs: a dashboard for now, a calendar for next, reports for explanation, and campaign tables for deeper inspection.
-            </p>
+
+            <div className="space-y-4">
+              <h1
+                id="salon-hero-title"
+                className="max-w-4xl text-balance text-4xl font-semibold leading-none text-slate-950 sm:text-5xl lg:text-6xl"
+              >
+                Make running salon paid ads easier while working toward 3x ROI.
+              </h1>
+              <p className="max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
+                DeepVisor connects to your Meta ads, monitors spend around the clock,
+                explains what is helping or hurting bookings, and turns paid-ad
+                management into simple next steps you can approve.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <Button
+                asChild
+                size="lg"
+                variant="primary"
+                className="from-blue-600 via-blue-500 to-emerald-500 text-white shadow-[0_16px_36px_rgba(37,99,235,0.22)]"
+              >
+                <Link href="/sign-up">
+                  Start free test <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="soft" className="bg-white text-slate-900 shadow-sm hover:bg-blue-50">
+                <Link href="/login">Log in</Link>
+              </Button>
+              <Button asChild size="lg" variant="ghost" className="text-slate-600 hover:bg-white">
+                <Link href="/features">How ROI improves</Link>
+              </Button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              {testStats.map((stat) => (
+                <div key={stat.label} className="rounded-2xl border border-blue-100 bg-white/90 p-4 shadow-sm backdrop-blur">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{stat.label}</p>
+                  <p className="mt-2 text-3xl font-semibold text-slate-950">{stat.value}</p>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">{stat.note}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {productSurfaces.map((surface) => {
-              const Icon = surface.icon;
-              return (
-                <Card key={surface.title} className="border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-card">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-                      <Icon className="h-5 w-5" aria-hidden="true" />
-                    </div>
-                    <span className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      {surface.meta}
-                    </span>
+          <SalonSignalBoard />
+        </div>
+      </Container>
+    </Section>
+  );
+};
+
+const SalonSignalBoard = () => {
+  return (
+    <div className="relative mx-auto w-full max-w-2xl">
+      <div className="motion-safe:animate-float-slow rounded-[2rem] border border-slate-200 bg-white/95 p-4 shadow-[0_28px_80px_rgba(15,23,42,0.14)] backdrop-blur sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-emerald-500 text-white">
+              <Scissors className="h-6 w-6" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">DeepVisor watch</p>
+              <h2 className="text-xl font-semibold text-slate-950">Salon Meta account</h2>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 motion-safe:animate-pulse" />
+            Live test
+          </span>
+        </div>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-[0.88fr_1.12fr]">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Current read</p>
+            <div className="mt-4 space-y-4">
+              {[
+                { label: "Retargeting bookings", value: "Healthy", width: "w-[86%]", tone: "bg-emerald-500" },
+                { label: "Color service leads", value: "Rising", width: "w-[72%]", tone: "bg-blue-500" },
+                { label: "Broad boost spend", value: "Waste risk", width: "w-[44%]", tone: "bg-amber-500" },
+              ].map((item) => (
+                <div key={item.label}>
+                  <div className="flex items-center justify-between gap-3 text-xs font-semibold">
+                    <span className="text-slate-600">{item.label}</span>
+                    <span className="text-slate-950">{item.value}</span>
                   </div>
-                  <h3 className="mt-5 text-xl font-semibold text-slate-950">{surface.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">{surface.description}</p>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+                    <div className={`h-full rounded-full ${item.tone} ${item.width} motion-safe:animate-[signal-fill_1.9s_ease-out_both]`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            {[
+              { title: "Cut weak boosted-post spend", meta: "Potential waste found", icon: ShieldCheck },
+              { title: "Move budget toward rebooking offer", meta: "Better booking signal", icon: TrendingUp },
+              { title: "Send weekly ROI report", meta: "Owner summary ready", icon: CalendarCheck },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <div key={item.title} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-950">{item.title}</p>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">{item.meta}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes signal-fill {
+          from {
+            transform: scaleX(0.28);
+            transform-origin: left;
+          }
+
+          to {
+            transform: scaleX(1);
+            transform-origin: left;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+const QuickValue = () => {
+  return (
+    <Section tone="light" id="product-system" className="border-b border-blue-100 py-10 sm:py-14">
+      <Container>
+        <div className="grid gap-6 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Paid ads, made easier</p>
+            <h2 className="text-balance text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl">
+              Your salon gets a practical paid-ad co-pilot, not another dashboard to manage.
+            </h2>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {quickWins.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Card key={item.title} className="border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-card">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <h3 className="mt-5 text-lg font-semibold text-slate-950">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">{item.copy}</p>
                 </Card>
               );
             })}
@@ -165,208 +242,94 @@ const ProductSystem = () => {
   );
 };
 
-const IntelligenceLoop = () => {
+const HowItWorks = () => {
   return (
-    <Section tone="muted" id="intelligence" className="border-b border-border py-12 sm:py-section-sm md:py-section">
+    <Section tone="muted" id="how-it-works" className="border-b border-blue-100 py-10 sm:py-14">
       <Container>
-        <div className="grid gap-8 lg:grid-cols-[1fr_0.95fr] lg:items-center">
-          <div className="space-y-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Account intelligence
-            </p>
-            <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
-              DeepVisor should answer the questions service-business owners keep asking.
-            </h2>
-            <p className="text-sm leading-7 text-slate-600 sm:text-base">
-              The backend direction is simple: every selected ad account becomes a long-lived intelligence object. As more syncs happen, DeepVisor should preserve lead history, improve context, and make quote-driven recommendations easier to trust.
-            </p>
-
-            <div className="grid gap-3">
-              {intelligenceAnswers.map((answer) => (
-                <div key={answer} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <span className="mt-1 h-2.5 w-2.5 rounded-full bg-blue-500" />
-                  <p className="text-sm font-semibold text-slate-800">{answer}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <Card className="border-slate-200 bg-white p-5 shadow-card sm:p-6">
-            <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Maturity model</p>
-                <h3 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-slate-950">Recommendations change with the account.</h3>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                <Target className="h-6 w-6" aria-hidden="true" />
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {[
-                { title: "New account", detail: "Focus on setup, tracking confidence, controlled experiments, and clean first tests." },
-                { title: "Weak-history account", detail: "Tighten inputs, improve lead-signal quality, and avoid scaling until quote patterns are stable." },
-                { title: "Mature account", detail: "Scale winners, refresh tired creative, reuse proven audiences, and protect cost per lead." },
-              ].map((item) => (
-                <div key={item.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="font-semibold text-slate-950">{item.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">{item.detail}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-      </Container>
-    </Section>
-  );
-};
-
-const ReportPreview = () => {
-  return (
-    <Section tone="light" id="outcomes" className="border-b border-border py-12 sm:py-section-sm md:py-section">
-      <Container>
-        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+        <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
           <div className="space-y-4">
-            <Badge variant="accent" className="w-fit">
-              Reports that explain
+            <Badge variant="accent" className="w-fit border-emerald-200 bg-emerald-50 text-emerald-700">
+              Simple salon workflow
             </Badge>
-            <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
-              Reports should explain how lead flow is changing, not drown owners in platform clutter.
+            <h2 className="text-balance text-3xl font-semibold leading-tight text-slate-950 sm:text-4xl">
+              DeepVisor makes paid-ad decisions easier, then asks before anything changes.
             </h2>
             <p className="text-sm leading-7 text-slate-600 sm:text-base">
-              A useful report should make the account obvious: where quote volume is strongest, what changed over time, which campaign or ad set deserves attention, and what DeepVisor recommends next.
+              The product is currently in testing. The goal is to help salon owners
+              run paid ads with agency-level visibility and recommendations without
+              agency pricing or daily platform babysitting.
             </p>
-            <Button asChild variant="soft">
-              <a href="#how-it-works">See how the flow works</a>
+            <Button asChild variant="soft" className="bg-white text-slate-900 shadow-sm hover:bg-blue-50">
+              <Link href="/features">See the full feature plan</Link>
             </Button>
           </div>
 
-          <Card className="border-slate-200 bg-white p-0 shadow-card">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Weekly report</p>
-                <h3 className="mt-1 text-xl font-semibold text-slate-950">April 4 - April 10</h3>
+          <div className="grid gap-3">
+            {flowSteps.map((step, index) => (
+              <div
+                key={step}
+                className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm motion-safe:animate-fade-up"
+                style={{ animationDelay: `${index * 90}ms` }}
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-semibold text-white">
+                  {index + 1}
+                </span>
+                <p className="font-semibold text-slate-950">{step}</p>
+                <CheckCircle2 className="ml-auto h-5 w-5 text-emerald-500" aria-hidden="true" />
               </div>
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                Ready for owner review
-              </span>
-            </div>
-
-            <div className="grid gap-0 md:grid-cols-2">
-              {reportHighlights.map((item) => (
-                <div key={item.label} className="border-b border-slate-200 p-5 odd:md:border-r md:[&:nth-last-child(-n+2)]:border-b-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
-                  <p className="mt-2 text-lg font-semibold text-slate-950">{item.value}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">{item.note}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
+            ))}
+          </div>
         </div>
       </Container>
     </Section>
   );
 };
 
-const HowItWorks = () => {
+const TestingCTA = () => {
   return (
-    <Section tone="dark" id="how-it-works" className="overflow-hidden py-12 sm:py-section-sm md:py-section">
-      <div className="pointer-events-none absolute inset-0 bg-soft-grid opacity-[0.08] [background-size:72px_72px]" aria-hidden="true" />
-      <Container className="relative">
-        <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
-          <div className="space-y-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">How it works</p>
-            <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
-              From connected ad account to queued lead-generation decisions.
+    <Section
+      tone="light"
+      id="support"
+      className="overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#12315f_48%,#0f766e_100%)] py-10 text-white sm:py-14"
+    >
+      <Container>
+        <div className="grid gap-8 lg:grid-cols-[1fr_0.85fr] lg:items-center">
+          <div className="space-y-5">
+            <Badge variant="dark" className="w-fit border-white/20 bg-white/10 text-white/80">
+              Salon owner testing
+            </Badge>
+            <h2 className="text-balance text-3xl font-semibold leading-tight text-white sm:text-4xl">
+              Want running your salon ads to feel less like a second job?
             </h2>
-            <p className="text-sm leading-7 text-white/70 sm:text-base">
-              DeepVisor should keep the path clear: connect, sync, analyze, recommend, and keep improving as the lead account changes.
+            <p className="max-w-2xl text-sm leading-7 text-white/70 sm:text-base">
+              Create an account, connect Meta when ready, and help shape the exact
+              reports, alerts, and approval flow that makes paid ads easier for salon owners.
             </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Button asChild size="lg" variant="primary" className="from-signal via-amber-400 to-emerald-400 text-slate-950">
+                <Link href="/sign-up">Join the free test</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/login">Existing login</Link>
+              </Button>
+            </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {systemSteps.map((step, index) => {
-              const Icon = step.icon;
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              { label: "Approval first", icon: LockKeyhole },
+              { label: "Weekly reports", icon: FileText },
+              { label: "Spend alerts", icon: Clock3 },
+              { label: "Booking focus", icon: Sparkles },
+            ].map((item) => {
+              const Icon = item.icon;
               return (
-                <div key={step.title} className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-white">
-                      <Icon className="h-5 w-5" aria-hidden="true" />
-                    </div>
-                    <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/35">
-                      0{index + 1}
-                    </span>
-                  </div>
-                  <h3 className="mt-5 text-lg font-semibold text-white">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-white/65">{step.copy}</p>
+                <div key={item.label} className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+                  <Icon className="h-5 w-5 text-amber-300" aria-hidden="true" />
+                  <p className="mt-3 font-semibold text-white">{item.label}</p>
                 </div>
               );
             })}
-          </div>
-        </div>
-      </Container>
-    </Section>
-  );
-};
-
-const UseCases = () => {
-  return (
-    <Section tone="light" id="use-cases" className="border-b border-border py-12 sm:py-section-sm md:py-section">
-      <Container>
-        <div className="flex flex-col gap-3 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Who it helps</p>
-          <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
-            Built for service businesses that need more leads, not more platform overhead.
-          </h2>
-          <p className="mx-auto max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-            The interface should be calm enough for owners and useful enough for operators who still need the underlying lead and campaign detail.
-          </p>
-        </div>
-
-        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {useCases.map((useCase) => (
-            <Card key={useCase.title} className="border-slate-200 bg-white p-5 shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-950">{useCase.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{useCase.description}</p>
-              <div className="mt-5 space-y-2">
-                {useCase.bullets.map((bullet) => (
-                  <div key={bullet} className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                    <span>{bullet}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          ))}
-        </div>
-      </Container>
-    </Section>
-  );
-};
-
-const SupportSection = () => {
-  return (
-    <Section tone="muted" id="support" className="border-b border-border py-12 sm:py-section-sm md:py-section">
-      <Container>
-        <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 text-center">
-          <Badge variant="accent" className="w-fit">
-            Early access
-          </Badge>
-          <h2 className="text-balance text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
-            Help shape the lead-intelligence product service businesses actually need.
-          </h2>
-          <p className="text-sm leading-7 text-slate-600 sm:text-base">
-            We&apos;re gathering feedback from service-business owners and operators who run lead-generation ads. If you want more qualified quotes and less hands-on platform work, share what would make DeepVisor valuable for you.
-          </p>
-          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button asChild size="lg" variant="primary">
-              <a href={SUPPORT_FORM_URL} target="_blank" rel="noreferrer">
-                Submit support form
-              </a>
-            </Button>
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              3-5 minutes · product feedback welcome
-            </span>
           </div>
         </div>
       </Container>

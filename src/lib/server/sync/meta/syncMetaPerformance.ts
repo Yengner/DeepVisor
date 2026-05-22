@@ -85,8 +85,8 @@ const DEFAULT_PERFORMANCE_POLICY: Pick<
   hourly_history_days: 7,
   audience_history_days: 14,
   allowed_breakdowns: ['publisher_platform', 'platform_position', 'impression_device'],
-  allow_ad_level_hourly: false,
-  allow_ad_level_audience: false,
+  allow_ad_level_hourly: true,
+  allow_ad_level_audience: true,
 };
 
 function addUtcDays(value: string, days: number): string {

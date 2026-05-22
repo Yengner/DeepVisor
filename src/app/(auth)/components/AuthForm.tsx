@@ -314,70 +314,119 @@ export default function AuthForm({ type }: AuthFormProps) {
   if (type === 'login') {
     return (
       <div className={classes.loginShell}>
-        <Paper shadow="md" radius="lg" p="xl" withBorder className={classes.loginCard}>
-          <Title order={2} mb="md">
-            Sign in to your account
+        <section className={classes.loginIntro}>
+          <Badge variant="light" color="blue" radius="xl" className={classes.salonBadge}>
+            DeepVisor workspace
+          </Badge>
+          <AnimatedWelcome />
+          <Title order={1} className={classes.introTitle}>
+            Pick up where your lead intelligence left off.
           </Title>
-
-          <Stack gap="md" mb="md">
-            <Button
-              fullWidth
-              radius="xl"
-              size="md"
-              className={classes.googlePrimaryButton}
-              leftSection={<IconBrandGoogle size={18} />}
-              loading={googleLoading}
-              onClick={handleGoogleOAuth}
-            >
-              Continue with Google
-            </Button>
-            <Divider label="Or sign in with email" labelPosition="center" />
-          </Stack>
-
-          <form onSubmit={handleSubmit}>
-            <Stack>
-              <TextInput
-                label="Email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <PasswordInput
-                label="Password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-
-              {!showVerifyEmailButton ? (
-                <Button type="submit" fullWidth loading={loading}>
-                  Sign in
-                </Button>
-              ) : null}
-            </Stack>
-          </form>
-
-          {showVerifyEmailButton ? (
-            <Button
-              variant="outline"
-              fullWidth
-              mt="md"
-              onClick={handleResendVerification}
-              loading={loading}
-            >
-              Resend verification email
-            </Button>
-          ) : null}
-
-          <Text mt="md">
-            Don&apos;t have an account?{' '}
-            <Anchor href="/sign-up" fz="md" fw={500}>
-              Sign up
-            </Anchor>
+          <Text className={classes.introCopy}>
+            Sign in to review the latest ad account signals, queued next steps, and
+            owner-ready reports from one focused workspace.
           </Text>
+          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm" className={classes.loginMetricGrid}>
+            {[
+              { label: 'Dashboard', value: 'Today view' },
+              { label: 'Calendar', value: 'Queued work' },
+              { label: 'Reports', value: 'Clear next steps' },
+            ].map((metric) => (
+              <div key={metric.label} className={classes.loginMetric}>
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+              </div>
+            ))}
+          </SimpleGrid>
+          <div className={classes.colorOrbit} aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+        </section>
+
+        <Paper shadow="xl" radius="xl" p="xl" withBorder className={classes.loginCard}>
+          <Stack gap="lg">
+            <div>
+              <ThemeIcon size={52} radius="lg" color="blue" variant="light">
+                <IconSparkles size={26} />
+              </ThemeIcon>
+              <Title order={2} mt="md">
+                Sign in to DeepVisor
+              </Title>
+              <Text c="dimmed" mt={6}>
+                Access your dashboard, reports, and approval queue.
+              </Text>
+            </div>
+
+            <Stack gap="md">
+              <Button
+                fullWidth
+                radius="xl"
+                size="md"
+                className={classes.googlePrimaryButton}
+                leftSection={<IconBrandGoogle size={18} />}
+                loading={googleLoading}
+                onClick={handleGoogleOAuth}
+              >
+                Continue with Google
+              </Button>
+              <Divider label="Or sign in with email" labelPosition="center" />
+            </Stack>
+
+            <form onSubmit={handleSubmit}>
+              <Stack>
+                <TextInput
+                  label="Email"
+                  placeholder="you@company.com"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <PasswordInput
+                  label="Password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+
+                {!showVerifyEmailButton ? (
+                  <Button
+                    type="submit"
+                    fullWidth
+                    loading={loading}
+                    radius="xl"
+                    size="md"
+                    className={classes.authPrimaryButton}
+                  >
+                    Sign in
+                  </Button>
+                ) : null}
+              </Stack>
+            </form>
+
+            {showVerifyEmailButton ? (
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={handleResendVerification}
+                loading={loading}
+                radius="xl"
+              >
+                Resend verification email
+              </Button>
+            ) : null}
+
+            <Text>
+              Don&apos;t have an account?{' '}
+              <Anchor href="/sign-up" fz="md" fw={700}>
+                Sign up
+              </Anchor>
+            </Text>
+          </Stack>
         </Paper>
       </div>
     );

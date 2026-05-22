@@ -1,14 +1,85 @@
 .loginShell {
-  min-height: 68vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 28px 16px;
-  background: #f8fafc;
+  position: relative;
+  min-height: calc(100vh - 112px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 480px);
+  gap: 28px;
+  align-items: stretch;
+  padding: 28px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.14), transparent 30%),
+    radial-gradient(circle at 86% 8%, rgba(52, 168, 83, 0.13), transparent 24%),
+    radial-gradient(circle at 62% 94%, rgba(245, 158, 11, 0.13), transparent 26%),
+    linear-gradient(135deg, #fbfdff 0%, #f3f8ff 44%, #f8fbf7 100%);
 }
 
 .loginCard {
-  width: min(100%, 440px);
+  align-self: center;
+  min-height: 560px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-color: rgba(37, 99, 235, 0.16);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px);
+}
+
+.loginIntro {
+  position: relative;
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(26px, 5vw, 72px);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 32px;
+  overflow: hidden;
+  color: #071c3a;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.62)),
+    radial-gradient(circle at 24% 22%, rgba(59, 130, 246, 0.23), transparent 28%),
+    radial-gradient(circle at 78% 32%, rgba(16, 185, 129, 0.18), transparent 24%),
+    radial-gradient(circle at 36% 80%, rgba(245, 158, 11, 0.17), transparent 26%);
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.11);
+}
+
+.loginIntro .animatedWelcome {
+  font-size: clamp(3.5rem, 8.6vw, 8rem);
+}
+
+.loginMetricGrid {
+  max-width: 680px;
+  margin-top: 30px;
+}
+
+.loginMetric {
+  min-height: 82px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(14px);
+}
+
+.loginMetric span {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.loginMetric strong {
+  color: #0f172a;
+  font-size: 0.95rem;
+  line-height: 1.25;
 }
 
 .signupShell {
@@ -219,6 +290,16 @@
   color: #0f172a;
 }
 
+.authPrimaryButton {
+  min-height: 46px;
+  background: linear-gradient(135deg, #2563eb, #1877f2 52%, #0f766e);
+  box-shadow: 0 16px 36px rgba(37, 99, 235, 0.22);
+}
+
+.authPrimaryButton:hover {
+  background: linear-gradient(135deg, #1d4ed8, #0f5fcc 52%, #0f766e);
+}
+
 @keyframes welcomeWave {
   0%,
   100% {
@@ -252,16 +333,20 @@
 }
 
 @media (max-width: 1080px) {
+  .loginShell,
   .signupShell {
     grid-template-columns: 1fr;
     padding: 18px;
   }
 
+  .loginIntro,
   .signupIntro,
+  .loginCard,
   .flowCard {
     min-height: auto;
   }
 
+  .loginIntro,
   .signupIntro {
     padding: 34px 24px 58px;
   }
@@ -278,9 +363,9 @@
 
 @media (max-width: 760px) {
   .loginShell {
-    min-height: 62vh;
-    align-items: flex-start;
-    padding: 18px 10px 88px;
+    min-height: calc(100vh - 92px);
+    gap: 12px;
+    padding: 10px 10px 96px;
   }
 
   .signupShell {
@@ -289,11 +374,13 @@
     padding: 10px 10px 96px;
   }
 
+  .loginIntro,
   .signupIntro {
     border-radius: 24px;
     padding: 28px 18px 52px;
   }
 
+  .loginShell .animatedWelcome,
   .animatedWelcome {
     flex-wrap: nowrap;
     gap: 0;
@@ -316,6 +403,7 @@
     line-height: 1.55;
   }
 
+  .loginCard,
   .flowCard {
     border-radius: 24px;
     padding: 18px;
