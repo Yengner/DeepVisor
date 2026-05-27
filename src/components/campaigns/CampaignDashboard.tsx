@@ -406,7 +406,9 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
       setAdsByAdset({});
       setRefreshFeedback({
         type: 'success',
-        message: `Sync completed: ${result.refreshedCount} updated, ${result.failedCount} failed.`,
+        message:
+          result.message ??
+          `Sync completed: ${result.refreshedCount} updated, ${result.failedCount} failed.`,
       });
       router.refresh();
     } catch (error) {

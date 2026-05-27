@@ -2383,7 +2383,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "business_profiles_org_fkey"
+            foreignKeyName: "business_profiles_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"

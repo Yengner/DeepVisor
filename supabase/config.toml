@@ -262,6 +262,14 @@ inspector_port = 8083
 enabled = true
 verify_jwt = false
 
+[functions.process_account_sync_jobs]
+enabled = true
+verify_jwt = false
+
+[functions.queue_account_sync_jobs]
+enabled = true
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

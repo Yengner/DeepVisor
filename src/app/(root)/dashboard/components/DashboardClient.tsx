@@ -78,6 +78,7 @@ type DashboardClientProps = {
     summaryCards?: boolean;
     liveDeliveryTables?: boolean;
     noLiveDeliveryAlert?: boolean;
+    dashboardNotifications?: boolean;
   };
 };
 
@@ -2578,7 +2579,9 @@ export function DashboardShellClient({ basePayload, children, below }: Dashboard
       router.refresh();
       setRefreshFeedback({
         type: 'success',
-        message: `Sync completed: ${result.refreshedCount ?? 0} updated, ${result.failedCount ?? 0} failed.`,
+        message:
+          result.message ??
+          `Sync completed: ${result.refreshedCount ?? 0} updated, ${result.failedCount ?? 0} failed.`,
       });
     } catch (error) {
       setRefreshFeedback({
@@ -2660,7 +2663,7 @@ export function DashboardShellClient({ basePayload, children, below }: Dashboard
           </Alert>
         ) : null}
 
-        <Card withBorder radius="xl" p="lg" className={classes.topBar}>
+        <Card withBorder radius="xl" p="lg" className={`${classes.topBar} ${classes.dashboardShellTopBar}`}>
           <Stack gap="lg">
             <Group
               justify="space-between"
@@ -2812,6 +2815,7 @@ export default function DashboardClient({
   const showSummaryCards = sections?.summaryCards ?? true;
   const showLiveDeliveryTables = sections?.liveDeliveryTables ?? true;
   const showNoLiveDeliveryAlert = sections?.noLiveDeliveryAlert ?? renderFullShell;
+  const showDashboardNotifications = sections?.dashboardNotifications ?? renderFullShell;
   const shouldRenderDashboardCard = renderFullShell || showFeaturedHistory || showSummaryCards;
   const noLiveDeliveryNotification = payload.dashboardNotifications.find(
     (notification) => notification.type === 'no_live_delivery'
@@ -3772,7 +3776,9 @@ export default function DashboardClient({
       router.refresh();
       setRefreshFeedback({
         type: 'success',
-        message: `Sync completed: ${result.refreshedCount ?? 0} updated, ${result.failedCount ?? 0} failed.`,
+        message:
+          result.message ??
+          `Sync completed: ${result.refreshedCount ?? 0} updated, ${result.failedCount ?? 0} failed.`,
       });
     } catch (error) {
       setRefreshFeedback({
@@ -4179,7 +4185,8 @@ export default function DashboardClient({
           </Alert>
         ) : null}
 
-        {showNoLiveDeliveryAlert &&
+        {showDashboardNotifications &&
+          showNoLiveDeliveryAlert &&
           payload.state === 'ready' &&
           !todayLiveWindow.hasLiveDelivery &&
           noLiveDeliveryAlertVisible ? (
@@ -4202,7 +4209,7 @@ export default function DashboardClient({
           </Alert>
         ) : null}
 
-        {showFeaturedHistory && continuationSignal && continuationAlertVisible ? (
+        {showDashboardNotifications && continuationSignal && continuationAlertVisible ? (
           <Alert
             color="orange"
             radius="lg"
@@ -4248,14 +4255,14 @@ export default function DashboardClient({
 
         {shouldRenderDashboardCard ? (
           <Card withBorder radius="xl" p="lg" className={classes.topBar}>
-            <Stack gap="lg">
+            <Stack gap="lg" className={classes.dashboardContentStack}>
               {renderFullShell ? (
                 <Group
                   justify="space-between"
                   align="flex-start"
                   gap="md"
                   wrap="wrap"
-                  className={classes.surfaceToolbar}
+                  className={`${classes.surfaceToolbar} ${classes.dashboardToolbar}`}
                 >
                   <div>
                     <Group gap="xs" wrap="wrap">
@@ -4300,17 +4307,7 @@ export default function DashboardClient({
 
               {showSummaryCards ? (
                 <Stack gap="sm" className={classes.summaryCardsSection}>
-                  <Group justify="space-between" align="center" gap="sm" wrap="wrap">
-                    <div>
-                      <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                        Quick metrics
-                      </Text>
-                      <Text size="sm" c="dimmed">
-                        {activeDeliveryWindowMode === 'today'
-                          ? 'Today for the selected account'
-                          : 'Lifetime for the selected account'}
-                      </Text>
-                    </div>
+                  <Group justify="flex-end" align="center" gap="sm" className={classes.summaryWindowControlRow}>
                     <SegmentedControl
                       radius="xl"
                       size="xs"
@@ -4321,7 +4318,6 @@ export default function DashboardClient({
                         {
                           label: 'Today',
                           value: 'today',
-                          disabled: !todayLiveWindow.hasLiveDelivery,
                         },
                         {
                           label: 'Lifetime',

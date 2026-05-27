@@ -11,7 +11,7 @@ const sections = [
   {
     title: '2. What DeepVisor Does',
     body: [
-      'DeepVisor provides advertising account intelligence, reporting, campaign review workflows, calendar queues, notifications, and decision-support summaries for connected ad accounts.',
+      'DeepVisor provides advertising account intelligence, reporting, campaign review workflows, scheduled reviews, notifications, and decision-support summaries for connected ad accounts.',
       'DeepVisor is a decision-support product. Deterministic metrics decide what happened. AI may help explain why it matters, prioritize what to review, and draft safe next steps.',
     ],
   },

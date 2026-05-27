@@ -366,7 +366,7 @@ Full backfill:
 - Requests `FULL_HISTORY_BACKFILL_DAYS = 10000`.
 - Meta date resolution caps that to the latest supported `37` months via `resolveMetaBackfillWindow()`.
 
-## Background Backfill Processing
+## Background Account Sync Job Processing
 
 Route:
 
@@ -378,6 +378,8 @@ Worker function:
 
 Optional Supabase cron wrapper:
 
+- [`supabase/functions/queue_account_sync_jobs/index.ts`](../../../../supabase/functions/queue_account_sync_jobs/index.ts)
+- [`supabase/functions/process_account_sync_jobs/index.ts`](../../../../supabase/functions/process_account_sync_jobs/index.ts)
 - [`supabase/functions/process_meta_backfill_jobs/index.ts`](../../../../supabase/functions/process_meta_backfill_jobs/index.ts)
 
 Main functions:
@@ -388,15 +390,19 @@ Main functions:
 
 What happens:
 
-1. An internal route reads pending `backfill` jobs.
-2. For each job, it resolves the selected ad account external id.
-3. It reruns `syncBusinessPlatform()` in `full_backfill` mode.
-4. Failures are persisted back onto the job row and sync-state row.
+1. Manual refresh uses `/api/sync/refresh` to enqueue `manual_refresh` jobs for the signed-in business.
+2. Scheduled refresh can use `/api/sync/scheduled-refresh` or `queue_account_sync_jobs` to enqueue stale `incremental` jobs for connected Meta accounts.
+3. The worker route reads pending `initial_historical`, `incremental`, `manual_refresh`, and `backfill` jobs.
+4. For each job, it resolves the selected ad account external id.
+5. It runs the queued account sync. Backfill jobs use `full_backfill`; incremental and manual refresh jobs use the default sync mode.
+6. Failures are persisted back onto the job row and sync-state row.
 
 Operational notes:
 
 - The internal route requires `INTERNAL_API_KEY`.
 - The Supabase edge function can additionally enforce `CRON_SECRET`.
+- Schedule `queue_account_sync_jobs` to create periodic refresh work, then schedule `process_account_sync_jobs` to drain the queue.
+- Schedule `process_account_sync_jobs` for new cron setup. `process_meta_backfill_jobs` is kept as a compatibility alias for existing schedules.
 
 ## Tables Written by Phase
 

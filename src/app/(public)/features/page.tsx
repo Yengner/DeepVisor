@@ -18,37 +18,75 @@ import {
 import { Badge, Button, Card, Container, Section } from "@/components/marketing";
 
 export const metadata: Metadata = {
-  title: "How DeepVisor Makes Salon Paid Ads Easier",
+  title: "Salon Meta Ads Reporting and Recommendations | DeepVisor",
   description:
-    "See how DeepVisor makes running salon paid ads easier with calendar queues, campaign reviews, reports, wasted-spend monitoring, and simpler next-step approvals.",
+    "See how DeepVisor helps salon owners understand Facebook and Instagram ad performance, identify wasted spend, schedule reviews, and approve clear next steps.",
+  alternates: {
+    canonical: "/features",
+  },
+  openGraph: {
+    title: "Salon Meta Ads Reporting and Recommendations | DeepVisor",
+    description:
+      "Understand salon Meta ad performance, identify wasted spend, and review clear next steps before changes are made.",
+    url: "/features",
+    type: "website",
+  },
 };
 
-const roiLevers = [
+const decisionBenefits = [
   {
-    title: "Make the daily ad work simpler",
-    copy: "DeepVisor watches high-cost leads, weak boosted posts, creative fatigue, and campaigns spending without enough booking intent.",
+    title: "Spot weak spend sooner",
+    copy: "DeepVisor helps surface campaigns, ads, or promoted services spending without strong lead or booking signals.",
     icon: TrendingDown,
   },
   {
-    title: "Make the next move obvious",
-    copy: "When a treatment, service, offer, audience, or retargeting campaign starts producing better signal, DeepVisor explains what to do next.",
+    title: "Understand what is working",
+    copy: "See which services, offers, creatives, and audiences are producing stronger performance signals.",
     icon: TrendingUp,
   },
   {
-    title: "Keep approval in your hands",
-    copy: "The product is built around recommendations and approval, so running paid ads is easier without losing control.",
+    title: "Stay in control of changes",
+    copy: "DeepVisor is built around clear recommendations and owner approval before serious campaign decisions are made.",
     icon: ShieldCheck,
   },
 ];
 
 const featureRows = [
-  { label: "24/7 ad monitoring", detail: "Watch spend, leads, and performance movement even when you are with clients.", icon: BellRing },
-  { label: "Plain next steps", detail: "Turn confusing ad performance into simple recommendations you can approve or ignore.", icon: Sparkles },
-  { label: "Salon-ready reports", detail: "Get plain-language summaries of what worked, what wasted spend, and what to do next.", icon: FileText },
-  { label: "Campaign calendar", detail: "Schedule reports, campaign reviews, spend checks, and other ad-work queues whenever you want them.", icon: CalendarClock },
-  { label: "Meta first", detail: "Testing starts with Facebook and Instagram ads because that is where many salons already spend.", icon: Megaphone },
-  { label: "Owner approvals", detail: "Review next steps before any serious ad account action moves forward.", icon: ClipboardCheck },
-  { label: "Agency-price alternative", detail: "DeepVisor is being shaped as software support for owners who cannot justify a full agency retainer.", icon: DollarSign },
+  {
+    label: "Ongoing performance monitoring",
+    detail: "Review spend, leads, and performance changes as new Meta ad data is synced.",
+    icon: BellRing,
+  },
+  {
+    label: "Clear next steps",
+    detail: "Turn confusing ad performance into simple recommendations you can review and approve.",
+    icon: Sparkles,
+  },
+  {
+    label: "Salon-ready reports",
+    detail: "Get plain-language summaries of what performed well, what may be wasting spend, and what to review next.",
+    icon: FileText,
+  },
+  {
+    label: "Scheduled reviews",
+    detail: "Schedule reports, campaign reviews, and spend checks when they are useful to your business.",
+    icon: CalendarClock,
+  },
+  {
+    label: "Meta ads first",
+    detail: "Testing begins with Facebook and Instagram ads, where many salons already reach potential clients.",
+    icon: Megaphone,
+  },
+  {
+    label: "Owner approvals",
+    detail: "Review recommendations before any serious ad account decision moves forward.",
+    icon: ClipboardCheck,
+  },
+  {
+    label: "Software built for owners",
+    detail: "DeepVisor is being shaped for salon owners who want clearer ad decisions without managing every detail themselves.",
+    icon: DollarSign,
+  },
 ];
 
 const roadmap = [
@@ -64,7 +102,7 @@ export default function FeaturesPage() {
   return (
     <>
       <FeatureHero />
-      <RoiLevers />
+      <DecisionBenefits />
       <FeatureGrid />
       <ReportDemo />
       <RoadmapCTA />
@@ -160,7 +198,7 @@ const FeatureHero = () => {
   );
 };
 
-const RoiLevers = () => {
+const DecisionBenefits = () => {
   return (
     <Section tone="light" id="roi" className="border-b border-blue-100 py-10 sm:py-14">
       <Container>
@@ -171,7 +209,7 @@ const RoiLevers = () => {
           </h2>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          {roiLevers.map((lever) => {
+          {decisionBenefits.map((lever) => {
             const Icon = lever.icon;
             return (
               <Card key={lever.title} className="border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-card">
@@ -294,7 +332,7 @@ const RoadmapCTA = () => {
             <p className="text-sm leading-7 text-white/70 sm:text-base">
               DeepVisor is not promising magic. It is building a tighter system for
               protecting spend, explaining performance, and making paid-ad decisions
-              easier to understand and approve. Calendar queues are a major part of
+              easier to understand and approve. Scheduled reviews are a major part of
               that: schedule the reports, reviews, and checks you want instead of
               waiting for someone else to run them.
             </p>

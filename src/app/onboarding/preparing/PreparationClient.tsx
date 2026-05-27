@@ -193,7 +193,8 @@ export default function PreparationClient({
         'complete',
         syncResponse.status === 429
           ? syncBody?.message || 'Recent sync data is already available, so DeepVisor used the latest stored account data.'
-          : `Sync completed with ${syncBody?.refreshedCount ?? 0} integration update${(syncBody?.refreshedCount ?? 0) === 1 ? '' : 's'}.`
+          : syncBody?.message ??
+            `Sync completed with ${syncBody?.refreshedCount ?? 0} integration update${(syncBody?.refreshedCount ?? 0) === 1 ? '' : 's'}.`
       );
 
       setPhaseStatus('history', 'running');

@@ -1703,6 +1703,121 @@ async function TodaySnapshotSection(base: DashboardSectionProps) {
   }
 }
 
+function selectFeaturedAdsetForDashboard(input: {
+  todayLiveWindow: DashboardLiveWindow;
+  liveLifetime: DashboardLiveWindow;
+  fallbackLiveWindow: DashboardLiveWindow | null;
+}): DashboardLiveWindow['adsets'][number] | null {
+  return (
+    input.todayLiveWindow.comparisons.adsets[0] ??
+    input.todayLiveWindow.adsets[0] ??
+    input.liveLifetime.comparisons.adsets[0] ??
+    input.liveLifetime.adsets[0] ??
+    input.fallbackLiveWindow?.comparisons.adsets[0] ??
+    input.fallbackLiveWindow?.adsets[0] ??
+    null
+  );
+}
+
+async function DashboardNotificationsSection(base: DashboardSectionProps) {
+  if (!base.adAccount?.id || !base.platformConnected || !base.selectedPlatformId) {
+    return null;
+  }
+
+  try {
+    const accountDayRange = getCurrentAdAccountDayDateRange(base.adAccount.timezone);
+    const latestDeliveryDay = getLatestAdAccountDeliveryDay(
+      base.adAccount,
+      base.syncCoverage?.coverageEndDate ?? null
+    );
+    const [todaySnapshot, lifetimeSnapshot] = await Promise.all([
+      getTodaySnapshot(
+        base.businessId,
+        base.selectedPlatformId,
+        base.adAccount.id,
+        accountDayRange.dateFrom,
+        accountDayRange.dateTo,
+        base.isMeta
+      ),
+      getLifetimeSnapshot(
+        base.businessId,
+        base.selectedPlatformId,
+        base.adAccount.id,
+        accountDayRange.dateTo,
+        base.isMeta,
+        base.syncCoverage?.coverageStartDate ?? null,
+        base.syncCoverage?.coverageEndDate ?? null,
+        latestDeliveryDay
+      ),
+    ]);
+    const fallbackSnapshot =
+      !todaySnapshot.liveWindow.hasLiveDelivery &&
+      latestDeliveryDay &&
+      latestDeliveryDay !== accountDayRange.dateFrom
+        ? await getFallbackSnapshot(
+            base.businessId,
+            base.selectedPlatformId,
+            base.adAccount.id,
+            latestDeliveryDay,
+            base.isMeta
+          )
+        : null;
+    const liveLifetime = lifetimeSnapshot?.liveWindow ?? emptyDashboardLiveWindow(base.isMeta);
+    const fallbackLiveWindow =
+      fallbackSnapshot?.liveWindow.hasLiveDelivery ? fallbackSnapshot.liveWindow : null;
+    const featuredAdset = selectFeaturedAdsetForDashboard({
+      todayLiveWindow: todaySnapshot.liveWindow,
+      liveLifetime,
+      fallbackLiveWindow,
+    });
+    const continuationSignal = buildContinuationSignalForFeaturedAdset({
+      featuredAdset,
+      currentDate: accountDayRange.dateTo,
+    });
+    const dashboardNotifications = await buildDashboardBannerNotifications({
+      businessId: base.businessId,
+      userId: base.userId,
+      adAccountId: base.adAccount.id,
+      accountDay: accountDayRange.dateTo,
+      hasLiveDelivery: todaySnapshot.liveWindow.hasLiveDelivery,
+      continuationSignal,
+    });
+
+    if (dashboardNotifications.length === 0) {
+      return null;
+    }
+
+    const featuredAdsetHistory = {
+      ...emptyFeaturedAdsetHistory(base.isMeta),
+      adset: featuredAdset,
+      continuationSignal,
+    };
+    const payload = buildSectionPayload(base, {
+      liveToday: todaySnapshot.liveWindow,
+      liveLifetime,
+      featuredAdsetHistory,
+      dashboardNotifications,
+    });
+
+    return (
+      <DashboardClient
+        payload={payload}
+        variant="analytics"
+        sections={{
+          featuredHistory: false,
+          summaryCards: false,
+          liveDeliveryTables: false,
+          noLiveDeliveryAlert: true,
+          dashboardNotifications: true,
+        }}
+      />
+    );
+  } catch (error) {
+    console.error('Failed to fetch dashboard notifications:', error);
+    return null;
+  }
+}
+
 async function FeaturedAdsetHistorySection(base: DashboardSectionProps) {
   if (!base.adAccount?.id || !base.platformConnected || !base.selectedPlatformId) {
     const payload = buildSectionPayload(base, {
@@ -1764,14 +1879,11 @@ async function FeaturedAdsetHistorySection(base: DashboardSectionProps) {
     const liveLifetime = lifetimeSnapshot?.liveWindow ?? emptyDashboardLiveWindow(base.isMeta);
     const fallbackLiveWindow =
       fallbackSnapshot?.liveWindow.hasLiveDelivery ? fallbackSnapshot.liveWindow : null;
-    const featuredAdset =
-      todaySnapshot.liveWindow.comparisons.adsets[0] ??
-      todaySnapshot.liveWindow.adsets[0] ??
-      liveLifetime.comparisons.adsets[0] ??
-      liveLifetime.adsets[0] ??
-      fallbackLiveWindow?.comparisons.adsets[0] ??
-      fallbackLiveWindow?.adsets[0] ??
-      null;
+    const featuredAdset = selectFeaturedAdsetForDashboard({
+      todayLiveWindow: todaySnapshot.liveWindow,
+      liveLifetime,
+      fallbackLiveWindow,
+    });
     const featuredAdsetHistory = await buildFeaturedAdsetHistory({
       businessId: base.businessId,
       selectedPlatformId: base.selectedPlatformId,
@@ -1809,7 +1921,8 @@ async function FeaturedAdsetHistorySection(base: DashboardSectionProps) {
           featuredHistory: true,
           summaryCards: false,
           liveDeliveryTables: false,
-          noLiveDeliveryAlert: true,
+          noLiveDeliveryAlert: false,
+          dashboardNotifications: false,
         }}
       />
     );
@@ -1925,6 +2038,9 @@ export default async function MainDashboardPage() {
         </Suspense>
       }
     >
+      <Suspense key="dashboard-notifications" fallback={null}>
+        <DashboardNotificationsSection {...base} />
+      </Suspense>
       <Suspense key="today-summary-cards" fallback={<SummaryCardsSkeleton />}>
         <TodaySnapshotSection {...base} />
       </Suspense>

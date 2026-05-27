@@ -11,7 +11,11 @@ import { createAdminClient } from '@/lib/server/supabase/admin';
 import { createOrReuseQueuedSyncJob } from '@/lib/server/repositories/ad_accounts/syncState';
 import { getPrimaryAdAccountSelection } from '@/lib/server/integrations/service';
 import type { Database, Json } from '@/lib/shared/types/supabase';
-import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integrations';
+import type {
+  AccountSyncJobStatus,
+  HistoricalSyncType,
+  SupportedIntegrationPlatform,
+} from '@/lib/shared/types/integrations';
 import { resolveMetaBackfillWindow } from './meta/client';
 
 const RATE_LIMIT_DETAIL_KEY = 'manual_sync_rate_limit';
@@ -34,6 +38,7 @@ type ManualRefreshAllowedResult = {
   allowed: true;
   refreshedCount: number;
   failedCount: number;
+  jobs: ManualRefreshJob[];
 };
 
 type ManualRefreshBlockedResult = {
@@ -46,6 +51,17 @@ type ManualRefreshBlockedResult = {
 export type ManualRefreshResult =
   | ManualRefreshAllowedResult
   | ManualRefreshBlockedResult;
+
+export type ManualRefreshJob = {
+  jobId: string;
+  adAccountId: string;
+  businessId: string;
+  platformIntegrationId: string;
+  status: AccountSyncJobStatus;
+  syncType: HistoricalSyncType;
+  requestedStartDate: string | null;
+  requestedEndDate: string | null;
+};
 
 function isSyncEligibleStatus(status: string): boolean {
   return status === 'connected' || status === 'error' || status === 'needs_reauth';
@@ -211,10 +227,12 @@ async function persistRateLimitState(input: {
 async function enqueueManualRefreshJobs(integrations: IntegrationRow[]): Promise<{
   queuedCount: number;
   failedCount: number;
+  jobs: ManualRefreshJob[];
 }> {
   const supabase = createAdminClient();
   let queuedCount = 0;
   let failedCount = 0;
+  const jobs: ManualRefreshJob[] = [];
 
   for (const integration of integrations) {
     const platform = Array.isArray(integration.platforms)
@@ -249,7 +267,7 @@ async function enqueueManualRefreshJobs(integrations: IntegrationRow[]): Promise
       }
 
       const syncWindow = resolveMetaBackfillWindow(30);
-      await createOrReuseQueuedSyncJob(supabase, {
+      const job = await createOrReuseQueuedSyncJob(supabase, {
         businessId: integration.business_id,
         platformIntegrationId: integration.id,
         adAccountId: adAccount.id,
@@ -267,6 +285,16 @@ async function enqueueManualRefreshJobs(integrations: IntegrationRow[]): Promise
           last_processed_ids: {},
         },
       });
+      jobs.push({
+        jobId: job.id,
+        adAccountId: job.ad_account_id,
+        businessId: job.business_id,
+        platformIntegrationId: job.platform_integration_id,
+        status: job.status as AccountSyncJobStatus,
+        syncType: job.sync_type as HistoricalSyncType,
+        requestedStartDate: job.requested_start_date,
+        requestedEndDate: job.requested_end_date,
+      });
       queuedCount += 1;
     } catch (error) {
       failedCount += 1;
@@ -274,7 +302,7 @@ async function enqueueManualRefreshJobs(integrations: IntegrationRow[]): Promise
     }
   }
 
-  return { queuedCount, failedCount };
+  return { queuedCount, failedCount, jobs };
 }
 
 export async function runManualBusinessSync(input: {
@@ -288,6 +316,7 @@ export async function runManualBusinessSync(input: {
       allowed: true,
       refreshedCount: 0,
       failedCount: 0,
+      jobs: [],
     };
   }
 
@@ -304,10 +333,11 @@ export async function runManualBusinessSync(input: {
   });
 
   const result = await enqueueManualRefreshJobs(integrations);
-
+  console.info(`Enqueued ${result.queuedCount} manual sync jobs for business ${input.businessId} with ${result.failedCount} failures.`);
   return {
     allowed: true,
     refreshedCount: result.queuedCount,
     failedCount: result.failedCount,
+    jobs: result.jobs,
   };
 }

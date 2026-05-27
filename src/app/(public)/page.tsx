@@ -73,9 +73,7 @@ const SalonHero = () => {
       <Container className="relative">
         <div className="grid gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
           <div className="space-y-6">
-            <Badge variant="accent" className="w-fit border-blue-200 bg-blue-50 text-blue-700">
-              Testing now with salon owners
-            </Badge>
+ 
 
             <div className="space-y-4">
               <h1
@@ -85,10 +83,9 @@ const SalonHero = () => {
                 Make running salon paid ads easier while working toward 3x ROI.
               </h1>
               <p className="max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
-                DeepVisor connects to your Meta ads, monitors spend around the clock,
-                explains what is helping or hurting bookings, and turns paid-ad
-                management into calendar queues, reports, and simple next steps you
-                can approve.
+                DeepVisor connects to your Facebook and Instagram ads, 
+                explains what is helping or hurting lead quality,
+                 and turns performance into clear reports and next steps you approve.
               </p>
             </div>
 
@@ -175,7 +172,7 @@ const SalonSignalBoard = () => {
             {[
               { title: "Cut weak boosted-post spend", meta: "Potential waste found", icon: ShieldCheck },
               { title: "Move budget toward rebooking offer", meta: "Better booking signal", icon: TrendingUp },
-              { title: "Run Friday campaign review", meta: "Calendar queue ready", icon: CalendarCheck },
+              { title: "Run Friday campaign review", meta: "Scheduled reviews ready", icon: CalendarCheck },
             ].map((item) => {
               const Icon = item.icon;
               return (
@@ -322,7 +319,7 @@ const TestingCTA = () => {
             {[
               { label: "Approval first", icon: LockKeyhole },
               { label: "Reports + reviews", icon: FileText },
-              { label: "Calendar queues", icon: CalendarCheck },
+              { label: "Scheduled Reviews", icon: CalendarCheck },
               { label: "Spend alerts", icon: Clock3 },
               { label: "Booking focus", icon: Sparkles },
             ].map((item) => {
