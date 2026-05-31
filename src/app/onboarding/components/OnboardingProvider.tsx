@@ -29,7 +29,7 @@ import classes from './OnboardingProvider.module.css';
 import {
   DEFAULT_INTELLIGENCE_GOALS,
   DEFAULT_WATCH_SIGNALS,
-} from '@/lib/shared/onboarding/salonProfile';
+} from '@/lib/shared/onboarding/businessProfileOptions';
 
 type OrganizationType = Database['public']['Enums']['organization_type'];
 

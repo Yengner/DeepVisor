@@ -1,8 +1,8 @@
-import CustomCampaignFlow from '@/components/campaigns/create/flows/manual/ManualCampaignFlow';
 import ManualMetaAdBuilder from '@/components/campaigns/create/platforms/meta/builders/ManualMetaAdBuilder';
 import ManualMetaAdStarter from '@/components/campaigns/create/platforms/meta/components/ManualMetaAdStarter';
 import ManualMetaAdSetStarter from '@/components/campaigns/create/platforms/meta/components/ManualMetaAdSetStarter';
 import ManualMetaAdSetBuilder from '@/components/campaigns/create/platforms/meta/builders/ManualMetaAdSetBuilder';
+import MetaLeadCampaignDraftHelper from '@/components/campaigns/create/platforms/meta/builders/MetaLeadCampaignDraftHelper';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { getCampaignDraftById, readCampaignDraftPayload } from '@/lib/server/campaigns/drafts';
@@ -42,7 +42,7 @@ export default async function CreateCampaignPage({
     const [platformData, adAccountData, campaignTree] = await Promise.all([
         getPlatformDetails(platformIntegrationId, businessId),
         getAdAccountData(adAccountDBId, platformIntegrationId, businessId),
-        createScope === 'campaign' ? Promise.resolve([]) : getCampaignsWithAdSetsAndAds(adAccountDBId),
+        getCampaignsWithAdSetsAndAds(adAccountDBId),
     ]);
 
     if (!platformData?.integrationId || platformData.status !== 'connected' || !adAccountData?.external_account_id) {
@@ -158,13 +158,15 @@ export default async function CreateCampaignPage({
     }
 
     return (
-        <CustomCampaignFlow
+        <MetaLeadCampaignDraftHelper
             platformData={{
                 id: platformData.integrationId,
                 platform_name: platformData.vendor,
             }}
             adAccountId={adAccountData.external_account_id}
+            campaigns={campaignTree}
             draft={manualDraft}
+            draftId={requestedDraftId}
         />
     );
 }

@@ -28,7 +28,7 @@ import {
   SAFETY_PREFERENCE_OPTIONS,
   TARGET_COST_PER_LEAD_OPTIONS,
   WATCH_SIGNAL_OPTIONS,
-} from '@/lib/shared/onboarding/salonProfile';
+} from '@/lib/shared/onboarding/businessProfileOptions';
 import type { UserData } from '../types';
 
 type PreferencesStepProps = {

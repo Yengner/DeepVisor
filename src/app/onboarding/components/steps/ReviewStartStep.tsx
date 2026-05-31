@@ -30,7 +30,7 @@ import {
   SALON_SERVICE_OPTIONS,
   WATCH_SIGNAL_OPTIONS,
   labelForOption,
-} from '@/lib/shared/onboarding/salonProfile';
+} from '@/lib/shared/onboarding/businessProfileOptions';
 
 type ReviewStartStepProps = {
   onComplete: () => void;

@@ -27,7 +27,7 @@ import {
   isAllowedOption,
   optionValues,
   type OnboardingOption,
-} from '@/lib/shared/onboarding/salonProfile';
+} from '@/lib/shared/onboarding/businessProfileOptions';
 
 type OrganizationType = Database['public']['Enums']['organization_type'];
 

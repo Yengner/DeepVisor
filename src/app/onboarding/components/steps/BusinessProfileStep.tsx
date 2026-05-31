@@ -26,7 +26,7 @@ import {
   SALON_INDUSTRY_OPTIONS,
   SALON_MOST_VALUABLE_SERVICE_OPTIONS,
   SALON_SERVICE_OPTIONS,
-} from '@/lib/shared/onboarding/salonProfile';
+} from '@/lib/shared/onboarding/businessProfileOptions';
 import type { UserData } from '../types';
 
 type BusinessProfileStepProps = {

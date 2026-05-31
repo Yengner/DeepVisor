@@ -8,6 +8,11 @@ import type {
   ReviveCampaignDraftRecommendation,
   ReviveCampaignOpportunity,
   ReviveDraftSource,
+  LeadCampaignAdSetDraft,
+  LeadCampaignCreativeDraft,
+  LeadCampaignMethodSettings,
+  LeadCampaignLeadMethod,
+  LeadCampaignOfferTemplate,
   SmartCampaignDraftForm,
 } from '@/lib/shared/types/campaignDrafts';
 import type { Database } from '@/lib/shared/types/supabase';
@@ -21,11 +26,12 @@ const META_LEADS_OBJECTIVE = 'OUTCOME_LEADS';
 const META_FORM_DESTINATION = 'ON_AD';
 const META_PHONE_DESTINATION = 'PHONE_CALL';
 const META_MESSENGER_DESTINATION = 'MESSENGER';
+const META_WHATSAPP_DESTINATION = 'WHATSAPP';
 const META_DEFAULT_OPTIMIZATION_GOAL = 'LEAD_GENERATION';
+const META_CALL_OPTIMIZATION_GOAL = 'QUALITY_CALL';
 const META_DEFAULT_BID_STRATEGY = 'LOWEST_COST_WITHOUT_CAP';
 const META_DEFAULT_BUYING_TYPE = 'AUCTION';
 const META_DEFAULT_BILLING_EVENT = 'IMPRESSIONS';
-const META_DEFAULT_CTA = 'LEARN_MORE';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -60,6 +66,12 @@ function startOfTodayIso(): string {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   return today.toISOString();
+}
+
+function isoDaysFromToday(days: number): string {
+  const date = new Date(startOfTodayIso());
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString();
 }
 
 function formatGoalLabel(value: string): string {
@@ -135,10 +147,73 @@ function inferDestinationType(input: {
   }
 
   if (input.messages > 0 && input.messages > input.leads) {
-    return META_MESSENGER_DESTINATION;
+    return META_WHATSAPP_DESTINATION;
   }
 
   return META_FORM_DESTINATION;
+}
+
+function normalizeLeadDestinationType(destinationType: string): string {
+  if (
+    destinationType === META_MESSENGER_DESTINATION ||
+    destinationType === META_WHATSAPP_DESTINATION ||
+    destinationType === META_PHONE_DESTINATION
+  ) {
+    return destinationType;
+  }
+
+  return META_FORM_DESTINATION;
+}
+
+function leadMethodForDestination(destinationType: string): LeadCampaignLeadMethod {
+  if (destinationType === META_MESSENGER_DESTINATION || destinationType === META_WHATSAPP_DESTINATION) {
+    return 'messages';
+  }
+
+  if (destinationType === META_PHONE_DESTINATION) {
+    return 'calls';
+  }
+
+  return 'instant_form';
+}
+
+function offerTemplateForLeadMethod(leadMethod: LeadCampaignLeadMethod): LeadCampaignOfferTemplate {
+  if (leadMethod === 'calls') {
+    return 'same_day_openings';
+  }
+
+  if (leadMethod === 'messages') {
+    return 'high_ticket_transformation';
+  }
+
+  return 'new_client_intro';
+}
+
+function optimizationGoalForDestination(destinationType: string): string {
+  return destinationType === META_PHONE_DESTINATION
+    ? META_CALL_OPTIMIZATION_GOAL
+    : META_DEFAULT_OPTIMIZATION_GOAL;
+}
+
+function defaultMethodSettings(): LeadCampaignMethodSettings {
+  return {
+    instantForm: {
+      formStyle: 'higher_intent',
+      privacyPolicyUrl: '',
+      qualifyingQuestions: ['Preferred service', 'Preferred appointment day', 'Phone number'],
+    },
+    messages: {
+      channel: 'whatsapp',
+      whatsappPhoneNumber: '',
+      whatsappBusinessReady: false,
+      responseReady: false,
+    },
+    calls: {
+      phoneNumber: '',
+      staffedHoursAcknowledged: false,
+      callWindow: 'Business hours only',
+    },
+  };
 }
 
 function parseTargeting(
@@ -173,6 +248,7 @@ function parseTargeting(
 
   return {
     markerPosition,
+    locationLabel: '',
     radius: asNumber(customLocation.radius) || 10,
     ageMin: asNumber(targeting.age_min) || 18,
     ageMax: asNumber(targeting.age_max) || 65,
@@ -183,48 +259,133 @@ function parseTargeting(
   };
 }
 
+function buildCreativeDraft(
+  input: {
+    creative: CreativeSeedRow | null;
+    role: 'primary' | 'challenger';
+    offerTemplate: LeadCampaignOfferTemplate;
+  }
+): LeadCampaignCreativeDraft {
+  const roleSuffix = input.role === 'challenger' ? ' angle 2' : '';
+  const fallbackByTemplate: Record<LeadCampaignOfferTemplate, { headline: string; primaryText: string; description: string; cta: string }> = {
+    new_client_intro: {
+      headline: `New client lead offer${roleSuffix}`,
+      primaryText: 'Book a first-time consult and see the right service plan before you commit.',
+      description: 'Consult',
+      cta: 'GET_OFFER',
+    },
+    high_ticket_transformation: {
+      headline: `Transformation consult${roleSuffix}`,
+      primaryText: 'Thinking about a bigger service? Message the business for a quick consult.',
+      description: 'Consult request',
+      cta: 'BOOK_NOW',
+    },
+    same_day_openings: {
+      headline: `Today openings available${roleSuffix}`,
+      primaryText: 'Call now to ask about same-day openings and available appointment times.',
+      description: 'Same-day openings',
+      cta: 'CALL_NOW',
+    },
+  };
+  const fallback = fallbackByTemplate[input.offerTemplate];
+  const hasExistingCreative = Boolean(input.creative?.platform_creative_id);
+
+  return {
+    id: input.role,
+    role: input.role,
+    contentSource: hasExistingCreative ? 'existing' : 'upload',
+    existingCreativeIds: hasExistingCreative && input.creative?.platform_creative_id
+      ? [input.creative.platform_creative_id]
+      : [],
+    selectedCreativeName: hasExistingCreative ? `Creative ${input.creative?.platform_creative_id}` : '',
+    uploadedFileNames: [],
+    imageHash: input.creative?.image_hash ?? '',
+    adHeadline: input.role === 'primary' ? input.creative?.headline ?? fallback.headline : fallback.headline,
+    adPrimaryText: input.role === 'primary' ? input.creative?.primary_text ?? fallback.primaryText : fallback.primaryText,
+    adDescription: input.role === 'primary' ? input.creative?.description ?? fallback.description : fallback.description,
+    adCallToAction: input.role === 'primary' ? input.creative?.cta_type ?? fallback.cta : fallback.cta,
+  };
+}
+
 function buildManualDraftPayload(input: {
   campaignName: string;
-  objective: string;
   destinationType: string;
   dailyBudget: number;
   adSetName: string;
-  optimizationGoal: string;
   pageId: string;
   targeting: ManualCampaignDraftForm['targeting'];
   creative: CreativeSeedRow | null;
 }): CampaignDraftPayload {
+  const destinationType = normalizeLeadDestinationType(input.destinationType);
+  const leadMethod = leadMethodForDestination(destinationType);
+  const offerTemplate = offerTemplateForLeadMethod(leadMethod);
+  const optimizationGoal = optimizationGoalForDestination(destinationType);
+  const lifetimeBudget = Math.max(150, Math.round(input.dailyBudget * 30));
+  const primaryCreative = buildCreativeDraft({
+    creative: input.creative,
+    role: 'primary',
+    offerTemplate,
+  });
+  const challengerCreative = buildCreativeDraft({
+    creative: null,
+    role: 'challenger',
+    offerTemplate,
+  });
+  const primaryAdSet: LeadCampaignAdSetDraft = {
+    id: 'primary',
+    role: 'primary',
+    existingCampaignId: null,
+    existingAdSetId: null,
+    adSetName: input.adSetName,
+    pageId: input.pageId,
+    optimizationGoal,
+    useAdvantageAudience: true,
+    useAdvantagePlacements: true,
+    billingEvent: META_DEFAULT_BILLING_EVENT,
+    targeting: input.targeting,
+    creatives: [primaryCreative, challengerCreative],
+  };
+
   return {
     mode: 'manual',
     form: {
       campaignName: input.campaignName,
-      objective: input.objective,
-      destinationType: META_FORM_DESTINATION,
+      objective: META_LEADS_OBJECTIVE,
+      destinationType,
       specialAdCategories: ['NONE'],
       bidStrategy: META_DEFAULT_BID_STRATEGY,
       buyingType: META_DEFAULT_BUYING_TYPE,
-      budgetAmount: input.dailyBudget,
-      budgetType: 'daily',
-      budgetOptimization: true,
+      budgetAmount: lifetimeBudget,
+      budgetType: 'lifetime',
+      budgetOptimization: false,
       startDate: startOfTodayIso(),
-      endDate: null,
+      endDate: isoDaysFromToday(30),
+      draftTarget: {
+        mode: 'new_campaign',
+        existingCampaignId: null,
+        existingCampaignName: null,
+        existingAdSetId: null,
+        existingAdSetName: null,
+      },
+      leadMethod,
+      offerTemplate,
+      methodSettings: defaultMethodSettings(),
+      adSets: [primaryAdSet],
       adSetName: input.adSetName,
       pageId: input.pageId,
-      optimizationGoal: input.optimizationGoal,
+      optimizationGoal,
       useAdvantageAudience: true,
       useAdvantagePlacements: true,
       billingEvent: META_DEFAULT_BILLING_EVENT,
       targeting: input.targeting,
       creative: {
-        contentSource: 'upload',
-        existingCreativeIds: input.creative?.platform_creative_id
-          ? [input.creative.platform_creative_id]
-          : [],
-        imageHash: input.creative?.image_hash ?? '',
-        adHeadline: input.creative?.headline ?? '',
-        adPrimaryText: input.creative?.primary_text ?? '',
-        adDescription: input.creative?.description ?? '',
-        adCallToAction: input.creative?.cta_type ?? META_DEFAULT_CTA,
+        contentSource: primaryCreative.contentSource,
+        existingCreativeIds: primaryCreative.existingCreativeIds,
+        imageHash: primaryCreative.imageHash,
+        adHeadline: primaryCreative.adHeadline,
+        adPrimaryText: primaryCreative.adPrimaryText,
+        adDescription: primaryCreative.adDescription,
+        adCallToAction: primaryCreative.adCallToAction,
       },
     },
   };
@@ -238,7 +399,9 @@ function buildSmartDraftPayload(input: {
   creative: CreativeSeedRow | null;
 }): CampaignDraftPayload {
   const destinationType =
-    input.destinationType === META_PHONE_DESTINATION || input.destinationType === META_MESSENGER_DESTINATION
+    input.destinationType === META_PHONE_DESTINATION ||
+    input.destinationType === META_MESSENGER_DESTINATION ||
+    input.destinationType === META_WHATSAPP_DESTINATION
       ? input.destinationType
       : META_FORM_DESTINATION;
 
@@ -364,9 +527,6 @@ function buildRecommendationSet(input: {
 }): ReviveCampaignDraftRecommendation[] {
   const businessName = input.businessProfile?.business_name || 'Your business';
   const topCampaignName = input.campaignSeed?.name || 'Best historic winner';
-  const topObjective = input.campaignSeed?.objective || META_LEADS_OBJECTIVE;
-  const bestGoal =
-    input.adsetSeed?.optimization_goal || META_DEFAULT_OPTIMIZATION_GOAL;
   const outcomeDirection = inferDestinationType({
     leads: input.last30dLeads,
     messages: input.last30dMessages,
@@ -381,11 +541,9 @@ function buildRecommendationSet(input: {
   const pageId = input.creativeSeed?.page_id ?? '';
   const historicClonePayload = buildManualDraftPayload({
     campaignName: `Revive ${topCampaignName}`,
-    objective: topObjective,
-    destinationType: META_FORM_DESTINATION,
+    destinationType: outcomeDirection,
     dailyBudget,
     adSetName: input.adsetSeed?.name || `${topCampaignName} - Relaunch`,
-    optimizationGoal: bestGoal,
     pageId,
     targeting,
     creative: input.creativeSeed,
@@ -399,11 +557,9 @@ function buildRecommendationSet(input: {
   });
   const manualDefaultsPayload = buildManualDraftPayload({
     campaignName: `${businessName} Lead Relaunch`,
-    objective: META_LEADS_OBJECTIVE,
-    destinationType: META_FORM_DESTINATION,
+    destinationType: outcomeDirection,
     dailyBudget: Math.max(20, Math.round(dailyBudget * 0.85)),
     adSetName: `${businessName} - Core audience`,
-    optimizationGoal: META_DEFAULT_OPTIMIZATION_GOAL,
     pageId,
     targeting: {
       markerPosition: targeting.markerPosition,

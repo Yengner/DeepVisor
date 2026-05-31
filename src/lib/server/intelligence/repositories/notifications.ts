@@ -40,6 +40,14 @@ type DeliveryLogRow = {
 
 type NotificationSurface = 'bell' | 'dashboard_banner' | 'both';
 
+function isDuplicateKeyError(error: unknown): boolean {
+  if (!error || typeof error !== 'object' || !('code' in error)) {
+    return false;
+  }
+
+  return (error as { code?: unknown }).code === '23505';
+}
+
 function resolveNotificationSurface(row: Pick<NotificationRow, 'payload_json'>): NotificationSurface {
   if (!row.payload_json || typeof row.payload_json !== 'object' || Array.isArray(row.payload_json)) {
     return 'bell';
@@ -145,30 +153,25 @@ export async function upsertNotification(
     updated_at: timestamp,
   };
 
-  const { data: existingRow, error: existingError } = await (supabase as any)
-    .from('notifications')
-    .select('*')
-    .eq('user_id', input.userId)
-    .eq('dedupe_key', input.dedupeKey)
-    .maybeSingle();
-
-  if (existingError) {
-    throw existingError;
-  }
-
-  if (existingRow) {
+  async function updateExistingNotification(): Promise<NotificationFeedItem | null> {
     const { data, error } = await (supabase as any)
       .from('notifications')
       .update(baseRow)
-      .eq('id', existingRow.id)
+      .eq('user_id', input.userId)
+      .eq('dedupe_key', input.dedupeKey)
       .select('*')
-      .single();
+      .maybeSingle();
 
     if (error) {
       throw error;
     }
 
-    return mapNotificationRow(data as NotificationRow);
+    return data ? mapNotificationRow(data as NotificationRow) : null;
+  }
+
+  const updatedNotification = await updateExistingNotification();
+  if (updatedNotification) {
+    return updatedNotification;
   }
 
   const { data, error } = await (supabase as any)
@@ -178,6 +181,13 @@ export async function upsertNotification(
     .single();
 
   if (error) {
+    if (isDuplicateKeyError(error)) {
+      const retriedNotification = await updateExistingNotification();
+      if (retriedNotification) {
+        return retriedNotification;
+      }
+    }
+
     throw error;
   }
 

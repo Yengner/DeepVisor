@@ -17,9 +17,10 @@ export const CAMPAIGN_OBJECTIVES = {
 export const DESTINATION_TYPES = {
     // Lead Generation
     FORM: 'ON_AD',
+    MESSENGER: 'MESSENGER',
+    WHATSAPP: 'WHATSAPP',
+    PHONE_CALL: 'PHONE_CALL',
 
-
-    // WHATSAPP: 'WHATSAPP',
     // MESSENGER: 'MESSENGER',
     // LEAD_FROM_IG_DIRECT: 'INSTAGRAM',
     // WEBSITE: 'WEBSITE',
@@ -39,6 +40,7 @@ export const OPTIMIZATION_GOALS = {
     // Lead Generation
     LEAD_GENERATION: 'LEAD_GENERATION',
     QUALITY_LEAD: 'QUALITY_LEAD',
+    QUALITY_CALL: 'QUALITY_CALL',
 
     // // Message Objectives (used within other campaign objectives)
     // CONVERSATIONS: 'CONVERSATIONS', // General messaging
@@ -88,13 +90,22 @@ export const OBJECTIVE_DESTINATION_OPTIMIZATION_MAP = {
             defaultGoal: OPTIMIZATION_GOALS.LEAD_GENERATION,
             promotedObjectFields: ['page_id']
         },
-        // [DESTINATION_TYPES.MESSENGER]: {
-        //     optimizationGoals: [
-        //         OPTIMIZATION_GOALS.LEAD_GENERATION,
-        //     ],
-        //     defaultGoal: OPTIMIZATION_GOALS.LEAD_GENERATION,
-        //     promotedObjectFields: ['page_id']
-        // },
+        [DESTINATION_TYPES.MESSENGER]: {
+            optimizationGoals: [
+                OPTIMIZATION_GOALS.LEAD_GENERATION,
+                OPTIMIZATION_GOALS.QUALITY_LEAD,
+            ],
+            defaultGoal: OPTIMIZATION_GOALS.LEAD_GENERATION,
+            promotedObjectFields: ['page_id']
+        },
+        [DESTINATION_TYPES.WHATSAPP]: {
+            optimizationGoals: [
+                OPTIMIZATION_GOALS.LEAD_GENERATION,
+                OPTIMIZATION_GOALS.QUALITY_LEAD,
+            ],
+            defaultGoal: OPTIMIZATION_GOALS.LEAD_GENERATION,
+            promotedObjectFields: ['page_id']
+        },
         // [DESTINATION_TYPES.LEAD_FROM_IG_DIRECT]: {
         //     optimizationGoals: [
         //         OPTIMIZATION_GOALS.LEAD_GENERATION,
@@ -102,20 +113,13 @@ export const OBJECTIVE_DESTINATION_OPTIMIZATION_MAP = {
         //     defaultGoal: OPTIMIZATION_GOALS.LEAD_GENERATION,
         //     promotedObjectFields: ['page_id']
         // },
-        // [DESTINATION_TYPES.WHATSAPP]: {
-        //     optimizationGoals: [
-        //         OPTIMIZATION_GOALS.CONVERSATIONS,
-        //     ],
-        //     defaultGoal: OPTIMIZATION_GOALS.CONVERSATIONS,
-        //     promotedObjectFields: ['page_id']
-        // },
-        // [DESTINATION_TYPES.PHONE_CALL]: {
-        //     optimizationGoals: [
-        //         OPTIMIZATION_GOALS.QUALITY_CALL,
-        //     ],
-        //     defaultGoal: OPTIMIZATION_GOALS.QUALITY_CALL,
-        //     promotedObjectFields: ['page_id']
-        // },
+        [DESTINATION_TYPES.PHONE_CALL]: {
+            optimizationGoals: [
+                OPTIMIZATION_GOALS.QUALITY_CALL,
+            ],
+            defaultGoal: OPTIMIZATION_GOALS.QUALITY_CALL,
+            promotedObjectFields: ['page_id']
+        },
         // [DESTINATION_TYPES.WEBSITE]: {
         //     optimizationGoals: [
         //         OPTIMIZATION_GOALS.LINK_CLICKS,
@@ -431,6 +435,7 @@ export const getOptimizationLabel = (goal: string): string => {
     switch (goal) {
         case OPTIMIZATION_GOALS.LEAD_GENERATION: return 'Maximum Leads';
         case OPTIMIZATION_GOALS.QUALITY_LEAD: return 'Quality Leads';
+        case OPTIMIZATION_GOALS.QUALITY_CALL: return 'Quality Phone Calls';
         // case OPTIMIZATION_GOALS.CONVERSATIONS: return 'Messaging Conversations';
         // case OPTIMIZATION_GOALS.REPLIES: return 'Message Replies';
         // case OPTIMIZATION_GOALS.PAGE_LIKES: return 'Page Likes';

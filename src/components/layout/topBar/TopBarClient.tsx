@@ -33,13 +33,9 @@ import {
     IconHelp,
     IconBell,
     IconPlus,
-    IconChartBar,
-    IconTable,
-    IconLayersIntersect,
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import DeepVisorNotices from '@/components/intelligence/DeepVisorNotices';
 import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -172,46 +168,21 @@ export default function TopBarClient({
             {/* Right Section */}
             <div className="flex items-center space-x-6">
                 {/* Quick Action Button */}
-                <Menu position="bottom-end" shadow="md">
-                    <Menu.Target>
-                        <Button
-                            leftSection={<IconPlus size={18} />}
-                            variant="light"
-                            size="sm"
-                            radius="md"
-                            fw={600}
-                            style={{
-                                backgroundColor: accentSoft,
-                                color: accentStrong,
-                                border: `1px solid ${borderColor}`,
-                            }}
-                        >
-                            Create New
-                        </Button>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                        <Menu.Label>Create</Menu.Label>
-                        <Menu.Item
-                            leftSection={<IconTable size={18} />}
-                            onClick={() => router.push('/campaigns/create')}
-                        >
-                            Campaign
-                        </Menu.Item>
-                        <Menu.Item
-                            leftSection={<IconLayersIntersect size={18} />}
-                            onClick={() => router.push('/campaigns/create?scope=adset')}
-                        >
-                            Ad Set
-                        </Menu.Item>
-                        <Menu.Divider />
-                        <Menu.Item
-                            leftSection={<IconChartBar size={18} />}
-                            onClick={() => router.push('/reports')}
-                        >
-                            Report
-                        </Menu.Item>
-                    </Menu.Dropdown>
-                </Menu>
+                <Button
+                    leftSection={<IconPlus size={18} />}
+                    variant="light"
+                    size="sm"
+                    radius="md"
+                    fw={600}
+                    onClick={() => router.push('/campaigns/create')}
+                    style={{
+                        backgroundColor: accentSoft,
+                        color: accentStrong,
+                        border: `1px solid ${borderColor}`,
+                    }}
+                >
+                    Create New
+                </Button>
 
                 {/* Search bar */}
                 <TextInput
@@ -232,8 +203,6 @@ export default function TopBarClient({
                     })}
                     className="text-base hidden md:block"
                 />
-
-                <DeepVisorNotices variant="popover" showCalendarLink />
 
                 {/* Notifications */}
                 <Menu shadow="md" width={notificationDropdownWidth} position="bottom-end">

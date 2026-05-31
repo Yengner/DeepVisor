@@ -38,6 +38,7 @@ import type { ReportBreakdownRow, ReportPayload } from '@/lib/server/reports/typ
 import type { AdAccountData } from '@/lib/server/data/types';
 import {
   getCachedAdAccountData,
+  getCachedAdAccountShellData,
   getCachedAdAccountSyncCoverage,
   getCachedBusinessName,
   getCachedPlatformDetails,
@@ -1151,15 +1152,15 @@ async function getDashboardBasePayload(input: {
   const { selectedPlatformId, selectedAdAccountId } = selection;
   const businessName = cachedBusinessName || input.fallbackBusinessName || 'Your business';
 
-  const [platform, selectedAdAccount] = await Promise.all([
+  const [platform, selectedAdAccount, selectedSyncCoverage] = await Promise.all([
     selectedPlatformId
       ? timer.measure('cached platform details', () =>
           getCachedPlatformDetails(input.userId, selectedPlatformId, input.businessId)
         )
       : Promise.resolve(null),
     selectedPlatformId && selectedAdAccountId
-      ? timer.measure('cached ad account data', () =>
-          getCachedAdAccountData(
+      ? timer.measure('cached ad account shell data', () =>
+          getCachedAdAccountShellData(
             input.userId,
             selectedAdAccountId,
             selectedPlatformId,
@@ -1167,15 +1168,15 @@ async function getDashboardBasePayload(input: {
           )
         )
       : Promise.resolve(null),
+    selectedAdAccountId
+      ? timer.measure('cached sync coverage', () =>
+          getCachedAdAccountSyncCoverage(input.userId, input.businessId, selectedAdAccountId)
+        )
+      : Promise.resolve(null),
   ]);
   const platformConnected = Boolean(platform && platform.status === 'connected');
   const adAccount = platformConnected ? selectedAdAccount : null;
-  const syncCoverage =
-    adAccount?.id
-      ? await timer.measure('cached sync coverage', () =>
-          getCachedAdAccountSyncCoverage(input.userId, input.businessId, adAccount.id)
-        )
-      : null;
+  const syncCoverage = adAccount?.id ? selectedSyncCoverage : null;
   const isMeta = platform?.vendor === 'meta';
   const payload = timer.measureSync('build base dashboard payload', () =>
     buildDashboardPayload({
@@ -1213,6 +1214,46 @@ async function getDashboardBasePayload(input: {
       platformConnected,
       dashboardNotifications: [],
     },
+  };
+}
+
+const getHydratedDashboardAdAccount = cache(
+  async (
+    userId: string,
+    businessId: string,
+    selectedPlatformId: string,
+    selectedAdAccountId: string
+  ) => {
+    const timer = createDashboardTimer();
+    const adAccount = await timer.measure('cached ad account metrics data', () =>
+      getCachedAdAccountData(userId, selectedAdAccountId, selectedPlatformId, businessId)
+    );
+    timer.finish('dashboard ad account metrics data total');
+    return adAccount;
+  }
+);
+
+async function hydrateDashboardSectionBase(base: DashboardSectionProps): Promise<DashboardSectionProps> {
+  if (
+    !base.platformConnected ||
+    !base.selectedPlatformId ||
+    !base.selectedAdAccountId ||
+    !base.adAccount?.id
+  ) {
+    return base;
+  }
+
+  const adAccount =
+    (await getHydratedDashboardAdAccount(
+      base.userId,
+      base.businessId,
+      base.selectedPlatformId,
+      base.selectedAdAccountId
+    )) ?? base.adAccount;
+
+  return {
+    ...base,
+    adAccount,
   };
 }
 
@@ -1637,6 +1678,8 @@ async function buildFeaturedAdsetHistory(input: {
 }
 
 async function TodaySnapshotSection(base: DashboardSectionProps) {
+  base = await hydrateDashboardSectionBase(base);
+
   if (!base.adAccount?.id || !base.platformConnected || !base.selectedPlatformId) {
     const payload = buildSectionPayload(base);
     return (
@@ -1720,6 +1763,8 @@ function selectFeaturedAdsetForDashboard(input: {
 }
 
 async function DashboardNotificationsSection(base: DashboardSectionProps) {
+  base = await hydrateDashboardSectionBase(base);
+
   if (!base.adAccount?.id || !base.platformConnected || !base.selectedPlatformId) {
     return null;
   }
@@ -1819,6 +1864,8 @@ async function DashboardNotificationsSection(base: DashboardSectionProps) {
 }
 
 async function FeaturedAdsetHistorySection(base: DashboardSectionProps) {
+  base = await hydrateDashboardSectionBase(base);
+
   if (!base.adAccount?.id || !base.platformConnected || !base.selectedPlatformId) {
     const payload = buildSectionPayload(base, {
       featuredAdsetHistory: emptyFeaturedAdsetHistory(base.isMeta),
@@ -1947,6 +1994,8 @@ async function FeaturedAdsetHistorySection(base: DashboardSectionProps) {
 }
 
 async function LiveDeliveryTablesSection(base: DashboardSectionProps) {
+  base = await hydrateDashboardSectionBase(base);
+
   if (!base.adAccount?.id || !base.platformConnected || !base.selectedPlatformId) {
     return null;
   }

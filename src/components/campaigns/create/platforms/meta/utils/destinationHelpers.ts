@@ -7,25 +7,25 @@ export function getDestinationConfig(destinationType: string): { label: string, 
                 label: 'Instant forms',
                 description: 'Generate leads by asking people to fill out a form.'
             };
+        case DESTINATION_TYPES.MESSENGER:
+            return {
+                label: 'Messenger',
+                description: 'Generate leads by starting chats in Messenger.'
+            };
+        case DESTINATION_TYPES.WHATSAPP:
+            return {
+                label: 'WhatsApp',
+                description: 'Generate leads by starting chats on WhatsApp.'
+            };
+        case DESTINATION_TYPES.PHONE_CALL:
+            return {
+                label: 'Calls',
+                description: 'Generate leads by asking people to call your business.'
+            };
         // case DESTINATION_TYPES.WEBSITE:
         //     return {
         //         label: 'Website',
         //         description: 'Send users to your website to learn more or take action.'
-        //     };
-        // case DESTINATION_TYPES.MESSENGER:
-        //     return {
-        //         label: 'Messenger',
-        //         description: 'Generate leads by starting chats in Messenger.'
-        //     };
-        // case DESTINATION_TYPES.WHATSAPP:
-        //     return {
-        //         label: 'WhatsApp',
-        //         description: 'Generate leads by starting chats on WhatsApp.'
-        //     };
-        // case DESTINATION_TYPES.PHONE_CALL:
-        //     return {
-        //         label: 'Calls',
-        //         description: 'Generate leads by asking people to call your business.'
         //     };
         // case DESTINATION_TYPES.APP:
         //     return {

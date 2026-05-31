@@ -6,6 +6,76 @@ export type ReviveStaleSeverity = 'watch' | 'stale' | 'critical';
 
 export type CampaignDraftMode = 'manual' | 'smart';
 
+export type LeadCampaignLeadMethod = 'instant_form' | 'messages' | 'calls';
+
+export type LeadCampaignOfferTemplate =
+  | 'new_client_intro'
+  | 'high_ticket_transformation'
+  | 'same_day_openings';
+
+export type CampaignDraftTargetMode =
+  | 'new_campaign'
+  | 'existing_campaign'
+  | 'existing_adset';
+
+export interface CampaignDraftTarget {
+  mode: CampaignDraftTargetMode;
+  existingCampaignId?: string | null;
+  existingCampaignName?: string | null;
+  existingAdSetId?: string | null;
+  existingAdSetName?: string | null;
+}
+
+export interface LeadCampaignCreativeDraft {
+  id: string;
+  role: 'primary' | 'challenger';
+  contentSource: string;
+  existingCreativeIds: string[];
+  selectedCreativeName?: string;
+  uploadedFileNames?: string[];
+  imageHash: string;
+  adHeadline: string;
+  adPrimaryText: string;
+  adDescription: string;
+  adCallToAction: string;
+}
+
+export interface LeadCampaignAdSetDraft {
+  id: string;
+  role: 'primary' | 'challenger';
+  existingCampaignId?: string | null;
+  existingAdSetId?: string | null;
+  adSetName: string;
+  pageId: string;
+  optimizationGoal: string;
+  useAdvantageAudience: boolean;
+  useAdvantagePlacements: boolean;
+  billingEvent: string;
+  targeting: ManualCampaignDraftForm['targeting'] & {
+    locationLabel?: string;
+  };
+  creatives: LeadCampaignCreativeDraft[];
+}
+
+export interface LeadCampaignMethodSettings {
+  instantForm: {
+    formStyle: 'higher_intent' | 'more_volume';
+    privacyPolicyUrl: string;
+    qualifyingQuestions: string[];
+  };
+  messages: {
+    channel: 'whatsapp' | 'messenger' | 'instagram';
+    whatsappPhoneNumber?: string;
+    whatsappBusinessReady?: boolean;
+    responseReady: boolean;
+  };
+  calls: {
+    phoneNumber: string;
+    staffedHoursAcknowledged: boolean;
+    callWindow: string;
+  };
+}
+
 export interface ManualCampaignDraftForm {
   campaignName: string;
   objective: string;
@@ -18,6 +88,11 @@ export interface ManualCampaignDraftForm {
   budgetOptimization: boolean;
   startDate: string;
   endDate: string | null;
+  draftTarget?: CampaignDraftTarget;
+  leadMethod?: LeadCampaignLeadMethod;
+  offerTemplate?: LeadCampaignOfferTemplate;
+  methodSettings?: LeadCampaignMethodSettings;
+  adSets?: LeadCampaignAdSetDraft[];
   adSetName: string;
   pageId: string;
   optimizationGoal: string;
@@ -26,6 +101,7 @@ export interface ManualCampaignDraftForm {
   billingEvent: string;
   targeting: {
     markerPosition: { lat: number; lng: number } | null;
+    locationLabel?: string;
     radius: number;
     ageMin: number;
     ageMax: number;

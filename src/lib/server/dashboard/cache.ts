@@ -12,6 +12,7 @@ import {
 import { listAdAccountDailyMetricsRowsByAccount } from '@/lib/server/repositories/ad_accounts/getAdAccountPerformance';
 import { toSupportedVendor } from '@/lib/server/repositories/platforms/normalizers';
 import type { AdAccountData, PlatformDetails } from '@/lib/server/data/types';
+import type { Database } from '@/lib/shared/types/supabase';
 import type { SyncCoverage } from '@/lib/shared/types/integrations';
 
 type PlatformJoin = {
@@ -43,6 +44,73 @@ type IntegrationLookup = {
   platform_id: string;
   platforms: PlatformJoin | PlatformJoin[];
 };
+
+function emptyAggregatedMetrics(): AdAccountData['aggregated_metrics'] {
+  return {
+    spend: 0,
+    impressions: 0,
+    clicks: 0,
+    link_clicks: 0,
+    reach: 0,
+    leads: 0,
+    messages: 0,
+    calls: 0,
+    ctr: 0,
+    cpc: 0,
+    cpm: 0,
+  };
+}
+
+function emptyTimeIncrementMetrics(): AdAccountData['time_increment_metrics'] {
+  return {
+    '1': [],
+    '7': [],
+    '30': [],
+  };
+}
+
+function toDashboardAdAccountShell(input: {
+  integration: IntegrationLookup;
+  adAccount: Pick<
+    Database['public']['Tables']['ad_accounts']['Row'],
+    | 'id'
+    | 'business_id'
+    | 'platform_id'
+    | 'external_account_id'
+    | 'name'
+    | 'status'
+    | 'last_synced'
+    | 'created_at'
+    | 'updated_at'
+    | 'currency_code'
+    | 'timezone'
+  >;
+  platformVendor: AdAccountData['platform_name'];
+}): AdAccountData {
+  const emptyMetrics = emptyAggregatedMetrics();
+
+  return {
+    id: input.adAccount.id,
+    business_id: input.adAccount.business_id,
+    platform_id: input.adAccount.platform_id,
+    platform_integration_id: input.integration.id,
+    external_account_id: input.adAccount.external_account_id,
+    ad_account_id: input.adAccount.external_account_id,
+    name: input.adAccount.name,
+    status: input.adAccount.status,
+    account_status: input.adAccount.status ?? 'unknown',
+    currency_code: input.adAccount.currency_code,
+    timezone: input.adAccount.timezone,
+    created_at: input.adAccount.created_at,
+    updated_at: input.adAccount.updated_at,
+    last_synced: input.adAccount.last_synced,
+    aggregated_metrics: emptyMetrics,
+    time_increment_metrics: emptyTimeIncrementMetrics(),
+    performance_summary: emptyMetrics,
+    daily_metrics: [],
+    platform_name: input.platformVendor,
+  };
+}
 
 function firstPlatform(value: PlatformJoin | PlatformJoin[]): PlatformJoin {
   return Array.isArray(value) ? value[0] ?? null : value;
@@ -222,6 +290,69 @@ export function getCachedAdAccountData(
     },
     [
       'dashboard-ad-account-data',
+      userId,
+      businessId,
+      selectedPlatformIntegrationId,
+      selectedAdAccountId,
+    ],
+    { revalidate: 60 }
+  )();
+}
+
+export function getCachedAdAccountShellData(
+  userId: string,
+  selectedAdAccountId: string,
+  selectedPlatformIntegrationId: string,
+  businessId: string
+): Promise<AdAccountData | null> {
+  return unstable_cache(
+    async () => {
+      const supabase = createAdminClient();
+      const { data: integrationData, error: integrationError } = await supabase
+        .from('platform_integrations')
+        .select('id, business_id, platform_id, platforms ( id, key, name )')
+        .eq('id', selectedPlatformIntegrationId)
+        .eq('business_id', businessId)
+        .maybeSingle();
+
+      if (integrationError) {
+        console.error('Error validating cached selected integration shell:', integrationError.message);
+        return null;
+      }
+
+      if (!integrationData) {
+        return null;
+      }
+
+      const integration = integrationData as unknown as IntegrationLookup;
+      const platform = firstPlatform(integration.platforms);
+      const { data: adAccount, error: adAccountError } = await supabase
+        .from('ad_accounts')
+        .select(
+          'id, business_id, platform_id, external_account_id, name, status, last_synced, created_at, updated_at, currency_code, timezone'
+        )
+        .eq('id', selectedAdAccountId)
+        .eq('business_id', businessId)
+        .eq('platform_id', integration.platform_id)
+        .maybeSingle();
+
+      if (adAccountError) {
+        console.error('Error fetching cached ad account shell:', adAccountError.message);
+        return null;
+      }
+
+      if (!adAccount) {
+        return null;
+      }
+
+      return toDashboardAdAccountShell({
+        integration,
+        adAccount,
+        platformVendor: toSupportedVendor(platform?.key),
+      });
+    },
+    [
+      'dashboard-ad-account-shell',
       userId,
       businessId,
       selectedPlatformIntegrationId,
