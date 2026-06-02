@@ -204,7 +204,10 @@ function defaultMethodSettings(): LeadCampaignMethodSettings {
     },
     messages: {
       channel: 'whatsapp',
+      whatsappPhoneNumberId: '',
       whatsappPhoneNumber: '',
+      whatsappBusinessAccountId: '',
+      whatsappBusinessAccountName: '',
       whatsappBusinessReady: false,
       responseReady: false,
     },

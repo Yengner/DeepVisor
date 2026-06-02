@@ -65,7 +65,10 @@ export interface LeadCampaignMethodSettings {
   };
   messages: {
     channel: 'whatsapp' | 'messenger' | 'instagram';
+    whatsappPhoneNumberId?: string;
     whatsappPhoneNumber?: string;
+    whatsappBusinessAccountId?: string;
+    whatsappBusinessAccountName?: string;
     whatsappBusinessReady?: boolean;
     responseReady: boolean;
   };

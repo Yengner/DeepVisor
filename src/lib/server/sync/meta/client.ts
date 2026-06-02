@@ -186,7 +186,8 @@ export async function fetchMetaCollection<T>(input: {
   }
 
   const rows: T[] = [];
-
+  console.log('fetching Meta collection', { path: input.path, params: input.params });
+  
   while (nextUrl) {
     const response = await fetchMetaResponseWithRetry(nextUrl);
 
@@ -194,6 +195,7 @@ export async function fetchMetaCollection<T>(input: {
     rows.push(...(body.data ?? []));
     nextUrl = body.paging?.next ? new URL(body.paging.next) : null;
   }
+  console.log('fetched Meta collection', { path: input.path, params: input.params, count: rows.length });
 
   return rows;
 }

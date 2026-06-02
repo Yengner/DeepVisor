@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const PUBLIC_ROUTES = new Set([
+    '/',
     '/features',
     '/privacy-policy',
     '/terms-of-service',
@@ -15,6 +16,22 @@ function normalizePathname(pathname: string): string {
     }
 
     return pathname;
+}
+
+function redirectWithSupabaseCookies(
+    request: NextRequest,
+    supabaseResponse: NextResponse,
+    pathname: string
+) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname;
+    const response = NextResponse.redirect(url);
+
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+        response.cookies.set(cookie.name, cookie.value, cookie);
+    });
+
+    return response;
 }
 
 export async function updateSession(request: NextRequest) {
@@ -54,22 +71,19 @@ export async function updateSession(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     const pathname = normalizePathname(request.nextUrl.pathname);
+    const isRootPage = pathname === '/';
     const isLoginPage = pathname.startsWith('/login');
     const isSignUpPage = pathname.startsWith('/sign-up');
     const isPublicRoute = PUBLIC_ROUTES.has(pathname);
 
     // Handle unauthenticated user trying to access protected routes
     if (!user && !isLoginPage && !isSignUpPage && !isPublicRoute) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/login';
-        return NextResponse.redirect(url);
+        return redirectWithSupabaseCookies(request, supabaseResponse, '/login');
     }
 
     // Handle authenticated user trying to access public pages  
-    if (user && (isLoginPage || isSignUpPage)) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/dashboard';
-        return NextResponse.redirect(url);
+    if (user && (isRootPage || isLoginPage || isSignUpPage)) {
+        return redirectWithSupabaseCookies(request, supabaseResponse, '/api/auth/redirect');
     }
 
 

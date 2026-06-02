@@ -48,12 +48,14 @@ export function useMetaPages(
             onError: (error: ErrorDetails) => {
               console.log("Error loading Meta pages:", error);
               setPagesError(error.userMessage);
+              setHasLoaded(true);
             }
           }
         );
       } catch (err) {
         console.error("Unexpected error:", err);
         setPagesError("An unexpected error occurred while loading Meta pages.");
+        setHasLoaded(true);
       } finally {
         setLoadingPages(false);
       }

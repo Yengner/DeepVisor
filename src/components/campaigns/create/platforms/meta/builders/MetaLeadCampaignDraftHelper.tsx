@@ -60,8 +60,9 @@ import type {
   LeadCampaignLeadMethod,
 } from '@/lib/shared/types/campaignDrafts';
 import type { CampaignTreeAdsetNode, CampaignTreeNode } from '@/lib/server/data';
+import type { MetaPage } from '@/lib/server/actions/meta/pages/actions';
+import type { MetaWhatsAppPhoneNumber } from '@/lib/server/actions/meta/whatsapp/actions';
 import MediaSelectionModal from '../components/MediaSelectionModal';
-import { useMetaPages } from '../hooks/useMetaPages';
 
 type MetaLeadCampaignDraftHelperProps = {
   platformData: {
@@ -72,6 +73,10 @@ type MetaLeadCampaignDraftHelperProps = {
   campaigns: CampaignTreeNode[];
   draft?: ManualCampaignDraftForm | null;
   draftId?: string | null;
+  metaPages?: MetaPage[];
+  pagesError?: string | null;
+  whatsappPhoneNumbers?: MetaWhatsAppPhoneNumber[];
+  whatsappPhoneNumbersError?: string | null;
 };
 
 type CreativeState = LeadCampaignCreativeDraft & {
@@ -127,6 +132,11 @@ type LeadEstimate = {
   costPerOutcome: number;
   points: LeadEstimatePoint[];
   usesFallback: boolean;
+};
+
+type InitialStateDefaults = {
+  pageId?: string;
+  whatsappPhoneNumber?: MetaWhatsAppPhoneNumber | null;
 };
 
 const LEADS_OBJECTIVE = 'OUTCOME_LEADS';
@@ -684,7 +694,10 @@ function defaultMethodSettings(): LeadCampaignMethodSettings {
     },
     messages: {
       channel: 'whatsapp',
+      whatsappPhoneNumberId: '',
       whatsappPhoneNumber: '',
+      whatsappBusinessAccountId: '',
+      whatsappBusinessAccountName: '',
       whatsappBusinessReady: false,
       responseReady: false,
     },
@@ -725,9 +738,33 @@ function normalizeMethodSettings(settings: LeadCampaignMethodSettings): LeadCamp
     messages: {
       ...settings.messages,
       channel: settings.messages.channel ?? 'whatsapp',
+      whatsappPhoneNumberId: settings.messages.whatsappPhoneNumberId ?? '',
       whatsappPhoneNumber: settings.messages.whatsappPhoneNumber ?? '',
+      whatsappBusinessAccountId: settings.messages.whatsappBusinessAccountId ?? '',
+      whatsappBusinessAccountName: settings.messages.whatsappBusinessAccountName ?? '',
       whatsappBusinessReady: settings.messages.whatsappBusinessReady ?? false,
       responseReady: settings.messages.responseReady ?? false,
+    },
+  };
+}
+
+function applyWhatsAppPhoneNumberDefaults(
+  settings: LeadCampaignMethodSettings,
+  phoneNumber: MetaWhatsAppPhoneNumber | null | undefined
+): LeadCampaignMethodSettings {
+  if (!phoneNumber || settings.messages.whatsappPhoneNumberId) {
+    return settings;
+  }
+
+  return {
+    ...settings,
+    messages: {
+      ...settings.messages,
+      whatsappPhoneNumberId: phoneNumber.id,
+      whatsappPhoneNumber: phoneNumber.display_phone_number,
+      whatsappBusinessAccountId: phoneNumber.whatsapp_business_account_id,
+      whatsappBusinessAccountName: phoneNumber.whatsapp_business_account_name ?? '',
+      whatsappBusinessReady: true,
     },
   };
 }
@@ -767,7 +804,10 @@ function creativeFromDraft(
   };
 }
 
-function buildInitialState(draft: ManualCampaignDraftForm | null | undefined): HelperState {
+function buildInitialState(
+  draft: ManualCampaignDraftForm | null | undefined,
+  defaults: InitialStateDefaults = {}
+): HelperState {
   const startDate = dateFromIso(draft?.startDate, new Date()) ?? new Date();
   const leadMethod = draft?.leadMethod ?? (draft?.destinationType ? leadMethodFromDestination(draft.destinationType) : 'messages');
   const firstDraftAdSet = draft?.adSets?.[0] ?? null;
@@ -827,6 +867,26 @@ function buildInitialState(draft: ManualCampaignDraftForm | null | undefined): H
       )
     ),
   }));
+  const methodSettings = normalizeMethodSettings({
+    ...defaultMethodSettings(),
+    ...(draft?.methodSettings ?? {}),
+    instantForm: {
+      ...defaultMethodSettings().instantForm,
+      ...(draft?.methodSettings?.instantForm ?? {}),
+    },
+    messages: {
+      ...defaultMethodSettings().messages,
+      ...(draft?.methodSettings?.messages ?? {}),
+    },
+    calls: {
+      ...defaultMethodSettings().calls,
+      ...(draft?.methodSettings?.calls ?? {}),
+    },
+  });
+  const hydratedMethodSettings =
+    leadMethod === 'messages' && methodSettings.messages.channel === 'whatsapp'
+      ? applyWhatsAppPhoneNumberDefaults(methodSettings, defaults.whatsappPhoneNumber)
+      : methodSettings;
 
   return {
     draftTargetMode,
@@ -834,7 +894,7 @@ function buildInitialState(draft: ManualCampaignDraftForm | null | undefined): H
     existingAdSetId: draft?.draftTarget?.existingAdSetId ?? firstDraftAdSet?.existingAdSetId ?? '',
     campaignName: draft?.campaignName || 'Lead campaign',
     leadMethod,
-    pageId: firstDraftAdSet?.pageId || draft?.pageId || '',
+    pageId: firstDraftAdSet?.pageId || draft?.pageId || defaults.pageId || '',
     serviceArea: firstDraftAdSet?.targeting.locationLabel || draft?.targeting.locationLabel || '',
     radius: firstDraftAdSet?.targeting.radius || draft?.targeting.radius || 5,
     budgetAmount:
@@ -843,22 +903,7 @@ function buildInitialState(draft: ManualCampaignDraftForm | null | undefined): H
         : draft?.budgetAmount || 600,
     startDate,
     endDate: dateFromIso(draft?.endDate, addDays(startDate, 30)),
-    methodSettings: normalizeMethodSettings({
-      ...defaultMethodSettings(),
-      ...(draft?.methodSettings ?? {}),
-      instantForm: {
-        ...defaultMethodSettings().instantForm,
-        ...(draft?.methodSettings?.instantForm ?? {}),
-      },
-      messages: {
-        ...defaultMethodSettings().messages,
-        ...(draft?.methodSettings?.messages ?? {}),
-      },
-      calls: {
-        ...defaultMethodSettings().calls,
-        ...(draft?.methodSettings?.calls ?? {}),
-      },
-    }),
+    methodSettings: hydratedMethodSettings,
     adSets: draftTargetMode === 'existing_adset' ? hydratedAdSets.slice(0, 1) : hydratedAdSets,
   };
 }
@@ -976,30 +1021,27 @@ export default function MetaLeadCampaignDraftHelper({
   campaigns,
   draft,
   draftId,
+  metaPages = [],
+  pagesError = null,
+  whatsappPhoneNumbers = [],
+  whatsappPhoneNumbersError = null,
 }: MetaLeadCampaignDraftHelperProps) {
   const router = useRouter();
-  const [state, setState] = useState<HelperState>(() => buildInitialState(draft));
+  const [state, setState] = useState<HelperState>(() =>
+    buildInitialState(draft, {
+      pageId: metaPages[0]?.page_id,
+      whatsappPhoneNumber: whatsappPhoneNumbers[0] ?? null,
+    })
+  );
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId ?? null);
   const [savedDraft, setSavedDraft] = useState<SaveDraftResponse['data'] | null>(null);
   const [mediaTarget, setMediaTarget] = useState<{ adSetId: string; creativeId: string } | null>(null);
-  const { metaPages, loadingPages, pagesError, hasLoaded } = useMetaPages(platformData.id);
 
   useEffect(() => {
     setCurrentDraftId(draftId ?? null);
   }, [draftId]);
-
-  useEffect(() => {
-    if (!hasLoaded || state.pageId || metaPages.length === 0) {
-      return;
-    }
-
-    setState((current) => ({
-      ...current,
-      pageId: metaPages[0].page_id,
-    }));
-  }, [hasLoaded, metaPages, state.pageId]);
 
   const selectedCampaign = useMemo(
     () => findCampaign(campaigns, state.existingCampaignId),
@@ -1015,6 +1057,22 @@ export default function MetaLeadCampaignDraftHelper({
     () => metaPages.find((page) => page.page_id === state.pageId)?.name ?? 'Selected Page',
     [metaPages, state.pageId]
   );
+  const whatsappPhoneNumberOptions = useMemo(
+    () =>
+      whatsappPhoneNumbers.map((phoneNumber) => ({
+        value: phoneNumber.id,
+        label: `${phoneNumber.display_phone_number}${phoneNumber.verified_name ? ` - ${phoneNumber.verified_name}` : ''}`,
+      })),
+    [whatsappPhoneNumbers]
+  );
+  const selectedWhatsAppPhoneNumber = useMemo(
+    () =>
+      whatsappPhoneNumbers.find(
+        (phoneNumber) => phoneNumber.id === state.methodSettings.messages.whatsappPhoneNumberId
+      ) ?? null,
+    [state.methodSettings.messages.whatsappPhoneNumberId, whatsappPhoneNumbers]
+  );
+
 
   useEffect(() => {
     if (state.draftTargetMode === 'new_campaign' || campaigns.length === 0) {
@@ -1265,12 +1323,13 @@ export default function MetaLeadCampaignDraftHelper({
 
     if (state.leadMethod === 'messages') {
       if (state.methodSettings.messages.channel === 'whatsapp') {
-        if (!state.methodSettings.messages.whatsappPhoneNumber?.trim()) {
-          nextErrors.push('Add the WhatsApp Business phone number.');
-        }
-
-        if (!state.methodSettings.messages.whatsappBusinessReady) {
-          nextErrors.push('Confirm WhatsApp Business is ready to receive ad conversations.');
+        if (!state.methodSettings.messages.whatsappPhoneNumberId?.trim()) {
+          nextErrors.push('Select a connected WhatsApp Business phone number from Meta.');
+        } else if (
+          whatsappPhoneNumbers.length > 0 &&
+          !selectedWhatsAppPhoneNumber
+        ) {
+          nextErrors.push('Select a WhatsApp Business phone number returned by Meta.');
         }
       }
 
@@ -1572,14 +1631,26 @@ export default function MetaLeadCampaignDraftHelper({
                   { value: 'messenger', label: 'Messenger' },
                 ]}
                 value={state.methodSettings.messages.channel}
-                onChange={(value) =>
-                  updateMethodSettings({
+                onChange={(value) => {
+                  const channel = (value as 'whatsapp' | 'messenger' | 'instagram') || 'whatsapp';
+                  const nextSettings = {
+                    ...state.methodSettings,
                     messages: {
                       ...state.methodSettings.messages,
-                      channel: (value as 'whatsapp' | 'messenger' | 'instagram') || 'whatsapp',
+                      channel,
                     },
-                  })
-                }
+                  };
+
+                  updateMethodSettings({
+                    messages:
+                      channel === 'whatsapp'
+                        ? applyWhatsAppPhoneNumberDefaults(
+                            nextSettings,
+                            whatsappPhoneNumbers[0] ?? null
+                          ).messages
+                        : nextSettings.messages,
+                  });
+                }}
                 allowDeselect={false}
               />
 
@@ -1593,36 +1664,65 @@ export default function MetaLeadCampaignDraftHelper({
                       <div>
                         <Text fw={900}>WhatsApp-first chat funnel</Text>
                         <Text size="sm" c="dimmed">
-                          The draft will save WhatsApp as the message destination. The ad should open a conversation
-                          with the connected WhatsApp Business number after Meta review.
+                          The draft will save WhatsApp as the message destination. Meta requires a WhatsApp Business
+                          number that already exists on the connected business account.
                         </Text>
                       </div>
                     </Group>
-                    <TextInput
-                      label="WhatsApp Business number"
-                      placeholder="+1 555 555 5555"
-                      value={state.methodSettings.messages.whatsappPhoneNumber ?? ''}
-                      onChange={(event) =>
+                    <Select
+                      label="Connected WhatsApp number"
+                      placeholder={
+                        whatsappPhoneNumberOptions.length > 0
+                          ? 'Choose a WhatsApp number'
+                          : 'No WhatsApp numbers found'
+                      }
+                      data={whatsappPhoneNumberOptions}
+                      value={state.methodSettings.messages.whatsappPhoneNumberId || null}
+                      onChange={(value) => {
+                        const phoneNumber = whatsappPhoneNumbers.find((item) => item.id === value);
                         updateMethodSettings({
                           messages: {
                             ...state.methodSettings.messages,
-                            whatsappPhoneNumber: event.currentTarget.value,
+                            whatsappPhoneNumberId: phoneNumber?.id ?? '',
+                            whatsappPhoneNumber: phoneNumber?.display_phone_number ?? '',
+                            whatsappBusinessAccountId: phoneNumber?.whatsapp_business_account_id ?? '',
+                            whatsappBusinessAccountName: phoneNumber?.whatsapp_business_account_name ?? '',
+                            whatsappBusinessReady: Boolean(phoneNumber),
                           },
-                        })
-                      }
+                        });
+                      }}
+                      searchable
+                      disabled={whatsappPhoneNumberOptions.length === 0}
+                      error={whatsappPhoneNumbersError}
                     />
-                    <Checkbox
-                      label="WhatsApp Business is connected and ready for ad conversations."
-                      checked={Boolean(state.methodSettings.messages.whatsappBusinessReady)}
-                      onChange={(event) =>
-                        updateMethodSettings({
-                          messages: {
-                            ...state.methodSettings.messages,
-                            whatsappBusinessReady: event.currentTarget.checked,
-                          },
-                        })
-                      }
-                    />
+                    {selectedWhatsAppPhoneNumber ? (
+                      <Paper withBorder radius="md" p="sm" bg="green.0">
+                        <Group justify="space-between" gap="sm" align="flex-start">
+                          <Stack gap={2}>
+                            <Text size="sm" fw={900}>
+                              {selectedWhatsAppPhoneNumber.display_phone_number}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              {selectedWhatsAppPhoneNumber.verified_name || 'Verified name unavailable'}
+                              {selectedWhatsAppPhoneNumber.whatsapp_business_account_name
+                                ? ` - ${selectedWhatsAppPhoneNumber.whatsapp_business_account_name}`
+                                : ''}
+                            </Text>
+                          </Stack>
+                          {selectedWhatsAppPhoneNumber.quality_rating ? (
+                            <Badge color="green" variant="light">
+                              {selectedWhatsAppPhoneNumber.quality_rating}
+                            </Badge>
+                          ) : null}
+                        </Group>
+                      </Paper>
+                    ) : null}
+                    {whatsappPhoneNumberOptions.length === 0 ? (
+                      <Alert color="yellow" radius="md" icon={<IconAlertTriangle size={16} />}>
+                        No connected WhatsApp Business numbers were returned by Meta. Connect a number in Meta Business
+                        Manager or choose Instagram DMs/Messenger for this draft.
+                      </Alert>
+                    ) : null}
                   </Stack>
                 </Paper>
               ) : null}
@@ -1981,6 +2081,13 @@ export default function MetaLeadCampaignDraftHelper({
                             setState((current) => ({
                               ...current,
                               leadMethod: method,
+                              methodSettings:
+                                method === 'messages' && current.methodSettings.messages.channel === 'whatsapp'
+                                  ? applyWhatsAppPhoneNumberDefaults(
+                                      current.methodSettings,
+                                      whatsappPhoneNumbers[0] ?? null
+                                    )
+                                  : current.methodSettings,
                               adSets: current.adSets.map((adSet) => ({
                                 ...adSet,
                                 optimizationGoal: optimizationGoalForLeadMethod(method),
@@ -2023,12 +2130,12 @@ export default function MetaLeadCampaignDraftHelper({
 
                   <Select
                     label="Facebook Page"
-                    placeholder={loadingPages ? 'Loading pages...' : 'Select a Page'}
+                    placeholder={metaPages.length > 0 ? 'Select a Page' : 'No Meta Pages found'}
                     data={metaPages.map((page) => ({ value: page.page_id, label: page.name }))}
                     value={state.pageId}
                     onChange={(value) => patchState({ pageId: value ?? '' })}
                     error={pagesError}
-                    disabled={loadingPages}
+                    disabled={metaPages.length === 0}
                     required
                   />
 

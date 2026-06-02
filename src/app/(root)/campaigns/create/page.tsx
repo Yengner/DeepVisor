@@ -5,6 +5,8 @@ import ManualMetaAdSetBuilder from '@/components/campaigns/create/platforms/meta
 import MetaLeadCampaignDraftHelper from '@/components/campaigns/create/platforms/meta/builders/MetaLeadCampaignDraftHelper';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
+import { getMetaPages } from '@/lib/server/actions/meta/pages/actions';
+import { getMetaWhatsAppPhoneNumbers } from '@/lib/server/actions/meta/whatsapp/actions';
 import { getCampaignDraftById, readCampaignDraftPayload } from '@/lib/server/campaigns/drafts';
 import { getAdAccountData, getCampaignsWithAdSetsAndAds, getPlatformDetails } from '@/lib/server/data';
 import { createServerClient } from '@/lib/server/supabase/server';
@@ -55,12 +57,27 @@ export default async function CreateCampaignPage({
     }
 
     const supabase = await createServerClient();
-    const draftRow = requestedDraftId
-        ? await getCampaignDraftById(supabase, {
+    const draftRowPromise = requestedDraftId
+        ? getCampaignDraftById(supabase, {
             businessId,
             draftId: requestedDraftId,
         })
         : null;
+    const campaignAssetsPromise =
+        createScope === 'campaign'
+            ? Promise.all([
+                getMetaPages({ platformId: platformData.integrationId }),
+                getMetaWhatsAppPhoneNumbers({
+                    platformId: platformData.integrationId,
+                    adAccountId: adAccountData.external_account_id,
+                }),
+            ])
+            : null;
+    console.log('platformData', platformData);
+    const [draftRow, campaignAssets] = await Promise.all([
+        draftRowPromise,
+        campaignAssetsPromise,
+    ]);
     const draftPayload = readCampaignDraftPayload(draftRow);
     const manualDraft = draftPayload?.mode === 'manual' ? draftPayload.form : null;
     const campaignWithSelectedAdSet =
@@ -157,6 +174,17 @@ export default async function CreateCampaignPage({
         );
     }
 
+    if (!campaignAssets) {
+        throw new Error('Campaign assets were not loaded.');
+    }
+
+    const [metaPagesResponse, whatsappPhoneNumbersResponse] = campaignAssets;
+    const metaPages = metaPagesResponse.success ? metaPagesResponse.data : [];
+    const pagesError = metaPagesResponse.success ? null : metaPagesResponse.error.userMessage;
+    const whatsappPhoneNumbers = whatsappPhoneNumbersResponse.success ? whatsappPhoneNumbersResponse.data : [];
+    const whatsappPhoneNumbersError =
+        whatsappPhoneNumbersResponse.success ? null : whatsappPhoneNumbersResponse.error.userMessage;
+
     return (
         <MetaLeadCampaignDraftHelper
             platformData={{
@@ -167,6 +195,10 @@ export default async function CreateCampaignPage({
             campaigns={campaignTree}
             draft={manualDraft}
             draftId={requestedDraftId}
+            metaPages={metaPages}
+            pagesError={pagesError}
+            whatsappPhoneNumbers={whatsappPhoneNumbers}
+            whatsappPhoneNumbersError={whatsappPhoneNumbersError}
         />
     );
 }

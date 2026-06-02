@@ -1,4 +1,5 @@
 import { createSupabaseClient } from "@/lib/server/supabase/server";
+import { resolvePostAuthRedirectPath } from "@/lib/server/auth/postAuthRedirect";
 import { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
 
     const supabase = await createSupabaseClient();
 
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
         token_hash,
         type,
     })
@@ -23,5 +24,11 @@ export async function GET(request: Request) {
         return NextResponse.redirect(new URL('/login?error=verification_failed', request.url));
     }
 
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const userId = data.user?.id;
+    if (!userId) {
+        return NextResponse.redirect(new URL('/login?error=verification_failed', request.url));
+    }
+
+    const redirectPath = await resolvePostAuthRedirectPath(userId);
+    return NextResponse.redirect(new URL(redirectPath, request.url));
 }

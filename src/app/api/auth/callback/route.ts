@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { resolvePostAuthRedirectPath } from '@/lib/server/auth/postAuthRedirect';
 import { createServerClient } from '@/lib/server/supabase/server';
 
 function safeNextPath(value: string | null): string {
@@ -12,7 +13,6 @@ function safeNextPath(value: string | null): string {
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  const next = safeNextPath(requestUrl.searchParams.get('next'));
   const oauthError = requestUrl.searchParams.get('error');
 
   if (oauthError) {
@@ -36,5 +36,29 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.redirect(new URL(next, requestUrl.origin));
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    const loginUrl = new URL('/login', requestUrl.origin);
+    loginUrl.searchParams.set('error', 'auth_callback_failed');
+    return NextResponse.redirect(loginUrl);
+  }
+
+  const fallbackNext = safeNextPath(requestUrl.searchParams.get('next'));
+  const redirectPath = await (async () => {
+    if (fallbackNext !== '/dashboard') {
+      return fallbackNext;
+    }
+
+    try {
+      return await resolvePostAuthRedirectPath(user.id);
+    } catch (redirectError) {
+      console.error('Failed to resolve OAuth post-auth redirect:', redirectError);
+      return '/onboarding';
+    }
+  })();
+
+  return NextResponse.redirect(new URL(redirectPath, requestUrl.origin));
 }

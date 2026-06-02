@@ -187,6 +187,17 @@ export default function AuthForm({ type }: AuthFormProps) {
     }
   }
 
+  function getAuthCallbackUrl() {
+    const configuredBaseUrl = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+    const baseUrl = configuredBaseUrl && configuredBaseUrl.length > 0
+      ? configuredBaseUrl
+      : window.location.origin;
+    const callbackUrl = new URL('/api/auth/callback', baseUrl);
+    callbackUrl.searchParams.set('next', '/dashboard');
+
+    return callbackUrl.toString();
+  }
+
   async function handleGoogleOAuth() {
     setGoogleLoading(true);
     setShowVerifyEmailButton(false);
@@ -195,11 +206,10 @@ export default function AuthForm({ type }: AuthFormProps) {
       saveSignupPreferences();
 
       const supabase = createClient();
-      const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent('/dashboard')}`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo,
+          redirectTo: getAuthCallbackUrl(),
           queryParams: {
             access_type: 'offline',
             prompt: 'select_account',
@@ -243,7 +253,7 @@ export default function AuthForm({ type }: AuthFormProps) {
         }
 
         toast.success('Logged in!');
-        router.push('/dashboard');
+        router.replace('/api/auth/redirect');
         return;
       }
 
