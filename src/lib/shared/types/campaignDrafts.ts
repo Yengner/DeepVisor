@@ -47,6 +47,10 @@ export interface LeadCampaignAdSetDraft {
   existingAdSetId?: string | null;
   adSetName: string;
   pageId: string;
+  instagramAccountId?: string | null;
+  instagramAccountName?: string | null;
+  instagramAccountUsername?: string | null;
+  instagramAccountPictureUrl?: string | null;
   optimizationGoal: string;
   useAdvantageAudience: boolean;
   useAdvantagePlacements: boolean;
@@ -98,6 +102,10 @@ export interface ManualCampaignDraftForm {
   adSets?: LeadCampaignAdSetDraft[];
   adSetName: string;
   pageId: string;
+  instagramAccountId?: string | null;
+  instagramAccountName?: string | null;
+  instagramAccountUsername?: string | null;
+  instagramAccountPictureUrl?: string | null;
   optimizationGoal: string;
   useAdvantageAudience: boolean;
   useAdvantagePlacements: boolean;

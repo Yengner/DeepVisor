@@ -1,4 +1,6 @@
 export * from './api'
 export * from './campaignDrafts'
+export * from './creativeLibrary'
 export * from './integrations'
 export * from './supabase'
+export * from './whatsappSetup'

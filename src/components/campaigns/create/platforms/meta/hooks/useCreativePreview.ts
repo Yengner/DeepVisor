@@ -14,6 +14,37 @@ interface UseCreativePreviewReturn {
     hasLoaded: boolean;
 }
 
+type PreviewApiResponse = {
+    previews?: Record<string, { body: string }>;
+} | {
+    success: true;
+    data: {
+        previews: Record<string, { body: string }>;
+    };
+} | {
+    success: false;
+    error?: {
+        userMessage?: string;
+        message?: string;
+    };
+};
+
+function getPreviewPayload(data: PreviewApiResponse): Record<string, { body: string }> {
+    if ('success' in data) {
+        return data.success ? data.data.previews : {};
+    }
+
+    return data.previews ?? {};
+}
+
+function getPreviewError(data: PreviewApiResponse): string | null {
+    if ('success' in data && !data.success) {
+        return data.error?.userMessage || data.error?.message || 'Failed to fetch preview';
+    }
+
+    return null;
+}
+
 /**
  * Hook for fetching preview HTML for a selected Meta creative
  */
@@ -27,12 +58,18 @@ export function useCreativePreview({
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [hasLoaded, setHasLoaded] = useState<boolean>(false);
+    const previewTypesParam = previewTypes.join(',');
 
-    /* eslint-disable react-hooks/exhaustive-deps */
     useEffect(() => {
         if (!enabled || !creativeId || !platformId) {
+            setPreviews({});
+            setLoading(false);
+            setError(null);
+            setHasLoaded(false);
             return;
         }
+
+        let cancelled = false;
 
         async function loadPreview() {
             setLoading(true);
@@ -43,26 +80,39 @@ export function useCreativePreview({
                 const params = new URLSearchParams({
                     platformId,
                     creativeId: creativeId || '',
-                    previewTypes: previewTypes.join(',')
+                    previewTypes: previewTypesParam
                 });
                 const res = await fetch(`/api/meta/previews?${params.toString()}`);
-                if (!res.ok) {
-                    const data = await res.json();
-                    throw new Error(data.error || 'Failed to fetch preview');
+                const data = (await res.json().catch(() => ({}))) as PreviewApiResponse;
+                const apiError = getPreviewError(data);
+
+                if (!res.ok || apiError) {
+                    throw new Error(apiError || 'Failed to fetch preview');
                 }
-                const data = await res.json();
-                setPreviews(data.previews || {});
-                setHasLoaded(true);
+
+                if (!cancelled) {
+                    setPreviews(getPreviewPayload(data));
+                    setHasLoaded(true);
+                }
 
             } catch (err: unknown) {
-                setError((err as Error).message || 'An unexpected error occurred while loading the creative preview.');
+                if (!cancelled) {
+                    setPreviews({});
+                    setError((err as Error).message || 'An unexpected error occurred while loading the creative preview.');
+                }
             } finally {
-                setLoading(false);
+                if (!cancelled) {
+                    setLoading(false);
+                }
             }
         }
 
-        loadPreview();
-    }, [platformId, creativeId, enabled]);
+        void loadPreview();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [platformId, creativeId, enabled, previewTypesParam]);
 
     return {
         previews,

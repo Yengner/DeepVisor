@@ -5,6 +5,7 @@ const META_GRAPH_BASE_URL = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 const META_MAX_LOOKBACK_MONTHS = 37;
 const META_TRANSIENT_MAX_ATTEMPTS = 3;
 const META_TRANSIENT_RETRY_BASE_MS = 700;
+const META_GRAPH_DEBUG = process.env.META_GRAPH_DEBUG === '1';
 
 type MetaCollectionResponse<T> = {
   data?: T[];
@@ -13,6 +14,10 @@ type MetaCollectionResponse<T> = {
   };
   error?: {
     message?: string;
+    type?: string;
+    code?: number;
+    error_subcode?: number;
+    fbtrace_id?: string;
   };
 };
 
@@ -94,9 +99,22 @@ function isRetryableMetaError(status: number, message: string): boolean {
 
 async function parseMetaError(response: Response): Promise<MetaParsedError> {
   const body = (await response.json().catch(() => ({}))) as {
-    error?: { message?: string };
+    error?: {
+      message?: string;
+      type?: string;
+      code?: number;
+      error_subcode?: number;
+      fbtrace_id?: string;
+    };
   };
-  const message = body.error?.message || `Meta request failed with status ${response.status}`;
+  const baseMessage = body.error?.message || `Meta request failed with status ${response.status}`;
+  const metadata = [
+    body.error?.type ? `type=${body.error.type}` : null,
+    typeof body.error?.code === 'number' ? `code=${body.error.code}` : null,
+    typeof body.error?.error_subcode === 'number' ? `subcode=${body.error.error_subcode}` : null,
+    body.error?.fbtrace_id ? `fbtrace_id=${body.error.fbtrace_id}` : null,
+  ].filter(Boolean);
+  const message = metadata.length > 0 ? `${baseMessage} (${metadata.join(', ')})` : baseMessage;
 
   return {
     message,
@@ -186,8 +204,10 @@ export async function fetchMetaCollection<T>(input: {
   }
 
   const rows: T[] = [];
-  console.log('fetching Meta collection', { path: input.path, params: input.params });
-  
+  if (META_GRAPH_DEBUG) {
+    console.debug('Fetching Meta collection', { path: input.path, params: input.params });
+  }
+
   while (nextUrl) {
     const response = await fetchMetaResponseWithRetry(nextUrl);
 
@@ -195,7 +215,9 @@ export async function fetchMetaCollection<T>(input: {
     rows.push(...(body.data ?? []));
     nextUrl = body.paging?.next ? new URL(body.paging.next) : null;
   }
-  console.log('fetched Meta collection', { path: input.path, params: input.params, count: rows.length });
+  if (META_GRAPH_DEBUG) {
+    console.debug('Fetched Meta collection', { path: input.path, params: input.params, count: rows.length });
+  }
 
   return rows;
 }

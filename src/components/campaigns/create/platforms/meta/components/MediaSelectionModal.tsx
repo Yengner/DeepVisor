@@ -1,385 +1,602 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-    Modal, Text, SimpleGrid, Paper, Image, Stack, Badge,
-    Group, ThemeIcon, Button, Center, Loader, Box, AspectRatio,
-    ScrollArea, Alert
+  Alert,
+  AspectRatio,
+  Badge,
+  Box,
+  Button,
+  Center,
+  Divider,
+  Group,
+  Image,
+  Loader,
+  Modal,
+  Paper,
+  ScrollArea,
+  Select,
+  SimpleGrid,
+  Stack,
+  Tabs,
+  Text,
+  ThemeIcon,
 } from '@mantine/core';
 import {
-    IconAlertCircle, IconPhoto, IconCheck, IconChevronLeft, IconChevronRight
+  IconAlertCircle,
+  IconCalendar,
+  IconCheck,
+  IconCurrencyDollar,
+  IconPhoto,
+  IconSparkles,
+  IconStarFilled,
+  IconTargetArrow,
 } from '@tabler/icons-react';
+import type {
+  CreativeLibraryItem,
+  CreativeLibrarySort,
+  CreativeLibrarySource,
+  CreativeLibraryStats,
+} from '@/lib/shared/types/creativeLibrary';
 import { useExistingCreatives } from '../hooks/useExistingCreatives';
-import { MetaCreative } from '@/lib/server/actions/meta/creatives/actions';
 import { useCreativePreview } from '../hooks/useCreativePreview';
 
+const FALLBACK_PREVIEW = 'https://placehold.co/640x640/f4f7fb/64748b?text=No+Preview';
+
 interface MediaSelectionModalProps {
-    opened: boolean;
-    onClose: () => void;
-    onSelectCreative: (creative: SelectedCreative | null) => void;
-    objective: string;
-    destinationType: string;
-    platformId: string;
-    adAccountId: string;
-    initialSelectedId?: string | null;
+  opened: boolean;
+  onClose: () => void;
+  onSelectCreative: (creative: SelectedCreative | null) => void;
+  objective: string;
+  destinationType: string;
+  platformId: string;
+  adAccountId: string;
+  initialSelectedId?: string | null;
 }
 
-interface SelectedCreative {
-    id: string;
-    name: string;
-    thumbnail_url?: string;
-    type: string;
+export interface SelectedCreative {
+  id: string;
+  name: string;
+  thumbnail_url?: string | null;
+  type: string;
+  source?: CreativeLibrarySource;
+  sourceId?: string;
+  postId?: string | null;
+  creativeIds?: string[];
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: value >= 100 ? 0 : 2,
+  }).format(value);
+}
+
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: 1,
+    notation: value >= 10000 ? 'compact' : 'standard',
+  }).format(value);
+}
+
+function formatRate(value: number | null): string {
+  if (value == null) {
+    return '-';
+  }
+
+  const normalized = value > 1 ? value : value * 100;
+  return `${normalized.toFixed(normalized >= 10 ? 1 : 2)}%`;
+}
+
+function formatDate(value: string | null): string {
+  if (!value) {
+    return 'No date yet';
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(value));
+}
+
+function statLabel(stats: CreativeLibraryStats): string {
+  if (stats.results > 0) {
+    return `${formatNumber(stats.results)} results`;
+  }
+
+  if (stats.clicks > 0) {
+    return `${formatNumber(stats.clicks)} clicks`;
+  }
+
+  if (stats.impressions > 0) {
+    return `${formatNumber(stats.impressions)} impressions`;
+  }
+
+  return 'No delivery yet';
+}
+
+function sortLabel(sort: CreativeLibrarySort): string {
+  switch (sort) {
+    case 'newest':
+      return 'Newest first';
+    case 'oldest':
+      return 'Oldest first';
+    case 'spend':
+      return 'Highest spend';
+    case 'results':
+      return 'Most results';
+    case 'best':
+    default:
+      return 'Best first';
+  }
+}
+
+function StatsGrid({ stats }: { stats: CreativeLibraryStats }) {
+  const items = [
+    { label: 'Spend', value: formatCurrency(stats.spend), icon: IconCurrencyDollar },
+    { label: 'Results', value: formatNumber(stats.results), icon: IconTargetArrow },
+    { label: 'CTR', value: formatRate(stats.ctr), icon: IconSparkles },
+  ];
+
+  return (
+    <SimpleGrid cols={3} spacing="xs">
+      {items.map((item) => {
+        const Icon = item.icon;
+        return (
+          <Paper key={item.label} withBorder radius="md" p="xs" bg="gray.0">
+            <Group gap={5} wrap="nowrap">
+              <Icon size={13} color="var(--mantine-color-blue-6)" />
+              <Text size="10px" c="dimmed" tt="uppercase" fw={800} style={{ letterSpacing: 0.3 }}>
+                {item.label}
+              </Text>
+            </Group>
+            <Text fw={900} size="sm" mt={2} c="dark.8">
+              {item.value}
+            </Text>
+          </Paper>
+        );
+      })}
+    </SimpleGrid>
+  );
+}
+
+function CreativeCard({
+  creative,
+  selected,
+  onClick,
+}: {
+  creative: CreativeLibraryItem;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Paper
+      withBorder
+      radius="lg"
+      p="xs"
+      onClick={onClick}
+      style={{
+        cursor: 'pointer',
+        borderColor: selected ? 'var(--mantine-color-blue-6)' : 'var(--mantine-color-gray-2)',
+        borderWidth: selected ? 2 : 1,
+        background: selected ? 'var(--mantine-color-blue-0)' : 'white',
+      }}
+    >
+      <Stack gap="xs">
+        <Box style={{ position: 'relative' }}>
+          <AspectRatio ratio={1}>
+            <Image
+              src={creative.thumbnail_url || FALLBACK_PREVIEW}
+              alt={creative.name}
+              fit="cover"
+              radius="md"
+            />
+          </AspectRatio>
+          {creative.isBest ? (
+            <Badge
+              size="sm"
+              radius="xl"
+              color="yellow"
+              leftSection={<IconStarFilled size={12} />}
+              style={{ position: 'absolute', top: 8, left: 8 }}
+            >
+              Best
+            </Badge>
+          ) : null}
+          {selected ? (
+            <ThemeIcon
+              color="blue"
+              size="lg"
+              radius="xl"
+              style={{ position: 'absolute', right: 8, top: 8 }}
+            >
+              <IconCheck size={16} />
+            </ThemeIcon>
+          ) : null}
+        </Box>
+
+        <Stack gap={3}>
+          <Text fw={850} size="sm" lineClamp={2} c="dark.8">
+            {creative.name}
+          </Text>
+          <Group gap={6} justify="space-between" wrap="nowrap">
+            <Badge variant="light" color={creative.source === 'page_post' ? 'grape' : 'blue'} size="xs">
+              {creative.type}
+            </Badge>
+            <Text size="xs" c="dimmed">
+              {statLabel(creative.stats)}
+            </Text>
+          </Group>
+        </Stack>
+
+        <StatsGrid stats={creative.stats} />
+      </Stack>
+    </Paper>
+  );
 }
 
 export default function MediaSelectionModal({
-    opened,
-    onClose,
-    onSelectCreative,
-    // objective = '',
-    // destinationType = '',
+  opened,
+  onClose,
+  onSelectCreative,
+  platformId,
+  adAccountId,
+  initialSelectedId = null,
+}: MediaSelectionModalProps) {
+  const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
+  const [activeSource, setActiveSource] = useState<CreativeLibrarySource>(
+    initialSelectedId?.startsWith('post:') ? 'page_post' : 'ad_creative'
+  );
+  const [sort, setSort] = useState<CreativeLibrarySort>('best');
+
+  const {
+    creatives,
+    allCreatives,
+    loading,
+    error,
+  } = useExistingCreatives({
     platformId,
     adAccountId,
-    initialSelectedId = null
-}: MediaSelectionModalProps) {
-    const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
+    enabled: opened,
+    source: activeSource,
+    sort,
+    limit: 160,
+  });
 
-    const {
-        creatives,
-        loading,
-        error,
-        hasNextPage,
-        hasPreviousPage,
-        goToNextPage,
-        goToPreviousPage,
-        reset
-    } = useExistingCreatives({
-        platformId,
-        adAccountId,
-        enabled: opened,
-        thumbnailWidth: 400,
-        thumbnailHeight: 300
+  const allItems = useMemo(
+    () => [...allCreatives.adCreatives, ...allCreatives.pagePosts],
+    [allCreatives.adCreatives, allCreatives.pagePosts]
+  );
+
+  const selectedCreative = useMemo(
+    () => allItems.find((creative) => creative.id === selectedId) || null,
+    [allItems, selectedId]
+  );
+
+  const previewCreativeId =
+    selectedCreative?.source === 'ad_creative' ? selectedCreative.sourceId : null;
+
+  const {
+    previews,
+    loading: loadingPreview,
+    error: previewError,
+  } = useCreativePreview({
+    platformId,
+    creativeId: previewCreativeId,
+    enabled: opened && !!previewCreativeId,
+    previewTypes: ['DESKTOP_FEED_STANDARD'],
+  });
+
+  const previewHtml = useMemo(() => {
+    return previews?.DESKTOP_FEED_STANDARD?.body || null;
+  }, [previews]);
+
+  useEffect(() => {
+    if (!opened) {
+      return;
+    }
+
+    setSelectedId(initialSelectedId);
+    setActiveSource(initialSelectedId?.startsWith('post:') ? 'page_post' : 'ad_creative');
+    setSort('best');
+  }, [initialSelectedId, opened]);
+
+  const handleSelection = (creative: CreativeLibraryItem) => {
+    setSelectedId(creative.id === selectedId ? null : creative.id);
+  };
+
+  const handleConfirmSelection = () => {
+    if (!selectedCreative) {
+      onSelectCreative(null);
+      onClose();
+      return;
+    }
+
+    onSelectCreative({
+      id: selectedCreative.id,
+      name: selectedCreative.name,
+      thumbnail_url: selectedCreative.thumbnail_url,
+      type: selectedCreative.type,
+      source: selectedCreative.source,
+      sourceId: selectedCreative.sourceId,
+      postId: selectedCreative.postId ?? null,
+      creativeIds: selectedCreative.creativeIds,
     });
+    onClose();
+  };
 
-    // --- Creative Preview logic ---
-    const {
-        previews,
-        loading: loadingPreview,
-        error: previewError,
-    } = useCreativePreview({
-        platformId,
-        creativeId: selectedId,
-        enabled: !!selectedId,
-        previewTypes: ['DESKTOP_FEED_STANDARD']
-    });
+  const activeEmptyText =
+    activeSource === 'page_post'
+      ? 'No synced Page posts with ad history yet.'
+      : 'No synced ad creatives yet.';
 
-    const previewHtml = useMemo(() => {
-        if (previews && previews['DESKTOP_FEED_STANDARD']?.body) {
-            return previews['DESKTOP_FEED_STANDARD'].body;
-        }
-        return null;
-    }, [previews]);
-
-    useEffect(() => {
-        if (opened) {
-            reset();
-            setSelectedId(initialSelectedId);
-        }
-    }, [opened, initialSelectedId, reset]);
-
-    const handleSelection = (creative: MetaCreative) => {
-        setSelectedId(creative.id === selectedId ? null : creative.id);
-    };
-
-    const handleConfirmSelection = () => {
-        if (!selectedId) {
-            onSelectCreative(null);
-            onClose();
-            return;
-        }
-
-        const selectedCreative = creatives.find(c => c.id === selectedId);
-        if (selectedCreative) {
-            onSelectCreative({
-                id: selectedCreative.id,
-                name: selectedCreative.name || `Creative ${selectedCreative.id}`,
-                thumbnail_url: selectedCreative.thumbnail_url,
-                type: selectedCreative.object_type || 'UNKNOWN'
-            });
-        } else {
-            onSelectCreative(null);
-        }
-
-        onClose();
-    };
-
-    // Memoize selected creative for preview fallback
-    const selectedCreative = useMemo(
-        () => creatives.find(c => c.id === selectedId) || null,
-        [selectedId, creatives]
-    );
-
-    return (
-        <Modal
-            opened={opened}
-            onClose={onClose}
-            size="xxl"
-            styles={{
-                body: { padding: '0' },
-                inner: { paddingBottom: 0 },
-                content: {
-                    minWidth: 1000,
-                    minHeight: 600,
-                    maxHeight: '90vh',
-                    display: 'flex',
-                    flexDirection: 'column'
-                }
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      size="min(1120px, 96vw)"
+      styles={{
+        body: { padding: 0 },
+        content: {
+          maxHeight: '92vh',
+          overflow: 'hidden',
+        },
+      }}
+      title={
+        <Group gap="xs">
+          <ThemeIcon color="blue" variant="light" radius="xl">
+            <IconPhoto size={18} />
+          </ThemeIcon>
+          <Stack gap={0}>
+            <Text fw={900}>Select existing creative</Text>
+            <Text size="xs" c="dimmed">
+              Ranked by synced Meta performance
+            </Text>
+          </Stack>
+        </Group>
+      }
+      centered
+      scrollAreaComponent={ScrollArea.Autosize}
+    >
+      <Box
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))',
+          gap: 18,
+          padding: 16,
+          minHeight: 620,
+        }}
+      >
+        <Stack gap="sm" style={{ minHeight: 0 }}>
+          <Tabs
+            value={activeSource}
+            onChange={(value) => {
+              const nextSource = (value || 'ad_creative') as CreativeLibrarySource;
+              setActiveSource(nextSource);
+              setSelectedId(null);
             }}
-            title={
-                <Group>
-                    <IconPhoto size={20} />
-                    <Text fw={600}>Select Creative</Text>
-                </Group>
-            }
-            centered
-            scrollAreaComponent={ScrollArea.Autosize}
-        >
-            {/* Main content area: fill modal height */}
-            <Box
-                style={{
-                    display: 'flex',
-                    gap: 32,
-                    flex: 1,
-                    minHeight: 0,
-                    padding: 16,
-                    height: 722, // 690 + 32px padding
-                    maxHeight: 722,
-                }}
-            >
-                {/* Left: Creatives Grid (scrollable) */}
-                <Box
+          >
+            <Tabs.List grow>
+              <Tabs.Tab value="ad_creative">Ad creatives</Tabs.Tab>
+              <Tabs.Tab value="page_post">Page posts</Tabs.Tab>
+            </Tabs.List>
+          </Tabs>
+
+          <Group justify="space-between" align="center" gap="xs" wrap="nowrap">
+            <Text size="sm" fw={800} c="dark.8">
+              {creatives.length} {activeSource === 'page_post' ? 'posts' : 'creatives'}
+            </Text>
+            <Select
+              aria-label="Sort creative library"
+              value={sort}
+              onChange={(value) => setSort((value || 'best') as CreativeLibrarySort)}
+              size="xs"
+              w={170}
+              data={[
+                { value: 'best', label: 'Best first' },
+                { value: 'results', label: 'Most results' },
+                { value: 'spend', label: 'Highest spend' },
+                { value: 'newest', label: 'Newest first' },
+                { value: 'oldest', label: 'Oldest first' },
+              ]}
+            />
+          </Group>
+
+          <ScrollArea h={500} offsetScrollbars>
+            <Stack gap="sm" pr="xs">
+              {loading ? (
+                <Center py="xl">
+                  <Stack align="center" gap="xs">
+                    <Loader size="md" />
+                    <Text size="sm" c="dimmed">
+                      Loading existing creative performance...
+                    </Text>
+                  </Stack>
+                </Center>
+              ) : null}
+
+              {!loading && error ? (
+                <Alert color="red" icon={<IconAlertCircle size={16} />}>
+                  {error}
+                </Alert>
+              ) : null}
+
+              {!loading && !error && creatives.length === 0 ? (
+                <Paper p="lg" withBorder radius="lg">
+                  <Stack align="center" gap="xs">
+                    <ThemeIcon color="blue" variant="light" radius="xl" size="lg">
+                      <IconPhoto size={22} />
+                    </ThemeIcon>
+                    <Text c="dimmed" size="sm" ta="center">
+                      {activeEmptyText}
+                    </Text>
+                  </Stack>
+                </Paper>
+              ) : null}
+
+              {!loading && !error && creatives.map((creative) => (
+                <CreativeCard
+                  key={creative.id}
+                  creative={creative}
+                  selected={selectedId === creative.id}
+                  onClick={() => handleSelection(creative)}
+                />
+              ))}
+            </Stack>
+          </ScrollArea>
+        </Stack>
+
+        <Paper withBorder radius="xl" p="md" bg="gray.0" style={{ minHeight: 0 }}>
+          {selectedCreative ? (
+            <Stack gap="md" h="100%">
+              <Group justify="space-between" align="flex-start" gap="sm">
+                <Stack gap={4} maw={420}>
+                  <Group gap="xs">
+                    {selectedCreative.isBest ? (
+                      <Badge color="yellow" variant="filled" leftSection={<IconStarFilled size={12} />}>
+                        Best performer
+                      </Badge>
+                    ) : null}
+                    <Badge color={selectedCreative.source === 'page_post' ? 'grape' : 'blue'} variant="light">
+                      {selectedCreative.source === 'page_post' ? 'Page post' : 'Ad creative'}
+                    </Badge>
+                  </Group>
+                  <Text fw={900} size="lg" lineClamp={2} c="dark.8">
+                    {selectedCreative.name}
+                  </Text>
+                  <Group gap={6} c="dimmed">
+                    <IconCalendar size={14} />
+                    <Text size="xs">
+                      {sortLabel(sort)} · Updated {formatDate(selectedCreative.updatedTime)}
+                    </Text>
+                  </Group>
+                </Stack>
+              </Group>
+
+              <Box style={{ flex: 1, minHeight: 300 }}>
+                {loadingPreview ? (
+                  <Center h="100%">
+                    <Loader size="md" />
+                  </Center>
+                ) : null}
+
+                {!loadingPreview && previewError ? (
+                  <Alert color="yellow" icon={<IconAlertCircle size={16} />}>
+                    {previewError}
+                  </Alert>
+                ) : null}
+
+                {!loadingPreview && !previewError && selectedCreative.source === 'ad_creative' && previewHtml ? (
+                  <Box
+                    className="creative-preview"
+                    dangerouslySetInnerHTML={{ __html: previewHtml }}
                     style={{
-                        width: 420,
-                        minWidth: 320,
-                        maxWidth: 480,
-                        flexShrink: 0,
-                        height: '100%',
-                        overflowY: 'auto',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'stretch',
-                        justifyContent: 'flex-start',
-                        borderRight: '1px solid var(--mantine-color-gray-2)',
-                        paddingRight: 8,
+                      width: '100%',
+                      height: '100%',
+                      minHeight: 430,
+                      border: '1px solid var(--mantine-color-gray-2)',
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      background: 'white',
                     }}
-                >
-                    {loading && (
-                        <Center py="xl">
-                            <Stack align="center">
-                                <Loader size="md" />
-                                <Text size="sm" c="dimmed">Loading your creatives...</Text>
-                            </Stack>
-                        </Center>
-                    )}
+                  />
+                ) : null}
 
-                    {error && (
-                        <Paper p="md" withBorder bg="red.0">
-                            <Group>
-                                <ThemeIcon color="red" variant="light"><IconAlertCircle size={16} /></ThemeIcon>
-                                <Text size="sm">{error}</Text>
-                            </Group>
-                        </Paper>
-                    )}
-
-                    {!loading && !error && creatives.length === 0 && (
-                        <Paper p="md" withBorder>
-                            <Stack align="center" py="md">
-                                <ThemeIcon color="blue" variant="light" size="lg"><IconPhoto size={24} /></ThemeIcon>
-                                <Text c="dimmed" size="sm" ta="center">No creatives available.</Text>
-                            </Stack>
-                        </Paper>
-                    )}
-
-                    {!loading && !error && creatives.length > 0 && (
-                        <>
-                            <SimpleGrid cols={2} spacing="md">
-                                {creatives.slice(0, 10).map((creative) => {
-                                    const isSelected = selectedId === creative.id;
-                                    return (
-                                        <Paper
-                                            key={creative.id}
-                                            withBorder
-                                            style={{
-                                                cursor: 'pointer',
-                                                borderColor: isSelected ? 'var(--mantine-color-blue-6)' : undefined,
-                                                borderWidth: isSelected ? 2 : 1,
-                                                overflow: 'hidden',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                minHeight: 90,
-                                            }}
-                                            onClick={() => handleSelection(creative)}
-                                        >
-                                            <Box style={{ position: 'relative' }}>
-                                                <AspectRatio ratio={4 / 3}>
-                                                    <Image
-                                                        src={creative.thumbnail_url || 'https://placehold.co/400x300/e6f7ff/0099cc?text=No+Preview'}
-                                                        alt={creative.name || 'Creative'}
-                                                        fit="cover"
-                                                    />
-                                                </AspectRatio>
-                                                {isSelected && (
-                                                    <Box
-                                                        style={{
-                                                            position: 'absolute',
-                                                            top: 0,
-                                                            right: 0,
-                                                            bottom: 0,
-                                                            left: 0,
-                                                            background: 'rgba(0, 0, 0, 0.15)',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center'
-                                                        }}
-                                                    >
-                                                        <ThemeIcon color="blue" size="xl" radius="xl">
-                                                            <IconCheck size={20} />
-                                                        </ThemeIcon>
-                                                    </Box>
-                                                )}
-                                            </Box>
-                                            <Box p="xs">
-                                                <Text fw={500} size="sm" lineClamp={1}>
-                                                    {creative.name || "Untitled Creative"}
-                                                </Text>
-                                                <Text size="xs" c="dimmed" mb="xs">
-                                                    {`ID: ${creative.id.slice(-12)}`}
-                                                </Text>
-                                                <Badge color="blue" fullWidth>
-                                                    {creative.object_type || 'Ad Creative'}
-                                                </Badge>
-                                            </Box>
-                                        </Paper>
-                                    );
-                                })}
-                            </SimpleGrid>
-
-                            {(hasNextPage || hasPreviousPage) && (
-                                <Group justify="center" mt="xl" mb="md" pt="md"
-                                    style={{ borderTop: '1px solid var(--mantine-color-gray-2)' }}
-                                >
-                                    <Button
-                                        variant="subtle"
-                                        disabled={!hasPreviousPage}
-                                        onClick={goToPreviousPage}
-                                        leftSection={<IconChevronLeft size={16} />}
-                                    >
-                                        Previous
-                                    </Button>
-                                    <Text size="sm" c="dimmed" px="md">
-                                        {loading ? 'Loading...' : `${creatives.length} items`}
-                                    </Text>
-                                    <Button
-                                        variant="subtle"
-                                        disabled={!hasNextPage}
-                                        onClick={goToNextPage}
-                                        rightSection={<IconChevronRight size={16} />}
-                                    >
-                                        Next
-                                    </Button>
-                                </Group>
-                            )}
-                        </>
-                    )}
-                </Box>
-
-                {/* Right: Preview (fixed 540x690, never scrolls) */}
-                <Box
+                {!loadingPreview && (selectedCreative.source === 'page_post' || !previewHtml) ? (
+                  <Center
+                    h="100%"
+                    mih={430}
                     style={{
-                        width: 540,
-                        height: 690,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'white',
+                      border: '1px solid var(--mantine-color-gray-2)',
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      background: 'white',
                     }}
-                >
-                    {selectedCreative ? (
-                        <>
-                            {loadingPreview && (
-                                <Center w={540} h={690}>
-                                    <Loader size="md" />
-                                </Center>
-                            )}
-                            {previewError && (
-                                <Alert color="red" title="Preview Error" mb="md">
-                                    {previewError}
-                                </Alert>
-                            )}
-                            {!loadingPreview && !previewError && previewHtml ? (
-                                <Box
-                                    className="creative-preview"
-                                    dangerouslySetInnerHTML={{ __html: previewHtml }}
-                                    style={{
-                                        width: 540,
-                                        height: 600,
-                                        border: '1px solid #eee',
-                                        borderRadius: '8px',
-                                        overflow: 'hidden',
-                                    }}
-                                />
-                            ) : null}
-                            {!loadingPreview && !previewError && !previewHtml && (
-                                <Image
-                                    src={selectedCreative.thumbnail_url || 'https://placehold.co/540x690/e6f7ff/0099cc?text=No+Preview'}
-                                    alt="Creative Preview"
-                                    width={540}
-                                    height={690}
-                                    fit="contain"
-                                    style={{ borderRadius: 8, border: '1px solid #eee' }}
-                                />
-                            )}
-                        </>
-                    ) : (
-                        <Center w={540} h={690}>
-                            <ThemeIcon color="gray" variant="light" size="lg"><IconPhoto size={24} /></ThemeIcon>
-                        </Center>
-                    )}
-                </Box>
-            </Box>
+                  >
+                    <Image
+                      src={selectedCreative.thumbnail_url || FALLBACK_PREVIEW}
+                      alt={selectedCreative.name}
+                      fit="contain"
+                      maw="100%"
+                      mah={430}
+                    />
+                  </Center>
+                ) : null}
+              </Box>
 
-            {/* Action Bar - Fixed at the bottom */}
-            <Box
-                style={{
-                    position: 'sticky',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    padding: '15px 20px',
-                    background: 'white',
-                    borderTop: '1px solid var(--mantine-color-gray-3)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginTop: 'auto'
-                }}
-            >
-                <Badge size="lg" color="blue" variant="light" radius="md">
-                    {selectedId ? '1 creative selected' : 'No selection'}
-                </Badge>
+              <Divider />
+              <StatsGrid stats={selectedCreative.stats} />
+              <SimpleGrid cols={3} spacing="xs">
+                <Paper withBorder radius="md" p="xs" bg="white">
+                  <Text size="10px" tt="uppercase" fw={800} c="dimmed" style={{ letterSpacing: 0.3 }}>
+                    Clicks
+                  </Text>
+                  <Text fw={900}>{formatNumber(selectedCreative.stats.clicks)}</Text>
+                </Paper>
+                <Paper withBorder radius="md" p="xs" bg="white">
+                  <Text size="10px" tt="uppercase" fw={800} c="dimmed" style={{ letterSpacing: 0.3 }}>
+                    Impressions
+                  </Text>
+                  <Text fw={900}>{formatNumber(selectedCreative.stats.impressions)}</Text>
+                </Paper>
+                <Paper withBorder radius="md" p="xs" bg="white">
+                  <Text size="10px" tt="uppercase" fw={800} c="dimmed" style={{ letterSpacing: 0.3 }}>
+                    Cost/result
+                  </Text>
+                  <Text fw={900}>
+                    {selectedCreative.stats.costPerResult == null
+                      ? '-'
+                      : formatCurrency(selectedCreative.stats.costPerResult)}
+                  </Text>
+                </Paper>
+              </SimpleGrid>
+            </Stack>
+          ) : (
+            <Center h="100%" mih={560}>
+              <Stack align="center" gap="xs">
+                <ThemeIcon color="gray" variant="light" radius="xl" size="xl">
+                  <IconPhoto size={24} />
+                </ThemeIcon>
+                <Text fw={800} c="dark.7">
+                  Pick a creative to preview it
+                </Text>
+                <Text size="sm" c="dimmed" ta="center" maw={300}>
+                  Start with the starred top performer, or switch sorting when you want the newest or oldest assets.
+                </Text>
+              </Stack>
+            </Center>
+          )}
+        </Paper>
+      </Box>
 
-                <Group>
-                    <Button variant="light" onClick={onClose}>
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleConfirmSelection}
-                        color="blue"
-                        disabled={!selectedId}
-                    >
-                        Confirm Selection
-                    </Button>
-                </Group>
-            </Box>
-        </Modal>
-    );
+      <Box
+        style={{
+          position: 'sticky',
+          bottom: 0,
+          padding: '14px 18px',
+          background: 'white',
+          borderTop: '1px solid var(--mantine-color-gray-2)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 12,
+        }}
+      >
+        <Badge size="lg" color={selectedId ? 'blue' : 'gray'} variant="light" radius="md">
+          {selectedId ? '1 creative selected' : 'No selection'}
+        </Badge>
+
+        <Group>
+          <Button variant="subtle" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmSelection} disabled={!selectedId}>
+            Use selected creative
+          </Button>
+        </Group>
+      </Box>
+    </Modal>
+  );
 }

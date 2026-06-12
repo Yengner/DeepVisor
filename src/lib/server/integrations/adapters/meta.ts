@@ -13,6 +13,14 @@ function requireEnv(name: string): string {
   return value;
 }
 
+const META_DEFAULT_OAUTH_SCOPES = [
+  'ads_read',
+  'business_management',
+  'pages_show_list',
+  'pages_read_engagement',
+  'instagram_basic',
+];
+
 export function buildMetaOAuthUrl(input: MetaOAuthBuildInput): URL {
   const oauthUrl = new URL('https://www.facebook.com/v23.0/dialog/oauth');
 
@@ -24,6 +32,8 @@ export function buildMetaOAuthUrl(input: MetaOAuthBuildInput): URL {
   const configId = process.env.META_BUSINESS_CONFIG_ID;
   if (configId) {
     oauthUrl.searchParams.set('config_id', configId);
+  } else {
+    oauthUrl.searchParams.set('scope', META_DEFAULT_OAUTH_SCOPES.join(','));
   }
 
   return oauthUrl;

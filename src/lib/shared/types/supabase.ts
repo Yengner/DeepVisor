@@ -2304,6 +2304,13 @@ export type Database = {
           industry: string | null
           lead_quality_signal: string | null
           lead_type: string | null
+          meta_page_id: string | null
+          meta_page_instagram_account_id: string | null
+          meta_page_instagram_account_name: string | null
+          meta_page_instagram_account_picture_url: string | null
+          meta_page_instagram_account_username: string | null
+          meta_page_name: string | null
+          meta_page_picture_url: string | null
           meta_ads_status: string | null
           monthly_budget: string | null
           most_valuable_service: string | null
@@ -2320,6 +2327,10 @@ export type Database = {
           updated_at: string
           watch_signals: string[] | null
           website: string | null
+          page_phone: string | null
+          whatsapp_number: string | null
+          whatsapp_number_source: string | null
+          whatsapp_setup_completed: boolean
         }
         Insert: {
           ad_goals?: string[] | null
@@ -2334,6 +2345,13 @@ export type Database = {
           industry?: string | null
           lead_quality_signal?: string | null
           lead_type?: string | null
+          meta_page_id?: string | null
+          meta_page_instagram_account_id?: string | null
+          meta_page_instagram_account_name?: string | null
+          meta_page_instagram_account_picture_url?: string | null
+          meta_page_instagram_account_username?: string | null
+          meta_page_name?: string | null
+          meta_page_picture_url?: string | null
           meta_ads_status?: string | null
           monthly_budget?: string | null
           most_valuable_service?: string | null
@@ -2350,6 +2368,10 @@ export type Database = {
           updated_at?: string
           watch_signals?: string[] | null
           website?: string | null
+          page_phone?: string | null
+          whatsapp_number?: string | null
+          whatsapp_number_source?: string | null
+          whatsapp_setup_completed?: boolean
         }
         Update: {
           ad_goals?: string[] | null
@@ -2364,6 +2386,13 @@ export type Database = {
           industry?: string | null
           lead_quality_signal?: string | null
           lead_type?: string | null
+          meta_page_id?: string | null
+          meta_page_instagram_account_id?: string | null
+          meta_page_instagram_account_name?: string | null
+          meta_page_instagram_account_picture_url?: string | null
+          meta_page_instagram_account_username?: string | null
+          meta_page_name?: string | null
+          meta_page_picture_url?: string | null
           meta_ads_status?: string | null
           monthly_budget?: string | null
           most_valuable_service?: string | null
@@ -2380,6 +2409,10 @@ export type Database = {
           updated_at?: string
           watch_signals?: string[] | null
           website?: string | null
+          page_phone?: string | null
+          whatsapp_number?: string | null
+          whatsapp_number_source?: string | null
+          whatsapp_setup_completed?: boolean
         }
         Relationships: [
           {

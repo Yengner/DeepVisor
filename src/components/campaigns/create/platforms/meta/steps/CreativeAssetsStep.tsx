@@ -29,7 +29,7 @@ interface CreativeAssetsStepProps {
 interface SelectedCreative {
     id: string;
     name: string;
-    thumbnail_url?: string;
+    thumbnail_url?: string | null;
     type: string;
     previewHtml?: string;
 }
@@ -53,6 +53,10 @@ export default function CreativeAssetsStep({
     const uploadedFiles = useMemo(() => creative.uploadedFiles || [], [creative.uploadedFiles]);
 
     const [mediaModalOpened, setMediaModalOpened] = useState(false);
+    const selectedExistingCreativeId = creative.existingCreativeIds?.[0] || null;
+    const canLoadMetaPreview = Boolean(
+        selectedExistingCreativeId && !selectedExistingCreativeId.startsWith('post:')
+    );
 
     // Use memoized uploadedFiles
     const { filePreview, handleFilesChange } = useFilePreview(uploadedFiles);
@@ -63,8 +67,8 @@ export default function CreativeAssetsStep({
         error: previewError,
     } = useCreativePreview({
         platformId: platformData.id,
-        creativeId: creative.existingCreativeIds?.[0],
-        enabled: creative.contentSource === 'existing' && !!creative.existingCreativeIds?.[0],
+        creativeId: canLoadMetaPreview ? selectedExistingCreativeId : null,
+        enabled: creative.contentSource === 'existing' && canLoadMetaPreview,
         previewTypes: ['DESKTOP_FEED_STANDARD']
     });
 

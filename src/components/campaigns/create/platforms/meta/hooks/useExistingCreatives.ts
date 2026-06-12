@@ -1,17 +1,25 @@
-import { MetaCreative } from '@/lib/server/actions/meta/creatives/actions';
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type {
+  CreativeLibraryItem,
+  CreativeLibrarySort,
+  CreativeLibrarySource,
+} from '@/lib/shared/types/creativeLibrary';
 
 export interface UseExistingCreativesOptions {
   platformId: string;
   adAccountId: string;
   enabled?: boolean;
   limit?: number;
-  thumbnailWidth?: number;
-  thumbnailHeight?: number;
+  source?: CreativeLibrarySource;
+  sort?: CreativeLibrarySort;
 }
 
 export interface UseExistingCreativesReturn {
-  creatives: MetaCreative[];
+  creatives: CreativeLibraryItem[];
+  allCreatives: {
+    adCreatives: CreativeLibraryItem[];
+    pagePosts: CreativeLibraryItem[];
+  };
   loading: boolean;
   error: string | null;
   hasLoaded: boolean;
@@ -22,114 +30,150 @@ export interface UseExistingCreativesReturn {
   reset: () => void;
 }
 
-/* eslint-disable */
+type CreativeLibraryResponse = {
+  success: true;
+  data: {
+    adCreatives: CreativeLibraryItem[];
+    pagePosts: CreativeLibraryItem[];
+  };
+} | {
+  success: false;
+  error?: {
+    userMessage?: string;
+    message?: string;
+  };
+};
+
+function getTimestamp(item: CreativeLibraryItem): number {
+  const value = item.createdTime ?? item.updatedTime;
+  return value ? new Date(value).getTime() : 0;
+}
+
+function compareBest(left: CreativeLibraryItem, right: CreativeLibraryItem): number {
+  const scoreDiff = right.score - left.score;
+  if (scoreDiff !== 0) {
+    return scoreDiff;
+  }
+
+  const resultsDiff = right.stats.results - left.stats.results;
+  if (resultsDiff !== 0) {
+    return resultsDiff;
+  }
+
+  const spendDiff = right.stats.spend - left.stats.spend;
+  if (spendDiff !== 0) {
+    return spendDiff;
+  }
+
+  return getTimestamp(right) - getTimestamp(left);
+}
+
+function sortCreatives(items: CreativeLibraryItem[], sort: CreativeLibrarySort): CreativeLibraryItem[] {
+  const sorted = [...items];
+
+  switch (sort) {
+    case 'newest':
+      return sorted.sort((left, right) => getTimestamp(right) - getTimestamp(left));
+    case 'oldest':
+      return sorted.sort((left, right) => getTimestamp(left) - getTimestamp(right));
+    case 'spend':
+      return sorted.sort((left, right) => right.stats.spend - left.stats.spend || compareBest(left, right));
+    case 'results':
+      return sorted.sort((left, right) => right.stats.results - left.stats.results || compareBest(left, right));
+    case 'best':
+    default:
+      return sorted.sort(compareBest);
+  }
+}
+
 export function useExistingCreatives({
   platformId,
   adAccountId,
   enabled = true,
-  limit = 10,
-  thumbnailWidth = 300,
-  thumbnailHeight = 225
+  limit = 120,
+  source = 'ad_creative',
+  sort = 'best',
 }: UseExistingCreativesOptions): UseExistingCreativesReturn {
-  const [creatives, setCreatives] = useState<MetaCreative[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [adCreatives, setAdCreatives] = useState<CreativeLibraryItem[]>([]);
+  const [pagePosts, setPagePosts] = useState<CreativeLibraryItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasLoaded, setHasLoaded] = useState<boolean>(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  // Pagination state
-  const [afterCursor, setAfterCursor] = useState<string | null>(null);
-  const [beforeCursor, setBeforeCursor] = useState<string | null>(null);
-  const [hasNextPage, setHasNextPage] = useState<boolean>(false);
-  const [hasPreviousPage, setHasPreviousPage] = useState<boolean>(false);
-
-  // Internal: track last loaded params to avoid unnecessary fetches
-  const [lastParams, setLastParams] = useState<{ after: string | null; before: string | null } | null>(null);
-
-  // Function to load creatives using cursor
-  const loadCreatives = useCallback(async (after: string | null = null, before: string | null = null, force = false) => {
-    // Avoid refetching if already loaded and not forced
-    if (hasLoaded && !force && lastParams && lastParams.after === after && lastParams.before === before) {
+  const loadCreatives = useCallback(async () => {
+    if (!enabled || !platformId || !adAccountId) {
       return;
     }
 
     setLoading(true);
     setError(null);
 
-    setLastParams({ after, before });
-
     try {
       const params = new URLSearchParams({
         platformId,
         adAccountId,
         limit: String(limit),
-        ...(after ? { after } : {}),
-        ...(before ? { before } : {}),
-        ...(thumbnailWidth ? { thumbnailWidth: String(thumbnailWidth) } : {}),
-        ...(thumbnailHeight ? { thumbnailHeight: String(thumbnailHeight) } : {}),
       });
 
-      const res = await fetch(`/api/meta/creatives?${params.toString()}`);
-      const data = await res.json();
+      const response = await fetch(`/api/campaigns/creative-library?${params.toString()}`, {
+        cache: 'no-store',
+      });
+      const body = (await response.json().catch(() => null)) as CreativeLibraryResponse | null;
 
-      if (!res.ok || data.error) {
-        setError(data.error?.userMessage || data.error || "Failed to load creatives");
+      if (!response.ok || !body) {
+        setError('Failed to load existing creative performance.');
+        setAdCreatives([]);
+        setPagePosts([]);
         return;
       }
 
-      setCreatives(data.creatives);
-      setAfterCursor(data.cursors?.after || null);
-      setBeforeCursor(data.cursors?.before || null);
-      setHasNextPage(!!data.hasNextPage);
-      setHasPreviousPage(!!data.hasPreviousPage);
+      if (!body.success) {
+        setError(body.error?.userMessage || body.error?.message || 'Failed to load existing creative performance.');
+        setAdCreatives([]);
+        setPagePosts([]);
+        return;
+      }
+
+      setAdCreatives(body.data.adCreatives ?? []);
+      setPagePosts(body.data.pagePosts ?? []);
       setHasLoaded(true);
-    } catch (err) {
-      setError("An unexpected error occurred while loading creatives.");
+    } catch {
+      setError('We could not load existing creative performance right now.');
+      setAdCreatives([]);
+      setPagePosts([]);
     } finally {
       setLoading(false);
     }
-  }, [platformId, adAccountId, limit, thumbnailWidth, thumbnailHeight]);
+  }, [adAccountId, enabled, limit, platformId]);
 
-  // Reset function to clear state and force reload
+  useEffect(() => {
+    void loadCreatives();
+  }, [loadCreatives, reloadKey]);
+
   const reset = useCallback(() => {
     setHasLoaded(false);
-    setLastParams(null);
-    setAfterCursor(null);
-    setBeforeCursor(null);
-    setHasNextPage(false);
-    setHasPreviousPage(false);
-    setCreatives([]);
-    loadCreatives(null, null, true);
-  }, [loadCreatives]);
+    setReloadKey((current) => current + 1);
+  }, []);
 
-  // Initial load or when dependencies change
-  useEffect(() => {
-    if (!enabled || !adAccountId || !platformId) return;
-    reset();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [platformId, adAccountId, enabled, limit, thumbnailWidth, thumbnailHeight]);
-
-  // Navigation functions
-  const goToNextPage = useCallback(() => {
-    if (hasNextPage && afterCursor) {
-      loadCreatives(afterCursor, null, true);
-    }
-  }, [hasNextPage, afterCursor, loadCreatives]);
-
-  const goToPreviousPage = useCallback(() => {
-    if (hasPreviousPage && beforeCursor) {
-      loadCreatives(null, beforeCursor, true);
-    }
-  }, [hasPreviousPage, beforeCursor, loadCreatives]);
+  const creatives = useMemo(() => {
+    const sourceItems = source === 'page_post' ? pagePosts : adCreatives;
+    return sortCreatives(sourceItems, sort);
+  }, [adCreatives, pagePosts, sort, source]);
 
   return {
     creatives,
+    allCreatives: {
+      adCreatives,
+      pagePosts,
+    },
     loading,
     error,
     hasLoaded,
-    hasNextPage,
-    hasPreviousPage,
-    goToNextPage,
-    goToPreviousPage,
-    reset
+    hasNextPage: false,
+    hasPreviousPage: false,
+    goToNextPage: () => undefined,
+    goToPreviousPage: () => undefined,
+    reset,
   };
 }
