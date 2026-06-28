@@ -4,11 +4,11 @@ import { Container } from "@/components/marketing";
 
 const Footer: FC = () => {
     return (
-        <footer className="border-t border-blue-100 bg-[radial-gradient(circle_at_12%_0%,rgba(37,99,235,0.1),transparent_30%),radial-gradient(circle_at_84%_0%,rgba(16,185,129,0.09),transparent_24%),linear-gradient(180deg,#ffffff_0%,#f7f9fc_100%)] text-slate-600">
+        <footer className="border-t border-slate-200 bg-white text-slate-600">
             <Container className="flex flex-col gap-6 py-4 text-xs sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-slate-950">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 via-blue-500 to-emerald-500 text-[10px] font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.18)]">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700 text-[10px] font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.16)]">
                             DV
                         </span>
                         <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-800">

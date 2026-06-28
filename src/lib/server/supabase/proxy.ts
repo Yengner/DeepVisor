@@ -71,7 +71,6 @@ export async function updateSession(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     const pathname = normalizePathname(request.nextUrl.pathname);
-    const isRootPage = pathname === '/';
     const isLoginPage = pathname.startsWith('/login');
     const isSignUpPage = pathname.startsWith('/sign-up');
     const isPublicRoute = PUBLIC_ROUTES.has(pathname);
@@ -81,8 +80,8 @@ export async function updateSession(request: NextRequest) {
         return redirectWithSupabaseCookies(request, supabaseResponse, '/login');
     }
 
-    // Handle authenticated user trying to access public pages  
-    if (user && (isRootPage || isLoginPage || isSignUpPage)) {
+    // Keep auth pages out of the way for signed-in users, but allow public marketing pages.
+    if (user && (isLoginPage || isSignUpPage)) {
         return redirectWithSupabaseCookies(request, supabaseResponse, '/api/auth/redirect');
     }
 
