@@ -3,7 +3,10 @@ import MobileAppChromeClient from '@/components/layout/MobileAppChromeClient';
 import TopBarClient from './TopBarClient';
 import type { Database } from '@/lib/shared/types/supabase';
 import { getCurrentSelection } from '@/lib/server/actions/app/selection';
-import { getUserNotifications } from '@/lib/server/actions/user/settings';
+import {
+  getUnreadUserNotificationIds,
+  getUserNotifications,
+} from '@/lib/server/actions/user/settings';
 
 type UserRow = Database['public']['Tables']['users']['Row'];
 
@@ -14,7 +17,10 @@ interface TopbarProps {
 
 export default async function Topbar({ user, businessId }: TopbarProps) {
   const supabase = await createServerClient();
-  const notifications = await getUserNotifications(user.id, 5);
+  const [notifications, unreadNotificationIds] = await Promise.all([
+    getUserNotifications(user.id, 5),
+    getUnreadUserNotificationIds(user.id),
+  ]);
 
   const { data: integrationRows, error: integrationError } = await supabase
     .from('platform_integrations')
@@ -99,6 +105,7 @@ export default async function Topbar({ user, businessId }: TopbarProps) {
           platforms={platforms}
           adAccounts={adAccounts}
           notifications={notifications}
+          unreadNotificationIds={unreadNotificationIds}
           initialPlatformId={selectedPlatformId}
           initialAccountId={selectedAccountId}
         />
@@ -108,6 +115,7 @@ export default async function Topbar({ user, businessId }: TopbarProps) {
         platforms={platforms}
         adAccounts={adAccounts}
         notifications={notifications}
+        unreadNotificationIds={unreadNotificationIds}
         initialPlatformId={selectedPlatformId}
         initialAccountId={selectedAccountId}
       />

@@ -1,5 +1,137 @@
 .page {
+  --dv-ink: #151714;
+  --dv-canvas: #f4f5ef;
+  --dv-border: #d9ddd3;
+  --dv-border-strong: #aeb5aa;
+  --dv-muted: #62685e;
+  --dv-signal: #0b7a4b;
+  --dv-coral: #e76156;
+  --dv-lime: #c8ff56;
   width: 100%;
+  min-height: calc(100vh - 7rem);
+  padding: 20px;
+  color: var(--dv-ink);
+  background: var(--dv-canvas);
+}
+
+.page :global(.mantine-Title-root),
+.page :global(.mantine-Text-root),
+.page :global(.mantine-Badge-root),
+.page :global(.mantine-Button-root),
+.page :global(.mantine-Table-root) {
+  letter-spacing: 0 !important;
+}
+
+.page :global(.mantine-Card-root),
+.page :global(.mantine-Paper-root) {
+  border: 1px solid var(--dv-border) !important;
+  border-radius: 6px !important;
+  background: #ffffff;
+  box-shadow: none !important;
+}
+
+.page :global(.mantine-Button-root),
+.page :global(.mantine-Badge-root),
+.page :global(.mantine-ThemeIcon-root),
+.page :global(.mantine-Alert-root),
+.page :global(.mantine-Accordion-root) {
+  border-radius: 5px !important;
+}
+
+.page :global(.mantine-Button-root) {
+  font-weight: 700;
+}
+
+.page :global(.mantine-Button-root[data-variant='filled']) {
+  border: 1px solid var(--dv-signal);
+  background: var(--dv-signal);
+}
+
+.page :global(.mantine-Button-root[data-variant='default']) {
+  border: 1px solid var(--dv-border-strong);
+  color: var(--dv-ink);
+  background: #ffffff;
+}
+
+.page :global(.mantine-Button-root[data-variant='light']) {
+  color: #075f3b;
+  background: #eaf6ef;
+}
+
+.page :global(.mantine-ThemeIcon-root) {
+  color: var(--dv-signal);
+  background: #eaf6ef;
+}
+
+.page :global(.mantine-Alert-root) {
+  border-width: 1px;
+  box-shadow: none;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 22px 24px;
+  border: 1px solid var(--dv-ink);
+  border-radius: 6px;
+  color: #ffffff;
+  background: var(--dv-ink);
+}
+
+.hero::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 104px;
+  height: 4px;
+  background: var(--dv-lime);
+  content: '';
+}
+
+.heroTitle {
+  color: #ffffff;
+  font-size: 2.15rem;
+  line-height: 1.1;
+}
+
+.heroCopy {
+  color: #c9cec4;
+}
+
+.hero :global(.mantine-Badge-root) {
+  border: 1px solid #4b5048;
+  color: #e9ece6;
+  background: #292d26;
+}
+
+.hero :global(.mantine-Badge-root):first-child {
+  border-color: rgba(200, 255, 86, 0.52);
+  color: var(--dv-ink);
+  background: var(--dv-lime);
+}
+
+.hero :global(.mantine-Button-root[data-variant='filled']) {
+  border-color: var(--dv-lime);
+  color: var(--dv-ink);
+  background: var(--dv-lime);
+}
+
+.hero :global(.mantine-Button-root[data-variant='default']) {
+  border-color: #596057;
+  color: #ffffff;
+  background: #2e322a;
+}
+
+.summaryCard {
+  min-height: 132px;
+}
+
+.summaryCard :global(.mantine-Title-root) {
+  font-variant-numeric: tabular-nums;
+}
+
+.sectionSurface {
+  border-left: 3px solid var(--dv-signal) !important;
 }
 
 .desktopRankingTable {
@@ -13,9 +145,9 @@
 .mobileRankingCard {
   min-width: 0;
   padding: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.94);
-  border-radius: 16px;
-  background: rgba(248, 250, 252, 0.82);
+  border: 1px solid var(--dv-border);
+  border-radius: 5px;
+  background: #f8f9f5;
 }
 
 .mobileMetricGrid {
@@ -28,13 +160,14 @@
 .mobileMetricGrid > div {
   min-width: 0;
   padding: 10px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--dv-border);
+  border-radius: 4px;
+  background: #ffffff;
 }
 
 .insightSummaryCard {
   height: 100%;
-  background: rgba(248, 250, 252, 0.72);
+  background: #f8f9f5 !important;
 }
 
 .insightDetails {
@@ -52,10 +185,44 @@
   padding: 0 10px 10px;
 }
 
+.insightDetails :global(.mantine-Accordion-item) {
+  border-color: var(--dv-border);
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.rankingSurface :global(.mantine-Table-th) {
+  padding-top: 9px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--dv-border-strong);
+  color: #4c534b;
+  background: #f1f3ed;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.rankingSurface :global(.mantine-Table-td) {
+  border-bottom: 1px solid #e5e8e0;
+  font-variant-numeric: tabular-nums;
+}
+
+.rankingSurface :global(.mantine-Table-tr:hover) :global(.mantine-Table-td) {
+  background: #f0f8f3;
+}
+
 @media (max-width: 760px) {
   .page {
     padding-inline: 10px;
-    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+    padding-bottom: 1rem;
+  }
+
+  .hero {
+    padding: 18px 16px;
+  }
+
+  .heroTitle {
+    font-size: 1.75rem;
   }
 
   .headerActions {

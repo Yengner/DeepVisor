@@ -29,6 +29,7 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import {
   getTierLimits,
+  getUnreadUserNotificationIds,
   getUserNotifications,
   getUserSubscriptionTier,
 } from '@/lib/server/actions/user/settings';
@@ -36,6 +37,7 @@ import { getAdAccountData, getBusinessAdAccountsRollup, getPlatformDetails } fro
 import { createServerClient } from '@/lib/server/supabase/server';
 import { formatNotificationPreviewMessage } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
+import classes from '../SettingsSurface.module.css';
 
 type BusinessProfilePreview = Pick<
   Database['public']['Tables']['business_profiles']['Row'],
@@ -246,6 +248,7 @@ export default async function ProfilePage() {
     rollup,
     subscriptionTier,
     notificationsRaw,
+    unreadNotificationIds,
     selectedPlatform,
     selectedAdAccount,
   ] = await Promise.all([
@@ -264,6 +267,7 @@ export default async function ProfilePage() {
     getBusinessAdAccountsRollup(businessId),
     getUserSubscriptionTier(user.id),
     getUserNotifications(user.id, 4),
+    getUnreadUserNotificationIds(user.id),
     selection.selectedPlatformId
       ? getPlatformDetails(selection.selectedPlatformId, businessId)
       : Promise.resolve(null),
@@ -302,7 +306,7 @@ export default async function ProfilePage() {
   });
 
   const notifications = notificationsRaw.map(normalizeNotification);
-  const unreadCount = notifications.filter((notification) => !notification.read).length;
+  const unreadCount = unreadNotificationIds.length;
   const connectedPlatformCount = integrations.filter(
     (integration) => String(integration.status).toLowerCase() === 'connected'
   ).length;
@@ -337,8 +341,8 @@ export default async function ProfilePage() {
     profileFieldCount >= 6 ? 'Strong profile context' : profileFieldCount >= 4 ? 'Good profile context' : 'Basic profile context';
 
   return (
-    <Container size="xl" pb="xl">
-      <Stack gap="lg">
+    <Container size="xl" pb="xl" className={`${classes.page} dv-app-page`}>
+      <Stack gap="lg" className={classes.pageStack}>
         <Card
           withBorder
           radius="lg"
@@ -350,7 +354,7 @@ export default async function ProfilePage() {
               <Avatar
                 radius="xl"
                 size={84}
-                color="blue"
+                color="signal"
                 styles={{ placeholder: { fontSize: 28, fontWeight: 700 } }}
               >
                 {initials}
@@ -361,10 +365,10 @@ export default async function ProfilePage() {
                   <Badge variant="light" className="app-platform-page-badge">
                     Profile
                   </Badge>
-                  <Badge color="cyan" variant="outline">
+                  <Badge color="signal" variant="outline">
                     {organizationName}
                   </Badge>
-                  <Badge color="green" variant="light">
+                  <Badge color="signal" variant="light">
                     {formatPlanTier(subscriptionTier)}
                   </Badge>
                 </Group>
@@ -402,7 +406,7 @@ export default async function ProfilePage() {
               radius="lg"
               p="md"
               className="app-platform-page-hero-panel"
-              style={{ minWidth: 320 }}
+              style={{ minWidth: 0, width: 'min(100%, 360px)', flex: '0 1 360px' }}
             >
               <Stack gap="sm">
                 <InfoRow label="Email" value={user.email} />
@@ -439,21 +443,21 @@ export default async function ProfilePage() {
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
           <SummaryCard
             icon={<IconUser size={18} />}
-            color="blue"
+            color="signal"
             label="Identity"
             title={`${profileFieldCount}/7 details on file`}
             detail={profileReadinessLabel}
           />
           <SummaryCard
             icon={<IconTargetArrow size={18} />}
-            color="teal"
+            color="signal"
             label="Workspace"
             title={businessProfile.business_name}
             detail={focusLabel}
           />
           <SummaryCard
             icon={<IconBell size={18} />}
-            color="grape"
+            color="signal"
             label="Signals"
             title={
               unreadCount > 0
@@ -464,7 +468,7 @@ export default async function ProfilePage() {
           />
           <SummaryCard
             icon={<IconDatabase size={18} />}
-            color="orange"
+            color="signal"
             label="Access"
             title={`${rollup.syncedAccountCount}/${Math.max(rollup.accountCount, 1)} synced accounts`}
             detail={`${limits.maxPlatforms.length} supported platform types on ${formatPlanTier(subscriptionTier)}`}
@@ -483,7 +487,7 @@ export default async function ProfilePage() {
                 you inside this workspace.
               </Text>
             </div>
-            <Badge color={user.status === 'active' ? 'green' : 'gray'} variant="light">
+            <Badge color={user.status === 'active' ? 'signal' : 'gray'} variant="light">
               {formatStatusLabel(user.status)}
             </Badge>
           </Group>
@@ -491,7 +495,7 @@ export default async function ProfilePage() {
           <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
             <Paper withBorder radius="md" p="md">
               <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="blue" radius="md">
+                <ThemeIcon variant="light" color="signal" radius="md">
                   <IconUser size={16} />
                 </ThemeIcon>
                 <div>
@@ -514,7 +518,7 @@ export default async function ProfilePage() {
 
             <Paper withBorder radius="md" p="md">
               <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="teal" radius="md">
+                <ThemeIcon variant="light" color="signal" radius="md">
                   <IconLock size={16} />
                 </ThemeIcon>
                 <div>
@@ -589,7 +593,7 @@ export default async function ProfilePage() {
           <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
             <Paper withBorder radius="md" p="md">
               <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="teal" radius="md">
+                <ThemeIcon variant="light" color="signal" radius="md">
                   <IconChartBar size={16} />
                 </ThemeIcon>
                 <div>
@@ -625,7 +629,7 @@ export default async function ProfilePage() {
 
             <Paper withBorder radius="md" p="md">
               <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="orange" radius="md">
+                <ThemeIcon variant="light" color="signal" radius="md">
                   <IconTargetArrow size={16} />
                 </ThemeIcon>
                 <div>
@@ -658,7 +662,7 @@ export default async function ProfilePage() {
               <Group gap="xs" wrap="wrap">
                 {(businessProfile.ad_goals ?? []).length > 0 ? (
                   businessProfile.ad_goals?.map((goal) => (
-                    <Badge key={goal} color="blue" variant="light">
+                    <Badge key={goal} color="signal" variant="light">
                       {goal.replace(/_/g, ' ')}
                     </Badge>
                   ))
@@ -675,7 +679,7 @@ export default async function ProfilePage() {
               <Group gap="xs" wrap="wrap">
                 {(businessProfile.preferred_platforms ?? []).length > 0 ? (
                   businessProfile.preferred_platforms?.map((platform) => (
-                    <Badge key={platform} color="cyan" variant="light">
+                    <Badge key={platform} color="signal" variant="light">
                       {platform}
                     </Badge>
                   ))
@@ -693,111 +697,21 @@ export default async function ProfilePage() {
           <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
             <div>
               <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                Workflow
-              </Text>
-              <Title order={3}>Where you go for each kind of work</Title>
-              <Text size="sm" c="dimmed" mt={4}>
-                Your profile should orient you quickly without turning into another settings
-                screen. These are the three product surfaces that matter day to day.
-              </Text>
-            </div>
-          </Group>
-
-          <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md">
-            <Paper withBorder radius="md" p="md">
-              <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="blue" radius="md">
-                  <IconChartBar size={16} />
-                </ThemeIcon>
-                <Text fw={700}>Dashboard</Text>
-              </Group>
-              <Text size="sm" c="dimmed">
-                Use Dashboard for the fastest read on the selected ad account and what needs
-                attention today.
-              </Text>
-              <Button
-                component="a"
-                href="/dashboard"
-                size="xs"
-                radius="xl"
-                variant="light"
-                color="blue"
-                mt="md"
-              >
-                Open dashboard
-              </Button>
-            </Paper>
-
-            <Paper withBorder radius="md" p="md">
-              <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="teal" radius="md">
-                  <IconDatabase size={16} />
-                </ThemeIcon>
-                <Text fw={700}>Reports</Text>
-              </Group>
-              <Text size="sm" c="dimmed">
-                Use Reports when you want the explanation layer: what got stronger, what got weaker,
-                and what changed over time.
-              </Text>
-              <Button
-                component="a"
-                href="/reports"
-                size="xs"
-                radius="xl"
-                variant="light"
-                color="teal"
-                mt="md"
-              >
-                Open reports
-              </Button>
-            </Paper>
-
-            <Paper withBorder radius="md" p="md">
-              <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="orange" radius="md">
-                  <IconPlug size={16} />
-                </ThemeIcon>
-                <Text fw={700}>Calendar</Text>
-              </Group>
-              <Text size="sm" c="dimmed">
-                Use Calendar when DeepVisor has queued work ready for approval, scheduling, or
-                revision.
-              </Text>
-              <Button
-                component="a"
-                href="/calendar"
-                size="xs"
-                radius="xl"
-                variant="light"
-                color="orange"
-                mt="md"
-              >
-                Open calendar
-              </Button>
-            </Paper>
-          </SimpleGrid>
-        </Card>
-
-        <Card withBorder radius="lg" p="xl">
-          <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
-            <div>
-              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
                 Signals
               </Text>
               <Title order={3}>Recent notifications and account health</Title>
               <Text size="sm" c="dimmed" mt={4}>
-                A profile page should still show the latest important changes without forcing you
-                into a full settings audit.
+                Latest unread signals and health checks for the selected account.
               </Text>
             </div>
-            <Badge color={unreadCount > 0 ? 'blue' : 'gray'} variant="light">
+            <Badge color={unreadCount > 0 ? 'signal' : 'gray'} variant="light">
               {unreadCount} unread
             </Badge>
           </Group>
 
           {!onboarding.onboarding_completed ? (
             <Alert
-              color="yellow"
+              color="#d69324"
               radius="md"
               icon={<IconAlertTriangle size={16} />}
               title="Business onboarding is still in progress"
@@ -811,7 +725,7 @@ export default async function ProfilePage() {
           <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
             <Paper withBorder radius="md" p="md">
               <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="grape" radius="md">
+                <ThemeIcon variant="light" color="signal" radius="md">
                   <IconBell size={16} />
                 </ThemeIcon>
                 <div>
@@ -830,7 +744,7 @@ export default async function ProfilePage() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <Group gap="xs" mb={4} wrap="wrap">
                             {!notification.read ? (
-                              <Badge color="blue" variant="light">
+                              <Badge color="signal" variant="light">
                                 Unread
                               </Badge>
                             ) : null}
@@ -875,7 +789,7 @@ export default async function ProfilePage() {
 
             <Paper withBorder radius="md" p="md">
               <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="orange" radius="md">
+                <ThemeIcon variant="light" color="signal" radius="md">
                   <IconClock size={16} />
                 </ThemeIcon>
                 <div>

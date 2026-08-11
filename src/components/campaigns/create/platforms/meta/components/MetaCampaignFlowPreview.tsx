@@ -138,7 +138,7 @@ export default function MetaCampaignFlowPreview({
     }
 
     return (
-        <div style={{ width: "100%", height: 340, background: "#f8fafc", borderRadius: 12 }}>
+        <div style={{ width: "100%", height: 340, background: "#f4f5ef", borderRadius: 8 }}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}

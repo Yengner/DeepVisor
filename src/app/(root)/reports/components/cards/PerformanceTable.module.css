@@ -13,9 +13,9 @@
 .mobileCard {
   min-width: 0;
   padding: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.94);
-  border-radius: 16px;
-  background: rgba(248, 250, 252, 0.78);
+  border: 1px solid rgba(21, 23, 20, 0.12);
+  border-radius: 8px;
+  background: #f4f5ef;
 }
 
 .mobileCardHeader {
@@ -40,7 +40,7 @@
 .mobileContext {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid rgba(226, 232, 240, 0.9);
+  border-top: 1px solid rgba(21, 23, 20, 0.12);
 }
 
 .mobileMetricGrid {
@@ -53,8 +53,8 @@
 .mobileMetricGrid > div {
   min-width: 0;
   padding: 10px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 @media (max-width: 760px) {

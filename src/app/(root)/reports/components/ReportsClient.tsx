@@ -102,9 +102,9 @@ const EFFICIENCY_TIMELINE_SERIES: ReportChartSeries[] = [
 ];
 
 const FINDING_ANNOTATION_COLORS = {
-  critical: '#e03131',
-  warning: '#f08c00',
-  info: '#1c7ed6',
+  critical: '#e76156',
+  warning: '#d69324',
+  info: '#6e6bf4',
 } as const;
 
 const FINDING_SHORT_LABELS = {
@@ -1848,12 +1848,12 @@ function ReportDeliverySurfaceGraph({ payload }: { payload: ReportPayload }) {
                             style={{
                               backgroundColor:
                                 cell.metricAverage > 0
-                                  ? `rgba(37, 99, 235, ${0.12 + cell.intensity * 0.76})`
-                                  : 'rgba(241, 245, 249, 0.94)',
+                                  ? `rgba(20, 168, 102, ${0.12 + cell.intensity * 0.76})`
+                                  : 'rgba(238, 240, 233, 0.94)',
                               borderColor:
                                 cell.metricAverage > 0
-                                  ? 'rgba(37, 99, 235, 0.28)'
-                                  : 'rgba(226, 232, 240, 0.94)',
+                                  ? 'rgba(11, 122, 75, 0.3)'
+                                  : 'rgba(21, 23, 20, 0.12)',
                             }}
                             title={`${cell.dayLabel} · ${formatHourLongLabel(
                               cell.hourOfDay
@@ -1894,17 +1894,17 @@ function ReportDeliverySurfaceGraph({ payload }: { payload: ReportPayload }) {
                           gridColumn: `${state.col}`,
                           gridRow: `${state.row}`,
                           backgroundColor: state.isActive
-                            ? `rgba(37, 99, 235, ${0.18 + state.intensity * 0.68})`
-                            : 'rgba(241, 245, 249, 0.96)',
+                            ? `rgba(20, 168, 102, ${0.18 + state.intensity * 0.68})`
+                            : 'rgba(238, 240, 233, 0.96)',
                           borderColor: state.isActive
-                            ? 'rgba(37, 99, 235, 0.42)'
-                            : 'rgba(203, 213, 225, 0.9)',
+                            ? 'rgba(11, 122, 75, 0.42)'
+                            : 'rgba(21, 23, 20, 0.18)',
                           color:
                             state.isActive && state.intensity > 0.45
                               ? '#ffffff'
                               : state.isActive
-                                ? '#1d4ed8'
-                                : '#64748b',
+                                ? '#075f3b'
+                                : '#697067',
                         }}
                         title={state.isActive ? `${state.name}: ${state.valueLabel}` : state.name}
                       >
@@ -2312,6 +2312,11 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
           payload={payload}
           exportLinks={exportLinks}
           onUpdate={updateSearch}
+          onRefresh={() => {
+            startTransition(() => {
+              router.refresh();
+            });
+          }}
           onOpenFilters={() => setFiltersOpened(true)}
           activeFilterCount={activeFilterCount}
           isDemo={isDemo}
@@ -2352,8 +2357,8 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
           <Paper
             radius="xl"
             p="md"
-            bg="rgba(59,130,246,0.08)"
-            style={{ border: '1px solid rgba(59,130,246,0.16)' }}
+            bg="rgba(20,168,102,0.08)"
+            style={{ border: '1px solid rgba(20,168,102,0.18)' }}
           >
             <Group justify="space-between" align="flex-start" gap="md">
               <div>

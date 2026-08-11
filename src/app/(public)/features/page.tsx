@@ -78,7 +78,7 @@ const FeatureHero = () => {
         <div className="grid gap-8 lg:grid-cols-[0.86fr_1.14fr] lg:items-center">
           <div className="space-y-6">
             <Badge variant="accent" className="w-fit border-blue-200 bg-blue-50 text-blue-700">
-              How it works
+              DeepVisor / How it works
             </Badge>
             <div className="space-y-4">
               <h1 className="max-w-4xl text-balance text-4xl font-semibold leading-none text-slate-950 sm:text-5xl lg:text-6xl">
@@ -257,7 +257,7 @@ const RoadmapCTA = () => {
   return (
     <Section
       tone="light"
-      className="overflow-hidden border-t border-blue-100 bg-[#eef6ff] py-10 text-slate-950 sm:py-14"
+      className="dv-feature-cta overflow-hidden border-t border-blue-100 bg-[#eef6ff] py-10 text-slate-950 sm:py-14"
     >
       <Container>
         <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">

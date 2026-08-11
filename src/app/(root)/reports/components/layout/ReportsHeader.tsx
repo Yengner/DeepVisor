@@ -30,6 +30,7 @@ interface ReportsHeaderProps {
     csv: string;
   };
   onUpdate: (mutate: (params: URLSearchParams) => void) => void;
+  onRefresh: () => void;
   onOpenFilters: () => void;
   activeFilterCount: number;
   isDemo?: boolean;
@@ -155,6 +156,7 @@ export default function ReportsHeader({
   payload,
   exportLinks,
   onUpdate,
+  onRefresh,
   onOpenFilters,
   activeFilterCount,
   isDemo = false,
@@ -323,7 +325,7 @@ export default function ReportsHeader({
                 radius="xl"
                 variant="default"
                 className="app-platform-page-action-icon"
-                onClick={() => onUpdate(() => undefined)}
+                onClick={onRefresh}
               >
                 <IconRefresh size={18} />
               </ActionIcon>

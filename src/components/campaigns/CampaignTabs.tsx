@@ -171,8 +171,6 @@ export default function CampaignTabsTop({ campaigns, userId }: CampaignTabsProps
             campaigns={campaignData as unknown as FormattedCampaign[]}
             selectedCampaignId={selectedCampaignId || undefined}
             onSelectCampaign={handleSelectCampaign}
-            onToggleCampaign={handleToggleCampaign}
-            onDeleteCampaign={handleDeleteCampaign}
           />
         </div>
       )}

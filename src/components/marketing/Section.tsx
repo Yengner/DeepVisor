@@ -8,7 +8,7 @@ const sectionVariants = cva("relative", {
       light: "bg-background text-foreground",
       muted: "bg-cloud text-foreground",
       dark: "bg-ink text-white",
-      gradient: "bg-gradient-to-b from-white via-cloud to-white text-foreground",
+      gradient: "bg-cloud text-foreground",
     },
     spacing: {
       default: "py-section-sm md:py-section",

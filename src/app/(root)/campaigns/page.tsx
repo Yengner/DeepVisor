@@ -37,7 +37,7 @@ export interface FormattedCampaign {
   clicks: number;
   impressions: number;
   frequency: string;
-  costPerResult: string;
+  costPerResult: number;
   cpm: number | null;
   ctr: number | null;
   cpc: number | null;
@@ -105,7 +105,7 @@ export default async function CampaignPage({
       status: c.status,
       objective: c.objective,
       startDate: c.start_date,
-      endDate: c.end_date || "No End Date",
+      endDate: c.end_date || "",
       attribution: "7-day click or view",
       spend: spendNum,
       results: totalResults > 0 ? `${totalResults} Results` : "0 Results",
@@ -113,7 +113,7 @@ export default async function CampaignPage({
       clicks: Number(c.clicks || 0),
       impressions: Number(c.impressions || 0),
       frequency: c.reach && c.impressions ? (Number(c.impressions) / Number(c.reach)).toFixed(2) : "0",
-      costPerResult: totalResults > 0 && spendNum > 0 ? `$${(spendNum / totalResults).toFixed(2)}` : "$0.00",
+      costPerResult: totalResults > 0 && spendNum > 0 ? spendNum / totalResults : 0,
       cpm: c.cpm != null ? Number(c.cpm) : null,
       ctr: c.ctr != null ? Number(c.ctr) : null,
       cpc: c.cpc != null ? Number(c.cpc) : null,
@@ -166,6 +166,7 @@ export default async function CampaignPage({
           campaigns={allCampaigns}
           platform={{ id: platformDetails.id, name: platformDetails.vendor }}
           adAccountId={selectedAdAccountId}
+          currencyCode={adAccountDetails.currency_code}
           accountMetrics={accountMetrics}
           initialSelection={initialSelection}
           initialAdSets={initialAdSets}

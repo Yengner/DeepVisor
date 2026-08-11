@@ -27,6 +27,7 @@ import {
   type ArchivedReport,
 } from '@/lib/server/intelligence/repositories/reportArchive';
 import { createAdminClient } from '@/lib/server/supabase/admin';
+import classes from './CampaignReportPage.module.css';
 
 function formatDateOnly(value: string | null): string {
   if (!value) {
@@ -76,16 +77,28 @@ function formatReportWindow(report: ArchivedReport): string {
   return start === end ? start : `${start} - ${end}`;
 }
 
-function formatCurrency(value: number | null): string {
+function formatCurrency(value: number | null, currencyCode: string | null): string {
   if (typeof value !== 'number') {
     return 'n/a';
   }
 
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 2,
-  }).format(value);
+  if (currencyCode?.toUpperCase() === 'MIXED') {
+    return value.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  }
+
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode || 'USD',
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
 }
 
 function formatNumber(value: number | null): string {
@@ -108,7 +121,7 @@ function SummaryCard({
   icon: React.ReactNode;
 }) {
   return (
-    <Card withBorder radius="lg" p="lg">
+    <Card withBorder radius="lg" p="lg" className={classes.summaryCard}>
       <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
         <div style={{ minWidth: 0 }}>
           <Text size="xs" tt="uppercase" fw={800} c="dimmed">
@@ -121,7 +134,7 @@ function SummaryCard({
             {detail}
           </Text>
         </div>
-        <ThemeIcon color="blue" variant="light" radius="md" size="lg">
+        <ThemeIcon color="signal" variant="light" radius="md" size="lg">
           {icon}
         </ThemeIcon>
       </Group>
@@ -148,20 +161,25 @@ export default async function CampaignReportPage({
   const reportWindow = formatReportWindow(report);
 
   return (
-    <Container size="xl" py="xl">
+    <Container size="xl" py="xl" className={`${classes.page} dv-app-page`}>
       <Stack gap="lg">
-        <Card withBorder radius="lg" p="xl" className="app-platform-page-hero">
+        <Card
+          withBorder
+          radius="lg"
+          p="xl"
+          className={`${classes.hero} app-platform-page-hero`}
+        >
           <Group justify="space-between" align="flex-start" gap="xl" wrap="wrap">
             <Stack gap="sm" maw={780}>
               <Group gap="xs" wrap="wrap">
                 <Badge variant="light" className="app-platform-page-badge">
                   Campaign report
                 </Badge>
-                <Badge color="blue" variant="light">
+                <Badge color="signal" variant="light">
                   {report.levelLabel}
                 </Badge>
                 {report.storagePath ? (
-                  <Badge color="green" variant="light">
+                  <Badge color="signal" variant="light">
                     Generated
                   </Badge>
                 ) : null}
@@ -220,7 +238,7 @@ export default async function CampaignReportPage({
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
           <SummaryCard
             label="Spend"
-            value={formatCurrency(report.summary.spend)}
+            value={formatCurrency(report.summary.spend, report.currencyCode)}
             detail="Spend in the generated report window."
             icon={<IconChartBar size={18} />}
           />
@@ -232,20 +250,20 @@ export default async function CampaignReportPage({
           />
           <SummaryCard
             label="Cost/result"
-            value={formatCurrency(report.summary.costPerResult)}
+            value={formatCurrency(report.summary.costPerResult, report.currencyCode)}
             detail="Average cost per result in this report."
             icon={<IconFileAnalytics size={18} />}
           />
           <SummaryCard
             label="CTR"
             value={formatPercent(report.summary.ctr)}
-            detail={`Clicks ${formatNumber(report.summary.clicks)} · CPC ${formatCurrency(report.summary.cpc)}`}
+            detail={`Clicks ${formatNumber(report.summary.clicks)} · CPC ${formatCurrency(report.summary.cpc, report.currencyCode)}`}
             icon={<IconCalendarTime size={18} />}
           />
         </SimpleGrid>
 
         {report.pdfHref ? (
-          <Card withBorder radius="lg" p={{ base: 'xs', sm: 'md' }}>
+          <Card withBorder radius="lg" p={{ base: 'xs', sm: 'md' }} className={classes.documentFrame}>
             <iframe
               title={report.title}
               src={report.pdfHref}
@@ -254,14 +272,14 @@ export default async function CampaignReportPage({
                 height: '78vh',
                 minHeight: 640,
                 border: 0,
-                borderRadius: 12,
-                background: '#f8fafc',
+                borderRadius: 4,
+                background: '#f4f5ef',
               }}
             />
           </Card>
         ) : (
           <Alert
-            color="yellow"
+            color="#d69324"
             radius="lg"
             icon={<IconAlertCircle size={18} />}
             title="Stored report unavailable"

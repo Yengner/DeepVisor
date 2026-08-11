@@ -1,5 +1,8 @@
 import type { NotificationFeedItem } from '@/lib/shared';
-import { listNotifications } from '@/lib/server/intelligence/repositories/notifications';
+import {
+    listNotifications,
+    listUnreadNotificationIds,
+} from '@/lib/server/intelligence/repositories/notifications';
 import type { AdAccountDetails } from "../../services/platforms/meta/types";
 import { createSupabaseClient } from "../../supabase/server";
 
@@ -18,6 +21,16 @@ export async function getUserNotifications(userId: string, limit = 10): Promise<
         });
     } catch (error) {
         console.error('Failed to load user notifications:', error);
+        return [];
+    }
+}
+
+export async function getUnreadUserNotificationIds(userId: string): Promise<string[]> {
+    try {
+        const supabase = await createSupabaseClient();
+        return await listUnreadNotificationIds(supabase as any, { userId });
+    } catch (error) {
+        console.error('Failed to load unread notification ids:', error);
         return [];
     }
 }

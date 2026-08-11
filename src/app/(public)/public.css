@@ -1,0 +1,470 @@
+.dv-public-shell {
+  --dv-ink: #151714;
+  --dv-ink-deep: #0d0f0d;
+  --dv-canvas: #f4f5ef;
+  --dv-paper: #ffffff;
+  --dv-line: #d5dad0;
+  --dv-line-strong: #bfc6ba;
+  --dv-muted: #666c63;
+  --dv-green: #0b7a4b;
+  --dv-green-bright: #14a866;
+  --dv-green-soft: #e8f4ed;
+  --dv-lime: #c8ff56;
+  --dv-coral: #e76156;
+  --dv-coral-soft: #fff0ee;
+  --dv-violet: #6e6bf4;
+  --dv-violet-soft: #f0efff;
+  min-height: 100vh;
+  overflow-x: clip;
+  background: var(--dv-canvas);
+  color: var(--dv-ink);
+}
+
+.dv-public-main * {
+  border-color: var(--dv-line);
+}
+
+.dv-public-shell [class*="tracking-"] {
+  letter-spacing: 0 !important;
+}
+
+.dv-public-shell [class*="rounded-"]:not([class*="rounded-full"]) {
+  border-radius: 8px !important;
+}
+
+.dv-public-shell :focus-visible {
+  outline: 2px solid var(--dv-green-bright);
+  outline-offset: 3px;
+}
+
+.dv-public-header {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.dv-public-nav-link::after {
+  position: absolute;
+  right: 0.75rem;
+  bottom: -1px;
+  left: 0.75rem;
+  height: 2px;
+  content: "";
+  background: var(--dv-lime);
+  transform: scaleX(0);
+  transition: transform 150ms ease;
+}
+
+.dv-public-nav-link:hover::after,
+.dv-public-nav-link[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+
+.dv-public-mobile-nav {
+  scrollbar-width: none;
+}
+
+.dv-public-mobile-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.dv-public-main {
+  min-height: 60vh;
+  background: var(--dv-canvas);
+}
+
+.dv-public-main > section {
+  border-color: var(--dv-line) !important;
+  background: var(--dv-canvas) !important;
+}
+
+.dv-public-main > section:nth-of-type(even) {
+  background: var(--dv-paper) !important;
+}
+
+.dv-public-main :where(h1, h2, h3, h4) {
+  color: var(--dv-ink);
+  letter-spacing: 0 !important;
+}
+
+.dv-public-main h1 {
+  max-width: 16ch;
+}
+
+.dv-public-main :where([class~="text-slate-950"], [class~="text-slate-900"], [class~="text-blue-950"]) {
+  color: var(--dv-ink) !important;
+}
+
+.dv-public-main :where([class~="text-slate-800"], [class~="text-slate-700"], [class~="text-slate-600"]) {
+  color: #50564d !important;
+}
+
+.dv-public-main :where([class~="text-slate-500"], [class~="text-slate-400"]) {
+  color: var(--dv-muted) !important;
+}
+
+.dv-public-main :where(
+  [class~="text-blue-800"],
+  [class~="text-blue-700"],
+  [class~="text-blue-600"],
+  [class~="text-blue-500"],
+  [class~="text-cyan-700"],
+  [class~="text-cyan-600"]
+) {
+  color: var(--dv-green) !important;
+}
+
+.dv-public-main :where([class~="text-emerald-700"], [class~="text-emerald-600"], [class~="text-emerald-500"]) {
+  color: var(--dv-green) !important;
+}
+
+.dv-public-main :where([class~="text-rose-700"], [class~="text-rose-600"], [class~="text-rose-500"]) {
+  color: #c84037 !important;
+}
+
+.dv-public-main :where([class~="text-indigo-700"], [class~="text-violet-700"], [class~="text-fuchsia-700"]) {
+  color: var(--dv-violet) !important;
+}
+
+.dv-public-main :where(
+  [class~="bg-blue-800"],
+  [class~="bg-blue-700"],
+  [class~="bg-blue-600"],
+  [class~="bg-blue-500"],
+  [class~="bg-cyan-700"],
+  [class~="bg-cyan-600"],
+  [class~="bg-cyan-500"],
+  [class~="bg-emerald-700"],
+  [class~="bg-emerald-600"],
+  [class~="bg-emerald-500"]
+) {
+  background-color: var(--dv-green) !important;
+}
+
+.dv-public-main :where(
+  [class~="bg-blue-100"],
+  [class~="bg-blue-50"],
+  [class~="bg-blue-50/60"],
+  [class~="bg-blue-50/70"],
+  [class~="bg-cyan-50"],
+  [class~="bg-emerald-100"],
+  [class~="bg-emerald-50"]
+) {
+  background-color: var(--dv-green-soft) !important;
+}
+
+.dv-public-main :where([class~="bg-rose-100"], [class~="bg-rose-50"], [class~="bg-orange-50"], [class~="bg-amber-50"]) {
+  background-color: var(--dv-coral-soft) !important;
+}
+
+.dv-public-main :where([class~="bg-rose-700"], [class~="bg-rose-600"], [class~="bg-rose-500"], [class~="bg-orange-500"], [class~="bg-amber-500"]) {
+  background-color: var(--dv-coral) !important;
+}
+
+.dv-public-main :where([class~="bg-indigo-50"], [class~="bg-violet-50"], [class~="bg-fuchsia-50"]) {
+  background-color: var(--dv-violet-soft) !important;
+}
+
+.dv-public-main :where([class~="bg-indigo-500"], [class~="bg-violet-500"], [class~="bg-fuchsia-500"]) {
+  background-color: var(--dv-violet) !important;
+}
+
+.dv-public-main :where([class~="bg-slate-50"], [class~="bg-cloud"], [class~="bg-secondary"], [class~="bg-muted"]) {
+  background-color: #f1f2ec !important;
+}
+
+.dv-public-main :where([class~="bg-slate-950"], [class~="bg-slate-900"], [class~="bg-ink"], [class~="bg-ink-80"]) {
+  background-color: var(--dv-ink-deep) !important;
+}
+
+.dv-public-main section[class~="bg-ink"] :where(h1, h2, h3, h4) {
+  color: #fff !important;
+}
+
+.dv-public-main section[class~="bg-ink"] p {
+  color: rgba(255, 255, 255, 0.62) !important;
+}
+
+.dv-public-main section[class~="bg-ink"] span.inline-flex {
+  border-color: rgba(200, 255, 86, 0.35) !important;
+  background: rgba(200, 255, 86, 0.08) !important;
+  color: var(--dv-lime) !important;
+}
+
+.dv-public-main :where(
+  [class~="border-blue-50"],
+  [class~="border-blue-100"],
+  [class~="border-blue-200"],
+  [class~="border-slate-200"],
+  [class~="border-slate-200/70"],
+  [class~="border-slate-200/80"]
+) {
+  border-color: var(--dv-line) !important;
+}
+
+.dv-public-main :where([class~="border-emerald-200"], [class~="border-emerald-400/30"]) {
+  border-color: #9fc9b3 !important;
+}
+
+.dv-public-main :where([class~="border-rose-200"], [class~="border-orange-200"], [class~="border-amber-200"]) {
+  border-color: #efb5af !important;
+}
+
+.dv-public-main :where([class~="shadow-sm"]) {
+  box-shadow: 0 1px 2px rgba(13, 15, 13, 0.07) !important;
+}
+
+.dv-public-main :where([class~="shadow-card"], [class~="shadow-card-strong"], [class*="shadow-[0_"]) {
+  box-shadow: 0 6px 18px rgba(13, 15, 13, 0.08) !important;
+}
+
+.dv-public-main :where([class~="backdrop-blur"], [class~="backdrop-blur-xl"]) {
+  backdrop-filter: none !important;
+}
+
+.dv-public-main :where(a.inline-flex.rounded-full, button.inline-flex.rounded-full) {
+  border-radius: 6px !important;
+}
+
+.dv-public-main :where(a.inline-flex, button.inline-flex) {
+  min-height: 38px;
+  transition-duration: 150ms;
+}
+
+.dv-public-main :where(a.inline-flex, button.inline-flex):active {
+  transform: translateY(1px) !important;
+}
+
+.dv-public-main :where(a[class~="bg-blue-700"], button[class~="bg-blue-700"]) {
+  border: 1px solid var(--dv-green);
+  background: var(--dv-green) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+.dv-public-main :where(a[class~="bg-blue-700"], button[class~="bg-blue-700"]):hover {
+  border-color: var(--dv-ink-deep);
+  background: var(--dv-ink-deep) !important;
+}
+
+.dv-public-main :where(a[class~="bg-white"], button[class~="bg-white"]):hover {
+  border-color: var(--dv-green) !important;
+  background: var(--dv-green-soft) !important;
+}
+
+.dv-public-main :where([class~="rounded-3xl"], [class~="rounded-2xl"], [class*="rounded-[1."]):not([class*="rounded-full"]) {
+  box-shadow: none;
+}
+
+.dv-public-main :where(.group, [class*="hover:-translate-y"]):hover {
+  border-color: var(--dv-line-strong);
+}
+
+.dv-public-main #support {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: var(--dv-ink-deep) !important;
+  color: #fff;
+}
+
+.dv-public-main #support :where(h2, h3, p) {
+  color: #fff !important;
+}
+
+.dv-public-main #support p {
+  color: rgba(255, 255, 255, 0.62) !important;
+}
+
+.dv-public-main #support [class~="bg-white"] {
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dv-public-main #support [class~="text-blue-700"] {
+  color: var(--dv-lime) !important;
+}
+
+.dv-public-main #support span.inline-flex,
+.dv-public-main .dv-feature-cta span.inline-flex {
+  border-color: rgba(200, 255, 86, 0.35) !important;
+  background: rgba(200, 255, 86, 0.08) !important;
+  color: var(--dv-lime) !important;
+}
+
+.dv-public-main #support :where(a[class~="bg-blue-700"], button[class~="bg-blue-700"]) {
+  border-color: var(--dv-lime) !important;
+  background: var(--dv-lime) !important;
+  color: var(--dv-ink-deep) !important;
+}
+
+.dv-public-main #support :where(a[class~="bg-blue-700"], button[class~="bg-blue-700"]):hover {
+  border-color: #fff !important;
+  background: #fff !important;
+}
+
+.dv-public-main #support a[class~="bg-white"] {
+  color: #fff !important;
+}
+
+.dv-public-main .dv-feature-cta {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: var(--dv-ink-deep) !important;
+  color: #fff;
+}
+
+.dv-public-main .dv-feature-cta :where(h2, h3) {
+  color: #fff !important;
+}
+
+.dv-public-main .dv-feature-cta p {
+  color: rgba(255, 255, 255, 0.62) !important;
+}
+
+.dv-public-main .dv-feature-cta > div > div > div:last-child > div {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dv-public-main .dv-feature-cta svg {
+  color: var(--dv-lime) !important;
+}
+
+.dv-public-main .dv-feature-cta :where(a[class~="bg-blue-700"], button[class~="bg-blue-700"]) {
+  border-color: var(--dv-lime) !important;
+  background: var(--dv-lime) !important;
+  color: var(--dv-ink-deep) !important;
+}
+
+.dv-public-main .dv-feature-cta :where(a[class~="bg-blue-700"], button[class~="bg-blue-700"]):hover {
+  border-color: #fff !important;
+  background: #fff !important;
+}
+
+.dv-public-main .dv-feature-cta a[class~="bg-white"] {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: transparent !important;
+  color: #fff !important;
+}
+
+.dv-legal-page {
+  color: var(--dv-ink);
+}
+
+.dv-legal-page section {
+  background: transparent !important;
+}
+
+@media (max-width: 639px) {
+  .dv-public-main > section {
+    padding-top: 2.25rem !important;
+    padding-bottom: 2.25rem !important;
+  }
+
+  .dv-public-main h1 {
+    font-size: 2.75rem;
+    line-height: 0.98;
+  }
+}
+
+@media (max-width: 420px) {
+  .dv-public-main h1 {
+    font-size: 2.35rem;
+  }
+
+  .dv-public-shell,
+  .dv-public-header,
+  .dv-public-main,
+  .dv-public-shell footer {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .dv-public-header > div,
+  .dv-public-mobile-nav > div,
+  .dv-public-main > :where(section, div),
+  .dv-public-main > section > div {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .dv-public-main :where([class~="grid"], [class~="flex"], [class*="min-w-"]) {
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+
+  .dv-public-main :where(h1, h2, h3, p, a, span) {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .dv-public-main :where(img, video, canvas) {
+    max-width: 100%;
+  }
+
+  .dv-public-header-cta {
+    width: 2.25rem;
+    min-width: 2.25rem;
+    padding-right: 0;
+    padding-left: 0;
+    gap: 0;
+  }
+
+  .dv-public-header-cta-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .dv-public-main #top a.inline-flex {
+    width: 100%;
+  }
+
+  .dv-public-main #top .dv-hero-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dv-public-main #top .dv-hero-actions > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .dv-public-main #top .dv-hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dv-public-main #top .dv-hero-stats > div {
+    padding: 0.75rem;
+  }
+
+  .dv-public-main #top .dv-hero-stats p:last-child {
+    font-size: 1.25rem;
+    line-height: 1.15;
+    overflow-wrap: normal;
+    white-space: nowrap;
+  }
+
+  .dv-public-main #top [class*="text-4xl"] {
+    font-size: 2.5rem;
+  }
+
+  .dv-legal-page header > div,
+  .dv-legal-page > div {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-public-shell *,
+  .dv-public-shell *::before,
+  .dv-public-shell *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

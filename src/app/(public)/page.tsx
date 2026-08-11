@@ -102,7 +102,7 @@ const SalonHero = () => {
         <div className="grid gap-8 lg:grid-cols-[0.88fr_1.12fr] lg:items-center">
           <div className="space-y-6">
             <Badge variant="accent" className="w-fit border-blue-200 bg-white text-blue-700">
-              Meta ads for salons
+              DeepVisor / Meta ads for salons
             </Badge>
 
             <div className="space-y-4">
@@ -118,7 +118,7 @@ const SalonHero = () => {
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="dv-hero-actions flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 asChild
                 size="lg"
@@ -137,7 +137,7 @@ const SalonHero = () => {
               </Button>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="dv-hero-stats grid gap-3 sm:grid-cols-3">
               {testStats.map((stat, index) => (
                 <div
                   key={stat.label}
@@ -264,14 +264,14 @@ const SignalStoryboard = () => {
           inset: 0;
           z-index: 0;
           content: "";
-          background: linear-gradient(90deg, rgba(37, 99, 235, 0.16), rgba(14, 165, 233, 0.08));
+          background: rgba(20, 168, 102, 0.12);
           transform: scaleX(0);
           transform-origin: left;
         }
 
         .dv-signal-action-icon {
-          color: #475569;
-          background: #e2e8f0;
+          color: #666c63;
+          background: #e2e6de;
         }
 
         .dv-signal-action-review {
@@ -387,16 +387,16 @@ const SignalStoryboard = () => {
           0%,
           47%,
           100% {
-            border-color: #e2e8f0;
-            background: #f8fafc;
+            border-color: #d5dad0;
+            background: #f4f5ef;
             box-shadow: none;
           }
 
           52%,
           88% {
-            border-color: rgba(37, 99, 235, 0.38);
-            background: #eff6ff;
-            box-shadow: 0 12px 28px rgba(37, 99, 235, 0.12);
+            border-color: rgba(11, 122, 75, 0.38);
+            background: #e8f4ed;
+            box-shadow: 0 8px 18px rgba(11, 122, 75, 0.1);
           }
         }
 
@@ -404,16 +404,16 @@ const SignalStoryboard = () => {
           0%,
           59%,
           100% {
-            border-color: #e2e8f0;
-            background: #f8fafc;
+            border-color: #d5dad0;
+            background: #f4f5ef;
             box-shadow: none;
           }
 
           64%,
           88% {
-            border-color: rgba(37, 99, 235, 0.38);
-            background: #eff6ff;
-            box-shadow: 0 12px 28px rgba(37, 99, 235, 0.12);
+            border-color: rgba(11, 122, 75, 0.38);
+            background: #e8f4ed;
+            box-shadow: 0 8px 18px rgba(11, 122, 75, 0.1);
           }
         }
 
@@ -421,16 +421,16 @@ const SignalStoryboard = () => {
           0%,
           71%,
           100% {
-            border-color: #e2e8f0;
-            background: #f8fafc;
+            border-color: #d5dad0;
+            background: #f4f5ef;
             box-shadow: none;
           }
 
           76%,
           88% {
-            border-color: rgba(37, 99, 235, 0.38);
-            background: #eff6ff;
-            box-shadow: 0 12px 28px rgba(37, 99, 235, 0.12);
+            border-color: rgba(11, 122, 75, 0.38);
+            background: #e8f4ed;
+            box-shadow: 0 8px 18px rgba(11, 122, 75, 0.1);
           }
         }
 
@@ -438,14 +438,14 @@ const SignalStoryboard = () => {
           0%,
           47%,
           100% {
-            color: #475569;
-            background: #e2e8f0;
+            color: #666c63;
+            background: #e2e6de;
           }
 
           52%,
           88% {
             color: #ffffff;
-            background: #2563eb;
+            background: #0b7a4b;
           }
         }
 
@@ -453,14 +453,14 @@ const SignalStoryboard = () => {
           0%,
           59%,
           100% {
-            color: #475569;
-            background: #e2e8f0;
+            color: #666c63;
+            background: #e2e6de;
           }
 
           64%,
           88% {
             color: #ffffff;
-            background: #2563eb;
+            background: #0b7a4b;
           }
         }
 
@@ -468,14 +468,14 @@ const SignalStoryboard = () => {
           0%,
           71%,
           100% {
-            color: #475569;
-            background: #e2e8f0;
+            color: #666c63;
+            background: #e2e6de;
           }
 
           76%,
           88% {
             color: #ffffff;
-            background: #2563eb;
+            background: #0b7a4b;
           }
         }
 
@@ -531,7 +531,7 @@ const SignalStoryboard = () => {
 
           .dv-signal-action-icon {
             color: #ffffff;
-            background: #2563eb;
+            background: #0b7a4b;
           }
         }
       `}</style>
@@ -810,7 +810,7 @@ const AnimatedGrowthWord = () => {
           display: flex;
           flex-wrap: wrap;
           gap: 1px;
-          font-size: clamp(3.1rem, 8vw, 6.6rem);
+          font-size: 6.5rem;
           font-weight: 950;
           line-height: 0.84;
           letter-spacing: 0;
@@ -821,31 +821,31 @@ const AnimatedGrowthWord = () => {
           color: var(--dv-letter-color);
           animation: dv-public-welcome-wave 2.9s ease-in-out infinite;
           animation-delay: calc(var(--letter-index) * 85ms);
-          filter: drop-shadow(0 14px 24px rgba(37, 99, 235, 0.1));
+          filter: drop-shadow(0 8px 14px rgba(11, 122, 75, 0.09));
         }
 
         .dv-public-welcome span:nth-child(1) {
-          --dv-letter-color: #2563eb;
+          --dv-letter-color: #0b7a4b;
         }
 
         .dv-public-welcome span:nth-child(2) {
-          --dv-letter-color: #0891b2;
+          --dv-letter-color: #14a866;
         }
 
         .dv-public-welcome span:nth-child(3) {
-          --dv-letter-color: #059669;
+          --dv-letter-color: #151714;
         }
 
         .dv-public-welcome span:nth-child(4) {
-          --dv-letter-color: #e11d48;
+          --dv-letter-color: #0b7a4b;
         }
 
         .dv-public-welcome span:nth-child(5) {
-          --dv-letter-color: #7c3aed;
+          --dv-letter-color: #6e6bf4;
         }
 
         .dv-public-welcome span:nth-child(6) {
-          --dv-letter-color: #0f766e;
+          --dv-letter-color: #14a866;
         }
 
         @keyframes dv-public-welcome-wave {
@@ -862,6 +862,18 @@ const AnimatedGrowthWord = () => {
         @media (prefers-reduced-motion: reduce) {
           .dv-public-welcome span {
             animation: none;
+          }
+        }
+
+        @media (max-width: 767px) {
+          .dv-public-welcome {
+            font-size: 4.5rem;
+          }
+        }
+
+        @media (max-width: 479px) {
+          .dv-public-welcome {
+            font-size: 3.1rem;
           }
         }
       `}</style>

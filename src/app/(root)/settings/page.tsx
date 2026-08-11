@@ -30,6 +30,7 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import {
   getTierLimits,
+  getUnreadUserNotificationIds,
   getUserNotifications,
   getUserSubscriptionTier,
 } from '@/lib/server/actions/user/settings';
@@ -47,6 +48,7 @@ import { getAdAccountData, getBusinessAdAccountsRollup, getPlatformDetails } fro
 import { formatNotificationPreviewMessage } from '@/lib/shared';
 import { createServerClient } from '@/lib/server/supabase/server';
 import IntelligencePreferencesCard from './components/IntelligencePreferencesCard';
+import classes from './SettingsSurface.module.css';
 
 type BusinessProfileSettings = {
   business_name: string;
@@ -165,16 +167,28 @@ function formatReportWindow(report: ArchivedReport): string {
   return start === end ? start : `${start} - ${end}`;
 }
 
-function formatCurrency(value: number | null): string {
+function formatCurrency(value: number | null, currencyCode: string | null): string {
   if (typeof value !== 'number') {
     return 'n/a';
   }
 
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 2,
-  }).format(value);
+  if (currencyCode?.toUpperCase() === 'MIXED') {
+    return value.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  }
+
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode || 'USD',
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
 }
 
 function formatNumber(value: number | null): string {
@@ -234,11 +248,11 @@ function statusColor(status: string | null | undefined): string {
   switch (String(status ?? '').toLowerCase()) {
     case 'connected':
     case 'active':
-      return 'green';
+      return 'signal';
     case 'error':
-      return 'red';
+      return '#e76156';
     case 'needs_reauth':
-      return 'yellow';
+      return '#d69324';
     case 'disconnected':
       return 'gray';
     default:
@@ -379,6 +393,7 @@ export default async function SettingsPage() {
     rollup,
     subscriptionTier,
     notificationsRaw,
+    unreadNotificationIds,
     selectedPlatform,
     selectedAdAccount,
     notificationPreference,
@@ -402,6 +417,7 @@ export default async function SettingsPage() {
     getBusinessAdAccountsRollup(businessId),
     getUserSubscriptionTier(user.id),
     getUserNotifications(user.id, 5),
+    getUnreadUserNotificationIds(user.id),
     selection.selectedPlatformId
       ? getPlatformDetails(selection.selectedPlatformId, businessId)
       : Promise.resolve(null),
@@ -457,7 +473,7 @@ export default async function SettingsPage() {
   });
 
   const notifications = notificationsRaw.map(normalizeNotification);
-  const unreadCount = notifications.filter((notification) => !notification.read).length;
+  const unreadCount = unreadNotificationIds.length;
   const connectedIntegrationsCount = integrations.filter(
     (integration) => String(integration.status).toLowerCase() === 'connected'
   ).length;
@@ -485,8 +501,8 @@ export default async function SettingsPage() {
   const archivedReportGroups = groupArchivedReports(archivedReports);
 
   return (
-    <Container size="xl" pb="xl">
-      <Stack gap="lg">
+    <Container size="xl" pb="xl" className={`${classes.page} dv-app-page`}>
+      <Stack gap="lg" className={classes.pageStack}>
         <Card
           withBorder
           radius="lg"
@@ -499,10 +515,10 @@ export default async function SettingsPage() {
                 <Badge variant="light" className="app-platform-page-badge">
                   Settings
                 </Badge>
-                <Badge color="cyan" variant="outline">
+                <Badge color="signal" variant="outline">
                   {organizationName}
                 </Badge>
-                <Badge color="green" variant="light">
+                <Badge color="signal" variant="light">
                   {formatPlanTier(subscriptionTier)}
                 </Badge>
               </Group>
@@ -538,7 +554,7 @@ export default async function SettingsPage() {
               radius="lg"
               p="md"
               className="app-platform-page-hero-panel"
-              style={{ minWidth: 320 }}
+              style={{ minWidth: 0, width: 'min(100%, 360px)', flex: '0 1 360px' }}
             >
               <Stack gap="sm">
                 <InfoRow label="Current focus" value={focusLabel} />
@@ -595,28 +611,28 @@ export default async function SettingsPage() {
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
           <SummaryCard
             icon={<IconUser size={18} />}
-            color="blue"
+            color="signal"
             label="Account"
             title={`${user.first_name} ${user.last_name}`.trim()}
             detail={`${user.email}${user.phone_number ? ` · ${user.phone_number}` : ''}`}
           />
           <SummaryCard
             icon={<IconTargetArrow size={18} />}
-            color="teal"
+            color="signal"
             label="Workspace"
             title={businessProfile.business_name}
             detail={`${profileSetupCount}/6 profile inputs filled${businessProfile.industry ? ` · ${businessProfile.industry}` : ''}`}
           />
           <SummaryCard
             icon={<IconLock size={18} />}
-            color="grape"
+            color="signal"
             label="Plan"
             title={formatPlanTier(subscriptionTier)}
             detail={`${accountUsageText} · ${limits.maxPlatforms.length} supported platform types on this tier`}
           />
           <SummaryCard
             icon={<IconDatabase size={18} />}
-            color="orange"
+            color="signal"
             label="Data"
             title={`${rollup.syncedAccountCount}/${Math.max(rollup.accountCount, 1)} synced accounts`}
             detail={
@@ -639,14 +655,14 @@ export default async function SettingsPage() {
                 workspace and what the business is trying to achieve.
               </Text>
             </div>
-            <Badge color={onboarding.onboarding_completed ? 'green' : 'yellow'} variant="light">
+            <Badge color={onboarding.onboarding_completed ? 'signal' : '#d69324'} variant="light">
               {onboarding.onboarding_completed ? 'Onboarding complete' : 'Onboarding in progress'}
             </Badge>
           </Group>
 
           {!onboarding.onboarding_completed ? (
             <Alert
-              color="yellow"
+              color="#d69324"
               radius="md"
               icon={<IconAlertTriangle size={16} />}
               title="Business setup is still in progress"
@@ -662,7 +678,7 @@ export default async function SettingsPage() {
           <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
             <Paper withBorder radius="md" p="md">
               <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="blue" radius="md">
+                <ThemeIcon variant="light" color="signal" radius="md">
                   <IconUser size={16} />
                 </ThemeIcon>
                 <div>
@@ -689,7 +705,7 @@ export default async function SettingsPage() {
 
             <Paper withBorder radius="md" p="md">
               <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="teal" radius="md">
+                <ThemeIcon variant="light" color="signal" radius="md">
                   <IconChartBar size={16} />
                 </ThemeIcon>
                 <div>
@@ -718,7 +734,7 @@ export default async function SettingsPage() {
               <Group gap="xs" wrap="wrap">
                 {(businessProfile.ad_goals ?? []).length > 0 ? (
                   businessProfile.ad_goals?.map((goal) => (
-                    <Badge key={goal} color="blue" variant="light">
+                    <Badge key={goal} color="signal" variant="light">
                       {goal.replace(/_/g, ' ')}
                     </Badge>
                   ))
@@ -734,7 +750,7 @@ export default async function SettingsPage() {
               <Group gap="xs" wrap="wrap">
                 {(businessProfile.preferred_platforms ?? []).length > 0 ? (
                   businessProfile.preferred_platforms?.map((platform) => (
-                    <Badge key={platform} color="cyan" variant="light">
+                    <Badge key={platform} color="signal" variant="light">
                       {platform}
                     </Badge>
                   ))
@@ -760,7 +776,7 @@ export default async function SettingsPage() {
                 toggles that do not matter yet.
               </Text>
             </div>
-            <Badge color={unreadCount > 0 ? 'blue' : 'gray'} variant="light">
+            <Badge color={unreadCount > 0 ? 'signal' : 'gray'} variant="light">
               {unreadCount} unread
             </Badge>
           </Group>
@@ -773,7 +789,7 @@ export default async function SettingsPage() {
 
             <Paper withBorder radius="md" p="md">
               <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="blue" radius="md">
+                <ThemeIcon variant="light" color="signal" radius="md">
                   <IconBell size={16} />
                 </ThemeIcon>
                 <div>
@@ -792,7 +808,7 @@ export default async function SettingsPage() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <Group gap="xs" mb={4} wrap="wrap">
                             {!notification.read ? (
-                              <Badge color="blue" variant="light">
+                              <Badge color="signal" variant="light">
                                 Unread
                               </Badge>
                             ) : null}
@@ -835,48 +851,6 @@ export default async function SettingsPage() {
               </Stack>
             </Paper>
 
-            <Paper withBorder radius="md" p="md">
-              <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="teal" radius="md">
-                  <IconTargetArrow size={16} />
-                </ThemeIcon>
-                <div>
-                  <Text fw={700}>How this workspace operates</Text>
-                  <Text size="sm" c="dimmed">
-                    The role of each major page in the product
-                  </Text>
-                </div>
-              </Group>
-
-              <Stack gap="sm">
-                <Paper withBorder radius="md" p="sm">
-                  <Text fw={700} size="sm">
-                    Dashboard
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    Use Dashboard for the daily operating read on the selected account.
-                  </Text>
-                </Paper>
-                <Paper withBorder radius="md" p="sm">
-                  <Text fw={700} size="sm">
-                    Reports
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    Use Reports when you want the explanation layer: what got stronger, what got
-                    weaker, and what changed over time.
-                  </Text>
-                </Paper>
-                <Paper withBorder radius="md" p="sm">
-                  <Text fw={700} size="sm">
-                    Calendar
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    Use Calendar when you want to approve or manage the queued work DeepVisor wants
-                    to execute next.
-                  </Text>
-                </Paper>
-              </Stack>
-            </Paper>
           </SimpleGrid>
         </Card>
 
@@ -892,7 +866,7 @@ export default async function SettingsPage() {
                 reporting level.
               </Text>
             </div>
-            <Badge color={archivedReports.length > 0 ? 'blue' : 'gray'} variant="light">
+            <Badge color={archivedReports.length > 0 ? 'signal' : 'gray'} variant="light">
               {archivedReports.length} saved
             </Badge>
           </Group>
@@ -903,7 +877,7 @@ export default async function SettingsPage() {
                 <Paper key={group.key} withBorder radius="md" p="md">
                   <Group justify="space-between" align="center" mb="sm" wrap="wrap">
                     <Group gap="sm">
-                      <ThemeIcon variant="light" color="blue" radius="md">
+                      <ThemeIcon variant="light" color="signal" radius="md">
                         <IconFileAnalytics size={16} />
                       </ThemeIcon>
                       <div>
@@ -922,7 +896,7 @@ export default async function SettingsPage() {
                         <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <Group gap="xs" mb={6} wrap="wrap">
-                              <Badge color="blue" variant="light">
+                              <Badge color="signal" variant="light">
                                 {report.levelLabel}
                               </Badge>
                               {report.adAccountName ? (
@@ -934,7 +908,7 @@ export default async function SettingsPage() {
                                 {formatReportWindow(report)}
                               </Badge>
                               {report.storagePath ? (
-                                <Badge color="green" variant="light">
+                                <Badge color="signal" variant="light">
                                   PDF stored
                                 </Badge>
                               ) : null}
@@ -944,7 +918,7 @@ export default async function SettingsPage() {
                             </Text>
                             <Group gap="md" mt={6} wrap="wrap">
                               <Text size="xs" c="dimmed">
-                                Spend {formatCurrency(report.summary.spend)}
+                                Spend {formatCurrency(report.summary.spend, report.currencyCode)}
                               </Text>
                               <Text size="xs" c="dimmed">
                                 Results {formatNumber(report.summary.results)}
@@ -953,7 +927,11 @@ export default async function SettingsPage() {
                                 CTR {formatPercent(report.summary.ctr)}
                               </Text>
                               <Text size="xs" c="dimmed">
-                                Cost/result {formatCurrency(report.summary.costPerResult)}
+                                Cost/result{' '}
+                                {formatCurrency(
+                                  report.summary.costPerResult,
+                                  report.currencyCode
+                                )}
                               </Text>
                             </Group>
                           </div>
@@ -1032,7 +1010,7 @@ export default async function SettingsPage() {
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md" mb="md">
             <SummaryCard
               icon={<IconPlug size={18} />}
-              color="blue"
+              color="signal"
               label="Platforms"
               title={`${connectedIntegrationsCount}/${Math.max(integrations.length, 1)} connected`}
               detail={
@@ -1043,21 +1021,21 @@ export default async function SettingsPage() {
             />
             <SummaryCard
               icon={<IconChartBar size={18} />}
-              color="teal"
+              color="signal"
               label="Ad Accounts"
               title={String(rollup.accountCount)}
               detail={`${rollup.activeAccountCount} active · ${rollup.syncedAccountCount} synced`}
             />
             <SummaryCard
               icon={<IconClock size={18} />}
-              color="grape"
+              color="signal"
               label="Latest sync"
               title={formatRelativeTime(rollup.lastSyncedAt)}
               detail={rollup.lastSyncedAt ? formatDateTime(rollup.lastSyncedAt) : 'Waiting for first sync'}
             />
             <SummaryCard
               icon={<IconTargetArrow size={18} />}
-              color="orange"
+              color="signal"
               label="Current focus"
               title={selectedAdAccount?.name ?? selectedPlatform?.displayName ?? 'Not set'}
               detail={focusLabel}
@@ -1121,11 +1099,10 @@ export default async function SettingsPage() {
               </Text>
               <Title order={3}>Plan, permissions, and data actions</Title>
               <Text size="sm" c="dimmed" mt={4}>
-                Keep this page honest about what is available now: your workspace role, current
-                plan boundaries, and the safest actions for data review.
+                Current workspace role, plan limits, and account-level data controls.
               </Text>
             </div>
-            <Badge color="green" variant="light">
+            <Badge color="signal" variant="light">
               {formatPlanTier(subscriptionTier)}
             </Badge>
           </Group>
@@ -1133,13 +1110,13 @@ export default async function SettingsPage() {
           <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
             <Paper withBorder radius="md" p="md">
               <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="grape" radius="md">
+                <ThemeIcon variant="light" color="signal" radius="md">
                   <IconLock size={16} />
                 </ThemeIcon>
                 <div>
                   <Text fw={700}>Plan and permissions</Text>
                   <Text size="sm" c="dimmed">
-                    Limits that define how this workspace can operate
+                    Limits currently applied to this workspace
                   </Text>
                 </div>
               </Group>
@@ -1168,7 +1145,7 @@ export default async function SettingsPage() {
 
             <Paper withBorder radius="md" p="md">
               <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="orange" radius="md">
+                <ThemeIcon variant="light" color="signal" radius="md">
                   <IconDatabase size={16} />
                 </ThemeIcon>
                 <div>
@@ -1193,7 +1170,7 @@ export default async function SettingsPage() {
                     size="xs"
                     radius="xl"
                     variant="light"
-                    color="blue"
+                    color="signal"
                     mt="md"
                   >
                     Open reports
@@ -1224,7 +1201,7 @@ export default async function SettingsPage() {
                 <Alert
                   icon={<IconAlertTriangle size={16} />}
                   title="Danger zone"
-                  color="red"
+                  color="#e76156"
                   variant="light"
                   radius="md"
                 >

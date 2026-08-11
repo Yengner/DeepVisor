@@ -80,15 +80,15 @@ function phaseDotClass(status: PhaseStatus) {
 function statusColor(status: PhaseStatus) {
   switch (status) {
     case 'complete':
-      return 'green';
+      return '#0b7a4b';
     case 'running':
-      return 'blue';
+      return '#0b7a4b';
     case 'error':
-      return 'red';
+      return '#e76156';
     case 'skipped':
-      return 'gray';
+      return '#747970';
     default:
-      return 'gray';
+      return '#747970';
   }
 }
 
@@ -254,41 +254,78 @@ export default function PreparationClient({
 
   return (
     <div className={classes.page}>
-      <Container size="lg" className={classes.shell}>
-        <Card withBorder radius="xl" p={{ base: 'lg', md: 'xl' }} className={classes.mainCard}>
-          <Stack gap="xl">
-            <Group justify="space-between" align="flex-start" gap="lg" wrap="wrap">
-              <div>
-                <Badge color={hasConnectedPlatform ? 'blue' : 'gray'} variant="light" size="lg">
-                  {platformLabel}
-                </Badge>
-                <Title order={1} mt="sm">
-                  Preparing {businessName || 'your business'} for DeepVisor
-                </Title>
-                <Text c="dimmed" size="lg" mt="xs" maw={720}>
-                  We are checking connected ad data, reading account history, and preparing the first recommendations before you land in the dashboard.
-                </Text>
-              </div>
+      <Container size="xl" className={classes.shell}>
+        <header className={classes.topBar}>
+          <div className={classes.brandLockup}>
+            <span className={classes.brandMark}>DV</span>
+            <span>DEEPVISOR</span>
+            <span className={classes.brandSection}>WORKSPACE PREP</span>
+          </div>
+          <span className={classes.secureLabel}>SECURE INITIALIZATION</span>
+        </header>
 
-              <ThemeIcon color={done ? 'green' : errorMessage ? 'red' : 'blue'} size={58} radius="xl" variant="light">
-                {done ? <IconCheck size={30} /> : errorMessage ? <IconAlertCircle size={30} /> : <IconRefresh size={30} />}
+        <div className={classes.prepGrid}>
+          <aside className={classes.statusPanel}>
+            <div className={classes.panelTopline}>
+              <Badge variant="light" size="md" radius="sm" className={classes.platformBadge}>
+                {platformLabel}
+              </Badge>
+              <ThemeIcon
+                size={48}
+                radius="sm"
+                variant="light"
+                className={`${classes.statusIcon} ${errorMessage ? classes.errorStatusIcon : ''} ${!done && !errorMessage ? classes.workingIcon : ''}`}
+              >
+                {done ? <IconCheck size={25} /> : errorMessage ? <IconAlertCircle size={25} /> : <IconRefresh size={25} />}
               </ThemeIcon>
-            </Group>
+            </div>
 
-            <Stack gap="xs">
-              <Group justify="space-between">
-                <Text fw={700}>
-                  {done ? 'Ready for dashboard' : runningPhase?.title ?? 'Preparing workspace'}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  {progress}% complete
-                </Text>
+            <div>
+              <span className={classes.panelKicker}>WORKSPACE INITIALIZATION</span>
+              <Title order={1} className={classes.panelTitle}>
+                Preparing {businessName || 'your business'}.
+              </Title>
+              <Text className={classes.panelCopy}>
+                DeepVisor is checking your data and assembling the first decision-ready account view.
+              </Text>
+            </div>
+
+            <div className={classes.progressBlock}>
+              <Group justify="space-between" align="flex-end" gap="md">
+                <div>
+                  <span>CURRENT CHECK</span>
+                  <strong>{done ? 'Ready for dashboard' : runningPhase?.title ?? 'Preparing workspace'}</strong>
+                </div>
+                <b>{progress}%</b>
               </Group>
-              <Progress value={progress} radius="xl" size="lg" color={errorMessage ? 'red' : done ? 'green' : 'blue'} animated={!done && !errorMessage} />
-            </Stack>
+              <Progress
+                value={progress}
+                radius={0}
+                size={7}
+                color={errorMessage ? '#e76156' : '#c8ff56'}
+                animated={!done && !errorMessage}
+                className={classes.progressBar}
+              />
+            </div>
+
+            <div className={classes.panelFootnote}>
+              {done
+                ? 'Your first workspace read is ready.'
+                : 'You can continue in the background at any time.'}
+            </div>
+          </aside>
+
+          <section className={classes.pipeline}>
+            <div className={classes.pipelineHeader}>
+              <div>
+                <span className={classes.pipelineKicker}>SETUP PIPELINE</span>
+                <Title order={2}>Workspace checks</Title>
+              </div>
+              <span className={classes.pipelineCount}>{completedCount} / {phases.length} COMPLETE</span>
+            </div>
 
             {errorMessage ? (
-              <Alert color="red" radius="lg" icon={<IconAlertCircle size={16} />} title="Preparation needs review">
+              <Alert color="red" radius="sm" icon={<IconAlertCircle size={16} />} title="Preparation needs review" className={classes.errorAlert}>
                 <Text size="sm">{errorMessage}</Text>
                 <Group mt="md" gap="sm">
                   <Button size="xs" variant="light" color="red" onClick={() => void runPreparation()}>
@@ -301,79 +338,76 @@ export default function PreparationClient({
               </Alert>
             ) : null}
 
-            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
-              <Card withBorder radius="lg" p="md" className={classes.statusCard}>
-                <Group gap="sm" mb="md">
-                  <ThemeIcon color="blue" variant="light" radius="md">
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+              <Card withBorder radius="sm" p="md" className={classes.statusCard}>
+                <Group gap="sm" mb="sm" wrap="nowrap">
+                  <ThemeIcon variant="light" radius="sm" className={classes.featureIcon}>
                     <IconDatabaseImport size={18} />
                   </ThemeIcon>
                   <div>
                     <Text fw={800}>Data ingestion</Text>
-                    <Text size="sm" c="dimmed">Campaigns, ad sets, ads, creatives, metrics</Text>
+                    <Text size="xs" c="dimmed">Campaigns, ads, creatives, metrics</Text>
                   </div>
                 </Group>
                 <Text size="sm" c="dimmed">
-                  Live ingestion runs when a platform is connected and one primary ad account is available. Otherwise DeepVisor starts in preview mode.
+                  Connected accounts sync live history. Unconnected workspaces begin in preview mode.
                 </Text>
               </Card>
 
-              <Card withBorder radius="lg" p="md" className={classes.statusCard}>
-                <Group gap="sm" mb="md">
-                  <ThemeIcon color="green" variant="light" radius="md">
+              <Card withBorder radius="sm" p="md" className={classes.statusCard}>
+                <Group gap="sm" mb="sm" wrap="nowrap">
+                  <ThemeIcon variant="light" radius="sm" className={classes.featureIcon}>
                     <IconTargetArrow size={18} />
                   </ThemeIcon>
                   <div>
                     <Text fw={800}>Account intelligence</Text>
-                    <Text size="sm" c="dimmed">Strengths, weak spots, next decisions</Text>
+                    <Text size="xs" c="dimmed">Strengths, risks, next decisions</Text>
                   </div>
                 </Group>
                 <Text size="sm" c="dimmed">
-                  Assessments populate DeepVisor&apos;s quick reads, report recommendations, and calendar planning context.
+                  Assessments feed quick reads, report recommendations, and planning context.
                 </Text>
               </Card>
             </SimpleGrid>
 
-            <Stack gap="sm">
-              {phases.map((phase) => (
+            <div className={classes.phaseList}>
+              {phases.map((phase, index) => (
                 <div key={phase.key} className={classes.phaseRow}>
-                  <Group justify="space-between" align="flex-start" gap="md" wrap="nowrap">
-                    <Group gap="sm" align="flex-start" wrap="nowrap">
-                      <span className={phaseDotClass(phase.status)} />
-                      <div>
-                        <Text fw={800}>{phase.title}</Text>
-                        <Text size="sm" c="dimmed" mt={3}>{phase.detail}</Text>
-                      </div>
-                    </Group>
-                    <Badge color={statusColor(phase.status)} variant="light" radius="sm">
-                      {phaseStatusLabel(phase.status)}
-                    </Badge>
-                  </Group>
+                  <span className={classes.phaseIndex}>{String(index + 1).padStart(2, '0')}</span>
+                  <span className={phaseDotClass(phase.status)} />
+                  <div className={classes.phaseContent}>
+                    <Text fw={800}>{phase.title}</Text>
+                    <Text size="sm" c="dimmed" mt={3}>{phase.detail}</Text>
+                  </div>
+                  <Badge color={statusColor(phase.status)} variant="light" radius="sm" className={classes.phaseBadge}>
+                    {phaseStatusLabel(phase.status)}
+                  </Badge>
                 </div>
               ))}
-            </Stack>
+            </div>
 
-            <Group justify="space-between" gap="md" wrap="wrap">
-              <Group gap="xs">
-                <ThemeIcon color="yellow" variant="light" radius="xl">
+            <footer className={classes.actionFooter}>
+              <Group gap="xs" wrap="nowrap" className={classes.actionNote}>
+                <ThemeIcon variant="light" radius="sm" className={classes.insightIcon}>
                   <IconSparkles size={16} />
                 </ThemeIcon>
                 <Text size="sm" c="dimmed">
                   {done
                     ? 'Taking you to the dashboard now.'
-                    : 'This can take a moment on the first connected ad account.'}
+                    : 'The first connected account can take a moment.'}
                 </Text>
               </Group>
               <Button
                 variant={done ? 'filled' : 'default'}
-                color={done ? 'green' : 'gray'}
                 rightSection={<IconCalendarTime size={16} />}
                 onClick={() => router.replace('/dashboard')}
+                className={done ? classes.primaryButton : classes.secondaryButton}
               >
                 {done ? 'Open dashboard' : 'Continue in background'}
               </Button>
-            </Group>
-          </Stack>
-        </Card>
+            </footer>
+          </section>
+        </div>
       </Container>
     </div>
   );

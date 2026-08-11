@@ -7,9 +7,9 @@ interface LoadingStateProps {
 export function LoadingState({ message = 'Loading...' }: LoadingStateProps) {
   return (
     <Center className="min-h-[300px]">
-      <Stack align="center">
-        <Loader size="lg" />
-        <Text c="dimmed">{message}</Text>
+      <Stack align="center" gap="sm">
+        <Loader size="sm" color="signal" />
+        <Text c="dimmed" size="sm" fw={650}>{message}</Text>
       </Stack>
     </Center>
   );

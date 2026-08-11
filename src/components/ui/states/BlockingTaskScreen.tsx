@@ -27,13 +27,13 @@ export default function BlockingTaskScreen({
       overlayProps={{ opacity: 0.18, blur: 2 }}
     >
       <div className={classes.viewport}>
-        <Paper p="xl" radius="xl" className={classes.overlayCard}>
+        <Paper p="xl" radius="md" className={classes.overlayCard}>
           <Stack gap="lg" align="center" ta="center" className={classes.content}>
-            <div className={classes.ballStage} aria-hidden="true">
-              <div className={classes.ball} />
-              <div className={classes.ballShadow} />
-              <div className={`${classes.ripple} ${classes.ripplePrimary}`} />
-              <div className={`${classes.ripple} ${classes.rippleSecondary}`} />
+            <div className={classes.signalStage} aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <span />
             </div>
             <Stack gap={6} maw={320}>
               <Title order={3}>{title}</Title>

@@ -42,7 +42,7 @@ export default function CampaignStats({
   const formatCurrency = (num: number): string => `$${num.toFixed(2)}`;
 
   return (
-    <Card withBorder radius="lg" p="md" style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.06), rgba(14,165,233,0.02))' }}>
+    <Card withBorder radius="md" p="md" style={{ background: 'var(--dv-surface)' }}>
       <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="md">
         <StatCard
           label="Campaigns"

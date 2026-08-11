@@ -12,7 +12,12 @@ import {
   ThemeIcon,
   Title,
 } from '@mantine/core';
-import { IconArrowRight, IconCheck, IconShieldCheck } from '@tabler/icons-react';
+import {
+  IconArrowRight,
+  IconCheck,
+  IconChevronLeft,
+  IconShieldCheck,
+} from '@tabler/icons-react';
 import type { UserData } from '../types';
 import {
   AVERAGE_CUSTOMER_VALUE_OPTIONS,
@@ -31,6 +36,7 @@ import {
   WATCH_SIGNAL_OPTIONS,
   labelForOption,
 } from '@/lib/shared/onboarding/businessProfileOptions';
+import styles from './OnboardingSteps.module.css';
 
 type ReviewStartStepProps = {
   onComplete: () => void;
@@ -47,7 +53,7 @@ function labelsForValues(values: string[], options: { value: string; label: stri
 
 function SummaryItem({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className={styles.summaryItem}>
       <Text size="xs" tt="uppercase" fw={800} c="dimmed">
         {label}
       </Text>
@@ -66,30 +72,30 @@ export default function ReviewStartStep({
   const watchSignalLabels = labelsForValues(userData.watchSignals, WATCH_SIGNAL_OPTIONS);
 
   return (
-    <Stack gap="xl" py={16}>
-      <div>
-        <Badge variant="light" color="green" radius="xl" display="block" w="fit-content" mx="auto" mb="sm">
+    <Stack gap="lg" className={styles.stepRoot}>
+      <div className={styles.stepIntro}>
+        <Badge variant="light" color="green" radius="sm" mb="sm" className={styles.readyBadge}>
           Ready to start
         </Badge>
-        <Title order={2} ta="center">
-          Review your DeepVisor setup
+        <Title order={2} className={styles.stepTitle}>
+          Confirm your decision profile.
         </Title>
-        <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto mb-6">
+        <Text className={styles.stepCopy}>
           These answers guide reports, campaign reviews, active findings, and future decision support.
         </Text>
       </div>
 
-      <Card withBorder radius="lg" p="lg">
+      <Card withBorder radius="sm" p="lg" className={`${styles.sectionCard} ${styles.summaryHero}`}>
         <Stack gap="lg">
           <Group justify="space-between" align="flex-start">
-            <div>
+            <div className={styles.summaryBusiness}>
               <Title order={3}>{userData.businessName || 'Your salon'}</Title>
               <Text c="dimmed">
                 {labelForOption(userData.industry, SALON_INDUSTRY_OPTIONS)} in{' '}
                 {userData.businessLocation || 'your market'}
               </Text>
             </div>
-            <ThemeIcon color="green" variant="light" radius="xl" size="lg">
+            <ThemeIcon color="green" variant="light" radius="sm" size="lg" className={styles.summaryIcon}>
               <IconShieldCheck size={22} />
             </ThemeIcon>
           </Group>
@@ -147,27 +153,28 @@ export default function ReviewStartStep({
       </Card>
 
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-        <Card withBorder radius="lg" p="lg">
+        <Card withBorder radius="sm" p="lg" className={styles.sectionCard}>
           <Title order={4} mb="sm">
             Services DeepVisor should understand
           </Title>
-          <Group gap="xs">
+          <Group gap="xs" className={styles.tagGroup}>
             {(promotedServiceLabels.length > 0 ? promotedServiceLabels : ['No services selected']).map((service) => (
-              <Badge key={service} variant="light" color="blue">
+              <Badge key={service} variant="light" color="green">
                 {service}
               </Badge>
             ))}
           </Group>
         </Card>
 
-        <Card withBorder radius="lg" p="lg">
+        <Card withBorder radius="sm" p="lg" className={styles.sectionCard}>
           <Title order={4} mb="sm">
             DeepVisor will watch for
           </Title>
           <List
             spacing="xs"
+            className={styles.watchList}
             icon={
-              <ThemeIcon color="blue" size={20} radius="xl" variant="light">
+              <ThemeIcon color="green" size={20} radius="sm" variant="light" className={styles.watchIcon}>
                 <IconCheck size={12} />
               </ThemeIcon>
             }
@@ -179,7 +186,7 @@ export default function ReviewStartStep({
         </Card>
       </SimpleGrid>
 
-      <Card withBorder radius="lg" p="lg" bg="gray.0">
+      <Card withBorder radius="sm" p="lg" className={styles.controlPanel}>
         <Text fw={800}>You stay in control.</Text>
         <Text c="dimmed" mt={4}>
           DeepVisor can recommend actions and prepare drafts, but it will not publish, pause,
@@ -190,11 +197,23 @@ export default function ReviewStartStep({
         </Text>
       </Card>
 
-      <Group justify="space-between">
-        <Button variant="light" onClick={onPrev} type="button">
+      <Group justify="space-between" className={styles.actionBar}>
+        <Button
+          variant="default"
+          onClick={onPrev}
+          type="button"
+          leftSection={<IconChevronLeft size={16} />}
+          className={styles.secondaryButton}
+        >
           Back
         </Button>
-        <Button size="md" rightSection={<IconArrowRight size={18} />} onClick={onComplete} loading={loading}>
+        <Button
+          size="md"
+          rightSection={<IconArrowRight size={18} />}
+          onClick={onComplete}
+          loading={loading}
+          className={styles.primaryButton}
+        >
           Start DeepVisor
         </Button>
       </Group>

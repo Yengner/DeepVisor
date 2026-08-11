@@ -1,10 +1,7 @@
 'use client';
 
 import '@mantine/charts/styles.css';
-import '@mantine/dates/styles.css';
-
 import { BarChart, ChartTooltip, LineChart } from '@mantine/charts';
-import { DatePicker } from '@mantine/dates';
 import {
   ActionIcon,
   Alert,
@@ -16,7 +13,6 @@ import {
   Group,
   Indicator,
   Modal,
-  NumberInput,
   Paper,
   Popover,
   ScrollArea,
@@ -564,54 +560,6 @@ function formatDateSpan(start: string | null, end: string | null): string | null
   }
 
   return startLabel ?? endLabel ?? null;
-}
-
-function addDaysToIsoDate(value: string, days: number): string | null {
-  const date = new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
-function daysBetweenIsoDates(fromDate: string, toDate: string): number {
-  const from = new Date(`${fromDate}T00:00:00Z`);
-  const to = new Date(`${toDate}T00:00:00Z`);
-
-  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
-    return 0;
-  }
-
-  return Math.round((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000));
-}
-
-function getDateDayNumber(value: string): number {
-  const date = new Date(`${value}T00:00:00Z`);
-  return Number.isNaN(date.getTime()) ? 0 : date.getUTCDate();
-}
-
-function clampExtensionDays(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 14;
-  }
-
-  return Math.min(365, Math.max(1, Math.round(value)));
-}
-
-function getTrendPointDateKey(point: DashboardTrendPoint): string | null {
-  return point.dayKey ?? point.label.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? null;
-}
-
-function hasActiveDeliveryPoint(point: DashboardTrendPoint): boolean {
-  return (
-    point.spend > 0 ||
-    point.impressions > 0 ||
-    point.clicks > 0 ||
-    point.inlineLinkClicks > 0 ||
-    point.results > 0
-  );
 }
 
 function toUtcIsoDate(value: Date): string {
@@ -1694,7 +1642,7 @@ function DataSummaryBox({
         <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
           <span
             className={classes.dataSummaryDot}
-            style={{ backgroundColor: summary.color ?? '#2563eb' }}
+            style={{ backgroundColor: summary.color ?? '#14a866' }}
           />
           <div className={classes.dataSummaryText}>
             <Text size="xs" fw={800} className={classes.dataSummaryLabel}>
@@ -2408,19 +2356,24 @@ function buildTrendChartConfig(input: {
   trendPoints: DashboardPayload['featuredAdsetHistory']['dailyTrend'];
   currencyCode: string | null;
 }): TrendChartConfig {
+  const currencyCode = input.currencyCode?.trim().toUpperCase() || 'USD';
+  const spendSeriesName = `Spend (${currencyCode})`;
+  const cpcSeriesName = `CPC (${currencyCode})`;
+  const cpmSeriesName = `CPM (${currencyCode})`;
+
   if (input.granularity === 'hourly') {
     if (input.trendMode === 'efficiency') {
       return {
         data: input.trendPoints.map((point) => ({
           label: point.label,
           'CTR (%)': Number(point.ctr.toFixed(2)),
-          'CPC ($)': Number(point.cpc.toFixed(2)),
-          'CPM ($)': Number(point.cpm.toFixed(2)),
+          [cpcSeriesName]: Number(point.cpc.toFixed(2)),
+          [cpmSeriesName]: Number(point.cpm.toFixed(2)),
         })),
         series: [
           { name: 'CTR (%)', color: FEATURED_HISTORY_COLORS.ctr },
-          { name: 'CPC ($)', color: FEATURED_HISTORY_COLORS.cpc },
-          { name: 'CPM ($)', color: FEATURED_HISTORY_COLORS.cpm },
+          { name: cpcSeriesName, color: FEATURED_HISTORY_COLORS.cpc },
+          { name: cpmSeriesName, color: FEATURED_HISTORY_COLORS.cpm },
         ],
         title: 'CTR, CPC, and CPM by hour',
         description:
@@ -2468,12 +2421,12 @@ function buildTrendChartConfig(input: {
     return {
       data: input.trendPoints.map((point) => ({
         label: point.label,
-        'Spend ($)': Number(point.spend.toFixed(2)),
+        [spendSeriesName]: Number(point.spend.toFixed(2)),
         Results: point.results,
         Clicks: point.clicks,
       })),
       series: [
-        { name: 'Spend ($)', color: FEATURED_HISTORY_COLORS.spend },
+        { name: spendSeriesName, color: FEATURED_HISTORY_COLORS.spend },
         { name: 'Results', color: FEATURED_HISTORY_COLORS.results },
         { name: 'Clicks', color: FEATURED_HISTORY_COLORS.clicks },
       ],
@@ -2489,13 +2442,13 @@ function buildTrendChartConfig(input: {
       data: input.trendPoints.map((point) => ({
         label: formatChartDateLabel(point.label),
         'CTR (%)': Number(point.ctr.toFixed(2)),
-        'CPC ($)': Number(point.cpc.toFixed(2)),
-        'CPM ($)': Number(point.cpm.toFixed(2)),
+        [cpcSeriesName]: Number(point.cpc.toFixed(2)),
+        [cpmSeriesName]: Number(point.cpm.toFixed(2)),
       })),
       series: [
         { name: 'CTR (%)', color: FEATURED_HISTORY_COLORS.ctr },
-        { name: 'CPC ($)', color: FEATURED_HISTORY_COLORS.cpc },
-        { name: 'CPM ($)', color: FEATURED_HISTORY_COLORS.cpm },
+        { name: cpcSeriesName, color: FEATURED_HISTORY_COLORS.cpc },
+        { name: cpmSeriesName, color: FEATURED_HISTORY_COLORS.cpm },
       ],
       title: 'CTR, CPC, and CPM',
       description: 'Efficiency signals that show whether the featured ad set is getting cheaper and cleaner over time.',
@@ -2529,12 +2482,12 @@ function buildTrendChartConfig(input: {
   return {
     data: input.trendPoints.map((point) => ({
       label: formatChartDateLabel(point.label),
-      'Spend ($)': Number(point.spend.toFixed(2)),
+      [spendSeriesName]: Number(point.spend.toFixed(2)),
       Results: point.results,
       Clicks: point.clicks,
     })),
     series: [
-      { name: 'Spend ($)', color: FEATURED_HISTORY_COLORS.spend },
+      { name: spendSeriesName, color: FEATURED_HISTORY_COLORS.spend },
       { name: 'Results', color: FEATURED_HISTORY_COLORS.results },
       { name: 'Clicks', color: FEATURED_HISTORY_COLORS.clicks },
     ],
@@ -2790,8 +2743,6 @@ export default function DashboardClient({
   const [activeFindings, setActiveFindings] = useState(payload.activeFindings);
   const [dismissingFindingIds, setDismissingFindingIds] = useState<Set<string>>(() => new Set());
   const [dismissingAllFindings, setDismissingAllFindings] = useState(false);
-  const [extensionModalOpen, setExtensionModalOpen] = useState(false);
-  const [extensionDays, setExtensionDays] = useState(14);
   const [localNoLiveDeliveryAlertVisible, setLocalNoLiveDeliveryAlertVisible] = useState(true);
   const [localContinuationAlertVisible, setLocalContinuationAlertVisible] = useState(true);
   const [dismissedDashboardNotificationIds, setDismissedDashboardNotificationIds] = useState<
@@ -2979,21 +2930,6 @@ export default function DashboardClient({
     historyGranularity,
     trendChart.data,
   ]);
-  const activeDeliveryDateKeys = useMemo(() => {
-    const keys = new Set<string>();
-
-    for (const point of dailyTrendPoints) {
-      const dateKey = getTrendPointDateKey(point);
-
-      if (dateKey && hasActiveDeliveryPoint(point)) {
-        keys.add(dateKey);
-      }
-    }
-
-    return keys;
-  }, [dailyTrendPoints]);
-  const extensionPreviewEndDate =
-    continuationSignal ? addDaysToIsoDate(continuationSignal.endDate, extensionDays) : null;
   const expandedHourlyTickValues = useMemo(
     () =>
       historyGranularity === 'hourly' && hourlyRangeMode === 'expanded'
@@ -3458,7 +3394,7 @@ export default function DashboardClient({
           label: hourlyHeatmap.summarySlotLabel,
           value: hourlyHeatmap.summaryDayLabel,
           detail: `Best hour: ${hourlyHeatmap.summaryHourLabel}`,
-          color: '#2563eb',
+          color: '#6e6bf4',
         }
         : null;
     }
@@ -3471,7 +3407,7 @@ export default function DashboardClient({
           eyebrow: 'Top geo',
           label: topState.name,
           value: topState.valueLabel,
-          color: '#2563eb',
+          color: '#6e6bf4',
         }
         : null;
     }
@@ -3648,14 +3584,6 @@ export default function DashboardClient({
     setActiveFindingsPopoverOpen((opened) => !opened);
   }
 
-  function handleExtensionDateChange(value: string | null) {
-    if (!continuationSignal || !value) {
-      return;
-    }
-
-    setExtensionDays(clampExtensionDays(daysBetweenIsoDates(continuationSignal.endDate, value)));
-  }
-
   useEffect(() => {
     setActiveFindings(payload.activeFindings);
   }, [payload.activeFindings]);
@@ -3807,138 +3735,6 @@ export default function DashboardClient({
           >
             {refreshFeedback.message}
           </Alert>
-        ) : null}
-
-        {continuationSignal ? (
-          <Modal
-            opened={extensionModalOpen}
-            onClose={() => setExtensionModalOpen(false)}
-            title="Preview schedule extension"
-            radius="lg"
-            size="lg"
-            centered
-          >
-            <Stack gap="md">
-              <div>
-                <Badge color="orange" variant="light" radius="sm">
-                  Preview only
-                </Badge>
-                <Text fw={900} mt="sm">
-                  {continuationSignal.entityName}
-                </Text>
-                <Text size="sm" c="dimmed" mt={4}>
-                  {formatContinuationEntityLevel(continuationSignal.entityLevel)}{' '}
-                  {formatContinuationDays(continuationSignal.daysUntilEnd)} on{' '}
-                  {formatReadableDate(continuationSignal.endDate) ?? continuationSignal.endDate}.
-                </Text>
-              </div>
-
-              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-                <Paper withBorder radius="lg" p="sm" className={classes.extensionCalendarPanel}>
-                  <DatePicker
-                    value={extensionPreviewEndDate}
-                    onChange={handleExtensionDateChange}
-                    defaultDate={continuationSignal.endDate}
-                    size="sm"
-                    getDayProps={(date) => {
-                      const isActiveDay = activeDeliveryDateKeys.has(date);
-                      const isEndDate = date === continuationSignal.endDate;
-                      const isBeforeOrCurrentEndDate = date <= continuationSignal.endDate;
-
-                      if (!isActiveDay && !isEndDate) {
-                        return { disabled: isBeforeOrCurrentEndDate };
-                      }
-
-                      return {
-                        disabled: isBeforeOrCurrentEndDate,
-                        title: isEndDate
-                          ? 'Current campaign end date'
-                          : 'Ad set had synced delivery on this date',
-                      };
-                    }}
-                    renderDay={(date) => {
-                      const isActiveDay = activeDeliveryDateKeys.has(date);
-                      const isEndDate = date === continuationSignal.endDate;
-                      const className = [
-                        classes.extensionCalendarDay,
-                        isActiveDay ? classes.extensionCalendarDayActive : '',
-                        isEndDate ? classes.extensionCalendarDayEnd : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ');
-
-                      return <div className={className}>{getDateDayNumber(date)}</div>;
-                    }}
-                  />
-                </Paper>
-
-                <Stack gap="md">
-                  <NumberInput
-                    label="Extend schedule by days"
-                    min={1}
-                    max={365}
-                    value={extensionDays}
-                    onChange={(value) => {
-                      const nextValue = typeof value === 'number' ? value : Number(value);
-                      setExtensionDays(clampExtensionDays(nextValue));
-                    }}
-                  />
-
-                  <Paper withBorder radius="lg" p="md">
-                    <Stack gap="xs">
-                      <Group justify="space-between" gap="md" wrap="nowrap">
-                        <Text size="sm" c="dimmed">
-                          Current end date
-                        </Text>
-                        <Text size="sm" fw={800} ta="right">
-                          {formatReadableDate(continuationSignal.endDate) ??
-                            continuationSignal.endDate}
-                        </Text>
-                      </Group>
-                      <Group justify="space-between" gap="md" wrap="nowrap">
-                        <Text size="sm" c="dimmed">
-                          Proposed end date
-                        </Text>
-                        <Text size="sm" fw={800} ta="right">
-                          {formatReadableDate(extensionPreviewEndDate) ??
-                            extensionPreviewEndDate ??
-                            '-'}
-                        </Text>
-                      </Group>
-                    </Stack>
-                  </Paper>
-
-                  <Group gap="md" wrap="wrap">
-                    <Group gap={6} wrap="nowrap">
-                      <span className={`${classes.extensionCalendarLegendSwatch} ${classes.extensionCalendarLegendActive}`} />
-                      <Text size="xs" c="dimmed">
-                        Active ad delivery
-                      </Text>
-                    </Group>
-                    <Group gap={6} wrap="nowrap">
-                      <span className={`${classes.extensionCalendarLegendSwatch} ${classes.extensionCalendarLegendEnd}`} />
-                      <Text size="xs" c="dimmed">
-                        Current end date
-                      </Text>
-                    </Group>
-                  </Group>
-                </Stack>
-              </SimpleGrid>
-
-              <Group justify="flex-end" gap="sm">
-                <Button
-                  variant="default"
-                  radius="xl"
-                  onClick={() => setExtensionModalOpen(false)}
-                >
-                  Close
-                </Button>
-                <Button radius="xl" color="orange" disabled>
-                  Preview only - no changes sent
-                </Button>
-              </Group>
-            </Stack>
-          </Modal>
         ) : null}
 
         <Modal
@@ -4222,34 +4018,23 @@ export default function DashboardClient({
               )
             }
           >
-            <Group justify="space-between" align="center" gap="sm" wrap="wrap">
-              <div>
-                <Text size="sm" fw={800}>
-                  {formatContinuationEntityLevel(continuationSignal.entityLevel)}{' '}
-                  {formatContinuationDays(continuationSignal.daysUntilEnd)} on{' '}
-                  {formatReadableDate(continuationSignal.endDate) ?? continuationSignal.endDate}
-                </Text>
-                <Text size="xs" c="dimmed" mt={3}>
-                  {continuationSignal.entityName}
-                  {continuationSignal.parentName ? ` | ${continuationSignal.parentName}` : ''}
-                  {formatContinuationBudget(continuationSignal, payload.viewContext.currencyCode)
-                    ? ` | ${formatContinuationBudget(
-                      continuationSignal,
-                      payload.viewContext.currencyCode
-                    )}`
-                    : ''}
-                </Text>
-              </div>
-              <Button
-                size="xs"
-                radius="xl"
-                color="orange"
-                variant="light"
-                onClick={() => setExtensionModalOpen(true)}
-              >
-                Review extension
-              </Button>
-            </Group>
+            <div>
+              <Text size="sm" fw={800}>
+                {formatContinuationEntityLevel(continuationSignal.entityLevel)}{' '}
+                {formatContinuationDays(continuationSignal.daysUntilEnd)} on{' '}
+                {formatReadableDate(continuationSignal.endDate) ?? continuationSignal.endDate}
+              </Text>
+              <Text size="xs" c="dimmed" mt={3}>
+                {continuationSignal.entityName}
+                {continuationSignal.parentName ? ` | ${continuationSignal.parentName}` : ''}
+                {formatContinuationBudget(continuationSignal, payload.viewContext.currencyCode)
+                  ? ` | ${formatContinuationBudget(
+                    continuationSignal,
+                    payload.viewContext.currencyCode
+                  )}`
+                  : ''}
+              </Text>
+            </div>
           </Alert>
         ) : null}
 
@@ -4851,12 +4636,12 @@ export default function DashboardClient({
                                               style={{
                                                 backgroundColor:
                                                   cell.metricAverage > 0
-                                                    ? `rgba(37, 99, 235, ${0.12 + cell.intensity * 0.76})`
-                                                    : 'rgba(241, 245, 249, 0.94)',
+                                                    ? `rgba(20, 168, 102, ${0.12 + cell.intensity * 0.76})`
+                                                    : 'rgba(238, 240, 233, 0.94)',
                                                 borderColor:
                                                   cell.metricAverage > 0
-                                                    ? 'rgba(37, 99, 235, 0.28)'
-                                                    : 'rgba(226, 232, 240, 0.94)',
+                                                    ? 'rgba(11, 122, 75, 0.3)'
+                                                    : 'rgba(21, 23, 20, 0.12)',
                                               }}
                                               title={`${cell.dayLabel} · ${formatHourLongLabel(
                                                 cell.hourOfDay
@@ -4902,17 +4687,17 @@ export default function DashboardClient({
                                             gridColumn: `${state.col}`,
                                             gridRow: `${state.row}`,
                                             backgroundColor: state.isActive
-                                              ? `rgba(37, 99, 235, ${0.18 + state.intensity * 0.68})`
-                                              : 'rgba(241, 245, 249, 0.96)',
+                                              ? `rgba(20, 168, 102, ${0.18 + state.intensity * 0.68})`
+                                              : 'rgba(238, 240, 233, 0.96)',
                                             borderColor: state.isActive
-                                              ? 'rgba(37, 99, 235, 0.42)'
-                                              : 'rgba(203, 213, 225, 0.9)',
+                                              ? 'rgba(11, 122, 75, 0.42)'
+                                              : 'rgba(21, 23, 20, 0.18)',
                                             color:
                                               state.isActive && state.intensity > 0.45
                                                 ? '#ffffff'
                                                 : state.isActive
-                                                  ? '#1d4ed8'
-                                                  : '#64748b',
+                                                  ? '#075f3b'
+                                                  : '#697067',
                                           }}
                                           title={
                                             state.isActive

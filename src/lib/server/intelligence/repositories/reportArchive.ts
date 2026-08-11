@@ -19,6 +19,7 @@ export type ArchivedReport = {
   title: string;
   level: ReportScope | 'unknown';
   levelLabel: string;
+  currencyCode: string | null;
   dateFrom: string | null;
   dateTo: string | null;
   generatedAt: string | null;
@@ -112,6 +113,7 @@ function mapReportArchiveRow(row: ReportArchiveRow): ArchivedReport | null {
     title: asString(action.title) ?? row.title,
     level,
     levelLabel: asString(action.levelLabel) ?? fallbackLevelLabel(level),
+    currencyCode: asString(action.currencyCode),
     dateFrom: asString(action.dateFrom),
     dateTo: asString(action.dateTo),
     generatedAt: asString(action.generatedAt) ?? row.completed_at,

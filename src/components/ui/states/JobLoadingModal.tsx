@@ -13,13 +13,21 @@ export default function JobLoadingModal({
     const error = job?.status === "error";
 
     return (
-        <Modal opened={opened} onClose={onClose} centered size="lg" withCloseButton={!done}>
+        <Modal
+            opened={opened}
+            onClose={error ? onClose : () => {}}
+            centered
+            size="lg"
+            withCloseButton={error}
+            closeOnClickOutside={error}
+            closeOnEscape={error}
+        >
             <Group justify="space-between" mb="sm">
                 <Text fw={600}>Working on your request…</Text>
                 <Text size="sm" c="dimmed">{job?.step ?? "…"}</Text>
             </Group>
 
-            <Progress value={pct} striped animated color={error ? "red" : done ? "green" : "blue"} mb="md" />
+            <Progress value={pct} striped animated color={error ? "red" : "signal"} mb="md" />
             <Text size="sm" c="dimmed" mb="md">{pct}% complete</Text>
 
             <Timeline bulletSize={20} lineWidth={2}>
@@ -30,7 +38,7 @@ export default function JobLoadingModal({
                                 <IconLoader size={12} />;
                     const color =
                         e.status === "success" ? "green" :
-                            e.status === "error" ? "red" : "blue";
+                            e.status === "error" ? "red" : "signal";
 
                     return (
                         <Timeline.Item key={e.id} bullet={icon} color={color} title={e.step}>

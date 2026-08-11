@@ -57,6 +57,7 @@ type AccountContext = {
   name: string | null;
   platform_id: string;
   timezone: string | null;
+  currency_code: string | null;
 };
 
 type BusinessContext = {
@@ -490,7 +491,7 @@ async function getAccountContext(
 
   const { data, error } = await supabase
     .from('ad_accounts')
-    .select('id, business_id, name, platform_id, timezone')
+    .select('id, business_id, name, platform_id, timezone, currency_code')
     .eq('id', adAccountId)
     .maybeSingle();
 
@@ -640,6 +641,7 @@ async function runReportQueueAction(
     business: BusinessContext | null;
     userIds: string[];
     timeZone: string;
+    currencyCode: string | null;
     timestamp: string;
   }
 ): Promise<CalendarQueueActionResult> {
@@ -694,6 +696,7 @@ async function runReportQueueAction(
       groupBy: query.groupBy,
       scope: query.scope,
       levelLabel: formatReportScopeLabel(query.scope),
+      currencyCode: payload.meta.currencyCode,
       generatedAt: input.timestamp,
       summary: {
         spend: payload.summary.spend,
@@ -718,6 +721,7 @@ async function runCalendarQueueAction(
     business: BusinessContext | null;
     userIds: string[];
     timeZone: string;
+    currencyCode: string | null;
     timestamp: string;
   }
 ): Promise<CalendarQueueActionResult | null> {
@@ -984,6 +988,7 @@ async function processOneQueueItem(
       business,
       userIds,
       timeZone,
+      currencyCode: account?.currency_code ?? null,
       timestamp: input.timestamp,
     });
     const href = actionResult?.link ?? buildActionHref(claimed);

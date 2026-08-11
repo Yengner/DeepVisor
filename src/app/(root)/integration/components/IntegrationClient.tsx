@@ -29,7 +29,6 @@ import {
   IconCheck,
   IconClock,
   IconLink,
-  IconLock,
   IconRefresh,
   IconSettings,
   IconTrash,
@@ -184,6 +183,7 @@ function ChannelArtwork({
 
 export default function IntegrationClient({ platforms }: PlatformListProps) {
   const [disconnectingPlatformId, setDisconnectingPlatformId] = useState<string | null>(null);
+  const [disconnectTarget, setDisconnectTarget] = useState<Platform | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<DisplayPlatform | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [focusedPlatformId, setFocusedPlatformId] = useState<string | null>(null);
@@ -251,7 +251,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
   const focusedPlatformNeedsAttention = focusedPlatform
     ? integrationNeedsAttention(focusedPlatform.status)
     : false;
-  const focusedPlatformPreviewOnly = Boolean(focusedPlatform) &&
+  const focusedPlatformUnavailable = Boolean(focusedPlatform) &&
     !focusedPlatformConnected &&
     focusedPlatform?.platformKey !== 'meta';
   const focusedHeroTitle = !focusedPlatform
@@ -262,14 +262,14 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
       ? `${focusedPlatform.platformName} is connected and driving this workspace.`
       : `Connect ${focusedPlatform.platformName}`;
   const focusedHeroDescription = !focusedPlatform
-    ? 'Pick the platform, choose the one ad account DeepVisor should watch, and see which channels are live, preview-only, or need attention before reports, dashboard, and calendar work depend on them.'
+    ? 'Review live connections, selected ad accounts, and sync health across the workspace.'
     : focusedPlatformPitchDetached
-      ? `This pitch-safe detach keeps the synced workspace data intact while making ${focusedPlatform.platformName} look disconnected here. Reconnect to replay the Meta connection story without rebuilding the workspace.`
+      ? `${focusedPlatform.platformName} is disconnected while its existing synced workspace data remains available. Reconnect to resume updates.`
     : focusedPlatformConnected
       ? `${focusedPlatform.platformName} is already live in DeepVisor. Keep its sync current, manage its primary ad account, and use this as the clean channel source for dashboard, reports, and calendar work.`
       : focusedPlatform.platformKey === 'meta'
         ? 'Authorize Meta, choose the one ad account DeepVisor should watch, and start feeding reporting, calendar, and recommendations from a single clean source.'
-        : `${focusedPlatform.platformName} is still a preview channel. Its connection pattern is visible here so you can plan how it will slot into the workspace once support is enabled.`;
+        : `${focusedPlatform.platformName} connections are not available yet.`;
   const focusedPrimaryLabel = !focusedPlatform
     ? 'Sync connected channels'
     : focusedPlatformPitchDetached
@@ -279,10 +279,9 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
       : focusedPlatformNeedsAttention
         ? `Reconnect ${focusedPlatform.platformName}`
         : `Connect ${focusedPlatform.platformName}`;
-  const focusedPrimaryDisabled = !focusedPlatform || focusedPlatformPreviewOnly;
   const heroCardStyle = {
-    background: `linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, ${focusedPalette.accentSurface} 100%)`,
-    borderColor: focusedPalette.border,
+    background: '#151714',
+    borderColor: '#2d322c',
   } satisfies CSSProperties;
 
   const syncPitchDetachedState = () => {
@@ -310,12 +309,17 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
   }, [selectedPlatform, sortedPlatforms]);
 
   const handleDisconnect = async (platform: Platform) => {
-    if (!confirm(`Disconnect ${platform.platformName}?`)) {
+    if (!platform.integrationId) {
+      toast.error('No integration found for this platform.');
       return;
     }
 
-    if (!platform.integrationId) {
-      toast.error('No integration found for this platform.');
+    setDisconnectTarget(platform);
+  };
+
+  const confirmDisconnect = async () => {
+    const platform = disconnectTarget;
+    if (!platform?.integrationId) {
       return;
     }
 
@@ -341,6 +345,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
       toast.error(`Failed to disconnect ${platform.platformName}. Please try again.`);
     } finally {
       setDisconnectingPlatformId(null);
+      setDisconnectTarget(null);
     }
   };
 
@@ -507,16 +512,19 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                   </Group>
 
                   <div>
-                    <Title order={2} style={{ color: focusedPalette.text }}>
+                    <Title order={2} className="app-platform-page-title">
                       {focusedHeroTitle}
                     </Title>
-                    <Text size="md" c="dimmed" mt="sm" maw={680}>
+                    <Text size="md" mt="sm" maw={680} className="app-platform-page-copy">
                       {focusedHeroDescription}
                     </Text>
                   </div>
 
                   <Group gap="sm" wrap="wrap">
-                    <Button
+                    {focusedPlatformUnavailable || !focusedPlatform ? (
+                      <Badge variant="outline" color="gray">Unavailable</Badge>
+                    ) : (
+                      <Button
                       leftSection={
                         focusedPlatformConnected ? <IconRefresh size={16} /> : <IconLink size={16} />
                       }
@@ -542,19 +550,12 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                             ? connecting
                             : false
                       }
-                      disabled={focusedPrimaryDisabled}
                       radius="xl"
-                      style={
-                        focusedPrimaryDisabled
-                          ? undefined
-                          : ({
-                              backgroundColor: focusedPalette.accent,
-                              color: '#ffffff',
-                            } as CSSProperties)
-                      }
+                      className="app-platform-page-action-primary"
                     >
                       {focusedPrimaryLabel}
-                    </Button>
+                      </Button>
+                    )}
                     {focusedPlatform ? (
                       <Button
                         leftSection={
@@ -578,10 +579,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
 
                           setSelectedPlatform(focusedPlatform);
                         }}
-                        style={{
-                          backgroundColor: focusedPalette.accentSoft,
-                          color: focusedPalette.text,
-                        }}
+                        className="app-platform-page-action-secondary"
                       >
                         {focusedPlatformConnected &&
                         focusedPlatform.platformKey === 'meta' &&
@@ -653,10 +651,6 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                     radius="xl"
                     color={focusedPalette.accent}
                   />
-                  <Text size="xs" c="dimmed" mt="sm">
-                    Select a channel to update the hero card and action state.
-                  </Text>
-
                   <Stack gap="sm" mt="lg">
                     {sortedPlatforms.map((platform) => {
                       const palette = getIntegrationPlatformPalette(platform.platformKey);
@@ -670,11 +664,9 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                           p="sm"
                           className={`${styles.statusRow} ${isFocused ? styles.statusRowActive : ''}`}
                           style={{
-                            borderColor: isFocused ? palette.accent : palette.border,
-                            background: isFocused ? palette.accentSurface : '#fff',
-                            boxShadow: isFocused
-                              ? `0 18px 36px ${palette.accentSoft}`
-                              : undefined,
+                            borderColor: isFocused ? palette.accent : '#343a33',
+                            background: isFocused ? '#2a3029' : '#1b1e1a',
+                            boxShadow: 'none',
                           } as CSSProperties}
                           role="button"
                           tabIndex={0}
@@ -725,63 +717,6 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
               </SimpleGrid>
             </Card>
 
-            <Paper withBorder radius="xl" p="xl" className={styles.guideCard}>
-              <Group justify="space-between" align="flex-start" mb="lg" wrap="wrap">
-                <div>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                    Setup Flow
-                  </Text>
-                  <Title order={3} mt={4}>
-                    How channel setup works in DeepVisor
-                  </Title>
-                </div>
-                <Badge color="gray" variant="light">
-                  Built for simple account scope
-                </Badge>
-              </Group>
-
-              <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md">
-                <Paper withBorder radius="lg" p="md" className={styles.stepCard}>
-                  <ThemeIcon size="xl" radius="xl" variant="light" color="blue">
-                    <IconLink size={20} />
-                  </ThemeIcon>
-                  <Text fw={700} mt="md">
-                    1. Connect a platform
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={6}>
-                    Start with Meta today. Other channels stay visible as preview cards so the
-                    product direction remains clear.
-                  </Text>
-                </Paper>
-
-                <Paper withBorder radius="lg" p="md" className={styles.stepCard}>
-                  <ThemeIcon size="xl" radius="xl" variant="light" color="violet">
-                    <IconLock size={20} />
-                  </ThemeIcon>
-                  <Text fw={700} mt="md">
-                    2. Choose one primary ad account
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={6}>
-                    Each platform syncs one clean account into Dashboard, Reports, Calendar, and the
-                    assistant so the workspace stays focused.
-                  </Text>
-                </Paper>
-
-                <Paper withBorder radius="lg" p="md" className={styles.stepCard}>
-                  <ThemeIcon size="xl" radius="xl" variant="light" color="teal">
-                    <IconArrowUpRight size={20} />
-                  </ThemeIcon>
-                  <Text fw={700} mt="md">
-                    3. DeepVisor keeps data flowing
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={6}>
-                    Once connected, sync keeps performance data, recommendations, and queued work
-                    aligned across the rest of the app.
-                  </Text>
-                </Paper>
-              </SimpleGrid>
-            </Paper>
-
             <div>
               <Group justify="space-between" align="flex-end" mb="md" wrap="wrap">
                 <div>
@@ -792,8 +727,8 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                     Connect, inspect, and manage each advertising platform
                   </Title>
                   <Text size="sm" c="dimmed" mt={4}>
-                    Connected channels surface health and sync timing. Preview channels show how the
-                    workspace can expand next.
+                    Connected channels surface health and sync timing. Unavailable channels are
+                    clearly marked.
                   </Text>
                 </div>
                 <Badge color="gray" variant="light">
@@ -878,7 +813,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                             </Text>
                             {!platform.integrationId && platform.platformKey !== 'meta' ? (
                               <Badge color="gray" variant="light">
-                                Preview
+                                Unavailable
                               </Badge>
                             ) : null}
                           </Group>
@@ -969,14 +904,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                 {integrationNeedsAttention(platform.status) ? 'Reconnect Meta' : 'Connect Meta'}
                               </Button>
                             ) : (
-                              <Button
-                                leftSection={<IconLock size={16} />}
-                                variant="light"
-                                color="gray"
-                                disabled
-                              >
-                                Preview only
-                              </Button>
+                              <Badge variant="outline" color="gray">Unavailable</Badge>
                             )}
 
                             <Button
@@ -1019,6 +947,43 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                 })}
               </SimpleGrid>
             </div>
+
+            <Modal
+              opened={Boolean(disconnectTarget)}
+              onClose={() => {
+                if (!disconnectingPlatformId) {
+                  setDisconnectTarget(null);
+                }
+              }}
+              title="Disconnect platform"
+              centered
+              closeOnClickOutside={!disconnectingPlatformId}
+              closeOnEscape={!disconnectingPlatformId}
+              withCloseButton={!disconnectingPlatformId}
+            >
+              <Stack gap="md">
+                <Text size="sm">
+                  Disconnect {disconnectTarget?.platformName ?? 'this platform'}? New performance
+                  data will stop syncing until it is reconnected.
+                </Text>
+                <Group justify="flex-end">
+                  <Button
+                    variant="default"
+                    onClick={() => setDisconnectTarget(null)}
+                    disabled={Boolean(disconnectingPlatformId)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    color="red"
+                    onClick={() => void confirmDisconnect()}
+                    loading={Boolean(disconnectingPlatformId)}
+                  >
+                    Disconnect
+                  </Button>
+                </Group>
+              </Stack>
+            </Modal>
 
             <Modal
               opened={Boolean(accountSelectionPlatform)}
@@ -1197,19 +1162,23 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                             Primary ad account
                           </Text>
                           <Group gap="xs" mt="sm" wrap="wrap">
-                            <Button
-                              radius="xl"
-                              variant="default"
-                              onClick={
-                                canChangeMetaAccount
-                                  ? () => void handleOpenAccountSelection(selectedPlatform)
-                                  : undefined
-                              }
-                            >
-                              {selectedPlatform.primaryAdAccountName ||
-                                selectedPlatform.primaryAdAccountExternalId ||
-                                'Not selected yet'}
-                            </Button>
+                            {canChangeMetaAccount ? (
+                              <Button
+                                radius="xl"
+                                variant="default"
+                                onClick={() => void handleOpenAccountSelection(selectedPlatform)}
+                              >
+                                {selectedPlatform.primaryAdAccountName ||
+                                  selectedPlatform.primaryAdAccountExternalId ||
+                                  'Not selected yet'}
+                              </Button>
+                            ) : (
+                              <Badge variant="light" color="signal" size="lg">
+                                {selectedPlatform.primaryAdAccountName ||
+                                  selectedPlatform.primaryAdAccountExternalId ||
+                                  'Not selected yet'}
+                              </Badge>
+                            )}
                             <Text size="sm" c="dimmed">
                               {selectedPlatform.discoveredAdAccountCount > 1
                                 ? `${selectedPlatform.discoveredAdAccountCount} discovered ad accounts can be switched and synced from here.`
@@ -1296,14 +1265,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                               {integrationNeedsAttention(selectedPlatform.status) ? 'Reconnect Meta' : 'Connect Meta'}
                             </Button>
                           ) : (
-                            <Button
-                              leftSection={<IconLock size={16} />}
-                              variant="light"
-                              color="gray"
-                              disabled
-                            >
-                              Preview only
-                            </Button>
+                            <Badge variant="outline" color="gray">Unavailable</Badge>
                           )}
                         </Group>
 

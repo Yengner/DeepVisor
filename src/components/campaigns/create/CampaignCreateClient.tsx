@@ -58,6 +58,7 @@ type CampaignCreateReadyContext = {
   requestedDraftId: string | null;
   platformData: PlatformData;
   adAccountId: string;
+  currencyCode: string | null;
   campaigns: CampaignTreeNode[];
   draft: ManualCampaignDraftForm | null;
   metaPages: MetaPage[];
@@ -89,15 +90,17 @@ type CampaignCreateContextResponse =
 function EmptyState({
   title,
   message,
-  iconColor = 'blue',
+  iconColor = 'signal',
+  action,
 }: {
   title: string;
   message: string;
   iconColor?: string;
+  action?: { label: string; href: string };
 }) {
   return (
     <Container size="sm" py="xl">
-      <Card withBorder radius="xl" p="xl">
+      <Card withBorder radius="md" p="xl">
         <Stack gap="md" align="center" ta="center">
           <ThemeIcon size={46} radius="xl" color={iconColor} variant="light">
             <IconSelector size={22} />
@@ -106,6 +109,11 @@ function EmptyState({
             <Title order={3}>{title}</Title>
             <Text c="dimmed">{message}</Text>
           </Stack>
+          {action ? (
+            <Button component="a" href={action.href}>
+              {action.label}
+            </Button>
+          ) : null}
         </Stack>
       </Card>
     </Container>
@@ -116,7 +124,7 @@ function CampaignCreateSkeleton() {
   return (
     <Container size="xl" py="xl">
       <Stack gap="lg">
-        <Card withBorder radius="xl" p="xl">
+        <Card withBorder radius="md" p="xl">
           <Stack gap="md">
             <Skeleton height={18} width={150} radius="md" />
             <Skeleton height={34} width="45%" radius="md" />
@@ -126,7 +134,7 @@ function CampaignCreateSkeleton() {
 
         <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md">
           {Array.from({ length: 3 }).map((_, index) => (
-            <Card key={index} withBorder radius="xl" p="lg">
+            <Card key={index} withBorder radius="md" p="lg">
               <Stack gap="sm">
                 <Skeleton height={38} width={38} radius="xl" />
                 <Skeleton height={18} width="60%" radius="md" />
@@ -137,7 +145,7 @@ function CampaignCreateSkeleton() {
           ))}
         </SimpleGrid>
 
-        <Card withBorder radius="xl" p="xl">
+        <Card withBorder radius="md" p="xl">
           <Stack gap="md">
             <Group justify="space-between">
               <Skeleton height={26} width={210} radius="md" />
@@ -199,6 +207,7 @@ function CampaignCreateRenderer({ context }: { context: CampaignCreateReadyConte
         <EmptyState
           title="No campaigns found yet"
           message="Create at least one Meta campaign before adding a new ad set inside it."
+          action={{ label: 'Create a campaign', href: '/campaigns/create' }}
         />
       );
     }
@@ -227,6 +236,7 @@ function CampaignCreateRenderer({ context }: { context: CampaignCreateReadyConte
         <EmptyState
           title="No campaigns found yet"
           message="Create at least one Meta campaign and ad set before adding a new ad inside it."
+          action={{ label: 'Create a campaign', href: '/campaigns/create' }}
         />
       );
     }
@@ -241,6 +251,10 @@ function CampaignCreateRenderer({ context }: { context: CampaignCreateReadyConte
         <EmptyState
           title="No ad sets found yet"
           message="Create at least one Meta ad set before adding a new ad inside it."
+          action={{
+            label: 'Create an ad set',
+            href: `/campaigns/create?scope=adset&campaign_id=${context.campaigns[0]?.id ?? ''}`,
+          }}
         />
       );
     }
@@ -269,6 +283,7 @@ function CampaignCreateRenderer({ context }: { context: CampaignCreateReadyConte
     <MetaLeadCampaignDraftHelper
       platformData={context.platformData}
       adAccountId={context.adAccountId}
+      currencyCode={context.currencyCode}
       campaigns={context.campaigns}
       draft={context.draft}
       draftId={context.requestedDraftId}
@@ -341,7 +356,7 @@ export default function CampaignCreateClient() {
   if (error) {
     return (
       <Container size="sm" py="xl">
-        <Alert color="red" radius="xl" icon={<IconAlertCircle size={18} />}>
+        <Alert color="red" radius="md" icon={<IconAlertCircle size={18} />}>
           <Stack gap="sm">
             <Text fw={800}>Campaign builder could not load</Text>
             <Text size="sm">{error}</Text>
@@ -365,11 +380,24 @@ export default function CampaignCreateClient() {
   }
 
   if (context.state === 'needs_selection') {
-    return <EmptyState title="Please select an ad account first" message={context.message} />;
+    return (
+      <EmptyState
+        title="Select an ad account first"
+        message={context.message}
+        action={{ label: 'Open connections', href: '/integration' }}
+      />
+    );
   }
 
   if (context.state === 'invalid_selection') {
-    return <EmptyState title="Invalid ad account selection" message={context.message} iconColor="red" />;
+    return (
+      <EmptyState
+        title="Ad account unavailable"
+        message={context.message}
+        iconColor="red"
+        action={{ label: 'Review connections', href: '/integration' }}
+      />
+    );
   }
 
   if (context.state !== 'ready') {

@@ -13,7 +13,13 @@ import {
   Title,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconChartBar, IconShieldCheck, IconTargetArrow } from '@tabler/icons-react';
+import {
+  IconArrowRight,
+  IconChartBar,
+  IconChevronLeft,
+  IconShieldCheck,
+  IconTargetArrow,
+} from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 import { updateBusinessProfileData } from '@/lib/server/actions/business/onboarding';
 import {
@@ -30,6 +36,7 @@ import {
   WATCH_SIGNAL_OPTIONS,
 } from '@/lib/shared/onboarding/businessProfileOptions';
 import type { UserData } from '../types';
+import styles from './OnboardingSteps.module.css';
 
 type PreferencesStepProps = {
   onNext: () => void;
@@ -134,22 +141,23 @@ export default function PreferencesStep({
   };
 
   return (
-    <Stack gap="xl" py={16}>
-      <div>
-        <Title order={2} ta="center">
-          Intelligence Goals & Signals
+    <Stack gap="lg" className={styles.stepRoot}>
+      <div className={styles.stepIntro}>
+        <span className={styles.stepKicker}>02 / Intelligence goals</span>
+        <Title order={2} className={styles.stepTitle}>
+          Set the signals worth acting on.
         </Title>
-        <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto mb-6">
+        <Text className={styles.stepCopy}>
           Tell DeepVisor what counts as a valuable lead so recommendations stay tied to real business outcomes.
         </Text>
       </div>
 
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="lg">
-          <Card withBorder p="lg" radius="lg">
-            <Group mb="md">
-              <IconTargetArrow size={20} />
-              <Title order={4}>Lead goals</Title>
+          <Card withBorder p="lg" radius="sm" className={styles.sectionCard}>
+            <Group mb="md" className={styles.sectionHeader}>
+              <span className={styles.sectionIcon}><IconTargetArrow size={17} /></span>
+              <Title order={4} className={styles.sectionTitle}>Lead goals</Title>
             </Group>
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
               <Select
@@ -191,10 +199,10 @@ export default function PreferencesStep({
             </SimpleGrid>
           </Card>
 
-          <Card withBorder p="lg" radius="lg">
-            <Group mb="md">
-              <IconChartBar size={20} />
-              <Title order={4}>Value and cost targets</Title>
+          <Card withBorder p="lg" radius="sm" className={styles.sectionCard}>
+            <Group mb="md" className={styles.sectionHeader}>
+              <span className={styles.sectionIcon}><IconChartBar size={17} /></span>
+              <Title order={4} className={styles.sectionTitle}>Value and cost targets</Title>
             </Group>
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
               <Select
@@ -216,10 +224,10 @@ export default function PreferencesStep({
             </SimpleGrid>
           </Card>
 
-          <Card withBorder p="lg" radius="lg">
-            <Group mb="md">
-              <IconShieldCheck size={20} />
-              <Title order={4}>Signals and safety</Title>
+          <Card withBorder p="lg" radius="sm" className={styles.sectionCard}>
+            <Group mb="md" className={styles.sectionHeader}>
+              <span className={styles.sectionIcon}><IconShieldCheck size={17} /></span>
+              <Title order={4} className={styles.sectionTitle}>Signals and safety</Title>
             </Group>
             <Stack gap="md">
               <MultiSelect
@@ -256,11 +264,22 @@ export default function PreferencesStep({
           </Card>
         </Stack>
 
-        <Group justify="space-between" mt="xl">
-          <Button variant="light" onClick={onPrev} type="button">
+        <Group justify="space-between" mt="xl" className={styles.actionBar}>
+          <Button
+            variant="default"
+            onClick={onPrev}
+            type="button"
+            leftSection={<IconChevronLeft size={16} />}
+            className={styles.secondaryButton}
+          >
             Back
           </Button>
-          <Button type="submit" loading={submitting}>
+          <Button
+            type="submit"
+            loading={submitting}
+            rightSection={<IconArrowRight size={17} />}
+            className={styles.primaryButton}
+          >
             Continue
           </Button>
         </Group>

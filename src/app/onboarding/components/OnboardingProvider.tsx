@@ -7,14 +7,8 @@ import {
   Stepper,
   Title,
   Text,
-  Card,
-  Group,
-  Badge,
-  Stack,
   Grid,
-  Paper,
   Progress,
-  ThemeIcon,
 } from '@mantine/core';
 import BlockingTaskScreen from '@/components/ui/states/BlockingTaskScreen';
 import toast from 'react-hot-toast';
@@ -23,7 +17,13 @@ import BusinessProfileStep from './steps/BusinessProfileStep';
 import ReviewStartStep from './steps/ReviewStartStep';
 import { updateOnboardingProgress } from '@/lib/server/actions/business/onboarding';
 import { UserData } from './types';
-import { IconCheck, IconDeviceAnalytics, IconSettings, IconCircleCheck, IconClock } from '@tabler/icons-react';
+import {
+  IconCheck,
+  IconCircleCheck,
+  IconDeviceAnalytics,
+  IconLockCheck,
+  IconSettings,
+} from '@tabler/icons-react';
 import type { Database } from '@/lib/shared/types/supabase';
 import classes from './OnboardingProvider.module.css';
 import {
@@ -196,139 +196,136 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
       : 'Autosave enabled';
 
   return (
-    <Container size="lg" className={`py-10 relative ${classes.onboardingShell}`}>
+    <main className={classes.page}>
       <BlockingTaskScreen
         opened={loading}
         title="Finishing onboarding"
         description="We are saving your salon profile and preparing your DeepVisor dashboard."
       />
 
-      <Stack gap="lg" className={classes.headerStack}>
-        <Group justify="space-between" align="flex-start">
-          <div>
-            <Badge variant="light" color="blue" mb="sm" radius="xl">
-              Salon setup
-            </Badge>
-            <Title order={1} className={classes.pageTitle}>Set up your salon intelligence profile</Title>
-            <Text c="dimmed" size="lg" className={classes.pageCopy}>
-              Tell DeepVisor what services, leads, and outcomes matter before it reviews ad performance.
-            </Text>
+      <Container size="xl" className={classes.onboardingShell}>
+        <header className={classes.topBar}>
+          <div className={classes.brandLockup}>
+            <span className={classes.brandMark}>DV</span>
+            <span>DEEPVISOR</span>
+            <span className={classes.brandSection}>INTELLIGENCE SETUP</span>
           </div>
-          <Stack gap={4} align="flex-end">
-            <Badge size="lg" variant="light">
-              Step {Math.min(active + 1, totalSteps)} of {totalSteps}
-            </Badge>
-            <Text size="xs" c="dimmed">
-              {autosaveLabel}
-            </Text>
-          </Stack>
-        </Group>
-      </Stack>
+          <div className={classes.saveState} aria-live="polite">
+            <span className={isAutosaving ? classes.savingDot : classes.savedDot} aria-hidden="true" />
+            {autosaveLabel}
+          </div>
+        </header>
 
-      <Grid gutter="lg" align="flex-start">
-        <Grid.Col span={{ base: 12, md: 4 }} className={classes.progressColumn}>
-          <Card shadow="sm" radius="xl" p="lg" withBorder className={classes.progressCard}>
-            <Stack gap="md">
-              <div>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-                  Progress
-                </Text>
-                <Group justify="space-between" mt={4}>
-                  <Text fw={600}>{progressValue}% complete</Text>
-                  <Text size="xs" c="dimmed">
-                    ~3-5 min
-                  </Text>
-                </Group>
-                <Progress value={progressValue} size="sm" radius="xl" mt="xs" />
+        <div className={classes.headerStack}>
+          <span className={classes.pageKicker}>BUSINESS PROFILE / 03 STEPS</span>
+          <Title order={1} className={classes.pageTitle}>Set your decision context.</Title>
+          <Text className={classes.pageCopy}>
+            Give DeepVisor the business signals it needs to judge ad performance against what actually matters.
+          </Text>
+        </div>
+
+        <Grid gutter={{ base: 18, md: 28 }} align="flex-start">
+          <Grid.Col span={{ base: 12, md: 4 }} className={classes.progressColumn}>
+            <aside className={classes.progressCard}>
+              <div className={classes.progressHeader}>
+                <div>
+                  <span>PROFILE COMPLETION</span>
+                  <strong>{progressValue}%</strong>
+                </div>
+                <span>~3-5 MIN</span>
               </div>
+              <Progress
+                value={progressValue}
+                size={6}
+                radius={0}
+                color="#c8ff56"
+                className={classes.railProgress}
+              />
 
-              <Stack gap="sm">
+              <div className={classes.stepList}>
                 {stepLabels.map((label, idx) => {
                   const isDone = active > idx;
                   const isActive = active === idx;
+                  const stepClassName = [
+                    classes.progressStep,
+                    isActive ? classes.progressStepActive : '',
+                    isDone ? classes.progressStepDone : '',
+                  ].filter(Boolean).join(' ');
+
                   return (
-                    <Paper
-                      key={label}
-                      withBorder
-                      radius="md"
-                      p="sm"
-                      style={{ borderColor: isActive ? 'var(--mantine-color-blue-5)' : undefined }}
-                    >
-                      <Group justify="space-between" align="center">
-                        <Group gap="xs">
-                          <ThemeIcon
-                            size="sm"
-                            radius="xl"
-                            color={isDone ? 'green' : isActive ? 'blue' : 'gray'}
-                            variant="light"
-                          >
-                            {isDone ? <IconCircleCheck size={14} /> : <IconClock size={14} />}
-                          </ThemeIcon>
-                          <div>
-                            <Text size="sm" fw={600}>{label}</Text>
-                            <Text size="xs" c="dimmed">{stepDescription[idx]}</Text>
-                          </div>
-                        </Group>
-                        {isDone && (
-                          <Badge size="xs" color="green" variant="light">
-                            Done
-                          </Badge>
-                        )}
-                      </Group>
-                    </Paper>
+                    <div key={label} className={stepClassName}>
+                      <span className={classes.stepNumber}>
+                        {isDone ? <IconCircleCheck size={17} /> : String(idx + 1).padStart(2, '0')}
+                      </span>
+                      <div>
+                        <strong>{label}</strong>
+                        <span>{stepDescription[idx]}</span>
+                      </div>
+                      {isActive ? <span className={classes.activeLabel}>ACTIVE</span> : null}
+                    </div>
                   );
                 })}
-              </Stack>
-            </Stack>
-          </Card>
-        </Grid.Col>
+              </div>
 
-        <Grid.Col span={{ base: 12, md: 8 }}>
-          <Card shadow="md" radius="xl" p="xl" withBorder className={classes.formCard}>
-            <Stepper active={active} onStepClick={() => { }} size="sm">
-              <Stepper.Step
-                label={stepLabels[0]}
-                description={stepDescription[0]}
-                icon={<IconDeviceAnalytics size={16} />}
-              >
-                <BusinessProfileStep
-                  onNext={nextStep}
-                  onPrev={prevStep}
-                  userData={userData}
-                  updateUserData={handleUpdateUserData}
-                  showBack={false}
-                />
-              </Stepper.Step>
+              <div className={classes.railNote}>
+                <IconLockCheck size={18} />
+                <span>Recommendations stay approval-first. Nothing changes without you.</span>
+              </div>
+            </aside>
+          </Grid.Col>
 
-              <Stepper.Step
-                label={stepLabels[1]}
-                description={stepDescription[1]}
-                icon={<IconSettings size={16} />}
-              >
-                <PreferencesStep
-                  onNext={nextStep}
-                  onPrev={prevStep}
-                  userData={userData}
-                  updateUserData={handleUpdateUserData}
-                />
-              </Stepper.Step>
+          <Grid.Col span={{ base: 12, md: 8 }}>
+            <section className={classes.formSurface}>
+              <div className={classes.mobileProgress}>
+                <span>STEP {Math.min(active + 1, totalSteps)} OF {totalSteps}</span>
+                <strong>{stepLabels[active]}</strong>
+                <Progress value={progressValue} size={5} radius={0} color="#0b7a4b" />
+              </div>
+              <Stepper active={active} onStepClick={() => { }} size="sm" className={classes.stepper}>
+                <Stepper.Step
+                  label={stepLabels[0]}
+                  description={stepDescription[0]}
+                  icon={<IconDeviceAnalytics size={16} />}
+                >
+                  <BusinessProfileStep
+                    onNext={nextStep}
+                    onPrev={prevStep}
+                    userData={userData}
+                    updateUserData={handleUpdateUserData}
+                    showBack={false}
+                  />
+                </Stepper.Step>
 
-              <Stepper.Step
-                label={stepLabels[2]}
-                description={stepDescription[2]}
-                icon={<IconCheck size={16} />}
-              >
-                <ReviewStartStep
-                  onComplete={nextStep}
-                  onPrev={prevStep}
-                  userData={userData}
-                  loading={loading}
-                />
-              </Stepper.Step>
-            </Stepper>
-          </Card>
-        </Grid.Col>
-      </Grid>
-    </Container>
+                <Stepper.Step
+                  label={stepLabels[1]}
+                  description={stepDescription[1]}
+                  icon={<IconSettings size={16} />}
+                >
+                  <PreferencesStep
+                    onNext={nextStep}
+                    onPrev={prevStep}
+                    userData={userData}
+                    updateUserData={handleUpdateUserData}
+                  />
+                </Stepper.Step>
+
+                <Stepper.Step
+                  label={stepLabels[2]}
+                  description={stepDescription[2]}
+                  icon={<IconCheck size={16} />}
+                >
+                  <ReviewStartStep
+                    onComplete={nextStep}
+                    onPrev={prevStep}
+                    userData={userData}
+                    loading={loading}
+                  />
+                </Stepper.Step>
+              </Stepper>
+            </section>
+          </Grid.Col>
+        </Grid>
+      </Container>
+    </main>
   );
 }

@@ -22,6 +22,7 @@ import {
   type ArchivedReport,
 } from '@/lib/server/intelligence/repositories/reportArchive';
 import { createAdminClient } from '@/lib/server/supabase/admin';
+import classes from './ArchivedReportPage.module.css';
 
 function formatDateOnly(value: string | null): string {
   if (!value) {
@@ -52,16 +53,28 @@ function formatReportWindow(report: ArchivedReport): string {
   return start === end ? start : `${start} - ${end}`;
 }
 
-function formatCurrency(value: number | null): string {
+function formatCurrency(value: number | null, currencyCode: string | null): string {
   if (typeof value !== 'number') {
     return 'n/a';
   }
 
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 2,
-  }).format(value);
+  if (currencyCode?.toUpperCase() === 'MIXED') {
+    return value.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  }
+
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode || 'USD',
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
 }
 
 function formatNumber(value: number | null): string {
@@ -89,20 +102,25 @@ export default async function ArchivedReportPage({
   }
 
   return (
-    <Container size="xl" pb="xl">
+    <Container size="xl" pb="xl" className={`${classes.page} dv-app-page`}>
       <Stack gap="lg">
-        <Card withBorder radius="lg" p="xl" className="app-platform-page-hero">
+        <Card
+          withBorder
+          radius="lg"
+          p="xl"
+          className={`${classes.hero} app-platform-page-hero`}
+        >
           <Group justify="space-between" align="flex-start" gap="xl" wrap="wrap">
             <Stack gap="sm" maw={760}>
               <Group gap="xs" wrap="wrap">
                 <Badge variant="light" className="app-platform-page-badge">
                   Report archive
                 </Badge>
-                <Badge color="blue" variant="light">
+                <Badge color="signal" variant="light">
                   {report.levelLabel}
                 </Badge>
                 {report.storagePath ? (
-                  <Badge color="green" variant="light">
+                  <Badge color="signal" variant="light">
                     Stored PDF
                   </Badge>
                 ) : null}
@@ -128,7 +146,7 @@ export default async function ArchivedReportPage({
                   </Badge>
                 ) : null}
                 <Badge color="gray" variant="outline">
-                  Spend {formatCurrency(report.summary.spend)}
+                  Spend {formatCurrency(report.summary.spend, report.currencyCode)}
                 </Badge>
                 <Badge color="gray" variant="outline">
                   Results {formatNumber(report.summary.results)}
@@ -164,7 +182,7 @@ export default async function ArchivedReportPage({
         </Card>
 
         {report.pdfHref ? (
-          <Card withBorder radius="lg" p="md">
+          <Card withBorder radius="lg" p="md" className={classes.documentFrame}>
             <iframe
               title={report.title}
               src={report.pdfHref}
@@ -173,14 +191,14 @@ export default async function ArchivedReportPage({
                 height: '78vh',
                 minHeight: 760,
                 border: 0,
-                borderRadius: 12,
-                background: '#f8fafc',
+                borderRadius: 4,
+                background: '#f4f5ef',
               }}
             />
           </Card>
         ) : (
           <Alert
-            color="yellow"
+            color="#d69324"
             radius="lg"
             icon={<IconAlertCircle size={18} />}
             title="Stored PDF unavailable"
@@ -192,14 +210,14 @@ export default async function ArchivedReportPage({
           </Alert>
         )}
 
-        <Card withBorder radius="lg" p="md">
+        <Card withBorder radius="lg" p="md" className={classes.detailBar}>
           <Group gap="sm">
             <IconFileAnalytics size={18} />
             <div>
               <Text fw={700}>Stored report details</Text>
               <Text size="sm" c="dimmed">
                 File {report.fileName ?? 'report.pdf'} · Cost/result{' '}
-                {formatCurrency(report.summary.costPerResult)} · Clicks{' '}
+                {formatCurrency(report.summary.costPerResult, report.currencyCode)} · Clicks{' '}
                 {formatNumber(report.summary.clicks)}
               </Text>
             </div>

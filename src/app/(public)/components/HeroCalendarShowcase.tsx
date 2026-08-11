@@ -171,11 +171,6 @@ const HeroCalendarShowcase = () => {
 
   return (
     <Card className="relative overflow-hidden rounded-[2rem] border-slate-200/80 bg-white/95 p-0 shadow-[0_30px_80px_rgba(15,23,42,0.14)]">
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.12),transparent_28%),radial-gradient(circle_at_80%_18%,rgba(14,165,233,0.12),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(248,250,252,0.96)_100%)]"
-        aria-hidden="true"
-      />
-
       <div className="relative border-b border-slate-200 px-5 py-4 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

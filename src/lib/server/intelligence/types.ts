@@ -120,6 +120,7 @@ export interface BusinessIntelligenceAdAccountSummary {
   platformIntegrationId: string | null;
   platformLabel: string;
   timezone: string | null;
+  currencyCode: string | null;
 }
 
 export interface BusinessIntelligenceSelection {

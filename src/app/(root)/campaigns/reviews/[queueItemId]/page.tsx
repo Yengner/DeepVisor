@@ -149,6 +149,7 @@ function buildReviewViewModel(input: {
     completedAt: input.row.completed_at,
     generatedAt: stringValue(action.generatedAt),
     processedAt: stringValue(execution.processedAt ?? execution.failedAt),
+    currencyCode: stringValue(action.currencyCode),
     scope,
     scopeLabel: scopeLabel(scope),
     aiGenerated: action.aiGenerated === true,

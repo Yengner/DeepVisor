@@ -16,7 +16,14 @@ import {
   Title,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconBuilding, IconMapPin, IconScissors, IconWallet } from '@tabler/icons-react';
+import {
+  IconArrowRight,
+  IconBuilding,
+  IconChevronLeft,
+  IconMapPin,
+  IconScissors,
+  IconWallet,
+} from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 import { updateBusinessProfileData } from '@/lib/server/actions/business/onboarding';
 import {
@@ -28,6 +35,7 @@ import {
   SALON_SERVICE_OPTIONS,
 } from '@/lib/shared/onboarding/businessProfileOptions';
 import type { UserData } from '../types';
+import styles from './OnboardingSteps.module.css';
 
 type BusinessProfileStepProps = {
   onNext: () => void;
@@ -247,22 +255,23 @@ export default function BusinessProfileStep({
   };
 
   return (
-    <Stack gap="xl" py={16}>
-      <div>
-        <Title order={2} ta="center">
-          Business Context
+    <Stack gap="lg" className={styles.stepRoot}>
+      <div className={styles.stepIntro}>
+        <span className={styles.stepKicker}>01 / Business context</span>
+        <Title order={2} className={styles.stepTitle}>
+          Define the business behind the numbers.
         </Title>
-        <Text size="lg" c="dimmed" ta="center" className="max-w-xl mx-auto mb-6">
+        <Text className={styles.stepCopy}>
           Help DeepVisor understand your salon, local market, services, customers, and budget.
         </Text>
       </div>
 
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="lg">
-          <Card withBorder p="lg" radius="lg">
-            <Group mb="md">
-              <IconBuilding size={20} />
-              <Title order={4}>Workspace and market</Title>
+          <Card withBorder p="lg" radius="sm" className={styles.sectionCard}>
+            <Group mb="md" className={styles.sectionHeader}>
+              <span className={styles.sectionIcon}><IconBuilding size={17} /></span>
+              <Title order={4} className={styles.sectionTitle}>Workspace and market</Title>
             </Group>
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
               <TextInput
@@ -314,10 +323,10 @@ export default function BusinessProfileStep({
             </SimpleGrid>
           </Card>
 
-          <Card withBorder p="lg" radius="lg">
-            <Group mb="md">
-              <IconScissors size={20} />
-              <Title order={4}>Services and customers</Title>
+          <Card withBorder p="lg" radius="sm" className={styles.sectionCard}>
+            <Group mb="md" className={styles.sectionHeader}>
+              <span className={styles.sectionIcon}><IconScissors size={17} /></span>
+              <Title order={4} className={styles.sectionTitle}>Services and customers</Title>
             </Group>
             <Stack gap="md">
               <MultiSelect
@@ -350,10 +359,10 @@ export default function BusinessProfileStep({
             </Stack>
           </Card>
 
-          <Card withBorder p="lg" radius="lg">
-            <Group mb="md">
-              <IconWallet size={20} />
-              <Title order={4}>Ads and budget</Title>
+          <Card withBorder p="lg" radius="sm" className={styles.sectionCard}>
+            <Group mb="md" className={styles.sectionHeader}>
+              <span className={styles.sectionIcon}><IconWallet size={17} /></span>
+              <Title order={4} className={styles.sectionTitle}>Ads and budget</Title>
             </Group>
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
               <Select
@@ -378,13 +387,24 @@ export default function BusinessProfileStep({
           </Card>
         </Stack>
 
-        <Group justify={showBack ? 'apart' : 'flex-end'} mt="xl">
+        <Group justify={showBack ? 'space-between' : 'flex-end'} mt="xl" className={styles.actionBar}>
           {showBack ? (
-            <Button variant="light" onClick={onPrev} type="button">
+            <Button
+              variant="default"
+              onClick={onPrev}
+              type="button"
+              leftSection={<IconChevronLeft size={16} />}
+              className={styles.secondaryButton}
+            >
               Back
             </Button>
           ) : null}
-          <Button type="submit" loading={submitting}>
+          <Button
+            type="submit"
+            loading={submitting}
+            rightSection={<IconArrowRight size={17} />}
+            className={styles.primaryButton}
+          >
             Continue
           </Button>
         </Group>

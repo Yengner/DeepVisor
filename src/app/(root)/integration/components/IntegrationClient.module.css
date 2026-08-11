@@ -5,10 +5,7 @@
 
 .heroGlowLeft,
 .heroGlowRight {
-  position: absolute;
-  border-radius: 999px;
-  pointer-events: none;
-  opacity: 0.75;
+  display: none;
 }
 
 .heroGlowLeft {
@@ -34,8 +31,20 @@
 }
 
 .heroSidebar {
-  background: transparent;
-  border-color: transparent;
+  background: transparent !important;
+  border: 0 !important;
+  border-left: 1px solid #343a33 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.heroSidebar :global(.mantine-Title-root),
+.heroSidebar .statusRow :global(.mantine-Text-root) {
+  color: #f7f8f3 !important;
+}
+
+.heroSidebar .statusRow :global(.mantine-Text-root[data-dimmed]) {
+  color: #a6ada3 !important;
 }
 
 .statusRow {
@@ -49,7 +58,7 @@
 
 .statusRow:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  box-shadow: none;
 }
 
 .statusRowActive {
@@ -57,7 +66,7 @@
 }
 
 .statusRow:focus-visible {
-  outline: 2px solid rgba(37, 99, 235, 0.28);
+  outline: 2px solid rgba(200, 255, 86, 0.55);
   outline-offset: 2px;
 }
 
@@ -65,8 +74,19 @@
   position: relative;
   min-height: 132px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(15, 23, 42, 0.08);
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px solid #343a33 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.heroCard .summaryCard :global(.mantine-Text-root) {
+  color: #f7f8f3 !important;
+}
+
+.heroCard .summaryCard :global(.mantine-Text-root[data-dimmed]) {
+  color: #a6ada3 !important;
 }
 
 .summaryAccent {
@@ -77,15 +97,15 @@
 }
 
 .guideCard {
-  background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(15, 23, 42, 0.08);
-  box-shadow: 0 20px 46px rgba(15, 23, 42, 0.06);
+  background: #ffffff;
+  border-color: rgba(21, 23, 20, 0.08);
+  box-shadow: none;
 }
 
 .stepCard {
   height: 100%;
-  background: rgba(248, 250, 252, 0.88);
-  border-color: rgba(15, 23, 42, 0.07);
+  background: #f4f5ef;
+  border-color: rgba(21, 23, 20, 0.07);
 }
 
 .channelCard {
@@ -93,9 +113,9 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(15, 23, 42, 0.08);
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
+  background: #ffffff;
+  border-color: rgba(21, 23, 20, 0.08);
+  box-shadow: none;
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -103,8 +123,9 @@
 }
 
 .channelCard:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 28px 56px rgba(15, 23, 42, 0.10);
+  transform: translateY(-1px);
+  border-color: var(--dv-border-strong);
+  box-shadow: 0 4px 14px rgba(21, 23, 20, 0.07);
 }
 
 .channelVisual {
@@ -129,50 +150,7 @@
 .channelGlowPrimary,
 .channelGlowSecondary,
 .channelArtworkShadow {
-  position: absolute;
-  pointer-events: none;
-}
-
-.channelGlowPrimary,
-.channelGlowSecondary {
-  border-radius: 999px;
-  z-index: 0;
-}
-
-.channelGlowPrimary {
-  width: 156px;
-  height: 156px;
-  left: 50%;
-  top: 50%;
-  opacity: 0.94;
-  filter: blur(16px);
-  transform: translate(-56%, -54%);
-}
-
-.channelGlowSecondary {
-  width: 104px;
-  height: 104px;
-  left: 50%;
-  top: 50%;
-  opacity: 0.72;
-  filter: blur(22px);
-  transform: translate(-6%, -18%);
-}
-
-.channelArtworkShadow {
-  left: 50%;
-  bottom: 10px;
-  width: 138px;
-  height: 34px;
-  z-index: 0;
-  transform: translateX(-50%);
-  background: radial-gradient(
-    ellipse at center,
-    rgba(15, 23, 42, 0.18) 0%,
-    rgba(15, 23, 42, 0.06) 38%,
-    rgba(15, 23, 42, 0) 74%
-  );
-  filter: blur(8px);
+  display: none;
 }
 
 .channelArtworkWrap {
@@ -187,13 +165,13 @@
 .platformArtwork {
   display: block;
   object-fit: contain;
-  filter: drop-shadow(0 20px 30px rgba(15, 23, 42, 0.18));
+  filter: drop-shadow(0 6px 12px rgba(21, 23, 20, 0.12));
 }
 
 .metricCard {
   height: 100%;
-  background: rgba(248, 250, 252, 0.72);
-  border-color: rgba(15, 23, 42, 0.07);
+  background: #f4f5ef;
+  border-color: rgba(21, 23, 20, 0.07);
 }
 
 .copyPanel {
@@ -202,7 +180,7 @@
 }
 
 .detailHero {
-  background: rgba(255, 255, 255, 0.98);
+  background: #ffffff;
 }
 
 @media (max-width: 62em) {
@@ -223,7 +201,7 @@
 
   .heroCard,
   .guideCard {
-    border-radius: 20px;
+    border-radius: 8px;
   }
 
   .heroSidebar {

@@ -6,14 +6,12 @@ import {
   ActionIcon,
   Avatar,
   Box,
-  Divider,
   Group,
   Loader,
   Menu,
   Paper,
   ScrollArea,
   Skeleton,
-  Switch,
   Table,
   Text,
   Tooltip,
@@ -24,12 +22,11 @@ import {
   IconCircle,
   IconDots,
   IconEye,
-  IconPencil,
   IconPhoto,
-  IconTrash,
 } from '@tabler/icons-react';
 import StatusBadge from './StatusBadge';
 import { buildEntityReportUrl } from './reportLinks';
+import { formatCurrencyAmount } from '@/lib/shared';
 import classes from './CampaignDashboard.module.css';
 
 const BG = 'var(--mantine-color-body)';
@@ -38,14 +35,12 @@ const Z_HEADER = 2;
 const Z_STICKY_RIGHT = 4;
 const RIGHT_COL_WIDTH = 24;
 
-const fmt$ = (n?: number) => `$${Number(n || 0).toFixed(2)}`;
 const fmtPct = (n?: number) => {
-  if (n == null) {
+  if (n == null || !Number.isFinite(n)) {
     return '0%';
   }
 
-  const value = n <= 1 ? n * 100 : n;
-  return `${value.toFixed(2)}%`;
+  return `${n.toFixed(2)}%`;
 };
 
 interface AdsTableProps {
@@ -56,6 +51,7 @@ interface AdsTableProps {
   onOpenAd?: (id: string) => void;
   platformIntegrationId?: string | null;
   adAccountId?: string | null;
+  currencyCode?: string | null;
   platformColor?: string;
   fillHeight?: boolean;
 }
@@ -68,6 +64,7 @@ export default function AdsTable({
   onOpenAd,
   platformIntegrationId,
   adAccountId,
+  currencyCode,
   platformColor = 'dark',
   fillHeight = false,
 }: AdsTableProps) {
@@ -181,7 +178,7 @@ export default function AdsTable({
                 <div className={classes.mobileMetricGrid}>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
-                    <Text fw={800}>{fmt$(spend)}</Text>
+                    <Text fw={800}>{formatCurrencyAmount(spend, currencyCode)}</Text>
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Results</Text>
@@ -189,7 +186,12 @@ export default function AdsTable({
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
-                    <Text fw={800}>{conversions > 0 ? fmt$(spend / conversions) : '$0.00'}</Text>
+                    <Text fw={800}>
+                      {formatCurrencyAmount(
+                        conversions > 0 ? spend / conversions : 0,
+                        currencyCode
+                      )}
+                    </Text>
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>CTR</Text>
@@ -199,7 +201,7 @@ export default function AdsTable({
 
                 <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
                   <Text size="xs" c="dimmed" lineClamp={1}>
-                    {ad.start_date || '—'} - {ad.end_date || 'Ongoing'}
+                    Activity: {ad.start_date || '—'} - {ad.end_date || '—'}
                   </Text>
                   <Text component="a" href={reportHref} size="xs" fw={800} c={platformColor} onClick={(event) => event.stopPropagation()}>
                     Report
@@ -359,23 +361,20 @@ export default function AdsTable({
                   </Table.Td>
                   <Table.Td>
                     <Group gap="xs" wrap="nowrap" onClick={(event) => event.stopPropagation()}>
-                      <Switch
-                        checked={(ad.status || '').toUpperCase() === 'ACTIVE'}
-                        size="sm"
-                        onLabel="ON"
-                        offLabel="OFF"
-                        color="green"
-                        readOnly
-                      />
                       <StatusBadge status={ad.status} />
                     </Group>
                   </Table.Td>
-                  <Table.Td>{fmt$(spend)}</Table.Td>
+                  <Table.Td>{formatCurrencyAmount(spend, currencyCode)}</Table.Td>
                   <Table.Td>{conversions > 0 ? `${conversions} ${conversions === 1 ? 'Result' : 'Results'}` : '0 Results'}</Table.Td>
-                  <Table.Td>{conversions > 0 ? fmt$(spend / conversions) : '$0.00'}</Table.Td>
+                  <Table.Td>
+                    {formatCurrencyAmount(
+                      conversions > 0 ? spend / conversions : 0,
+                      currencyCode
+                    )}
+                  </Table.Td>
                   <Table.Td>{fmtPct(ad.ctr != null ? Number(ad.ctr) : 0)}</Table.Td>
-                  <Table.Td>{ad.cpc != null ? fmt$(Number(ad.cpc)) : '—'}</Table.Td>
-                  <Table.Td>{ad.cpm != null ? fmt$(Number(ad.cpm)) : '—'}</Table.Td>
+                  <Table.Td>{ad.cpc != null ? formatCurrencyAmount(Number(ad.cpc), currencyCode) : '—'}</Table.Td>
+                  <Table.Td>{ad.cpm != null ? formatCurrencyAmount(Number(ad.cpm), currencyCode) : '—'}</Table.Td>
                   <Table.Td>{impressions.toLocaleString()}</Table.Td>
                   <Table.Td>{clicks.toLocaleString()}</Table.Td>
                   <Table.Td>{reach.toLocaleString()}</Table.Td>
@@ -416,9 +415,6 @@ export default function AdsTable({
                           </ActionIcon>
                         </Menu.Target>
                         <Menu.Dropdown>
-                          <Menu.Item leftSection={<IconPencil size={16} />}>
-                            Edit Ad
-                          </Menu.Item>
                           <Menu.Item
                             leftSection={<IconChartBar size={16} />}
                             component="a"
@@ -426,10 +422,6 @@ export default function AdsTable({
                             onClick={(event) => event.stopPropagation()}
                           >
                             View Analytics
-                          </Menu.Item>
-                          <Divider />
-                          <Menu.Item color="red" leftSection={<IconTrash size={16} />}>
-                            Delete Ad
                           </Menu.Item>
                         </Menu.Dropdown>
                       </Menu>

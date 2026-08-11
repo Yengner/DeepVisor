@@ -115,7 +115,7 @@ export default function ManualMetaAdStarter({
     return (
         <Container size="lg" py="xl">
             <Stack gap="xl">
-                <Stack gap="xs">
+                <Stack gap="xs" className="dv-create-hero">
                     <Badge w="fit-content" size="lg" variant="light" color="violet">
                         Meta Ad Builder
                     </Badge>
@@ -195,8 +195,7 @@ export default function ManualMetaAdStarter({
                         radius="xl"
                         p="xl"
                         style={{
-                            background:
-                                'linear-gradient(180deg, rgba(248,246,255,0.94) 0%, rgba(255,255,255,0.98) 100%)',
+                            background: '#f4f5ef',
                         }}
                     >
                         {selectedCampaign && selectedAdSet ? (

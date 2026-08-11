@@ -6,7 +6,6 @@ import {
   Group,
   Menu,
   ScrollArea,
-  Switch,
   Table,
   Text,
   Tooltip,
@@ -16,11 +15,10 @@ import {
   IconCheck,
   IconCircle,
   IconDots,
-  IconPencil,
-  IconTrash,
 } from '@tabler/icons-react';
 import StatusBadge from './StatusBadge';
 import { buildEntityReportUrl } from './reportLinks';
+import { formatCurrencyAmount } from '@/lib/shared';
 import classes from './CampaignDashboard.module.css';
 
 interface CampaignTableProps {
@@ -28,10 +26,9 @@ interface CampaignTableProps {
   selectedCampaignId?: string;
   onSelectCampaign: (campaignId: string) => void;
   onOpenCampaign?: (campaignId: string) => void;
-  onToggleCampaign: (campaignId: string, newStatus: boolean) => void;
-  onDeleteCampaign: (campaignId: string) => void;
   platformIntegrationId?: string | null;
   adAccountId?: string | null;
+  currencyCode?: string | null;
   platformColor?: string;
   fillHeight?: boolean;
 }
@@ -47,15 +44,12 @@ export default function CampaignTable({
   selectedCampaignId,
   onSelectCampaign,
   onOpenCampaign,
-  onToggleCampaign,
-  onDeleteCampaign,
   platformIntegrationId,
   adAccountId,
+  currencyCode,
   platformColor = 'dark',
   fillHeight = false,
 }: CampaignTableProps) {
-  const fmt$ = (n?: number) => `$${Number(n || 0).toFixed(2)}`;
-
   const maxRowsBeforeScroll = 12;
   const headerH = 44;
   const rowH = 48;
@@ -128,24 +122,6 @@ export default function CampaignTable({
                       >
                         View Analytics
                       </Menu.Item>
-                      <Menu.Item
-                        leftSection={<IconPencil size={16} />}
-                        component="a"
-                        href={`/campaigns/${campaign.id}/edit`}
-                      >
-                        Edit Campaign
-                      </Menu.Item>
-                      <Menu.Divider />
-                      <Menu.Item
-                        color="red"
-                        leftSection={<IconTrash size={16} />}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onDeleteCampaign(campaign.id);
-                        }}
-                      >
-                        Delete Campaign
-                      </Menu.Item>
                     </Menu.Dropdown>
                   </Menu>
                 </Group>
@@ -153,7 +129,7 @@ export default function CampaignTable({
                 <div className={classes.mobileMetricGrid}>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
-                    <Text fw={800}>{fmt$(campaign.spend)}</Text>
+                    <Text fw={800}>{formatCurrencyAmount(campaign.spend, currencyCode)}</Text>
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Results</Text>
@@ -161,7 +137,9 @@ export default function CampaignTable({
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
-                    <Text fw={800}>{campaign.costPerResult}</Text>
+                    <Text fw={800}>
+                      {formatCurrencyAmount(campaign.costPerResult, currencyCode)}
+                    </Text>
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>CTR</Text>
@@ -171,7 +149,7 @@ export default function CampaignTable({
 
                 <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
                   <Text size="xs" c="dimmed" lineClamp={1}>
-                    {campaign.startDate} - {campaign.endDate && campaign.endDate !== 'No End Date' ? campaign.endDate : 'Ongoing'}
+                    Activity: {campaign.startDate || '—'} - {campaign.endDate || '—'}
                   </Text>
                   <Text
                     component="a"
@@ -211,8 +189,8 @@ export default function CampaignTable({
             <Table.Th style={{ width: 320, maxWidth: 320 }}>Campaign</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Status</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Objective</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Start</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>End</Table.Th>
+            <Table.Th style={{ whiteSpace: 'nowrap' }}>First activity</Table.Th>
+            <Table.Th style={{ whiteSpace: 'nowrap' }}>Last activity</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Spend</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Results</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Cost/Result</Table.Th>
@@ -337,37 +315,22 @@ export default function CampaignTable({
                   </Table.Td>
 
                   <Table.Td>
-                    <Group
-                      gap="xs"
-                      wrap="nowrap"
-                      onClick={(event) => event.stopPropagation()}
-                      onDoubleClick={(event) => event.stopPropagation()}
-                    >
-                      <Switch
-                        checked={campaign.delivery}
-                        onChange={(event) => onToggleCampaign(campaign.id, event.currentTarget.checked)}
-                        size="sm"
-                        onLabel="ON"
-                        offLabel="OFF"
-                        color="green"
-                      />
+                    <Group gap="xs" wrap="nowrap">
                       <StatusBadge status={campaign.status} />
                     </Group>
                   </Table.Td>
 
                   <Table.Td><Text size="sm">{campaign.objective}</Text></Table.Td>
-                  <Table.Td style={{ whiteSpace: 'nowrap' }}><Text size="sm">{campaign.startDate}</Text></Table.Td>
+                  <Table.Td style={{ whiteSpace: 'nowrap' }}><Text size="sm">{campaign.startDate || '—'}</Text></Table.Td>
                   <Table.Td style={{ whiteSpace: 'nowrap' }}>
-                    <Text size="sm">
-                      {campaign.endDate && campaign.endDate !== 'No End Date' ? campaign.endDate : 'Ongoing'}
-                    </Text>
+                    <Text size="sm">{campaign.endDate || '—'}</Text>
                   </Table.Td>
-                  <Table.Td><Text fw={500} size="sm">{fmt$(campaign.spend)}</Text></Table.Td>
+                  <Table.Td><Text fw={500} size="sm">{formatCurrencyAmount(campaign.spend, currencyCode)}</Text></Table.Td>
                   <Table.Td><Text size="sm">{campaign.results}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.costPerResult}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{formatCurrencyAmount(campaign.costPerResult, currencyCode)}</Text></Table.Td>
                   <Table.Td><Text size="sm">{campaign.ctr != null ? `${campaign.ctr}%` : '0%'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.cpc != null ? fmt$(campaign.cpc) : '—'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.cpm != null ? fmt$(campaign.cpm) : '—'}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.cpc != null ? formatCurrencyAmount(campaign.cpc, currencyCode) : '—'}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.cpm != null ? formatCurrencyAmount(campaign.cpm, currencyCode) : '—'}</Text></Table.Td>
                   <Table.Td><Text size="sm">{campaign.reach ?? 0}</Text></Table.Td>
                   <Table.Td><Text size="sm">{campaign.impressions ?? 0}</Text></Table.Td>
                   <Table.Td><Text size="sm">{campaign.clicks ?? 0}</Text></Table.Td>
@@ -383,7 +346,12 @@ export default function CampaignTable({
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm">
-                      {Number(campaign.leads) > 0 ? fmt$(Number(campaign.spend || 0) / Number(campaign.leads)) : '$0.00'}
+                      {formatCurrencyAmount(
+                        Number(campaign.leads) > 0
+                          ? Number(campaign.spend || 0) / Number(campaign.leads)
+                          : 0,
+                        currencyCode
+                      )}
                     </Text>
                   </Table.Td>
 
@@ -408,31 +376,12 @@ export default function CampaignTable({
                       </Menu.Target>
                       <Menu.Dropdown>
                         <Menu.Item
-                          leftSection={<IconPencil size={16} />}
-                          component="a"
-                          href={`/campaigns/${campaign.id}/edit`}
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          Edit Campaign
-                        </Menu.Item>
-                        <Menu.Item
                           leftSection={<IconChartBar size={16} />}
                           component="a"
                           href={reportHref}
                           onClick={(event) => event.stopPropagation()}
                         >
                           View Analytics
-                        </Menu.Item>
-                        <Menu.Divider />
-                        <Menu.Item
-                          color="red"
-                          leftSection={<IconTrash size={16} />}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onDeleteCampaign(campaign.id);
-                          }}
-                        >
-                          Delete Campaign
                         </Menu.Item>
                       </Menu.Dropdown>
                     </Menu>

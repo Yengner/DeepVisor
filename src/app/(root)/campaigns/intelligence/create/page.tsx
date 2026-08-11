@@ -61,6 +61,7 @@ export default async function SmartCampaignPage({
             platformName={platformDetails.displayName}
             platformId={platformDetails.integrationId}
             adAccountId={adAccount.ad_account_id}
+            currencyCode={adAccount.currency_code}
             draft={smartDraft}
         />);
 }

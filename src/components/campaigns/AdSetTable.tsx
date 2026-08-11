@@ -9,14 +9,14 @@ import {
   Paper,
   ScrollArea,
   Skeleton,
-  Switch,
   Table,
   Text,
   Tooltip,
 } from '@mantine/core';
-import { IconChartBar, IconCheck, IconCircle, IconDots, IconPencil, IconTrash } from '@tabler/icons-react';
+import { IconChartBar, IconCheck, IconCircle, IconDots } from '@tabler/icons-react';
 import StatusBadge from './StatusBadge';
 import { buildEntityReportUrl } from './reportLinks';
+import { formatCurrencyAmount } from '@/lib/shared';
 import classes from './CampaignDashboard.module.css';
 
 const BG = 'var(--mantine-color-body)';
@@ -33,6 +33,7 @@ interface AdSetTableProps {
   selectedAdSetId?: string | null;
   platformIntegrationId?: string | null;
   adAccountId?: string | null;
+  currencyCode?: string | null;
   platformColor?: string;
   fillHeight?: boolean;
 }
@@ -45,11 +46,10 @@ export default function AdSetTable({
   selectedAdSetId,
   platformIntegrationId,
   adAccountId,
+  currencyCode,
   platformColor = 'dark',
   fillHeight = false,
 }: AdSetTableProps) {
-  const fmt$ = (n?: number) => `$${Number(n || 0).toFixed(2)}`;
-
   const maxRowsBeforeScroll = 12;
   const headerH = 44;
   const rowH = 48;
@@ -143,9 +143,6 @@ export default function AdSetTable({
                       <Menu.Item leftSection={<IconChartBar size={16} />} component="a" href={reportHref}>
                         View Analytics
                       </Menu.Item>
-                      <Menu.Item leftSection={<IconPencil size={16} />} component="a" href={`/adsets/${adSet.id}/edit`}>
-                        Edit Ad Set
-                      </Menu.Item>
                     </Menu.Dropdown>
                   </Menu>
                 </Group>
@@ -153,7 +150,7 @@ export default function AdSetTable({
                 <div className={classes.mobileMetricGrid}>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
-                    <Text fw={800}>{fmt$(spend)}</Text>
+                    <Text fw={800}>{formatCurrencyAmount(spend, currencyCode)}</Text>
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Results</Text>
@@ -161,7 +158,9 @@ export default function AdSetTable({
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
-                    <Text fw={800}>{results > 0 ? fmt$(spend / results) : '$0.00'}</Text>
+                    <Text fw={800}>
+                      {formatCurrencyAmount(results > 0 ? spend / results : 0, currencyCode)}
+                    </Text>
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>CTR</Text>
@@ -171,7 +170,7 @@ export default function AdSetTable({
 
                 <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
                   <Text size="xs" c="dimmed" lineClamp={1}>
-                    {adSet.start_date || '—'} - {adSet.end_date || 'Ongoing'}
+                    Activity: {adSet.start_date || '—'} - {adSet.end_date || '—'}
                   </Text>
                   <Text component="a" href={reportHref} size="xs" fw={800} c={platformColor} onClick={(event) => event.stopPropagation()}>
                     Report
@@ -204,8 +203,8 @@ export default function AdSetTable({
             <Table.Th style={{ width: 320, maxWidth: 320 }}>Ad Set</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Status</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Objective</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Start</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>End</Table.Th>
+            <Table.Th style={{ whiteSpace: 'nowrap' }}>First activity</Table.Th>
+            <Table.Th style={{ whiteSpace: 'nowrap' }}>Last activity</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Spend</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Results</Table.Th>
             <Table.Th style={{ whiteSpace: 'nowrap' }}>Cost/Result</Table.Th>
@@ -250,7 +249,6 @@ export default function AdSetTable({
               const rowBg = isSelected ? `var(--mantine-color-${platformColor}-1)` : 'transparent';
               const stickyCellBg = isSelected ? `var(--mantine-color-${platformColor}-1)` : BG;
               const status = (adSet.status || '').toString();
-              const delivery = status.toUpperCase() === 'ACTIVE';
               const spend = Number(adSet.spend || 0);
               const ctr = adSet.ctr != null ? Number(adSet.ctr) : null;
               const cpc = adSet.cpc != null ? Number(adSet.cpc) : null;
@@ -331,14 +329,6 @@ export default function AdSetTable({
                       onClick={(event) => event.stopPropagation()}
                       onDoubleClick={(event) => event.stopPropagation()}
                     >
-                      <Switch
-                        checked={delivery}
-                        size="sm"
-                        onLabel="ON"
-                        offLabel="OFF"
-                        color="green"
-                        readOnly
-                      />
                       <StatusBadge status={status} />
                     </Group>
                   </Table.Td>
@@ -348,14 +338,14 @@ export default function AdSetTable({
                     <Text size="sm">{adSet.start_date || '—'}</Text>
                   </Table.Td>
                   <Table.Td style={{ whiteSpace: 'nowrap' }}>
-                    <Text size="sm">{adSet.end_date || 'Ongoing'}</Text>
+                    <Text size="sm">{adSet.end_date || '—'}</Text>
                   </Table.Td>
-                  <Table.Td><Text fw={500} size="sm">{fmt$(spend)}</Text></Table.Td>
+                  <Table.Td><Text fw={500} size="sm">{formatCurrencyAmount(spend, currencyCode)}</Text></Table.Td>
                   <Table.Td><Text size="sm">{results > 0 ? `${results} Results` : '0 Results'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{results > 0 ? fmt$(spend / results) : '$0.00'}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{formatCurrencyAmount(results > 0 ? spend / results : 0, currencyCode)}</Text></Table.Td>
                   <Table.Td><Text size="sm">{ctr != null ? `${ctr}%` : '0%'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{cpc != null ? fmt$(cpc) : '—'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{cpm != null ? fmt$(cpm) : '—'}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{cpc != null ? formatCurrencyAmount(cpc, currencyCode) : '—'}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{cpm != null ? formatCurrencyAmount(cpm, currencyCode) : '—'}</Text></Table.Td>
                   <Table.Td><Text size="sm">{reach}</Text></Table.Td>
                   <Table.Td><Text size="sm">{impressions}</Text></Table.Td>
                   <Table.Td><Text size="sm">{clicks}</Text></Table.Td>
@@ -363,7 +353,7 @@ export default function AdSetTable({
                   <Table.Td><Text size="sm">{leads}</Text></Table.Td>
                   <Table.Td><Text size="sm">{messages}</Text></Table.Td>
                   <Table.Td><Text size="sm">{reach > 0 ? (impressions / reach).toFixed(2) : '0.00'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{leads > 0 ? fmt$(spend / leads) : '$0.00'}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{formatCurrencyAmount(leads > 0 ? spend / leads : 0, currencyCode)}</Text></Table.Td>
 
                   <Table.Td
                     style={{
@@ -386,31 +376,12 @@ export default function AdSetTable({
                       </Menu.Target>
                       <Menu.Dropdown>
                         <Menu.Item
-                          leftSection={<IconPencil size={16} />}
-                          component="a"
-                          href={`/adsets/${adSet.id}/edit`}
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          Edit Ad Set
-                        </Menu.Item>
-                        <Menu.Item
                           leftSection={<IconChartBar size={16} />}
                           component="a"
                           href={reportHref}
                           onClick={(event) => event.stopPropagation()}
                         >
                           View Analytics
-                        </Menu.Item>
-                        <Menu.Divider />
-                        <Menu.Item
-                          color="red"
-                          leftSection={<IconTrash size={16} />}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            alert(`Delete Ad Set ${adSet.name}`);
-                          }}
-                        >
-                          Delete Ad Set
                         </Menu.Item>
                       </Menu.Dropdown>
                     </Menu>

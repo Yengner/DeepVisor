@@ -39,39 +39,6 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 const PLATFORM_DISPLAY_ORDER = ['meta', 'google', 'tiktok'];
 
-const DEMO_WORKSPACE_OPTIONS: WorkspaceOption[] = [
-  {
-    value: 'preview-meta',
-    platformId: null,
-    accountId: null,
-    platformKey: 'meta',
-    platformLabel: 'Meta',
-    accountLabel: 'DeepVisor Main Account',
-    accountIdentifier: 'act_98345122',
-    preview: true,
-  },
-  {
-    value: 'preview-google',
-    platformId: null,
-    accountId: null,
-    platformKey: 'google',
-    platformLabel: 'Google Ads',
-    accountLabel: 'DeepVisor Search Main',
-    accountIdentifier: '482-190-7721',
-    preview: true,
-  },
-  {
-    value: 'preview-tiktok',
-    platformId: null,
-    accountId: null,
-    platformKey: 'tiktok',
-    platformLabel: 'TikTok Ads',
-    accountLabel: 'DeepVisor TikTok Core',
-    accountIdentifier: '7183-4401-55',
-    preview: true,
-  },
-];
-
 function formatPlatformLabel(platformKey: string): string {
   return PLATFORM_LABELS[platformKey] ?? platformKey.charAt(0).toUpperCase() + platformKey.slice(1);
 }
@@ -130,33 +97,46 @@ export default function PlatformAdAccountDropdownClient({
 
   const liveOptions = useMemo(() => {
     return sortByPlatformOrder(
-      platforms.map((platform) => {
-        const primaryAccount =
-          adAccounts.find((account) => account.platform_integration_id === platform.id) ?? null;
+      platforms.flatMap<WorkspaceOption>((platform): WorkspaceOption[] => {
+        const platformAccounts = adAccounts.filter(
+          (account) => account.platform_integration_id === platform.id
+        );
+        const platformKey = platform.platform_name.toLowerCase();
+        const platformLabel = formatPlatformLabel(platformKey);
 
-        return {
-          value: `live:${platform.id}:${primaryAccount?.id ?? 'none'}`,
-          platformId: platform.id,
-          accountId: primaryAccount?.id ?? null,
-          platformKey: platform.platform_name.toLowerCase(),
-          platformLabel: formatPlatformLabel(platform.platform_name.toLowerCase()),
-          accountLabel: primaryAccount?.name ?? 'No ad account connected',
-          accountIdentifier: primaryAccount?.external_account_id ?? null,
-          preview: false,
-        } satisfies WorkspaceOption;
+        if (platformAccounts.length === 0) {
+          return [
+            {
+              value: `live:${platform.id}:none`,
+              platformId: platform.id,
+              accountId: null,
+              platformKey,
+              platformLabel,
+              accountLabel: 'No ad account connected',
+              accountIdentifier: null,
+              preview: false,
+            } satisfies WorkspaceOption,
+          ];
+        }
+
+        return platformAccounts.map(
+          (account) =>
+            ({
+              value: `live:${platform.id}:${account.id}`,
+              platformId: platform.id,
+              accountId: account.id,
+              platformKey,
+              platformLabel,
+              accountLabel: account.name ?? 'Unnamed ad account',
+              accountIdentifier: account.external_account_id,
+              preview: false,
+            }) satisfies WorkspaceOption
+        );
       })
     );
   }, [adAccounts, platforms]);
 
-  const previewOptions = useMemo(() => {
-    const livePlatformKeys = new Set(liveOptions.map((option) => option.platformKey));
-    return DEMO_WORKSPACE_OPTIONS.filter((option) => !livePlatformKeys.has(option.platformKey));
-  }, [liveOptions]);
-
-  const workspaceOptions = useMemo(
-    () => [...liveOptions, ...previewOptions],
-    [liveOptions, previewOptions]
-  );
+  const workspaceOptions = liveOptions;
 
   const resolvedInitialValue = useMemo(() => {
     const exactMatch = liveOptions.find(
@@ -229,7 +209,6 @@ export default function PlatformAdAccountDropdownClient({
     return null;
   }
 
-  const hasPreviewOptions = previewOptions.length > 0;
   const selectedIcon = getPlatformIcon(selectedOption.platformKey, 18);
   const accentColor = 'var(--platform-accent)';
   const accentStrong = 'var(--platform-accent-strong)';
@@ -238,6 +217,7 @@ export default function PlatformAdAccountDropdownClient({
   const borderColor = 'var(--platform-border)';
   const compact = variant === 'compact';
   const drawer = variant === 'drawer';
+  const inChrome = !drawer;
   const menuWidth = compact || drawer ? 'min(calc(100vw - 24px), 360px)' : 360;
 
   return (
@@ -247,24 +227,26 @@ export default function PlatformAdAccountDropdownClient({
           disabled={isPending}
           style={{
             width: compact || drawer ? '100%' : undefined,
-            minWidth: compact ? 0 : drawer ? '100%' : 290,
-            padding: compact ? '8px 10px' : '10px 14px',
-            borderRadius: compact ? 12 : 14,
-            border: `1px solid ${borderColor}`,
-            background: 'rgba(255, 255, 255, 0.78)',
-            boxShadow: '0 6px 18px rgba(15, 23, 42, 0.04)',
+            minWidth: compact ? 0 : drawer ? '100%' : 270,
+            padding: compact ? '6px 8px' : '6px 10px',
+            borderRadius: 6,
+            border: inChrome ? '1px solid #343a33' : `1px solid ${borderColor}`,
+            background: inChrome ? '#20241f' : '#ffffff',
+            boxShadow: 'none',
           }}
         >
           <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
             <Group align="center" wrap="nowrap" gap="sm">
               <ThemeIcon
                 size={compact ? 'md' : 'lg'}
-                radius="xl"
+                radius="sm"
                 variant="filled"
                 style={{
-                  backgroundColor: selectedOption.preview ? 'rgba(148, 163, 184, 0.14)' : accentSoftStrong,
-                  color: selectedOption.preview ? '#64748b' : accentStrong,
-                  border: selectedOption.preview ? '1px solid rgba(148, 163, 184, 0.24)' : `1px solid ${borderColor}`,
+                  backgroundColor: selectedOption.preview
+                    ? inChrome ? '#2a2f29' : 'rgba(148, 163, 184, 0.14)'
+                    : inChrome ? 'var(--platform-source-soft)' : accentSoftStrong,
+                  color: selectedOption.preview ? (inChrome ? '#a6ada3' : '#64748b') : (inChrome ? '#f7f8f3' : accentStrong),
+                  border: inChrome ? '1px solid #3b4139' : selectedOption.preview ? '1px solid rgba(148, 163, 184, 0.24)' : `1px solid ${borderColor}`,
                 }}
               >
                 {selectedIcon}
@@ -272,7 +254,7 @@ export default function PlatformAdAccountDropdownClient({
 
               <div style={{ minWidth: 0, flex: 1 }}>
                 <Group gap={6} wrap={compact ? 'nowrap' : 'wrap'}>
-                  <Text size={compact ? 'xs' : 'sm'} fw={700} lineClamp={1}>
+                  <Text size={compact ? 'xs' : 'sm'} fw={750} lineClamp={1} c={inChrome ? 'white' : undefined}>
                       {selectedOption.platformLabel}
                     </Text>
                   {selectedOption.preview && !compact ? (
@@ -281,7 +263,7 @@ export default function PlatformAdAccountDropdownClient({
                     </Badge>
                   ) : null}
                 </Group>
-                <Text size="xs" c="dimmed" lineClamp={1}>
+                <Text size="xs" c={inChrome ? '#a6ada3' : 'dimmed'} lineClamp={1}>
                   {selectedOption.accountLabel}
                   {formatAccountIdentifier(selectedOption.accountIdentifier)
                     ? ` · ${formatAccountIdentifier(selectedOption.accountIdentifier)}`
@@ -290,22 +272,13 @@ export default function PlatformAdAccountDropdownClient({
               </div>
             </Group>
 
-            <IconChevronDown size={16} color="#6b7280" />
+            <IconChevronDown size={16} color={inChrome ? '#a6ada3' : '#6b7280'} />
           </Group>
         </UnstyledButton>
       </Menu.Target>
 
       <Menu.Dropdown>
         <Menu.Label>Platforms & ad accounts</Menu.Label>
-        <Text size="xs" c="dimmed" px="sm" pb="xs">
-          Switch the workspace view by platform. Each platform carries one primary ad account in
-          this version of the selector.
-        </Text>
-        {hasPreviewOptions ? (
-          <Text size="xs" c="dimmed" px="sm" pb="sm">
-            Preview rows are static until those integrations are connected for real.
-          </Text>
-        ) : null}
 
         {workspaceOptions.map((option) => {
           const isActive = option.value === selectedOption.value;
@@ -317,7 +290,7 @@ export default function PlatformAdAccountDropdownClient({
                 <Group align="center" wrap="nowrap" gap="sm">
                   <ThemeIcon
                     size="lg"
-                    radius="xl"
+                    radius="sm"
                     variant="filled"
                     style={{
                       backgroundColor: option.preview ? 'rgba(148, 163, 184, 0.14)' : accentSoft,

@@ -1,5 +1,5 @@
 import { Button, Card, Stack, Text, Title, ThemeIcon } from '@mantine/core';
-import { IconPlug, IconBuildingStore, IconPresentationAnalytics } from '@tabler/icons-react';
+import { IconArrowRight, IconPlug, IconBuildingStore, IconPresentationAnalytics } from '@tabler/icons-react';
 import Link from 'next/link';
 
 interface EmptyCampaignStateProps {
@@ -35,27 +35,34 @@ export function EmptyCampaignState({ type, platformName }: EmptyCampaignStatePro
     const content = config[type];
 
     return (
-        <Card p="xl" withBorder radius="md" className="mx-auto max-w-md mt-16">
+        <Card p="xl" withBorder radius="md" className="app-platform-page-hero mx-auto mt-16 max-w-xl">
             <Stack align="center" gap="md">
                 <ThemeIcon
-                    size={60}
-                    radius={40}
-                    color={type === 'platform' ? 'blue' : type === 'adAccount' ? 'indigo' : 'green'}
+                    size={48}
+                    radius="sm"
+                    color="signal"
+                    style={{ background: '#c8ff56', color: '#151714' }}
                 >
                     {content.icon}
                 </ThemeIcon>
 
-                <Title order={2} ta="center">
+                <Title order={2} ta="center" className="app-platform-page-title">
                     {content.title}
                 </Title>
 
-                <Text size="lg" c="dimmed" ta="center" mb="md">
+                <Text size="md" ta="center" mb="md" className="app-platform-page-copy">
                     {content.description}
                 </Text>
 
-                <Link href={content.buttonLink} style={{ textDecoration: 'none' }}>
-                    <Button size="md">{content.buttonText}</Button>
-                </Link>
+                <Button
+                  component={Link}
+                  href={content.buttonLink}
+                  size="md"
+                  rightSection={<IconArrowRight size={16} />}
+                  className="app-platform-page-action-primary"
+                >
+                  {content.buttonText}
+                </Button>
             </Stack>
         </Card>
     );

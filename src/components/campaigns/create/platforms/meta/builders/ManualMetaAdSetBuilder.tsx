@@ -82,7 +82,7 @@ export default function ManualMetaAdSetBuilder({
     return (
         <Container size="lg" py="xl">
             <Stack gap="xl">
-                <Group justify="apart" align="flex-start">
+                <Group justify="apart" align="flex-start" className="dv-create-hero">
                     <Stack gap="xs">
                         <Badge w="fit-content" size="lg" variant="light" color="blue">
                             Add Ad Set

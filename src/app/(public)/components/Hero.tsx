@@ -29,11 +29,6 @@ const Hero: FC = () => {
       id="platform"
       aria-labelledby="hero-title"
     >
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(37,99,235,0.12),transparent_30%),radial-gradient(circle_at_86%_10%,rgba(52,168,83,0.12),transparent_22%),linear-gradient(180deg,#ffffff_0%,#f7f9fc_72%)]"
-        aria-hidden="true"
-      />
-
       <Container className="relative">
         <div className="grid items-center gap-10 lg:grid-cols-[0.82fr_1.18fr] xl:grid-cols-[0.78fr_1.22fr]">
           <div className="space-y-7">
@@ -44,7 +39,7 @@ const Hero: FC = () => {
             <div className="space-y-5">
               <h1
                 id="hero-title"
-                className="max-w-4xl text-balance text-4xl font-semibold leading-[0.98] tracking-[-0.055em] text-slate-950 sm:text-5xl lg:text-6xl xl:text-[4.25rem]"
+                className="max-w-4xl text-balance text-4xl font-semibold leading-[0.98] text-slate-950 sm:text-5xl lg:text-6xl xl:text-[4.25rem]"
               >
                 Get more qualified quotes without living inside ad platforms
               </h1>

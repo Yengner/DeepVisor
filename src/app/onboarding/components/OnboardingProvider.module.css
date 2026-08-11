@@ -1,22 +1,113 @@
+.page {
+  --ink: #151714;
+  --deep-ink: #0d0f0d;
+  --canvas: #f4f5ef;
+  --line: #ced2c7;
+  --muted: #666b61;
+  --signal: #0b7a4b;
+  --lime: #c8ff56;
+  --coral: #e76156;
+  min-height: 100svh;
+  background: var(--canvas);
+  color: var(--ink);
+}
+
 .onboardingShell {
   width: 100%;
+  padding-bottom: 72px;
+}
+
+.topBar {
+  min-height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brandLockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.brandMark {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--lime);
+  font-size: 0.7rem;
+}
+
+.brandSection {
+  margin-left: 2px;
+  padding-left: 12px;
+  border-left: 1px solid #b8bcb2;
+  color: #777c72;
+  font-weight: 700;
+}
+
+.saveState {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.savedDot,
+.savingDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--signal);
+}
+
+.savingDot {
+  background: #7258a3;
+  animation: savePulse 1s ease-in-out infinite;
 }
 
 .headerStack {
-  margin-bottom: 28px;
+  max-width: 820px;
+  padding: 44px 0 32px;
+}
+
+.pageKicker {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--signal);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0;
 }
 
 .pageTitle {
-  max-width: 760px;
-  margin-bottom: 8px;
-  font-size: clamp(2rem, 4vw, 3.5rem);
-  line-height: 1;
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display), var(--font-body), sans-serif;
+  font-size: 2.75rem;
+  line-height: 1.08;
   letter-spacing: 0;
 }
 
 .pageCopy {
   max-width: 720px;
-  line-height: 1.55;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.65;
 }
 
 .progressColumn {
@@ -25,80 +116,396 @@
 
 .progressCard {
   position: sticky;
-  top: 88px;
-  background:
-    linear-gradient(180deg, rgba(239, 246, 255, 0.9), rgba(255, 255, 255, 0.96)),
-    radial-gradient(circle at 18% 0%, rgba(37, 99, 235, 0.16), transparent 34%);
+  top: 20px;
+  overflow: hidden;
+  border: 1px solid var(--deep-ink);
+  border-radius: 8px;
+  background: var(--ink);
+  color: #ffffff;
 }
 
-.formCard {
-  overflow: visible;
-  background: rgba(255, 255, 255, 0.96);
+.progressHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px;
+  border-bottom: 1px solid #3a3e38;
 }
 
-@media (max-width: 760px) {
+.progressHeader > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progressHeader span {
+  color: #a9aea4;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.progressHeader strong {
+  color: var(--lime);
+  font-family: var(--font-display), var(--font-body), sans-serif;
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.railProgress {
+  border-radius: 0;
+  background: #393d36;
+}
+
+.stepList {
+  display: flex;
+  flex-direction: column;
+}
+
+.progressStep {
+  min-height: 82px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #353934;
+  color: #aeb3a9;
+}
+
+.progressStepActive {
+  background: #20231f;
+  color: #ffffff;
+  box-shadow: inset 3px 0 0 var(--lime);
+}
+
+.progressStepDone {
+  color: #dce0d8;
+}
+
+.stepNumber {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #50554c;
+  border-radius: 4px;
+  color: #aeb3a9;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.progressStepActive .stepNumber,
+.progressStepDone .stepNumber {
+  border-color: var(--lime);
+  color: var(--lime);
+}
+
+.progressStep > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.progressStep strong {
+  color: inherit;
+  font-size: 0.84rem;
+  line-height: 1.25;
+}
+
+.progressStep > div > span {
+  overflow-wrap: anywhere;
+  color: #858b80;
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.activeLabel {
+  color: var(--lime);
+  font-size: 0.61rem;
+  font-weight: 900;
+}
+
+.railNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 20px;
+  color: #aeb3a9;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.railNote svg {
+  flex: 0 0 auto;
+  color: var(--lime);
+}
+
+.formSurface {
+  min-width: 0;
+}
+
+.mobileProgress {
+  display: none;
+}
+
+.stepper :global(.mantine-Stepper-steps) {
+  display: none;
+}
+
+.stepper :global(.mantine-Stepper-content) {
+  padding-top: 0;
+}
+
+.formSurface :global(.mantine-Card-root) {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.formSurface :global(.mantine-Title-root) {
+  color: var(--ink);
+  letter-spacing: 0;
+}
+
+.formSurface :global(.mantine-InputWrapper-label) {
+  margin-bottom: 5px;
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.formSurface :global(.mantine-InputWrapper-description) {
+  margin-bottom: 7px;
+  color: #777c72;
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.formSurface :global(.mantine-Input-input),
+.formSurface :global(.mantine-Textarea-input) {
+  min-height: 46px;
+  border: 1px solid #c8ccc1;
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.formSurface :global(.mantine-Input-input:hover),
+.formSurface :global(.mantine-Textarea-input:hover) {
+  border-color: #92988c;
+}
+
+.formSurface :global(.mantine-Input-input:focus),
+.formSurface :global(.mantine-Input-input:focus-within),
+.formSurface :global(.mantine-Textarea-input:focus) {
+  border-color: var(--signal);
+  box-shadow: 0 0 0 2px rgba(11, 122, 75, 0.12);
+}
+
+.formSurface :global(.mantine-MultiSelect-pill) {
+  border-radius: 3px;
+  background: #eaf5ee;
+  color: #075f3a;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.formSurface :global(.mantine-Combobox-dropdown) {
+  border: 1px solid #bfc4b8;
+  border-radius: 4px;
+  box-shadow: 0 14px 34px rgba(21, 23, 20, 0.12);
+}
+
+.formSurface :global(.mantine-Combobox-option) {
+  border-radius: 3px;
+  font-size: 0.86rem;
+}
+
+.formSurface :global(.mantine-Combobox-option[data-combobox-selected]) {
+  background: var(--signal);
+  color: #ffffff;
+}
+
+.formSurface :global(.mantine-Button-root) {
+  min-height: 44px;
+  border-radius: 4px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.formSurface :global(.mantine-Button-root[data-variant='filled']) {
+  background: var(--signal);
+  color: #ffffff;
+}
+
+.formSurface :global(.mantine-Button-root[data-variant='filled']:hover) {
+  background: #08623d;
+}
+
+.formSurface :global(.mantine-Button-root[data-variant='light']) {
+  background: #e9f3ec;
+  color: #075f3a;
+}
+
+.formSurface :global(.mantine-Badge-root) {
+  border-radius: 3px;
+  letter-spacing: 0;
+}
+
+.errorPage {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--canvas, #f4f5ef);
+}
+
+.errorPanel {
+  width: min(100%, 620px);
+  padding: 28px;
+  border: 1px solid #cfd2c8;
+  border-top: 4px solid #e76156;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #151714;
+}
+
+.errorPanel :global(.mantine-Title-root) {
+  letter-spacing: 0;
+}
+
+.errorKicker {
+  color: #b33f36;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.errorPanel :global(.mantine-Button-root) {
+  width: fit-content;
+  min-height: 44px;
+  border-radius: 4px;
+  background: #151714;
+  color: #ffffff;
+}
+
+@keyframes savePulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 62em) {
   .onboardingShell {
-    max-width: none;
-    padding: 14px 6px 104px !important;
+    padding-inline: 18px;
   }
 
   .headerStack {
-    padding-inline: 6px;
-    margin-bottom: 14px;
-  }
-
-  .pageTitle {
-    font-size: 1.85rem;
-  }
-
-  .pageCopy {
-    font-size: 0.98rem;
+    padding: 34px 0 24px;
   }
 
   .progressColumn {
     display: none;
   }
 
-  .formCard {
-    width: calc(100vw - 8px);
-    margin-inline: calc(50% - 50vw + 4px);
-    padding: 12px !important;
-    border-radius: 20px;
+  .mobileProgress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 18px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #ffffff;
   }
 
-  .formCard :global(.mantine-Stepper-steps) {
-    margin-bottom: 16px;
-    overflow-x: auto;
-    padding-bottom: 4px;
+  .mobileProgress span {
+    color: var(--signal);
+    font-size: 0.66rem;
+    font-weight: 900;
   }
 
-  .formCard :global(.mantine-Stepper-content) {
-    padding-top: 8px;
+  .mobileProgress strong {
+    margin-bottom: 4px;
+    font-size: 0.86rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .onboardingShell {
+    max-width: none;
+    padding: 0 10px 90px;
   }
 
-  .formCard :global(.mantine-Card-root) {
-    padding: 14px !important;
-    border-radius: 16px;
-    overflow: visible;
+  .topBar {
+    min-height: 58px;
   }
 
-  .formCard :global(.mantine-Combobox-dropdown) {
-    width: 100% !important;
-    max-width: calc(100vw - 28px);
-    z-index: 30;
+  .brandSection {
+    display: none;
   }
 
-  .formCard :global(.mantine-SimpleGrid-root) {
+  .saveState {
+    max-width: 132px;
+    justify-content: flex-end;
+    text-align: right;
+    font-size: 0.68rem;
+  }
+
+  .headerStack {
+    padding: 28px 2px 22px;
+  }
+
+  .pageTitle {
+    font-size: 2.1rem;
+  }
+
+  .pageCopy {
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+
+  .mobileProgress {
+    margin-inline: -2px;
+  }
+
+  .formSurface :global(.mantine-Card-root) {
+    padding: 15px !important;
+  }
+
+  .formSurface :global(.mantine-SimpleGrid-root) {
     gap: 12px;
   }
 
-  .formCard :global(.mantine-Input-input),
-  .formCard :global(.mantine-Textarea-input) {
-    min-height: 46px;
+  .formSurface :global(.mantine-Input-input),
+  .formSurface :global(.mantine-Textarea-input) {
+    min-height: 48px;
     font-size: 16px;
   }
 
-  .formCard :global(.mantine-Button-root) {
-    min-height: 44px;
+  .errorPage {
+    padding: 10px;
+  }
+
+  .errorPanel {
+    padding: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .savingDot {
+    animation: none;
   }
 }

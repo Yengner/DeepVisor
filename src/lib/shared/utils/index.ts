@@ -1,6 +1,7 @@
 export * from './collections'
 export * from './calendarQueue'
 export * from './chartColors'
+export * from './currency'
 export * from './date'
 export * from './format'
 export * from './guards'

@@ -6,6 +6,7 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import type { Database } from '@/lib/shared/types/supabase';
 import type { IntegrationStatus } from '@/lib/shared/types/integrations';
 import { getPrimaryAdAccountSelection } from '@/lib/server/integrations/service';
+import { ErrorState } from '@/components/ui/states/ErrorState';
 
 type PlatformRow = Pick<Database['public']['Tables']['platforms']['Row'], 'id' | 'key' | 'name' | 'api_info'>;
 type PlatformIntegrationRow = {
@@ -97,7 +98,15 @@ export default async function IntegrationPage() {
   }
   if (integrationError) {
     console.error('Error fetching platform integrations in integration page:', integrationError.message);
-    return <div>Failed to load integrations</div>;
+    return (
+      <div className="dv-app-page px-4 py-8 md:px-6">
+        <ErrorState
+          title="Connections could not load"
+          message="DeepVisor could not read the connected advertising accounts. Try again from the overview."
+          primaryAction={{ label: 'Return to overview', href: '/dashboard' }}
+        />
+      </div>
+    );
   }
   if (adAccountsError) {
     console.error('Error fetching discovered ad accounts in integration page:', adAccountsError.message);

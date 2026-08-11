@@ -1,255 +1,114 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import {
-  NavLink,
-  Stack,
-  ThemeIcon,
-  Tooltip,
-  Divider,
-} from '@mantine/core';
-import {
-  IconSettings,
-  IconLogout,
-} from '@tabler/icons-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Tooltip } from '@mantine/core';
+import { IconLogout, IconSettings } from '@tabler/icons-react';
 import { clientHandleSignOut } from '@/lib/client';
 import { isAppNavItemActive, primaryNavItems } from './navigation';
 
-const Sidebar = () => {
+type RailItemProps = {
+  active: boolean;
+  expanded: boolean;
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  tone?: 'default' | 'danger';
+};
+
+function RailItem({
+  active,
+  expanded,
+  icon,
+  label,
+  onClick,
+  tone = 'default',
+}: RailItemProps) {
+  const control = (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      aria-label={label}
+      className={`group relative flex h-11 w-full items-center gap-3 overflow-hidden rounded-md border px-3 text-sm font-bold transition-colors ${
+        active
+          ? 'border-[#d7ff8a] bg-[#c8ff56] text-[#151714]'
+          : tone === 'danger'
+            ? 'border-transparent text-[#e98b83] hover:border-[#49302e] hover:bg-[#251b1a]'
+            : 'border-transparent text-[#aab2a7] hover:border-[#30352f] hover:bg-[#242823] hover:text-white'
+      }`}
+    >
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center">{icon}</span>
+      <span
+        className={`whitespace-nowrap transition-opacity duration-150 ${
+          expanded ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      >
+        {label}
+      </span>
+    </button>
+  );
+
+  if (expanded) {
+    return control;
+  }
+
+  return (
+    <Tooltip label={label} position="right" withArrow openDelay={220}>
+      {control}
+    </Tooltip>
+  );
+}
+
+export default function Sidebar() {
   const [isExpanded, setIsExpanded] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
-  const menuItems = primaryNavItems;
-
-  const handleNavigation = (route: string) => {
-    router.push(route);
-  };
-
-  const handleLogout = async () => {
-    await clientHandleSignOut();
-  };
-
-  const sidebarBg = 'var(--platform-sidebar-bg)';
-  const activeColor = 'var(--platform-accent)';
-  const hoverColor = 'var(--platform-accent-soft)';
-  const iconInactiveColor = 'var(--platform-nav-icon)';
-  const textColor = 'var(--platform-text-strong)';
-  const dividerColor = 'var(--platform-border)';
-
   return (
-    <div
+    <aside
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
-      className={`hidden md:block fixed top-16 left-0 h-[calc(100vh-4rem)] z-40 border-r border-gray-200 transition-all duration-500 ${isExpanded ? 'w-52' : 'w-16'}`}
-      style={{
-        backgroundColor: sidebarBg,
-        borderRightColor: 'var(--platform-border)',
-        boxShadow: 'var(--platform-sidebar-shadow)'
-      }}
+      className={`fixed bottom-0 left-0 top-16 z-40 hidden overflow-hidden border-r border-[#292d28] bg-[#0d0f0d] transition-[width] duration-200 md:block ${
+        isExpanded ? 'w-[13.5rem]' : 'w-[3.75rem]'
+      }`}
+      aria-label="Workspace navigation"
     >
-      <div className="h-full flex flex-col justify-between py-8">
-        {/* Top Section: Menu Items */}
-        <Stack gap={12} >
-          {menuItems.map((item) => (
-            isExpanded ? (
-              <NavLink
-                key={item.name}
-                label={<span style={{ fontSize: 17, fontWeight: 600 }}>{item.name}</span>}
-                leftSection={
-                  <ThemeIcon
-                    size={32}
-                    variant="filled"
-                    style={{
-                      backgroundColor: isAppNavItemActive(pathname, item.route) ? activeColor : hoverColor,
-                      color: isAppNavItemActive(pathname, item.route) ? '#ffffff' : iconInactiveColor,
-                      minWidth: 32,
-                      minHeight: 32,
-                    }}
-                  >
-                    <item.icon size={21} stroke={1.5} color={isAppNavItemActive(pathname, item.route) ? "#ffffff" : undefined} />
-                  </ThemeIcon>
-                }
-                active={isAppNavItemActive(pathname, item.route)}
-                onClick={() => handleNavigation(item.route)}
-                variant={isAppNavItemActive(pathname, item.route) ? "filled" : "light"}
-                styles={() => ({
-                  root: {
-                    '&[dataActive]': {
-                      backgroundColor: activeColor
-                    },
-                    '&:hover': {
-                      backgroundColor: hoverColor
-                    },
-                    borderRadius: 12,
-                    padding: '12px 12px',
-                  },
-                  label: {
-                    color: isAppNavItemActive(pathname, item.route) ? "#ffffff" : textColor,
-                    fontWeight: isAppNavItemActive(pathname, item.route) ? 700 : 600,
-                    fontSize: 17
-                  }
-                })}
+      <div className="flex h-full flex-col justify-between px-2 py-4">
+        <nav className="space-y-1.5">
+          {primaryNavItems.map((item) => {
+            const active = isAppNavItemActive(pathname, item.route);
+            return (
+              <RailItem
+                key={item.route}
+                active={active}
+                expanded={isExpanded}
+                icon={<item.icon size={19} stroke={active ? 2.25 : 1.8} />}
+                label={item.name}
+                onClick={() => router.push(item.route)}
               />
-            ) : (
-              <Tooltip
-                key={item.name}
-                label={<span style={{ fontSize: 14 }}>{item.name}</span>}
-                position="right"
-                withArrow
-                transitionProps={{ transition: "pop", duration: 200 }}
-              >
-                <NavLink
-                  leftSection={
-                  <ThemeIcon
-                    size={32}
-                    variant="filled"
-                    style={{
-                      backgroundColor: isAppNavItemActive(pathname, item.route) ? activeColor : hoverColor,
-                      color: isAppNavItemActive(pathname, item.route) ? '#ffffff' : iconInactiveColor,
-                      minWidth: 32,
-                      minHeight: 32,
-                    }}
-                  >
-                      <item.icon size={21} stroke={1.5} color={isAppNavItemActive(pathname, item.route) ? "#ffffff" : undefined} />
-                    </ThemeIcon>
-                  }
-                  active={isAppNavItemActive(pathname, item.route)}
-                  onClick={() => handleNavigation(item.route)}
-                  variant="subtle"
-                  styles={(theme) => ({
-                    root: {
-                      borderRadius: theme.radius.md,
-                      '&[dataActive]': {
-                        backgroundColor: activeColor
-                      },
-                      '&:hover': {
-                        backgroundColor: hoverColor
-                      },
-                      padding: '12px 12px',
-                    }
-                  })}
-                />
-              </Tooltip>
-            )
-          ))}
-        </Stack>
+            );
+          })}
+        </nav>
 
-        {/* Bottom Section: Settings & Logout */}
-        <Stack gap={10} mb={10}>
-          <Divider my="sm" color={dividerColor} />
-
-          {isExpanded ? (
-            <>
-              <NavLink
-                label={<span style={{ fontSize: 18, fontWeight: 600 }}>Settings</span>}
-                leftSection={
-                  <ThemeIcon size={34} variant="light" color={iconInactiveColor}>
-                    <IconSettings size={22} stroke={1.7} />
-                  </ThemeIcon>
-                }
-                onClick={() => handleNavigation('/settings')}
-                styles={{
-                  label: {
-                    color: textColor,
-                    fontWeight: 600,
-                    fontSize: 18
-                  },
-                  root: {
-                    '&:hover': {
-                      backgroundColor: hoverColor
-                    },
-                    borderRadius: 10,
-                    padding: '12px 12px',
-                  }
-                }}
-              />
-
-              <NavLink
-                label={<span style={{ fontSize: 18, fontWeight: 600 }}>Logout</span>}
-                leftSection={
-                  <ThemeIcon size={34} variant="light" color="red">
-                    <IconLogout size={22} stroke={1.7} />
-                  </ThemeIcon>
-                }
-                color="red"
-                onClick={handleLogout}
-                styles={{
-                  root: {
-                    '&:hover': {
-                      backgroundColor: '#ffe5e5'
-                    },
-                    borderRadius: 10,
-                    padding: '12px 12px',
-                  },
-                  label: {
-                    fontWeight: 600,
-                    fontSize: 18
-                  }
-                }}
-              />
-            </>
-          ) : (
-            <>
-              <Tooltip
-                label={<span style={{ fontSize: 15 }}>Settings</span>}
-                position="right"
-                withArrow
-                transitionProps={{ transition: "pop", duration: 200 }}
-              >
-                <NavLink
-                  leftSection={
-                    <ThemeIcon size={34} variant="light" color={iconInactiveColor}>
-                      <IconSettings size={22} stroke={1.7} />
-                    </ThemeIcon>
-                  }
-                  onClick={() => handleNavigation('/settings')}
-                  variant="subtle"
-                  styles={{
-                    root: {
-                      '&:hover': {
-                        backgroundColor: hoverColor
-                      },
-                      borderRadius: 10,
-                      padding: '12px 12px',
-                    }
-                  }}
-                />
-              </Tooltip>
-
-              <Tooltip
-                label={<span style={{ fontSize: 15 }}>Logout</span>}
-                position="right"
-                withArrow
-                transitionProps={{ transition: "pop", duration: 200 }}
-              >
-                <NavLink
-                  leftSection={
-                    <ThemeIcon size={34} variant="light" color="red">
-                      <IconLogout size={22} stroke={1.7} />
-                    </ThemeIcon>
-                  }
-                  onClick={handleLogout}
-                  variant="subtle"
-                  color="red"
-                  styles={{
-                    root: {
-                      '&:hover': {
-                        backgroundColor: '#ffe5e5'
-                      },
-                      borderRadius: 10,
-                      padding: '12px 12px',
-                    }
-                  }}
-                />
-              </Tooltip>
-            </>
-          )}
-        </Stack>
+        <div className="space-y-1.5 border-t border-[#292d28] pt-3">
+          <RailItem
+            active={isAppNavItemActive(pathname, '/settings')}
+            expanded={isExpanded}
+            icon={<IconSettings size={19} stroke={1.8} />}
+            label="Settings"
+            onClick={() => router.push('/settings')}
+          />
+          <RailItem
+            active={false}
+            expanded={isExpanded}
+            icon={<IconLogout size={19} stroke={1.8} />}
+            label="Log out"
+            tone="danger"
+            onClick={() => void clientHandleSignOut()}
+          />
+        </div>
       </div>
-    </div>
+    </aside>
   );
-};
-
-export default Sidebar;
+}

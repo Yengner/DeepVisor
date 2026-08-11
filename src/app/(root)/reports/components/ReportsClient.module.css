@@ -10,7 +10,7 @@
 .reportCard,
 .kpiCard,
 .breadcrumbCard {
-  background: rgba(255, 255, 255, 0.97);
+  background: #ffffff;
 }
 
 .headerCard {
@@ -32,7 +32,7 @@
 
 .headerTitle {
   color: var(--platform-text-strong);
-  letter-spacing: -0.035em;
+  letter-spacing: 0;
   line-height: 1.05;
 }
 
@@ -42,8 +42,8 @@
   gap: 12px;
   padding: 12px 14px;
   border: 1px solid var(--platform-border);
-  border-radius: 20px;
-  background: rgba(248, 250, 252, 0.82);
+  border-radius: 8px;
+  background: #f4f5ef;
 }
 
 .controlField {
@@ -54,7 +54,7 @@
 }
 
 .controlLabel {
-  color: #64748b;
+  color: #697067;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -65,9 +65,9 @@
   gap: 8px;
   min-height: 42px;
   padding: 6px;
-  border: 1px solid rgba(226, 232, 240, 0.92);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(21, 23, 20, 0.12);
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .presetButton {
@@ -90,9 +90,9 @@
   align-items: center;
   min-height: 42px;
   padding: 0 12px;
-  border: 1px solid rgba(226, 232, 240, 0.92);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(21, 23, 20, 0.12);
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .compareField :global(.mantine-Switch-body) {
@@ -121,8 +121,8 @@
 }
 
 .kpiValue {
-  color: #0f172a;
-  letter-spacing: -0.035em;
+  color: #151714;
+  letter-spacing: 0;
   line-height: 1;
 }
 
@@ -148,13 +148,13 @@
 }
 
 .deltaNeutral {
-  color: #64748b;
+  color: #697067;
   background: rgba(148, 163, 184, 0.14);
 }
 
 .cardHeader {
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.88);
+  border-bottom: 1px solid rgba(21, 23, 20, 0.12);
 }
 
 .timelineChartStack {
@@ -169,7 +169,7 @@
 .timelineChartSection + .timelineChartSection {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(226, 232, 240, 0.9);
+  border-top: 1px solid rgba(21, 23, 20, 0.12);
 }
 
 .timelineSectionHeader {
@@ -190,14 +190,14 @@
 
 .insightPanel {
   height: 100%;
-  background: rgba(248, 250, 252, 0.78);
+  background: #f4f5ef;
 }
 
 .insightBlock {
   padding: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.92);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(21, 23, 20, 0.12);
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .reportCalendarDay {
@@ -217,20 +217,20 @@
   height: 5px;
   border-radius: 999px;
   background: #f97316;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 1px #ffffff;
   transform: translateX(-50%);
 }
 
 .reportChartTooltip {
   min-width: 170px;
   max-width: 240px;
-  border-color: rgba(203, 213, 225, 0.94);
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.13);
+  border-color: rgba(21, 23, 20, 0.18);
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(21, 23, 20, 0.13);
 }
 
 .reportChartTooltipTitle {
-  color: #0f172a;
+  color: #151714;
   line-height: 1.2;
 }
 
@@ -259,17 +259,17 @@
   width: 20px;
   height: 20px;
   padding: 0;
-  border: 1px solid rgba(226, 232, 240, 0.92);
+  border: 1px solid rgba(21, 23, 20, 0.12);
   border-radius: 999px;
-  background: rgba(248, 250, 252, 0.76);
-  color: #475569;
+  background: #f4f5ef;
+  color: #596057;
   font-size: 10px;
   font-weight: 800;
   line-height: 1;
 }
 
 .reportAnnotationTooltip {
-  border-top: 1px solid rgba(226, 232, 240, 0.92);
+  border-top: 1px solid rgba(21, 23, 20, 0.12);
 }
 
 .reportAnnotationTooltipItem {
@@ -282,9 +282,9 @@
 
 .moverRow {
   padding: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.92);
-  border-radius: 16px;
-  background: rgba(248, 250, 252, 0.72);
+  border: 1px solid rgba(21, 23, 20, 0.12);
+  border-radius: 8px;
+  background: #f4f5ef;
 }
 
 .rankingAccordion {
@@ -292,9 +292,9 @@
 }
 
 .rankingAccordionItem {
-  border: 1px solid rgba(226, 232, 240, 0.92);
-  border-radius: 16px;
-  background: rgba(248, 250, 252, 0.58);
+  border: 1px solid rgba(21, 23, 20, 0.12);
+  border-radius: 8px;
+  background: #f4f5ef;
 }
 
 .rankingAccordionControl {
@@ -311,14 +311,14 @@
 
 .chartSubSection {
   padding-top: 14px;
-  border-top: 1px solid rgba(226, 232, 240, 0.9);
+  border-top: 1px solid rgba(21, 23, 20, 0.12);
 }
 
 .stateMapWrap {
   width: 100%;
-  border: 1px solid rgba(226, 232, 240, 0.92);
-  border-radius: 18px;
-  background: rgba(248, 250, 252, 0.74);
+  border: 1px solid rgba(21, 23, 20, 0.12);
+  border-radius: 8px;
+  background: #f4f5ef;
   padding: 10px;
   overflow-x: auto;
 }
@@ -340,8 +340,8 @@
   justify-content: center;
   width: var(--state-map-tile-size);
   min-height: var(--state-map-tile-size);
-  border: 1px solid rgba(203, 213, 225, 0.9);
-  border-radius: 12px;
+  border: 1px solid rgba(21, 23, 20, 0.18);
+  border-radius: 8px;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -378,12 +378,12 @@
 .heatmapCell {
   width: 100%;
   height: 22px;
-  border: 1px solid rgba(226, 232, 240, 0.94);
+  border: 1px solid rgba(21, 23, 20, 0.12);
   border-radius: 7px;
 }
 
 .emptyPanel {
-  border-color: rgba(226, 232, 240, 0.92);
+  border-color: rgba(21, 23, 20, 0.12);
 }
 
 .tableCard {
@@ -429,12 +429,12 @@
   .kpiCard,
   .breadcrumbCard,
   .headerCard {
-    border-radius: 18px;
+    border-radius: 8px;
   }
 
   .controlBar {
     grid-template-columns: minmax(0, 1fr);
-    border-radius: 14px;
+    border-radius: 8px;
   }
 
   .chartWrap {

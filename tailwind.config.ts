@@ -51,25 +51,25 @@ export default {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
-  			ink: {
-  				DEFAULT: "#0b111a",
-  				80: "#111827",
-  				70: "#1f2937",
-  				60: "#374151"
+			ink: {
+				DEFAULT: "#0d0f0d",
+				80: "#151714",
+				70: "#242823",
+				60: "#343a33"
   			},
   			steel: {
   				DEFAULT: "#5b6b80",
   				40: "#9aa6b2",
   				20: "#c7d0da"
   			},
-  			cloud: {
-  				DEFAULT: "#f5f7fb",
-  				80: "#eef2f7"
-  			},
-  			signal: {
-  				DEFAULT: "#f59e0b",
-  				soft: "#fcd34d",
-  				muted: "#fef3c7"
+			cloud: {
+				DEFAULT: "#f4f5ef",
+				80: "#eef0e9"
+			},
+			signal: {
+				DEFAULT: "#14a866",
+				soft: "#c8ff56",
+				muted: "#e9f7ef"
   			},
   			aurora: {
   				DEFAULT: "#60a5fa",
@@ -92,21 +92,21 @@ export default {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)',
-  			xl: "1.25rem",
-  			"2xl": "1.75rem",
-  			"3xl": "2.5rem"
+			xl: "0.5rem",
+			"2xl": "0.5rem",
+			"3xl": "0.5rem"
   		},
   		boxShadow: {
-  			"card": "0 18px 50px rgba(10, 14, 20, 0.12)",
-  			"card-strong": "0 25px 60px rgba(10, 14, 20, 0.18)",
-  			"glow-amber": "0 0 45px rgba(245, 158, 11, 0.35)",
-  			"glow-blue": "0 0 55px rgba(96, 165, 250, 0.3)",
+			"card": "0 1px 2px rgba(21, 23, 20, 0.05)",
+			"card-strong": "0 8px 24px rgba(21, 23, 20, 0.08)",
+			"glow-amber": "0 0 0 rgba(0, 0, 0, 0)",
+			"glow-blue": "0 0 0 rgba(0, 0, 0, 0)",
   			"inner-glow": "inset 0 1px 0 rgba(255, 255, 255, 0.35)"
   		},
   		backgroundImage: {
-  			"mesh-glow": "radial-gradient(circle at 20% 10%, rgba(245, 158, 11, 0.22), transparent 55%), radial-gradient(circle at 80% 0%, rgba(96, 165, 250, 0.18), transparent 60%), radial-gradient(circle at 60% 80%, rgba(16, 185, 129, 0.16), transparent 55%)",
+			"mesh-glow": "none",
   			"soft-grid": "linear-gradient(90deg, rgba(15, 23, 42, 0.08) 1px, transparent 1px), linear-gradient(rgba(15, 23, 42, 0.08) 1px, transparent 1px)",
-  			"sheen": "linear-gradient(120deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02) 45%, rgba(255, 255, 255, 0.12))"
+			"sheen": "none"
   		},
   		keyframes: {
   			"float-slow": {

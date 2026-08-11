@@ -53,6 +53,7 @@ export type CampaignReviewViewModel = {
   completedAt: string | null;
   generatedAt: string | null;
   processedAt: string | null;
+  currencyCode: string | null;
   scope: 'active_recent' | 'specific_campaign' | 'unknown';
   scopeLabel: string;
   aiGenerated: boolean;

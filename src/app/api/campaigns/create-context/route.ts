@@ -171,6 +171,7 @@ export async function GET(request: NextRequest) {
           platform_name: platformData.vendor,
         },
         adAccountId: adAccountData.external_account_id,
+        currencyCode: adAccountData.currency_code,
         campaigns: campaignTree,
         draft: manualDraft,
         metaPages,

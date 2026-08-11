@@ -189,7 +189,7 @@ function daysBetweenUtcDates(fromDate: string, toDate: string): number {
   return Math.ceil((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000));
 }
 
-export function createDashboardTimer() {
+function createDashboardTimer() {
   return createServerTimer('dashboard', { enabledEnvVar: 'DASHBOARD_TIMING' });
 }
 

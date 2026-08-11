@@ -17,6 +17,7 @@ import {
 } from '@mantine/core';
 import {
   IconAdjustments,
+  IconAlertCircle,
   IconChartBar,
   IconChevronLeft,
   IconFilterOff,
@@ -36,6 +37,7 @@ import type { AdLifetimeRow, AdSetLifetimeRow } from '@/lib/server/data';
 import type { RefreshIntegrationsResponse } from '@/lib/shared/types/integrations';
 import type { FormattedCampaign } from '@/app/(root)/campaigns/page';
 import { fetchAdSetsForCampaign, fetchAdsForAdset } from '@/lib/server/data/queries/components.query';
+import { formatCurrencyAmount } from '@/lib/shared';
 import classes from './CampaignDashboard.module.css';
 
 type TabKey = 'campaigns' | 'adsets' | 'ads';
@@ -49,6 +51,7 @@ interface CampaignDashboardProps {
   campaigns: FormattedCampaign[];
   platform: PlatformInfo;
   adAccountId: string;
+  currencyCode: string | null;
   accountMetrics: {
     spend: number;
     impressions: number;
@@ -81,10 +84,6 @@ function formatCompactNumber(value: number): string {
   return Math.round(value).toLocaleString();
 }
 
-function formatCurrency(value: number): string {
-  return `$${Number(value || 0).toFixed(2)}`;
-}
-
 function campaignResults(campaign: FormattedCampaign): number {
   return Number(campaign.leads || 0) + Number(campaign.messages || 0);
 }
@@ -109,6 +108,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     campaigns,
     platform,
     adAccountId,
+    currencyCode,
     accountMetrics,
     initialSelection,
     initialAdSets,
@@ -158,6 +158,10 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   const [adsLoading, setAdsLoading] = useState(false);
   const [refreshFeedback, setRefreshFeedback] = useState<{
     type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+  const [drilldownError, setDrilldownError] = useState<{
+    scope: 'adsets' | 'ads';
     message: string;
   } | null>(null);
 
@@ -329,7 +333,11 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   useEffect(() => {
     if (activeTab !== 'adsets') return;
     if (!selectedCampaignId) return;
-    if (adSetsByCampaign[selectedCampaignId]) return;
+    setDrilldownError((current) => (current?.scope === 'adsets' ? null : current));
+    if (adSetsByCampaign[selectedCampaignId]) {
+      setAdsetsLoading(false);
+      return;
+    }
 
     let cancelled = false;
     setAdsetsLoading(true);
@@ -343,6 +351,14 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
         }
 
         setAdSetsByCampaign((previous) => ({ ...previous, [selectedCampaignId]: rows || [] }));
+      } catch (error) {
+        console.error('Error loading campaign ad sets:', error);
+        if (!cancelled) {
+          setDrilldownError({
+            scope: 'adsets',
+            message: 'Ad sets could not be loaded. Previously loaded rows have been preserved.',
+          });
+        }
       } finally {
         if (!cancelled) {
           setAdsetsLoading(false);
@@ -358,7 +374,11 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   useEffect(() => {
     if (activeTab !== 'ads') return;
     if (!selectedAdSetId) return;
-    if (adsByAdset[selectedAdSetId]) return;
+    setDrilldownError((current) => (current?.scope === 'ads' ? null : current));
+    if (adsByAdset[selectedAdSetId]) {
+      setAdsLoading(false);
+      return;
+    }
 
     let cancelled = false;
     setAdsLoading(true);
@@ -372,6 +392,14 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
         }
 
         setAdsByAdset((previous) => ({ ...previous, [selectedAdSetId]: rows || [] }));
+      } catch (error) {
+        console.error('Error loading ad set ads:', error);
+        if (!cancelled) {
+          setDrilldownError({
+            scope: 'ads',
+            message: 'Ads could not be loaded. Previously loaded rows have been preserved.',
+          });
+        }
       } finally {
         if (!cancelled) {
           setAdsLoading(false);
@@ -460,6 +488,20 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
           </Alert>
         ) : null}
 
+        {drilldownError?.scope === activeTab ? (
+          <Alert
+            color="red"
+            icon={<IconAlertCircle size={16} />}
+            radius={0}
+            className={classes.feedback}
+            withCloseButton
+            closeButtonLabel="Dismiss loading error"
+            onClose={() => setDrilldownError(null)}
+          >
+            {drilldownError.message}
+          </Alert>
+        ) : null}
+
         <Tabs
           value={activeTab}
           onChange={(value) => {
@@ -495,13 +537,13 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                     {accountSummary.pausedCampaigns} inactive
                   </Badge>
                   <Badge color="gray" variant="light">
-                    {formatCurrency(accountSummary.spend)} spend
+                    {formatCurrencyAmount(accountSummary.spend, currencyCode)} spend
                   </Badge>
                   <Badge color="gray" variant="light">
                     {formatCompactNumber(accountSummary.totalResults)} results
                   </Badge>
                   <Badge color="gray" variant="light">
-                    {formatCurrency(accountSummary.costPerResult)} / result
+                    {formatCurrencyAmount(accountSummary.costPerResult, currencyCode)} / result
                   </Badge>
                 </Group>
               </div>
@@ -576,7 +618,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                   {layerSummary.count} {layerSummary.label.toLowerCase()}
                 </Badge>
                 <Badge variant="light" color="green">
-                  {formatCurrency(layerSummary.spend)} spend
+                  {formatCurrencyAmount(layerSummary.spend, currencyCode)} spend
                 </Badge>
                 <Badge variant="outline" color="gray">
                   {formatCompactNumber(layerSummary.results)} results
@@ -635,14 +677,9 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                   selectedCampaignId={selectedCampaignId ?? undefined}
                   onSelectCampaign={setSelectedCampaignId}
                   onOpenCampaign={handleOpenCampaign}
-                  onToggleCampaign={(id, on) => {
-                    setCampaignData((previous) =>
-                      previous.map((campaign) => (campaign.id === id ? { ...campaign, delivery: on } : campaign))
-                    );
-                  }}
-                  onDeleteCampaign={(id) => setCampaignData((previous) => previous.filter((campaign) => campaign.id !== id))}
                   platformIntegrationId={platform.id}
                   adAccountId={adAccountId}
+                  currencyCode={currencyCode}
                   platformColor={platformColor}
                   fillHeight
                 />
@@ -660,6 +697,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                     selectedAdSetId={selectedAdSetId}
                     platformIntegrationId={platform.id}
                     adAccountId={adAccountId}
+                    currencyCode={currencyCode}
                     platformColor={platformColor}
                     fillHeight
                   />
@@ -677,6 +715,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                     onSelectAd={setSelectedAdId}
                     platformIntegrationId={platform.id}
                     adAccountId={adAccountId}
+                    currencyCode={currencyCode}
                     platformColor={platformColor}
                     fillHeight
                   />

@@ -68,8 +68,8 @@ export default function ManualMetaAdSetStarter({
     return (
         <Container size="lg" py="xl">
             <Stack gap="xl">
-                <Stack gap="xs">
-                    <Badge w="fit-content" size="lg" variant="light" color="blue">
+                <Stack gap="xs" className="dv-create-hero">
+                    <Badge w="fit-content" size="lg" variant="light" className="app-platform-page-badge">
                         Meta Ad Set Builder
                     </Badge>
                     <Title order={2}>Add a new ad set inside an existing campaign</Title>
@@ -135,8 +135,7 @@ export default function ManualMetaAdSetStarter({
                         radius="xl"
                         p="xl"
                         style={{
-                            background:
-                                'linear-gradient(180deg, rgba(246,249,255,0.92) 0%, rgba(255,255,255,0.98) 100%)',
+                            background: '#f4f5ef',
                         }}
                     >
                         {selectedCampaign ? (

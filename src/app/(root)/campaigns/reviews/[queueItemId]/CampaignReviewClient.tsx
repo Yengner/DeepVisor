@@ -51,12 +51,30 @@ function formatDateTime(value: string | null): string {
   });
 }
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(value) ? value : 0);
+function formatCurrency(
+  value: number,
+  currencyCode: string | null,
+  maximumFractionDigits = 0
+): string {
+  const safeValue = Number.isFinite(value) ? value : 0;
+
+  if (currencyCode?.toUpperCase() === 'MIXED') {
+    return safeValue.toLocaleString('en-US', { maximumFractionDigits });
+  }
+
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode || 'USD',
+      maximumFractionDigits,
+    }).format(safeValue);
+  } catch {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits,
+    }).format(safeValue);
+  }
 }
 
 function formatNumber(value: number): string {
@@ -66,28 +84,28 @@ function formatNumber(value: number): string {
 }
 
 function formatMetric(value: number): string {
-  return Number.isFinite(value) && value > 0 ? value.toFixed(2) : '-';
+  return Number.isFinite(value) && value > 0 ? `${value.toFixed(2)}%` : '-';
 }
 
 function stateColor(state: CampaignReviewViewModel['state']): string {
   switch (state) {
     case 'completed':
-      return 'green';
+      return 'signal';
     case 'failed':
-      return 'red';
+      return '#e76156';
     default:
-      return 'yellow';
+      return '#d69324';
   }
 }
 
 function severityColor(severity: CampaignReviewFindingView['severity']): string {
   switch (severity) {
     case 'critical':
-      return 'red';
+      return '#e76156';
     case 'warning':
-      return 'orange';
+      return '#d69324';
     default:
-      return 'blue';
+      return 'signal';
   }
 }
 
@@ -116,7 +134,7 @@ function SummaryCard({
   icon: React.ReactNode;
 }) {
   return (
-    <Card withBorder radius="md" p="lg">
+    <Card withBorder radius="md" p="lg" className={classes.summaryCard}>
       <Group justify="space-between" align="flex-start" mb="md">
         <div>
           <Text size="xs" tt="uppercase" fw={700} c="dimmed">
@@ -182,7 +200,7 @@ function InsightSummarySection({
 
 function FindingsSection({ findings }: { findings: CampaignReviewFindingView[] }) {
   return (
-    <Paper withBorder radius="md" p="lg">
+    <Paper withBorder radius="md" p="lg" className={classes.sectionSurface}>
       <Stack gap="md">
         <Title order={2} size="h3">
           Findings
@@ -227,13 +245,15 @@ function FindingsSection({ findings }: { findings: CampaignReviewFindingView[] }
 function RankingTable({
   title,
   rows,
+  currencyCode,
 }: {
   title: string;
   rows: CampaignReviewEntityView[];
+  currencyCode: string | null;
 }) {
   if (rows.length === 0) {
     return (
-      <Paper withBorder radius="md" p="lg">
+      <Paper withBorder radius="md" p="lg" className={classes.rankingSurface}>
         <Stack gap={4}>
           <Title order={3} size="h4">
             {title}
@@ -247,7 +267,7 @@ function RankingTable({
   }
 
   return (
-    <Paper withBorder radius="md" p="lg">
+    <Paper withBorder radius="md" p="lg" className={classes.rankingSurface}>
       <Stack gap="md">
         <Title order={3} size="h4">
           {title}
@@ -279,7 +299,7 @@ function RankingTable({
                   <Text size="xs" c="dimmed" fw={700}>
                     Recent spend
                   </Text>
-                  <Text fw={800}>{formatCurrency(row.recent.spend)}</Text>
+                  <Text fw={800}>{formatCurrency(row.recent.spend, currencyCode)}</Text>
                 </div>
                 <div>
                   <Text size="xs" c="dimmed" fw={700}>
@@ -291,13 +311,13 @@ function RankingTable({
                   <Text size="xs" c="dimmed" fw={700}>
                     Cost/result
                   </Text>
-                  <Text fw={800}>{formatMetric(row.recent.costPerResult)}</Text>
+                  <Text fw={800}>{formatCurrency(row.recent.costPerResult, currencyCode, 2)}</Text>
                 </div>
                 <div>
                   <Text size="xs" c="dimmed" fw={700}>
                     Lifetime spend
                   </Text>
-                  <Text fw={800}>{formatCurrency(row.lifetime.spend)}</Text>
+                  <Text fw={800}>{formatCurrency(row.lifetime.spend, currencyCode)}</Text>
                 </div>
               </div>
             </article>
@@ -328,11 +348,13 @@ function RankingTable({
                     ) : null}
                   </Table.Td>
                   <Table.Td>{row.status ?? 'Unknown'}</Table.Td>
-                  <Table.Td ta="right">{formatCurrency(row.recent.spend)}</Table.Td>
+                  <Table.Td ta="right">{formatCurrency(row.recent.spend, currencyCode)}</Table.Td>
                   <Table.Td ta="right">{formatNumber(row.recent.results)}</Table.Td>
-                  <Table.Td ta="right">{formatMetric(row.recent.costPerResult)}</Table.Td>
-                  <Table.Td ta="right">{formatMetric(row.recent.ctr)}%</Table.Td>
-                  <Table.Td ta="right">{formatCurrency(row.lifetime.spend)}</Table.Td>
+                  <Table.Td ta="right">
+                    {formatCurrency(row.recent.costPerResult, currencyCode, 2)}
+                  </Table.Td>
+                  <Table.Td ta="right">{formatMetric(row.recent.ctr)}</Table.Td>
+                  <Table.Td ta="right">{formatCurrency(row.lifetime.spend, currencyCode)}</Table.Td>
                 </Table.Tr>
               ))}
             </Table.Tbody>
@@ -352,9 +374,15 @@ export default function CampaignReviewClient({
   const failed = review.state === 'failed';
 
   return (
-    <Container size="xl" py="xl" className={classes.page}>
+    <Container size="xl" py="xl" className={`${classes.page} dv-app-page`}>
       <Stack gap="lg">
-        <Group justify="space-between" align="flex-start" gap="lg" wrap="wrap">
+        <Group
+          justify="space-between"
+          align="flex-start"
+          gap="lg"
+          wrap="wrap"
+          className={classes.hero}
+        >
           <Stack gap={6}>
             <Group gap="xs" wrap="wrap">
               <Badge color={stateColor(review.state)} variant="light">
@@ -368,8 +396,8 @@ export default function CampaignReviewClient({
                 </Badge>
               ) : null}
             </Group>
-            <Title order={1}>Campaign review</Title>
-            <Text c="dimmed">{review.title}</Text>
+            <Title order={1} className={classes.heroTitle}>Campaign review</Title>
+            <Text className={classes.heroCopy}>{review.title}</Text>
           </Stack>
           <Group gap="sm" className={classes.headerActions}>
             <Button component="a" href="/dashboard" variant="default">
@@ -386,14 +414,14 @@ export default function CampaignReviewClient({
         </Group>
 
         {failed ? (
-          <Alert icon={<IconAlertTriangle size={18} />} color="red" radius="md">
+          <Alert icon={<IconAlertTriangle size={18} />} color="#e76156" radius="md">
             {review.errorMessage ??
               'This campaign review failed during the last processing attempt. It can be retried by the queue processor.'}
           </Alert>
         ) : null}
 
         {!completed && !failed ? (
-          <Alert icon={<IconClock size={18} />} color="yellow" radius="md">
+          <Alert icon={<IconClock size={18} />} color="#d69324" radius="md">
             This campaign review is queued or waiting to process. It will populate after the
             scheduled queue processor runs.
           </Alert>
@@ -404,21 +432,21 @@ export default function CampaignReviewClient({
             label="Campaigns Reviewed"
             value={formatNumber(review.reviewedCampaignCount)}
             detail="Campaigns included in this review scope."
-            color="blue"
+            color="signal"
             icon={<IconCheck size={18} />}
           />
           <SummaryCard
             label="Findings"
             value={formatNumber(review.findings.length)}
             detail="Warning or critical items saved for review."
-            color={review.findings.length > 0 ? 'orange' : 'green'}
+            color={review.findings.length > 0 ? '#d69324' : 'signal'}
             icon={<IconAlertTriangle size={18} />}
           />
           <SummaryCard
             label="Generated"
             value={review.generatedAt ? formatDateTime(review.generatedAt) : 'Pending'}
             detail={`Scheduled for ${formatDateTime(review.scheduledFor)}.`}
-            color="teal"
+            color="signal"
             icon={<IconCalendarTime size={18} />}
           />
           <SummaryCard
@@ -431,19 +459,19 @@ export default function CampaignReviewClient({
                   ? `Fallback: ${review.fallbackReason}.`
                   : 'Deterministic thresholds and comparison stats.'
             }
-            color="violet"
+            color="#6e6bf4"
             icon={<IconSparkles size={18} />}
           />
         </SimpleGrid>
 
         {review.unavailableCampaign ? (
-          <Alert icon={<IconAlertTriangle size={18} />} color="yellow" radius="md">
+          <Alert icon={<IconAlertTriangle size={18} />} color="#d69324" radius="md">
             The selected campaign was unavailable when this review ran:{' '}
             {review.unavailableCampaign}
           </Alert>
         ) : null}
 
-        <Paper withBorder radius="md" p="lg">
+        <Paper withBorder radius="md" p="lg" className={classes.sectionSurface}>
           <Stack gap="md">
             <Group gap="xs">
               <IconCheck size={18} />
@@ -485,9 +513,21 @@ export default function CampaignReviewClient({
 
         {completed ? <FindingsSection findings={review.findings} /> : null}
 
-        <RankingTable title="Campaign ranking" rows={review.campaignRankings} />
-        <RankingTable title="Ad set ranking" rows={review.adsetRankings} />
-        <RankingTable title="Ad ranking" rows={review.adRankings} />
+        <RankingTable
+          title="Campaign ranking"
+          rows={review.campaignRankings}
+          currencyCode={review.currencyCode}
+        />
+        <RankingTable
+          title="Ad set ranking"
+          rows={review.adsetRankings}
+          currencyCode={review.currencyCode}
+        />
+        <RankingTable
+          title="Ad ranking"
+          rows={review.adRankings}
+          currencyCode={review.currencyCode}
+        />
       </Stack>
     </Container>
   );

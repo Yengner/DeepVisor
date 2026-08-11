@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SmartCampaignDraftForm } from '@/lib/shared/types/campaignDrafts';
 import {
-    Container, Card, Title, Text, Button, Group, Loader, Select, TextInput, NumberInput, Stack, Divider, Box, Grid, Paper
+    Badge, Container, Title, Text, Button, Group, Loader, Select, TextInput, NumberInput, Stack, Box, Grid, Paper
 } from '@mantine/core';
 import { IconBulb } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import JobLoadingModal from '@/components/ui/states/JobLoadingModal';
+import { showError } from '@/lib/client';
+import { formatCurrencyAmount } from '@/lib/shared';
 
 const TIMEFRAMES = [
     { value: '7', label: '1 Week' },
@@ -37,8 +39,9 @@ export default function SmartCampaignClient({
     platformName,
     platformId,
     adAccountId,
+    currencyCode,
     draft,
-}: { userId: string, platformName: string; platformId: string; adAccountId: string; draft?: SmartCampaignDraftForm | null }) {
+}: { userId: string, platformName: string; platformId: string; adAccountId: string; currencyCode: string | null; draft?: SmartCampaignDraftForm | null }) {
     const router = useRouter();
     const form = useForm({
         initialValues: {
@@ -71,6 +74,7 @@ export default function SmartCampaignClient({
     const totalCost = form.values.budgetType === 'daily'
         ? days * Number(form.values.budget)
         : Number(form.values.budget || 0);
+    const currencyLabel = currencyCode?.trim().toUpperCase() || 'USD';
 
     async function handleSubmit(values: typeof form.values) {
         setLoading(true);
@@ -103,6 +107,10 @@ export default function SmartCampaignClient({
         } catch (error) {
             setLoading(false);
             console.error('Error creating campaign:', error);
+            showError(
+                error instanceof Error ? error.message : 'The campaign draft could not be created.',
+                'Campaign could not be created'
+            );
         }
     }
 
@@ -113,7 +121,10 @@ export default function SmartCampaignClient({
                 <JobLoadingModal
                     jobId={jobId}
                     opened={showLoadingModal}
-                    onClose={() => setShowLoadingModal(false)}
+                    onClose={() => {
+                        setShowLoadingModal(false);
+                        setLoading(false);
+                    }}
                     onDone={async () => {
                         setShowLoadingModal(false);
                         router.push('/calendar');
@@ -121,20 +132,23 @@ export default function SmartCampaignClient({
                 />
             )}
 
-            <Container size="sm" py="xl">
-                <Card withBorder p="xl" radius="md">
-                    <Group align="center" mb="md">
-                        <IconBulb size={32} color="#fab005" />
-                        <Title order={2}>Create Campaign</Title>
-                    </Group>
-                    <Text mb="xs">
-                        <b>Platform:</b> <span style={{ color: '#228be6' }}>{platformName}</span>
-                    </Text>
-                    <Divider my="md" />
+            <Container size="md" py="lg" className="dv-app-page">
+                <Stack gap="lg">
+                    <div className="dv-app-page-header">
+                        <div>
+                            <Group gap="xs" mb={6}>
+                                <Badge variant="light" color="signal">Campaign builder</Badge>
+                                <Badge variant="outline" color="gray">{platformName}</Badge>
+                            </Group>
+                            <Title order={2}>Create an intelligent campaign</Title>
+                            <Text c="dimmed" mt={4}>Set the outcome, lead destination, schedule, and budget.</Text>
+                        </div>
+                        <IconBulb size={26} color="#0b7a4b" />
+                    </div>
                     <form onSubmit={form.onSubmit(handleSubmit)}>
                         <Stack gap="md">
                             <Grid gutter="md">
-                                <Grid.Col span={6}>
+                                <Grid.Col span={{ base: 12, sm: 6 }}>
                                     <Paper withBorder p="md" radius="md">
                                         <Select
                                             label="Objective"
@@ -154,7 +168,7 @@ export default function SmartCampaignClient({
                                 </Grid.Col>
 
 
-                                <Grid.Col span={6}>
+                                <Grid.Col span={{ base: 12, sm: 6 }}>
                                     <Paper withBorder p="md" radius="md">
                                         <Select
                                             label="Timeframe"
@@ -171,7 +185,7 @@ export default function SmartCampaignClient({
                                             required
                                         />
                                         <NumberInput
-                                            label={form.values.budgetType === 'daily' ? "Daily Budget ($)" : "Lifetime Budget ($)"}
+                                            label={form.values.budgetType === 'daily' ? `Daily Budget (${currencyLabel})` : `Lifetime Budget (${currencyLabel})`}
                                             placeholder="Enter budget"
                                             {...form.getInputProps('budget')}
                                             min={1}
@@ -182,7 +196,10 @@ export default function SmartCampaignClient({
                                                 {form.values.budgetType === 'daily'
                                                     ? `Total campaign cost for ${days} days: `
                                                     : 'Total campaign cost:'}
-                                                <b>${totalCost.toLocaleString()}</b>
+                                                <b>{formatCurrencyAmount(totalCost, currencyCode, {
+                                                    minimumFractionDigits: 0,
+                                                    maximumFractionDigits: 2,
+                                                })}</b>
                                             </Text>
                                         </Box>
                                     </Paper>
@@ -196,19 +213,17 @@ export default function SmartCampaignClient({
                                 />
                             </Paper>
                             <Button
-                                leftSection={loading ? <Loader size={18} color="yellow" /> : <IconBulb size={18} />}
-                                variant="gradient"
-                                gradient={{ from: 'yellow', to: 'teal', deg: 60 }}
+                                leftSection={loading ? <Loader size={18} color="white" /> : <IconBulb size={18} />}
                                 size="md"
-                                radius="md"
                                 type="submit"
                                 disabled={loading}
+                                style={{ alignSelf: 'flex-end' }}
                             >
                                 {loading ? 'Creating...' : 'Create Campaign'}
                             </Button>
                         </Stack>
                     </form>
-                </Card>
+                </Stack>
             </Container>
         </>
     );

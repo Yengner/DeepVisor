@@ -1,3 +1,5 @@
+'use client';
+
 import { Stack, Title, Text, Button, Group } from '@mantine/core';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
@@ -26,8 +28,8 @@ export function ErrorState({
 
   return (
     <Stack align="center" className="max-w-md mx-auto py-12 text-center">
-      <div className="bg-red-100 rounded-full p-5 w-20 h-20 flex items-center justify-center mb-4">
-        <IconAlertTriangle size={40} className="text-red-600" />
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-md border border-[#f0bbb7] bg-[#fcedeb] text-[#ba3e36]">
+        <IconAlertTriangle size={24} />
       </div>
       
       <Title order={2}>{title}</Title>

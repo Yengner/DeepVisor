@@ -116,6 +116,7 @@ export type CampaignReviewResult = {
   type: 'campaign_review';
   reviewHref: string;
   scope: CampaignReviewScope;
+  currencyCode: string | null;
   generatedAt: string;
   aiGenerated: boolean;
   aiRunId: string | null;
@@ -938,6 +939,7 @@ export async function buildCampaignReviewResult(
     adAccountId: string;
     queueItemId: string;
     payload: Record<string, unknown>;
+    currencyCode?: string | null;
     generatedAt: string;
   }
 ): Promise<CampaignReviewResult> {
@@ -1037,6 +1039,7 @@ export async function buildCampaignReviewResult(
     type: 'campaign_review',
     reviewHref,
     scope: config.scope,
+    currencyCode: input.currencyCode ?? null,
     generatedAt: input.generatedAt,
     decisionSupportVersion: DECISION_SUPPORT_VERSION,
     ...narrative,
@@ -1056,6 +1059,7 @@ export async function runCampaignReviewQueueAction(
     business: { id: string; business_name: string; organization_id: string | null } | null;
     userIds: string[];
     timeZone: string;
+    currencyCode: string | null;
     timestamp: string;
   }
 ) {
@@ -1071,6 +1075,7 @@ export async function runCampaignReviewQueueAction(
     adAccountId: item.adAccountId,
     queueItemId: item.id,
     payload: item.payload,
+    currencyCode: input.currencyCode,
     generatedAt: input.timestamp,
   });
   const riskCount = result.findings.filter(

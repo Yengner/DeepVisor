@@ -1,10 +1,8 @@
 import {
-  Alert,
   Badge,
   Button,
   Card,
   Container,
-  Divider,
   Group,
   Paper,
   SimpleGrid,
@@ -18,10 +16,7 @@ import {
   IconBell,
   IconBolt,
   IconCalendarTime,
-  IconChartBar,
   IconInbox,
-  IconInfoCircle,
-  IconPlug,
 } from '@tabler/icons-react';
 import {
   formatDisplayDate,
@@ -32,6 +27,7 @@ import {
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { getUserNotifications } from '@/lib/server/actions/user/settings';
 import classes from './NotificationsPage.module.css';
+import NotificationAction from './NotificationAction';
 
 function formatDateTime(value: string | null): string {
   if (!value) {
@@ -61,17 +57,17 @@ function formatTypeLabel(value: string): string {
 function typeColor(value: string): string {
   switch (value) {
     case 'report':
-      return 'blue';
+      return 'signal';
     case 'calendar':
-      return 'grape';
+      return '#6e6bf4';
     case 'guardrail':
-      return 'red';
+      return '#e76156';
     case 'sync':
-      return 'teal';
+      return 'signal';
     case 'insight':
-      return 'violet';
+      return '#6e6bf4';
     case 'workflow':
-      return 'orange';
+      return 'signal';
     default:
       return 'gray';
   }
@@ -85,7 +81,7 @@ function SummaryCard(props: {
   color: string;
 }) {
   return (
-    <Card withBorder radius="md" p="lg">
+    <Card withBorder radius="md" p="lg" className={classes.summaryCard}>
       <Group justify="space-between" align="flex-start" mb="md">
         <div>
           <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
@@ -112,9 +108,7 @@ function NotificationCard({ notification }: { notification: NotificationFeedItem
       withBorder
       radius="md"
       p="md"
-      style={{
-        backgroundColor: notification.read ? undefined : 'var(--mantine-color-blue-0)',
-      }}
+      className={`${classes.notificationCard} ${notification.read ? '' : classes.unread}`}
     >
       <Group
         justify="space-between"
@@ -126,7 +120,7 @@ function NotificationCard({ notification }: { notification: NotificationFeedItem
         <div style={{ flex: 1, minWidth: 0 }}>
           <Group gap="xs" mb={6} wrap="wrap">
             {!notification.read ? (
-              <Badge color="blue" variant="light">
+              <Badge color="signal" variant="light">
                 Unread
               </Badge>
             ) : (
@@ -167,18 +161,12 @@ function NotificationCard({ notification }: { notification: NotificationFeedItem
           </Group>
         </div>
 
-        {notification.link ? (
-          <Button
-            component="a"
-            href={notification.link}
-            variant="light"
-            size="xs"
-            className={classes.notificationAction}
-            rightSection={<IconArrowRight size={14} />}
-          >
-            Open
-          </Button>
-        ) : null}
+        <NotificationAction
+          notificationId={notification.id}
+          unread={!notification.read}
+          href={notification.link ?? null}
+          className={classes.notificationAction}
+        />
       </Group>
     </Paper>
   );
@@ -190,28 +178,44 @@ export default async function NotificationsPage() {
   const unreadCount = notifications.filter((notification) => !notification.read).length;
   const actionableCount = notifications.filter((notification) => Boolean(notification.link)).length;
   const typeCount = new Set(notifications.map((notification) => notification.type)).size;
+  const typeSummary = Array.from(
+    notifications.reduce((counts, notification) => {
+      counts.set(notification.type, (counts.get(notification.type) ?? 0) + 1);
+      return counts;
+    }, new Map<string, number>())
+  ).sort((left, right) => right[1] - left[1]);
   const newestDate = notifications[0]?.created_at ?? null;
 
   return (
-    <Container size="xl" py="md" className={classes.page}>
-      <Stack gap="xl">
-        <Group justify="space-between" align="flex-start" gap="lg" wrap="wrap">
+    <Container size="xl" py="md" className={`${classes.page} dv-app-page`}>
+      <Stack gap="lg">
+        <Group
+          justify="space-between"
+          align="flex-start"
+          gap="lg"
+          wrap="wrap"
+          className={classes.hero}
+        >
           <div>
-            <Badge variant="light" color="blue" mb="sm">
+            <Badge variant="light" mb="sm" className={classes.heroBadge}>
               Live inbox
             </Badge>
-            <Title order={1}>Notifications</Title>
-            <Text c="dimmed" size="lg" mt={8} maw={760}>
-              This feed now reflects real DeepVisor notices for the current workspace, including
-              trend findings, report-ready prompts, and workflow follow-up items.
+            <Title order={1} className={classes.heroTitle}>Notifications</Title>
+            <Text size="md" mt={8} maw={720} className={classes.heroCopy}>
+              Monitor report prompts, account signals, and workflow follow-ups from one live queue.
             </Text>
           </div>
 
           <Group gap="sm" className={classes.headerActions}>
-            <Button component="a" href="/dashboard" variant="default">
+            <Button component="a" href="/dashboard" variant="default" className={classes.heroSecondaryAction}>
               Dashboard
             </Button>
-            <Button component="a" href="/integration" rightSection={<IconArrowRight size={16} />}>
+            <Button
+              component="a"
+              href="/integration"
+              rightSection={<IconArrowRight size={16} />}
+              className={classes.heroPrimaryAction}
+            >
               Open integrations
             </Button>
           </Group>
@@ -219,25 +223,25 @@ export default async function NotificationsPage() {
 
         <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }} spacing="md">
           <SummaryCard
-            title="Feed Size"
+            title="Recent Feed"
             value={`${notifications.length}`}
-            detail="Notifications currently available in the workspace feed."
+            detail="Newest items loaded for this workspace."
             icon={<IconInbox size={18} />}
-            color="blue"
+            color="signal"
           />
           <SummaryCard
             title="Unread"
             value={`${unreadCount}`}
-            detail="Messages that would still need attention in a live inbox."
+            detail="Items still awaiting review."
             icon={<IconBell size={18} />}
-            color="grape"
+            color="signal"
           />
           <SummaryCard
             title="Actionable"
             value={`${actionableCount}`}
             detail="Notifications with a direct destination inside the app."
             icon={<IconBolt size={18} />}
-            color="orange"
+            color="signal"
           />
           <SummaryCard
             title="Latest Update"
@@ -252,7 +256,7 @@ export default async function NotificationsPage() {
                 : 'No notifications yet.'
             }
             icon={<IconCalendarTime size={18} />}
-            color="teal"
+            color="signal"
           />
         </SimpleGrid>
 
@@ -263,102 +267,60 @@ export default async function NotificationsPage() {
                 <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
                   Full Feed
                 </Text>
-                <Title order={3}>All notifications</Title>
+                <Title order={3}>Recent notifications</Title>
                 <Text size="sm" c="dimmed" mt={4}>
-                  Ordered newest first, with direct links back to the parts of the product each notice points to.
+                  Newest first, with direct links for actionable items.
                 </Text>
               </div>
-              <Badge color={unreadCount > 0 ? 'blue' : 'gray'} variant="light">
+              <Badge color={unreadCount > 0 ? 'signal' : 'gray'} variant="light">
                 {unreadCount} unread
               </Badge>
             </Group>
 
-            <Stack gap="md">
-              {notifications.map((notification) => (
-                <NotificationCard key={notification.id} notification={notification} />
-              ))}
-            </Stack>
+            {notifications.length > 0 ? (
+              <Stack gap="md">
+                {notifications.map((notification) => (
+                  <NotificationCard key={notification.id} notification={notification} />
+                ))}
+              </Stack>
+            ) : (
+              <Stack align="center" ta="center" py="xl" gap="xs">
+                <ThemeIcon size="xl" variant="light" color="signal" radius="md">
+                  <IconInbox size={20} />
+                </ThemeIcon>
+                <Text fw={750}>Inbox clear</Text>
+                <Text size="sm" c="dimmed" maw={420}>
+                  There are no report, workflow, sync, or account-signal notifications yet.
+                </Text>
+              </Stack>
+            )}
           </Card>
 
-          <Stack gap="md">
-            <Card withBorder radius="lg" p="xl">
-              <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="violet" radius="md">
-                  <IconChartBar size={16} />
-                </ThemeIcon>
-                <div>
-                  <Text fw={700}>What will show up here</Text>
-                  <Text size="sm" c="dimmed">
-                    The intended notification categories for DeepVisor
-                  </Text>
-                </div>
-              </Group>
-
-              <Stack gap="sm">
-                <Paper withBorder radius="md" p="sm">
-                  <Text fw={700} size="sm">Reports and briefs</Text>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    New summaries, wins, weak spots, and recommendation refreshes.
-                  </Text>
-                </Paper>
-                <Paper withBorder radius="md" p="sm">
-                  <Text fw={700} size="sm">Calendar and workflow prompts</Text>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    Approval requests, queued work, and next-step reminders.
-                  </Text>
-                </Paper>
-                <Paper withBorder radius="md" p="sm">
-                  <Text fw={700} size="sm">Sync and integration status</Text>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    Platform sync completions, token issues, and reconnect prompts.
-                  </Text>
-                </Paper>
-                <Paper withBorder radius="md" p="sm">
-                  <Text fw={700} size="sm">Guardrails and signals</Text>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    Spend shifts, delivery concerns, and other notable account changes.
-                  </Text>
-                </Paper>
-              </Stack>
-            </Card>
-
-            <Card withBorder radius="lg" p="xl">
-              <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="teal" radius="md">
-                  <IconPlug size={16} />
-                </ThemeIcon>
-                <div>
-                  <Text fw={700}>How to use this feed</Text>
-                  <Text size="sm" c="dimmed">
-                    What these notices are meant to drive
-                  </Text>
-                </div>
-              </Group>
-
-              <Stack gap="sm">
-                <Text size="sm" c="dimmed">
-                  Use this page to review the current attention layer without leaving the workspace context:
-                </Text>
-                <Divider />
-                <Text size="sm">1. Trend findings and report-ready prompts land here first.</Text>
-                <Text size="sm">2. Calendar approvals and follow-up links stay directly actionable.</Text>
-                <Text size="sm">3. Notification and report preferences can be managed from Settings.</Text>
-                <Button component="a" href="/settings" variant="light" mt="sm">
-                  Review settings
-                </Button>
-              </Stack>
-            </Card>
-
+          <Stack gap="md" className={classes.sideRail}>
             <Card withBorder radius="lg" p="xl">
               <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                Categories
+                Feed composition
               </Text>
               <Title order={3} mt={6}>
-                {typeCount} feed types
+                {typeCount} active {typeCount === 1 ? 'type' : 'types'}
               </Title>
-              <Text size="sm" c="dimmed" mt="xs">
-                The static feed currently covers reporting, calendar, guardrails, sync, insights, system, and workflow messages.
-              </Text>
+              {typeSummary.length > 0 ? (
+                <Stack gap={8} mt="md">
+                  {typeSummary.map(([type, count]) => (
+                    <Group key={type} justify="space-between" gap="sm">
+                      <Badge color={typeColor(type)} variant="light">
+                        {formatTypeLabel(type)}
+                      </Badge>
+                      <Text size="sm" fw={750}>{count}</Text>
+                    </Group>
+                  ))}
+                </Stack>
+              ) : (
+                <Text size="sm" c="dimmed" mt="xs">No categories recorded.</Text>
+              )}
+              <Button component="a" href="/settings" variant="light" fullWidth mt="lg">
+                Notification settings
+              </Button>
             </Card>
           </Stack>
         </SimpleGrid>

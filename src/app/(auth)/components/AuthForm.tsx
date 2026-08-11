@@ -1,10 +1,9 @@
 'use client';
 
-import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Anchor,
-  Badge,
   Button,
   Divider,
   Group,
@@ -21,9 +20,10 @@ import {
 import {
   IconArrowRight,
   IconBrandGoogle,
+  IconChartDots,
   IconCheck,
   IconChevronLeft,
-  IconSparkles,
+  IconShieldCheck,
 } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 import {
@@ -76,18 +76,64 @@ const TRUST_ITEMS = [
   'You approve changes before anything goes live',
 ];
 
-function AnimatedWelcome() {
+function IntelligencePanel({ type }: AuthFormProps) {
+  const isLogin = type === 'login';
+
   return (
-    <div className={classes.animatedWelcome} aria-label="Welcome">
-      {'Welcome'.split('').map((letter, index) => (
-        <span
-          key={`${letter}-${index}`}
-          style={{ '--letter-index': index } as CSSProperties}
-        >
-          {letter}
+    <section className={classes.intelligencePanel}>
+      <div className={classes.panelBrand}>
+        <span className={classes.panelBrandMark}>DV</span>
+        <span>DEEPVISOR / AD INTELLIGENCE</span>
+      </div>
+
+      <div className={classes.panelMessage}>
+        <span className={classes.panelEyebrow}>
+          <span className={classes.liveDot} aria-hidden="true" />
+          Decision signal active
         </span>
-      ))}
-    </div>
+        <h1 className={classes.panelTitle}>
+          {isLogin ? 'Know what to do next.' : 'Start with signal, not guesswork.'}
+        </h1>
+        <p className={classes.panelCopy}>
+          {isLogin
+            ? 'Return to a clear read on spend, leads, and the decisions waiting for you.'
+            : 'Build a focused intelligence profile around the outcomes that matter to your business.'}
+        </p>
+      </div>
+
+      <div className={classes.signalPreview} aria-label="DeepVisor intelligence preview">
+        <div className={classes.signalPreviewHeader}>
+          <span>ACCOUNT SIGNAL</span>
+          <span className={classes.signalStatus}>MONITORING</span>
+        </div>
+        <div className={classes.signalScoreRow}>
+          <strong>82</strong>
+          <div>
+            <span>Healthy momentum</span>
+            <small>Signal quality is improving</small>
+          </div>
+        </div>
+        <div className={classes.signalRows}>
+          <div>
+            <span>Lead efficiency</span>
+            <strong className={classes.positiveSignal}>+12.4%</strong>
+          </div>
+          <div>
+            <span>Spend pacing</span>
+            <strong>On target</strong>
+          </div>
+          <div>
+            <span>Action queue</span>
+            <strong>3 ready</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className={classes.panelFooter}>
+        <span><IconChartDots size={16} />Evidence-led</span>
+        <span><IconShieldCheck size={16} />Approval-first</span>
+      </div>
+    </section>
   );
 }
 
@@ -116,6 +162,7 @@ function ChoiceGrid({
               .filter(Boolean)
               .join(' ')}
             onClick={() => onSelect(option.value)}
+            aria-pressed={isSelected}
           >
             <span>{option.label}</span>
             {isSelected ? <IconCheck size={16} /> : null}
@@ -324,55 +371,26 @@ export default function AuthForm({ type }: AuthFormProps) {
   if (type === 'login') {
     return (
       <div className={classes.loginShell}>
-        <section className={classes.loginIntro}>
-          <Badge variant="light" color="blue" radius="xl" className={classes.salonBadge}>
-            DeepVisor workspace
-          </Badge>
-          <AnimatedWelcome />
-          <Title order={1} className={classes.introTitle}>
-            Pick up where your lead intelligence left off.
-          </Title>
-          <Text className={classes.introCopy}>
-            Sign in to review the latest ad account signals, queued next steps, and
-            owner-ready reports from one focused workspace.
-          </Text>
-          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm" className={classes.loginMetricGrid}>
-            {[
-              { label: 'Dashboard', value: 'Today view' },
-              { label: 'Calendar', value: 'Queued work' },
-              { label: 'Reports', value: 'Clear next steps' },
-            ].map((metric) => (
-              <div key={metric.label} className={classes.loginMetric}>
-                <span>{metric.label}</span>
-                <strong>{metric.value}</strong>
-              </div>
-            ))}
-          </SimpleGrid>
-          <div className={classes.colorOrbit} aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </div>
-        </section>
+        <IntelligencePanel type="login" />
 
-        <Paper shadow="xl" radius="xl" p="xl" withBorder className={classes.loginCard}>
+        <Paper radius="sm" p="xl" withBorder className={classes.loginCard}>
           <Stack gap="lg">
-            <div>
-              <ThemeIcon size={52} radius="lg" color="blue" variant="light">
-                <IconSparkles size={26} />
+            <div className={classes.authHeading}>
+              <ThemeIcon size={42} radius="sm" color="green" variant="light" className={classes.authIcon}>
+                <IconShieldCheck size={22} />
               </ThemeIcon>
               <Title order={2} mt="md">
-                Sign in to DeepVisor
+                Welcome back
               </Title>
               <Text c="dimmed" mt={6}>
-                Access your dashboard, reports, and approval queue.
+                Sign in to your DeepVisor workspace.
               </Text>
             </div>
 
             <Stack gap="md">
               <Button
                 fullWidth
-                radius="xl"
+                radius="sm"
                 size="md"
                 className={classes.googlePrimaryButton}
                 leftSection={<IconBrandGoogle size={18} />}
@@ -408,7 +426,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                     type="submit"
                     fullWidth
                     loading={loading}
-                    radius="xl"
+                    radius="sm"
                     size="md"
                     className={classes.authPrimaryButton}
                   >
@@ -424,13 +442,14 @@ export default function AuthForm({ type }: AuthFormProps) {
                 fullWidth
                 onClick={handleResendVerification}
                 loading={loading}
-                radius="xl"
+                radius="sm"
+                className={classes.secondaryButton}
               >
                 Resend verification email
               </Button>
             ) : null}
 
-            <Text>
+            <Text size="sm" className={classes.switchAuth}>
               Don&apos;t have an account?{' '}
               <Anchor href="/sign-up" fz="md" fw={700}>
                 Sign up
@@ -444,37 +463,20 @@ export default function AuthForm({ type }: AuthFormProps) {
 
   return (
     <div className={classes.signupShell}>
-      <section className={classes.signupIntro}>
-        <Badge variant="light" color="blue" radius="xl" className={classes.salonBadge}>
-          Built for salons running Meta ads
-        </Badge>
-        <AnimatedWelcome />
-        <Title order={1} className={classes.introTitle}>
-          Grow your salon with smarter Meta ads.
-        </Title>
-        <Text className={classes.introCopy}>
-          DeepVisor helps salons understand what ads are bringing leads, what is wasting
-          money, and what to improve next.
-        </Text>
-        <div className={classes.colorOrbit} aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
-      </section>
+      <IntelligencePanel type="signup" />
 
-      <Paper shadow="xl" radius="xl" p="xl" withBorder className={classes.flowCard}>
+      <Paper radius="sm" p="xl" withBorder className={classes.flowCard}>
         <Stack gap="lg">
           <div>
-            <Group justify="space-between" mb="xs">
-              <Text size="xs" fw={800} tt="uppercase" c="dimmed">
-                Free setup
+            <Group justify="space-between" mb="xs" className={classes.progressMeta}>
+              <Text size="xs" fw={800} tt="uppercase">
+                Intelligence profile
               </Text>
-              <Text size="xs" fw={800} c="dimmed">
+              <Text size="xs" fw={800}>
                 Step {signupStep + 1} of 6
               </Text>
             </Group>
-            <Progress value={signupProgress} radius="xl" size="sm" />
+            <Progress value={signupProgress} radius={0} size={6} color="#0b7a4b" className={classes.signupProgress} />
           </div>
 
           {signupStep > 0 && signupStep < 5 ? (
@@ -492,8 +494,8 @@ export default function AuthForm({ type }: AuthFormProps) {
 
           {signupStep === 0 ? (
             <Stack gap="lg">
-              <ThemeIcon size={54} radius="lg" color="blue" variant="light">
-                <IconSparkles size={28} />
+              <ThemeIcon size={48} radius="sm" color="green" variant="light" className={classes.authIcon}>
+                <IconChartDots size={24} />
               </ThemeIcon>
               <div>
                 <Title order={2}>Grow your salon with smarter Meta ads.</Title>
@@ -504,7 +506,8 @@ export default function AuthForm({ type }: AuthFormProps) {
               </div>
               <Button
                 size="md"
-                radius="xl"
+                radius="sm"
+                className={classes.authPrimaryButton}
                 rightSection={<IconArrowRight size={18} />}
                 onClick={goToNextStep}
               >
@@ -581,7 +584,7 @@ export default function AuthForm({ type }: AuthFormProps) {
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
                 {TRUST_ITEMS.map((item) => (
                   <div key={item} className={classes.trustItem}>
-                    <ThemeIcon color="green" variant="light" radius="xl" size="sm">
+                    <ThemeIcon color="green" variant="light" radius="sm" size="sm">
                       <IconCheck size={14} />
                     </ThemeIcon>
                     <Text size="sm" fw={700}>
@@ -592,7 +595,8 @@ export default function AuthForm({ type }: AuthFormProps) {
               </SimpleGrid>
               <Button
                 size="md"
-                radius="xl"
+                radius="sm"
+                className={classes.authPrimaryButton}
                 rightSection={<IconArrowRight size={18} />}
                 onClick={goToNextStep}
               >
@@ -623,7 +627,7 @@ export default function AuthForm({ type }: AuthFormProps) {
 
               <Button
                 fullWidth
-                radius="xl"
+                radius="sm"
                 size="md"
                 className={classes.googlePrimaryButton}
                 leftSection={<IconBrandGoogle size={18} />}
@@ -686,7 +690,14 @@ export default function AuthForm({ type }: AuthFormProps) {
                       minLength={6}
                     />
                   </SimpleGrid>
-                  <Button type="submit" fullWidth loading={loading} radius="xl" size="md">
+                  <Button
+                    type="submit"
+                    fullWidth
+                    loading={loading}
+                    radius="sm"
+                    size="md"
+                    className={classes.authPrimaryButton}
+                  >
                     Create account
                   </Button>
                 </Stack>
@@ -704,7 +715,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                 .
               </Text>
 
-              <Text>
+              <Text size="sm" className={classes.switchAuth}>
                 Already have an account?{' '}
                 <Anchor href="/login" fz="md" fw={500}>
                   Login

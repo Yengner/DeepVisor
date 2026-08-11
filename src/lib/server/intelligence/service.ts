@@ -62,6 +62,7 @@ type AdAccountRow = {
   last_synced: string | null;
   platform_id: string;
   timezone: string | null;
+  currency_code: string | null;
   created_at: string | null;
 };
 
@@ -124,7 +125,9 @@ async function loadBusinessHeader(
         .order('created_at', { ascending: true }),
       supabase
         .from('ad_accounts')
-        .select('id, name, status, external_account_id, last_synced, platform_id, timezone, created_at')
+        .select(
+          'id, name, status, external_account_id, last_synced, platform_id, timezone, currency_code, created_at'
+        )
         .eq('business_id', businessId)
         .order('created_at', { ascending: true }),
     ]);
@@ -183,6 +186,7 @@ async function loadBusinessHeader(
       platformIntegrationId: integration.id,
       platformLabel: label,
       timezone: selectedAccount.timezone,
+      currencyCode: selectedAccount.currency_code,
     });
   }
 

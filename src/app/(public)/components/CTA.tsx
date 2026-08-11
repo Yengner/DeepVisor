@@ -14,7 +14,7 @@ const CTA: FC = () => {
                 DeepVisor direction
               </Badge>
 
-              <h2 className="text-balance text-3xl font-semibold leading-tight tracking-[-0.04em] text-white sm:text-4xl">
+              <h2 className="text-balance text-3xl font-semibold leading-tight text-white sm:text-4xl">
                 The goal is simple: turn lead-generation history into more qualified quotes, more booked jobs, and less hands-on ad-platform work.
               </h2>
 
@@ -41,7 +41,7 @@ const CTA: FC = () => {
               ].map((stat) => (
                 <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">{stat.label}</p>
-                  <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">{stat.value}</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">{stat.value}</p>
                   <p className="mt-2 text-xs leading-5 text-white/55">{stat.hint}</p>
                 </div>
               ))}

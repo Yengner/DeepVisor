@@ -44,8 +44,7 @@ export default async function ReportsPage({
     (livePayload?.summary.spend ?? 0) > 0 ||
     (livePayload?.summary.impressions ?? 0) > 0;
 
-  const shouldUseDemo =
-    demoRequested || (!hasData && (liveFilterOptions?.adAccounts.length ?? 0) === 0);
+  const shouldUseDemo = demoRequested;
 
   const payload = shouldUseDemo
     ? buildDemoReportPayload(query, organizationName)

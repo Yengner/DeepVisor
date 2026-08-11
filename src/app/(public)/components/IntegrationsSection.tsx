@@ -11,7 +11,6 @@ type Platform = {
     icon: IconType;
     iconClassName: string;
     iconSurfaceClassName?: string;
-    glowClassName: string;
     statusClassName: string;
 };
 
@@ -21,7 +20,6 @@ const metaPlatform: Platform = {
     icon: SiMeta,
     iconClassName: "text-[#4da3ff]",
     iconSurfaceClassName: "border-white/10 bg-white/10",
-    glowClassName: "from-[#1877F2]/30 via-sky-400/12 to-violet-400/18",
     statusClassName: "border-emerald-400/25 bg-emerald-400/10 text-emerald-200",
 };
 
@@ -31,7 +29,6 @@ const plannedPlatforms: Platform[] = [
         status: "Planned",
         icon: SiGoogleads,
         iconClassName: "text-[#4285F4]",
-        glowClassName: "from-[#4285F4]/20 via-[#34A853]/12 to-[#FBBC05]/18",
         statusClassName: "border-slate-200 bg-white/90 text-slate-500",
     },
     {
@@ -39,7 +36,6 @@ const plannedPlatforms: Platform[] = [
         status: "Planned",
         icon: FaAmazon,
         iconClassName: "text-[#ff9900]",
-        glowClassName: "from-[#ff9900]/20 via-[#232f3e]/8 to-[#ff9900]/12",
         statusClassName: "border-slate-200 bg-white/90 text-slate-500",
     },
     {
@@ -47,7 +43,6 @@ const plannedPlatforms: Platform[] = [
         status: "Planned",
         icon: SiTiktok,
         iconClassName: "text-[#111111]",
-        glowClassName: "from-[#25F4EE]/18 via-white/10 to-[#FE2C55]/18",
         statusClassName: "border-slate-200 bg-white/90 text-slate-500",
     },
     {
@@ -55,7 +50,6 @@ const plannedPlatforms: Platform[] = [
         status: "Planned",
         icon: FaMicrosoft,
         iconClassName: "text-[#00A4EF]",
-        glowClassName: "from-[#00A4EF]/18 via-[#7FBA00]/10 to-[#F25022]/18",
         statusClassName: "border-slate-200 bg-white/90 text-slate-500",
     },
     {
@@ -64,7 +58,6 @@ const plannedPlatforms: Platform[] = [
         icon: SiSnapchat,
         iconClassName: "text-slate-950",
         iconSurfaceClassName: "border-[#f4ea00] bg-[#FFFC00]",
-        glowClassName: "from-[#FFFC00]/24 via-white/8 to-[#FFFC00]/12",
         statusClassName: "border-slate-200 bg-white/90 text-slate-500",
     },
     {
@@ -72,7 +65,6 @@ const plannedPlatforms: Platform[] = [
         status: "Planned",
         icon: SiLinkedin,
         iconClassName: "text-[#0A66C2]",
-        glowClassName: "from-[#0A66C2]/20 via-sky-200/8 to-[#0A66C2]/16",
         statusClassName: "border-slate-200 bg-white/90 text-slate-500",
     },
     {
@@ -80,7 +72,6 @@ const plannedPlatforms: Platform[] = [
         status: "Planned",
         icon: SiPinterest,
         iconClassName: "text-[#E60023]",
-        glowClassName: "from-[#E60023]/18 via-rose-200/8 to-[#E60023]/18",
         statusClassName: "border-slate-200 bg-white/90 text-slate-500",
     },
 ];
@@ -91,15 +82,6 @@ const LogoChip = ({ platform, featured = false }: { platform: Platform; featured
     if (featured) {
         return (
             <Card className="relative overflow-hidden border-white/10 bg-ink p-0 shadow-card-strong">
-                <div
-                    className={cn(
-                        "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-90",
-                        platform.glowClassName
-                    )}
-                    aria-hidden="true"
-                />
-                <div className="pointer-events-none absolute -left-12 top-4 h-40 w-40 rounded-full bg-[#1877F2]/25 blur-3xl motion-safe:animate-float-slow" aria-hidden="true" />
-
                 <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                     <div className="flex items-center gap-4">
                         <div
@@ -108,7 +90,6 @@ const LogoChip = ({ platform, featured = false }: { platform: Platform; featured
                                 platform.iconSurfaceClassName
                             )}
                         >
-                            <div className="absolute inset-2 rounded-2xl bg-[#1877F2]/20 blur-xl" aria-hidden="true" />
                             <Icon className={cn("relative h-8 w-8", platform.iconClassName)} aria-hidden="true" />
                         </div>
 
@@ -134,14 +115,6 @@ const LogoChip = ({ platform, featured = false }: { platform: Platform; featured
 
     return (
         <div className="group relative min-w-max overflow-hidden rounded-2xl border border-slate-200/80 bg-white/85 px-4 py-3 shadow-card backdrop-blur transition duration-300 hover:-translate-y-0.5 hover:shadow-card-strong">
-            <div
-                className={cn(
-                    "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-0 transition duration-300 group-hover:opacity-100",
-                    platform.glowClassName
-                )}
-                aria-hidden="true"
-            />
-
             <div className="relative flex items-center gap-3">
                 <div
                     className={cn(
@@ -170,9 +143,7 @@ const LogoChip = ({ platform, featured = false }: { platform: Platform; featured
 
 const IntegrationsSection: FC = () => {
     return (
-        <Section tone="gradient" id="integrations" className="overflow-hidden py-12 sm:py-section-sm md:py-section">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.10),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(245,158,11,0.12),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(14,165,233,0.10),transparent_35%)]" aria-hidden="true" />
-
+        <Section tone="light" id="integrations" className="overflow-hidden py-12 sm:py-section-sm md:py-section">
             <Container className="relative">
                 <div className="mx-auto max-w-3xl text-center">
                     <Badge variant="accent" className="w-fit">
@@ -202,9 +173,6 @@ const IntegrationsSection: FC = () => {
                     </div>
 
                     <div className="group relative mt-4 hidden overflow-hidden md:block">
-                        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-white via-white/90 to-transparent" aria-hidden="true" />
-                        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-white via-white/90 to-transparent" aria-hidden="true" />
-
                         <div className="flex min-w-max gap-4 motion-safe:animate-[logo-strip_28s_linear_infinite] group-hover:[animation-play-state:paused]">
                             <div className="flex min-w-max gap-4 pr-4">
                                 {plannedPlatforms.map((platform) => (

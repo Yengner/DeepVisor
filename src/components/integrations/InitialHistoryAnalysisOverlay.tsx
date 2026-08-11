@@ -231,9 +231,9 @@ export default function InitialHistoryAnalysisOverlay({
       closeOnClickOutside={false}
       closeOnEscape={false}
       padding={0}
-      radius="xl"
+      radius="md"
       size="78rem"
-      overlayProps={{ backgroundOpacity: 0.1, blur: 18 }}
+      overlayProps={{ backgroundOpacity: 0.42, blur: 2 }}
       styles={{
         content: {
           background: 'transparent',
@@ -246,11 +246,11 @@ export default function InitialHistoryAnalysisOverlay({
     >
       <div className={classes.frame}>
         <div className={classes.ambientGlow} aria-hidden="true" />
-        <Paper radius={28} className={classes.panel}>
+        <Paper radius="md" className={classes.panel}>
           <div className={classes.header}>
             <div className={classes.headerCopy}>
               <Group gap="xs" mb={10}>
-                <Badge color="blue" variant="light" size="lg">
+                <Badge color="signal" variant="light" size="lg">
                   Initial History Read
                 </Badge>
                 <Badge color={confidence.color} variant="light" size="lg">
@@ -272,7 +272,7 @@ export default function InitialHistoryAnalysisOverlay({
 
             <div className={classes.headerActions}>
               <div className={classes.liveBadge}>
-                <ThemeIcon size={32} radius="xl" variant="light" color="blue">
+                <ThemeIcon size={32} radius="md" variant="light" color="signal">
                   <IconSparkles size={16} />
                 </ThemeIcon>
                 <div>
@@ -285,7 +285,7 @@ export default function InitialHistoryAnalysisOverlay({
 
               <Button
                 size="md"
-                radius="xl"
+                radius="md"
                 onClick={onContinue}
                 disabled={!canContinue}
               >
@@ -295,12 +295,12 @@ export default function InitialHistoryAnalysisOverlay({
           </div>
 
           <div className={classes.dashboard}>
-            <Paper radius="xl" p="lg" className={classes.railCard}>
+            <Paper radius="md" p="lg" className={classes.railCard}>
               <div className={classes.railTop}>
                 <Text size="xs" tt="uppercase" fw={700} c="dimmed">
                   Scan progress
                 </Text>
-                <Progress value={progressValue} radius="xl" size="md" color="blue" />
+                <Progress value={progressValue} radius="sm" size="md" color="signal" />
               </div>
 
               <div className={classes.phaseList}>
@@ -347,7 +347,7 @@ export default function InitialHistoryAnalysisOverlay({
               </div>
             </Paper>
 
-            <Paper radius="xl" p="lg" className={classes.heroCard}>
+            <Paper radius="md" p="lg" className={classes.heroCard}>
               <div className={classes.heroGrid}>
                 <div className={classes.heroStats}>
                   <div className={classes.liveWindowCard}>
@@ -357,7 +357,7 @@ export default function InitialHistoryAnalysisOverlay({
                       </Text>
                       <Text fw={700}>{activeWindow.label}</Text>
                     </div>
-                    <ThemeIcon size={38} radius="xl" variant="light" color="blue">
+                    <ThemeIcon size={38} radius="md" variant="light" color="signal">
                       <IconTrendingUp size={20} />
                     </ThemeIcon>
                   </div>
@@ -407,7 +407,7 @@ export default function InitialHistoryAnalysisOverlay({
                         </Text>
                         <Text fw={700}>{analysis.bestWindow.label}</Text>
                       </div>
-                      <ThemeIcon size={34} radius="xl" variant="light" color="teal">
+                      <ThemeIcon size={34} radius="md" variant="light" color="signal">
                         <IconClockHour4 size={18} />
                       </ThemeIcon>
                     </Group>
@@ -425,7 +425,7 @@ export default function InitialHistoryAnalysisOverlay({
                       </Text>
                       <Text fw={700}>Window comparison</Text>
                     </div>
-                    <ThemeIcon size={34} radius="xl" variant="light" color="dark">
+                    <ThemeIcon size={34} radius="md" variant="light" color="dark">
                       <IconChartBar size={18} />
                     </ThemeIcon>
                   </div>
@@ -455,7 +455,7 @@ export default function InitialHistoryAnalysisOverlay({
                               transition={{ duration: 0.45, ease: 'easeOut' }}
                             />
                           </div>
-                          <Text size="xs" fw={700} c={isActive ? 'blue.7' : 'dimmed'}>
+                          <Text size="xs" fw={700} c={isActive ? 'signal.8' : 'dimmed'}>
                             {shortWindowLabel(window)}
                           </Text>
                           <Text size="xs" c="dimmed">
@@ -469,7 +469,7 @@ export default function InitialHistoryAnalysisOverlay({
               </div>
             </Paper>
 
-            <Paper radius="xl" p="lg" className={classes.compareCard}>
+            <Paper radius="md" p="lg" className={classes.compareCard}>
               <Group justify="space-between" align="center" mb="md">
                 <div>
                   <Text size="xs" tt="uppercase" fw={700} c="dimmed">
@@ -477,7 +477,7 @@ export default function InitialHistoryAnalysisOverlay({
                   </Text>
                   <Text fw={700}>What the account has been chasing</Text>
                 </div>
-                <ThemeIcon size={34} radius="xl" variant="light" color="blue">
+                <ThemeIcon size={34} radius="md" variant="light" color="violet">
                   <IconTargetArrow size={18} />
                 </ThemeIcon>
               </Group>
@@ -507,7 +507,7 @@ export default function InitialHistoryAnalysisOverlay({
               </div>
             </Paper>
 
-            <Paper radius="xl" p="lg" className={classes.campaignCard}>
+            <Paper radius="md" p="lg" className={classes.campaignCard}>
               <Group justify="space-between" align="center" mb="md">
                 <div>
                   <Text size="xs" tt="uppercase" fw={700} c="dimmed">
@@ -515,7 +515,7 @@ export default function InitialHistoryAnalysisOverlay({
                   </Text>
                   <Text fw={700}>What produced the strongest outcomes</Text>
                 </div>
-                <ThemeIcon size={34} radius="xl" variant="light" color="teal">
+                <ThemeIcon size={34} radius="md" variant="light" color="signal">
                   <IconBolt size={18} />
                 </ThemeIcon>
               </Group>
@@ -553,7 +553,7 @@ export default function InitialHistoryAnalysisOverlay({
               </div>
             </Paper>
 
-            <Paper radius="xl" p="lg" className={classes.insightCard}>
+            <Paper radius="md" p="lg" className={classes.insightCard}>
               <div className={classes.insightHeader}>
                 <div>
                   <Text size="xs" tt="uppercase" fw={700} c="dimmed">

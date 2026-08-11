@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-
+import "./public.css";
 
 export const metadata: Metadata = {
   title: "DeepVisor - Easier Paid Ads for Salons",
@@ -15,10 +15,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <div className="dv-public-shell">
       <Header />
-      <main>{children}</main>
+      <main className="dv-public-main">{children}</main>
       <Footer />
-    </>
+    </div>
   );
 }

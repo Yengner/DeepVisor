@@ -15,10 +15,12 @@ export function EmptyState({
   onAction
 }: EmptyStateProps) {
   return (
-    <Stack align="center" className="py-16 text-center">
-      <IconInbox size={48} className="text-gray-400" />
+    <Stack align="center" className="mx-auto max-w-lg border-y border-[#dfe2da] py-14 text-center">
+      <span className="flex h-11 w-11 items-center justify-center rounded-md border border-[#c9cec4] bg-white text-[#697067]">
+        <IconInbox size={22} />
+      </span>
       <Title order={3}>{title}</Title>
-      <Text color="dimmed" size="lg" className="max-w-md">
+      <Text c="dimmed" size="md" className="max-w-md">
         {message}
       </Text>
       

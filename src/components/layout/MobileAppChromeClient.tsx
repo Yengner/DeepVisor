@@ -17,18 +17,15 @@ import {
   Portal,
   Stack,
   Text,
-  TextInput,
   ThemeIcon,
 } from '@mantine/core';
 import {
   IconBell,
-  IconLayersIntersect,
   IconLogout,
   IconPlus,
-  IconSearch,
   IconSettings,
-  IconTable,
 } from '@tabler/icons-react';
+import { BrandLockup, BrandMark } from '@/components/brand/Brand';
 import {
   clientHandleSignOut,
   markAllNotificationsAsReadClient,
@@ -58,6 +55,7 @@ type MobileAppChromeClientProps = {
     external_account_id: string | null;
   }>;
   notifications?: NotificationFeedItem[];
+  unreadNotificationIds?: string[];
   initialPlatformId?: string | null;
   initialAccountId?: string | null;
 };
@@ -75,21 +73,20 @@ export default function MobileAppChromeClient({
   platforms = [],
   adAccounts = [],
   notifications = [],
+  unreadNotificationIds = [],
   initialPlatformId,
   initialAccountId,
 }: MobileAppChromeClientProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [drawerOpened, setDrawerOpened] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [userNotifications, setUserNotifications] =
     useState<NotificationFeedItem[]>(notifications);
-  const notificationCount = userNotifications.filter((notification) => !notification.read).length;
+  const [unreadIds, setUnreadIds] = useState<string[]>(unreadNotificationIds);
+  const notificationCount = unreadIds.length;
   const accentColor = 'var(--platform-accent)';
   const accentStrong = 'var(--platform-accent-strong)';
   const accentSoft = 'var(--platform-accent-soft)';
-  const accentSoftStrong = 'var(--platform-accent-soft-strong)';
-  const borderColor = 'var(--platform-border)';
   const textStrong = 'var(--platform-text-strong)';
   const fullName = `${userInfo?.first_name ?? ''} ${userInfo?.last_name ?? ''}`.trim();
   const userInitials =
@@ -102,7 +99,8 @@ export default function MobileAppChromeClient({
 
   useEffect(() => {
     setUserNotifications(notifications);
-  }, [notifications]);
+    setUnreadIds(unreadNotificationIds);
+  }, [notifications, unreadNotificationIds]);
 
   const navigate = (route: string) => {
     setDrawerOpened(false);
@@ -111,16 +109,20 @@ export default function MobileAppChromeClient({
 
   const isMobileBottomItemActive = (route: string) =>
     isAppNavItemActive(pathname, route) ||
-    (route === '/settings' && Boolean(pathname?.startsWith('/integration')));
+    (route === '/settings' && Boolean(
+      pathname?.startsWith('/settings/')
+    ));
+
+  const drawerNavItems = [...primaryNavItems, ...secondaryNavItems];
+  const activeDrawerRoute = drawerNavItems
+    .filter((item) => isAppNavItemActive(pathname, item.route))
+    .sort((left, right) => right.route.length - left.route.length)[0]?.route;
 
   const markAllRead = () => {
-    const unreadIds = userNotifications
-      .filter((notification) => !notification.read)
-      .map((notification) => notification.id);
-
     setUserNotifications((current) =>
       current.map((notification) => ({ ...notification, read: true }))
     );
+    setUnreadIds([]);
     void markAllNotificationsAsReadClient(unreadIds);
   };
 
@@ -131,6 +133,7 @@ export default function MobileAppChromeClient({
           item.id === notification.id ? { ...item, read: true } : item
         )
       );
+      setUnreadIds((current) => current.filter((id) => id !== notification.id));
       void markNotificationReadClient(notification.id);
     }
 
@@ -153,27 +156,10 @@ export default function MobileAppChromeClient({
           onClick={() => setDrawerOpened((opened) => !opened)}
           aria-label="Open navigation"
           size="sm"
-          color={accentStrong}
+          color="#f7f8f3"
         />
 
-        <Box
-          w={34}
-          h={34}
-          style={{
-            borderRadius: 12,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background:
-              'linear-gradient(135deg, var(--platform-accent-strong) 0%, var(--platform-accent) 62%, rgba(255,255,255,0.92) 160%)',
-            color: '#ffffff',
-            flex: '0 0 auto',
-          }}
-        >
-          <Text fw={800} size="xs" lh={1}>
-            DV
-          </Text>
-        </Box>
+        <BrandMark tone="light" className="h-[34px] w-[34px]" />
 
         <div style={{ minWidth: 0, flex: 1 }}>
           <PlatformAdAccountDropdownClient
@@ -190,10 +176,9 @@ export default function MobileAppChromeClient({
             <Indicator disabled={notificationCount === 0} label={notificationCount} size={16}>
               <ActionIcon
                 size="lg"
-                radius="xl"
                 variant="subtle"
                 aria-label="Open notifications"
-                style={{ color: accentStrong, backgroundColor: accentSoft }}
+                style={{ color: '#d7ddd4', backgroundColor: '#20241f', border: '1px solid #343a33' }}
               >
                 <IconBell size={20} />
               </ActionIcon>
@@ -252,15 +237,14 @@ export default function MobileAppChromeClient({
 
         <Menu shadow="md" width={220} position="bottom-end">
           <Menu.Target>
-            <ActionIcon size="lg" radius="xl" variant="subtle" aria-label="Open account menu">
+            <ActionIcon size="lg" variant="subtle" aria-label="Open account menu">
               <Avatar
-                color="blue"
-                radius="xl"
+                radius="sm"
                 size={34}
                 style={{
-                  backgroundColor: accentSoftStrong,
-                  color: accentStrong,
-                  border: `1px solid ${borderColor}`,
+                  backgroundColor: '#c8ff56',
+                  color: '#151714',
+                  border: '1px solid #d7ff8a',
                 }}
               >
                 {userInitials}
@@ -282,7 +266,7 @@ export default function MobileAppChromeClient({
       <Drawer
         opened={drawerOpened}
         onClose={() => setDrawerOpened(false)}
-        title={<Text fw={800}>DeepVisor</Text>}
+        title={<BrandLockup />}
         position="left"
         size="min(88vw, 360px)"
         padding="md"
@@ -298,71 +282,43 @@ export default function MobileAppChromeClient({
             variant="drawer"
           />
 
-          <TextInput
-            placeholder="Search DeepVisor"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.currentTarget.value)}
-            leftSection={<IconSearch size={16} />}
-          />
-
-          <Stack gap={8}>
-            <Text size="xs" fw={800} c="dimmed" tt="uppercase">
-              Create
-            </Text>
-            <Button
-              leftSection={<IconTable size={18} />}
-              fullWidth
-              justify="flex-start"
-              variant="light"
-              disabled
-            >
-              Campaign
-            </Button>
-            <Button
-              leftSection={<IconLayersIntersect size={18} />}
-              fullWidth
-              justify="flex-start"
-              variant="light"
-              disabled
-            >
-              Ad set
-            </Button>
-            <Button
-              leftSection={<IconPlus size={18} />}
-              fullWidth
-              justify="flex-start"
-              variant="light"
-              disabled
-            >
-              Ad
-            </Button>
-          </Stack>
+          <Button
+            leftSection={<IconPlus size={18} />}
+            fullWidth
+            justify="flex-start"
+            onClick={() => navigate('/campaigns/create')}
+          >
+            New campaign
+          </Button>
 
           <Divider />
 
           <Stack gap={4}>
-            {[...primaryNavItems, ...secondaryNavItems].map((item) => (
+            {drawerNavItems.map((item) => {
+              const active = item.route === activeDrawerRoute;
+
+              return (
               <NavLink
                 key={item.route}
                 label={item.name}
                 leftSection={
                   <ThemeIcon
-                    variant={isAppNavItemActive(pathname, item.route) ? 'filled' : 'light'}
+                    variant={active ? 'filled' : 'light'}
                     style={{
-                      backgroundColor: isAppNavItemActive(pathname, item.route)
+                      backgroundColor: active
                         ? accentColor
                         : accentSoft,
-                      color: isAppNavItemActive(pathname, item.route) ? '#fff' : accentStrong,
+                      color: active ? '#fff' : accentStrong,
                     }}
                   >
                     <item.icon size={18} />
                   </ThemeIcon>
                 }
-                active={isAppNavItemActive(pathname, item.route)}
+                active={active}
                 onClick={() => navigate(item.route)}
                 styles={{
                   root: {
-                    borderRadius: 14,
+                    borderRadius: 6,
                   },
                   label: {
                     color: textStrong,
@@ -370,7 +326,8 @@ export default function MobileAppChromeClient({
                   },
                 }}
               />
-            ))}
+              );
+            })}
           </Stack>
 
           <Divider />
@@ -389,8 +346,8 @@ export default function MobileAppChromeClient({
 
       <Portal>
         <nav
-          className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t bg-white/95 px-1 pb-[calc(0.45rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur md:hidden"
-          style={{ borderColor }}
+          className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t bg-white px-1 pb-[calc(0.45rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-4px_16px_rgba(21,23,20,0.08)] md:hidden"
+          style={{ borderColor: '#dfe2da' }}
           aria-label="Primary mobile navigation"
         >
           {mobileBottomNavItems.slice(0, 2).map((item) => {
@@ -401,10 +358,10 @@ export default function MobileAppChromeClient({
                 key={item.route}
                 type="button"
                 onClick={() => navigate(item.route)}
-                className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-bold"
+                className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-[10px] font-bold"
                 style={{
-                  color: active ? accentStrong : '#64748b',
-                  backgroundColor: active ? accentSoft : 'transparent',
+                  color: active ? '#0b7a4b' : '#697067',
+                  backgroundColor: active ? '#e9f7ef' : 'transparent',
                 }}
               >
                 <item.icon size={20} stroke={active ? 2.2 : 1.8} />
@@ -414,19 +371,19 @@ export default function MobileAppChromeClient({
           })}
           <button
             type="button"
-            disabled
-            aria-label="Create campaigns, ad sets, and ads coming soon"
-            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-bold disabled:cursor-not-allowed"
+            onClick={() => navigate('/campaigns/create')}
+            aria-label="Create campaign"
+            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-[10px] font-bold"
             style={{
-              color: '#94a3b8',
-              backgroundColor: 'rgba(148, 163, 184, 0.12)',
+              color: '#151714',
+              backgroundColor: 'transparent',
             }}
           >
             <span
-              className="flex h-10 w-10 items-center justify-center rounded-full"
+              className="flex h-10 w-10 items-center justify-center rounded-md"
               style={{
-                backgroundColor: 'rgba(148, 163, 184, 0.18)',
-                border: '1px solid rgba(148, 163, 184, 0.34)',
+                backgroundColor: '#c8ff56',
+                border: '1px solid #b6ed46',
               }}
             >
               <IconPlus size={24} stroke={2.4} />
@@ -443,10 +400,10 @@ export default function MobileAppChromeClient({
                 key={item.route}
                 type="button"
                 onClick={() => navigate(item.route)}
-                className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-bold"
+                className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-[10px] font-bold"
                 style={{
-                  color: active ? accentStrong : '#64748b',
-                  backgroundColor: active ? accentSoft : 'transparent',
+                  color: active ? '#0b7a4b' : '#697067',
+                  backgroundColor: active ? '#e9f7ef' : 'transparent',
                 }}
               >
                 {isNotifications ? (

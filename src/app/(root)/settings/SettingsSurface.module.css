@@ -1,0 +1,238 @@
+.page {
+  --dv-ink: #151714;
+  --dv-canvas: #f4f5ef;
+  --dv-surface: #ffffff;
+  --dv-subtle: #f8f9f5;
+  --dv-border: #d9ddd3;
+  --dv-border-strong: #aeb5aa;
+  --dv-muted: #62685e;
+  --dv-signal: #0b7a4b;
+  --dv-signal-bright: #14a866;
+  --dv-coral: #e76156;
+  --dv-lime: #c8ff56;
+  width: 100%;
+  min-height: calc(100vh - 7rem);
+  padding: 20px;
+  color: var(--dv-ink);
+  background: var(--dv-canvas);
+}
+
+.page :global(.mantine-Title-root),
+.page :global(.mantine-Text-root),
+.page :global(.mantine-Badge-root),
+.page :global(.mantine-Button-root),
+.page :global(.mantine-Input-input) {
+  letter-spacing: 0 !important;
+}
+
+.page :global(.mantine-Card-root),
+.page :global(.mantine-Paper-root) {
+  border: 1px solid var(--dv-border) !important;
+  border-radius: 6px !important;
+  background: var(--dv-surface);
+  box-shadow: none !important;
+}
+
+.pageStack > :global(.mantine-Card-root) {
+  padding: 20px !important;
+}
+
+.pageStack > :global(.app-platform-page-hero) {
+  padding: 22px 24px !important;
+}
+
+.page :global(.mantine-Card-root) :global(.mantine-Paper-root) {
+  background: var(--dv-subtle);
+}
+
+.page :global(.mantine-Button-root),
+.page :global(.mantine-Input-input),
+.page :global(.mantine-Select-input),
+.page :global(.mantine-Alert-root),
+.page :global(.mantine-ThemeIcon-root),
+.page :global(.mantine-Badge-root) {
+  border-radius: 5px !important;
+}
+
+.page :global(.mantine-Button-root) {
+  font-weight: 700;
+}
+
+.page :global(.mantine-Button-root[data-variant='filled']) {
+  border: 1px solid var(--dv-signal);
+  color: #ffffff;
+  background: var(--dv-signal);
+}
+
+.page :global(.mantine-Button-root[data-variant='filled']:hover) {
+  border-color: #075f3b;
+  background: #075f3b;
+}
+
+.page :global(.mantine-Button-root[data-variant='default']) {
+  border: 1px solid var(--dv-border-strong);
+  color: var(--dv-ink);
+  background: #ffffff;
+}
+
+.page :global(.mantine-Button-root[data-variant='light']) {
+  color: #075f3b;
+  background: #eaf6ef;
+}
+
+.page :global(.mantine-Button-root[data-variant='subtle']) {
+  border: 1px solid var(--dv-border);
+  color: #394039;
+  background: #ffffff;
+}
+
+.page :global(.mantine-Button-root[data-variant='subtle']:hover) {
+  border-color: #9fc9b0;
+  color: #075f3b;
+  background: #eaf6ef;
+}
+
+.page :global(.mantine-ThemeIcon-root) {
+  color: var(--dv-signal);
+  background: #eaf6ef;
+}
+
+.page :global(.mantine-Input-input) {
+  border-color: var(--dv-border-strong);
+  background: #ffffff;
+}
+
+.page :global(.mantine-Input-input:focus),
+.page :global(.mantine-Input-input:focus-within) {
+  border-color: var(--dv-signal);
+}
+
+.page :global(.mantine-Switch-track[data-checked]) {
+  border-color: var(--dv-signal);
+  background: var(--dv-signal);
+}
+
+.page :global(.mantine-Alert-root) {
+  border-width: 1px;
+  box-shadow: none;
+}
+
+.page :global(.app-platform-page-hero) {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--dv-ink) !important;
+  color: #ffffff;
+  background: var(--dv-ink) !important;
+  box-shadow: none !important;
+}
+
+.page :global(.app-platform-page-hero)::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 104px;
+  height: 4px;
+  background: var(--dv-lime);
+  content: '';
+}
+
+.page :global(.app-platform-page-title) {
+  color: #ffffff !important;
+}
+
+.page :global(.app-platform-page-copy) {
+  color: #c9cec4 !important;
+}
+
+.page :global(.app-platform-page-kicker) {
+  color: var(--dv-lime) !important;
+}
+
+.page :global(.app-platform-page-badge) {
+  border: 1px solid rgba(200, 255, 86, 0.52) !important;
+  color: var(--dv-ink) !important;
+  background: var(--dv-lime) !important;
+}
+
+.page :global(.app-platform-page-hero) :global(.mantine-Badge-root[data-variant='outline']) {
+  border-color: #596057;
+  color: #e5e8e1;
+}
+
+.page :global(.app-platform-page-hero-panel) {
+  border-color: #4b5048 !important;
+  color: #ffffff;
+  background: #242720 !important;
+  backdrop-filter: none;
+  box-shadow: none !important;
+}
+
+.page :global(.app-platform-page-hero-panel) :global(.mantine-Text-root) {
+  color: #d9ddd4;
+}
+
+.page :global(.app-platform-page-action-primary) {
+  border-color: var(--dv-lime) !important;
+  color: var(--dv-ink) !important;
+  background: var(--dv-lime) !important;
+  box-shadow: none !important;
+}
+
+.page :global(.app-platform-page-action-primary:hover) {
+  border-color: #d7ff83 !important;
+  background: #d7ff83 !important;
+}
+
+.page :global(.app-platform-page-action-secondary) {
+  border-color: #596057 !important;
+  color: #ffffff !important;
+  background: #2e322a !important;
+}
+
+.page :global(.mantine-Avatar-root) {
+  border: 1px solid var(--dv-lime);
+  border-radius: 6px !important;
+  color: var(--dv-ink);
+  background: var(--dv-lime);
+}
+
+.page :global(.mantine-Card-root[id]) {
+  scroll-margin-top: 82px;
+}
+
+.page :global(.mantine-Card-root[id]) > :global(.mantine-Group-root):first-child {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--dv-border);
+}
+
+.page :global(.mantine-Card-root[id]) :global(.mantine-Title-root) {
+  color: var(--dv-ink);
+}
+
+@media (max-width: 760px) {
+  .page {
+    padding: 10px;
+  }
+
+  .page :global(.app-platform-page-hero) {
+    padding: 18px 16px !important;
+  }
+
+  .page :global(.app-platform-page-hero) > :global(.mantine-Group-root) {
+    gap: 18px;
+  }
+
+  .page :global(.app-platform-page-hero) > :global(.mantine-Group-root) > :global(.mantine-Group-root) {
+    width: 100%;
+    flex-wrap: wrap !important;
+  }
+
+  .page :global(.app-platform-page-hero-panel) {
+    width: 100%;
+    min-width: 0 !important;
+  }
+
+  .page :global(.mantine-Card-root[id]) {
+    padding: 16px !important;
+  }
+}

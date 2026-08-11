@@ -527,7 +527,16 @@ export default function CreativeAssetsStep({
                                                         <Text size="xs" c="dimmed" mb="xs">
                                                             {creative.adDescription || placeholderAd.description}
                                                         </Text>
-                                                        <Button fullWidth size="sm">
+                                                        <Box
+                                                            py={8}
+                                                            ta="center"
+                                                            style={{
+                                                                border: '1px solid var(--dv-border-strong)',
+                                                                borderRadius: 6,
+                                                                fontSize: 'var(--mantine-font-size-sm)',
+                                                                fontWeight: 700,
+                                                            }}
+                                                        >
                                                             {creative.adCallToAction === 'SHOP_NOW' ? 'Shop Now' :
                                                                 creative.adCallToAction === 'LEARN_MORE' ? 'Learn More' :
                                                                     creative.adCallToAction === 'SIGN_UP' ? 'Sign Up' :
@@ -535,7 +544,7 @@ export default function CreativeAssetsStep({
                                                                             creative.adCallToAction === 'CONTACT_US' ? 'Contact Us' :
                                                                                 creative.adCallToAction === 'GET_OFFER' ? 'Get Offer' :
                                                                                     'Learn More'}
-                                                        </Button>
+                                                        </Box>
                                                     </Box>
                                                 </Paper>
                                             )
@@ -586,7 +595,16 @@ export default function CreativeAssetsStep({
                                             <Text size="xs" c="dimmed" mb="xs">
                                                 {creative.adDescription || placeholderAd.description}
                                             </Text>
-                                            <Button fullWidth size="sm">
+                                            <Box
+                                                py={8}
+                                                ta="center"
+                                                style={{
+                                                    border: '1px solid var(--dv-border-strong)',
+                                                    borderRadius: 6,
+                                                    fontSize: 'var(--mantine-font-size-sm)',
+                                                    fontWeight: 700,
+                                                }}
+                                            >
                                                 {creative.adCallToAction === 'SHOP_NOW' ? 'Shop Now' :
                                                     creative.adCallToAction === 'LEARN_MORE' ? 'Learn More' :
                                                         creative.adCallToAction === 'SIGN_UP' ? 'Sign Up' :
@@ -594,15 +612,11 @@ export default function CreativeAssetsStep({
                                                                 creative.adCallToAction === 'CONTACT_US' ? 'Contact Us' :
                                                                     creative.adCallToAction === 'GET_OFFER' ? 'Get Offer' :
                                                                         'Learn More'}
-                                            </Button>
+                                            </Box>
                                         </Box>
                                     </Paper>
                                 )}
 
-                            <Paper p="md" withBorder radius="md" bg="blue.0">
-                                <Text fw={500} size="sm" mb="xs">Ad Preview Notes</Text>
-                                <Text size="xs">This is a simplified preview of how your ad might appear in Facebook News Feed. Actual appearance may vary.</Text>
-                            </Paper>
                         </Stack>
                     </Card>
                 </Box>

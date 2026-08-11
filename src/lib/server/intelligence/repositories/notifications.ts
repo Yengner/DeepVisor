@@ -116,6 +116,28 @@ export async function listNotifications(
   return rows.slice(0, limit ?? rows.length).map(mapNotificationRow);
 }
 
+export async function listUnreadNotificationIds(
+  supabase: IntelligenceClient,
+  input: { userId: string }
+): Promise<string[]> {
+  const { data, error } = await (supabase as any)
+    .from('notifications')
+    .select('id, payload_json')
+    .eq('user_id', input.userId)
+    .eq('read', false);
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as Array<Pick<NotificationRow, 'id' | 'payload_json'>>)
+    .filter((row) => {
+      const surface = resolveNotificationSurface(row);
+      return surface === 'bell' || surface === 'both';
+    })
+    .map((row) => row.id);
+}
+
 export async function upsertNotification(
   supabase: IntelligenceClient,
   input: {

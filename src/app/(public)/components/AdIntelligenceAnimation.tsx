@@ -16,7 +16,6 @@ import { SiMeta } from "react-icons/si";
 
 type StatCard = {
   label: string;
-  start: string;
   end: string;
   lift: string;
   icon: LucideIcon;
@@ -36,19 +35,16 @@ type CreativeRow = {
   Icon: IconType;
   brandColor: string;
   surfaceColor: string;
-  budgetStart: string;
   budgetEnd: string;
-  leadsStart: string;
   leadsEnd: string;
-  clicksStart: string;
   clicksEnd: string;
   lift: string;
 };
 
 const statCards: StatCard[] = [
-  { label: "Budget", start: "$421", end: "$608", lift: "+44%", icon: CircleDollarSign },
-  { label: "Leads", start: "46", end: "81", lift: "+76%", icon: MessageCircle },
-  { label: "Clicks", start: "612", end: "1,048", lift: "+71%", icon: MousePointerClick },
+  { label: "Budget", end: "$608", lift: "+44%", icon: CircleDollarSign },
+  { label: "Leads", end: "81", lift: "+76%", icon: MessageCircle },
+  { label: "Clicks", end: "1,048", lift: "+71%", icon: MousePointerClick },
 ];
 
 const creativeAssets: CreativeMedia[] = [
@@ -128,11 +124,8 @@ const creativeRows: CreativeRow[] = [
     Icon: SiMeta,
     brandColor: "#1877f2",
     surfaceColor: "#eff6ff",
-    budgetStart: "$96",
     budgetEnd: "$214",
-    leadsStart: "9",
     leadsEnd: "32",
-    clicksStart: "188",
     clicksEnd: "511",
     lift: "+256%",
   },
@@ -143,11 +136,8 @@ const creativeRows: CreativeRow[] = [
     Icon: SiMeta,
     brandColor: "#1877f2",
     surfaceColor: "#eff6ff",
-    budgetStart: "$184",
     budgetEnd: "$236",
-    leadsStart: "24",
     leadsEnd: "37",
-    clicksStart: "296",
     clicksEnd: "392",
     lift: "+54%",
   },
@@ -158,11 +148,8 @@ const creativeRows: CreativeRow[] = [
     Icon: SiMeta,
     brandColor: "#1877f2",
     surfaceColor: "#eef7ff",
-    budgetStart: "$141",
     budgetEnd: "$158",
-    leadsStart: "13",
     leadsEnd: "12",
-    clicksStart: "128",
     clicksEnd: "145",
     lift: "-8%",
   },
@@ -269,10 +256,7 @@ export default function AdIntelligenceAnimation() {
                   </span>
                 </div>
                 <p className="mt-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">{stat.label}</p>
-                <div className="relative mt-0.5 h-6 overflow-hidden text-lg font-semibold text-slate-950">
-                  <span className="dv-stat-old absolute inset-0">{stat.start}</span>
-                  <span className="dv-stat-new absolute inset-0">{stat.end}</span>
-                </div>
+                <p className="mt-0.5 text-lg font-semibold text-slate-950">{stat.end}</p>
               </div>
             );
           })}
@@ -359,18 +343,15 @@ export default function AdIntelligenceAnimation() {
 
                       <div className="mt-2 grid grid-cols-3 gap-1">
                         {[
-                          { label: "Budget", start: row.budgetStart, end: row.budgetEnd },
-                          { label: "Leads", start: row.leadsStart, end: row.leadsEnd },
-                          { label: "Clicks", start: row.clicksStart, end: row.clicksEnd },
+                          { label: "Budget", value: row.budgetEnd },
+                          { label: "Leads", value: row.leadsEnd },
+                          { label: "Clicks", value: row.clicksEnd },
                         ].map((metric) => (
                           <div key={metric.label} className="min-w-0 rounded-lg bg-slate-50 px-1.5 py-1">
                             <p className="truncate text-[8px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                               {metric.label}
                             </p>
-                            <div className="relative mt-0.5 h-4 overflow-hidden text-[11px] font-semibold text-slate-950">
-                              <span className="dv-stat-old absolute inset-0">{metric.start}</span>
-                              <span className="dv-stat-new absolute inset-0">{metric.end}</span>
-                            </div>
+                            <p className="mt-0.5 text-[11px] font-semibold text-slate-950">{metric.value}</p>
                           </div>
                         ))}
                       </div>
@@ -391,21 +372,6 @@ export default function AdIntelligenceAnimation() {
           animation-name: dv-rank-card-cycle;
           animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
           will-change: transform, opacity;
-        }
-
-        .dv-stat-old,
-        .dv-stat-new {
-          animation-duration: 10.8s;
-          animation-iteration-count: infinite;
-          animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
-        }
-
-        .dv-stat-old {
-          animation-name: dv-stat-old;
-        }
-
-        .dv-stat-new {
-          animation-name: dv-stat-new;
         }
 
         .dv-date-track {
@@ -454,30 +420,6 @@ export default function AdIntelligenceAnimation() {
           }
         }
 
-        @keyframes dv-stat-old {
-          0%, 28% {
-            transform: translateY(0);
-            opacity: 1;
-          }
-
-          44%, 100% {
-            transform: translateY(-100%);
-            opacity: 0;
-          }
-        }
-
-        @keyframes dv-stat-new {
-          0%, 28% {
-            transform: translateY(100%);
-            opacity: 0;
-          }
-
-          44%, 100% {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-
         @keyframes dv-date-track {
           100% {
             transform: translateY(-5rem);
@@ -486,8 +428,6 @@ export default function AdIntelligenceAnimation() {
 
         @media (prefers-reduced-motion: reduce) {
           .dv-rank-card,
-          .dv-stat-old,
-          .dv-stat-new,
           .dv-date-track {
             animation: none;
           }
@@ -504,14 +444,6 @@ export default function AdIntelligenceAnimation() {
             transform: translate3d(0, 220px, 0);
           }
 
-          .dv-stat-old {
-            display: none;
-          }
-
-          .dv-stat-new {
-            opacity: 1;
-            transform: translateY(0);
-          }
         }
       `}</style>
     </div>

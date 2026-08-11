@@ -113,37 +113,12 @@ const sections = [
 
 export default function TermsOfServicePage() {
   return (
-    <div className="bg-[#f7f9fc] px-4 py-12 sm:px-6 lg:px-8">
-      <article className="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600">
-          DeepVisor legal
-        </p>
-        <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">
-          Terms of Service
-        </h1>
-        <p className="mt-4 text-sm text-slate-500">
-          <strong>Last updated:</strong> {lastUpdated}
-        </p>
-        <p className="mt-6 text-base leading-7 text-slate-700">
-          These Terms are a practical product-facing draft and are not a substitute for legal
-          advice. Have counsel review them before relying on them for production customers.
-        </p>
-
-        <div className="mt-10 space-y-9">
-          {sections.map((section) => (
-            <section key={section.title}>
-              <h2 className="text-xl font-bold text-slate-900">{section.title}</h2>
-              <div className="mt-3 space-y-3">
-                {section.body.map((paragraph) => (
-                  <p key={paragraph} className="leading-7 text-slate-700">
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      </article>
-    </div>
+    <LegalDocument
+      title="Terms of Service"
+      lastUpdated={lastUpdated}
+      intro="These Terms are a practical product-facing draft and are not a substitute for legal advice. Have counsel review them before relying on them for production customers."
+      sections={sections}
+    />
   );
 }
+import LegalDocument from '../components/LegalDocument';

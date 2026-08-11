@@ -43,6 +43,7 @@ import toast from 'react-hot-toast';
 import type { BusinessIntelligenceWorkspace } from '@/lib/server/intelligence';
 import {
   buildRecurringCalendarQueuePreviewItems,
+  formatCurrencyAmount,
   type CalendarQueuePreviewItem as QueueItem,
   type CalendarQueueSource as QueueSource,
   type CalendarQueueStatus as QueueStatus,
@@ -1157,6 +1158,11 @@ export default function CalendarClient({
   const [deletingQueueId, setDeletingQueueId] = useState<string | null>(null);
   const [recurringDeleteTarget, setRecurringDeleteTarget] =
     useState<RecurringDeleteTarget | null>(null);
+  const [destructiveTarget, setDestructiveTarget] = useState<{
+    kind: 'item' | 'template' | 'automatic';
+    id: string | null;
+    title: string;
+  } | null>(null);
 
   useEffect(() => {
     setQueueItems(initialQueueItems);
@@ -1183,9 +1189,13 @@ export default function CalendarClient({
     () =>
       campaignReviewOptions.map((campaign) => ({
         value: campaign.campaignExternalId,
-        label: `${campaign.campaignName} · $${campaign.spend.toFixed(0)} · ${campaign.results} results`,
+        label: `${campaign.campaignName} · ${formatCurrencyAmount(
+          campaign.spend,
+          selectedAdAccount?.currencyCode,
+          { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+        )} · ${campaign.results} results`,
       })),
-    [campaignReviewOptions]
+    [campaignReviewOptions, selectedAdAccount?.currencyCode]
   );
 
   const today = useMemo(() => startOfDay(initialNow), [initialNow]);
@@ -1886,8 +1896,7 @@ export default function CalendarClient({
     }
 
     if (!looksLikeUuid(id)) {
-      updateQueueItem(id, (item) => ({ ...item, status: 'approved' }));
-      toast.success('Queue item approved');
+      toast.error('This generated occurrence cannot be approved until it is persisted.');
       return;
     }
 
@@ -1931,12 +1940,7 @@ export default function CalendarClient({
       }
     }
 
-    updateQueueItem(id, (item) => ({
-      ...item,
-      status: 'draft',
-      description: `${item.description} Edited in skeleton mode for later refinement.`,
-    }));
-    toast.success('Queue item moved back to draft');
+    toast.error('Only recurring queue templates can be edited here.');
   }
 
   function handleDelete(id: string) {
@@ -1953,18 +1957,38 @@ export default function CalendarClient({
     }
 
     if (looksLikeUuid(id)) {
-      void deleteCalendarQueue(
-        {
-          queueItemId: id,
-        },
-        'Queue item removed'
-      );
+      setDestructiveTarget({
+        kind: 'item',
+        id,
+        title: targetItem?.title ?? 'this queue item',
+      });
       return;
     }
 
-    setSelectedCalendarItemId((current) => (current === id ? null : current));
-    updateQueueItem(id, () => null);
-    toast.success('Queue item removed');
+    toast.error('This generated occurrence cannot be removed directly.');
+  }
+
+  async function confirmDestructiveAction() {
+    const target = destructiveTarget;
+    if (!target) {
+      return;
+    }
+
+    setDestructiveTarget(null);
+
+    if (target.kind === 'item' && target.id) {
+      await deleteCalendarQueue({ queueItemId: target.id }, 'Queue item removed');
+      return;
+    }
+
+    if (target.kind === 'template' && target.id) {
+      await removeTemplate(target.id);
+      return;
+    }
+
+    if (target.kind === 'automatic') {
+      await handleRebuildQueue();
+    }
   }
 
   async function confirmDeleteRecurringOccurrence() {
@@ -2176,6 +2200,7 @@ export default function CalendarClient({
               Open action
             </Button>
           ) : null}
+          {looksLikeUuid(item.id) ? (
           <Button
             size="sm"
             radius="xl"
@@ -2191,6 +2216,8 @@ export default function CalendarClient({
           >
             {item.isParent ? 'Approve workflow' : 'Approve'}
           </Button>
+          ) : null}
+          {item.recurringTemplateId ? (
           <Button
             size="sm"
             radius="xl"
@@ -2201,6 +2228,8 @@ export default function CalendarClient({
           >
             {item.isRecurring ? 'Edit queue' : 'Modify'}
           </Button>
+          ) : null}
+          {item.recurringTemplateId || looksLikeUuid(item.id) ? (
           <Button
             size="sm"
             radius="xl"
@@ -2212,6 +2241,7 @@ export default function CalendarClient({
           >
             {item.isRecurring ? 'Remove queue' : 'Remove'}
           </Button>
+          ) : null}
         </Group>
       </div>
     );
@@ -2276,6 +2306,34 @@ export default function CalendarClient({
           </Stack>
         </Modal>
 
+        <Modal
+          opened={Boolean(destructiveTarget)}
+          onClose={() => setDestructiveTarget(null)}
+          title="Confirm removal"
+          centered
+          radius="lg"
+        >
+          <Stack gap="md">
+            <Text size="sm">
+              {destructiveTarget?.kind === 'automatic'
+                ? 'Clear all automatic queue items for the selected account? Recurring queues will remain.'
+                : `Remove ${destructiveTarget?.title ?? 'this queue'}? This action cannot be undone.`}
+            </Text>
+            <Group justify="flex-end">
+              <Button variant="default" onClick={() => setDestructiveTarget(null)}>
+                Cancel
+              </Button>
+              <Button
+                color="red"
+                loading={Boolean(deletingQueueId) || rebuildingQueue}
+                onClick={() => void confirmDestructiveAction()}
+              >
+                Remove
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
+
         {selectionRequiredPlatforms.length > 0 ? (
           <Alert
             color="yellow"
@@ -2321,7 +2379,13 @@ export default function CalendarClient({
                 leftSection={<IconRefresh size={16} />}
                 loading={rebuildingQueue}
                 disabled={!workspace.selectedAdAccountId || !selectedPlatformIntegrationId}
-                onClick={() => void handleRebuildQueue()}
+                onClick={() =>
+                  setDestructiveTarget({
+                    kind: 'automatic',
+                    id: null,
+                    title: 'automatic queue items',
+                  })
+                }
               >
                 Clear automatic items
               </Button>
@@ -2604,7 +2668,13 @@ export default function CalendarClient({
                               radius="xl"
                               aria-label={`Delete ${template.title}`}
                               loading={deletingQueueId === template.id}
-                              onClick={() => void removeTemplate(template.id)}
+                              onClick={() =>
+                                setDestructiveTarget({
+                                  kind: 'template',
+                                  id: template.id,
+                                  title: template.title,
+                                })
+                              }
                               className={classes.templateActionButton}
                             >
                               <IconTrash size={15} />

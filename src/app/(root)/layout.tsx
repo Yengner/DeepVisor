@@ -35,7 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
-        <main className="app-platform-main flex-1 overflow-y-auto pl-0 pr-0 pt-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pl-16 md:pr-2 md:pt-10 md:pb-10 mx-auto space-y-5 md:space-y-8">
+        <main className="app-platform-main mx-auto flex-1 space-y-5 overflow-y-auto pb-[calc(5.5rem+env(safe-area-inset-bottom))] pl-0 pr-0 pt-3 md:space-y-6 md:pb-6 md:pl-[3.75rem] md:pr-3 md:pt-4">
           {children}
         </main>
       </div>

@@ -36,42 +36,42 @@
 }
 
 .topPanel {
-  background: rgba(255, 255, 255, 0.96);
+  background: #ffffff;
 }
 
 .templateRow {
   border-color: transparent;
   color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 .templateCardReport {
-  background: linear-gradient(180deg, #4f46e5 0%, #4338ca 100%);
+  background: #5f5bd6;
 }
 
 .templateCardCampaignReview {
-  background: linear-gradient(180deg, #0f766e 0%, #115e59 100%);
+  background: #0b7a4b;
 }
 
 .templateCardCreativeRefresh {
-  background: linear-gradient(180deg, #ea580c 0%, #c2410c 100%);
+  background: #b95627;
 }
 
 .templateCardBudgetReview {
-  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+  background: #c84d45;
 }
 
 .templateCardCustom {
-  background: linear-gradient(180deg, #7c3aed 0%, #6d28d9 100%);
+  background: #7455b5;
 }
 
 .templateRowMeta {
-  color: rgba(255, 255, 255, 0.82);
+  color: #ffffff;
   font-weight: 700;
 }
 
 .templateRowDescription {
-  color: rgba(255, 255, 255, 0.92);
+  color: #ffffff;
 }
 
 .templateCardActions {
@@ -81,6 +81,7 @@
 .templateActionButton {
   background: rgba(255, 255, 255, 0.16);
   color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
 }
 
 .templateActionButton:hover {
@@ -96,7 +97,7 @@
 .templateTypeButton {
   appearance: none;
   border: 1px solid transparent;
-  border-radius: 20px;
+  border-radius: 8px;
   padding: 16px;
   text-align: left;
   color: #fff;
@@ -120,7 +121,7 @@
 }
 
 .templateTypeButtonActive {
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 0 0 3px rgba(20, 168, 102, 0.18);
   transform: translateY(-1px);
 }
 
@@ -136,7 +137,7 @@
   margin-top: 6px;
   font-size: 0.85rem;
   line-height: 1.4;
-  color: rgba(255, 255, 255, 0.9);
+  color: #ffffff;
 }
 
 .templateInfoButton {
@@ -157,7 +158,7 @@
 }
 
 .templateFormLeadCopy {
-  color: rgba(255, 255, 255, 0.92);
+  color: #ffffff;
 }
 
 .topStats {
@@ -172,27 +173,27 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.96);
-  border-radius: 16px;
-  background: rgba(248, 250, 252, 0.84);
+  border: 1px solid rgba(21, 23, 20, 0.12);
+  border-radius: 8px;
+  background: #f4f5ef;
 }
 
 .topStatValue {
   font-size: 20px;
   font-weight: 800;
   line-height: 1;
-  color: #0f172a;
+  color: #151714;
 }
 
 .topStatLabel {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: #64748b;
+  color: #697067;
 }
 
 .miniCalendarPanel {
-  background: rgba(255, 255, 255, 0.96);
+  background: #ffffff;
 }
 
 .miniCalendarGrid {
@@ -209,7 +210,7 @@
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: #64748b;
+  color: #697067;
   text-transform: uppercase;
 }
 
@@ -224,7 +225,7 @@
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
-  color: #0f172a;
+  color: #151714;
   cursor: pointer;
   font: inherit;
   font-size: 11px;
@@ -240,7 +241,7 @@
 }
 
 .miniDayOutside {
-  color: #94a3b8;
+  color: #9aa297;
 }
 
 .miniDayToday {
@@ -267,9 +268,9 @@
 .eventPopoverDropdown {
   max-width: min(360px, calc(100vw - 24px));
   padding: 0 !important;
-  border: 1px solid rgba(226, 232, 240, 0.98);
-  border-radius: 24px !important;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  border: 1px solid rgba(21, 23, 20, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(21, 23, 20, 0.14);
   background: #fff;
 }
 
@@ -295,20 +296,20 @@
   font-size: 1.35rem;
   font-weight: 800;
   line-height: 1.08;
-  color: #0f172a;
+  color: #151714;
 }
 
 .eventPopoverDate {
   margin-top: 5px;
   font-size: 0.95rem;
-  color: #475569;
+  color: #596057;
 }
 
 .eventPopoverDescription {
   margin-top: 14px;
   font-size: 0.95rem;
   line-height: 1.6;
-  color: #0f172a;
+  color: #151714;
 }
 
 .eventPopoverMetaGrid {
@@ -320,13 +321,13 @@
 
 .eventPopoverMetaItem {
   padding: 12px 14px;
-  border: 1px solid rgba(226, 232, 240, 0.96);
-  border-radius: 16px;
-  background: rgba(248, 250, 252, 0.82);
+  border: 1px solid rgba(21, 23, 20, 0.12);
+  border-radius: 8px;
+  background: #f4f5ef;
 }
 
 .selectedStrip {
-  background: rgba(255, 255, 255, 0.96);
+  background: #ffffff;
 }
 
 .selectedStripBody {
@@ -345,8 +346,8 @@
   min-height: 0;
   height: 100%;
   border: 1px solid var(--platform-card-border);
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.96);
+  border-radius: 8px;
+  background: #ffffff;
   box-shadow: var(--platform-card-shadow);
   overflow: hidden;
 }
@@ -357,9 +358,8 @@
   justify-content: space-between;
   gap: 16px;
   padding: 12px 18px;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.96);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.92) 100%);
+  border-bottom: 1px solid rgba(21, 23, 20, 0.12);
+  background: #f4f5ef;
 }
 
 .calendarToolbarPrimary {
@@ -373,9 +373,9 @@
   min-width: 0;
   margin-left: 6px;
   overflow: hidden;
-  font-size: clamp(1.35rem, 1rem + 1vw, 2rem);
+  font-size: 2rem;
   line-height: 1.05;
-  color: #0f172a;
+  color: #151714;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -399,7 +399,7 @@
 }
 
 .mobileAgendaDay {
-  background: rgba(255, 255, 255, 0.96);
+  background: #ffffff;
 }
 
 .mobileAgendaItem {
@@ -408,15 +408,15 @@
   min-width: 0;
   gap: 10px;
   padding: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.94);
-  border-radius: 16px;
-  background: rgba(248, 250, 252, 0.82);
+  border: 1px solid rgba(21, 23, 20, 0.12);
+  border-radius: 8px;
+  background: #f4f5ef;
   text-align: left;
 }
 
 .mobileAgendaTime {
   flex: 0 0 54px;
-  color: #475569;
+  color: #596057;
   font-size: 12px;
   font-weight: 800;
 }
@@ -435,14 +435,14 @@
 }
 
 .mobileAgendaTitle {
-  color: #0f172a;
+  color: #151714;
   font-size: 13px;
   font-weight: 800;
 }
 
 .mobileAgendaMeta {
   margin-top: 2px;
-  color: #64748b;
+  color: #697067;
   font-size: 12px;
   font-weight: 700;
 }
@@ -492,18 +492,18 @@
   height: 38px;
   margin-top: 3px;
   border-radius: 999px;
-  color: #1f2937;
+  color: #242823;
   font-size: 22px;
   font-weight: 500;
   line-height: 1;
 }
 
 .mobileScheduleTodayText {
-  color: #1a73e8;
+  color: #0b7a4b;
 }
 
 .mobileScheduleDateToday {
-  background: #1a73e8;
+  background: #0b7a4b;
   color: #fff;
 }
 
@@ -536,7 +536,7 @@
 .mobileScheduleEventCard {
   padding: 10px 12px;
   color: #fff;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 0 rgba(21, 23, 20, 0.05);
 }
 
 .mobileScheduleStatusBadge {
@@ -547,8 +547,8 @@
   margin-bottom: 8px;
   padding: 3px 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -570,14 +570,14 @@
 
 .mobileScheduleEventMeta {
   margin-top: 8px;
-  color: rgba(255, 255, 255, 0.84);
+  color: #ffffff;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .mobileScheduleSelected {
-  outline: 2px solid rgba(26, 115, 232, 0.28);
+  outline: 2px solid rgba(20, 168, 102, 0.38);
   outline-offset: 2px;
 }
 
@@ -598,17 +598,17 @@
   min-width: 1016px;
   box-sizing: border-box;
   padding-right: var(--calendar-scrollbar-width, 0px);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.96);
-  background: rgba(255, 255, 255, 0.98);
+  border-bottom: 1px solid rgba(21, 23, 20, 0.12);
+  background: #ffffff;
 }
 
 .weekHeaderSpacer {
-  border-right: 1px solid rgba(226, 232, 240, 0.96);
+  border-right: 1px solid rgba(21, 23, 20, 0.12);
 }
 
 .weekHeaderDay {
   padding: 10px 12px 12px;
-  border-right: 1px solid rgba(226, 232, 240, 0.96);
+  border-right: 1px solid rgba(21, 23, 20, 0.12);
 }
 
 .weekHeaderDayToday {
@@ -636,7 +636,7 @@
   border-radius: 999px;
   font-size: 18px;
   font-weight: 700;
-  color: #0f172a;
+  color: #151714;
 }
 
 .weekHeaderDateToday {
@@ -653,7 +653,7 @@
 .weekScroller {
   flex: 1;
   overflow: auto;
-  background: rgba(255, 255, 255, 0.98);
+  background: #ffffff;
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
 }
@@ -667,8 +667,8 @@
 .weekTimeColumn {
   position: relative;
   height: var(--calendar-week-grid-height);
-  border-right: 1px solid rgba(226, 232, 240, 0.96);
-  background: rgba(255, 255, 255, 0.98);
+  border-right: 1px solid rgba(21, 23, 20, 0.12);
+  background: #ffffff;
   overflow: visible;
 }
 
@@ -679,7 +679,7 @@
   text-align: right;
   font-size: 11px;
   font-weight: 600;
-  color: #64748b;
+  color: #697067;
   line-height: 1;
   white-space: nowrap;
 }
@@ -687,15 +687,15 @@
 .weekDayColumn {
   position: relative;
   height: var(--calendar-week-grid-height);
-  border-right: 1px solid rgba(226, 232, 240, 0.96);
-  background-color: rgba(255, 255, 255, 0.98);
+  border-right: 1px solid rgba(21, 23, 20, 0.12);
+  background-color: #ffffff;
   background-image:
     repeating-linear-gradient(
       to bottom,
       transparent 0,
       transparent calc(var(--calendar-hour-row-height) - 1px),
-      rgba(226, 232, 240, 0.94) calc(var(--calendar-hour-row-height) - 1px),
-      rgba(226, 232, 240, 0.94) var(--calendar-hour-row-height)
+      rgba(21, 23, 20, 0.12) calc(var(--calendar-hour-row-height) - 1px),
+      rgba(21, 23, 20, 0.12) var(--calendar-hour-row-height)
     );
 }
 
@@ -718,7 +718,7 @@
   border-radius: 999px;
   transform: translateY(-50%);
   background: #ef4444;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.98);
+  box-shadow: 0 0 0 2px #ffffff;
 }
 
 .weekDayColumnToday {
@@ -735,7 +735,7 @@
   justify-content: flex-start;
   gap: 2px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 7px 9px;
   text-align: left;
   cursor: pointer;
@@ -767,17 +767,17 @@
 }
 
 .selectedEvent {
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.92);
-  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: inset 0 0 0 1px #ffffff;
+  border-color: #ffffff;
 }
 
 .weekEventOverlapped {
-  border-color: rgba(255, 255, 255, 0.68);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+  border-color: #ffffff;
+  box-shadow: inset 0 0 0 1px #ffffff;
 }
 
 .sourceManual {
-  background: #2563eb;
+  background: #0b7a4b;
 }
 
 .sourceAgent {
@@ -785,12 +785,12 @@
 }
 
 .sourceAutomatic {
-  background: #10b981;
+  background: #14a866;
 }
 
 .eventManual {
-  background: #4f7fe9;
-  border-color: #4f7fe9;
+  background: #14a866;
+  border-color: #14a866;
   color: #fff;
 }
 
@@ -846,7 +846,7 @@
   letter-spacing: 0.01em;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: rgba(255, 255, 255, 0.96);
+  color: #ffffff;
 }
 
 .eventOverlapBadge {
@@ -857,7 +857,7 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.18);
   color: #fff;
   font-size: 10px;
   font-weight: 800;
@@ -891,7 +891,7 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: rgba(255, 255, 255, 0.9);
+  color: #ffffff;
 }
 
 .weekEventCompact .eventMeta {
@@ -919,7 +919,7 @@
 .monthShell {
   flex: 1;
   overflow: auto;
-  background: rgba(255, 255, 255, 0.98);
+  background: #ffffff;
 }
 
 .monthHeaderRow {
@@ -929,9 +929,9 @@
   display: grid;
   grid-template-columns: repeat(7, minmax(138px, 1fr));
   min-width: 966px;
-  border-top: 1px solid rgba(226, 232, 240, 0.96);
-  border-left: 1px solid rgba(226, 232, 240, 0.96);
-  background: rgba(248, 250, 252, 0.98);
+  border-top: 1px solid rgba(21, 23, 20, 0.12);
+  border-left: 1px solid rgba(21, 23, 20, 0.12);
+  background: #f4f5ef;
 }
 
 .monthGrid {
@@ -939,19 +939,19 @@
   grid-template-columns: repeat(7, minmax(138px, 1fr));
   grid-auto-rows: 154px;
   min-width: 966px;
-  border-left: 1px solid rgba(226, 232, 240, 0.96);
+  border-left: 1px solid rgba(21, 23, 20, 0.12);
 }
 
 .monthHeaderCell {
   padding: 12px 14px;
-  border-right: 1px solid rgba(226, 232, 240, 0.96);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.96);
-  background: rgba(248, 250, 252, 0.96);
+  border-right: 1px solid rgba(21, 23, 20, 0.12);
+  border-bottom: 1px solid rgba(21, 23, 20, 0.12);
+  background: #f4f5ef;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #64748b;
+  color: #697067;
 }
 
 .monthDayCell {
@@ -960,14 +960,14 @@
   height: 154px;
   min-height: 154px;
   padding: 8px 10px 10px;
-  border-right: 1px solid rgba(226, 232, 240, 0.96);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.96);
+  border-right: 1px solid rgba(21, 23, 20, 0.12);
+  border-bottom: 1px solid rgba(21, 23, 20, 0.12);
   background: #fff;
   overflow: hidden;
 }
 
 .monthDayOutside {
-  background: #f8fafc;
+  background: #f4f5ef;
 }
 
 .monthDayToday {
@@ -994,7 +994,7 @@
   justify-content: center;
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: #151714;
 }
 
 .monthDayNumberToday {
@@ -1003,7 +1003,7 @@
 }
 
 .monthDayNumberOutside {
-  color: #94a3b8;
+  color: #9aa297;
 }
 
 .monthDayNumberSelected {
@@ -1044,7 +1044,7 @@
   flex: 0 0 auto;
   font-size: 10px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: #ffffff;
 }
 
 .monthEventLabel {
@@ -1073,8 +1073,8 @@
 }
 
 .selectedMonthEvent {
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9);
-  border-color: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 0 0 1px #ffffff;
+  border-color: #ffffff;
 }
 
 .monthOverflow {
@@ -1082,17 +1082,17 @@
   padding-left: 18px;
   font-size: 11px;
   font-weight: 700;
-  color: #64748b;
+  color: #697067;
 }
 
 .emptyState {
   padding: 16px 20px;
-  border-top: 1px solid rgba(226, 232, 240, 0.96);
-  background: rgba(248, 250, 252, 0.9);
+  border-top: 1px solid rgba(21, 23, 20, 0.12);
+  background: #f4f5ef;
 }
 
 .eventModalContent {
-  border-radius: 28px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -1113,28 +1113,28 @@
   flex: 0 0 auto;
   width: 28px;
   height: 28px;
-  border-radius: 9px;
+  border-radius: 8px;
   margin-top: 6px;
 }
 
 .eventModalTitle {
   margin-top: 8px;
-  font-size: clamp(1.6rem, 1.2rem + 1vw, 2.4rem);
+  font-size: 2.4rem;
   line-height: 1.08;
-  color: #0f172a;
+  color: #151714;
 }
 
 .eventModalDate {
   margin-top: 8px;
   font-size: 1.05rem;
-  color: #475569;
+  color: #596057;
 }
 
 .eventModalDescription {
   margin-top: 28px;
   font-size: 1.05rem;
   line-height: 1.75;
-  color: #0f172a;
+  color: #151714;
 }
 
 .eventModalMetaGrid {
@@ -1146,9 +1146,9 @@
 
 .eventModalMetaItem {
   padding: 14px 16px;
-  border: 1px solid rgba(226, 232, 240, 0.96);
-  border-radius: 18px;
-  background: rgba(248, 250, 252, 0.82);
+  border: 1px solid rgba(21, 23, 20, 0.12);
+  border-radius: 8px;
+  background: #f4f5ef;
 }
 
 @media (max-width: 960px) {
@@ -1208,7 +1208,7 @@
   .calendarShell {
     height: auto;
     overflow: visible;
-    border-radius: 20px;
+    border-radius: 8px;
   }
 
   .templateTypeGrid {
@@ -1226,6 +1226,10 @@
   .calendarRangeTitle {
     width: 100%;
     margin-left: 0;
+  }
+
+  .eventModalTitle {
+    font-size: 1.75rem;
   }
 
   .desktopCalendarGrid {
@@ -1297,8 +1301,8 @@
     gap: 8px;
     padding: 10px 12px;
     border-radius: 0;
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.14);
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(21, 23, 20, 0.14);
   }
 
   .calendarToolbarPrimary {
@@ -1342,8 +1346,8 @@
 
   .emptyState {
     margin: 18px 12px;
-    border: 1px solid rgba(226, 232, 240, 0.96);
-    border-radius: 18px;
+    border: 1px solid rgba(21, 23, 20, 0.12);
+    border-radius: 8px;
   }
 
   .mobileCalendarFab {
@@ -1354,13 +1358,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 68px;
-    height: 68px;
+    width: 54px;
+    height: 54px;
     border: 0;
-    border-radius: 20px;
-    background: #1557d6;
+    border-radius: 8px;
+    background: #0b7a4b;
     color: #fff;
-    box-shadow: 0 12px 26px rgba(21, 87, 214, 0.32);
+    box-shadow: 0 8px 22px rgba(11, 122, 75, 0.24);
     cursor: pointer;
   }
 }

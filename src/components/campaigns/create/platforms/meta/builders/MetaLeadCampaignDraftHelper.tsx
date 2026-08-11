@@ -64,6 +64,7 @@ import type {
 import type { ConfiguredWhatsAppNumber } from '@/lib/shared/types/whatsappSetup';
 import type { CampaignTreeAdsetNode, CampaignTreeNode } from '@/lib/server/data';
 import type { MetaPage } from '@/lib/server/actions/meta/pages/actions';
+import { formatCurrencyAmount } from '@/lib/shared';
 import MediaSelectionModal from '../components/MediaSelectionModal';
 
 type MetaLeadCampaignDraftHelperProps = {
@@ -72,6 +73,7 @@ type MetaLeadCampaignDraftHelperProps = {
     platform_name: string;
   };
   adAccountId: string;
+  currencyCode: string | null;
   campaigns: CampaignTreeNode[];
   draft?: ManualCampaignDraftForm | null;
   draftId?: string | null;
@@ -258,12 +260,11 @@ function pickerValueToDate(value: string | Date | null, fallback: Date | null): 
   return dateFromIso(value, fallback);
 }
 
-function formatMoney(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+function formatMoney(value: number, currencyCode: string | null): string {
+  return formatCurrencyAmount(value, currencyCode, {
+    minimumFractionDigits: 0,
     maximumFractionDigits: value >= 100 ? 0 : 2,
-  }).format(value);
+  });
 }
 
 function formatOutcomeCount(value: number): string {
@@ -290,13 +291,16 @@ function isBrowserPreviewableVideo(file: File): boolean {
   return file.type.startsWith('video/') || ['.mp4', '.mov', '.m4v', '.webm', '.ogv'].includes(extension);
 }
 
-function formatPerformance(item: CampaignTreeNode | CampaignTreeAdsetNode | null): string {
+function formatPerformance(
+  item: CampaignTreeNode | CampaignTreeAdsetNode | null,
+  currencyCode: string | null
+): string {
   if (!item?.performance) {
     return 'No synced performance yet';
   }
 
   const cost = item.performance.costPerResult != null
-    ? `${formatMoney(item.performance.costPerResult)}/result`
+    ? `${formatMoney(item.performance.costPerResult, currencyCode)}/result`
     : 'cost pending';
 
   return `${item.performance.results} results, ${cost}`;
@@ -476,7 +480,13 @@ function buildLeadEstimate(input: {
   };
 }
 
-function LeadEstimateChart({ points }: { points: LeadEstimatePoint[] }) {
+function LeadEstimateChart({
+  points,
+  currencyCode,
+}: {
+  points: LeadEstimatePoint[];
+  currencyCode: string | null;
+}) {
   const width = 320;
   const height = 118;
   const padding = 16;
@@ -516,8 +526,8 @@ function LeadEstimateChart({ points }: { points: LeadEstimatePoint[] }) {
         })}
       </svg>
       <Group justify="space-between" mt={-6}>
-        <Text size="xs" c="dimmed">{formatMoney(points[0]?.budget ?? 0)}</Text>
-        <Text size="xs" c="dimmed">{formatMoney(points[points.length - 1]?.budget ?? 0)}</Text>
+        <Text size="xs" c="dimmed">{formatMoney(points[0]?.budget ?? 0, currencyCode)}</Text>
+        <Text size="xs" c="dimmed">{formatMoney(points[points.length - 1]?.budget ?? 0, currencyCode)}</Text>
       </Group>
     </Box>
   );
@@ -566,7 +576,7 @@ function CreativeAdPreview({
             h={28}
             style={{
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--mantine-color-blue-5), var(--mantine-color-violet-5))',
+              background: '#14a866',
             }}
           />
           <div>
@@ -587,7 +597,7 @@ function CreativeAdPreview({
           h={fullHeight ? undefined : 164}
           mih={fullHeight ? 280 : undefined}
           style={{
-            borderRadius: 12,
+            borderRadius: 8,
             overflow: 'hidden',
             border: '1px solid var(--mantine-color-gray-3)',
             background: 'white',
@@ -647,9 +657,20 @@ function CreativeAdPreview({
               {creative.adDescription || 'Description preview'}
             </Text>
           </div>
-          <Button size="xs" variant="default" radius="md" style={{ flexShrink: 0 }}>
+          <Box
+            component="span"
+            px="sm"
+            py={6}
+            style={{
+              flexShrink: 0,
+              border: '1px solid var(--dv-border-strong)',
+              borderRadius: 6,
+              fontSize: 'var(--mantine-font-size-xs)',
+              fontWeight: 700,
+            }}
+          >
             {creative.adCallToAction.replaceAll('_', ' ')}
-          </Button>
+          </Box>
         </Group>
       </Stack>
     </Paper>
@@ -1057,6 +1078,7 @@ function buildPayload(
 export default function MetaLeadCampaignDraftHelper({
   platformData,
   adAccountId,
+  currencyCode,
   campaigns,
   draft,
   draftId,
@@ -1378,7 +1400,7 @@ export default function MetaLeadCampaignDraftHelper({
     }
 
     if (!state.budgetAmount || state.budgetAmount < 50) {
-      nextErrors.push('Set a lifetime budget of at least $50.');
+      nextErrors.push(`Set a lifetime budget of at least ${formatMoney(50, currencyCode)}.`);
     }
 
     if (!state.endDate) {
@@ -1896,9 +1918,9 @@ export default function MetaLeadCampaignDraftHelper({
   return (
     <Container size="xl" py="xl">
       <Stack gap="xl">
-        <Group justify="space-between" align="flex-start" gap="md">
+        <Group justify="space-between" align="flex-start" gap="md" className="dv-create-hero">
           <Stack gap="xs" maw={780}>
-            <Badge w="fit-content" size="lg" variant="light" color="blue">
+            <Badge w="fit-content" size="lg" variant="light" className="app-platform-page-badge">
               Meta lead campaign
             </Badge>
             <Title order={1}>Create a lead campaign</Title>
@@ -2028,7 +2050,7 @@ export default function MetaLeadCampaignDraftHelper({
                                     </Group>
                                     <Text fw={900}>{recommendedTarget.name}</Text>
                                     <Text size="sm" c="dimmed">
-                                      {formatPerformance(recommendedTarget)}
+                                      {formatPerformance(recommendedTarget, currencyCode)}
                                     </Text>
                                   </Stack>
                                 </Group>
@@ -2088,7 +2110,7 @@ export default function MetaLeadCampaignDraftHelper({
                                   ) : null}
                                 </Group>
                                 <Text size="xs" c="dimmed">
-                                  {formatPerformance(selectedCampaign)}
+                                  {formatPerformance(selectedCampaign, currencyCode)}
                                 </Text>
                               </Stack>
                               <Badge variant="light" color={selectedCampaign.status?.toLowerCase() === 'active' ? 'green' : 'gray'}>
@@ -2132,7 +2154,7 @@ export default function MetaLeadCampaignDraftHelper({
                                       ) : null}
                                     </Group>
                                     <Text size="xs" c="dimmed">
-                                      {formatPerformance(selectedAdSet)}
+                                      {formatPerformance(selectedAdSet, currencyCode)}
                                     </Text>
                                   </Stack>
                                   <Badge variant="light" color="blue">
@@ -2331,7 +2353,7 @@ export default function MetaLeadCampaignDraftHelper({
                           {selectedAdSet?.name ?? 'Choose an ad set above'}
                         </Text>
                         <Text size="xs" c="dimmed">
-                          {formatPerformance(selectedAdSet)}
+                          {formatPerformance(selectedAdSet, currencyCode)}
                         </Text>
                       </Stack>
                     </Paper>
@@ -2570,8 +2592,7 @@ export default function MetaLeadCampaignDraftHelper({
                       <Title order={3}>Budget and estimate</Title>
                     </Group>
                     <NumberInput
-                      label="Lifetime budget"
-                      prefix="$"
+                      label={`Lifetime budget (${currencyCode?.trim().toUpperCase() || 'USD'})`}
                       min={50}
                       value={state.budgetAmount}
                       onChange={(value) => patchState({ budgetAmount: Number(value) || 0 })}
@@ -2593,7 +2614,9 @@ export default function MetaLeadCampaignDraftHelper({
                     />
                     <Paper withBorder radius="md" p="md" bg="green.0">
                       <Text fw={800}>
-                        {dailyEquivalent ? `$${dailyEquivalent.amount}/day equivalent` : 'Set an end date'}
+                        {dailyEquivalent
+                          ? `${formatMoney(dailyEquivalent.amount, currencyCode)}/day equivalent`
+                          : 'Set an end date'}
                       </Text>
                       <Text size="sm" c="dimmed">
                         {dailyEquivalent
@@ -2618,13 +2641,13 @@ export default function MetaLeadCampaignDraftHelper({
                           {formatOutcomeCount(leadEstimate.low)}-{formatOutcomeCount(leadEstimate.high)}
                         </Text>
                         <Text size="sm" c="dimmed">
-                          Around {formatOutcomeCount(leadEstimate.estimate)} {leadEstimate.label} at {formatMoney(state.budgetAmount)}.
+                          Around {formatOutcomeCount(leadEstimate.estimate)} {leadEstimate.label} at {formatMoney(state.budgetAmount, currencyCode)}.
                         </Text>
-                        <LeadEstimateChart points={leadEstimate.points} />
+                        <LeadEstimateChart points={leadEstimate.points} currencyCode={currencyCode} />
                         <SimpleGrid cols={2} spacing="xs">
                           <Paper withBorder radius="sm" p="xs" bg="gray.0">
                             <Text size="xs" c="dimmed">Modeled cost</Text>
-                            <Text size="sm" fw={800}>{formatMoney(leadEstimate.costPerOutcome)}</Text>
+                            <Text size="sm" fw={800}>{formatMoney(leadEstimate.costPerOutcome, currencyCode)}</Text>
                           </Paper>
                           <Paper withBorder radius="sm" p="xs" bg="gray.0">
                             <Text size="xs" c="dimmed">Data source</Text>
@@ -2674,6 +2697,7 @@ export default function MetaLeadCampaignDraftHelper({
         destinationType={destinationForLeadMethod(state.leadMethod, state.methodSettings)}
         platformId={platformData.id}
         adAccountId={adAccountId}
+        currencyCode={currencyCode}
         initialSelectedId={activeMediaCreative?.existingCreativeIds[0] ?? null}
       />
     </Container>

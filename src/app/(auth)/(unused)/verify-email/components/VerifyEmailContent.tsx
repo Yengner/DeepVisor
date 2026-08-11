@@ -1,293 +1,338 @@
-// @ts-nocheck
-
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/client/supabase/browser';
-import { Loader, Title, Text, Stack, Button, TextInput, Center } from '@mantine/core';
-import { IconCheck, IconAlertCircle } from '@tabler/icons-react';
+import { Button, Loader, TextInput } from '@mantine/core';
+import { AlertTriangle, ArrowRight, Check, MailCheck, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { createClient } from '@/lib/client/supabase/browser';
 import { createUserProfile } from '@/lib/server/actions/user/profile';
+import { LegacyAuthFrame } from '../../LegacyAuthFrame';
+import classes from '../../LegacyAuth.module.css';
+
+type VerificationStatus = 'loading' | 'loadingVerification' | 'success' | 'error' | 'manual';
 
 export default function VerifyEmailContent() {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const supabase = createClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = useMemo(() => createClient(), []);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const verificationHandledRef = useRef(false);
+  const tokenVerificationRef = useRef<string | null>(null);
 
-    // Add new ref to store interval ID and verification status
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
-    const verificationHandledRef = useRef<boolean>(false);
+  const [status, setStatus] = useState<VerificationStatus>('loading');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [manualCode, setManualCode] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
 
-    // State variables
-    const [status, setStatus] = useState<'loading' | 'loadingVerification' | 'success' | 'error' | 'manual'>('loading');
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [manualCode, setManualCode] = useState<string>('');
-    const [isVerifying, setIsVerifying] = useState(false);
-    const [resendTimer, setResendTimer] = useState<number>(0);
+  const handleVerificationSuccess = useCallback(async (userId: string) => {
+    if (verificationHandledRef.current) return;
+    verificationHandledRef.current = true;
 
-    // Memoize functions with useCallback
-    const handleVerificationSuccess = useCallback(async (userId: string) => {
-        if (verificationHandledRef.current) {
-            return;
-        }
-        verificationHandledRef.current = true;
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
 
-        // Clear polling interval
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-        }
+    try {
+      const result = await createUserProfile(userId);
 
-        try {
-            const { success, errorMessage } = await createUserProfile(userId);
+      if (!result.success) {
+        verificationHandledRef.current = false;
+        setStatus('error');
+        setErrorMessage(result.errorMessage || 'Your email is verified, but profile setup could not be completed.');
+        toast.error('Profile setup could not be completed.');
+        return;
+      }
 
-            if (!success) {
-                console.error('Error creating profile:', errorMessage);
-                toast.error('Account created but profile setup failed. Please contact support.');
-            }
+      setStatus('success');
+      redirectTimerRef.current = setTimeout(() => router.push('/select-plan'), 3000);
+    } catch (profileError) {
+      console.error('Error in verification success flow:', profileError);
+      verificationHandledRef.current = false;
+      setStatus('error');
+      setErrorMessage('Your email is verified, but profile setup could not be completed.');
+    }
+  }, [router]);
 
-            setStatus('success');
+  const checkVerificationStatus = useCallback(async () => {
+    if (verificationHandledRef.current) return;
 
-            setTimeout(() => {
-                router.push('/select-plan');
-            }, 3000);
-        } catch (err) {
-            console.error('Error in verification success flow:', err);
-            setStatus('error');
-            setErrorMessage('Account verified but profile setup failed. Please contact support.');
-        }
-    }, [router]);
+    try {
+      const { data, error } = await supabase.auth.getUser();
 
-    const checkVerificationStatus = useCallback(async () => {
-        // Don't check if we've already handled verification
-        if (verificationHandledRef.current) {
-            return;
-        }
+      if (error) {
+        console.warn('Error checking verification status:', error);
+        return;
+      }
 
-        try {
-            const { data, error } = await supabase.auth.getUser();
+      if (data.user?.email_confirmed_at) {
+        await handleVerificationSuccess(data.user.id);
+      }
+    } catch (statusError) {
+      console.warn('No auth session during verification polling:', statusError);
+    }
+  }, [handleVerificationSuccess, supabase]);
 
-            if (error) {
-                console.warn('Error checking verification status:', error);
-                return;
-            }
+  const verifyWithTokenHash = useCallback(async (tokenHash: string) => {
+    if (tokenVerificationRef.current === tokenHash) return;
+    tokenVerificationRef.current = tokenHash;
+    setStatus('loadingVerification');
+    setErrorMessage(null);
 
-            if (data?.user?.email_confirmed_at) {
-                await handleVerificationSuccess(data.user.id);
-            }
-        } catch (err) {
-            console.warn('No Auth Session during polling:', err);
-        }
-    }, [supabase, handleVerificationSuccess]);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: 'email',
+      });
 
-    const verifyWithTokenHash = useCallback(async (tokenHash: string) => {
-        setStatus('loadingVerification');
-        try {
-            const { data, error } = await supabase.auth.verifyOtp({
-                token_hash: tokenHash,
-                type: 'email',
-            });
+      if (error || !data.user) {
+        console.error('Verification failed:', error);
+        setStatus('error');
+        setErrorMessage('The verification link is invalid or expired. Request a new code or enter one manually.');
+        return;
+      }
 
-            if (error || !data) {
-                console.error('Verification failed:', error);
-                setStatus('error');
-                setErrorMessage('Verification failed. Please try again or enter the code manually.');
-            } else {
-                if (data.user) {
-                    await handleVerificationSuccess(data.user.id);
-                } else {
-                    setStatus('error');
-                    setErrorMessage('Verification failed. User data is missing.');
-                }
-            }
-        } catch (err) {
-            console.error('Unexpected error:', err);
-            setStatus('error');
-            setErrorMessage('An unexpected error occurred. Please try again.');
-        }
-    }, [supabase, handleVerificationSuccess]);
+      await handleVerificationSuccess(data.user.id);
+    } catch (verificationError) {
+      console.error('Unexpected email verification error:', verificationError);
+      setStatus('error');
+      setErrorMessage('Email verification could not be completed. Please try again.');
+    }
+  }, [handleVerificationSuccess, supabase]);
 
-    useEffect(() => {
-        const tokenHash = searchParams.get('token_hash');
-        const type = searchParams.get('type');
-        const email = searchParams.get('email');
+  useEffect(() => {
+    const tokenHash = searchParams.get('token_hash');
+    const type = searchParams.get('type');
+    const email = searchParams.get('email');
 
-        if (tokenHash && type === 'email') {
-            verifyWithTokenHash(tokenHash);
-        } else {
-            checkVerificationStatus();
-            if (email) {
-                localStorage.setItem('emailForVerification', email);
-            }
-            setStatus('manual');
-        }
+    if (email) {
+      try {
+        localStorage.setItem('emailForVerification', email);
+      } catch {
+        // Manual verification can still use a session-confirmed account.
+      }
+    }
 
-        // Store interval reference so we can clear it
-        intervalRef.current = setInterval(checkVerificationStatus, 5000);
+    if (tokenHash && type === 'email') {
+      void verifyWithTokenHash(tokenHash);
+    } else {
+      setStatus('manual');
+      void checkVerificationStatus();
+      intervalRef.current = setInterval(() => void checkVerificationStatus(), 5000);
+    }
 
-        // Clean up interval on unmount
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-                intervalRef.current = null;
-            }
-        };
-    }, [searchParams, checkVerificationStatus, verifyWithTokenHash]);
-
-    useEffect(() => {
-        if (resendTimer > 0) {
-            const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [resendTimer]);
-
-    // Handle verification with manual code
-    const verifyWithManualCode = async () => {
-        if (!manualCode || manualCode.length !== 6) {
-            setErrorMessage('Please enter a valid 6-digit code.');
-            return;
-        }
-
-        setIsVerifying(true);
-        try {
-            const email = localStorage.getItem('emailForVerification') || '';
-            const { data, error } = await supabase.auth.verifyOtp({
-                token: manualCode,
-                type: 'email',
-                email: email,
-            });
-
-            if (error || !data) {
-                console.error('Verification failed:', error);
-                setStatus('error');
-                setErrorMessage('Verification failed. Please check your code and try again.');
-            } else {
-                if (data.user) {
-                    await handleVerificationSuccess(data.user.id);
-                } else {
-                    setStatus('error');
-                    setErrorMessage('Verification failed. User data is missing.');
-                }
-            }
-        } catch (err) {
-            console.error('Unexpected error:', err);
-            setStatus('error');
-            setErrorMessage('An unexpected error occurred. Please try again.');
-        } finally {
-            setIsVerifying(false);
-        }
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+        redirectTimerRef.current = null;
+      }
     };
+  }, [checkVerificationStatus, searchParams, verifyWithTokenHash]);
 
-    // Handle resend verification email
-    const resendVerificationEmail = async () => {
-        setResendTimer(30); // Set timer to 30 seconds
-        try {
-            const email = localStorage.getItem('emailForVerification') || '';
-            const { error } = await supabase.auth.resend({
-                type: 'signup',
-                email,
-            });
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const timer = setTimeout(() => setResendTimer((current) => Math.max(0, current - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [resendTimer]);
 
-            if (error) {
-                console.error('Error resending verification email:', error);
-                setErrorMessage('Failed to resend verification email. Please try again.');
-            } else {
-                setErrorMessage(null);
-                toast.success('Verification email sent!');
-            }
-        } catch (err) {
-            console.error('Unexpected error while resending verification email:', err);
-            setErrorMessage('An unexpected error occurred. Please try again.');
-        }
-    };
+  function getStoredEmail() {
+    try {
+      return localStorage.getItem('emailForVerification') || '';
+    } catch {
+      return '';
+    }
+  }
 
-    // Render different UI based on status
-    return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-50 p-4">
-            {status === 'loading' && (
-                <Center>
-                    <Loader size="xl" color="blue" />
-                </Center>
-            )}
+  async function verifyWithManualCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-            {status === 'loadingVerification' && (
-                <Stack align="center">
-                    <Loader size="xl" color="blue" />
-                    <Title order={2} className="text-gray-800">
-                        Verifying your email...
-                    </Title>
-                    <Text>Please wait while we verify your email address.</Text>
-                </Stack>
-            )}
+    if (!/^\d{6}$/.test(manualCode)) {
+      setErrorMessage('Enter the complete 6-digit verification code.');
+      return;
+    }
 
-            {status === 'manual' && (
-                <Stack align="center" className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-                    <Title order={2} className="text-gray-800">
-                        Verify Your Email
-                    </Title>
-                    <Text className="text-center mb-4">
-                        We sent a verification code to your email. Please enter it below to complete your account setup.
-                    </Text>
-                    <TextInput
-                        placeholder="Enter 6-digit code"
-                        value={manualCode}
-                        onChange={(e) => setManualCode(e.target.value)}
-                        maxLength={6}
-                        className="w-full"
-                        error={errorMessage || undefined}
-                    />
-                    <Button
-                        onClick={verifyWithManualCode}
-                        loading={isVerifying}
-                        fullWidth
-                        className="mt-4"
-                    >
-                        Verify Code
-                    </Button>
-                    <Button
-                        onClick={resendVerificationEmail}
-                        disabled={resendTimer > 0}
-                        fullWidth
-                        variant="outline"
-                        className="mt-4"
-                    >
-                        {resendTimer > 0 ? `Resend Code in ${resendTimer}s` : 'Resend Verification Code'}
-                    </Button>
-                </Stack>
-            )}
+    const email = getStoredEmail();
+    if (!email) {
+      setErrorMessage('The verification email is missing. Return to sign up and request a new code.');
+      return;
+    }
 
-            {status === 'success' && (
-                <Stack align="center" className="bg-white p-8 rounded-lg shadow-md">
-                    <div className="flex items-center justify-center w-24 h-24 rounded-full bg-green-100 mb-4">
-                        <IconCheck size={48} className="text-green-600" />
-                    </div>
-                    <Title order={2} className="text-green-600">
-                        Email Verified!
-                    </Title>
-                    <Text className="text-center">
-                        Your account has been successfully created. Redirecting to plan selection...
-                    </Text>
-                </Stack>
-            )}
+    setIsVerifying(true);
+    setErrorMessage(null);
 
-            {status === 'error' && (
-                <Stack align="center" className="bg-white p-8 rounded-lg shadow-md">
-                    <div className="flex items-center justify-center w-24 h-24 rounded-full bg-red-100 mb-4">
-                        <IconAlertCircle size={48} className="text-red-600" />
-                    </div>
-                    <Title order={2} className="text-red-600">
-                        Verification Failed
-                    </Title>
-                    <Text className="text-center">{errorMessage}</Text>
-                    <Button variant="outline" onClick={() => setStatus('manual')} className="mt-4">
-                        Try Again
-                    </Button>
-                    <Button variant="subtle" onClick={() => router.push('/login')} className="mt-2">
-                        Back to Login
-                    </Button>
-                </Stack>
-            )}
-        </div>
-    );
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        token: manualCode,
+        type: 'email',
+        email,
+      });
+
+      if (error || !data.user) {
+        console.error('Verification failed:', error);
+        setStatus('error');
+        setErrorMessage('The code is invalid or expired. Check the code or request a new one.');
+        return;
+      }
+
+      await handleVerificationSuccess(data.user.id);
+    } catch (verificationError) {
+      console.error('Unexpected email verification error:', verificationError);
+      setStatus('error');
+      setErrorMessage('Email verification could not be completed. Please try again.');
+    } finally {
+      setIsVerifying(false);
+    }
+  }
+
+  async function resendVerificationEmail() {
+    const email = getStoredEmail();
+    if (!email) {
+      setErrorMessage('The verification email is missing. Return to sign up and request a new code.');
+      return;
+    }
+
+    setResendTimer(30);
+    setErrorMessage(null);
+
+    try {
+      const { error } = await supabase.auth.resend({ type: 'signup', email });
+
+      if (error) {
+        console.error('Error resending verification email:', error);
+        setErrorMessage('A new verification email could not be sent. Please try again.');
+        setResendTimer(0);
+        return;
+      }
+
+      toast.success('Verification email sent.');
+    } catch (resendError) {
+      console.error('Unexpected resend error:', resendError);
+      setErrorMessage('A new verification email could not be sent. Please try again.');
+      setResendTimer(0);
+    }
+  }
+
+  const activeStep = status === 'success' ? 2 : 1;
+
+  return (
+    <LegacyAuthFrame
+      eyebrow="Identity confirmation"
+      title={status === 'success' ? 'Email confirmed.' : 'Secure your account.'}
+      description="Confirm the email attached to this account before selecting workspace access."
+      steps={['Account created', 'Verify email', 'Select access']}
+      activeStep={activeStep}
+    >
+      <section className={classes.surface} aria-live="polite">
+        {status === 'loading' || status === 'loadingVerification' ? (
+          <div className={classes.statusBlock}>
+            <span className={classes.statusIcon}><Loader size="sm" color="signal" /></span>
+            <p className={classes.surfaceKicker}>Email verification</p>
+            <h2 className={classes.statusTitle}>
+              {status === 'loadingVerification' ? 'Checking your verification link' : 'Loading verification'}
+            </h2>
+            <p className={classes.statusCopy}>Confirming the account and email status.</p>
+          </div>
+        ) : null}
+
+        {status === 'manual' ? (
+          <>
+            <header className={classes.surfaceHeader}>
+              <p className={classes.surfaceKicker}>Email verification</p>
+              <h2>Enter your verification code</h2>
+              <p>Use the 6-digit code sent to the email address attached to your new account.</p>
+            </header>
+
+            <form className={classes.formStack} onSubmit={verifyWithManualCode}>
+              <TextInput
+                label="Verification code"
+                placeholder="000000"
+                value={manualCode}
+                onChange={(event) => {
+                  setManualCode(event.currentTarget.value.replace(/\D/g, '').slice(0, 6));
+                  setErrorMessage(null);
+                }}
+                maxLength={6}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                error={errorMessage || undefined}
+                className={classes.codeInput}
+              />
+              <Button type="submit" loading={isVerifying} className={classes.primaryButton}>
+                Verify email
+              </Button>
+              <Button
+                type="button"
+                onClick={resendVerificationEmail}
+                disabled={resendTimer > 0}
+                variant="outline"
+                className={classes.secondaryButton}
+                leftSection={<RotateCcw size={15} />}
+              >
+                {resendTimer > 0 ? `Resend available in ${resendTimer}s` : 'Resend verification email'}
+              </Button>
+              <Button component={Link} href="/login" variant="subtle" color="dark">
+                Back to login
+              </Button>
+            </form>
+          </>
+        ) : null}
+
+        {status === 'success' ? (
+          <div className={classes.statusBlock}>
+            <span className={classes.statusIcon}><Check size={23} /></span>
+            <p className={classes.surfaceKicker}>Email confirmed</p>
+            <h2 className={classes.statusTitle}>Your identity is verified</h2>
+            <p className={classes.statusCopy}>
+              Account setup is complete. Plan selection opens automatically in a moment.
+            </p>
+            <div className={classes.statusActions}>
+              <Button
+                component={Link}
+                href="/select-plan"
+                className={classes.primaryButton}
+                rightSection={<ArrowRight size={16} />}
+              >
+                Continue to plans
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {status === 'error' ? (
+          <div className={classes.statusBlock} role="alert">
+            <span className={`${classes.statusIcon} ${classes.statusIconError}`}>
+              <AlertTriangle size={22} />
+            </span>
+            <p className={classes.surfaceKicker}>Verification interrupted</p>
+            <h2 className={classes.statusTitle}>Email could not be verified</h2>
+            <p className={classes.statusCopy}>{errorMessage || 'Verification could not be completed.'}</p>
+            <div className={classes.statusActions}>
+              <Button
+                className={classes.primaryButton}
+                leftSection={<MailCheck size={16} />}
+                onClick={() => {
+                  tokenVerificationRef.current = null;
+                  setErrorMessage(null);
+                  setStatus('manual');
+                }}
+              >
+                Enter a code
+              </Button>
+              <Button component={Link} href="/login" className={classes.secondaryButton} variant="outline">
+                Back to login
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </section>
+    </LegacyAuthFrame>
+  );
 }

@@ -38,6 +38,7 @@ import type {
   CreativeLibrarySource,
   CreativeLibraryStats,
 } from '@/lib/shared/types/creativeLibrary';
+import { formatCurrencyAmount } from '@/lib/shared';
 import { useExistingCreatives } from '../hooks/useExistingCreatives';
 import { useCreativePreview } from '../hooks/useCreativePreview';
 
@@ -51,6 +52,7 @@ interface MediaSelectionModalProps {
   destinationType: string;
   platformId: string;
   adAccountId: string;
+  currencyCode?: string | null;
   initialSelectedId?: string | null;
 }
 
@@ -63,14 +65,6 @@ export interface SelectedCreative {
   sourceId?: string;
   postId?: string | null;
   creativeIds?: string[];
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: value >= 100 ? 0 : 2,
-  }).format(value);
 }
 
 function formatNumber(value: number): string {
@@ -133,9 +127,22 @@ function sortLabel(sort: CreativeLibrarySort): string {
   }
 }
 
-function StatsGrid({ stats }: { stats: CreativeLibraryStats }) {
+function StatsGrid({
+  stats,
+  currencyCode,
+}: {
+  stats: CreativeLibraryStats;
+  currencyCode?: string | null;
+}) {
   const items = [
-    { label: 'Spend', value: formatCurrency(stats.spend), icon: IconCurrencyDollar },
+    {
+      label: 'Spend',
+      value: formatCurrencyAmount(stats.spend, currencyCode, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: stats.spend >= 100 ? 0 : 2,
+      }),
+      icon: IconCurrencyDollar,
+    },
     { label: 'Results', value: formatNumber(stats.results), icon: IconTargetArrow },
     { label: 'CTR', value: formatRate(stats.ctr), icon: IconSparkles },
   ];
@@ -166,10 +173,12 @@ function CreativeCard({
   creative,
   selected,
   onClick,
+  currencyCode,
 }: {
   creative: CreativeLibraryItem;
   selected: boolean;
   onClick: () => void;
+  currencyCode?: string | null;
 }) {
   return (
     <Paper
@@ -231,7 +240,7 @@ function CreativeCard({
           </Group>
         </Stack>
 
-        <StatsGrid stats={creative.stats} />
+        <StatsGrid stats={creative.stats} currencyCode={currencyCode} />
       </Stack>
     </Paper>
   );
@@ -243,6 +252,7 @@ export default function MediaSelectionModal({
   onSelectCreative,
   platformId,
   adAccountId,
+  currencyCode,
   initialSelectedId = null,
 }: MediaSelectionModalProps) {
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
@@ -442,6 +452,7 @@ export default function MediaSelectionModal({
                   creative={creative}
                   selected={selectedId === creative.id}
                   onClick={() => handleSelection(creative)}
+                  currencyCode={currencyCode}
                 />
               ))}
             </Stack>
@@ -497,7 +508,7 @@ export default function MediaSelectionModal({
                       height: '100%',
                       minHeight: 430,
                       border: '1px solid var(--mantine-color-gray-2)',
-                      borderRadius: 16,
+                      borderRadius: 8,
                       overflow: 'hidden',
                       background: 'white',
                     }}
@@ -510,7 +521,7 @@ export default function MediaSelectionModal({
                     mih={430}
                     style={{
                       border: '1px solid var(--mantine-color-gray-2)',
-                      borderRadius: 16,
+                      borderRadius: 8,
                       overflow: 'hidden',
                       background: 'white',
                     }}
@@ -527,7 +538,7 @@ export default function MediaSelectionModal({
               </Box>
 
               <Divider />
-              <StatsGrid stats={selectedCreative.stats} />
+              <StatsGrid stats={selectedCreative.stats} currencyCode={currencyCode} />
               <SimpleGrid cols={3} spacing="xs">
                 <Paper withBorder radius="md" p="xs" bg="white">
                   <Text size="10px" tt="uppercase" fw={800} c="dimmed" style={{ letterSpacing: 0.3 }}>
@@ -548,7 +559,15 @@ export default function MediaSelectionModal({
                   <Text fw={900}>
                     {selectedCreative.stats.costPerResult == null
                       ? '-'
-                      : formatCurrency(selectedCreative.stats.costPerResult)}
+                      : formatCurrencyAmount(
+                          selectedCreative.stats.costPerResult,
+                          currencyCode,
+                          {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits:
+                              selectedCreative.stats.costPerResult >= 100 ? 0 : 2,
+                          }
+                        )}
                   </Text>
                 </Paper>
               </SimpleGrid>

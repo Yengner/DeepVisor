@@ -4,25 +4,25 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/shared/utils/format";
 
 const buttonVariants = cva(
-  "group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60",
+  "group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-md border font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px disabled:pointer-events-none disabled:opacity-60",
   {
     variants: {
       variant: {
         primary:
-          "bg-blue-700 text-white shadow-[0_16px_34px_rgba(37,99,235,0.22)] hover:bg-blue-800 hover:translate-y-[1px]",
+          "border-[#151714] bg-[#151714] text-white shadow-none hover:border-[#0b7a4b] hover:bg-[#0b7a4b]",
         secondary:
-          "bg-ink-80 text-white shadow-card hover:bg-ink-70",
+          "border-[#0b7a4b] bg-[#0b7a4b] text-white shadow-none hover:border-[#075f3b] hover:bg-[#075f3b]",
         outline:
-          "border border-white/15 bg-white/5 text-white/80 hover:border-white/30 hover:bg-white/10",
+          "border-white/25 bg-transparent text-white hover:border-[#c8ff56] hover:text-[#c8ff56]",
         ghost:
-          "text-foreground hover:bg-muted",
+          "border-transparent text-foreground hover:bg-[#e8ebe3]",
         soft:
-          "bg-secondary text-foreground hover:bg-muted",
+          "border-[#dfe2da] bg-white text-foreground hover:border-[#bdc4b9] hover:bg-[#eef0e9]",
       },
       size: {
-        sm: "px-4 py-2 text-xs",
-        md: "px-5 py-3 text-sm",
-        lg: "px-6 py-3.5 text-sm",
+        sm: "min-h-9 px-3.5 py-2 text-xs",
+        md: "min-h-10 px-4 py-2.5 text-sm",
+        lg: "min-h-11 px-5 py-3 text-sm",
       },
     },
     defaultVariants: {
