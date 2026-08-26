@@ -1,92 +1,39 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Container,
-  Stepper,
-  Title,
-  Text,
-  Grid,
-  Progress,
-} from '@mantine/core';
-import BlockingTaskScreen from '@/components/ui/states/BlockingTaskScreen';
+import { Container, Progress, Text, Title } from '@mantine/core';
+import { IconCheck, IconCircleCheck, IconLockCheck } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
-import PreferencesStep from './steps/PreferencesStep';
-import BusinessProfileStep from './steps/BusinessProfileStep';
-import ReviewStartStep from './steps/ReviewStartStep';
-import { updateOnboardingProgress } from '@/lib/server/actions/business/onboarding';
-import { UserData } from './types';
+import BlockingTaskScreen from '@/components/ui/states/BlockingTaskScreen';
 import {
-  IconCheck,
-  IconCircleCheck,
-  IconDeviceAnalytics,
-  IconLockCheck,
-  IconSettings,
-} from '@tabler/icons-react';
-import type { Database } from '@/lib/shared/types/supabase';
-import classes from './OnboardingProvider.module.css';
+  updateOnboardingProgress,
+  type OnboardingInitial,
+} from '@/lib/server/actions/business/onboarding';
 import {
   DEFAULT_INTELLIGENCE_GOALS,
   DEFAULT_WATCH_SIGNALS,
 } from '@/lib/shared/onboarding/businessProfileOptions';
-
-type OrganizationType = Database['public']['Enums']['organization_type'];
-
-export type OnboardingInitial = {
-  step: number;
-  completed: boolean;
-  businessId: string | null;
-  organizationId: string | null;
-  organizationName: string;
-  organizationType: OrganizationType;
-  connectedPlatformKeys: string[];
-  businessData: {
-    businessName: string;
-    industry: string | null;
-    monthlyBudget: string | null;
-    website: string | null;
-    bookingLink: string | null;
-    businessLocation: string | null;
-    customerRadius: string | null;
-    description: string | null;
-    promotedServices: string[];
-    mostValuableService: string | null;
-    metaAdsStatus: string | null;
-    primaryGoal: string | null;
-    leadType: string | null;
-    preferredContactMethod: string | null;
-    leadQualitySignal: string | null;
-    averageCustomerValue: string | null;
-    targetCostPerLead: string | null;
-    watchSignals: string[];
-    recommendationStyle: string | null;
-    safetyPreference: string | null;
-    adGoals: string[];
-    preferredPlatforms: string[];
-  };
-};
+import BusinessProfileStep from './steps/BusinessProfileStep';
+import ConnectAccountsStep from './steps/ConnectAccountsStep';
+import type { UserData } from './types';
+import classes from './OnboardingProvider.module.css';
 
 type OnboardingProviderProps = {
   initial: OnboardingInitial;
-  userId: string;
 };
 
+const STEP_LABELS = ['Business essentials', 'Connect Meta'];
+const STEP_DESCRIPTIONS = ['Name, service, location, contact', 'Connect live data or skip'];
+const TOTAL_STEPS = STEP_LABELS.length;
+
+function clampStep(step: number): number {
+  return Math.min(Math.max(step, 0), TOTAL_STEPS - 1);
+}
+
 export default function OnboardingProvider({ initial }: OnboardingProviderProps) {
-  const stepLabels = ['Business Context', 'Intelligence Goals', 'Review & Start'];
-  const stepDescription = ['Business, services, budget', 'Goals, signals, guardrails', 'Confirm setup'];
-  const totalSteps = stepLabels.length;
-  const clampStep = (step: number) => Math.min(Math.max(step, 0), totalSteps - 1);
-
-  const [active, setActive] = useState(() => {
-    if (initial.completed) return totalSteps - 1;
-    return clampStep(initial.step);
-  });
-  const [loading, setLoading] = useState(false);
-  const [isAutosaving, setIsAutosaving] = useState(false);
-  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-  const autosaveTimer = useRef<number | null>(null);
-
+  const [active, setActive] = useState(() => clampStep(initial.step));
+  const [finishing, setFinishing] = useState(false);
   const [userData, setUserData] = useState<UserData>(() => ({
     businessName: initial.businessData.businessName ?? '',
     industry: initial.businessData.industry ?? '',
@@ -102,16 +49,20 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
     mostValuableService: initial.businessData.mostValuableService ?? '',
     metaAdsStatus: initial.businessData.metaAdsStatus ?? '',
     primaryGoal: initial.businessData.primaryGoal ?? DEFAULT_INTELLIGENCE_GOALS.primaryGoal,
-    leadType: initial.businessData.leadType ?? DEFAULT_INTELLIGENCE_GOALS.leadType,
-    preferredContactMethod: initial.businessData.preferredContactMethod ?? DEFAULT_INTELLIGENCE_GOALS.preferredContactMethod,
-    leadQualitySignal: initial.businessData.leadQualitySignal ?? DEFAULT_INTELLIGENCE_GOALS.leadQualitySignal,
+    leadType: initial.businessData.leadType ?? '',
+    preferredContactMethod: initial.businessData.preferredContactMethod ?? '',
+    leadQualitySignal:
+      initial.businessData.leadQualitySignal ?? DEFAULT_INTELLIGENCE_GOALS.leadQualitySignal,
     averageCustomerValue: initial.businessData.averageCustomerValue ?? '',
     targetCostPerLead: initial.businessData.targetCostPerLead ?? '',
-    watchSignals: Array.isArray(initial.businessData.watchSignals) && initial.businessData.watchSignals.length > 0
-      ? initial.businessData.watchSignals
-      : [...DEFAULT_WATCH_SIGNALS],
-    recommendationStyle: initial.businessData.recommendationStyle ?? DEFAULT_INTELLIGENCE_GOALS.recommendationStyle,
-    safetyPreference: initial.businessData.safetyPreference ?? DEFAULT_INTELLIGENCE_GOALS.safetyPreference,
+    watchSignals:
+      Array.isArray(initial.businessData.watchSignals) && initial.businessData.watchSignals.length > 0
+        ? initial.businessData.watchSignals
+        : [...DEFAULT_WATCH_SIGNALS],
+    recommendationStyle:
+      initial.businessData.recommendationStyle ?? DEFAULT_INTELLIGENCE_GOALS.recommendationStyle,
+    safetyPreference:
+      initial.businessData.safetyPreference ?? DEFAULT_INTELLIGENCE_GOALS.safetyPreference,
     adGoals: Array.isArray(initial.businessData.adGoals) ? initial.businessData.adGoals : [],
     preferredPlatforms: Array.isArray(initial.businessData.preferredPlatforms)
       ? initial.businessData.preferredPlatforms
@@ -119,88 +70,60 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
     emailNotifications: true,
     weeklyReports: true,
     performanceAlerts: true,
-    connectedPlatforms: Array.isArray(initial.connectedPlatformKeys) ? initial.connectedPlatformKeys : [],
+    connectedPlatforms: Array.isArray(initial.connectedPlatformKeys)
+      ? initial.connectedPlatformKeys
+      : [],
   }));
-
   const router = useRouter();
-  const canPersist = Boolean(initial.businessId);
 
-  useEffect(() => {
-    return () => {
-      if (autosaveTimer.current) {
-        window.clearTimeout(autosaveTimer.current);
-      }
-    };
-  }, []);
-
-  const persistProgress = async (step: number, completed?: boolean) => {
-    if (!canPersist) return true;
-    setIsAutosaving(true);
+  const persistProgress = async (step: number, completed: boolean) => {
     try {
       const progressRes = await updateOnboardingProgress({ step, completed });
       if (!progressRes.success) {
         toast.error(progressRes.error.userMessage);
         return false;
       }
-      setLastSavedAt(new Date());
+
       return true;
     } catch (error) {
       console.error('Error updating onboarding progress:', error);
-      toast.error('Error saving progress. Please try again.');
+      toast.error('Your progress could not be saved. Please try again.');
       return false;
-    } finally {
-      setIsAutosaving(false);
     }
   };
 
   const nextStep = async () => {
-    if (loading) return;
+    if (finishing) return;
 
-    if (active >= totalSteps - 1) {
-      setLoading(true);
-      const saved = await persistProgress(totalSteps, true);
-      setLoading(false);
-      if (saved) router.push('/integration');
+    if (active === 0) {
+      const saved = await persistProgress(1, false);
+      if (saved) setActive(1);
       return;
     }
 
-    const nextStepIndex = active + 1;
-    setActive(nextStepIndex);
-    void persistProgress(Math.min(nextStepIndex, totalSteps), false);
-  };
-
-  const prevStep = () => {
-    if (loading) return;
-    const prevStepIndex = active > 0 ? active - 1 : 0;
-    setActive(prevStepIndex);
-    void persistProgress(prevStepIndex, false);
-  };
-
-  const handleUpdateUserData = (data: Partial<typeof userData>) => {
-    setUserData((prev) => ({ ...prev, ...data }));
-    setIsAutosaving(true);
-    if (autosaveTimer.current) {
-      window.clearTimeout(autosaveTimer.current);
+    setFinishing(true);
+    const saved = await persistProgress(TOTAL_STEPS, true);
+    if (saved) {
+      router.replace('/dashboard');
+      return;
     }
-    autosaveTimer.current = window.setTimeout(() => {
-      setIsAutosaving(false);
-      setLastSavedAt(new Date());
-    }, 800);
+    setFinishing(false);
   };
 
-  const progressValue = Math.min(100, Math.round(((Math.min(active, totalSteps - 1) + 1) / totalSteps) * 100));
-  const autosaveLabel = isAutosaving
-    ? 'Saving changes...'
-    : lastSavedAt
-      ? `Saved ${lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-      : 'Autosave enabled';
+  const prevStep = async () => {
+    if (finishing || active === 0) return;
+    const saved = await persistProgress(0, false);
+    if (saved) setActive(0);
+  };
+
+  const progressValue = active === 0 ? 50 : 100;
 
   return (
-    <main className={classes.page}>
+    <div className={classes.page}>
       <BlockingTaskScreen
-        opened={loading}
-        title="Finishing onboarding"
-        description="We are saving your salon profile and preparing your DeepVisor dashboard."
+        opened={finishing}
+        title="Opening your workspace"
+        description="We are saving setup and preparing your DeepVisor dashboard."
       />
 
       <Container size="xl" className={classes.onboardingShell}>
@@ -208,124 +131,95 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
           <div className={classes.brandLockup}>
             <span className={classes.brandMark}>DV</span>
             <span>DEEPVISOR</span>
-            <span className={classes.brandSection}>INTELLIGENCE SETUP</span>
+            <span className={classes.brandSection}>WORKSPACE SETUP</span>
           </div>
-          <div className={classes.saveState} aria-live="polite">
-            <span className={isAutosaving ? classes.savingDot : classes.savedDot} aria-hidden="true" />
-            {autosaveLabel}
-          </div>
+          <span className={classes.stepStatus}>Step {active + 1} of {TOTAL_STEPS}</span>
         </header>
 
         <div className={classes.headerStack}>
-          <span className={classes.pageKicker}>BUSINESS PROFILE / 03 STEPS</span>
-          <Title order={1} className={classes.pageTitle}>Set your decision context.</Title>
+          <span className={classes.pageKicker}>TWO-STAGE SETUP</span>
+          <Title order={1} className={classes.pageTitle}>Get to a useful dashboard quickly.</Title>
           <Text className={classes.pageCopy}>
-            Give DeepVisor the business signals it needs to judge ad performance against what actually matters.
+            Add the business signals DeepVisor cannot safely infer, then connect Meta or continue without it.
           </Text>
         </div>
 
-        <Grid gutter={{ base: 18, md: 28 }} align="flex-start">
-          <Grid.Col span={{ base: 12, md: 4 }} className={classes.progressColumn}>
-            <aside className={classes.progressCard}>
-              <div className={classes.progressHeader}>
-                <div>
-                  <span>PROFILE COMPLETION</span>
-                  <strong>{progressValue}%</strong>
-                </div>
-                <span>~3-5 MIN</span>
+        <div className={classes.contentGrid}>
+          <aside className={classes.progressColumn} aria-label="Onboarding progress">
+            <div className={classes.progressHeader}>
+              <div>
+                <span>SETUP PROGRESS</span>
+                <strong>{progressValue}%</strong>
               </div>
-              <Progress
-                value={progressValue}
-                size={6}
-                radius={0}
-                color="#c8ff56"
-                className={classes.railProgress}
-              />
+              <span>ABOUT 2 MIN</span>
+            </div>
+            <Progress
+              value={progressValue}
+              size={6}
+              radius={0}
+              color="#c8ff56"
+              className={classes.railProgress}
+            />
 
-              <div className={classes.stepList}>
-                {stepLabels.map((label, idx) => {
-                  const isDone = active > idx;
-                  const isActive = active === idx;
-                  const stepClassName = [
-                    classes.progressStep,
-                    isActive ? classes.progressStepActive : '',
-                    isDone ? classes.progressStepDone : '',
-                  ].filter(Boolean).join(' ');
+            <div className={classes.stepList}>
+              {STEP_LABELS.map((label, index) => {
+                const isDone = active > index;
+                const isActive = active === index;
+                const stepClassName = [
+                  classes.progressStep,
+                  isActive ? classes.progressStepActive : '',
+                  isDone ? classes.progressStepDone : '',
+                ].filter(Boolean).join(' ');
 
-                  return (
-                    <div key={label} className={stepClassName}>
-                      <span className={classes.stepNumber}>
-                        {isDone ? <IconCircleCheck size={17} /> : String(idx + 1).padStart(2, '0')}
-                      </span>
-                      <div>
-                        <strong>{label}</strong>
-                        <span>{stepDescription[idx]}</span>
-                      </div>
-                      {isActive ? <span className={classes.activeLabel}>ACTIVE</span> : null}
+                return (
+                  <div key={label} className={stepClassName}>
+                    <span className={classes.stepNumber}>
+                      {isDone ? <IconCircleCheck size={17} /> : String(index + 1).padStart(2, '0')}
+                    </span>
+                    <div>
+                      <strong>{label}</strong>
+                      <span>{STEP_DESCRIPTIONS[index]}</span>
                     </div>
-                  );
-                })}
+                    {isActive ? <IconCheck size={16} className={classes.activeIcon} /> : null}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className={classes.railNote}>
+              <IconLockCheck size={18} />
+              <span>Nothing is published or changed without your approval.</span>
+            </div>
+          </aside>
+
+          <section className={classes.formSurface}>
+            <div className={classes.mobileProgress}>
+              <div>
+                <span>STEP {active + 1} OF {TOTAL_STEPS}</span>
+                <strong>{STEP_LABELS[active]}</strong>
               </div>
+              <Progress value={progressValue} size={5} radius={0} color="#0b7a4b" />
+            </div>
 
-              <div className={classes.railNote}>
-                <IconLockCheck size={18} />
-                <span>Recommendations stay approval-first. Nothing changes without you.</span>
-              </div>
-            </aside>
-          </Grid.Col>
-
-          <Grid.Col span={{ base: 12, md: 8 }}>
-            <section className={classes.formSurface}>
-              <div className={classes.mobileProgress}>
-                <span>STEP {Math.min(active + 1, totalSteps)} OF {totalSteps}</span>
-                <strong>{stepLabels[active]}</strong>
-                <Progress value={progressValue} size={5} radius={0} color="#0b7a4b" />
-              </div>
-              <Stepper active={active} onStepClick={() => { }} size="sm" className={classes.stepper}>
-                <Stepper.Step
-                  label={stepLabels[0]}
-                  description={stepDescription[0]}
-                  icon={<IconDeviceAnalytics size={16} />}
-                >
-                  <BusinessProfileStep
-                    onNext={nextStep}
-                    onPrev={prevStep}
-                    userData={userData}
-                    updateUserData={handleUpdateUserData}
-                    showBack={false}
-                  />
-                </Stepper.Step>
-
-                <Stepper.Step
-                  label={stepLabels[1]}
-                  description={stepDescription[1]}
-                  icon={<IconSettings size={16} />}
-                >
-                  <PreferencesStep
-                    onNext={nextStep}
-                    onPrev={prevStep}
-                    userData={userData}
-                    updateUserData={handleUpdateUserData}
-                  />
-                </Stepper.Step>
-
-                <Stepper.Step
-                  label={stepLabels[2]}
-                  description={stepDescription[2]}
-                  icon={<IconCheck size={16} />}
-                >
-                  <ReviewStartStep
-                    onComplete={nextStep}
-                    onPrev={prevStep}
-                    userData={userData}
-                    loading={loading}
-                  />
-                </Stepper.Step>
-              </Stepper>
-            </section>
-          </Grid.Col>
-        </Grid>
+            {active === 0 ? (
+              <BusinessProfileStep
+                onNext={nextStep}
+                onPrev={prevStep}
+                userData={userData}
+                updateUserData={(data) => setUserData((current) => ({ ...current, ...data }))}
+                showBack={false}
+              />
+            ) : (
+              <ConnectAccountsStep
+                onNext={nextStep}
+                onPrev={prevStep}
+                userData={userData}
+                updateUserData={(data) => setUserData((current) => ({ ...current, ...data }))}
+              />
+            )}
+          </section>
+        </div>
       </Container>
-    </main>
+    </div>
   );
 }

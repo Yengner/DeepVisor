@@ -1,16 +1,13 @@
 'use client';
 
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Anchor,
   Button,
   Divider,
-  Group,
   Paper,
   PasswordInput,
-  Progress,
-  SimpleGrid,
   Stack,
   Text,
   TextInput,
@@ -18,11 +15,8 @@ import {
   Title,
 } from '@mantine/core';
 import {
-  IconArrowRight,
   IconBrandGoogle,
   IconChartDots,
-  IconCheck,
-  IconChevronLeft,
   IconShieldCheck,
 } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
@@ -38,43 +32,6 @@ import classes from './AuthForm.module.css';
 interface AuthFormProps {
   type: 'login' | 'signup';
 }
-
-type SignupStep = 0 | 1 | 2 | 3 | 4 | 5;
-type Choice = {
-  value: string;
-  label: string;
-};
-
-const SITUATION_OPTIONS: Choice[] = [
-  { value: 'running_ads', label: 'I already run Facebook/Instagram ads' },
-  { value: 'boosted_posts', label: 'I have boosted posts before' },
-  { value: 'starting_ads', label: 'I want to start running ads' },
-  { value: 'not_sure', label: 'I am not sure' },
-];
-
-const GOAL_OPTIONS: Choice[] = [
-  { value: 'bookings', label: 'More bookings' },
-  { value: 'messages', label: 'More messages' },
-  { value: 'calls', label: 'More calls' },
-  { value: 'form_leads', label: 'More form leads' },
-  { value: 'roi', label: 'Better ROI from current ads' },
-  { value: 'less_waste', label: 'Less wasted ad spend' },
-];
-
-const LEAD_OPTIONS: Choice[] = [
-  { value: 'messages', label: 'Instagram/Facebook messages' },
-  { value: 'calls', label: 'Phone calls' },
-  { value: 'lead_form', label: 'Lead form' },
-  { value: 'booking_link', label: 'Booking link' },
-  { value: 'recommend', label: 'Not sure, recommend one' },
-];
-
-const TRUST_ITEMS = [
-  'Secure Meta connection',
-  'No automatic budget increases',
-  '30-day free test',
-  'You approve changes before anything goes live',
-];
 
 function IntelligencePanel({ type }: AuthFormProps) {
   const isLogin = type === 'login';
@@ -137,102 +94,30 @@ function IntelligencePanel({ type }: AuthFormProps) {
   );
 }
 
-function ChoiceGrid({
-  options,
-  selected,
-  onSelect,
-}: {
-  options: Choice[];
-  selected: string;
-  onSelect: (value: string) => void;
-}) {
-  return (
-    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-      {options.map((option) => {
-        const isSelected = selected === option.value;
-
-        return (
-          <button
-            key={option.value}
-            type="button"
-            className={[
-              classes.choiceButton,
-              isSelected ? classes.choiceButtonSelected : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            onClick={() => onSelect(option.value)}
-            aria-pressed={isSelected}
-          >
-            <span>{option.label}</span>
-            {isSelected ? <IconCheck size={16} /> : null}
-          </button>
-        );
-      })}
-    </SimpleGrid>
-  );
-}
-
 export default function AuthForm({ type }: AuthFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phoneNo, setPhoneNo] = useState('');
-  const [signupStep, setSignupStep] = useState<SignupStep>(0);
-  const [situation, setSituation] = useState('');
-  const [goal, setGoal] = useState('');
-  const [leadPreference, setLeadPreference] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showVerifyEmailButton, setShowVerifyEmailButton] = useState(false);
 
-  const signupProgress = useMemo(
-    () => Math.min(100, Math.round(((signupStep + 1) / 6) * 100)),
-    [signupStep]
-  );
-
   useEffect(() => {
     const authError = new URLSearchParams(window.location.search).get('error');
 
-    if (type !== 'login' || !authError) return;
+    if (!authError) return;
 
+    const authAction = type === 'login' ? 'sign-in' : 'sign-up';
     const message =
       authError === 'google_oauth_failed'
-        ? 'Google sign-in was canceled or failed.'
-        : 'Google sign-in could not be completed. Please try again.';
+        ? `Google ${authAction} was canceled or failed.`
+        : `Google ${authAction} could not be completed. Please try again.`;
 
     toast.error(message);
-    router.replace('/login');
+    router.replace(type === 'login' ? '/login' : '/sign-up');
   }, [router, type]);
-
-  function goToNextStep() {
-    setSignupStep((current) => Math.min(current + 1, 5) as SignupStep);
-  }
-
-  function goToPreviousStep() {
-    setSignupStep((current) => Math.max(current - 1, 0) as SignupStep);
-  }
-
-  function saveSignupPreferences() {
-    if (type !== 'signup') return;
-
-    try {
-      window.localStorage.setItem(
-        'deepvisor_signup_preferences',
-        JSON.stringify({
-          situation,
-          goal,
-          leadPreference,
-        })
-      );
-    } catch {
-      // Signup preferences are nice-to-have client context only.
-    }
-  }
 
   function getAuthCallbackUrl() {
     const configuredBaseUrl = process.env.NEXT_PUBLIC_BASE_URL?.trim();
@@ -241,6 +126,7 @@ export default function AuthForm({ type }: AuthFormProps) {
       : window.location.origin;
     const callbackUrl = new URL('/api/auth/callback', baseUrl);
     callbackUrl.searchParams.set('next', '/dashboard');
+    callbackUrl.searchParams.set('auth_page', type);
 
     return callbackUrl.toString();
   }
@@ -250,8 +136,6 @@ export default function AuthForm({ type }: AuthFormProps) {
     setShowVerifyEmailButton(false);
 
     try {
-      saveSignupPreferences();
-
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -304,7 +188,7 @@ export default function AuthForm({ type }: AuthFormProps) {
         return;
       }
 
-      if (!firstName.trim() || !lastName.trim() || !email.trim() || !phoneNo.trim()) {
+      if (!firstName.trim() || !email.trim()) {
         toast.error('Please fill in all required fields.');
         return;
       }
@@ -314,20 +198,7 @@ export default function AuthForm({ type }: AuthFormProps) {
         return;
       }
 
-      if (password !== confirmPassword) {
-        toast.error('Passwords do not match.');
-        return;
-      }
-
-      saveSignupPreferences();
-
-      const res = await handleSignUp(
-        email,
-        password,
-        firstName.trim(),
-        lastName.trim(),
-        phoneNo.trim()
-      );
+      const res = await handleSignUp(email.trim(), password, firstName.trim());
 
       if (!res.success) {
         toast.error(res.error.userMessage ?? 'Signup failed.');
@@ -467,262 +338,89 @@ export default function AuthForm({ type }: AuthFormProps) {
 
       <Paper radius="sm" p="xl" withBorder className={classes.flowCard}>
         <Stack gap="lg">
-          <div>
-            <Group justify="space-between" mb="xs" className={classes.progressMeta}>
-              <Text size="xs" fw={800} tt="uppercase">
-                Intelligence profile
-              </Text>
-              <Text size="xs" fw={800}>
-                Step {signupStep + 1} of 6
-              </Text>
-            </Group>
-            <Progress value={signupProgress} radius={0} size={6} color="#0b7a4b" className={classes.signupProgress} />
+          <div className={classes.authHeading}>
+            <ThemeIcon size={42} radius="sm" color="green" variant="light" className={classes.authIcon}>
+              <IconChartDots size={22} />
+            </ThemeIcon>
+            <Title order={2} mt="md">Create your account</Title>
+            <Text c="dimmed" mt={6}>
+              Business details take one short step after signup.
+            </Text>
           </div>
 
-          {signupStep > 0 && signupStep < 5 ? (
-            <Button
-              variant="subtle"
-              color="gray"
-              size="xs"
-              leftSection={<IconChevronLeft size={14} />}
-              className={classes.backButton}
-              onClick={goToPreviousStep}
-            >
-              Back
-            </Button>
-          ) : null}
+          <Button
+            fullWidth
+            radius="sm"
+            size="md"
+            className={classes.googlePrimaryButton}
+            leftSection={<IconBrandGoogle size={18} />}
+            loading={googleLoading}
+            onClick={handleGoogleOAuth}
+          >
+            Continue with Google
+          </Button>
 
-          {signupStep === 0 ? (
-            <Stack gap="lg">
-              <ThemeIcon size={48} radius="sm" color="green" variant="light" className={classes.authIcon}>
-                <IconChartDots size={24} />
-              </ThemeIcon>
-              <div>
-                <Title order={2}>Grow your salon with smarter Meta ads.</Title>
-                <Text c="dimmed" mt="sm">
-                  Answer a few quick questions so DeepVisor can personalize setup before
-                  your free account is created.
-                </Text>
-              </div>
-              <Button
-                size="md"
-                radius="sm"
-                className={classes.authPrimaryButton}
-                rightSection={<IconArrowRight size={18} />}
-                onClick={goToNextStep}
-              >
-                Start free
-              </Button>
-            </Stack>
-          ) : null}
+          <Divider label="Or sign up with email" labelPosition="center" />
 
-          {signupStep === 1 ? (
-            <Stack gap="md">
-              <div>
-                <Title order={2}>Where are you right now?</Title>
-                <Text c="dimmed" mt={6}>
-                  Pick the closest answer.
-                </Text>
-              </div>
-              <ChoiceGrid
-                options={SITUATION_OPTIONS}
-                selected={situation}
-                onSelect={(value) => {
-                  setSituation(value);
-                  goToNextStep();
-                }}
+          <form onSubmit={handleSubmit}>
+            <Stack>
+              <TextInput
+                label="First name"
+                placeholder="First name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                autoComplete="given-name"
+                required
               />
-            </Stack>
-          ) : null}
-
-          {signupStep === 2 ? (
-            <Stack gap="md">
-              <div>
-                <Title order={2}>What do you want more of?</Title>
-                <Text c="dimmed" mt={6}>
-                  This helps us prioritize the first dashboard experience.
-                </Text>
-              </div>
-              <ChoiceGrid
-                options={GOAL_OPTIONS}
-                selected={goal}
-                onSelect={(value) => {
-                  setGoal(value);
-                  goToNextStep();
-                }}
+              <TextInput
+                label="Email"
+                placeholder="you@company.com"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
               />
-            </Stack>
-          ) : null}
-
-          {signupStep === 3 ? (
-            <Stack gap="md">
-              <div>
-                <Title order={2}>How do you prefer new clients to contact you?</Title>
-                <Text c="dimmed" mt={6}>
-                  DeepVisor will keep the recommendation focused on your lead path.
-                </Text>
-              </div>
-              <ChoiceGrid
-                options={LEAD_OPTIONS}
-                selected={leadPreference}
-                onSelect={(value) => {
-                  setLeadPreference(value);
-                  goToNextStep();
-                }}
+              <PasswordInput
+                label="Password"
+                placeholder="At least 6 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                required
+                minLength={6}
               />
-            </Stack>
-          ) : null}
-
-          {signupStep === 4 ? (
-            <Stack gap="lg">
-              <div>
-                <Title order={2}>You stay in control.</Title>
-                <Text c="dimmed" mt={6}>
-                  DeepVisor does not publish, pause, or change ads without your approval.
-                </Text>
-              </div>
-              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                {TRUST_ITEMS.map((item) => (
-                  <div key={item} className={classes.trustItem}>
-                    <ThemeIcon color="green" variant="light" radius="sm" size="sm">
-                      <IconCheck size={14} />
-                    </ThemeIcon>
-                    <Text size="sm" fw={700}>
-                      {item}
-                    </Text>
-                  </div>
-                ))}
-              </SimpleGrid>
               <Button
-                size="md"
-                radius="sm"
-                className={classes.authPrimaryButton}
-                rightSection={<IconArrowRight size={18} />}
-                onClick={goToNextStep}
-              >
-                Create my free account
-              </Button>
-            </Stack>
-          ) : null}
-
-          {signupStep === 5 ? (
-            <Stack gap="lg">
-              <div>
-                <Group justify="space-between" gap="xs" wrap="wrap">
-                  <Title order={2}>Create your free account</Title>
-                  <Button
-                    variant="subtle"
-                    color="gray"
-                    size="xs"
-                    leftSection={<IconChevronLeft size={14} />}
-                    onClick={() => setSignupStep(4)}
-                  >
-                    Trust step
-                  </Button>
-                </Group>
-                <Text c="dimmed" mt={6}>
-                  Salon and business details come after signup.
-                </Text>
-              </div>
-
-              <Button
+                type="submit"
                 fullWidth
+                loading={loading}
                 radius="sm"
                 size="md"
-                className={classes.googlePrimaryButton}
-                leftSection={<IconBrandGoogle size={18} />}
-                loading={googleLoading}
-                onClick={handleGoogleOAuth}
+                className={classes.authPrimaryButton}
               >
-                Continue with Google
+                Create account
               </Button>
-
-              <Divider label="Or sign up with email" labelPosition="center" />
-
-              <form onSubmit={handleSubmit}>
-                <Stack>
-                  <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                    <TextInput
-                      label="First name"
-                      placeholder="First name"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      required
-                    />
-                    <TextInput
-                      label="Last name"
-                      placeholder="Last name"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      required
-                    />
-                  </SimpleGrid>
-                  <TextInput
-                    label="Email"
-                    placeholder="you@salon.com"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                  <TextInput
-                    label="Phone number"
-                    placeholder="Your phone number"
-                    value={phoneNo}
-                    onChange={(e) => setPhoneNo(e.target.value)}
-                    required
-                  />
-                  <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                    <PasswordInput
-                      label="Password"
-                      placeholder="Create a password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={6}
-                    />
-                    <PasswordInput
-                      label="Confirm password"
-                      placeholder="Confirm password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      minLength={6}
-                    />
-                  </SimpleGrid>
-                  <Button
-                    type="submit"
-                    fullWidth
-                    loading={loading}
-                    radius="sm"
-                    size="md"
-                    className={classes.authPrimaryButton}
-                  >
-                    Create account
-                  </Button>
-                </Stack>
-              </form>
-
-              <Text size="xs" c="dimmed">
-                By creating an account, you agree to DeepVisor&apos;s{' '}
-                <Anchor href="/terms-of-service" size="xs" fw={700}>
-                  Terms
-                </Anchor>{' '}
-                and{' '}
-                <Anchor href="/privacy-policy" size="xs" fw={700}>
-                  Privacy Policy
-                </Anchor>
-                .
-              </Text>
-
-              <Text size="sm" className={classes.switchAuth}>
-                Already have an account?{' '}
-                <Anchor href="/login" fz="md" fw={500}>
-                  Login
-                </Anchor>
-              </Text>
             </Stack>
-          ) : null}
+          </form>
+
+          <Text size="xs" c="dimmed">
+            By creating an account, you agree to DeepVisor&apos;s{' '}
+            <Anchor href="/terms-of-service" size="xs" fw={700}>
+              Terms
+            </Anchor>{' '}
+            and{' '}
+            <Anchor href="/privacy-policy" size="xs" fw={700}>
+              Privacy Policy
+            </Anchor>
+            .
+          </Text>
+
+          <Text size="sm" className={classes.switchAuth}>
+            Already have an account?{' '}
+            <Anchor href="/login" fz="md" fw={500}>
+              Login
+            </Anchor>
+          </Text>
         </Stack>
       </Paper>
     </div>

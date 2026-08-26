@@ -3,6 +3,7 @@
 import type { AdSetLifetimeRow } from '@/lib/server/data';
 import {
   ActionIcon,
+  Button,
   Group,
   Loader,
   Menu,
@@ -13,7 +14,7 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core';
-import { IconChartBar, IconCheck, IconCircle, IconDots } from '@tabler/icons-react';
+import { IconChartBar, IconCheck, IconCircle, IconCopyPlus, IconDots } from '@tabler/icons-react';
 import StatusBadge from './StatusBadge';
 import { buildEntityReportUrl } from './reportLinks';
 import { formatCurrencyAmount } from '@/lib/shared';
@@ -30,6 +31,7 @@ interface AdSetTableProps {
   loading?: boolean;
   onSelectAdSet?: (id: string) => void;
   onOpenAdSet?: (id: string) => void;
+  onRunAgain?: (adSet: AdSetLifetimeRow) => void;
   selectedAdSetId?: string | null;
   platformIntegrationId?: string | null;
   adAccountId?: string | null;
@@ -43,6 +45,7 @@ export default function AdSetTable({
   loading = false,
   onSelectAdSet,
   onOpenAdSet,
+  onRunAgain,
   selectedAdSetId,
   platformIntegrationId,
   adAccountId,
@@ -140,6 +143,17 @@ export default function AdSetTable({
                       </ActionIcon>
                     </Menu.Target>
                     <Menu.Dropdown>
+                      {onRunAgain ? (
+                        <Menu.Item
+                          leftSection={<IconCopyPlus size={16} />}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onRunAgain(adSet);
+                          }}
+                        >
+                          Run again
+                        </Menu.Item>
+                      ) : null}
                       <Menu.Item leftSection={<IconChartBar size={16} />} component="a" href={reportHref}>
                         View Analytics
                       </Menu.Item>
@@ -169,12 +183,29 @@ export default function AdSetTable({
                 </div>
 
                 <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
-                  <Text size="xs" c="dimmed" lineClamp={1}>
+                  <Text size="xs" c="dimmed" lineClamp={1} className={classes.mobileActivity}>
                     Activity: {adSet.start_date || '—'} - {adSet.end_date || '—'}
                   </Text>
-                  <Text component="a" href={reportHref} size="xs" fw={800} c={platformColor} onClick={(event) => event.stopPropagation()}>
-                    Report
-                  </Text>
+                  <Group gap={4} wrap="nowrap" className={classes.mobileEntityActions}>
+                    {onRunAgain ? (
+                      <Button
+                        size="compact-xs"
+                        variant="light"
+                        color={platformColor}
+                        leftSection={<IconCopyPlus size={14} />}
+                        className={classes.mobileRunAgainButton}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onRunAgain(adSet);
+                        }}
+                      >
+                        Run again
+                      </Button>
+                    ) : null}
+                    <Text component="a" href={reportHref} size="xs" fw={800} c={platformColor} onClick={(event) => event.stopPropagation()}>
+                      Report
+                    </Text>
+                  </Group>
                 </Group>
               </div>
             );
@@ -375,6 +406,17 @@ export default function AdSetTable({
                         </ActionIcon>
                       </Menu.Target>
                       <Menu.Dropdown>
+                        {onRunAgain ? (
+                          <Menu.Item
+                            leftSection={<IconCopyPlus size={16} />}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onRunAgain(adSet);
+                            }}
+                          >
+                            Run again
+                          </Menu.Item>
+                        ) : null}
                         <Menu.Item
                           leftSection={<IconChartBar size={16} />}
                           component="a"

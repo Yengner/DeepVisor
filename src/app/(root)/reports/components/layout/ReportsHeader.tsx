@@ -6,7 +6,9 @@ import {
   Badge,
   Button,
   Card,
+  Collapse,
   Group,
+  Menu,
   Select,
   Stack,
   Switch,
@@ -16,6 +18,8 @@ import {
 import { DatePickerInput } from '@mantine/dates';
 import {
   IconAdjustmentsHorizontal,
+  IconChevronDown,
+  IconDownload,
   IconFileSpreadsheet,
   IconFileTypePdf,
   IconRefresh,
@@ -170,6 +174,7 @@ export default function ReportsHeader({
     [payload.query.dateFrom, payload.query.dateTo]
   );
   const [draftRange, setDraftRange] = useState<[Date | null, Date | null]>(rangeValue);
+  const [moreOptionsOpen, setMoreOptionsOpen] = useState(false);
   const activeDateCountByIso = useMemo(
     () => new Map((payload.activeDates?.days ?? []).map((item) => [item.date, item.activeEntityCount])),
     [payload.activeDates]
@@ -253,9 +258,6 @@ export default function ReportsHeader({
         >
           <div className={classes.headerMeta}>
             <Group gap="xs" align="center" wrap="wrap">
-              <Badge color="gray" variant="light" size="md">
-                {payload.meta.businessName}
-              </Badge>
               <Badge color="blue" variant="light" size="md">
                 {payload.meta.scopeLabel}
               </Badge>
@@ -264,28 +266,12 @@ export default function ReportsHeader({
                   Demo data
                 </Badge>
               ) : null}
-              <Badge
-                color={
-                  isSummaryRangeReport
-                    ? 'blue'
-                    : payload.query.compareMode === 'previous_period'
-                      ? 'teal'
-                      : 'gray'
-                }
-                variant="light"
-                size="md"
-              >
-                {isAccountLevelReport
-                  ? 'Full account history'
-                  : isMaxRangeReport
-                    ? 'Max summary'
-                  : payload.query.compareMode === 'previous_period'
-                    ? 'Comparing previous period'
-                    : 'Single range'}
-              </Badge>
             </Group>
             <Text fw={900} size="1.65rem" mt="xs" className={classes.headerTitle}>
               {payload.meta.title}
+            </Text>
+            <Text size="sm" c="dimmed" mt={4}>
+              {reportDateSummary}
             </Text>
           </div>
 
@@ -299,26 +285,27 @@ export default function ReportsHeader({
             >
               Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
             </Button>
-            <Button
-              component="a"
-              href={exportLinks.pdf}
-              leftSection={<IconFileTypePdf size={16} />}
-              radius="xl"
-              variant="filled"
-              className="app-platform-page-action-primary"
-            >
-              Export PDF
-            </Button>
-            <Button
-              component="a"
-              href={exportLinks.csv}
-              leftSection={<IconFileSpreadsheet size={16} />}
-              radius="xl"
-              variant="default"
-              className="app-platform-page-action-secondary"
-            >
-              Export CSV
-            </Button>
+            <Menu position="bottom-end" shadow="md" width={190}>
+              <Menu.Target>
+                <Button
+                  leftSection={<IconDownload size={16} />}
+                  rightSection={<IconChevronDown size={14} />}
+                  radius="xl"
+                  variant="filled"
+                  className="app-platform-page-action-primary"
+                >
+                  Export
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item component="a" href={exportLinks.pdf} leftSection={<IconFileTypePdf size={16} />}>
+                  PDF report
+                </Menu.Item>
+                <Menu.Item component="a" href={exportLinks.csv} leftSection={<IconFileSpreadsheet size={16} />}>
+                  CSV data
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
             <Tooltip label={isPending ? 'Refreshing…' : 'Refresh report'}>
               <ActionIcon
                 size="lg"
@@ -333,7 +320,9 @@ export default function ReportsHeader({
           </Group>
         </Group>
 
-        <div className={classes.controlBar}>
+        <div
+          className={`${classes.controlBar} ${isSummaryRangeReport ? classes.controlBarSummary : ''}`}
+        >
           {isAccountLevelReport ? (
             <div className={classes.controlField}>
               <Text size="xs" fw={700} className={classes.controlLabel}>
@@ -472,35 +461,54 @@ export default function ReportsHeader({
             </>
           )}
 
-          <div className={classes.controlField}>
-            <Text size="xs" fw={700} className={classes.controlLabel}>
-              Group By
-            </Text>
-            <Select
-              aria-label="Group by"
-              value={payload.query.groupBy}
-              onChange={(value) => {
-                if (!value) {
-                  return;
-                }
+          {!isSummaryRangeReport ? (
+            <Button
+              variant="subtle"
+              color="dark"
+              rightSection={
+                <IconChevronDown
+                  size={14}
+                  className={moreOptionsOpen ? classes.chevronOpen : classes.chevron}
+                />
+              }
+              onClick={() => setMoreOptionsOpen((current) => !current)}
+              aria-expanded={moreOptionsOpen}
+              className={classes.moreOptionsButton}
+            >
+              More options
+            </Button>
+          ) : null}
+        </div>
 
-                onUpdate((params) => {
-                  params.set('group_by', value);
-                });
-              }}
-              data={[
-                { value: 'day', label: 'Day' },
-                { value: 'week', label: 'Week' },
-                { value: 'month', label: 'Month' },
-              ]}
-              radius="md"
-              size="sm"
-              className={classes.groupBySelect}
-              disabled={isSummaryRangeReport}
-            />
-          </div>
+        <Collapse in={!isSummaryRangeReport && moreOptionsOpen}>
+          <div className={classes.advancedControlBar}>
+            <div className={classes.controlField}>
+              <Text size="xs" fw={700} className={classes.controlLabel}>
+                Group By
+              </Text>
+              <Select
+                aria-label="Group by"
+                value={payload.query.groupBy}
+                onChange={(value) => {
+                  if (!value) {
+                    return;
+                  }
 
-          {isSummaryRangeReport ? null : (
+                  onUpdate((params) => {
+                    params.set('group_by', value);
+                  });
+                }}
+                data={[
+                  { value: 'day', label: 'Day' },
+                  { value: 'week', label: 'Week' },
+                  { value: 'month', label: 'Month' },
+                ]}
+                radius="md"
+                size="sm"
+                className={classes.groupBySelect}
+              />
+            </div>
+
             <div className={classes.controlField}>
               <Text size="xs" fw={700} className={classes.controlLabel}>
                 Compare
@@ -522,18 +530,18 @@ export default function ReportsHeader({
                 />
               </div>
             </div>
-          )}
 
-          {payload.activeDates ? (
-            <Group gap="xs" wrap="wrap" className={classes.activeDatesHint}>
-              <span className={classes.activeDatesLegendDot} />
-              <Text size="xs" c="dimmed">
-                {payload.activeDates.label}. {payload.activeDates.totalActiveDays.toLocaleString()} active
-                day{payload.activeDates.totalActiveDays === 1 ? '' : 's'} across {activeDateSummary}.
-              </Text>
-            </Group>
-          ) : null}
-        </div>
+            {payload.activeDates ? (
+              <Group gap="xs" wrap="wrap" className={classes.activeDatesHint}>
+                <span className={classes.activeDatesLegendDot} />
+                <Text size="xs" c="dimmed">
+                  {payload.activeDates.label}. {payload.activeDates.totalActiveDays.toLocaleString()} active
+                  day{payload.activeDates.totalActiveDays === 1 ? '' : 's'} across {activeDateSummary}.
+                </Text>
+              </Group>
+            ) : null}
+          </div>
+        </Collapse>
       </Stack>
     </Card>
   );

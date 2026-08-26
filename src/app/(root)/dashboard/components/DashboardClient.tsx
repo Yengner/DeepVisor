@@ -8,6 +8,7 @@ import {
   Badge,
   Button,
   Card,
+  Collapse,
   Container,
   Grid,
   Group,
@@ -31,9 +32,12 @@ import {
   IconArrowUpRight,
   IconChartBar,
   IconChartLine,
+  IconChevronDown,
   IconClock,
   IconCurrencyDollar,
+  IconListDetails,
   IconLink,
+  IconPlus,
   IconRefresh,
   IconTargetArrow,
   IconUsers,
@@ -2500,6 +2504,8 @@ function buildTrendChartConfig(input: {
 export function DashboardShellClient({ basePayload, children, below }: DashboardShellClientProps) {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsMounted, setDetailsMounted] = useState(false);
   const [refreshFeedback, setRefreshFeedback] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -2616,8 +2622,7 @@ export function DashboardShellClient({ basePayload, children, below }: Dashboard
           </Alert>
         ) : null}
 
-        <Card withBorder radius="xl" p="lg" className={`${classes.topBar} ${classes.dashboardShellTopBar}`}>
-          <Stack gap="lg">
+        <header className={`${classes.shellHeader} ${classes.dashboardShellTopBar}`}>
             <Group
               justify="space-between"
               align="flex-start"
@@ -2627,14 +2632,8 @@ export function DashboardShellClient({ basePayload, children, below }: Dashboard
             >
               <div>
                 <Group gap="xs" wrap="wrap">
-                  <Badge variant="light" className="app-platform-page-badge">
-                    Dashboard
-                  </Badge>
                   <Badge color={statusColor(basePayload.viewContext.platformStatus)} variant="light">
                     {basePayload.viewContext.platformName ?? 'No platform selected'}
-                  </Badge>
-                  <Badge color={statusColor(basePayload.viewContext.adAccountStatus)} variant="outline">
-                    {basePayload.viewContext.adAccountName ?? 'No ad account selected'}
                   </Badge>
                 </Group>
                 <Text fw={900} size="1.65rem" mt="sm" className={classes.title}>
@@ -2643,19 +2642,22 @@ export function DashboardShellClient({ basePayload, children, below }: Dashboard
               </div>
 
               <Group gap="sm" wrap="wrap" className={classes.topBarActions}>
-                <Button
+                <ActionIcon
                   onClick={handleRefresh}
-                  leftSection={<IconRefresh size={16} />}
                   loading={refreshing}
                   disabled={!basePayload.viewContext.canRefresh}
                   radius="xl"
+                  size="lg"
+                  variant="default"
                   className="app-platform-page-action-primary"
+                  aria-label="Refresh dashboard"
                 >
-                  Refresh
-                </Button>
+                  <IconRefresh size={18} />
+                </ActionIcon>
                 <Button
                   component={Link}
                   href={reportsHref}
+                  leftSection={<IconChartBar size={16} />}
                   radius="xl"
                   variant="default"
                   className="app-platform-page-action-secondary"
@@ -2664,11 +2666,59 @@ export function DashboardShellClient({ basePayload, children, below }: Dashboard
                 </Button>
               </Group>
             </Group>
-
-          </Stack>
-        </Card>
+        </header>
         {children}
-        {below}
+        <Group
+          justify="space-between"
+          align="center"
+          gap="md"
+          wrap="wrap"
+          className={classes.decisionBar}
+        >
+          <div>
+            <Text fw={900}>Next move</Text>
+            <Text size="sm" c="dimmed">
+              Start a draft or check the campaigns already running.
+            </Text>
+          </div>
+          <Group gap="sm" wrap="wrap" className={classes.decisionActions}>
+            <Button component={Link} href="/campaigns/create" leftSection={<IconPlus size={16} />}>
+              New campaign
+            </Button>
+            <Button component={Link} href="/campaigns" variant="default">
+              Campaigns
+            </Button>
+            {below ? (
+              <Button
+                variant="subtle"
+                color="dark"
+                leftSection={<IconListDetails size={16} />}
+                rightSection={
+                  <IconChevronDown
+                    size={15}
+                    className={detailsOpen ? classes.chevronOpen : classes.chevron}
+                  />
+                }
+                onClick={() => {
+                  setDetailsMounted(true);
+                  setDetailsOpen((current) => !current);
+                }}
+                aria-expanded={detailsOpen}
+              >
+                {detailsOpen ? 'Hide analysis' : 'View analysis'}
+              </Button>
+            ) : null}
+          </Group>
+        </Group>
+        {below ? (
+          <Collapse in={detailsOpen}>
+            {detailsMounted ? (
+              <Stack gap="md" className={classes.detailStack}>
+                {below}
+              </Stack>
+            ) : null}
+          </Collapse>
+        ) : null}
       </Stack>
     </Container>
   );
@@ -2700,8 +2750,8 @@ export function FeaturedAdsetSkeleton() {
 
 export function SummaryCardsSkeleton() {
   return (
-    <SimpleGrid cols={{ base: 3, sm: 3, lg: 3, xl: 6 }} spacing="md" className={classes.summaryCardsGrid}>
-      {Array.from({ length: 6 }).map((_, index) => (
+    <SimpleGrid cols={{ base: 2, lg: 4 }} spacing="md" className={classes.summaryCardsGrid}>
+      {Array.from({ length: 4 }).map((_, index) => (
         <Paper key={index} withBorder radius="xl" p="md" className={classes.metricCard}>
           <Stack gap="sm">
             <Skeleton height={14} width="65%" radius="md" />
@@ -2797,18 +2847,7 @@ export default function DashboardClient({
   const liveSummary = liveWindow.summary;
   const mobileLiveRowLimit = 3;
   const isLifetimeDeliveryWindow = activeDeliveryWindowMode === 'lifetime';
-  const summaryCampaignLabel = isLifetimeDeliveryWindow ? 'Campaigns' : 'Live campaigns';
-  const summaryAdsetLabel = isLifetimeDeliveryWindow ? 'Ad sets' : 'Live ad sets';
   const summaryAdLabel = isLifetimeDeliveryWindow ? 'Ads' : 'Live ads';
-  const summaryPlatformLabel = isLifetimeDeliveryWindow ? 'Platforms' : 'Serving platforms';
-  const summaryPlatformValue =
-    liveSummary.servingPlatformLabels.length > 0
-      ? <ServingPlatformLogos labels={liveSummary.servingPlatformLabels} />
-      : isLifetimeDeliveryWindow && payload.viewContext.platformName
-        ? payload.viewContext.platformName
-        : isMeta
-          ? 'Syncing'
-          : 'Unavailable';
   const liveComparisons = liveWindow.comparisons;
   const featuredPlatformBreakdowns = payload.featuredAdsetHistory.platformBreakdowns;
   const featuredAudienceBreakdowns = payload.featuredAdsetHistory.audienceBreakdowns;
@@ -4092,7 +4131,13 @@ export default function DashboardClient({
 
               {showSummaryCards ? (
                 <Stack gap="sm" className={classes.summaryCardsSection}>
-                  <Group justify="flex-end" align="center" gap="sm" className={classes.summaryWindowControlRow}>
+                  <Group justify="space-between" align="center" gap="sm" className={classes.summaryWindowControlRow}>
+                    <div>
+                      <Text fw={900}>Account snapshot</Text>
+                      <Text size="sm" c="dimmed">
+                        Spend and customer outcomes.
+                      </Text>
+                    </div>
                     <SegmentedControl
                       radius="xl"
                       size="xs"
@@ -4112,22 +4157,7 @@ export default function DashboardClient({
                       ]}
                     />
                   </Group>
-                  <SimpleGrid cols={{ base: 3, sm: 3, lg: 3, xl: 6 }} spacing="md" className={classes.summaryCardsGrid}>
-                    <SummaryCard
-                      label={summaryCampaignLabel}
-                      value={formatNumber(liveSummary.liveCampaignCount)}
-                      icon={IconUsers}
-                    />
-                    <SummaryCard
-                      label={summaryAdsetLabel}
-                      value={formatNumber(liveSummary.liveAdsetCount)}
-                      icon={IconTargetArrow}
-                    />
-                    <SummaryCard
-                      label={summaryAdLabel}
-                      value={formatNumber(liveSummary.liveAdCount)}
-                      icon={IconLink}
-                    />
+                  <SimpleGrid cols={{ base: 2, lg: 4 }} spacing="md" className={classes.summaryCardsGrid}>
                     <SummaryCard
                       label="Spend"
                       value={formatCurrency(liveSummary.spend, payload.viewContext.currencyCode)}
@@ -4141,8 +4171,17 @@ export default function DashboardClient({
                       icon={IconTargetArrow}
                     />
                     <SummaryCard
-                      label={summaryPlatformLabel}
-                      value={summaryPlatformValue}
+                      label="Cost per result"
+                      value={
+                        liveSummary.primaryOutcomeValue > 0
+                          ? formatCurrency(liveSummary.costPerResult, payload.viewContext.currencyCode, 2)
+                          : '—'
+                      }
+                      icon={IconCurrencyDollar}
+                    />
+                    <SummaryCard
+                      label={summaryAdLabel}
+                      value={formatNumber(liveSummary.liveAdCount)}
                       icon={IconLink}
                     />
                   </SimpleGrid>

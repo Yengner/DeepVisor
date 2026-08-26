@@ -31,6 +31,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import CampaignTable from './CampaignTable';
 import AdSetTable from './AdSetTable';
 import AdsTable from './AdsTable';
+import RunAgainSheet, { type RunAgainSource } from './RunAgainSheet';
 import { EmptyCampaignState } from './EmptyStates';
 import { formatRetryDelay } from '@/lib/shared';
 import type { AdLifetimeRow, AdSetLifetimeRow } from '@/lib/server/data';
@@ -52,6 +53,7 @@ interface CampaignDashboardProps {
   platform: PlatformInfo;
   adAccountId: string;
   currencyCode: string | null;
+  accountTimezone?: string | null;
   accountMetrics: {
     spend: number;
     impressions: number;
@@ -109,6 +111,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     platform,
     adAccountId,
     currencyCode,
+    accountTimezone,
     accountMetrics,
     initialSelection,
     initialAdSets,
@@ -119,6 +122,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const platformColor = getPlatformColor(platform.name);
+  const isMetaPlatform = ['facebook', 'meta'].includes(platform.name.toLowerCase());
   const initialCampaignFallback = campaigns.length > 0 ? campaigns[0].id : null;
 
   const [campaignData, setCampaignData] = useState(campaigns);
@@ -129,6 +133,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     initialSelection?.adsetId ?? null
   );
   const [selectedAdId, setSelectedAdId] = useState<string | null>(null);
+  const [reuseSource, setReuseSource] = useState<RunAgainSource | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>(
     (initialSelection?.tab as TabKey) || 'campaigns'
   );
@@ -461,6 +466,48 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     setActiveTab('ads');
   };
 
+  const handleRunAdSet = (adSet: AdSetLifetimeRow) => {
+    setReuseSource({
+      sourceType: 'adset',
+      campaignId: adSet.campaign_id,
+      adSetId: adSet.id,
+      name: adSet.name,
+      campaignName: adSet.campaign_name,
+      status: adSet.status,
+      objective: adSet.objective || adSet.optimization_goal || undefined,
+      spend: Number(adSet.spend || 0),
+      results: Number(adSet.leads || 0) + Number(adSet.messages || 0),
+      ctr: adSet.ctr != null && Number.isFinite(Number(adSet.ctr)) ? Number(adSet.ctr) : null,
+      activityStart: adSet.start_date,
+      activityEnd: adSet.end_date,
+      creativeAvailable: false,
+    });
+  };
+
+  const handleRunAd = (ad: AdLifetimeRow) => {
+    const adId = ad.ad_id ?? ad.id;
+    const parentCampaign = campaignData.find((campaign) => campaign.id === ad.campaign_id);
+    const parentAdSet = selectedAdSet?.id === ad.adset_id ? selectedAdSet : null;
+
+    setReuseSource({
+      sourceType: 'ad',
+      campaignId: ad.campaign_id,
+      adSetId: ad.adset_id,
+      adId,
+      name: ad.name || 'Unnamed ad',
+      campaignName: ad.campaign_name,
+      adSetName: ad.adset_name,
+      status: ad.status,
+      objective: parentAdSet?.objective || parentAdSet?.optimization_goal || parentCampaign?.objective,
+      spend: Number(ad.spend || 0),
+      results: Number(ad.leads || 0) + Number(ad.messages || 0),
+      ctr: ad.ctr != null && Number.isFinite(Number(ad.ctr)) ? Number(ad.ctr) : null,
+      activityStart: ad.start_date,
+      activityEnd: ad.end_date,
+      creativeAvailable: Boolean(ad.creative_id),
+    });
+  };
+
   const resetFilters = () => {
     setSearchQuery('');
     setStatusFilter(null);
@@ -694,6 +741,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                     loading={adsetsLoading}
                     onSelectAdSet={setSelectedAdSetId}
                     onOpenAdSet={handleOpenAdSet}
+                    onRunAgain={isMetaPlatform ? handleRunAdSet : undefined}
                     selectedAdSetId={selectedAdSetId}
                     platformIntegrationId={platform.id}
                     adAccountId={adAccountId}
@@ -713,6 +761,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                     loading={adsLoading}
                     selectedAdId={selectedAdId}
                     onSelectAd={setSelectedAdId}
+                    onRunAgain={isMetaPlatform ? handleRunAd : undefined}
                     platformIntegrationId={platform.id}
                     adAccountId={adAccountId}
                     currencyCode={currencyCode}
@@ -725,6 +774,13 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
           </div>
         </Tabs>
       </Card>
+      <RunAgainSheet
+        opened={Boolean(reuseSource)}
+        source={reuseSource}
+        currencyCode={currencyCode}
+        accountTimezone={accountTimezone}
+        onClose={() => setReuseSource(null)}
+      />
     </div>
   );
 }

@@ -127,12 +127,24 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      if (
+        existingDraft.platform_integration_id !== integration.id ||
+        existingDraft.ad_account_id !== adAccount.id
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'This draft belongs to a different Meta ad account. Switch to its original account before editing it.',
+          },
+          { status: 409 }
+        );
+      }
+
       const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('campaign_drafts')
         .update({
-          platform_integration_id: integration.id,
-          ad_account_id: adAccount.id,
           updated_by_user_id: user.id,
           title,
           payload_json: payloadJson as unknown as Database['public']['Tables']['campaign_drafts']['Update']['payload_json'],
@@ -143,11 +155,24 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', existingDraft.id)
         .eq('business_id', businessId)
+        .eq('platform_integration_id', integration.id)
+        .eq('ad_account_id', adAccount.id)
         .select('id')
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
-        throw error ?? new Error('Failed to update campaign draft');
+      if (error) {
+        throw error;
+      }
+
+      if (!data) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'This draft is no longer available in the selected Meta ad account. Reload before trying again.',
+          },
+          { status: 409 }
+        );
       }
 
       return NextResponse.json({

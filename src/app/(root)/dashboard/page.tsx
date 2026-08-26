@@ -2082,9 +2082,14 @@ export default async function MainDashboardPage() {
     <DashboardShellClient
       basePayload={base.basePayload}
       below={
-        <Suspense key="live-delivery-tables" fallback={<LiveDeliveryTablesSkeleton />}>
-          <LiveDeliveryTablesSection {...base} />
-        </Suspense>
+        <>
+          <Suspense key="featured-adset-history" fallback={<FeaturedAdsetSkeleton />}>
+            <FeaturedAdsetHistorySection {...base} />
+          </Suspense>
+          <Suspense key="live-delivery-tables" fallback={<LiveDeliveryTablesSkeleton />}>
+            <LiveDeliveryTablesSection {...base} />
+          </Suspense>
+        </>
       }
     >
       <Suspense key="dashboard-notifications" fallback={null}>
@@ -2092,9 +2097,6 @@ export default async function MainDashboardPage() {
       </Suspense>
       <Suspense key="today-summary-cards" fallback={<SummaryCardsSkeleton />}>
         <TodaySnapshotSection {...base} />
-      </Suspense>
-      <Suspense key="featured-adset-history" fallback={<FeaturedAdsetSkeleton />}>
-        <FeaturedAdsetHistorySection {...base} />
       </Suspense>
     </DashboardShellClient>
   );

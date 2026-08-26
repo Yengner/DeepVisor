@@ -10,6 +10,7 @@ import {
   Badge,
   Button,
   Card,
+  Collapse,
   Container,
   Drawer,
   Grid,
@@ -26,8 +27,11 @@ import {
 import {
   IconArrowDownRight,
   IconArrowUpRight,
+  IconAlertTriangle,
   IconChartBar,
+  IconChevronDown,
   IconChevronRight,
+  IconTargetArrow,
   IconTimeline,
 } from '@tabler/icons-react';
 import Link from 'next/link';
@@ -2093,6 +2097,8 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [filtersOpened, setFiltersOpened] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsMounted, setDetailsMounted] = useState(false);
 
   const currentSearchString = searchParams?.toString() ?? '';
 
@@ -2287,6 +2293,14 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
     () => buildReportBreadcrumbs(payload, filterOptions),
     [filterOptions, payload]
   );
+  const strongestRow = useMemo(
+    () => pickStrongestRow(payload.breakdown.rows),
+    [payload.breakdown.rows]
+  );
+  const watchedRow = useMemo(() => {
+    const row = pickWeakestRow(payload.breakdown.rows);
+    return row?.id === strongestRow?.id ? null : row;
+  }, [payload.breakdown.rows, strongestRow?.id]);
 
   return (
     <Container fluid px={6} py={0} className={`${classes.page} reports-page-shell`}>
@@ -2323,7 +2337,7 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
           isPending={isPending}
         />
 
-        {breadcrumbs.length > 0 ? (
+        {breadcrumbs.length > 1 ? (
           <Paper withBorder radius="xl" p="md" className={classes.breadcrumbCard}>
             <Group gap="xs" wrap="wrap">
               <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
@@ -2388,39 +2402,79 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
           </Card>
         )}
 
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+        <SimpleGrid cols={{ base: 2, lg: 4 }} spacing="md">
           {payload.kpis.map((kpi) => (
             <KpiCard key={kpi.key} kpi={kpi} />
           ))}
         </SimpleGrid>
 
+        {strongestRow || watchedRow ? (
+          <section className={classes.fastRead} aria-labelledby="report-fast-read-title">
+            <Group justify="space-between" align="center" gap="sm" wrap="wrap">
+              <div>
+                <Text id="report-fast-read-title" fw={900}>
+                  Fast read
+                </Text>
+                <Text size="sm" c="dimmed">
+                  Current selection
+                </Text>
+              </div>
+              <Badge variant="light" color="gray">
+                {payload.breakdown.rows.length} {payload.breakdown.rows.length === 1 ? 'item' : 'items'}
+              </Badge>
+            </Group>
+            <SimpleGrid cols={{ base: 1, sm: watchedRow ? 2 : 1 }} spacing="md" mt="md">
+              {strongestRow ? (
+                <div className={classes.signalItem}>
+                  <ThemeIcon color="teal" variant="light" radius="md">
+                    <IconTargetArrow size={18} />
+                  </ThemeIcon>
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                      Strongest performer
+                    </Text>
+                    <Text fw={900} lineClamp={1}>{strongestRow.name}</Text>
+                    <Text size="sm" c="dimmed">
+                      {formatEntityPerformance(strongestRow, payload.meta.currencyCode)}
+                    </Text>
+                  </div>
+                </div>
+              ) : null}
+              {watchedRow ? (
+                <div className={classes.signalItem}>
+                  <ThemeIcon color="orange" variant="light" radius="md">
+                    <IconAlertTriangle size={18} />
+                  </ThemeIcon>
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                      Watch closely
+                    </Text>
+                    <Text fw={900} lineClamp={1}>{watchedRow.name}</Text>
+                    <Text size="sm" c="dimmed">
+                      {formatEntityPerformance(watchedRow, payload.meta.currencyCode)}
+                    </Text>
+                  </div>
+                </div>
+              ) : null}
+            </SimpleGrid>
+          </section>
+        ) : null}
+
         <Grid gutter="md" align="stretch">
-          <Grid.Col span={{ base: 12, xl: 8 }}>
+          <Grid.Col span={{ base: 12, xl: detailsOpen ? 8 : 12 }}>
             <Card withBorder radius="xl" p="lg" h="100%" className={classes.reportCard}>
               <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.cardHeader}>
                 <div>
                   <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
                     Timeline
                   </Text>
-                  <Text fw={900} size="xl" mt={4}>
-                    Performance over time
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    Delivery and efficiency trends for the selected reporting window.
-                  </Text>
+                  <Text fw={900} size="xl" mt={4}>Performance trend</Text>
                 </div>
                 <Group gap="xs" wrap="wrap">
                   <Badge variant="light" color="gray" radius="sm">
                     {payload.query.rangeMode === 'max'
                       ? 'Summary comparison'
                       : `Grouped by ${payload.query.groupBy}`}
-                  </Badge>
-                  <Badge variant="light" color={payload.query.compareMode === 'previous_period' ? 'teal' : 'gray'} radius="sm">
-                    {payload.query.rangeMode === 'max'
-                      ? 'Max summary'
-                      : payload.query.compareMode === 'previous_period'
-                        ? 'Previous period on'
-                        : 'No comparison'}
                   </Badge>
                 </Group>
               </Group>
@@ -2483,6 +2537,8 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
                   </div>
                 </section>
 
+                <Collapse in={detailsOpen}>
+                {detailsMounted ? (
                 <section className={classes.timelineChartSection}>
                   <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.timelineSectionHeader}>
                     <div>
@@ -2540,53 +2596,80 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: Report
                     )}
                   </div>
                 </section>
+                ) : null}
+                </Collapse>
               </Stack>
             </Card>
           </Grid.Col>
 
-          <Grid.Col span={{ base: 12, xl: 4 }}>
-            <ReportDeliverySurfaceGraph payload={payload} />
-          </Grid.Col>
+          {detailsOpen ? (
+            <Grid.Col span={{ base: 12, xl: 4 }}>
+              <ReportDeliverySurfaceGraph payload={payload} />
+            </Grid.Col>
+          ) : null}
         </Grid>
 
-        <RankedEntityBoard
-          rows={payload.breakdown.rows}
-          currencyCode={payload.meta.currencyCode}
-          ranking={payload.ranking}
-          query={payload.query}
-        />
+        <Group justify="center" className={classes.analysisToggleBar}>
+          <Button
+            variant="subtle"
+            color="dark"
+            rightSection={
+              <IconChevronDown
+                size={15}
+                className={detailsOpen ? classes.chevronOpen : classes.chevron}
+              />
+            }
+            onClick={() => {
+              setDetailsMounted(true);
+              setDetailsOpen((current) => !current);
+            }}
+            aria-expanded={detailsOpen}
+          >
+            {detailsOpen ? 'Hide full analysis' : 'View full analysis'}
+          </Button>
+        </Group>
 
-        <Card withBorder radius="xl" p="lg" className={`${classes.reportCard} ${classes.tableCard}`}>
-          <Stack gap="md">
-            <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.cardHeader}>
-              <div>
-                <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                  Performance table
-                </Text>
-                <Text fw={900} size="xl" mt={4}>
-                  {payload.breakdown.title}
-                </Text>
-                <Text size="sm" c="dimmed" mt={4}>
-                  Full row-level view for campaigns, ad sets, or ads in the current filters.
-                </Text>
-              </div>
-              <Group gap="xs" wrap="wrap">
-                {visibleFilterSummary.map((item) => (
-                  <Badge key={`${item.label}:${item.value}`} variant="light" color="gray" radius="sm">
-                    {item.label}: {item.value}
-                  </Badge>
-                ))}
-              </Group>
-            </Group>
-
-            <PerformanceTable
-              title={payload.breakdown.title}
+        <Collapse in={detailsOpen}>
+          {detailsMounted ? (
+          <Stack gap="md" className={classes.analysisStack}>
+            <RankedEntityBoard
               rows={payload.breakdown.rows}
               currencyCode={payload.meta.currencyCode}
-              hideTitle
+              ranking={payload.ranking}
+              query={payload.query}
             />
+
+            <Card withBorder radius="xl" p="lg" className={`${classes.reportCard} ${classes.tableCard}`}>
+              <Stack gap="md">
+                <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" className={classes.cardHeader}>
+                  <div>
+                    <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                      Performance table
+                    </Text>
+                    <Text fw={900} size="xl" mt={4}>
+                      {payload.breakdown.title}
+                    </Text>
+                  </div>
+                  <Group gap="xs" wrap="wrap">
+                    {visibleFilterSummary.map((item) => (
+                      <Badge key={`${item.label}:${item.value}`} variant="light" color="gray" radius="sm">
+                        {item.label}: {item.value}
+                      </Badge>
+                    ))}
+                  </Group>
+                </Group>
+
+                <PerformanceTable
+                  title={payload.breakdown.title}
+                  rows={payload.breakdown.rows}
+                  currencyCode={payload.meta.currencyCode}
+                  hideTitle
+                />
+              </Stack>
+            </Card>
           </Stack>
-        </Card>
+          ) : null}
+        </Collapse>
       </Stack>
     </Container>
   );

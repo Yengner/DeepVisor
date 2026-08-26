@@ -281,6 +281,7 @@ function CampaignCreateRenderer({ context }: { context: CampaignCreateReadyConte
 
   return (
     <MetaLeadCampaignDraftHelper
+      key={`${context.adAccountId}:${context.requestedDraftId ?? 'new'}`}
       platformData={context.platformData}
       adAccountId={context.adAccountId}
       currencyCode={context.currencyCode}

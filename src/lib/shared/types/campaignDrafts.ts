@@ -1,10 +1,65 @@
 import type { SyncCoverage } from './integrations';
+import type { Json } from './supabase';
 
 export type ReviveDraftSource = 'historic_clone' | 'fresh_relaunch' | 'manual_defaults';
 
 export type ReviveStaleSeverity = 'watch' | 'stale' | 'critical';
 
 export type CampaignDraftMode = 'manual' | 'smart';
+
+export type CampaignReuseSourceType = 'campaign' | 'adset' | 'ad';
+
+export type CampaignReuseCreativeMode = 'reuse' | 'fresh';
+
+export interface CreateCampaignReuseDraftRequest {
+  sourceType: CampaignReuseSourceType;
+  sourceCampaignId: string;
+  sourceAdSetId?: string;
+  sourceAdId?: string;
+  budgetType: 'daily' | 'lifetime';
+  budgetAmount: number;
+  startAt: string;
+  endAt: string;
+  creativeMode: CampaignReuseCreativeMode;
+  idempotencyKey: string;
+}
+
+export interface CreateCampaignReuseDraftResult {
+  draftId: string;
+  href: string;
+  replayed: boolean;
+}
+
+export interface CampaignReuseDraftSource {
+  sourceType: CampaignReuseSourceType;
+  creativeMode: CampaignReuseCreativeMode;
+  configurationCoverage?: 'exact' | 'partial';
+  missingConfiguration?: string[];
+  campaignId: string;
+  campaignName: string;
+  campaignStatus: string | null;
+  adSetId: string | null;
+  adSetName: string | null;
+  adSetStatus: string | null;
+  adId: string | null;
+  adName: string | null;
+  adStatus: string | null;
+  creativeId: string | null;
+  serviceName?: string | null;
+  serviceValue?: string | null;
+  currencyCode: string | null;
+  timezone: string | null;
+}
+
+export interface CampaignReuseAdSetSourceConfiguration {
+  destinationType: string | null;
+  bidStrategy: string | null;
+  billingEvent: string | null;
+  optimizationGoal: string | null;
+  promotedObject: Json | null;
+  targeting: Json | null;
+  attributionSpec: Json | null;
+}
 
 export type LeadCampaignLeadMethod = 'instant_form' | 'messages' | 'calls';
 
@@ -34,6 +89,7 @@ export interface LeadCampaignCreativeDraft {
   selectedCreativeName?: string;
   uploadedFileNames?: string[];
   imageHash: string;
+  linkUrl?: string;
   adHeadline: string;
   adPrimaryText: string;
   adDescription: string;
@@ -55,6 +111,7 @@ export interface LeadCampaignAdSetDraft {
   useAdvantageAudience: boolean;
   useAdvantagePlacements: boolean;
   billingEvent: string;
+  sourceConfiguration?: CampaignReuseAdSetSourceConfiguration;
   targeting: ManualCampaignDraftForm['targeting'] & {
     locationLabel?: string;
   };
@@ -64,6 +121,7 @@ export interface LeadCampaignAdSetDraft {
 export interface LeadCampaignMethodSettings {
   instantForm: {
     formStyle: 'higher_intent' | 'more_volume';
+    formId?: string;
     privacyPolicyUrl: string;
     qualifyingQuestions: string[];
   };
@@ -84,6 +142,9 @@ export interface LeadCampaignMethodSettings {
 }
 
 export interface ManualCampaignDraftForm {
+  initialStatus?: 'PAUSED';
+  reviewRequired?: boolean;
+  reuseSource?: CampaignReuseDraftSource;
   campaignName: string;
   objective: string;
   destinationType: string;
@@ -123,6 +184,7 @@ export interface ManualCampaignDraftForm {
     contentSource: string;
     existingCreativeIds: string[];
     imageHash: string;
+    linkUrl?: string;
     adHeadline: string;
     adPrimaryText: string;
     adDescription: string;

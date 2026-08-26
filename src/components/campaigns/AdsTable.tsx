@@ -6,6 +6,7 @@ import {
   ActionIcon,
   Avatar,
   Box,
+  Button,
   Group,
   Loader,
   Menu,
@@ -20,6 +21,7 @@ import {
   IconChartBar,
   IconCheck,
   IconCircle,
+  IconCopyPlus,
   IconDots,
   IconEye,
   IconPhoto,
@@ -49,6 +51,7 @@ interface AdsTableProps {
   selectedAdId?: string | null;
   onSelectAd?: (id: string) => void;
   onOpenAd?: (id: string) => void;
+  onRunAgain?: (ad: AdLifetimeRow) => void;
   platformIntegrationId?: string | null;
   adAccountId?: string | null;
   currencyCode?: string | null;
@@ -62,6 +65,7 @@ export default function AdsTable({
   selectedAdId,
   onSelectAd,
   onOpenAd,
+  onRunAgain,
   platformIntegrationId,
   adAccountId,
   currencyCode,
@@ -163,6 +167,17 @@ export default function AdsTable({
                       </ActionIcon>
                     </Menu.Target>
                     <Menu.Dropdown>
+                      {onRunAgain ? (
+                        <Menu.Item
+                          leftSection={<IconCopyPlus size={16} />}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onRunAgain(ad);
+                          }}
+                        >
+                          Run again
+                        </Menu.Item>
+                      ) : null}
                       {previewImage ? (
                         <Menu.Item leftSection={<IconEye size={16} />} component="a" href={previewImage} target="_blank">
                           Preview
@@ -200,12 +215,29 @@ export default function AdsTable({
                 </div>
 
                 <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
-                  <Text size="xs" c="dimmed" lineClamp={1}>
+                  <Text size="xs" c="dimmed" lineClamp={1} className={classes.mobileActivity}>
                     Activity: {ad.start_date || '—'} - {ad.end_date || '—'}
                   </Text>
-                  <Text component="a" href={reportHref} size="xs" fw={800} c={platformColor} onClick={(event) => event.stopPropagation()}>
-                    Report
-                  </Text>
+                  <Group gap={4} wrap="nowrap" className={classes.mobileEntityActions}>
+                    {onRunAgain ? (
+                      <Button
+                        size="compact-xs"
+                        variant="light"
+                        color={platformColor}
+                        leftSection={<IconCopyPlus size={14} />}
+                        className={classes.mobileRunAgainButton}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onRunAgain(ad);
+                        }}
+                      >
+                        Run again
+                      </Button>
+                    ) : null}
+                    <Text component="a" href={reportHref} size="xs" fw={800} c={platformColor} onClick={(event) => event.stopPropagation()}>
+                      Report
+                    </Text>
+                  </Group>
                 </Group>
               </div>
             );
@@ -415,6 +447,17 @@ export default function AdsTable({
                           </ActionIcon>
                         </Menu.Target>
                         <Menu.Dropdown>
+                          {onRunAgain ? (
+                            <Menu.Item
+                              leftSection={<IconCopyPlus size={16} />}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                onRunAgain(ad);
+                              }}
+                            >
+                              Run again
+                            </Menu.Item>
+                          ) : null}
                           <Menu.Item
                             leftSection={<IconChartBar size={16} />}
                             component="a"

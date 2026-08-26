@@ -14,15 +14,16 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
   const oauthError = requestUrl.searchParams.get('error');
+  const authPage = requestUrl.searchParams.get('auth_page') === 'login' ? '/login' : '/sign-up';
 
   if (oauthError) {
-    const loginUrl = new URL('/sign-up', requestUrl.origin);
+    const loginUrl = new URL(authPage, requestUrl.origin);
     loginUrl.searchParams.set('error', 'google_oauth_failed');
     return NextResponse.redirect(loginUrl);
   }
 
   if (!code) {
-    const loginUrl = new URL('/sign-up', requestUrl.origin);
+    const loginUrl = new URL(authPage, requestUrl.origin);
     loginUrl.searchParams.set('error', 'auth_callback_missing_code');
     return NextResponse.redirect(loginUrl);
   }
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    const loginUrl = new URL('/sign-up', requestUrl.origin);
+    const loginUrl = new URL(authPage, requestUrl.origin);
     loginUrl.searchParams.set('error', 'auth_callback_failed');
     return NextResponse.redirect(loginUrl);
   }

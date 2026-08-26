@@ -35,6 +35,36 @@
   min-width: 0;
 }
 
+.shellHeader {
+  min-width: 0;
+  padding: 6px 2px 0;
+}
+
+.decisionBar {
+  min-width: 0;
+  padding: 14px 2px;
+  border-top: 1px solid var(--dv-border);
+  border-bottom: 1px solid var(--dv-border);
+}
+
+.decisionActions {
+  flex: 0 0 auto;
+}
+
+.detailStack {
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.chevron,
+.chevronOpen {
+  transition: transform 160ms ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
 .windowControlWrap {
   max-width: 100%;
   overflow-x: auto;
@@ -727,6 +757,26 @@
 
   .summaryWindowControlRow {
     width: 100%;
+    align-items: flex-end;
+  }
+
+  .decisionBar {
+    align-items: stretch;
+    padding: 12px 0;
+  }
+
+  .decisionActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .decisionActions :global(.mantine-Button-root) {
+    width: 100%;
+  }
+
+  .decisionActions :global(.mantine-Button-root:last-child) {
+    grid-column: 1 / -1;
   }
 
   .metricValue {

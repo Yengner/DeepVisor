@@ -340,7 +340,7 @@ export async function updateBusinessProfileData(input: {
 
     const validationError =
       validateAllowedString('Industry', input.industry, SALON_INDUSTRY_OPTIONS, input.industry !== undefined) ??
-      validateAllowedString('Monthly ad budget', input.monthlyBudget, MONTHLY_AD_BUDGET_OPTIONS, input.monthlyBudget !== undefined) ??
+      validateAllowedString('Monthly ad budget', input.monthlyBudget, MONTHLY_AD_BUDGET_OPTIONS) ??
       validateAllowedString('Customer radius', input.customerRadius, CUSTOMER_RADIUS_OPTIONS) ??
       validateAllowedArray('Main services', input.promotedServices, SALON_SERVICE_OPTIONS, input.promotedServices !== undefined) ??
       validateAllowedString('Most valuable service', input.mostValuableService, [
@@ -379,11 +379,13 @@ export async function updateBusinessProfileData(input: {
     const updateData = cleanUndefined({
       business_name: businessName,
       industry: input.industry ?? undefined,
-      monthly_budget: input.monthlyBudget ?? undefined,
+      monthly_budget:
+        input.monthlyBudget === undefined ? undefined : cleanString(input.monthlyBudget),
       website: cleanStringForUpdate(input.website),
       booking_link: cleanStringForUpdate(input.bookingLink),
       business_location: cleanStringForUpdate(input.businessLocation),
-      customer_radius: input.customerRadius ?? undefined,
+      customer_radius:
+        input.customerRadius === undefined ? undefined : cleanString(input.customerRadius),
       description: cleanStringForUpdate(input.description),
       promoted_services: cleanStringArray(input.promotedServices),
       most_valuable_service: cleanStringForUpdate(input.mostValuableService),

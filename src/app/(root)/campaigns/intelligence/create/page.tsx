@@ -1,5 +1,6 @@
 import SmartCampaignClient from "./SmartCampaignClient";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
+import { ErrorState } from '@/components/ui/states/ErrorState';
 import { redirect } from 'next/navigation';
 import { resolveCurrentSelection } from "@/lib/server/actions/app/selection";
 import { getRequiredAppContext } from "@/lib/server/actions/app/context";
@@ -48,6 +49,21 @@ export default async function SmartCampaignPage({
             draftId: requestedDraftId,
         })
         : null;
+
+    if (
+        draftRow &&
+        (draftRow.platform_integration_id !== platformDetails.integrationId ||
+            draftRow.ad_account_id !== adAccount.id)
+    ) {
+        return (
+            <ErrorState
+                title="Draft belongs to another ad account"
+                message="Switch to the draft's original Meta account before opening it. The current account has not been changed."
+                primaryAction={{ label: 'Back to campaigns', href: '/campaigns' }}
+            />
+        );
+    }
+
     const draftPayload = readCampaignDraftPayload(draftRow);
     const smartDraft = draftPayload?.mode === 'smart' ? draftPayload.form : null;
 

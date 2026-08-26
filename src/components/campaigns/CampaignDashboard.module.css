@@ -132,6 +132,16 @@
   border-top: 1px solid rgba(21, 23, 20, 0.12);
 }
 
+.mobileActivity {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mobileEntityActions,
+.mobileRunAgainButton {
+  flex: 0 0 auto;
+}
+
 @media (max-width: 760px) {
   .pageShell {
     height: auto;
@@ -199,5 +209,9 @@
     flex-direction: column;
     gap: 10px;
     padding-bottom: 0;
+  }
+
+  .mobileRunAgainButton {
+    min-height: 40px;
   }
 }

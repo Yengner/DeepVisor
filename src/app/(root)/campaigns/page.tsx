@@ -167,6 +167,7 @@ export default async function CampaignPage({
           platform={{ id: platformDetails.id, name: platformDetails.vendor }}
           adAccountId={selectedAdAccountId}
           currencyCode={adAccountDetails.currency_code}
+          accountTimezone={adAccountDetails.timezone ?? null}
           accountMetrics={accountMetrics}
           initialSelection={initialSelection}
           initialAdSets={initialAdSets}

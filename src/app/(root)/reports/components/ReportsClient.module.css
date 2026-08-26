@@ -38,12 +38,41 @@
 
 .controlBar {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 1.1fr) minmax(140px, 180px) minmax(210px, auto);
+  grid-template-columns: minmax(0, 0.8fr) minmax(280px, 1.2fr) auto;
   gap: 12px;
   padding: 12px 14px;
   border: 1px solid var(--platform-border);
   border-radius: 8px;
   background: #f4f5ef;
+}
+
+.controlBarSummary {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.advancedControlBar {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(220px, 1fr);
+  gap: 12px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--platform-border);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.moreOptionsButton {
+  align-self: end;
+  min-height: 42px;
+}
+
+.chevron,
+.chevronOpen {
+  transition: transform 160ms ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
 }
 
 .controlField {
@@ -118,6 +147,39 @@
 
 .kpiCard {
   height: 100%;
+}
+
+.fastRead {
+  min-width: 0;
+  padding: 16px 2px;
+  border-top: 1px solid var(--platform-border);
+  border-bottom: 1px solid var(--platform-border);
+}
+
+.signalItem {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
+  padding: 12px;
+  border-left: 3px solid rgba(20, 168, 102, 0.45);
+  background: #f4f5ef;
+}
+
+.signalItem + .signalItem {
+  border-left-color: rgba(217, 119, 6, 0.45);
+}
+
+.analysisToggleBar {
+  padding: 8px 0;
+  border-top: 1px solid var(--platform-border);
+  border-bottom: 1px solid var(--platform-border);
+}
+
+.analysisStack {
+  min-width: 0;
+  padding-top: 12px;
 }
 
 .kpiValue {
@@ -399,30 +461,49 @@
 
 @media (max-width: 1100px) {
   .controlBar {
-    grid-template-columns: minmax(0, 1fr) minmax(240px, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 1fr) auto;
+  }
+
+  .controlBarSummary {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (max-width: 760px) {
   .headerActions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr)) 42px;
     width: 100%;
     gap: 8px;
   }
 
-  .headerActions :global(.mantine-Button-root),
-  .headerActions :global(.mantine-ActionIcon-root) {
+  .headerActions :global(.mantine-Button-root) {
     width: 100%;
   }
 
   .headerActions :global(.mantine-ActionIcon-root) {
+    width: 42px;
     min-width: 42px;
   }
 
   .headerTitle {
     font-size: 1.35rem;
     line-height: 1.12;
+  }
+
+  .kpiValue {
+    font-size: 1.25rem;
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+  }
+
+  .kpiCard {
+    min-width: 0;
+    padding: 12px !important;
+  }
+
+  .deltaPill {
+    padding: 3px 6px;
   }
 
   .reportCard,
@@ -435,6 +516,10 @@
   .controlBar {
     grid-template-columns: minmax(0, 1fr);
     border-radius: 8px;
+  }
+
+  .advancedControlBar {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .chartWrap {

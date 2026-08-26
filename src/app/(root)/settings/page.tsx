@@ -48,6 +48,7 @@ import { getAdAccountData, getBusinessAdAccountsRollup, getPlatformDetails } fro
 import { formatNotificationPreviewMessage } from '@/lib/shared';
 import { createServerClient } from '@/lib/server/supabase/server';
 import IntelligencePreferencesCard from './components/IntelligencePreferencesCard';
+import CampaignDefaultsForm from './components/CampaignDefaultsForm';
 import classes from './SettingsSurface.module.css';
 
 type BusinessProfileSettings = {
@@ -56,6 +57,12 @@ type BusinessProfileSettings = {
   website: string | null;
   description: string | null;
   monthly_budget: string | null;
+  booking_link: string | null;
+  business_location: string | null;
+  customer_radius: string | null;
+  most_valuable_service: string | null;
+  promoted_services: string[] | null;
+  preferred_contact_method: string | null;
   ad_goals: string[] | null;
   preferred_platforms: string[] | null;
   updated_at: string;
@@ -403,7 +410,7 @@ export default async function SettingsPage() {
     supabase
       .from('business_profiles')
       .select(
-        'business_name, industry, website, description, monthly_budget, ad_goals, preferred_platforms, updated_at'
+        'business_name, industry, website, description, monthly_budget, booking_link, business_location, customer_radius, most_valuable_service, promoted_services, preferred_contact_method, ad_goals, preferred_platforms, updated_at'
       )
       .eq('id', businessId)
       .maybeSingle(),
@@ -450,6 +457,12 @@ export default async function SettingsPage() {
     website: null,
     description: null,
     monthly_budget: null,
+    booking_link: null,
+    business_location: null,
+    customer_radius: null,
+    most_valuable_service: null,
+    promoted_services: [],
+    preferred_contact_method: null,
     ad_goals: [],
     preferred_platforms: [],
     updated_at: new Date().toISOString(),
@@ -762,6 +775,18 @@ export default async function SettingsPage() {
               </Group>
             </Paper>
           </SimpleGrid>
+
+          <CampaignDefaultsForm
+            initial={{
+              businessLocation: businessProfile.business_location ?? '',
+              customerRadius: businessProfile.customer_radius ?? '',
+              mainService: businessProfile.most_valuable_service ?? '',
+              promotedServices: businessProfile.promoted_services ?? [],
+              preferredContactMethod: businessProfile.preferred_contact_method ?? '',
+              bookingLink: businessProfile.booking_link ?? '',
+              monthlyBudget: businessProfile.monthly_budget ?? '',
+            }}
+          />
         </Card>
 
         <Card withBorder radius="lg" p="xl" id="signals">

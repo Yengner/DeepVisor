@@ -11,6 +11,7 @@ type CampaignDraftRow = Database['public']['Tables']['campaign_drafts']['Row'];
 export async function createCampaignDraft(
   supabase: DraftClient,
   input: {
+    draftId?: string;
     businessId: string;
     platformIntegrationId: string;
     adAccountId: string;
@@ -25,6 +26,7 @@ export async function createCampaignDraft(
   const { data, error } = await supabase
     .from('campaign_drafts')
     .insert({
+      ...(input.draftId ? { id: input.draftId } : {}),
       business_id: input.businessId,
       platform_integration_id: input.platformIntegrationId,
       ad_account_id: input.adAccountId,

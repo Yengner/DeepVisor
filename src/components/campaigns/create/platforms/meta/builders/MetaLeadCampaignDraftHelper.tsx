@@ -19,6 +19,7 @@ import {
   Group,
   NumberInput,
   Paper,
+  SegmentedControl,
   Select,
   SimpleGrid,
   Stack,
@@ -36,6 +37,8 @@ import {
   IconCalendar,
   IconChartLine,
   IconCheck,
+  IconChevronLeft,
+  IconChevronRight,
   IconCirclePlus,
   IconDeviceMobileMessage,
   IconFileDescription,
@@ -55,17 +58,20 @@ import {
 import type {
   CampaignDraftTargetMode,
   CampaignDraftPayload,
+  CampaignReuseDraftSource,
   ManualCampaignDraftForm,
   LeadCampaignAdSetDraft,
   LeadCampaignCreativeDraft,
   LeadCampaignMethodSettings,
   LeadCampaignLeadMethod,
+  LeadCampaignOfferTemplate,
 } from '@/lib/shared/types/campaignDrafts';
 import type { ConfiguredWhatsAppNumber } from '@/lib/shared/types/whatsappSetup';
 import type { CampaignTreeAdsetNode, CampaignTreeNode } from '@/lib/server/data';
 import type { MetaPage } from '@/lib/server/actions/meta/pages/actions';
 import { formatCurrencyAmount } from '@/lib/shared';
 import MediaSelectionModal from '../components/MediaSelectionModal';
+import classes from './MetaLeadCampaignDraftHelper.module.css';
 
 type MetaLeadCampaignDraftHelperProps = {
   platformData: {
@@ -87,6 +93,7 @@ type CreativeState = LeadCampaignCreativeDraft & {
 };
 
 type AdSetState = Omit<LeadCampaignAdSetDraft, 'pageId' | 'targeting' | 'creatives'> & {
+  markerPosition: { lat: number; lng: number } | null;
   ageMin: number;
   ageMax: number;
   genders: string[];
@@ -95,14 +102,24 @@ type AdSetState = Omit<LeadCampaignAdSetDraft, 'pageId' | 'targeting' | 'creativ
 };
 
 type HelperState = {
+  initialStatus?: 'PAUSED';
+  reviewRequired?: boolean;
+  reuseSource?: CampaignReuseDraftSource;
   draftTargetMode: CampaignDraftTargetMode;
   existingCampaignId: string;
   existingAdSetId: string;
   campaignName: string;
+  objective: string;
+  specialAdCategories: string[];
+  bidStrategy: string;
+  buyingType: string;
+  budgetOptimization: boolean;
   leadMethod: LeadCampaignLeadMethod;
+  offerTemplate?: LeadCampaignOfferTemplate;
   pageId: string;
   serviceArea: string;
   radius: number;
+  budgetType: 'daily' | 'lifetime';
   budgetAmount: number;
   startDate: Date;
   endDate: Date | null;
@@ -124,6 +141,8 @@ type LeadEstimatePoint = {
   budget: number;
   outcomes: number;
 };
+
+type BuilderStage = 0 | 1 | 2;
 
 type VisualSelectOption = {
   value: string;
@@ -181,6 +200,19 @@ const DEFAULT_BUYING_TYPE = 'AUCTION';
 const DEFAULT_BILLING_EVENT = 'IMPRESSIONS';
 const DEFAULT_FORM_GOAL = 'LEAD_GENERATION';
 const DEFAULT_CALL_GOAL = 'QUALITY_CALL';
+const SUPPORTED_HELPER_OBJECTIVES = new Set([
+  'OUTCOME_LEADS',
+  'OUTCOME_ENGAGEMENT',
+  'LEAD_GENERATION',
+  'MESSAGES',
+]);
+const SUPPORTED_REUSE_DESTINATIONS = new Set([
+  FORM_DESTINATION,
+  MESSAGE_DESTINATION,
+  WHATSAPP_DESTINATION,
+  CALL_DESTINATION,
+  'INSTAGRAM_DIRECT',
+]);
 const META_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif'];
 const META_VIDEO_EXTENSIONS = [
   '.3g2',
@@ -776,6 +808,7 @@ function defaultCreative(
     uploadedFileNames: [],
     uploadedFiles: [],
     imageHash: '',
+    linkUrl: '',
     adHeadline: `${DEFAULT_CREATIVE_COPY.headline}${suffix}`.slice(0, 40),
     adPrimaryText: DEFAULT_CREATIVE_COPY.primaryText,
     adDescription: role === 'challenger' ? `Angle ${angleNumber}` : DEFAULT_CREATIVE_COPY.description,
@@ -829,6 +862,7 @@ function defaultAdSet(role: 'primary' | 'challenger'): AdSetState {
     useAdvantageAudience: true,
     useAdvantagePlacements: true,
     billingEvent: DEFAULT_BILLING_EVENT,
+    markerPosition: null,
     ageMin: 18,
     ageMax: 65,
     genders: [],
@@ -903,6 +937,8 @@ function buildInitialState(
     useAdvantageAudience: adSet.useAdvantageAudience ?? true,
     useAdvantagePlacements: adSet.useAdvantagePlacements ?? true,
     billingEvent: adSet.billingEvent || DEFAULT_BILLING_EVENT,
+    sourceConfiguration: adSet.sourceConfiguration,
+    markerPosition: adSet.targeting.markerPosition ?? null,
     ageMin: adSet.targeting.ageMin || 18,
     ageMax: adSet.targeting.ageMax || 65,
     genders: adSet.targeting.genders ?? [],
@@ -940,20 +976,31 @@ function buildInitialState(
       : methodSettings;
 
   return {
+    initialStatus: draft?.initialStatus,
+    reviewRequired: draft?.reviewRequired,
+    reuseSource: draft?.reuseSource,
     draftTargetMode,
     existingCampaignId: draft?.draftTarget?.existingCampaignId ?? firstDraftAdSet?.existingCampaignId ?? '',
     existingAdSetId: draft?.draftTarget?.existingAdSetId ?? firstDraftAdSet?.existingAdSetId ?? '',
     campaignName: draft?.campaignName || 'Lead campaign',
+    objective: draft?.objective || LEADS_OBJECTIVE,
+    specialAdCategories: draft?.specialAdCategories?.length ? draft.specialAdCategories : ['NONE'],
+    bidStrategy: draft?.bidStrategy || DEFAULT_BID_STRATEGY,
+    buyingType: draft?.buyingType || DEFAULT_BUYING_TYPE,
+    budgetOptimization: draft?.budgetOptimization ?? false,
     leadMethod,
+    offerTemplate: draft?.offerTemplate,
     pageId: firstDraftAdSet?.pageId || draft?.pageId || defaults.pageId || '',
     serviceArea: firstDraftAdSet?.targeting.locationLabel || draft?.targeting.locationLabel || '',
     radius: firstDraftAdSet?.targeting.radius || draft?.targeting.radius || 5,
-    budgetAmount:
-      draft?.budgetType === 'daily'
-        ? Math.max(150, Math.round((draft.budgetAmount || 20) * 30))
-        : draft?.budgetAmount || 600,
+    budgetType: draft?.budgetType ?? 'lifetime',
+    budgetAmount: draft && Number.isFinite(draft.budgetAmount)
+      ? draft.budgetAmount
+      : 600,
     startDate,
-    endDate: dateFromIso(draft?.endDate, addDays(startDate, 30)),
+    endDate: draft
+      ? dateFromIso(draft.endDate, null)
+      : addDays(startDate, 30),
     methodSettings: hydratedMethodSettings,
     adSets: draftTargetMode === 'existing_adset' ? hydratedAdSets.slice(0, 1) : hydratedAdSets,
   };
@@ -979,6 +1026,7 @@ function stripRuntimeCreativeFields(creative: CreativeState): LeadCampaignCreati
         ? creative.uploadedFiles.map((file) => file.name)
         : creative.uploadedFileNames,
     imageHash: creative.imageHash,
+    linkUrl: creative.linkUrl,
     adHeadline: creative.adHeadline,
     adPrimaryText: creative.adPrimaryText,
     adDescription: creative.adDescription,
@@ -993,7 +1041,6 @@ function buildPayload(
   selectedPage: MetaPage | null
 ): CampaignDraftPayload {
   const destinationType = destinationForLeadMethod(state.leadMethod, state.methodSettings);
-  const optimizationGoal = optimizationGoalForLeadMethod(state.leadMethod);
   const persistedAdSets: LeadCampaignAdSetDraft[] = state.adSets.map((adSet) => ({
     id: adSet.id,
     role: adSet.role,
@@ -1007,12 +1054,13 @@ function buildPayload(
     instagramAccountName: selectedPage?.instagram_account_name ?? null,
     instagramAccountUsername: selectedPage?.instagram_account_username ?? null,
     instagramAccountPictureUrl: selectedPage?.instagram_account_picture_url ?? null,
-    optimizationGoal,
+    optimizationGoal: adSet.optimizationGoal || optimizationGoalForLeadMethod(state.leadMethod),
     useAdvantageAudience: adSet.useAdvantageAudience,
     useAdvantagePlacements: adSet.useAdvantagePlacements,
     billingEvent: adSet.billingEvent,
+    sourceConfiguration: adSet.sourceConfiguration,
     targeting: {
-      markerPosition: null,
+      markerPosition: adSet.markerPosition,
       locationLabel: state.serviceArea,
       radius: state.radius,
       ageMin: adSet.ageMin,
@@ -1028,17 +1076,22 @@ function buildPayload(
   return {
     mode: 'manual',
     form: {
+      initialStatus: state.initialStatus,
+      reviewRequired: state.reviewRequired,
+      reuseSource: state.reuseSource,
       campaignName: state.draftTargetMode === 'new_campaign'
         ? state.campaignName
         : selectedCampaign?.name ?? state.campaignName,
-      objective: LEADS_OBJECTIVE,
+      objective: state.objective,
       destinationType,
-      specialAdCategories: ['NONE'],
-      bidStrategy: DEFAULT_BID_STRATEGY,
-      buyingType: DEFAULT_BUYING_TYPE,
+      specialAdCategories: state.specialAdCategories,
+      bidStrategy: state.bidStrategy,
+      buyingType: state.buyingType,
       budgetAmount: state.budgetAmount,
-      budgetType: 'lifetime',
-      budgetOptimization: state.draftTargetMode !== 'existing_adset' && persistedAdSets.length > 1,
+      budgetType: state.budgetType,
+      budgetOptimization:
+        state.budgetOptimization ||
+        (state.draftTargetMode !== 'existing_adset' && persistedAdSets.length > 1),
       startDate: state.startDate.toISOString(),
       endDate: toIso(state.endDate),
       draftTarget: {
@@ -1049,6 +1102,7 @@ function buildPayload(
         existingAdSetName: state.draftTargetMode === 'existing_adset' ? selectedAdSet?.name ?? null : null,
       },
       leadMethod: state.leadMethod,
+      offerTemplate: state.offerTemplate,
       methodSettings: state.methodSettings,
       adSets: persistedAdSets,
       adSetName: firstAdSet.adSetName,
@@ -1057,7 +1111,7 @@ function buildPayload(
       instagramAccountName: selectedPage?.instagram_account_name ?? null,
       instagramAccountUsername: selectedPage?.instagram_account_username ?? null,
       instagramAccountPictureUrl: selectedPage?.instagram_account_picture_url ?? null,
-      optimizationGoal,
+      optimizationGoal: firstAdSet.optimizationGoal,
       useAdvantageAudience: firstAdSet.useAdvantageAudience,
       useAdvantagePlacements: firstAdSet.useAdvantagePlacements,
       billingEvent: firstAdSet.billingEvent,
@@ -1066,6 +1120,7 @@ function buildPayload(
         contentSource: firstCreative.contentSource,
         existingCreativeIds: firstCreative.existingCreativeIds,
         imageHash: firstCreative.imageHash,
+        linkUrl: firstCreative.linkUrl,
         adHeadline: firstCreative.adHeadline,
         adPrimaryText: firstCreative.adPrimaryText,
         adDescription: firstCreative.adDescription,
@@ -1093,6 +1148,7 @@ export default function MetaLeadCampaignDraftHelper({
       whatsappPhoneNumber: configuredWhatsAppNumbers[0] ?? null,
     })
   );
+  const [activeStage, setActiveStage] = useState<BuilderStage>(0);
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId ?? null);
@@ -1201,9 +1257,15 @@ export default function MetaLeadCampaignDraftHelper({
 
     return {
       days,
-      amount: Math.round((state.budgetAmount / days) * 100) / 100,
+      amount: Math.round(
+        (state.budgetType === 'daily' ? state.budgetAmount : state.budgetAmount / days) * 100
+      ) / 100,
+      totalAmount: Math.round(
+        (state.budgetType === 'daily' ? state.budgetAmount * days : state.budgetAmount) * 100
+      ) / 100,
     };
-  }, [state.budgetAmount, state.endDate, state.startDate]);
+  }, [state.budgetAmount, state.budgetType, state.endDate, state.startDate]);
+  const plannedBudgetAmount = dailyEquivalent?.totalAmount ?? state.budgetAmount;
   const leadEstimate = useMemo(
     () =>
       buildLeadEstimate({
@@ -1211,9 +1273,17 @@ export default function MetaLeadCampaignDraftHelper({
         selectedCampaign,
         selectedAdSet,
         leadMethod: state.leadMethod,
-        budgetAmount: state.budgetAmount,
+        budgetAmount: plannedBudgetAmount,
       }),
-    [campaigns, selectedCampaign, selectedAdSet, state.budgetAmount, state.leadMethod]
+    [campaigns, plannedBudgetAmount, selectedCampaign, selectedAdSet, state.leadMethod]
+  );
+  const normalizedObjective = state.objective.trim().toUpperCase();
+  const unsupportedReuseObjective = Boolean(
+    state.reuseSource && !SUPPORTED_HELPER_OBJECTIVES.has(normalizedObjective)
+  );
+  const reuseDestination = state.adSets[0]?.sourceConfiguration?.destinationType?.trim().toUpperCase() || null;
+  const unsupportedReuseDestination = Boolean(
+    state.reuseSource && reuseDestination && !SUPPORTED_REUSE_DESTINATIONS.has(reuseDestination)
   );
 
   const activeMediaCreative = mediaTarget
@@ -1361,6 +1431,18 @@ export default function MetaLeadCampaignDraftHelper({
     const primaryAdSet = state.adSets[0];
     const primaryCreative = primaryAdSet.creatives[0];
 
+    if (unsupportedReuseObjective) {
+      nextErrors.push(
+        `The source objective ${state.objective || 'is unavailable'} cannot be safely edited in this lead campaign helper.`
+      );
+    }
+
+    if (unsupportedReuseDestination) {
+      nextErrors.push(
+        `The source destination ${reuseDestination} cannot be safely edited in this lead campaign helper.`
+      );
+    }
+
     if (state.draftTargetMode === 'new_campaign' && !state.campaignName.trim()) {
       nextErrors.push('Add a campaign name.');
     }
@@ -1381,6 +1463,10 @@ export default function MetaLeadCampaignDraftHelper({
 
     if (!state.pageId) {
       nextErrors.push('Select the Facebook Page that will run the ad.');
+    } else if (state.reuseSource && !selectedPage) {
+      nextErrors.push(
+        'The source Facebook Page is not available to this Meta connection. Select an accessible Page before saving.'
+      );
     }
 
     if (
@@ -1399,15 +1485,24 @@ export default function MetaLeadCampaignDraftHelper({
       nextErrors.push('Set a location radius.');
     }
 
-    if (!state.budgetAmount || state.budgetAmount < 50) {
-      nextErrors.push(`Set a lifetime budget of at least ${formatMoney(50, currencyCode)}.`);
+    const minimumBudget = state.budgetType === 'daily' ? 1 : 50;
+    if (!state.budgetAmount || state.budgetAmount < minimumBudget) {
+      nextErrors.push(
+        `Set a ${state.budgetType} budget of at least ${formatMoney(minimumBudget, currencyCode)}.`
+      );
     }
 
     if (!state.endDate) {
       nextErrors.push('Set a fixed campaign end date.');
     }
 
-    if (!primaryCreative.adHeadline.trim() || !primaryCreative.adPrimaryText.trim()) {
+    const usesExistingCreative =
+      primaryCreative.contentSource === 'existing' &&
+      primaryCreative.existingCreativeIds.length > 0;
+    if (
+      !usesExistingCreative &&
+      (!primaryCreative.adHeadline.trim() || !primaryCreative.adPrimaryText.trim())
+    ) {
       nextErrors.push('Add a headline and primary text for the primary ad.');
     }
 
@@ -1444,6 +1539,19 @@ export default function MetaLeadCampaignDraftHelper({
     setSavedDraft(null);
 
     if (nextErrors.length > 0) {
+      const firstError = nextErrors[0].toLowerCase();
+      if (
+        firstError.includes('facebook page') ||
+        firstError.includes('service area') ||
+        firstError.includes('location radius')
+      ) {
+        setActiveStage(1);
+      } else if (firstError.includes('headline') || firstError.includes('primary text')) {
+        setActiveStage(2);
+      } else {
+        setActiveStage(0);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -1618,6 +1726,14 @@ export default function MetaLeadCampaignDraftHelper({
           maxLength={40}
           value={creative.adDescription}
           onChange={(event) => updateCreative(adSet.id, creative.id, { adDescription: event.currentTarget.value })}
+        />
+        <TextInput
+          label="Destination URL"
+          description="Booking page, service page, or website used by this creative."
+          placeholder="https://example.com/book"
+          type="url"
+          value={creative.linkUrl || ''}
+          onChange={(event) => updateCreative(adSet.id, creative.id, { linkUrl: event.currentTarget.value })}
         />
         <Select
           label="Call to action"
@@ -1916,19 +2032,63 @@ export default function MetaLeadCampaignDraftHelper({
   }
 
   return (
-    <Container size="xl" py="xl">
+    <Container size="xl" py="xl" className={classes.page}>
       <Stack gap="xl">
         <Group justify="space-between" align="flex-start" gap="md" className="dv-create-hero">
           <Stack gap="xs" maw={780}>
             <Badge w="fit-content" size="lg" variant="light" className="app-platform-page-badge">
-              Meta lead campaign
+              {state.reuseSource ? 'Paused run-again draft' : 'Meta lead campaign'}
             </Badge>
-            <Title order={1}>Create a lead campaign</Title>
+            <Title order={1}>{state.reuseSource ? 'Review run-again draft' : 'Create a lead campaign'}</Title>
           </Stack>
           <Badge size="lg" variant="outline" color="gray">
-            Review before launch
+            Draft review only
           </Badge>
         </Group>
+
+        {state.initialStatus === 'PAUSED' ? (
+          <Alert color="green" radius="md" icon={<IconCheck size={18} />} title="Paused draft only">
+            Saving updates only this paused DeepVisor draft. It does not change the source or
+            publish anything on Meta.
+          </Alert>
+        ) : null}
+
+        {state.reuseSource?.configurationCoverage === 'partial' ? (
+          <Alert
+            color="yellow"
+            radius="md"
+            icon={<IconAlertTriangle size={18} />}
+            title="Some source settings need confirmation"
+          >
+            Historical sync did not include{' '}
+            {state.reuseSource.missingConfiguration?.join(', ') || 'all source configuration'}.
+            Saved salon defaults were used where available. Review these settings before saving.
+          </Alert>
+        ) : null}
+
+        {unsupportedReuseObjective ? (
+          <Alert
+            color="red"
+            radius="md"
+            icon={<IconAlertTriangle size={18} />}
+            title="This source objective needs a full campaign review"
+          >
+            Objective {state.objective || 'unknown'} is not represented by this lead campaign helper.
+            Saving is blocked so the source is not converted to {LEADS_OBJECTIVE}.
+          </Alert>
+        ) : null}
+
+        {unsupportedReuseDestination ? (
+          <Alert
+            color="red"
+            radius="md"
+            icon={<IconAlertTriangle size={18} />}
+            title="This source destination needs a full campaign review"
+          >
+            Destination {reuseDestination} is not represented by this lead campaign helper.
+            Saving is blocked so it is not converted to {FORM_DESTINATION}.
+          </Alert>
+        ) : null}
 
         {errors.length > 0 ? (
           <Alert color="red" radius="lg" icon={<IconAlertTriangle size={18} />} title="Finish these items before saving">
@@ -1948,10 +2108,35 @@ export default function MetaLeadCampaignDraftHelper({
           </Alert>
         ) : null}
 
+        <div className={classes.stageHeader}>
+          <Group justify="space-between" align="center" gap="sm" wrap="wrap">
+            <div>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
+                Step {activeStage + 1} of 3
+              </Text>
+              <Text fw={900}>
+                {activeStage === 0 ? 'Campaign setup' : activeStage === 1 ? 'Audience' : 'Creative and review'}
+              </Text>
+            </div>
+            <SegmentedControl
+              value={String(activeStage)}
+              onChange={(value) => setActiveStage(Number(value) as BuilderStage)}
+              data={[
+                { value: '0', label: 'Setup' },
+                { value: '1', label: 'Audience' },
+                { value: '2', label: 'Creative' },
+              ]}
+              aria-label="Campaign setup stage"
+              className={classes.stageControl}
+            />
+          </Group>
+        </div>
+
         <Grid gutter="lg">
-          <Grid.Col span={{ base: 12, lg: 8 }}>
+          <Grid.Col span={{ base: 12, lg: activeStage === 1 ? 12 : 8 }}>
             <Stack gap="lg">
-              <Card withBorder radius="lg" p="lg">
+              <Box className={activeStage === 0 ? classes.stageVisible : classes.stageHidden}>
+              <Card withBorder radius="lg" p="lg" className={classes.sectionCard}>
                 <Stack gap="md">
                   <Group gap="sm">
                     <ThemeIcon color="blue" variant="light" radius="xl">
@@ -1980,43 +2165,24 @@ export default function MetaLeadCampaignDraftHelper({
                       ) : null}
                     </Group>
 
-                    <SimpleGrid cols={{ base: 1, md: 3 }}>
-                      {targetCardCopy.map((target) => {
-                        const Icon = target.icon;
-                        const selected = state.draftTargetMode === target.mode;
-                        const disabled = target.mode !== 'new_campaign' && campaigns.length === 0;
-
-                        return (
-                          <Paper
-                            key={target.mode}
-                            withBorder
-                            radius="lg"
-                            p="md"
-                            bg={selected ? 'blue.0' : undefined}
-                            style={{
-                              cursor: disabled ? 'not-allowed' : 'pointer',
-                              opacity: disabled ? 0.55 : 1,
-                              borderColor: selected ? 'var(--mantine-color-blue-6)' : undefined,
-                            }}
-                            onClick={() => {
-                              if (!disabled) {
-                                updateDraftTargetMode(target.mode);
-                              }
-                            }}
-                          >
-                            <Stack gap="xs">
-                              <ThemeIcon color="blue" variant={selected ? 'filled' : 'light'} radius="xl">
-                                <Icon size={18} />
-                              </ThemeIcon>
-                              <Text fw={800}>{target.title}</Text>
-                              <Text size="sm" c="dimmed">
-                                {target.description}
-                              </Text>
-                            </Stack>
-                          </Paper>
-                        );
-                      })}
-                    </SimpleGrid>
+                    <SegmentedControl
+                      fullWidth
+                      value={state.draftTargetMode}
+                      onChange={(value) => updateDraftTargetMode(value as CampaignDraftTargetMode)}
+                      data={targetCardCopy.map((target) => ({
+                        value: target.mode,
+                        label:
+                          target.mode === 'new_campaign'
+                            ? 'New'
+                            : target.mode === 'existing_campaign'
+                              ? 'Campaign'
+                              : 'Ad set',
+                        disabled: target.mode !== 'new_campaign' && campaigns.length === 0,
+                      }))}
+                    />
+                    <Text size="sm" c="dimmed">
+                      {targetCardCopy.find((target) => target.mode === state.draftTargetMode)?.description}
+                    </Text>
 
                     {state.draftTargetMode !== 'new_campaign' ? (
                       <Paper withBorder radius="lg" p="md">
@@ -2189,59 +2355,45 @@ export default function MetaLeadCampaignDraftHelper({
                     </Text>
                   </Stack>
 
-                  <SimpleGrid cols={{ base: 1, md: 3 }}>
-                    {(Object.keys(methodCardCopy) as LeadCampaignLeadMethod[]).map((method) => {
-                      const Icon = methodCardCopy[method].icon;
-                      const selected = state.leadMethod === method;
-                      return (
-                        <Paper
-                          key={method}
-                          withBorder
-                          radius="lg"
-                          p="md"
-                          bg={selected ? 'blue.0' : undefined}
-                          style={{
-                            cursor: 'pointer',
-                            borderColor: selected ? 'var(--mantine-color-blue-6)' : undefined,
-                          }}
-                          onClick={() =>
-                            setState((current) => ({
-                              ...current,
-                              leadMethod: method,
-                              methodSettings:
-                                method === 'messages' && current.methodSettings.messages.channel === 'whatsapp'
-                                  ? applyWhatsAppPhoneNumberDefaults(
-                                      current.methodSettings,
-                                      configuredWhatsAppNumbers[0] ?? null
-                                    )
-                                  : current.methodSettings,
-                              adSets: current.adSets.map((adSet) => ({
-                                ...adSet,
-                                optimizationGoal: optimizationGoalForLeadMethod(method),
-                              })),
-                            }))
-                          }
-                        >
-                          <Stack gap="xs">
-                            <ThemeIcon color="blue" variant={selected ? 'filled' : 'light'} radius="xl">
-                              <Icon size={18} />
-                            </ThemeIcon>
-                            <Text fw={800}>{methodCardCopy[method].title}</Text>
-                            <Text size="sm" c="dimmed">
-                              {methodCardCopy[method].description}
-                            </Text>
-                          </Stack>
-                        </Paper>
-                      );
-                    })}
-                  </SimpleGrid>
+                  <SegmentedControl
+                    fullWidth
+                    value={state.leadMethod}
+                    onChange={(value) => {
+                      const method = value as LeadCampaignLeadMethod;
+                      setState((current) => ({
+                        ...current,
+                        leadMethod: method,
+                        methodSettings:
+                          method === 'messages' && current.methodSettings.messages.channel === 'whatsapp'
+                            ? applyWhatsAppPhoneNumberDefaults(
+                                current.methodSettings,
+                                configuredWhatsAppNumbers[0] ?? null
+                              )
+                            : current.methodSettings,
+                        adSets: current.adSets.map((adSet) => ({
+                          ...adSet,
+                          optimizationGoal: optimizationGoalForLeadMethod(method),
+                        })),
+                      }));
+                    }}
+                    data={[
+                      { value: 'messages', label: 'Messages' },
+                      { value: 'instant_form', label: 'Form' },
+                      { value: 'calls', label: 'Calls' },
+                    ]}
+                  />
+                  <Text size="sm" c="dimmed">
+                    {methodCardCopy[state.leadMethod].description}
+                  </Text>
 
                   {renderLeadMethodSetup()}
 
                 </Stack>
               </Card>
+              </Box>
 
-              <Card withBorder radius="lg" p="lg">
+              <Box className={activeStage === 1 ? classes.stageVisible : classes.stageHidden}>
+              <Card withBorder radius="lg" p="lg" className={classes.sectionCard}>
                 <Stack gap="md">
                   <Group gap="sm">
                     <ThemeIcon color="green" variant="light" radius="xl">
@@ -2480,8 +2632,10 @@ export default function MetaLeadCampaignDraftHelper({
                   )}
                 </Stack>
               </Card>
+              </Box>
 
-              <Card withBorder radius="lg" p="lg">
+              <Box className={activeStage === 2 ? classes.stageVisible : classes.stageHidden}>
+              <Card withBorder radius="lg" p="lg" className={classes.sectionCard}>
                 <Stack gap="md">
                   <Group gap="sm">
                     <ThemeIcon color="violet" variant="light" radius="xl">
@@ -2577,23 +2731,52 @@ export default function MetaLeadCampaignDraftHelper({
 	                  ))}
 	                </Stack>
               </Card>
+              </Box>
             </Stack>
           </Grid.Col>
 
-          <Grid.Col span={{ base: 12, lg: 4 }}>
+          <Grid.Col
+            span={{ base: 12, lg: 4 }}
+            className={activeStage === 1 ? classes.stageHidden : classes.stageVisible}
+          >
             <Box style={{ position: 'sticky', top: 18 }}>
               <Stack gap="lg">
-                <Card withBorder radius="lg" p="lg">
+                <Card withBorder radius="lg" p="lg" className={classes.sectionCard}>
                   <Stack gap="md">
                     <Group gap="sm">
                       <ThemeIcon color="green" variant="light" radius="xl">
                         <IconCalendar size={18} />
                       </ThemeIcon>
-                      <Title order={3}>Budget and estimate</Title>
+                      <Title order={3}>{activeStage === 0 ? 'Budget and dates' : 'Review and save'}</Title>
                     </Group>
+                    <SegmentedControl
+                      fullWidth
+                      value={state.budgetType}
+                      onChange={(value) => {
+                        const budgetType = value as 'daily' | 'lifetime';
+                        const days = dailyEquivalent?.days ?? 30;
+                        patchState({
+                          budgetType,
+                          budgetAmount: Math.max(
+                            budgetType === 'daily' ? 1 : 50,
+                            Math.round(
+                              (budgetType === 'daily'
+                                ? state.budgetAmount / Math.max(days, 1)
+                                : state.budgetAmount * days) * 100
+                            ) / 100
+                          ),
+                        });
+                      }}
+                      data={[
+                        { value: 'daily', label: 'Daily' },
+                        { value: 'lifetime', label: 'Lifetime' },
+                      ]}
+                    />
                     <NumberInput
-                      label={`Lifetime budget (${currencyCode?.trim().toUpperCase() || 'USD'})`}
-                      min={50}
+                      label={`${state.budgetType === 'daily' ? 'Daily' : 'Lifetime'} budget (${
+                        currencyCode?.trim().toUpperCase() || 'USD'
+                      })`}
+                      min={state.budgetType === 'daily' ? 1 : 50}
                       value={state.budgetAmount}
                       onChange={(value) => patchState({ budgetAmount: Number(value) || 0 })}
                       required
@@ -2620,10 +2803,13 @@ export default function MetaLeadCampaignDraftHelper({
                       </Text>
                       <Text size="sm" c="dimmed">
                         {dailyEquivalent
-                          ? `${dailyEquivalent.days} day run with a hard lifetime budget.`
+                          ? state.budgetType === 'daily'
+                            ? `${dailyEquivalent.days} day run, about ${formatMoney(dailyEquivalent.totalAmount, currencyCode)} total.`
+                            : `${dailyEquivalent.days} day run with a hard lifetime budget.`
                           : 'DeepVisor recommends a fixed 30-day window.'}
                       </Text>
                     </Paper>
+                    {activeStage === 2 ? (
                     <Paper withBorder radius="md" p="md">
                       <Stack gap="sm">
                         <Group gap="sm" align="flex-start">
@@ -2632,52 +2818,102 @@ export default function MetaLeadCampaignDraftHelper({
                           </ThemeIcon>
                           <div>
                             <Text fw={800}>Estimated {leadEstimate.label}</Text>
-                            <Text size="xs" c="dimmed">
-                              Sub-linear model from {leadEstimate.sourceDetail.toLowerCase()}.
-                            </Text>
                           </div>
                         </Group>
                         <Text fw={900} size="1.35rem">
                           {formatOutcomeCount(leadEstimate.low)}-{formatOutcomeCount(leadEstimate.high)}
                         </Text>
                         <Text size="sm" c="dimmed">
-                          Around {formatOutcomeCount(leadEstimate.estimate)} {leadEstimate.label} at {formatMoney(state.budgetAmount, currencyCode)}.
+                          Around {formatOutcomeCount(leadEstimate.estimate)} {leadEstimate.label} at{' '}
+                          {formatMoney(plannedBudgetAmount, currencyCode)} planned spend.
                         </Text>
-                        <LeadEstimateChart points={leadEstimate.points} currencyCode={currencyCode} />
-                        <SimpleGrid cols={2} spacing="xs">
-                          <Paper withBorder radius="sm" p="xs" bg="gray.0">
-                            <Text size="xs" c="dimmed">Modeled cost</Text>
-                            <Text size="sm" fw={800}>{formatMoney(leadEstimate.costPerOutcome, currencyCode)}</Text>
-                          </Paper>
-                          <Paper withBorder radius="sm" p="xs" bg="gray.0">
-                            <Text size="xs" c="dimmed">Data source</Text>
-                            <Text size="sm" fw={800} lineClamp={1}>
-                              {leadEstimate.sourceLabel}
-                            </Text>
-                          </Paper>
-                        </SimpleGrid>
-                        {leadEstimate.usesFallback ? (
-                          <Text size="xs" c="dimmed">
-                            This will become more personal after more Meta performance is synced.
-                          </Text>
-                        ) : null}
+                        <details className={classes.estimateDetails}>
+                          <summary>Estimate details</summary>
+                          <Stack gap="sm" mt="sm">
+                            <LeadEstimateChart points={leadEstimate.points} currencyCode={currencyCode} />
+                            <SimpleGrid cols={2} spacing="xs">
+                              <Paper withBorder radius="sm" p="xs" bg="gray.0">
+                                <Text size="xs" c="dimmed">Modeled cost</Text>
+                                <Text size="sm" fw={800}>{formatMoney(leadEstimate.costPerOutcome, currencyCode)}</Text>
+                              </Paper>
+                              <Paper withBorder radius="sm" p="xs" bg="gray.0">
+                                <Text size="xs" c="dimmed">Data source</Text>
+                                <Text size="sm" fw={800} lineClamp={1}>
+                                  {leadEstimate.sourceLabel}
+                                </Text>
+                              </Paper>
+                            </SimpleGrid>
+                            {leadEstimate.usesFallback ? (
+                              <Text size="xs" c="dimmed">
+                                Estimate uses a general baseline until more Meta performance is synced.
+                              </Text>
+                            ) : null}
+                          </Stack>
+                        </details>
                       </Stack>
                     </Paper>
-                    <Divider />
-                    <Button
-                      size="md"
-                      leftSection={<IconSparkles size={18} />}
-                      loading={saving}
-                      onClick={handleSaveDraft}
-                    >
-                      Save draft
-                    </Button>
+                    ) : null}
+                    <div className={classes.desktopStageAction}>
+                      {activeStage === 0 ? (
+                        <Button
+                          fullWidth
+                          rightSection={<IconChevronRight size={16} />}
+                          onClick={() => setActiveStage(1)}
+                        >
+                          Continue to audience
+                        </Button>
+                      ) : (
+                        <Button
+                          fullWidth
+                          leftSection={<IconSparkles size={18} />}
+                          loading={saving}
+                          disabled={unsupportedReuseObjective || unsupportedReuseDestination}
+                          onClick={handleSaveDraft}
+                        >
+                          Save draft
+                        </Button>
+                      )}
+                    </div>
                   </Stack>
                 </Card>
               </Stack>
             </Box>
           </Grid.Col>
         </Grid>
+
+        <Group justify="space-between" align="center" gap="sm" className={classes.stageFooter}>
+          <Button
+            variant="default"
+            leftSection={<IconChevronLeft size={16} />}
+            disabled={activeStage === 0 || saving}
+            onClick={() => setActiveStage((activeStage - 1) as BuilderStage)}
+          >
+            Back
+          </Button>
+          <Text size="sm" c="dimmed" className={classes.stageFooterLabel}>
+            {activeStage === 0 ? 'Setup' : activeStage === 1 ? 'Audience' : 'Creative'}
+          </Text>
+          {activeStage < 2 ? (
+            <Button
+              rightSection={<IconChevronRight size={16} />}
+              onClick={() => {
+                setActiveStage((activeStage + 1) as BuilderStage);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              Continue
+            </Button>
+          ) : (
+            <Button
+              leftSection={<IconSparkles size={18} />}
+              loading={saving}
+              disabled={unsupportedReuseObjective || unsupportedReuseDestination}
+              onClick={handleSaveDraft}
+            >
+              Save draft
+            </Button>
+          )}
+        </Group>
       </Stack>
 
       <MediaSelectionModal
@@ -2693,7 +2929,7 @@ export default function MetaLeadCampaignDraftHelper({
           }
           setMediaTarget(null);
         }}
-        objective={LEADS_OBJECTIVE}
+        objective={state.objective}
         destinationType={destinationForLeadMethod(state.leadMethod, state.methodSettings)}
         platformId={platformData.id}
         adAccountId={adAccountId}

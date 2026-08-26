@@ -34,29 +34,30 @@ export async function handleLogin(email: string, password: string): Promise<ApiR
  * @param email User's email
  * @param password User's password
  * @param first_name User's first name
- * @param last_name User's last name
- * @param phone_number User's phone number
+ * @param last_name User's optional last name
+ * @param phone_number User's optional phone number
  * @return Success status and user ID if successful, error message otherwise
 */
 export async function handleSignUp(
     email: string,
     password: string,
     first_name: string,
-    last_name: string,
-    phone_number: string
+    last_name = '',
+    phone_number = ''
 ): Promise<ApiResponse<{ userId: string }>> {
     try {
         const supabase = await createSupabaseClient();
+        const normalizedPhone = phone_number.trim();
 
         const { data, error } = await supabase.auth.signUp({
             email,
-            phone: phone_number,
             password,
+            ...(normalizedPhone ? { phone: normalizedPhone } : {}),
             options: {
                 data: {
-                    first_name,
-                    last_name,
-                    phone_number,
+                    first_name: first_name.trim(),
+                    last_name: last_name.trim(),
+                    ...(normalizedPhone ? { phone_number: normalizedPhone } : {}),
                 },
             },
         });

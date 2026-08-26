@@ -19,6 +19,7 @@ import type { Database } from '@/lib/shared/types/supabase';
 import { getLatestAdAccountAssessment } from '@/lib/server/intelligence/repositories/assessments';
 import { getAdAccountSyncCoverage } from '@/lib/server/repositories/ad_accounts/syncState';
 import { createCampaignDraft } from './drafts';
+import { getMonthlyBudgetUpperBound } from './budgetGuardrails';
 
 type CampaignsClient = SupabaseClient<Database>;
 
@@ -85,29 +86,12 @@ function looksLikeUuid(value: string | null): boolean {
   return typeof value === 'string' && UUID_PATTERN.test(value);
 }
 
-function mapMonthlyBudgetCap(value: string | null): number | null {
-  switch (value) {
-    case 'under_1000':
-      return 1000;
-    case '1000_5000':
-      return 5000;
-    case '5000_10000':
-      return 10000;
-    case '10000_50000':
-      return 50000;
-    case 'over_50000':
-      return 50000;
-    default:
-      return null;
-  }
-}
-
 function clampBudget(input: {
   suggestedDailyBudget: number;
   monthlyBudget: string | null;
 }): number {
-  const cap = mapMonthlyBudgetCap(input.monthlyBudget);
-  const maxDaily = cap ? Math.max(20, Math.round(cap / 30)) : 250;
+  const cap = getMonthlyBudgetUpperBound(input.monthlyBudget);
+  const maxDaily = cap != null ? Math.max(20, Math.round(cap / 30)) : 250;
   return Math.max(20, Math.min(Math.round(input.suggestedDailyBudget), maxDaily));
 }
 

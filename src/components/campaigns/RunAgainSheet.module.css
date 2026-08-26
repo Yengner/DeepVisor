@@ -1,0 +1,192 @@
+.modalContent {
+  overflow: hidden;
+  border: 1px solid rgba(21, 23, 20, 0.16);
+}
+
+.modalHeader {
+  min-height: 66px;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(21, 23, 20, 0.12);
+}
+
+.modalBody {
+  padding: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(90dvh - 66px);
+}
+
+.scrollRegion {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+}
+
+.sourcePanel {
+  background: #f8f9f5;
+}
+
+.sourceTitle {
+  min-width: 0;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(21, 23, 20, 0.12);
+}
+
+.metricGrid > div {
+  min-width: 0;
+}
+
+.accountContext {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 12px;
+  border: 1px solid rgba(21, 23, 20, 0.12);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.section,
+.reviewSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+.section + .section,
+.reviewSection {
+  padding-top: 18px;
+  border-top: 1px solid rgba(21, 23, 20, 0.12);
+}
+
+.sectionHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settingsAccordion {
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.reviewRow {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.8fr) minmax(0, 1.2fr);
+  align-items: start;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(21, 23, 20, 0.08);
+}
+
+.reviewRow:last-child {
+  border-bottom: 0;
+}
+
+.footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 0 0 auto;
+  padding: 13px 18px calc(13px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(21, 23, 20, 0.14);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.footerCopy {
+  min-width: 0;
+}
+
+.footerActions {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 48em) {
+  .modalContent {
+    border: 0;
+  }
+
+  .modalHeader {
+    min-height: 62px;
+    padding: 12px 14px;
+  }
+
+  .form {
+    height: calc(100dvh - 62px);
+    max-height: none;
+  }
+
+  .scrollRegion {
+    padding: 14px 12px 20px;
+  }
+
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .accountContext {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .footer {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .footerCopy {
+    display: none;
+  }
+
+  .footerActions {
+    display: grid;
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+    width: 100%;
+  }
+
+  .footerActions :global(.mantine-Button-root) {
+    min-height: 46px;
+  }
+
+  .reviewRow {
+    grid-template-columns: minmax(92px, 0.65fr) minmax(0, 1.35fr);
+    gap: 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .footerActions {
+    grid-template-columns: 1fr;
+  }
+
+  .reviewRow {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .reviewRow :global(.mantine-Text-root:last-child) {
+    text-align: left;
+  }
+}

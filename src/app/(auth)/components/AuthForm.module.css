@@ -44,7 +44,7 @@
 
 .signupShell .intelligencePanel,
 .flowCard {
-  min-height: 700px;
+  min-height: 640px;
 }
 
 .panelBrand {
@@ -281,15 +281,6 @@
   color: var(--signal);
 }
 
-.progressMeta {
-  color: var(--muted);
-  letter-spacing: 0;
-}
-
-.signupProgress {
-  background: #e3e6dd;
-}
-
 .loginCard :global(.mantine-InputWrapper-label),
 .flowCard :global(.mantine-InputWrapper-label) {
   margin-bottom: 6px;
@@ -340,79 +331,6 @@
 .flowCard :global(.mantine-Anchor-root:hover) {
   color: #075d39;
   text-decoration: underline;
-}
-
-.backButton {
-  width: fit-content;
-  margin-bottom: -4px;
-  color: var(--muted);
-}
-
-.choiceButton {
-  min-height: 64px;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 15px;
-  border: 1px solid #c7cbc0;
-  border-radius: 4px;
-  background: #ffffff;
-  color: var(--ink);
-  text-align: left;
-  font: inherit;
-  font-size: 0.88rem;
-  font-weight: 750;
-  line-height: 1.35;
-  cursor: pointer;
-  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
-}
-
-.choiceButton:hover,
-.choiceButton:focus-visible {
-  border-color: var(--signal);
-  background: #f1f7f2;
-  outline: none;
-}
-
-.choiceButton:focus-visible {
-  box-shadow: 0 0 0 3px rgba(11, 122, 75, 0.15);
-}
-
-.choiceButtonSelected {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: #ffffff;
-}
-
-.choiceButtonSelected:hover,
-.choiceButtonSelected:focus-visible {
-  border-color: var(--ink);
-  background: var(--deep-ink);
-}
-
-.choiceButtonSelected svg {
-  flex: 0 0 auto;
-  color: var(--lime);
-}
-
-.trustItem {
-  min-height: 58px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid #d3d6cd;
-  border-radius: 4px;
-  background: var(--canvas);
-}
-
-.trustItem :global(.mantine-ThemeIcon-root) {
-  border: 1px solid #bed8c7;
-  border-radius: 4px;
-  background: #eaf5ee;
-  color: var(--signal);
 }
 
 .googlePrimaryButton,

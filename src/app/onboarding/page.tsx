@@ -3,10 +3,11 @@ import { getLoggedInUserOrRedirect } from '@/lib/server/actions/user/account';
 import { getOnboardingInitial } from '@/lib/server/actions/business/onboarding';
 import { Button, Stack, Text, Title } from '@mantine/core';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import classes from './components/OnboardingProvider.module.css';
 
 export default async function OnboardingPage() {
-  const user = await getLoggedInUserOrRedirect();
+  await getLoggedInUserOrRedirect();
   const res = await getOnboardingInitial();
 
   if (!res.success) {
@@ -19,10 +20,6 @@ export default async function OnboardingPage() {
             <Text c="dimmed">
               {res.error.userMessage || 'We could not load your onboarding workspace.'}
             </Text>
-            <Text c="dimmed">
-              DeepVisor currently takes new users through the business-owner path first. Partner workspace onboarding
-              can be added later without changing the organization model underneath it.
-            </Text>
             <Button component={Link} href="/login" variant="light">
               Back to login
             </Button>
@@ -33,6 +30,7 @@ export default async function OnboardingPage() {
   }
 
   const init = res.data;
+  if (init.completed) redirect('/dashboard');
 
-  return <OnboardingProvider initial={init} userId={user.id} />;
+  return <OnboardingProvider initial={init} />;
 }

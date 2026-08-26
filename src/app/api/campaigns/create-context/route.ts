@@ -98,6 +98,31 @@ export async function GET(request: NextRequest) {
       businessProfilePromise,
       metaPagesPromise,
     ]);
+
+    if (requestedDraftId && createScope === 'campaign') {
+      if (!draftRow) {
+        return NextResponse.json(
+          fail('Requested campaign draft was not found.', ErrorCode.NOT_FOUND, {
+            userMessage: 'This campaign draft no longer exists or is not available to this business.',
+          }),
+          { status: 404 }
+        );
+      }
+
+      if (
+        draftRow.platform_integration_id !== platformIntegrationId ||
+        draftRow.ad_account_id !== adAccountDBId
+      ) {
+        return NextResponse.json(
+          fail('Campaign draft scope does not match the active selection.', ErrorCode.CONFLICT, {
+            userMessage:
+              'This draft belongs to a different Meta ad account. Switch to its original account before opening it.',
+          }),
+          { status: 409 }
+        );
+      }
+    }
+
     const draftPayload = readCampaignDraftPayload(draftRow);
     const manualDraft = draftPayload?.mode === 'manual' ? draftPayload.form : null;
     let metaPages: MetaPage[] = [];

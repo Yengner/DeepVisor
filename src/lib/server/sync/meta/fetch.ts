@@ -23,6 +23,9 @@ type MetaCampaignNode = {
   id?: string;
   name?: string;
   objective?: string;
+  buying_type?: string;
+  bid_strategy?: string;
+  special_ad_categories?: unknown;
   status?: string;
   effective_status?: string;
   start_time?: string;
@@ -39,6 +42,13 @@ type MetaAdsetNode = {
   campaign_id?: string;
   name?: string;
   optimization_goal?: string;
+  billing_event?: string;
+  bid_strategy?: string;
+  destination_type?: string;
+  promoted_object?: unknown;
+  targeting?: unknown;
+  attribution_spec?: unknown;
+  is_dynamic_creative?: boolean;
   status?: string;
   effective_status?: string;
   start_time?: string;
@@ -643,6 +653,9 @@ export async function fetchMetaCampaignSeeds(input: {
         'id',
         'name',
         'objective',
+        'buying_type',
+        'bid_strategy',
+        'special_ad_categories',
         'status',
         'effective_status',
         'start_time',
@@ -690,6 +703,13 @@ export async function fetchMetaAdsetSeeds(input: {
         'campaign_id',
         'name',
         'optimization_goal',
+        'billing_event',
+        'bid_strategy',
+        'destination_type',
+        'promoted_object',
+        'targeting',
+        'attribution_spec',
+        'is_dynamic_creative',
         'status',
         'effective_status',
         'start_time',

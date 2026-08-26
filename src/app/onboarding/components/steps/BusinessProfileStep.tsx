@@ -1,48 +1,79 @@
 'use client';
 
-import { type ChangeEventHandler, type FocusEventHandler, type ReactNode, useMemo, useState } from 'react';
-import { Autocomplete as GooglePlacesAutocomplete, useJsApiLoader } from '@react-google-maps/api';
+import {
+  type ChangeEventHandler,
+  type FocusEventHandler,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import {
+  Autocomplete as GooglePlacesAutocomplete,
+  useJsApiLoader,
+} from '@react-google-maps/api';
 import {
   Button,
-  Card,
   Group,
-  MultiSelect,
   Select,
   SimpleGrid,
   Stack,
   Text,
   TextInput,
-  Textarea,
   Title,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import {
   IconArrowRight,
+  IconAlertCircle,
   IconBuilding,
+  IconCheck,
   IconChevronLeft,
+  IconCloudUpload,
   IconMapPin,
+  IconMessageCircle,
   IconScissors,
   IconWallet,
 } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 import { updateBusinessProfileData } from '@/lib/server/actions/business/onboarding';
 import {
+  CONTACT_METHOD_OPTIONS,
   CUSTOMER_RADIUS_OPTIONS,
-  META_ADS_STATUS_OPTIONS,
+  DEFAULT_INTELLIGENCE_GOALS,
+  DEFAULT_WATCH_SIGNALS,
   MONTHLY_AD_BUDGET_OPTIONS,
-  SALON_INDUSTRY_OPTIONS,
-  SALON_MOST_VALUABLE_SERVICE_OPTIONS,
   SALON_SERVICE_OPTIONS,
+  isAllowedOption,
+  labelForOption,
 } from '@/lib/shared/onboarding/businessProfileOptions';
 import type { UserData } from '../types';
 import styles from './OnboardingSteps.module.css';
 
 type BusinessProfileStepProps = {
-  onNext: () => void;
-  onPrev: () => void;
+  onNext: () => void | Promise<void>;
+  onPrev: () => void | Promise<void>;
   userData: UserData;
   updateUserData: (data: Partial<UserData>) => void;
   showBack?: boolean;
+};
+
+type EssentialsFormValues = {
+  businessName: string;
+  mainService: string;
+  businessLocation: string;
+  customerRadius: string;
+  preferredContactMethod: string;
+  monthlyBudget: string;
+};
+
+type EssentialsField = keyof EssentialsFormValues;
+type DraftSaveState = 'saving' | 'saved' | 'error';
+type BusinessProfileDraft = Parameters<typeof updateBusinessProfileData>[0];
+type QueuedDraft = {
+  payload: BusinessProfileDraft;
+  revision: number;
+  savedFields: EssentialsField[];
 };
 
 const BUSINESS_NAME_PLACEHOLDERS = new Set([
@@ -73,9 +104,7 @@ function normalizeBusinessName(value: string): string {
 function validateBusinessName(value: string): string | null {
   const normalized = normalizeBusinessName(value);
 
-  if (!normalized) {
-    return 'Business name is required';
-  }
+  if (!normalized) return 'Business name is required';
 
   if (BUSINESS_NAME_PLACEHOLDERS.has(normalized.toLowerCase())) {
     return 'Replace the default name with your real business name';
@@ -86,6 +115,85 @@ function validateBusinessName(value: string): string | null {
 
 function requiredString(message: string) {
   return (value: string) => (value.trim() ? null : message);
+}
+
+function leadTypeForContact(contactMethod: string): string {
+  switch (contactMethod) {
+    case 'whatsapp_messages':
+      return 'whatsapp_messages';
+    case 'instagram_dms':
+    case 'facebook_messenger':
+      return 'messages';
+    case 'phone_calls':
+      return 'phone_calls';
+    case 'lead_form':
+      return 'instant_forms';
+    case 'website_booking_link':
+      return 'booking_link_clicks';
+    default:
+      return 'recommend_for_me';
+  }
+}
+
+function initialMainService(userData: UserData): string {
+  const allowedServices = new Set(SALON_SERVICE_OPTIONS.map((option) => option.value));
+  if (allowedServices.has(userData.mostValuableService)) return userData.mostValuableService;
+  return userData.promotedServices.find((service) => allowedServices.has(service)) ?? '';
+}
+
+function buildDraftPayload(
+  values: EssentialsFormValues,
+  dirtyFields: ReadonlySet<EssentialsField>,
+  existingPromotedServices: string[]
+): { payload: BusinessProfileDraft; savedFields: EssentialsField[] } {
+  const payload: BusinessProfileDraft = {};
+  const savedFields: EssentialsField[] = [];
+
+  if (dirtyFields.has('businessName') && !validateBusinessName(values.businessName)) {
+    payload.businessName = normalizeBusinessName(values.businessName);
+    savedFields.push('businessName');
+  }
+
+  if (dirtyFields.has('mainService') && isAllowedOption(values.mainService, SALON_SERVICE_OPTIONS)) {
+    payload.mostValuableService = values.mainService;
+    payload.promotedServices = Array.from(
+      new Set([values.mainService, ...existingPromotedServices].filter(Boolean))
+    );
+    savedFields.push('mainService');
+  }
+
+  if (dirtyFields.has('businessLocation') && values.businessLocation.trim()) {
+    payload.businessLocation = values.businessLocation.trim();
+    savedFields.push('businessLocation');
+  }
+
+  if (
+    dirtyFields.has('customerRadius') &&
+    isAllowedOption(values.customerRadius, CUSTOMER_RADIUS_OPTIONS)
+  ) {
+    payload.customerRadius = values.customerRadius;
+    savedFields.push('customerRadius');
+  }
+
+  if (
+    dirtyFields.has('preferredContactMethod') &&
+    isAllowedOption(values.preferredContactMethod, CONTACT_METHOD_OPTIONS)
+  ) {
+    payload.preferredContactMethod = values.preferredContactMethod;
+    savedFields.push('preferredContactMethod');
+  }
+
+  if (dirtyFields.has('monthlyBudget')) {
+    if (!values.monthlyBudget) {
+      payload.monthlyBudget = null;
+      savedFields.push('monthlyBudget');
+    } else if (isAllowedOption(values.monthlyBudget, MONTHLY_AD_BUDGET_OPTIONS)) {
+      payload.monthlyBudget = values.monthlyBudget;
+      savedFields.push('monthlyBudget');
+    }
+  }
+
+  return { payload, savedFields };
 }
 
 function BusinessAddressInput({
@@ -111,13 +219,9 @@ function BusinessAddressInput({
 
   const input = (
     <TextInput
-      label="Business address"
+      label="Service address"
       placeholder="123 Main St, Tampa, FL"
-      description={
-        googleMapsApiKey
-          ? 'Start typing to search for your salon address.'
-          : 'Used to understand your local market and ad radius.'
-      }
+      description="Used for local reporting and targeting context."
       required
       leftSection={<IconMapPin size={16} />}
       value={value}
@@ -128,9 +232,7 @@ function BusinessAddressInput({
     />
   );
 
-  if (!googleMapsApiKey || loadError || !isLoaded) {
-    return input;
-  }
+  if (!googleMapsApiKey || loadError || !isLoaded) return input;
 
   return (
     <GooglePlacesAutocomplete
@@ -138,9 +240,7 @@ function BusinessAddressInput({
       onPlaceChanged={() => {
         const place = autocomplete?.getPlace();
         const address = place?.formatted_address || place?.name || '';
-        if (address) {
-          onSelectAddress(address);
-        }
+        if (address) onSelectAddress(address);
       }}
       options={{
         fields: ['formatted_address', 'name', 'geometry'],
@@ -160,96 +260,182 @@ export default function BusinessProfileStep({
   showBack = true,
 }: BusinessProfileStepProps) {
   const [submitting, setSubmitting] = useState(false);
-
-  const form = useForm({
-    initialValues: {
-      businessName: validateBusinessName(userData.businessName || '')
-        ? ''
-        : normalizeBusinessName(userData.businessName),
-      industry: userData.industry || '',
-      businessLocation: userData.businessLocation || '',
-      website: userData.website || '',
-      bookingLink: userData.bookingLink || '',
-      customerRadius: userData.customerRadius || '',
-      promotedServices: Array.isArray(userData.promotedServices) ? userData.promotedServices : [],
-      mostValuableService: userData.mostValuableService || '',
-      description: userData.description || '',
-      monthlyBudget: userData.monthlyBudget || '',
-      metaAdsStatus: userData.metaAdsStatus || '',
-    },
+  const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>('saved');
+  const dirtyDraftFields = useRef<Set<EssentialsField>>(new Set());
+  const draftRevision = useRef(0);
+  const draftTimer = useRef<number | null>(null);
+  const draftQueue = useRef<Promise<void>>(Promise.resolve());
+  const pendingDraft = useRef<QueuedDraft | null>(null);
+  const draftWorkerRunning = useRef(false);
+  const submittingRef = useRef(false);
+  const [draftChangeCount, setDraftChangeCount] = useState(0);
+  const existingPromotedServices = useRef(userData.promotedServices);
+  const initialValues = useRef<EssentialsFormValues>({
+    businessName: validateBusinessName(userData.businessName || '')
+      ? ''
+      : normalizeBusinessName(userData.businessName),
+    mainService: initialMainService(userData),
+    businessLocation: userData.businessLocation || '',
+    customerRadius: userData.customerRadius || '',
+    preferredContactMethod: userData.preferredContactMethod || '',
+    monthlyBudget: userData.monthlyBudget || '',
+  });
+  const latestDraftValues = useRef<EssentialsFormValues>(initialValues.current);
+  const form = useForm<EssentialsFormValues>({
+    initialValues: initialValues.current,
     validate: {
       businessName: validateBusinessName,
-      industry: requiredString('Industry is required'),
-      businessLocation: requiredString('Business address is required'),
-      promotedServices: (value) => (value.length === 0 ? 'Choose at least one service' : null),
-      mostValuableService: requiredString('Choose your most valuable service'),
-      description: requiredString('A short business context is required'),
-      monthlyBudget: requiredString('Monthly ad budget is required'),
-      metaAdsStatus: requiredString('Meta ads status is required'),
+      mainService: requiredString('Choose your main service'),
+      businessLocation: requiredString('Service address is required'),
+      customerRadius: requiredString('Choose a customer radius'),
+      preferredContactMethod: requiredString('Choose a preferred contact path'),
     },
-    onValuesChange: (values) => {
-      updateUserData({
-        businessName: values.businessName,
-        industry: values.industry,
-        businessLocation: values.businessLocation,
-        website: values.website,
-        bookingLink: values.bookingLink,
-        customerRadius: values.customerRadius,
-        promotedServices: values.promotedServices,
-        mostValuableService: values.mostValuableService,
-        description: values.description,
-        monthlyBudget: values.monthlyBudget,
-        metaAdsStatus: values.metaAdsStatus,
+    onValuesChange: (values, previous) => {
+      if (submittingRef.current) return;
+
+      (Object.keys(values) as EssentialsField[]).forEach((field) => {
+        if (values[field] !== previous[field]) dirtyDraftFields.current.add(field);
       });
+      latestDraftValues.current = values;
+      draftRevision.current += 1;
+      setDraftSaveState('saving');
+      setDraftChangeCount((count) => count + 1);
     },
   });
 
-  const mostValuableServiceOptions = useMemo(() => {
-    if (form.values.promotedServices.length === 0) {
-      return SALON_MOST_VALUABLE_SERVICE_OPTIONS;
-    }
+  const enqueueDraft = (draft: QueuedDraft) => {
+    // Keep only the newest not-yet-started snapshot while the active write finishes.
+    pendingDraft.current = draft;
+    if (draftWorkerRunning.current) return;
 
-    const selectedOptions = SALON_SERVICE_OPTIONS.filter((option) =>
-      form.values.promotedServices.includes(option.value)
-    );
-    const includesOther = selectedOptions.some((option) => option.value === 'other');
+    draftWorkerRunning.current = true;
+    draftQueue.current = (async () => {
+      try {
+        while (pendingDraft.current) {
+          const nextDraft = pendingDraft.current;
+          pendingDraft.current = null;
 
-    return includesOther
-      ? selectedOptions
-      : [...selectedOptions, { value: 'other', label: 'Other' }];
-  }, [form.values.promotedServices]);
+          try {
+            const result = await updateBusinessProfileData(nextDraft.payload);
+            if (nextDraft.revision !== draftRevision.current) continue;
+
+            if (!result.success) {
+              setDraftSaveState('error');
+              continue;
+            }
+
+            nextDraft.savedFields.forEach((field) => dirtyDraftFields.current.delete(field));
+            setDraftSaveState(dirtyDraftFields.current.size === 0 ? 'saved' : 'error');
+          } catch (error) {
+            console.error('Error saving onboarding draft:', error);
+            if (nextDraft.revision === draftRevision.current) {
+              setDraftSaveState('error');
+            }
+          }
+        }
+      } finally {
+        draftWorkerRunning.current = false;
+      }
+    })();
+  };
+
+  useEffect(() => {
+    if (draftChangeCount === 0) return;
+
+    if (draftTimer.current) window.clearTimeout(draftTimer.current);
+    const requestRevision = draftRevision.current;
+
+    draftTimer.current = window.setTimeout(() => {
+      const dirtyFields = new Set(dirtyDraftFields.current);
+      const { payload, savedFields } = buildDraftPayload(
+        latestDraftValues.current,
+        dirtyFields,
+        existingPromotedServices.current
+      );
+
+      if (Object.keys(payload).length === 0) {
+        if (requestRevision === draftRevision.current) setDraftSaveState('error');
+        return;
+      }
+
+      enqueueDraft({
+        payload,
+        revision: requestRevision,
+        savedFields,
+      });
+    }, 900);
+
+    return () => {
+      if (draftTimer.current) {
+        window.clearTimeout(draftTimer.current);
+        draftTimer.current = null;
+      }
+    };
+  }, [draftChangeCount]);
 
   const handleSubmit = async (values: typeof form.values) => {
+    submittingRef.current = true;
     setSubmitting(true);
-    try {
-      const businessName = normalizeBusinessName(values.businessName);
-      const cleanValues = {
-        businessName,
-        industry: values.industry,
-        businessLocation: values.businessLocation.trim(),
-        website: values.website.trim(),
-        bookingLink: values.bookingLink.trim(),
-        customerRadius: values.customerRadius,
-        promotedServices: values.promotedServices,
-        mostValuableService: values.mostValuableService,
-        description: values.description.trim(),
-        monthlyBudget: values.monthlyBudget,
-        metaAdsStatus: values.metaAdsStatus,
-      };
 
-      updateUserData(cleanValues);
+    try {
+      if (draftTimer.current) {
+        window.clearTimeout(draftTimer.current);
+        draftTimer.current = null;
+      }
+      draftRevision.current += 1;
+      await draftQueue.current;
+
+      const businessName = normalizeBusinessName(values.businessName);
+      const serviceLabel = labelForOption(values.mainService, SALON_SERVICE_OPTIONS, 'services');
+      const primaryGoal = userData.primaryGoal || DEFAULT_INTELLIGENCE_GOALS.primaryGoal;
+      const promotedServices = Array.from(
+        new Set([values.mainService, ...userData.promotedServices].filter(Boolean))
+      );
+      const cleanValues: Partial<UserData> = {
+        businessName,
+        businessLocation: values.businessLocation.trim(),
+        customerRadius: values.customerRadius,
+        monthlyBudget: values.monthlyBudget || 'not_sure',
+        promotedServices,
+        mostValuableService: values.mainService,
+        preferredContactMethod: values.preferredContactMethod,
+        industry: userData.industry || 'other',
+        description:
+          userData.description ||
+          `${businessName} offers ${serviceLabel.toLowerCase()} in ${values.businessLocation.trim()}.`,
+        metaAdsStatus: userData.metaAdsStatus || 'not_sure',
+        primaryGoal,
+        leadType: userData.leadType || leadTypeForContact(values.preferredContactMethod),
+        leadQualitySignal:
+          userData.leadQualitySignal || DEFAULT_INTELLIGENCE_GOALS.leadQualitySignal,
+        watchSignals:
+          userData.watchSignals.length > 0 ? userData.watchSignals : [...DEFAULT_WATCH_SIGNALS],
+        recommendationStyle:
+          userData.recommendationStyle || DEFAULT_INTELLIGENCE_GOALS.recommendationStyle,
+        safetyPreference:
+          userData.safetyPreference || DEFAULT_INTELLIGENCE_GOALS.safetyPreference,
+        adGoals: userData.adGoals.length > 0 ? userData.adGoals : [primaryGoal],
+        preferredPlatforms:
+          userData.preferredPlatforms.length > 0 ? userData.preferredPlatforms : ['meta'],
+      };
 
       const saveRes = await updateBusinessProfileData(cleanValues);
       if (!saveRes.success) {
+        setDraftSaveState('error');
         toast.error(saveRes.error.userMessage);
         return;
       }
 
-      onNext();
+      dirtyDraftFields.current.clear();
+      setDraftSaveState('saved');
+      updateUserData(cleanValues);
+      await onNext();
     } catch (error) {
       console.error('Error saving business profile:', error);
+      setDraftSaveState('error');
       toast.error('Failed to save your business profile');
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -257,157 +443,128 @@ export default function BusinessProfileStep({
   return (
     <Stack gap="lg" className={styles.stepRoot}>
       <div className={styles.stepIntro}>
-        <span className={styles.stepKicker}>01 / Business context</span>
+        <div className={styles.stepMetaRow}>
+          <span className={styles.stepKicker}>01 / Business essentials</span>
+          <span
+            className={[
+              styles.draftState,
+              draftSaveState === 'error' ? styles.draftStateError : '',
+            ].filter(Boolean).join(' ')}
+            aria-live="polite"
+          >
+            {draftSaveState === 'saving' ? <IconCloudUpload size={14} /> : null}
+            {draftSaveState === 'saved' ? <IconCheck size={14} /> : null}
+            {draftSaveState === 'error' ? <IconAlertCircle size={14} /> : null}
+            {draftSaveState === 'saving' ? 'Saving...' : null}
+            {draftSaveState === 'saved' ? 'Saved' : null}
+            {draftSaveState === 'error' ? 'Not saved' : null}
+          </span>
+        </div>
         <Title order={2} className={styles.stepTitle}>
-          Define the business behind the numbers.
+          Tell us enough to make the dashboard useful.
         </Title>
         <Text className={styles.stepCopy}>
-          Help DeepVisor understand your salon, local market, services, customers, and budget.
+          This is the only business form required before your workspace opens.
         </Text>
       </div>
 
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack gap="lg">
-          <Card withBorder p="lg" radius="sm" className={styles.sectionCard}>
+          <fieldset
+            className={styles.essentialsSection}
+            aria-labelledby="business-essentials-heading"
+            disabled={submitting}
+          >
             <Group mb="md" className={styles.sectionHeader}>
               <span className={styles.sectionIcon}><IconBuilding size={17} /></span>
-              <Title order={4} className={styles.sectionTitle}>Workspace and market</Title>
+              <Title id="business-essentials-heading" order={3} className={styles.sectionTitle}>
+                Business essentials
+              </Title>
             </Group>
+
             <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
               <TextInput
                 label="Business name"
-                placeholder="DeepVisor Salon"
-                description="This becomes the name of your business workspace."
+                placeholder="Your business name"
+                description="This names your DeepVisor workspace."
                 required
+                leftSection={<IconBuilding size={16} />}
+                autoComplete="organization"
                 {...form.getInputProps('businessName')}
               />
               <Select
-                label="Industry"
-                placeholder="Select industry"
-                description="Used for reporting baselines and recommendation context."
+                label="Main service"
+                placeholder="Choose one service"
+                description="Start with the service that matters most."
                 required
-                data={SALON_INDUSTRY_OPTIONS}
+                searchable
+                leftSection={<IconScissors size={16} />}
+                data={SALON_SERVICE_OPTIONS}
                 {...dropdownProps}
-                {...form.getInputProps('industry')}
+                {...form.getInputProps('mainService')}
               />
               <BusinessAddressInput
                 value={form.values.businessLocation}
                 error={form.errors.businessLocation}
                 onChange={(event) => form.setFieldValue('businessLocation', event.currentTarget.value)}
                 onBlur={() => form.validateField('businessLocation')}
-                onSelectAddress={(address) => {
-                  form.setFieldValue('businessLocation', address);
-                  updateUserData({ businessLocation: address });
-                }}
+                onSelectAddress={(address) => form.setFieldValue('businessLocation', address)}
               />
               <Select
-                label="How far do your customers usually travel?"
-                placeholder="Select radius"
-                description="Optional. Helps DeepVisor reason about local targeting."
+                label="Customer radius"
+                placeholder="Choose a radius"
+                description="Choose Not sure if you want to decide later."
+                required
+                leftSection={<IconMapPin size={16} />}
                 data={CUSTOMER_RADIUS_OPTIONS}
                 {...dropdownProps}
                 {...form.getInputProps('customerRadius')}
               />
-              <TextInput
-                label="Website"
-                placeholder="https://yourbusiness.com"
-                description="Optional. Adds context to your profile."
-                {...form.getInputProps('website')}
-              />
-              <TextInput
-                label="Booking link"
-                placeholder="https://yourbookinglink.com"
-                description="Optional, but helps DeepVisor understand where customers should take action."
-                {...form.getInputProps('bookingLink')}
-              />
-            </SimpleGrid>
-          </Card>
-
-          <Card withBorder p="lg" radius="sm" className={styles.sectionCard}>
-            <Group mb="md" className={styles.sectionHeader}>
-              <span className={styles.sectionIcon}><IconScissors size={17} /></span>
-              <Title order={4} className={styles.sectionTitle}>Services and customers</Title>
-            </Group>
-            <Stack gap="md">
-              <MultiSelect
-                label="Main services you want to promote"
-                placeholder="Choose services"
-                description="DeepVisor uses this to understand which offers, creatives, and leads matter most."
-                required
-                searchable
-                data={SALON_SERVICE_OPTIONS}
-                {...dropdownProps}
-                {...form.getInputProps('promotedServices')}
-              />
               <Select
-                label="Which service is most valuable to your business?"
-                placeholder="Choose service"
-                description="Used to prioritize recommendations around higher-value customers."
+                label="Preferred contact path"
+                placeholder="How should leads reach you?"
+                description="Used to focus lead and conversion reporting."
                 required
-                data={mostValuableServiceOptions}
+                leftSection={<IconMessageCircle size={16} />}
+                data={CONTACT_METHOD_OPTIONS}
                 {...dropdownProps}
-                {...form.getInputProps('mostValuableService')}
+                {...form.getInputProps('preferredContactMethod')}
               />
-              <Textarea
-                label="What do you sell and who are you trying to reach?"
-                placeholder="Example: We are a hair salon in Tampa that offers color, balayage, extensions, and haircuts. We want to reach women within 10 miles who are looking for premium hair services and consultations."
-                description="This is the most important non-platform input for recommendations."
-                minRows={4}
-                required
-                {...form.getInputProps('description')}
-              />
-            </Stack>
-          </Card>
-
-          <Card withBorder p="lg" radius="sm" className={styles.sectionCard}>
-            <Group mb="md" className={styles.sectionHeader}>
-              <span className={styles.sectionIcon}><IconWallet size={17} /></span>
-              <Title order={4} className={styles.sectionTitle}>Ads and budget</Title>
-            </Group>
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
               <Select
                 label="Monthly ad budget"
-                placeholder="Select budget range"
-                description="Used for pacing suggestions, guardrails, and safe campaign recommendations."
-                required
+                placeholder="Optional"
+                description="You can add or change this later."
+                clearable
+                leftSection={<IconWallet size={16} />}
                 data={MONTHLY_AD_BUDGET_OPTIONS}
                 {...dropdownProps}
                 {...form.getInputProps('monthlyBudget')}
               />
-              <Select
-                label="Are you currently running Facebook or Instagram ads?"
-                placeholder="Select status"
-                description="Helps DeepVisor decide whether to analyze existing ads or help you start simple."
-                required
-                data={META_ADS_STATUS_OPTIONS}
-                {...dropdownProps}
-                {...form.getInputProps('metaAdsStatus')}
-              />
             </SimpleGrid>
-          </Card>
-        </Stack>
+          </fieldset>
 
-        <Group justify={showBack ? 'space-between' : 'flex-end'} mt="xl" className={styles.actionBar}>
-          {showBack ? (
+          <Group justify="space-between" className={styles.actionBar} wrap="nowrap">
+            {showBack ? (
+              <Button
+                variant="default"
+                leftSection={<IconChevronLeft size={16} />}
+                onClick={() => void onPrev()}
+                disabled={submitting}
+                className={styles.secondaryButton}
+              >
+                Back
+              </Button>
+            ) : <span />}
             <Button
-              variant="default"
-              onClick={onPrev}
-              type="button"
-              leftSection={<IconChevronLeft size={16} />}
-              className={styles.secondaryButton}
+              type="submit"
+              loading={submitting}
+              rightSection={<IconArrowRight size={16} />}
+              className={styles.primaryButton}
             >
-              Back
+              Save and continue
             </Button>
-          ) : null}
-          <Button
-            type="submit"
-            loading={submitting}
-            rightSection={<IconArrowRight size={17} />}
-            className={styles.primaryButton}
-          >
-            Continue
-          </Button>
-        </Group>
+          </Group>
+        </Stack>
       </form>
     </Stack>
   );
