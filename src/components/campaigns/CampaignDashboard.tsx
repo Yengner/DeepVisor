@@ -1,4 +1,6 @@
 'use client';
+import product from '@/components/product/Product.module.css';
+import { ownerMessages } from '@/components/product/presentation';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -449,7 +451,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
       setRefreshFeedback({
         type: 'error',
         message:
-          error instanceof Error ? error.message : 'Failed to refresh campaign data.',
+          ownerMessages.refresh,
       });
     } finally {
       setIsRefreshing(false);
@@ -519,7 +521,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   }
 
   return (
-    <div className={`${classes.pageShell} campaigns-page-shell`}>
+    <div className={`${classes.pageShell} ${product.page} campaigns-page-shell`}>
       <Card withBorder radius="xl" p={0} className={classes.tableSurface}>
         {refreshFeedback ? (
           <Alert
@@ -574,7 +576,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                 </Group>
 
                 <Title order={2} mt={6} className={classes.title}>
-                  Campaign table
+                  Campaigns
                 </Title>
                 <Group gap="xs" mt={8} wrap="wrap">
                   <Badge color="green" variant="light">
@@ -634,6 +636,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
 
                 <Tooltip label="Refresh data">
                   <ActionIcon
+                    aria-label="Refresh campaign data"
                     onClick={handleRefresh}
                     loading={isRefreshing}
                     variant="light"

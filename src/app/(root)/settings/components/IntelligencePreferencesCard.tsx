@@ -1,4 +1,5 @@
 'use client';
+import { ownerMessages } from '@/components/product/presentation';
 
 import { useState } from 'react';
 import {
@@ -92,12 +93,10 @@ export default function IntelligencePreferencesCard({
         message: 'Intelligence preferences updated.',
       });
     } catch (error) {
+      console.error('Could not save preferences', error);
       setFeedback({
         type: 'error',
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Unable to save these intelligence settings right now.',
+        message: ownerMessages.preferences,
       });
     } finally {
       setSaving(false);

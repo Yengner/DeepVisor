@@ -141,10 +141,11 @@ export default function CampaignTable({
                       {formatCurrencyAmount(campaign.costPerResult, currencyCode)}
                     </Text>
                   </div>
-                  <div>
-                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>CTR</Text>
+                  <details className={classes.moreMetrics} onClick={event=>event.stopPropagation()} onKeyDown={event=>event.stopPropagation()}>
+                    <summary>More metrics</summary>
+                    <Text size="xs" c="dimmed">Click-through rate</Text>
                     <Text fw={800}>{campaign.ctr != null ? `${campaign.ctr}%` : '0%'}</Text>
-                  </div>
+                  </details>
                 </div>
 
                 <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">

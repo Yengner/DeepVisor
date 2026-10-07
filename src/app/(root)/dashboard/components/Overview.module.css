@@ -1,0 +1,366 @@
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 16px 24px 36px;
+  color: #20282d;
+  letter-spacing: 0;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 18px;
+}
+.header h1 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.header p {
+  margin: 0;
+  color: #52616c;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  color: #53636d;
+}
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 24px;
+  grid-template-areas: "performance performance" "attention activity" "monitoring trend" "units units";
+}
+.performance {
+  grid-area: performance;
+}
+.attention {
+  grid-area: attention;
+}
+.monitoring {
+  grid-area: monitoring;
+}
+.activity {
+  grid-area: activity;
+}
+.units {
+  grid-area: units;
+}
+.trend {
+  grid-area: trend;
+}
+.section {
+  min-width: 0;
+  border-top: 1px solid #dbe3e7;
+  padding-top: 18px;
+}
+.section h2 {
+  font-size: 18px;
+  line-height: 1.3;
+  margin: 0;
+  font-weight: 650;
+}
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.subtle {
+  color: #5c6b75;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 6px 0;
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.metric {
+  min-width: 0;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid #dbe3e7;
+  border-radius: 8px;
+}
+.metric dt {
+  font-size: 14px;
+  color: #53636d;
+  line-height: 1.35;
+}
+.metric dd {
+  font-size: 25px;
+  font-weight: 650;
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.target dd {
+  font-size: 18px;
+  line-height: 1.5;
+}
+.attentionCard {
+  border: 1px solid #dbe3e7;
+  background: white;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+.attentionCard h3 {
+  margin: 8px 0 4px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 600;
+  background: #edf1f4;
+  color: #405361;
+  white-space: normal;
+}
+.good {
+  background: #e5f4ec;
+  color: #1c6749;
+}
+.warn {
+  background: #fff2d7;
+  color: #77530c;
+}
+.bad {
+  background: #fcebe8;
+  color: #a13d32;
+}
+.blue {
+  background: #e7f0ff;
+  color: #275eb0;
+}
+.link {
+  color: #0b7a4b;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+}
+.link:hover {
+  text-decoration: underline;
+}
+.counts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+  margin: 0;
+}
+.count {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5eaed;
+}
+.count dt {
+  font-size: 14px;
+  color: #52616b;
+}
+.count dd {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.event {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 8px;
+  border-bottom: 1px solid #e5eaed;
+  padding: 12px 0;
+}
+.event svg {
+  color: #3c7b68;
+  margin-top: 2px;
+}
+.event strong {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+.event time {
+  color: #61707a;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.table th {
+  text-align: right;
+  font-weight: 500;
+  color: #61707a;
+  padding: 10px 5px;
+}
+.table td {
+  text-align: right;
+  padding: 12px 5px;
+  border-top: 1px solid #e5eaed;
+  font-variant-numeric: tabular-nums;
+}
+.table th:first-child,
+.table td:first-child {
+  text-align: left;
+}
+.table td:first-child {
+  max-width: 150px;
+  overflow-wrap: anywhere;
+}
+.table td .badge {
+  margin-top: 5px;
+}
+.chart {
+  width: 100%;
+  height: 190px;
+  min-width: 0;
+}
+.chartSummary {
+  padding: 10px 0;
+  font-size: 13px;
+  color: #52616b;
+}
+.empty {
+  padding: 20px 0;
+  color: #5c6b75;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.error {
+  border-left: 3px solid #c86948;
+  padding: 10px 14px;
+  background: #fff6f1;
+  font-size: 14px;
+  color: #82452f;
+}
+.loading {
+  min-height: 160px;
+}
+@media (max-width: 48em) {
+  .page {
+    padding: 12px 16px 24px;
+  }
+  .header {
+    padding-bottom: 12px;
+  }
+  .header h1 {
+    font-size: 23px;
+  }
+  .status {
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    grid-template-areas: "performance" "attention" "monitoring" "activity" "units" "trend";
+  }
+  .section {
+    padding-top: 14px;
+  }
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .metric {
+    padding: 12px;
+  }
+  .metric dd {
+    font-size: 23px;
+  }
+  .target dd {
+    font-size: 17px;
+  }
+  .section h2 {
+    font-size: 17px;
+  }
+  .table thead {
+    display: none;
+  }
+  .table,
+  .table tbody {
+    display: block;
+  }
+  .table tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid #e5eaed;
+    padding: 12px 0;
+  }
+  .table td {
+    display: block;
+    padding: 6px 0 0;
+    border: 0;
+    text-align: left;
+  }
+  .table td:first-child {
+    grid-column: 1 / -1;
+    max-width: none;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    padding: 0;
+  }
+  .table td:first-child > span:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .table td:not(:first-child)::before {
+    content: attr(data-label);
+    display: block;
+    color: #62727c;
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  .table td .badge {
+    margin: 0;
+  }
+  .chart {
+    height: 175px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

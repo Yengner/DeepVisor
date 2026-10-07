@@ -28,6 +28,7 @@ import {
 import { createClient } from '@/lib/client/supabase/browser';
 import { ErrorCode } from '@/lib/shared/types/api';
 import classes from './AuthForm.module.css';
+import { buildOAuthCallbackUrl } from './oauthCallback';
 
 interface AuthFormProps {
   type: 'login' | 'signup';
@@ -120,15 +121,7 @@ export default function AuthForm({ type }: AuthFormProps) {
   }, [router, type]);
 
   function getAuthCallbackUrl() {
-    const configuredBaseUrl = process.env.NEXT_PUBLIC_BASE_URL?.trim();
-    const baseUrl = configuredBaseUrl && configuredBaseUrl.length > 0
-      ? configuredBaseUrl
-      : window.location.origin;
-    const callbackUrl = new URL('/api/auth/callback', baseUrl);
-    callbackUrl.searchParams.set('next', '/dashboard');
-    callbackUrl.searchParams.set('auth_page', type);
-
-    return callbackUrl.toString();
+    return buildOAuthCallbackUrl(window.location.origin, type, process.env.NEXT_PUBLIC_BASE_URL);
   }
 
   async function handleGoogleOAuth() {

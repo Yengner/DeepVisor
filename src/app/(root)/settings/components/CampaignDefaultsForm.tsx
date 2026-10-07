@@ -1,4 +1,5 @@
 'use client';
+import { ownerMessages } from '@/components/product/presentation';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -124,9 +125,10 @@ export default function CampaignDefaultsForm({ initial }: CampaignDefaultsFormPr
       });
       router.refresh();
     } catch (error) {
+      console.error('Campaign defaults could not be saved', error);
       setFeedback({
         type: 'error',
-        message: error instanceof Error ? error.message : 'Campaign defaults could not be saved.',
+        message: ownerMessages.preferences,
       });
     } finally {
       setSaving(false);

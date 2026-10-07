@@ -40,11 +40,11 @@
 
 .heroSidebar :global(.mantine-Title-root),
 .heroSidebar .statusRow :global(.mantine-Text-root) {
-  color: #f7f8f3 !important;
+  color: #202b25 !important;
 }
 
 .heroSidebar .statusRow :global(.mantine-Text-root[data-dimmed]) {
-  color: #a6ada3 !important;
+  color: #536159 !important;
 }
 
 .statusRow {
@@ -131,8 +131,8 @@
 .channelVisual {
   position: relative;
   overflow: hidden;
-  min-height: 232px;
-  padding: 20px 20px 28px;
+  min-height: 156px;
+  padding: 16px;
 }
 
 .channelStatusBadge {
@@ -144,7 +144,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 136px;
+  min-height: 88px;
 }
 
 .channelGlowPrimary,
@@ -159,7 +159,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 120px;
+  min-height: 80px;
 }
 
 .platformArtwork {
@@ -175,8 +175,9 @@
 }
 
 .copyPanel {
-  min-height: 108px;
-  border-width: 1px;
+  min-height: 0;
+  border-width: 0;
+  background: transparent;
 }
 
 .detailHero {
@@ -189,7 +190,7 @@
   }
 
   .channelVisual {
-    min-height: 208px;
+    min-height: 156px;
   }
 }
 
@@ -221,8 +222,8 @@
   }
 
   .channelVisual {
-    min-height: 196px;
-    padding: 18px 18px 24px;
+    min-height: 140px;
+    padding: 14px;
   }
 
   .channelStatusBadge {
@@ -230,7 +231,7 @@
   }
 
   .channelArtworkStage {
-    min-height: 120px;
+    min-height: 80px;
   }
 
   .channelGlowPrimary {

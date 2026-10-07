@@ -1,4 +1,8 @@
 'use client';
+import Disclosure from '@/components/product/Disclosure';
+import product from '@/components/product/Product.module.css';
+import { ownerMessages } from '@/components/product/presentation';
+import StatusBadge from '@/components/product/StatusBadge';
 
 import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
@@ -26,7 +30,6 @@ import {
 import {
   IconAlertTriangle,
   IconArrowUpRight,
-  IconCheck,
   IconClock,
   IconLink,
   IconRefresh,
@@ -255,20 +258,20 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
     !focusedPlatformConnected &&
     focusedPlatform?.platformKey !== 'meta';
   const focusedHeroTitle = !focusedPlatform
-    ? 'Connect each ad channel once, then let DeepVisor run from it.'
+    ? 'Connect your advertising account'
     : focusedPlatformPitchDetached
       ? `Reconnect ${focusedPlatform.platformName} and reattach saved workspace data.`
     : focusedPlatformConnected
-      ? `${focusedPlatform.platformName} is connected and driving this workspace.`
+      ? `${focusedPlatform.platformName} is connected`
       : `Connect ${focusedPlatform.platformName}`;
   const focusedHeroDescription = !focusedPlatform
     ? 'Review live connections, selected ad accounts, and sync health across the workspace.'
     : focusedPlatformPitchDetached
       ? `${focusedPlatform.platformName} is disconnected while its existing synced workspace data remains available. Reconnect to resume updates.`
     : focusedPlatformConnected
-      ? `${focusedPlatform.platformName} is already live in DeepVisor. Keep its sync current, manage its primary ad account, and use this as the clean channel source for dashboard, reports, and calendar work.`
+      ? 'Review your selected account and sync its latest performance.'
       : focusedPlatform.platformKey === 'meta'
-        ? 'Authorize Meta, choose the one ad account DeepVisor should watch, and start feeding reporting, calendar, and recommendations from a single clean source.'
+        ? 'Connect Meta and choose the ad account to use in DeepVisor.'
         : `${focusedPlatform.platformName} connections are not available yet.`;
   const focusedPrimaryLabel = !focusedPlatform
     ? 'Sync connected channels'
@@ -373,7 +376,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
       router.refresh();
     } catch (error) {
       console.error('Error refreshing connections:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to refresh sync.');
+      toast.error(ownerMessages.refresh);
     } finally {
       setRefreshing(false);
     }
@@ -416,7 +419,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
       );
     } catch (error) {
       console.error('Error loading Meta ad accounts:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to load Meta ad accounts.');
+      toast.error(ownerMessages.accounts);
       setAccountSelectionPlatform(null);
     } finally {
       setLoadingAccountOptions(false);
@@ -460,7 +463,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
       router.refresh();
     } catch (error) {
       console.error('Error selecting Meta ad account:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to change Meta ad account.');
+      toast.error(ownerMessages.selection);
     } finally {
       setSubmittingAccountSelection(false);
     }
@@ -469,7 +472,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
   return (
     <MetaIntegrationFlow returnTo="/integration">
       {({ connectMeta, connecting }) => (
-        <Container size="xl" pos="relative" pb="xl">
+        <Container size="xl" pos="relative" pb="xl" className={product.page}>
           <LoadingOverlay
             visible={refreshing}
             zIndex={1000}
@@ -496,7 +499,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                 <Stack gap="md" className={styles.heroContent}>
                   <Group gap="xs" wrap="wrap">
                     <Badge variant="light" className="app-platform-page-badge">
-                      Integrations
+                      Connections
                     </Badge>
                     {focusedPlatform ? (
                       <Badge
@@ -513,12 +516,13 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
 
                   <div>
                     <Title order={2} className="app-platform-page-title">
-                      {focusedHeroTitle}
+                      Connections
                     </Title>
                     <Text size="md" mt="sm" maw={680} className="app-platform-page-copy">
                       {focusedHeroDescription}
                     </Text>
                   </div>
+                  <Text size="sm" fw={600}>{focusedPlatform?.primaryAdAccountName || focusedHeroTitle}</Text>
 
                   <Group gap="sm" wrap="wrap">
                     {focusedPlatformUnavailable || !focusedPlatform ? (
@@ -590,6 +594,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                     ) : null}
                   </Group>
 
+                  <Disclosure title="Connection summary">
                   <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                     <SummaryCard
                       label="Connected"
@@ -628,8 +633,10 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                       accent="#64748b"
                     />
                   </SimpleGrid>
+                  </Disclosure>
                 </Stack>
 
+                <Disclosure title="All connection statuses">
                 <Paper withBorder radius="xl" p="lg" className={`${styles.heroSidebar} app-platform-page-hero-panel`}>
                   <Group justify="space-between" align="flex-start" mb="md">
                     <div>
@@ -664,8 +671,8 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                           p="sm"
                           className={`${styles.statusRow} ${isFocused ? styles.statusRowActive : ''}`}
                           style={{
-                            borderColor: isFocused ? palette.accent : '#343a33',
-                            background: isFocused ? '#2a3029' : '#1b1e1a',
+                            borderColor: isFocused ? palette.accent : '#dce3de',
+                            background: isFocused ? '#edf4ef' : '#ffffff',
                             boxShadow: 'none',
                           } as CSSProperties}
                           role="button"
@@ -701,19 +708,14 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                               </div>
                             </Group>
 
-                            <Badge
-                              size="sm"
-                              color={getIntegrationStatusColor(platform.status)}
-                              variant={isIntegrationConnected(platform.status) ? 'light' : 'outline'}
-                            >
-                              {getIntegrationStatusLabel(platform.status)}
-                            </Badge>
+                            <StatusBadge status={platform.status}/>
                           </Group>
                         </Paper>
                       );
                     })}
                   </Stack>
                 </Paper>
+                </Disclosure>
               </SimpleGrid>
             </Card>
 
@@ -724,7 +726,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                     Channel Directory
                   </Text>
                   <Title order={3} mt={4}>
-                    Connect, inspect, and manage each advertising platform
+                    Your connections
                   </Title>
                   <Text size="sm" c="dimmed" mt={4}>
                     Connected channels surface health and sync timing. Unavailable channels are
@@ -762,20 +764,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                         }}
                       >
                         <Group justify="space-between" align="flex-start" mb="xl">
-                          <Badge
-                            className={styles.channelStatusBadge}
-                            color={getIntegrationStatusColor(platform.status)}
-                            variant={isIntegrationConnected(platform.status) ? 'light' : 'outline'}
-                            leftSection={
-                              isIntegrationConnected(platform.status) ? (
-                                <IconCheck size={12} />
-                              ) : integrationNeedsAttention(platform.status) ? (
-                                <IconAlertTriangle size={12} />
-                              ) : undefined
-                            }
-                          >
-                            {getIntegrationStatusLabel(platform.status)}
-                          </Badge>
+                          <StatusBadge status={platform.status}/>
 
                           <ThemeIcon
                             size="xl"
@@ -848,7 +837,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                             variant="light"
                             icon={<IconAlertTriangle size={16} />}
                           >
-                            {platformError}
+                            {ownerMessages.connection}
                           </Alert>
                         ) : null}
 
@@ -1078,12 +1067,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                               <Text fw={700} size="xl" style={{ color: palette.text }}>
                                   {selectedPlatform.platformName}
                                 </Text>
-                                <Badge
-                                  color={getIntegrationStatusColor(selectedPlatform.status)}
-                                  variant={connected ? 'light' : 'outline'}
-                                >
-                                  {getIntegrationStatusLabel(selectedPlatform.status)}
-                                </Badge>
+                                <StatusBadge status={selectedPlatform.status}/>
                   
                               </Group>
                               <Text size="sm" maw={460}>
@@ -1100,6 +1084,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                         </Group>
                       </Paper>
 
+                      <Disclosure title="Connection diagnostics">
                       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                         <Paper withBorder radius="lg" p="md" className={styles.metricCard}>
                           <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
@@ -1156,6 +1141,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                         </Paper>
                       </SimpleGrid>
 
+                      </Disclosure>
                       {selectedPlatform.platformKey === 'meta' && connected ? (
                         <div>
                           <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
@@ -1219,7 +1205,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                           variant="light"
                           icon={<IconAlertTriangle size={16} />}
                         >
-                          {selectedPlatform.lastError}
+                          {ownerMessages.connection}
                         </Alert>
                       ) : null}
 

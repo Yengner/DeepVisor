@@ -1,7 +1,9 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { Alert, Button, Group, Skeleton, Stack, Text } from '@mantine/core';
+import { Alert, Group, Stack, Text } from '@mantine/core';
+import ProductLinkButton from '@/components/product/ProductLinkButton';
+import SectionSkeleton from '@/components/product/SectionSkeleton';
+import product from '@/components/product/Product.module.css';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { loadDecisionSurface } from '@/lib/server/decisions/loadSurface';
@@ -11,7 +13,7 @@ import classes from './Decisions.module.css';
 export const metadata: Metadata = { title: 'Decisions | DeepVisor' };
 
 function LoadingFeed() {
-  return <Stack gap="md" aria-label="Loading decisions">{[0, 1, 2].map((item) => <Skeleton key={item} height={190} radius="sm" />)}</Stack>;
+  return <Stack gap="md" aria-label="Loading decisions">{[0, 1, 2].map((item) => <SectionSkeleton key={item} kind="attention" />)}</Stack>;
 }
 
 async function DecisionContent({ page }: { page: number }) {
@@ -22,9 +24,9 @@ async function DecisionContent({ page }: { page: number }) {
   catch { return <Alert color="red" title="Decisions are unavailable">We could not load your saved decisions. Please try again shortly.</Alert>; }
   return <><DecisionsFeed cards={data.cards} canReview={['owner', 'admin'].includes(role)} />
     {(page > 0 || data.hasNext) && <Group justify="space-between" mt="lg">
-      <Button component={Link} href={`/decisions?page=${Math.max(0, page - 1)}`} variant="default" disabled={page === 0}>Newer decisions</Button>
+      <ProductLinkButton href={`/decisions?page=${Math.max(0, page - 1)}`} disabled={page === 0}>Newer decisions</ProductLinkButton>
       <Text size="sm" c="dimmed">Page {page + 1}</Text>
-      <Button component={Link} href={`/decisions?page=${page + 1}`} variant="default" disabled={!data.hasNext}>Older decisions</Button>
+      <ProductLinkButton href={`/decisions?page=${page + 1}`} disabled={!data.hasNext}>Older decisions</ProductLinkButton>
     </Group>}
     <FindingsFeed findings={data.findings} unavailable={data.findingsUnavailable} />
   </>;
@@ -34,8 +36,8 @@ export default async function DecisionsPage({ searchParams }: { searchParams: Pr
   const params = await searchParams;
   const parsed = Number(params.page ?? 0);
   const page = Number.isSafeInteger(parsed) && parsed >= 0 && parsed <= 10000 ? parsed : 0;
-  return <div className={classes.page}>
-    <header className={classes.header}><h1>Decisions</h1><Text size="sm" c="dimmed">Your ad reviews and next steps, in one place.</Text></header>
+  return <div className={`${classes.page} ${product.page}`}>
+    <header className={classes.header}><h1>Decisions</h1><Text size="sm" c="dimmed">Reviews and next steps across your business accounts.</Text></header>
     <Suspense key={page} fallback={<LoadingFeed />}><DecisionContent page={page} /></Suspense>
   </div>;
 }

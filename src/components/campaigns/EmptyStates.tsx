@@ -1,6 +1,9 @@
+'use client';
+
 import { Button, Card, Stack, Text, Title, ThemeIcon } from '@mantine/core';
 import { IconArrowRight, IconPlug, IconBuildingStore, IconPresentationAnalytics } from '@tabler/icons-react';
 import Link from 'next/link';
+import product from '@/components/product/Product.module.css';
 
 interface EmptyCampaignStateProps {
     type: 'platform' | 'adAccount' | 'campaigns';
@@ -12,7 +15,7 @@ export function EmptyCampaignState({ type, platformName }: EmptyCampaignStatePro
         platform: {
             icon: <IconPlug size={30} />,
             title: 'No Ad Platform Connected',
-            description: 'Connect an ad platform to sync data and unlock campaigns, reports, and your calendar queue.',
+            description: 'Connect Meta to see your campaigns and their performance here.',
             buttonText: 'Connect a Platform',
             buttonLink: '/integration',
         },
@@ -35,13 +38,13 @@ export function EmptyCampaignState({ type, platformName }: EmptyCampaignStatePro
     const content = config[type];
 
     return (
-        <Card p="xl" withBorder radius="md" className="app-platform-page-hero mx-auto mt-16 max-w-xl">
+        <Card p="xl" withBorder radius="md" className={`${product.page} mx-auto mt-8 max-w-xl`}>
             <Stack align="center" gap="md">
                 <ThemeIcon
                     size={48}
                     radius="sm"
                     color="signal"
-                    style={{ background: '#c8ff56', color: '#151714' }}
+                    style={{ background: '#e8f4ec', color: '#226443' }}
                 >
                     {content.icon}
                 </ThemeIcon>

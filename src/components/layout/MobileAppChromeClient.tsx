@@ -360,14 +360,14 @@ export default function MobileAppChromeClient({
                 onClick={() => navigate(item.route)}
                 aria-label={item.name}
                 aria-current={active ? 'page' : undefined}
-                className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-[10px] font-bold"
+                className="flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-0.5 py-1.5 text-[10px] font-semibold"
                 style={{
                   color: active ? '#0b7a4b' : '#697067',
                   backgroundColor: active ? '#e9f7ef' : 'transparent',
                 }}
               >
                 <item.icon size={20} stroke={active ? 2.2 : 1.8} />
-                <span className="w-full truncate">{item.shortName}</span>
+                <span className="w-full break-words text-center leading-tight">{item.shortName}</span>
               </button>
             );
           })}

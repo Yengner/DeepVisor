@@ -1,6 +1,7 @@
 import type { Database } from '@/lib/shared/types/supabase';
 import { formatCurrencyAmount } from '@/lib/shared/utils/currency';
 import { approvalFingerprint } from './approval';
+import { executionDisplay, type ExecutionDisplay } from './executionPresentation';
 
 type Tables = Database['ai']['Tables'];
 type ActionProposalRow = Tables['action_proposals']['Row'];
@@ -44,7 +45,7 @@ export interface DecisionCard {
   id: string; title: string; entity: string; account: string; createdAt: string; explanation: string;
   evaluated: string[]; confidence: number | null; probability: number | null; provider: string;
   evidence: Array<{ label: string; value: string }>; period: string | null;
-  proposals: Array<{ id: string; title: string; detail: string; status: string; reason: string | null; canReview: boolean; reviewFingerprint: string | null }>;
+  proposals: Array<{ id: string; title: string; detail: string; status: string; reason: string | null; canReview: boolean; reviewFingerprint: string | null; currentValue?: string | null; proposedValue?: string | null; executionHistory?: ExecutionDisplay[] }>;
 }
 
 export function toDecisionCard(input: {
@@ -68,7 +69,7 @@ export function toDecisionCard(input: {
   if (numeric(metrics.costPerResult) !== null) evidence.push({ label: 'Cost per result', value: currency ? formatCurrencyAmount(numeric(metrics.costPerResult), currency) : String(metrics.costPerResult) });
   return {
     id: run.id, title, createdAt: run.created_at,
-    entity: input.entityName || (snapshot ? `Ad set ${snapshot.entity_id}` : 'Ad set unavailable'),
+    entity: input.entityName || 'Ad set unavailable',
     account: input.accountName || 'Connected ad account',
     explanation: run.status === 'completed'
       ? text(result.explanation) || (decision === 'HOLD' ? 'No delivery change was recommended.' : decision === 'INSUFFICIENT_DATA' ? 'Wait for stronger evidence before making changes.' : 'Based on the saved performance review. No additional explanation was supplied.')
@@ -98,6 +99,9 @@ export function toDecisionCard(input: {
         ? `${formatCurrencyAmount(current / divisor, currency)} to ${formatCurrencyAmount(target / divisor, currency)}`
         : proposal.action_type === 'PAUSE_DELIVERY_UNIT' ? 'Pause delivery for this ad set.' : 'Review the proposed change.';
       return { id: proposal.id, title: decisionLabels[proposal.action_type] ?? 'Proposed action', detail, status,
+        currentValue: proposal.action_type === 'REDUCE_BUDGET' && current !== null && currency ? formatCurrencyAmount(current / divisor, currency) : null,
+        proposedValue: proposal.action_type === 'REDUCE_BUDGET' && target !== null && currency ? formatCurrencyAmount(target / divisor, currency) : proposal.action_type === 'PAUSE_DELIVERY_UNIT' ? 'Paused' : null,
+        executionHistory: executions.map(execution => executionDisplay(execution, proposal.action_type)),
         reason: policyReasons[text(policy.reason) ?? ''] ?? null,
         reviewFingerprint: snapshot && input.policy ? approvalFingerprint(proposal, run, snapshot, input.policy) : null,
         canReview: Boolean(snapshot && snapshot.entity_id === proposal.target_entity_id && snapshot.entity_type === proposal.target_entity_type) &&

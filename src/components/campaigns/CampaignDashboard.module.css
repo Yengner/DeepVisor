@@ -7,7 +7,8 @@
   display: flex;
   box-sizing: border-box;
   padding-top: 6px;
-  padding-left: 6px;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 .tableSurface {
@@ -125,7 +126,7 @@
 
 .mobileMetricGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 12px;
   padding-top: 12px;
@@ -136,6 +137,10 @@
   min-width: 0;
   flex: 1 1 auto;
 }
+.mobileMetricGrid > div > :global(.mantine-Text-root):first-child { font-size: 12px; font-weight: 500; text-transform: none; }
+.mobileMetricGrid > div > :global(.mantine-Text-root):last-child { font-size: 16px; font-weight: 650; overflow-wrap: anywhere; }
+.moreMetrics { grid-column: 1 / -1; font-size: 13px; }
+.moreMetrics summary { min-height: 44px; padding: 12px 0; cursor: pointer; color: #0b7a4b; }
 
 .mobileEntityActions,
 .mobileRunAgainButton {
@@ -152,12 +157,14 @@
 
   .tableSurface {
     min-height: calc(100dvh - 0.75rem);
-    border-radius: 8px;
+    border: 0;
+    background: transparent;
     overflow: visible;
   }
 
   .tableHeader {
-    padding: 14px;
+    padding: 0 0 14px;
+    background: transparent;
   }
 
   .actionGroup,
@@ -197,7 +204,7 @@
   }
 
   .tablePanelInner {
-    padding: 10px 10px 1rem;
+    padding: 12px 0 16px;
   }
 
   .desktopDataTable {

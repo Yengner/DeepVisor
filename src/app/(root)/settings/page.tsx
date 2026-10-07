@@ -50,6 +50,10 @@ import { createServerClient } from '@/lib/server/supabase/server';
 import IntelligencePreferencesCard from './components/IntelligencePreferencesCard';
 import CampaignDefaultsForm from './components/CampaignDefaultsForm';
 import classes from './SettingsSurface.module.css';
+import Disclosure from '@/components/product/Disclosure';
+import product from '@/components/product/Product.module.css';
+import { ownerMessages } from '@/components/product/presentation';
+import StatusBadge from '@/components/product/StatusBadge';
 
 type BusinessProfileSettings = {
   business_name: string;
@@ -249,22 +253,6 @@ function formatStatusLabel(value: string | null | undefined): string {
   return value
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
-function statusColor(status: string | null | undefined): string {
-  switch (String(status ?? '').toLowerCase()) {
-    case 'connected':
-    case 'active':
-      return 'signal';
-    case 'error':
-      return '#e76156';
-    case 'needs_reauth':
-      return '#d69324';
-    case 'disconnected':
-      return 'gray';
-    default:
-      return 'gray';
-  }
 }
 
 function formatPlanTier(value: string): string {
@@ -514,7 +502,7 @@ export default async function SettingsPage() {
   const archivedReportGroups = groupArchivedReports(archivedReports);
 
   return (
-    <Container size="xl" pb="xl" className={`${classes.page} dv-app-page`}>
+    <Container size="xl" pb="xl" className={`${classes.page} ${product.page} dv-app-page`}>
       <Stack gap="lg" className={classes.pageStack}>
         <Card
           withBorder
@@ -541,11 +529,10 @@ export default async function SettingsPage() {
                   {formatOrgType(organizationType)} workspace
                 </Text>
                 <Title order={2} mt={4} className="app-platform-page-title">
-                  Workspace controls and account context
+                  Settings
                 </Title>
                 <Text size="md" maw={620} mt="xs" className="app-platform-page-copy">
-                  Keep settings practical: who you are, what workspace DeepVisor is operating in,
-                  what is connected, how data is flowing, and what limits apply.
+                  Your business profile, preferences, and account access.
                 </Text>
               </div>
 
@@ -621,6 +608,7 @@ export default async function SettingsPage() {
           </Button>
         </Group>
 
+        <Disclosure title="Account and workspace details">
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
           <SummaryCard
             icon={<IconUser size={18} />}
@@ -656,6 +644,7 @@ export default async function SettingsPage() {
           />
         </SimpleGrid>
 
+        </Disclosure>
         <Card withBorder radius="lg" p="xl" id="workspace">
           <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
             <div>
@@ -879,7 +868,8 @@ export default async function SettingsPage() {
           </SimpleGrid>
         </Card>
 
-        <Card withBorder radius="lg" p="xl" id="report-archive">
+        <Disclosure title="Saved reports" id="report-archive">
+        <Card withBorder radius="lg" p="xl">
           <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
             <div>
               <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
@@ -1009,7 +999,9 @@ export default async function SettingsPage() {
           </Stack>
         </Card>
 
-        <Card withBorder radius="lg" p="xl" id="connections">
+        </Disclosure>
+        <Disclosure title="Connection diagnostics" id="connections">
+        <Card withBorder radius="lg" p="xl">
           <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
             <div>
               <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
@@ -1074,9 +1066,7 @@ export default async function SettingsPage() {
                   <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
                     <div style={{ flex: 1, minWidth: 240 }}>
                       <Group gap="xs" mb={6} wrap="wrap">
-                        <Badge color={statusColor(integration.status)} variant="light">
-                          {formatStatusLabel(integration.status)}
-                        </Badge>
+                        <StatusBadge status={integration.status}/>
                         <Badge color="gray" variant="outline">
                           {integration.name}
                         </Badge>
@@ -1088,7 +1078,7 @@ export default async function SettingsPage() {
                       </Text>
                       {integration.lastError ? (
                         <Text size="sm" c="dimmed" mt={6}>
-                          Last error: {integration.lastError}
+                          {ownerMessages.connection}
                         </Text>
                       ) : null}
                     </div>
@@ -1108,14 +1098,14 @@ export default async function SettingsPage() {
               <Paper withBorder radius="md" p="md">
                 <Text fw={700}>No platform integrations yet</Text>
                 <Text size="sm" c="dimmed" mt={6}>
-                  Connect Meta first so Dashboard, Reports, and Calendar have a real account to work
-                  from.
+                  Connect Meta to make account performance available in Overview.
                 </Text>
               </Paper>
             )}
           </Stack>
         </Card>
 
+        </Disclosure>
         <Card withBorder radius="lg" p="xl" id="access">
           <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
             <div>

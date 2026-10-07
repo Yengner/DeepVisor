@@ -32,7 +32,7 @@ function RailItem({
       aria-label={label}
       className={`group relative flex h-11 w-full items-center gap-3 overflow-hidden rounded-md border px-3 text-sm font-bold transition-colors ${
         active
-          ? 'border-[#d7ff8a] bg-[#c8ff56] text-[#151714]'
+          ? 'border-[#355447] bg-[#203b2f] text-[#e5f4ec]'
           : tone === 'danger'
             ? 'border-transparent text-[#e98b83] hover:border-[#49302e] hover:bg-[#251b1a]'
             : 'border-transparent text-[#aab2a7] hover:border-[#30352f] hover:bg-[#242823] hover:text-white'
@@ -49,12 +49,8 @@ function RailItem({
     </button>
   );
 
-  if (expanded) {
-    return control;
-  }
-
   return (
-    <Tooltip label={label} position="right" withArrow openDelay={220}>
+    <Tooltip label={label} disabled={expanded} position="right" withArrow openDelay={220}>
       {control}
     </Tooltip>
   );
@@ -69,6 +65,8 @@ export default function Sidebar() {
     <aside
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
+      onFocusCapture={() => setIsExpanded(true)}
+      onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setIsExpanded(false); }}
       className={`fixed bottom-0 left-0 top-16 z-40 hidden overflow-hidden border-r border-[#292d28] bg-[#0d0f0d] transition-[width] duration-200 md:block ${
         isExpanded ? 'w-[13.5rem]' : 'w-[3.75rem]'
       }`}

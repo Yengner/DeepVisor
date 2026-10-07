@@ -12,6 +12,9 @@
 .metrics dd { margin: 4px 0 0; font-size: 16px; font-weight: 650; }
 .proposal { border-top: 1px solid #e7eae6; padding-top: 16px; margin-top: 16px; }
 .review { margin-top: 12px; }
+.link { display: inline-flex; align-items: center; min-height: 44px; color: #0b7a4b; font-size: 14px; font-weight: 600; margin-top: 8px; }
+.details summary { min-height: 44px; }
+.card h2 { font-weight: 650; }
 .empty { padding: 48px 16px; text-align: center; color: #526158; }
 .findings { margin-top: 32px; }
 .finding { border-top: 1px solid #dfe4df; padding: 16px 0; overflow-wrap: anywhere; }

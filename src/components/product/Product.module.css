@@ -1,0 +1,46 @@
+.status { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 3px 7px; border-radius: 4px; font-size: 12px; line-height: 1.4; font-weight: 600; white-space: normal; letter-spacing: 0; }
+.positive { background: #e8f4ec; color: #226443; }
+.information { background: #edf1f7; color: #3b566f; }
+.attention { background: #fff3d9; color: #76500b; }
+.problem { background: #fbece9; color: #9a3c32; }
+.neutral { background: #edf0ee; color: #535e57; }
+.disclosure { border-top: 1px solid #dce3de; padding: 12px 0; min-width: 0; scroll-margin-top: 16px; }
+.disclosure > summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-size: 14px; font-weight: 600; }
+.disclosure > summary:hover { color: #0b7a4b; }
+.disclosure[open] > summary { margin-bottom: 12px; }
+.mode { max-width: 1180px; margin: 0 auto !important; padding: 0 24px; font-size: 12px; color: #536159; }
+.mode summary { cursor: pointer; padding: 8px 0; min-height: 44px; width: fit-content; }
+.mode p { max-width: 660px; margin: 0 0 12px; line-height: 1.6; }
+.page { color: #202b25; letter-spacing: 0; }
+.page :global(.app-platform-page-title) { color: #202b25 !important; font-size: 26px !important; line-height: 1.25; letter-spacing: 0; }
+.page :global(.app-platform-page-copy), .page :global(.app-platform-page-kicker), .page :global(.app-platform-page-hero-panel) :global(.mantine-Text-root) { color: #536159 !important; }
+.page :global(.app-platform-page-hero) { color: #202b25 !important; }
+.page :global(.app-platform-page-hero)::after { display: none; }
+.page :global(.app-platform-page-badge) { color: #335444 !important; background: #eaf2ec !important; border-color: #d6e4da !important; }
+.page :global(.app-platform-page-hero) :global(.app-platform-page-action-secondary) { color: #335444 !important; background: white !important; border-color: #bac8be !important; }
+.page :global(.app-platform-page-hero) { border: 0 !important; box-shadow: none !important; background: transparent !important; padding: 0 0 20px !important; }
+.page :global(.app-platform-page-hero-panel) { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+.page :global(.mantine-Button-root) { font-weight: 600; border-radius: 6px !important; }
+.page :global(.mantine-ActionIcon-root), .page :global(.mantine-Input-input) { border-radius: 6px !important; }
+.page :global(.app-platform-page-action-primary) { background: #0b7a4b !important; border-color: #0b7a4b !important; color: white !important; }
+.page :global(.app-platform-page-action-primary:hover) { background: #09623d !important; }
+.page :global(.mantine-Text-root) { letter-spacing: 0; }
+.page :global(.mantine-Card-root), .page :global(.mantine-Paper-root) { box-shadow: none; border-radius: 8px !important; }
+.page :global(.mantine-Button-root), .page :global(.mantine-ActionIcon-root), .page a, .page summary { transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease; }
+.page :focus-visible, .disclosure :focus-visible, .mode :focus-visible { outline: 2px solid #0b7a4b; outline-offset: 3px; }
+.values { display: flex; flex-wrap: wrap; gap: 16px 32px; margin: 12px 0; }
+.values dt { font-size: 12px; color: #5b695f; }
+.values dd { margin: 4px 0 0; font-size: 16px; font-weight: 600; }
+.audit { border-top: 1px solid #e1e7e2; padding: 12px 0; }
+.skeleton { min-height: 160px; }
+.tiles { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; min-height: 132px; }
+@media(max-width:48em) {
+  .page { padding-left: 16px !important; padding-right: 16px !important; }
+  .page :global(.app-platform-page-title) { font-size: 24px !important; }
+  .page :global(.mantine-Button-root), .page :global(.mantine-ActionIcon-root) { min-height: 44px; }
+  .page :global(.mantine-ActionIcon-root) { min-width: 44px; }
+  .page :global(.mantine-SegmentedControl-label) { min-height: 36px; display: flex; align-items: center; justify-content: center; }
+  .tiles { grid-template-columns: repeat(2,minmax(0,1fr)); min-height: 260px; }
+  .mode { padding: 0 16px; }
+}
+@media(prefers-reduced-motion:reduce) { .page *, .mode *, .disclosure * { transition: none !important; animation: none !important; } }
