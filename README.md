@@ -37,8 +37,12 @@ DeepVisor is not meant to be another analytics wall. The product direction is si
 
 ## Local Development
 
+Node.js 24 is required. With nvm, use the checked-in `.nvmrc`:
+
 ```bash
-npm install
+nvm install
+nvm use
+npm ci
 npm run dev
 ```
 
