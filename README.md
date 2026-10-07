@@ -47,6 +47,33 @@ Useful scripts:
 - `npm run build`: production build check
 - `npm run types:supabase`: regenerate typed Supabase schema bindings
 
+## Tests And CI
+
+Use Node.js 24 (the CI version) and install dependencies with `npm ci`.
+
+```bash
+npm test             # Run all unit tests once
+npm run test:watch   # Re-run affected tests while editing
+npm run typecheck    # Generate Next.js route types and check TypeScript
+npm run build       # Check the production build
+```
+
+Unit tests use [Vitest](https://vitest.dev/guide/) in a Node environment. Place
+tests beside the code as `*.test.ts` under `src`; the existing `@/` import alias
+works in tests. The initial tests cover currency formatting and recurring calendar
+items without network access, credentials, or application logic changes. Browser
+and E2E tests are not part of this baseline.
+
+GitHub Actions runs installation, type checking, unit tests, and the production
+build on pushes and pull requests in a single job. It caches npm downloads and
+cancels superseded runs. Build-only Supabase and Stripe placeholders are defined
+in `.github/workflows/ci.yml`; no repository secrets or live services are needed.
+The resulting CI build is for validation, not deployment.
+
+The existing `npm run lint` script uses `next lint`, which is unavailable in
+Next.js 16. Lint migration and existing application lint errors are not included
+in this test baseline or the CI gate.
+
 ## Repo Pointers
 
 - Root marketing and app routes: [src/app]()

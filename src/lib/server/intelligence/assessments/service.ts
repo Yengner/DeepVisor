@@ -31,10 +31,10 @@ import type {
   BusinessSynthesisDigest,
   DigestCreativeFatigueRisk,
   DigestTestingVelocity,
-  DigestTrendSnapshot,
   DigestWindowWinner,
   TrackingConfidence,
 } from '../types';
+import { computeTrackingConfidence, computeTrendSnapshot, ELEVATED_FREQUENCY_THRESHOLD } from './metrics';
 
 type AssessmentClient = SupabaseClient<Database>;
 
@@ -142,59 +142,11 @@ function summarizeWindowBetween(
   );
 }
 
-function computeTrendSnapshot(input: {
-  currentValue: number;
-  previousValue: number;
-}): DigestTrendSnapshot {
-  const deltaAbsolute = Number((input.currentValue - input.previousValue).toFixed(2));
-  const deltaPercent =
-    input.previousValue > 0
-      ? Number((((input.currentValue - input.previousValue) / input.previousValue) * 100).toFixed(2))
-      : input.currentValue > 0
-        ? 100
-        : null;
-
-  let direction: DigestTrendSnapshot['direction'] = 'unknown';
-  if (input.currentValue === 0 && input.previousValue === 0) {
-    direction = 'flat';
-  } else if (Math.abs(deltaAbsolute) < 0.01) {
-    direction = 'flat';
-  } else if (deltaAbsolute > 0) {
-    direction = 'up';
-  } else if (deltaAbsolute < 0) {
-    direction = 'down';
-  }
-
-  return {
-    direction,
-    deltaAbsolute,
-    deltaPercent,
-    currentValue: Number(input.currentValue.toFixed(2)),
-    previousValue: Number(input.previousValue.toFixed(2)),
-  };
-}
-
 function computeSpendLevel(spendLast30d: number): AdAccountDigest['spendLevel'] {
   if (spendLast30d <= 0) return 'none';
   if (spendLast30d < 500) return 'low';
   if (spendLast30d < 3000) return 'medium';
   return 'high';
-}
-
-function computeTrackingConfidence(window: AssessmentWindowMetrics): TrackingConfidence {
-  if (window.conversion >= 10) {
-    return 'high';
-  }
-
-  if (window.linkClicks >= 25 && window.conversion >= 2) {
-    return 'medium';
-  }
-
-  if (window.clicks >= 50 && window.linkClicks >= 20 && window.conversion === 0) {
-    return 'low';
-  }
-
-  return window.linkClicks > 0 ? 'medium' : 'low';
 }
 
 function computeCreativeFreshness(input: {
@@ -552,7 +504,7 @@ function buildCreativeFatigueRisk(input: {
     reasons.push('Creative freshness is mixed and may need rotation.');
   }
 
-  if (input.recentWindow.frequency >= 3.5) {
+  if (input.recentWindow.frequency >= ELEVATED_FREQUENCY_THRESHOLD) {
     score += 25;
     reasons.push(`Recent frequency is elevated at ${input.recentWindow.frequency.toFixed(2)}.`);
   }

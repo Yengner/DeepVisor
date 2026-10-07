@@ -1,8 +1,7 @@
 import type { Icon } from '@tabler/icons-react';
 import {
   IconBell,
-  IconCalendarMonth,
-  IconChartBar,
+  IconChecklist,
   IconHome2,
   IconPresentation,
   IconPuzzle,
@@ -18,25 +17,19 @@ export type AppNavItem = {
 };
 
 export const primaryNavItems: AppNavItem[] = [
-  { name: 'Overview', shortName: 'Home', icon: IconHome2, route: '/dashboard' },
-  { name: 'Calendar', shortName: 'Calendar', icon: IconCalendarMonth, route: '/calendar' },
+  { name: 'Overview', shortName: 'Overview', icon: IconHome2, route: '/dashboard' },
+  { name: 'Decisions', shortName: 'Decisions', icon: IconChecklist, route: '/decisions' },
   { name: 'Campaigns', shortName: 'Campaigns', icon: IconPresentation, route: '/campaigns' },
-  { name: 'Reports', shortName: 'Reports', icon: IconChartBar, route: '/reports' },
-  { name: 'Connections', shortName: 'Connect', icon: IconPuzzle, route: '/integration' },
+  { name: 'Connections', shortName: 'Connections', icon: IconPuzzle, route: '/integration' },
+  { name: 'Settings', shortName: 'Settings', icon: IconSettings, route: '/settings' },
 ];
 
 export const secondaryNavItems: AppNavItem[] = [
-  { name: 'Settings', shortName: 'Settings', icon: IconSettings, route: '/settings' },
   { name: 'Profile', shortName: 'Profile', icon: IconUser, route: '/settings/profile' },
   { name: 'Notifications', shortName: 'Alerts', icon: IconBell, route: '/notifications' },
 ];
 
-export const mobileBottomNavItems: AppNavItem[] = [
-  { name: 'Dashboard', shortName: 'Home', icon: IconHome2, route: '/dashboard' },
-  { name: 'Calendar', shortName: 'Calendar', icon: IconCalendarMonth, route: '/calendar' },
-  { name: 'Notifications', shortName: 'Alerts', icon: IconBell, route: '/notifications' },
-  { name: 'Settings', shortName: 'Settings', icon: IconSettings, route: '/settings' },
-];
+export const mobileBottomNavItems: AppNavItem[] = primaryNavItems;
 
 export function isAppNavItemActive(pathname: string | null, route: string): boolean {
   if (!pathname) {

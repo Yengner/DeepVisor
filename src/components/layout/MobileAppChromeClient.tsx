@@ -350,7 +350,7 @@ export default function MobileAppChromeClient({
           style={{ borderColor: '#dfe2da' }}
           aria-label="Primary mobile navigation"
         >
-          {mobileBottomNavItems.slice(0, 2).map((item) => {
+          {mobileBottomNavItems.map((item) => {
             const active = isMobileBottomItemActive(item.route);
 
             return (
@@ -358,6 +358,8 @@ export default function MobileAppChromeClient({
                 key={item.route}
                 type="button"
                 onClick={() => navigate(item.route)}
+                aria-label={item.name}
+                aria-current={active ? 'page' : undefined}
                 className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-[10px] font-bold"
                 style={{
                   color: active ? '#0b7a4b' : '#697067',
@@ -365,71 +367,6 @@ export default function MobileAppChromeClient({
                 }}
               >
                 <item.icon size={20} stroke={active ? 2.2 : 1.8} />
-                <span className="w-full truncate">{item.shortName}</span>
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            onClick={() => navigate('/campaigns/create')}
-            aria-label="Create campaign"
-            className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-[10px] font-bold"
-            style={{
-              color: '#151714',
-              backgroundColor: 'transparent',
-            }}
-          >
-            <span
-              className="flex h-10 w-10 items-center justify-center rounded-md"
-              style={{
-                backgroundColor: '#c8ff56',
-                border: '1px solid #b6ed46',
-              }}
-            >
-              <IconPlus size={24} stroke={2.4} />
-            </span>
-            <span className="w-full truncate">Create</span>
-          </button>
-          {mobileBottomNavItems.slice(2).map((item) => {
-            const active = isMobileBottomItemActive(item.route);
-            const isNotifications = item.route === '/notifications';
-            const icon = <item.icon size={20} stroke={active ? 2.2 : 1.8} />;
-
-            return (
-              <button
-                key={item.route}
-                type="button"
-                onClick={() => navigate(item.route)}
-                className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-[10px] font-bold"
-                style={{
-                  color: active ? '#0b7a4b' : '#697067',
-                  backgroundColor: active ? '#e9f7ef' : 'transparent',
-                }}
-              >
-                {isNotifications ? (
-                  <Indicator
-                    disabled={notificationCount === 0}
-                    label={notificationCount > 9 ? '9+' : notificationCount}
-                    size={18}
-                    offset={1}
-                    styles={{
-                      indicator: {
-                        minWidth: 18,
-                        height: 18,
-                        padding: '0 4px',
-                        borderRadius: 999,
-                        lineHeight: '18px',
-                        fontSize: 10,
-                        fontWeight: 800,
-                        border: '2px solid #ffffff',
-                      },
-                    }}
-                  >
-                    {icon}
-                  </Indicator>
-                ) : (
-                  icon
-                )}
                 <span className="w-full truncate">{item.shortName}</span>
               </button>
             );

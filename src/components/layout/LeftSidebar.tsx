@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Tooltip } from '@mantine/core';
-import { IconLogout, IconSettings } from '@tabler/icons-react';
+import { IconLogout } from '@tabler/icons-react';
 import { clientHandleSignOut } from '@/lib/client';
 import { isAppNavItemActive, primaryNavItems } from './navigation';
 
@@ -92,13 +92,6 @@ export default function Sidebar() {
         </nav>
 
         <div className="space-y-1.5 border-t border-[#292d28] pt-3">
-          <RailItem
-            active={isAppNavItemActive(pathname, '/settings')}
-            expanded={isExpanded}
-            icon={<IconSettings size={19} stroke={1.8} />}
-            label="Settings"
-            onClick={() => router.push('/settings')}
-          />
           <RailItem
             active={false}
             expanded={isExpanded}
