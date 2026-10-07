@@ -146,6 +146,22 @@ export const loadOverviewDaily = cache(
 export const loadOverviewPolicy = cache((businessId: string) =>
   nullable(() => getAutonomyPolicy(createAdminClient(), businessId)),
 );
+
+/** Shared daily history for account comparisons and the bounded advertising board. */
+export const loadOverviewHistory = cache(async (businessId: string, accountId: string, today: string) => {
+  const entities = await loadOverviewEntities(businessId, accountId);
+  const [recent, older] = await Promise.all([
+    loadOverviewDaily(businessId, accountId, today),
+    byIds(entities.map(e => e.id), (ids, from, to) => createAdminClient()
+      .from('ad_entity_performance_daily')
+      .select('entity_id,day,currency_code,spend,leads,messages,calls,impressions,clicks,reach,inline_link_clicks')
+      .eq('ad_account_id', accountId).eq('entity_level', 'adset').in('entity_id', ids)
+      .gte('day', shiftDay(today, -60)).lte('day', shiftDay(today, -30))
+      .order('day').order('entity_id').range(from, to)),
+  ]);
+  const ids = new Set(entities.map(e => e.id));
+  return [...older, ...recent].filter(r => ids.has(r.entity_id));
+});
 export const loadOverviewSync = cache((businessId: string, accountId: string) =>
   nullable(async () => {
     const client = createAdminClient();

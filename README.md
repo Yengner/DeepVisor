@@ -95,3 +95,9 @@ DeepVisor should become the place where an operator can answer:
 - What should be approved or queued next?
 
 The long-term goal is durable account memory, better recommendations over time, and a cleaner operating workflow for businesses that rely on paid acquisition.
+
+## Local Decision Previews
+
+While signed in with `npm run dev`, open `/dashboard?preview=decisions` or `/decisions?preview=decisions` to see sample approval-required, creative-review, no-change, shadow, blocked, approved, executed and insufficient-data decisions. The banner links between both previews and back to live views.
+
+This is a development-only presentation preview, not seeded database data. Review buttons are disabled, no approval fingerprints are created, and nothing is saved or executed. Dashboard performance, advertising, connection and configured mode remain real; a selected, synchronized Meta account is still required for the normal Dashboard. Sample decision counts, checks and activity are explicitly fictional. The preview parameter is ignored in production.

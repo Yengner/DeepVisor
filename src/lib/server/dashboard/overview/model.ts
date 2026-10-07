@@ -460,7 +460,9 @@ export function decisionViews(input: {
     provenanceUnavailable: data.provenanceUnavailable,
     outcomesUnavailable: data.outcomesUnavailable,
   };
-  return { view, states };
+  // Retain complete, priority-ordered attention for the control center and board.
+  // The legacy presentation above still exposes only its original three rows.
+  return { view, states, allAttention: attention, allActivity: activity };
 }
 
 export function performanceView(input: {

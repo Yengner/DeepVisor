@@ -44,12 +44,16 @@ export async function GET(request: NextRequest) {
 
     const { businessId } = await getRequiredAppContext();
     const supabase = await createServerClient();
-    const { data: creativeRows, error: creativeError } = await supabase
+    let query = supabase
       .from('ad_creatives')
       .select('id, business_id, platform_integration_id, platform_creative_id')
       .eq('business_id', businessId)
+      .eq('platform_integration_id', platformId)
       .eq('platform_creative_id', creativeId)
       .limit(1);
+    const accountId = request.nextUrl.searchParams.get('accountId');
+    if (accountId) query = query.eq('ad_account_id', accountId);
+    const { data: creativeRows, error: creativeError } = await query;
 
     if (creativeError) {
       throw creativeError;

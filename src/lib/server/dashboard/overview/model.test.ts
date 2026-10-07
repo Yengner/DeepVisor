@@ -310,6 +310,13 @@ describe("Overview decisions", () => {
     expect(view.counts.checked).toBe(1);
     expect(view.activity).toHaveLength(8);
   });
+  it('retains the complete open-attention count beyond the legacy three-item presentation', () => {
+    const data = withProposal(records());
+    data.proposals = Array.from({ length: 6 }, (_, i) => ({ ...data.proposals[0], id: `proposal-${i}` }));
+    const result = evaluate(data);
+    expect(result.view.attention).toHaveLength(3);
+    expect(result.allAttention).toHaveLength(6);
+  });
   it("uses historical provenance, never the current policy mode as the originating mode", () => {
     const data = records();
     expect(originatingMode("run", data)).toBe("SHADOW");

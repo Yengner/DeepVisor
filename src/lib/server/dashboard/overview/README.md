@@ -53,3 +53,14 @@ recent, sufficient HOLD with adequate tracking and no conflicting proposal.
 Run `npm test -- src/lib/server/dashboard/overview`, `npm run typecheck` and
 `npm run build`. The repository's existing `next lint` command is unsupported by
 Next 16; validation uses the Next ESLint configuration directly.
+# Control-Center Presentation
+
+The Overview uses a single responsive daily chart: integrated with account controls on desktop and below advertising on mobile. It does not render or load the legacy analytical breakdowns. Campaigns remains table-first; the account-scoped exploration loader and lazy drawer are reused for the dashboard's ad-set board.
+
+`controlModel.ts` calculates aggregate CTR and completed-window changes. A comparison requires coverage for every scoped ad set on every day in both windows; an incomplete account day remains a chart gap. Selected totals include partial today and explicitly identify incomplete coverage. No target comparison is inferred from profile preferences.
+
+Featured cards always represent **ad sets**. Comparable positive result leaders are selected first; tied leaders use stable ID ordering only for layout and are labeled "Most results · tied". Fallbacks are priority-ordered unresolved attention, then active ad sets with the latest positive normalized daily activity. Database update timestamps are not used as relevance signals. Strongest measured ad media may represent a set without replacing its metrics with that ad's totals.
+
+Monitoring shows completed checks, HOLD/no-change decisions, creative-review recommendations, and all unresolved attention (not only today's items). These counts overlap. Empty attention is only called stable when every represented unit passes the existing fresh Healthy evidence rule. Configured autonomy is not runtime authorization; there are no approval or execution commands on Overview.
+
+Remaining source limitations: no scheduler heartbeat or authoritative eligible-unit population; no exact target currency/result binding; creative-specific intelligence, reliable playable video URLs, deduplicated multi-day reach, and some historical mode/event timestamps are unavailable. These are not synthesized by presentation code.

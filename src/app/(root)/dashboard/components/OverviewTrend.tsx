@@ -18,6 +18,7 @@ const labels = {
   spend: "Spend",
   results: "Results",
   costPerResult: "Cost per result",
+  ctr: "CTR",
 };
 export default function OverviewTrend({
   points,
@@ -28,37 +29,42 @@ export default function OverviewTrend({
 }) {
   const [metric, setMetric] = useState<keyof typeof labels>("results");
   const color =
-    metric === "results"
+    metric === "results" || metric === "ctr"
       ? "#287f60"
       : metric === "spend"
         ? "#3074d5"
         : "#a86a27";
   const format = (value: number) =>
-    metric === "results"
-      ? new Intl.NumberFormat().format(value)
-      : currency
-        ? new Intl.NumberFormat("en", {
-            style: "currency",
-            currency,
-            maximumFractionDigits: 2,
-          }).format(value)
-        : String(value);
-  const last = points.filter((p) => p[metric] !== null).at(-1);
+    metric === "ctr"
+      ? `${value.toFixed(2)}%`
+      : metric === "results"
+        ? new Intl.NumberFormat().format(value)
+        : currency
+          ? new Intl.NumberFormat("en", {
+              style: "currency",
+              currency,
+              maximumFractionDigits: 2,
+            }).format(value)
+          : String(value);
+  const last = points.filter((p) => p[metric] != null).at(-1);
   return (
     <>
       <SegmentedControl
+        className={classes.trendModes}
         aria-label="Trend metric"
         mb="md"
         size="xs"
         radius="sm"
         value={metric}
         onChange={(value) => setMetric(value as keyof typeof labels)}
-        data={Object.entries(labels).map(([value, label]) => ({
-          value,
-          label,
-        }))}
+        data={Object.entries(labels)
+          .filter(([key]) => key !== "ctr" || points.some((p) => "ctr" in p))
+          .map(([value, label]) => ({
+            value,
+            label,
+          }))}
       />
-      {points.some((p) => p[metric] !== null) ? (
+      {points.some((p) => p[metric] != null) ? (
         <div
           className={classes.chart}
           role="img"

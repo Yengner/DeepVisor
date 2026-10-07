@@ -364,3 +364,5 @@
     transition: none !important;
   }
 }
+.trendModes { max-width: 100%; }
+.trendModes :global(.mantine-SegmentedControl-label) { min-height: 44px; display: flex; align-items: center; justify-content: center; }

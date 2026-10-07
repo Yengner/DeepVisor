@@ -41,7 +41,7 @@ function ReviewButtons({ id, fingerprint }: { id: string; fingerprint: string })
   </Stack>;
 }
 
-export default function DecisionsFeed({ cards, canReview }: { cards: DecisionCard[]; canReview: boolean }) {
+export default function DecisionsFeed({ cards, canReview, preview = false }: { cards: DecisionCard[]; canReview: boolean; preview?: boolean }) {
   if (!cards.length) return <div className={classes.empty}><IconShieldCheck size={28} aria-hidden />
     <Text fw={700} mt="sm">No decisions yet</Text><Text c="dimmed" size="sm" mt={4}>Saved evaluations will appear here when available. Check Overview for your connection and latest sync.</Text><a href="/dashboard" className={classes.link}>Open Overview</a></div>;
   return <Stack gap="md">{cards.map((card) => {
@@ -66,7 +66,7 @@ export default function DecisionsFeed({ cards, canReview }: { cards: DecisionCar
       {proposal.status==='Observation only'&&<Text size="sm" mt="xs">Shadow observation only. This observation did not execute a change.</Text>}
       {['Needs reconciliation','Execution failed'].includes(proposal.status)&&<Text size="sm" mt="xs">The result needs verification. Check the recorded state before making another change.</Text>}
       {!!proposal.executionHistory?.length&&<details className={classes.details}><summary>Recorded changes</summary>{proposal.executionHistory.map((execution,i)=><div key={i} className={product.audit}><StatusBadge status={execution.status}/><Text size="xs" c="dimmed" mt={8}>{execution.completedAt?`Completed ${timestamp(execution.completedAt)}`:execution.startedAt?`Started ${timestamp(execution.startedAt)}`:'Execution time unavailable'}</Text><dl className={product.values}><div><dt>Observed before</dt><dd>{execution.before??'Unavailable'}</dd></div><div><dt>Observed after</dt><dd>{execution.after??'Unavailable'}</dd></div></dl></div>)}</details>}
-      {proposal.canReview && proposal.reviewFingerprint && <div className={classes.review}>{canReview ? <ReviewButtons id={proposal.id} fingerprint={proposal.reviewFingerprint} /> : <Text size="xs" c="dimmed">An owner or admin can review this action.</Text>}</div>}
+      {preview && proposal.canReview ? <div className={classes.review}><Group gap="xs"><Button disabled leftSection={<IconCheck size={16} />}>Approve</Button><Button disabled variant="default" leftSection={<IconX size={16} />}>Reject</Button></Group><Text size="xs" c="dimmed" mt="xs">Preview only. Reviews cannot be saved.</Text></div> : !preview && proposal.canReview && proposal.reviewFingerprint && <div className={classes.review}>{canReview ? <ReviewButtons id={proposal.id} fingerprint={proposal.reviewFingerprint} /> : <Text size="xs" c="dimmed">An owner or admin can review this action.</Text>}</div>}
     </section>)}
   </article>;})}</Stack>;
 }

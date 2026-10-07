@@ -28,7 +28,7 @@ export type Metrics = {
   results: number | null;
   costPerResult: number | null;
 };
-export type TrendPoint = Metrics & { day: string; current: boolean };
+export type TrendPoint = Metrics & { day: string; current: boolean; ctr?: number | null };
 export interface PerformanceView {
   metrics: Metrics;
   currency: string | null;

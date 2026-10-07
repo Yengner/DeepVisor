@@ -19,8 +19,8 @@ export function PeriodControl({ period }: { period: Period }) {
       disabled={pending}
       data={[
         { value: "today", label: "Today" },
-        { value: "7d", label: "7 days" },
-        { value: "30d", label: "30 days" },
+        { value: "7d", label: "7D" },
+        { value: "30d", label: "30D" },
       ]}
       onChange={(value) => {
         const next = new URLSearchParams(params);

@@ -9,6 +9,8 @@ import { createServerClient } from '@/lib/server/supabase/server';
 import { loadDecisionSurface } from '@/lib/server/decisions/loadSurface';
 import DecisionsFeed, { FindingsFeed } from './DecisionsFeed';
 import classes from './Decisions.module.css';
+import { buildDecisionPreview, isDecisionPreview } from '@/lib/server/decisions/preview';
+import DecisionPreviewBanner from '@/components/product/DecisionPreviewBanner';
 
 export const metadata: Metadata = { title: 'Decisions | DeepVisor' };
 
@@ -16,8 +18,9 @@ function LoadingFeed() {
   return <Stack gap="md" aria-label="Loading decisions">{[0, 1, 2].map((item) => <SectionSkeleton key={item} kind="attention" />)}</Stack>;
 }
 
-async function DecisionContent({ page }: { page: number }) {
+async function DecisionContent({ page, preview }: { page: number; preview: boolean }) {
   const { businessId, role } = await getRequiredAppContext();
+  if (preview) return <DecisionsFeed cards={buildDecisionPreview(new Date().toISOString()).cards} canReview={false} preview />;
   const client = await createServerClient();
   let data;
   try { data = await loadDecisionSurface(client, businessId, page); }
@@ -32,12 +35,14 @@ async function DecisionContent({ page }: { page: number }) {
   </>;
 }
 
-export default async function DecisionsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+export default async function DecisionsPage({ searchParams }: { searchParams: Promise<{ page?: string; preview?: string }> }) {
   const params = await searchParams;
   const parsed = Number(params.page ?? 0);
   const page = Number.isSafeInteger(parsed) && parsed >= 0 && parsed <= 10000 ? parsed : 0;
+  const preview = isDecisionPreview(params.preview);
   return <div className={`${classes.page} ${product.page}`}>
     <header className={classes.header}><h1>Decisions</h1><Text size="sm" c="dimmed">Reviews and next steps across your business accounts.</Text></header>
-    <Suspense key={page} fallback={<LoadingFeed />}><DecisionContent page={page} /></Suspense>
+    {preview && <DecisionPreviewBanner page="decisions" />}
+    <Suspense key={`${page}:${preview}`} fallback={<LoadingFeed />}><DecisionContent page={page} preview={preview} /></Suspense>
   </div>;
 }
