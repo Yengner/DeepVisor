@@ -88,6 +88,7 @@
     "zustand": "^5.0.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@types/facebook-js-sdk": "^3.3.12",
     "@types/facebook-nodejs-business-sdk": "^20.0.2",
     "@types/lru-cache": "^7.10.9",

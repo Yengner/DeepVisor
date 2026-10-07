@@ -14,6 +14,106 @@ export type Database = {
   }
   ai: {
     Tables: {
+      action_outcomes: {
+        Row: {
+          business_id: string
+          calculated_change_json: Json
+          created_at: string
+          executed_action_id: string
+          id: string
+          measurement_horizon_hours: number
+          metrics_after_json: Json
+          metrics_before_json: Json
+        }
+        Insert: {
+          business_id: string
+          calculated_change_json: Json
+          created_at?: string
+          executed_action_id: string
+          id?: string
+          measurement_horizon_hours: number
+          metrics_after_json: Json
+          metrics_before_json: Json
+        }
+        Update: {
+          business_id?: string
+          calculated_change_json?: Json
+          created_at?: string
+          executed_action_id?: string
+          id?: string
+          measurement_horizon_hours?: number
+          metrics_after_json?: Json
+          metrics_before_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_outcomes_business_id_executed_action_id_fkey"
+            columns: ["business_id", "executed_action_id"]
+            isOneToOne: false
+            referencedRelation: "executed_actions"
+            referencedColumns: ["business_id", "id"]
+          },
+        ]
+      }
+      action_proposals: {
+        Row: {
+          action_type: string
+          business_id: string
+          created_at: string
+          current_state_json: Json
+          decision_run_id: string
+          id: string
+          policy_result_json: Json
+          proposed_state_json: Json
+          requires_approval: boolean
+          risk_level: string
+          status: string
+          target_entity_id: string
+          target_entity_type: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          business_id: string
+          created_at?: string
+          current_state_json?: Json
+          decision_run_id: string
+          id?: string
+          policy_result_json?: Json
+          proposed_state_json?: Json
+          requires_approval?: boolean
+          risk_level?: string
+          status?: string
+          target_entity_id: string
+          target_entity_type: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          business_id?: string
+          created_at?: string
+          current_state_json?: Json
+          decision_run_id?: string
+          id?: string
+          policy_result_json?: Json
+          proposed_state_json?: Json
+          requires_approval?: boolean
+          risk_level?: string
+          status?: string
+          target_entity_id?: string
+          target_entity_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_proposals_business_id_decision_run_id_fkey"
+            columns: ["business_id", "decision_run_id"]
+            isOneToOne: false
+            referencedRelation: "decision_runs"
+            referencedColumns: ["business_id", "id"]
+          },
+        ]
+      }
       agent_observations: {
         Row: {
           ad_account_id: string | null
@@ -119,6 +219,45 @@ export type Database = {
           source_id?: string | null
           source_type?: string
           status?: string
+        }
+        Relationships: []
+      }
+      autonomy_policies: {
+        Row: {
+          allowed_action_classes: string[]
+          budget_boundaries_json: Json
+          business_id: string
+          cooldown_config_json: Json
+          created_at: string
+          id: string
+          max_budget_change_percent: number
+          minimum_evidence_json: Json
+          mode: string
+          updated_at: string
+        }
+        Insert: {
+          allowed_action_classes?: string[]
+          budget_boundaries_json?: Json
+          business_id: string
+          cooldown_config_json?: Json
+          created_at?: string
+          id?: string
+          max_budget_change_percent?: number
+          minimum_evidence_json?: Json
+          mode?: string
+          updated_at?: string
+        }
+        Update: {
+          allowed_action_classes?: string[]
+          budget_boundaries_json?: Json
+          business_id?: string
+          cooldown_config_json?: Json
+          created_at?: string
+          id?: string
+          max_budget_change_percent?: number
+          minimum_evidence_json?: Json
+          mode?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -302,6 +441,151 @@ export type Database = {
           primary_format?: string | null
           snapshot_date?: string
           visual_style_tags?: string[]
+        }
+        Relationships: []
+      }
+      decision_runs: {
+        Row: {
+          business_id: string
+          confidence: number | null
+          created_at: string
+          decision_json: Json
+          feature_snapshot_id: string
+          id: string
+          model_version: string | null
+          provider: string
+          provider_model: string | null
+          provider_response_json: Json | null
+          provider_version: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          confidence?: number | null
+          created_at?: string
+          decision_json?: Json
+          feature_snapshot_id: string
+          id?: string
+          model_version?: string | null
+          provider: string
+          provider_model?: string | null
+          provider_response_json?: Json | null
+          provider_version?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          confidence?: number | null
+          created_at?: string
+          decision_json?: Json
+          feature_snapshot_id?: string
+          id?: string
+          model_version?: string | null
+          provider?: string
+          provider_model?: string | null
+          provider_response_json?: Json | null
+          provider_version?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_runs_business_id_feature_snapshot_id_fkey"
+            columns: ["business_id", "feature_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "feature_snapshots"
+            referencedColumns: ["business_id", "id"]
+          },
+        ]
+      }
+      executed_actions: {
+        Row: {
+          action_proposal_id: string
+          business_id: string
+          completed_at: string | null
+          created_at: string
+          error_json: Json | null
+          id: string
+          request_metadata_json: Json
+          started_at: string | null
+          state_after_json: Json | null
+          state_before_json: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action_proposal_id: string
+          business_id: string
+          completed_at?: string | null
+          created_at?: string
+          error_json?: Json | null
+          id?: string
+          request_metadata_json?: Json
+          started_at?: string | null
+          state_after_json?: Json | null
+          state_before_json?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_proposal_id?: string
+          business_id?: string
+          completed_at?: string | null
+          created_at?: string
+          error_json?: Json | null
+          id?: string
+          request_metadata_json?: Json
+          started_at?: string | null
+          state_after_json?: Json | null
+          state_before_json?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executed_actions_business_id_action_proposal_id_fkey"
+            columns: ["business_id", "action_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "action_proposals"
+            referencedColumns: ["business_id", "id"]
+          },
+        ]
+      }
+      feature_snapshots: {
+        Row: {
+          ad_account_id: string
+          business_id: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          feature_json: Json
+          feature_schema_version: number
+          id: string
+          platform_integration_id: string
+        }
+        Insert: {
+          ad_account_id: string
+          business_id: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          feature_json: Json
+          feature_schema_version: number
+          id?: string
+          platform_integration_id: string
+        }
+        Update: {
+          ad_account_id?: string
+          business_id?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          feature_json?: Json
+          feature_schema_version?: number
+          id?: string
+          platform_integration_id?: string
         }
         Relationships: []
       }
@@ -2304,6 +2588,7 @@ export type Database = {
           industry: string | null
           lead_quality_signal: string | null
           lead_type: string | null
+          meta_ads_status: string | null
           meta_page_id: string | null
           meta_page_instagram_account_id: string | null
           meta_page_instagram_account_name: string | null
@@ -2311,12 +2596,12 @@ export type Database = {
           meta_page_instagram_account_username: string | null
           meta_page_name: string | null
           meta_page_picture_url: string | null
-          meta_ads_status: string | null
           monthly_budget: string | null
           most_valuable_service: string | null
           onboarding_completed: boolean
           onboarding_step: number
           organization_id: string | null
+          page_phone: string | null
           preferred_contact_method: string | null
           preferred_platforms: string[] | null
           primary_goal: string | null
@@ -2327,7 +2612,6 @@ export type Database = {
           updated_at: string
           watch_signals: string[] | null
           website: string | null
-          page_phone: string | null
           whatsapp_number: string | null
           whatsapp_number_source: string | null
           whatsapp_setup_completed: boolean
@@ -2345,6 +2629,7 @@ export type Database = {
           industry?: string | null
           lead_quality_signal?: string | null
           lead_type?: string | null
+          meta_ads_status?: string | null
           meta_page_id?: string | null
           meta_page_instagram_account_id?: string | null
           meta_page_instagram_account_name?: string | null
@@ -2352,12 +2637,12 @@ export type Database = {
           meta_page_instagram_account_username?: string | null
           meta_page_name?: string | null
           meta_page_picture_url?: string | null
-          meta_ads_status?: string | null
           monthly_budget?: string | null
           most_valuable_service?: string | null
           onboarding_completed?: boolean
           onboarding_step?: number
           organization_id?: string | null
+          page_phone?: string | null
           preferred_contact_method?: string | null
           preferred_platforms?: string[] | null
           primary_goal?: string | null
@@ -2368,7 +2653,6 @@ export type Database = {
           updated_at?: string
           watch_signals?: string[] | null
           website?: string | null
-          page_phone?: string | null
           whatsapp_number?: string | null
           whatsapp_number_source?: string | null
           whatsapp_setup_completed?: boolean
@@ -2386,6 +2670,7 @@ export type Database = {
           industry?: string | null
           lead_quality_signal?: string | null
           lead_type?: string | null
+          meta_ads_status?: string | null
           meta_page_id?: string | null
           meta_page_instagram_account_id?: string | null
           meta_page_instagram_account_name?: string | null
@@ -2393,12 +2678,12 @@ export type Database = {
           meta_page_instagram_account_username?: string | null
           meta_page_name?: string | null
           meta_page_picture_url?: string | null
-          meta_ads_status?: string | null
           monthly_budget?: string | null
           most_valuable_service?: string | null
           onboarding_completed?: boolean
           onboarding_step?: number
           organization_id?: string | null
+          page_phone?: string | null
           preferred_contact_method?: string | null
           preferred_platforms?: string[] | null
           primary_goal?: string | null
@@ -2409,7 +2694,6 @@ export type Database = {
           updated_at?: string
           watch_signals?: string[] | null
           website?: string | null
-          page_phone?: string | null
           whatsapp_number?: string | null
           whatsapp_number_source?: string | null
           whatsapp_setup_completed?: boolean
@@ -5968,12 +6252,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5997,11 +6281,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -6022,11 +6306,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -6047,11 +6331,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -6064,11 +6348,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
