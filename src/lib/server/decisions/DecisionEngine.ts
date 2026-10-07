@@ -23,6 +23,8 @@ export class DecisionEngine {
     platformIntegrationId: string;
     snapshot: FeatureSnapshot;
     questions: readonly string[];
+    /** Reserved by a durable job before evaluation; primary keys prevent replay. */
+    persistenceIds?: { featureSnapshotId: string; decisionRunId: string };
   }): Promise<PersistedDecisionResult> {
     const identity = providerIdentitySchema.safeParse(this.provider.identity);
     if (!identity.success || !input.businessId.trim() || !input.platformIntegrationId.trim() ||
@@ -39,6 +41,7 @@ export class DecisionEngine {
     try {
       const saved = await saveFeatureSnapshot(this.client, {
         platformIntegrationId: input.platformIntegrationId, snapshot,
+        ...(input.persistenceIds ? { snapshotId: input.persistenceIds.featureSnapshotId } : {}),
       });
       featureSnapshotId = saved.id;
       const run = await insertDecisionRun(this.client, input.businessId, {
@@ -49,7 +52,7 @@ export class DecisionEngine {
         model_version: identity.data.modelVersion,
         decision_json: { questions },
         status: 'pending',
-      });
+      }, ...(input.persistenceIds ? [input.persistenceIds.decisionRunId] as const : [] as const));
       decisionRunId = run.id;
     } catch {
       throw new DecisionEngineError('PERSISTENCE_FAILED');

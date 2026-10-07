@@ -1,5 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { processMetaBackfillJobs } from '@/lib/server/sync/meta/processBackfillJobs';
+import { drainShadowJobs } from '@/lib/server/decisions/shadow/service';
+import { processActionOutcomes } from '@/lib/server/decisions/outcomes/service';
+
+export const maxDuration = 180;
 
 function getRequestApiKey(request: NextRequest): string | null {
   const apiKeyHeader = request.headers.get('x-internal-api-key');
@@ -51,6 +55,10 @@ export async function POST(request: NextRequest) {
   if (authError) {
     return authError;
   }
+
+  // Runs even on idle sync ticks, so durable shadow backlog can drain independently.
+  after(drainShadowJobs);
+  after(processActionOutcomes);
 
   try {
     const body = await request.json().catch(() => ({}));

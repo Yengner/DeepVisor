@@ -1,4 +1,5 @@
 import 'server-only';
+import { enqueueShadowAfterSync } from '@/lib/server/decisions/shadow/service';
 
 import {
   completeHistoricalSyncJob,
@@ -454,6 +455,9 @@ export async function processMetaFirstSyncJob(input: {
     performanceRowsSynced,
     message: 'First history sync completed.',
   });
+
+  await enqueueShadowAfterSync(input.supabase, { businessId: input.job.business_id, integrationId: input.job.platform_integration_id,
+    adAccountId: adAccount.id, syncJobId: input.job.id });
 
   return {
     adAccountId: adAccount.id,

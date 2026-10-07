@@ -14,32 +14,185 @@ export type Database = {
   }
   ai: {
     Tables: {
+      execution_controls: {
+        Row: { singleton: boolean; limited_auto_enabled: boolean }
+        Insert: { singleton?: boolean; limited_auto_enabled?: boolean }
+        Update: { singleton?: boolean; limited_auto_enabled?: boolean }
+        Relationships: []
+      }
+      limited_auto_evaluations: {
+        Row: {
+          business_id: string
+          source_snapshot_id: string
+          source_hash: string
+          policy_json: Json
+          decision_run_id: string | null
+          action_proposal_id: string | null
+          status: string
+          reason: string | null
+          created_at: string
+          completed_at: string | null
+        }
+        Insert: {
+          business_id: string
+          source_snapshot_id: string
+          source_hash: string
+          policy_json: Json
+          decision_run_id?: string | null
+          action_proposal_id?: string | null
+          status?: string
+          reason?: string | null
+          created_at?: string
+          completed_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          source_snapshot_id?: string
+          source_hash?: string
+          policy_json?: Json
+          decision_run_id?: string | null
+          action_proposal_id?: string | null
+          status?: string
+          reason?: string | null
+          created_at?: string
+          completed_at?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "limited_auto_evaluations_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "limited_auto_evaluations_business_id_source_snapshot_id_fkey"; columns: ["business_id", "source_snapshot_id"]; isOneToOne: true; referencedRelation: "feature_snapshots"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "limited_auto_evaluations_business_id_decision_run_id_fkey"; columns: ["business_id", "decision_run_id"]; isOneToOne: false; referencedRelation: "decision_runs"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "limited_auto_evaluations_business_id_action_proposal_id_fkey"; columns: ["business_id", "action_proposal_id"]; isOneToOne: false; referencedRelation: "action_proposals"; referencedColumns: ["business_id", "id"] },
+        ]
+      }
+      shadow_evaluation_jobs: {
+        Row: {
+          id: string
+          business_id: string
+          platform_integration_id: string
+          ad_account_id: string
+          entity_id: string
+          evaluation_version: string
+          source_hash: string
+          source_json: Json
+          source_synced_at: string
+          source_sync_job_id: string
+          feature_snapshot_id: string
+          decision_run_id: string
+          action_proposal_id: string
+          status: string
+          result_json: Json | null
+          error_code: string | null
+          created_at: string
+          started_at: string | null
+          completed_at: string | null
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          platform_integration_id: string
+          ad_account_id: string
+          entity_id: string
+          evaluation_version: string
+          source_hash: string
+          source_json: Json
+          source_synced_at: string
+          source_sync_job_id: string
+          feature_snapshot_id?: string
+          decision_run_id?: string
+          action_proposal_id?: string
+          status?: string
+          result_json?: Json | null
+          error_code?: string | null
+          created_at?: string
+          started_at?: string | null
+          completed_at?: string | null
+        }
+        Update: Partial<Database['ai']['Tables']['shadow_evaluation_jobs']['Insert']>
+        Relationships: [
+          { foreignKeyName: "shadow_evaluation_jobs_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "shadow_evaluation_jobs_platform_integration_id_fkey"; columns: ["platform_integration_id"]; isOneToOne: false; referencedRelation: "platform_integrations"; referencedColumns: ["id"] },
+          { foreignKeyName: "shadow_evaluation_jobs_ad_account_id_fkey"; columns: ["ad_account_id"]; isOneToOne: false; referencedRelation: "ad_accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "shadow_evaluation_jobs_source_sync_job_id_fkey"; columns: ["source_sync_job_id"]; isOneToOne: false; referencedRelation: "account_sync_jobs"; referencedColumns: ["id"] },
+        ]
+      }
+      review_execution_claims: {
+        Row: {
+          proposal_id: string
+          business_id: string
+          execution_id: string
+          active: boolean
+          context_json: Json
+          created_at: string
+        }
+        Insert: {
+          proposal_id: string
+          business_id: string
+          execution_id: string
+          active?: boolean
+          context_json: Json
+          created_at?: string
+        }
+        Update: {
+          proposal_id?: string
+          business_id?: string
+          execution_id?: string
+          active?: boolean
+          context_json?: Json
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "review_execution_claims_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "review_execution_claims_business_id_proposal_id_fkey"; columns: ["business_id", "proposal_id"]; isOneToOne: true; referencedRelation: "action_proposals"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "review_execution_claims_business_id_execution_id_fkey"; columns: ["business_id", "execution_id"]; isOneToOne: true; referencedRelation: "executed_actions"; referencedColumns: ["business_id", "id"] },
+        ]
+      }
       action_outcomes: {
         Row: {
+          source_kind: string
+          shadow_decision_run_id: string | null
+          anchor_at: string | null
+          measurement_due_at: string | null
+          measurement_status: string
+          next_attempt_at: string | null
+          measured_at: string | null
           business_id: string
           calculated_change_json: Json
           created_at: string
-          executed_action_id: string
+          executed_action_id: string | null
           id: string
           measurement_horizon_hours: number
           metrics_after_json: Json
           metrics_before_json: Json
         }
         Insert: {
+          source_kind?: string
+          shadow_decision_run_id?: string | null
+          anchor_at?: string | null
+          measurement_due_at?: string | null
+          measurement_status?: string
+          next_attempt_at?: string | null
+          measured_at?: string | null
           business_id: string
           calculated_change_json: Json
           created_at?: string
-          executed_action_id: string
+          executed_action_id?: string | null
           id?: string
           measurement_horizon_hours: number
           metrics_after_json: Json
           metrics_before_json: Json
         }
         Update: {
+          source_kind?: string
+          shadow_decision_run_id?: string | null
+          anchor_at?: string | null
+          measurement_due_at?: string | null
+          measurement_status?: string
+          next_attempt_at?: string | null
+          measured_at?: string | null
           business_id?: string
           calculated_change_json?: Json
           created_at?: string
-          executed_action_id?: string
+          executed_action_id?: string | null
           id?: string
           measurement_horizon_hours?: number
           metrics_after_json?: Json
@@ -51,6 +204,13 @@ export type Database = {
             columns: ["business_id", "executed_action_id"]
             isOneToOne: false
             referencedRelation: "executed_actions"
+            referencedColumns: ["business_id", "id"]
+          },
+          {
+            foreignKeyName: "action_outcomes_shadow_run_fkey"
+            columns: ["business_id", "shadow_decision_run_id"]
+            isOneToOne: false
+            referencedRelation: "decision_runs"
             referencedColumns: ["business_id", "id"]
           },
         ]
@@ -803,7 +963,45 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      limited_auto_history: { Args: { p_business: string }; Returns: Json }
+      claim_limited_auto_evaluation: { Args: { p_business: string; p_snapshot: string }; Returns: Json }
+      finish_limited_auto_evaluation: { Args: { p_business: string; p_snapshot: string; p_status: string; p_reason: string; p_run?: string | null; p_proposal?: string | null }; Returns: undefined }
+      claim_limited_auto_execution: { Args: { p_business: string; p_proposal: string; p_execution: string }; Returns: Json }
+      authorize_limited_auto_execution: { Args: { p_business: string; p_execution: string }; Returns: undefined }
+      checkpoint_limited_auto_execution: { Args: { p_business: string; p_execution: string; p_before: Json; p_request: Json }; Returns: undefined }
+      process_action_outcomes: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
+      measure_outcome_window: {
+        Args: { p_account: string; p_entity: string; p_currency: string; p_zone: string; p_start: string; p_end: string }
+        Returns: Json
+      }
+      outcome_observed_changes: {
+        Args: { p_before: Json; p_after: Json }
+        Returns: Json
+      }
+      enqueue_meta_shadow: {
+        Args: { p_business: string; p_integration: string; p_account: string; p_sync_job: string; p_version: string }
+        Returns: number
+      }
+      claim_meta_shadow: { Args: Record<string, never>; Returns: Json }
+      finish_meta_shadow: {
+        Args: { p_job: string; p_result: Json; p_proposal: Json; p_error: string | null }
+        Returns: undefined
+      }
+      claim_review_execution: {
+        Args: { p_business: string; p_proposal: string; p_execution: string }
+        Returns: Json
+      }
+      checkpoint_review_execution: {
+        Args: { p_business: string; p_execution: string; p_before: Json; p_request: Json }
+        Returns: undefined
+      }
+      finish_review_execution: {
+        Args: { p_business: string; p_execution: string; p_success: boolean; p_after: Json; p_error: Json }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

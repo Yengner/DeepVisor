@@ -1,5 +1,34 @@
 # V2 decision persistence
 
+Scheduled Meta sync can now queue opt-in SHADOW evaluations. See
+[`shadow/README.md`](shadow/README.md) for source deduplication, policy comparison,
+worker failure handling and deployment settings. This path never executes actions.
+
+The explicit REVIEW-mode executor is documented in
+[`../advertising/README.md`](../advertising/README.md). It is disabled by default;
+approval alone never starts it. Approval now binds to the exact displayed
+proposal/evidence fingerprint, preventing stale-screen approvals.
+
+## Decisions operating surface
+
+`/decisions` reads business-scoped persisted evaluations, snapshots, proposals,
+execution history and existing trend findings. It does not run evaluations on
+page load. The feed includes historical decisions with 20 evaluations per page;
+raw provider responses are never passed to the UI. Persisted results from the
+deterministic provider appear as sample evaluations using the same data path.
+
+Owners and admins can approve/reject pending REVIEW proposals only when the
+current policy is `approval_required`, allows the action, and the saved policy
+result is `REQUIRE_APPROVAL` / `REVIEW_MODE`. The server checks the business,
+snapshot target and absence of execution history again. An optimistic update
+protects against concurrent reviews and records reviewer/time in policy JSON.
+Approval only records intent; it neither enqueues nor executes an action.
+Any future executor must revalidate policy, evidence and state transactionally
+before execution. Findings remain read-only here, with no legacy action enqueue.
+
+Run `npm test -- src/lib/server/decisions/surface.test.ts` for mocked persisted
+records covering presentation, review authorization and conflict handling.
+
 ## Provider-neutral evaluation
 
 `DecisionProvider.evaluate(snapshot, questions)` returns a `DecisionResult` using
@@ -30,7 +59,8 @@ Its confidence of 1 expresses rule certainty, not calibrated outcome probability
 questions are recorded but do not change its fixed rules. The interface also
 supports REDUCE_BUDGET and PAUSE_DELIVERY_UNIT. These are decision labels only:
 the engine does not create proposals or invoke execution. The optional Jev adapter
-below uses the same interface. No application route or automatic action is connected.
+below uses the same interface. Execution is separate, behind the explicitly opted-in
+[advertising layer](../advertising/LIMITED_AUTO.md); providers never invoke actions.
 
 ## Jev adapter
 
@@ -114,8 +144,8 @@ The snapshot helper copies identity and schema version from `FeatureSnapshot`.
 
 Authenticated organization members can read their business records through RLS.
 Anonymous access and authenticated writes are denied. Writes require a trusted
-server/service-role client. These permissions intentionally do not introduce a
-browser approval endpoint. Redact credentials/tokens from provider responses,
+server/service-role client. The Decisions server action authorizes owner/admin
+reviews before performing approval-only writes. Redact credentials/tokens from provider responses,
 request metadata and errors before storage; these records are member-readable.
 
 Autonomy defaults to `off`, no allowed actions, and a zero budget-change limit.

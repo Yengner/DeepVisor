@@ -1,4 +1,5 @@
 import 'server-only';
+import { enqueueShadowAfterSync } from '@/lib/server/decisions/shadow/service';
 
 import { fetchMetaAdAccountSnapshots } from '@/lib/server/integrations/adapters/meta';
 import {
@@ -431,6 +432,9 @@ export async function syncMetaBusinessPlatform(input: {
         completesFullHistory,
       }),
     ]);
+
+    await enqueueShadowAfterSync(input.supabase, { businessId: input.businessId, integrationId: input.platformIntegrationId,
+      adAccountId: primaryAdAccount.id, syncJobId: job.id });
 
     return {
       syncMode: input.syncMode,

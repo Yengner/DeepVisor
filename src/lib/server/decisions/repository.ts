@@ -19,11 +19,12 @@ function pageLimit(limit = 50): number {
 
 export async function saveFeatureSnapshot(
   client: Client,
-  input: { platformIntegrationId: string; snapshot: FeatureSnapshot }
+  input: { platformIntegrationId: string; snapshot: FeatureSnapshot; snapshotId?: string }
 ) {
   const { snapshot } = input;
   requireBusinessId(snapshot.deliveryUnit.businessId);
   const { data, error } = await client.schema('ai').from('feature_snapshots').insert({
+    ...(input.snapshotId ? { id: input.snapshotId } : {}),
     business_id: snapshot.deliveryUnit.businessId,
     platform_integration_id: input.platformIntegrationId,
     ad_account_id: snapshot.deliveryUnit.adAccountId,
@@ -55,11 +56,12 @@ export async function listFeatureSnapshots(client: Client, businessId: string, l
 
 export async function insertDecisionRun(
   client: Client, businessId: string,
-  values: Omit<Insert<'decision_runs'>, 'business_id' | 'id' | 'created_at' | 'updated_at'>
+  values: Omit<Insert<'decision_runs'>, 'business_id' | 'id' | 'created_at' | 'updated_at'>,
+  runId?: string,
 ) {
   requireBusinessId(businessId);
   const { data, error } = await client.schema('ai').from('decision_runs')
-    .insert({ ...values, business_id: businessId }).select('*').single();
+    .insert({ ...values, business_id: businessId, ...(runId ? { id: runId } : {}) }).select('*').single();
   if (error) throw error;
   return data;
 }

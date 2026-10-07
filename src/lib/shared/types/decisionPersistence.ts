@@ -66,7 +66,14 @@ export type ExecutedActionRow = MutableRecord & {
 };
 
 export type ActionOutcomeRow = RecordBase & {
-  executed_action_id: string;
+  executed_action_id: string | null;
+  shadow_decision_run_id: string | null;
+  source_kind: 'executed' | 'shadow';
+  anchor_at: string | null;
+  measurement_due_at: string | null;
+  measurement_status: 'pending' | 'complete' | 'insufficient_data' | 'unavailable';
+  next_attempt_at: string | null;
+  measured_at: string | null;
   measurement_horizon_hours: number;
   metrics_before_json: Json;
   metrics_after_json: Json;
@@ -91,6 +98,6 @@ export type DecisionPersistenceTables = {
   decision_runs: Table<DecisionRunRow, 'business_id' | 'feature_snapshot_id' | 'provider', [BusinessRelation<'decision_runs'>, ParentRelation<'decision_runs', 'feature_snapshot_id', 'feature_snapshots'>]>;
   action_proposals: Table<ActionProposalRow, 'business_id' | 'decision_run_id' | 'action_type' | 'target_entity_type' | 'target_entity_id', [BusinessRelation<'action_proposals'>, ParentRelation<'action_proposals', 'decision_run_id', 'decision_runs'>]>;
   executed_actions: Table<ExecutedActionRow, 'business_id' | 'action_proposal_id', [BusinessRelation<'executed_actions'>, ParentRelation<'executed_actions', 'action_proposal_id', 'action_proposals'>]>;
-  action_outcomes: Table<ActionOutcomeRow, 'business_id' | 'executed_action_id' | 'measurement_horizon_hours' | 'metrics_before_json' | 'metrics_after_json' | 'calculated_change_json', [BusinessRelation<'action_outcomes'>, ParentRelation<'action_outcomes', 'executed_action_id', 'executed_actions'>]>;
+  action_outcomes: Table<ActionOutcomeRow, 'business_id' | 'measurement_horizon_hours' | 'metrics_before_json' | 'metrics_after_json' | 'calculated_change_json', [BusinessRelation<'action_outcomes'>, ParentRelation<'action_outcomes', 'executed_action_id', 'executed_actions'>, Relation<'action_outcomes_shadow_run_fkey', ['business_id', 'shadow_decision_run_id'], 'decision_runs', ['business_id', 'id']>]>;
   autonomy_policies: Table<AutonomyPolicyRow, 'business_id', [Omit<BusinessRelation<'autonomy_policies'>, 'isOneToOne'> & { isOneToOne: true }]>;
 };
