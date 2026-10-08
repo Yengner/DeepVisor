@@ -9,10 +9,7 @@ import type {
 } from "./types";
 import { aggregate, comparisons, mediaFor, rank, trend } from "./model";
 import { periodRange, shiftDay } from "../../dashboard/overview/model";
-import {
-  recordedActivity,
-  selectAdvertising,
-} from "../../dashboard/overview/controlModel";
+import { selectBoardAdvertising } from "../../dashboard/overview/controlModel";
 
 export const fixtureToday = "2026-10-07";
 export function dailyFixture(entity = "ad-1", results = 3): Daily[] {
@@ -212,6 +209,7 @@ export function advertisingBoardFixture(
     return {
       ...detail.detail!.unit,
       id: `set-${i + 1}`,
+      delivery: i === 0 ? "ACTIVE" : "PAUSED",
       name,
       state:
         i === 1
@@ -238,14 +236,13 @@ export function advertisingBoardFixture(
       ],
     };
   });
-  const selection = selectAdvertising(
+  const selection = selectBoardAdvertising(
     items,
     ["set-2"],
-    recordedActivity(
-      names.flatMap((_, i) => dailyFixture(`set-${i + 1}`)),
-      names.map((_, i) => entityFixture("adset", `set-${i + 1}`)),
-      fixtureToday,
-    ),
+    names.flatMap((_, i) => dailyFixture(`set-${i + 1}`)),
+    names.map((_, i) => entityFixture("adset", `set-${i + 1}`)),
+    period,
+    fixtureToday,
   );
   return {
     ...detail,
@@ -253,11 +250,6 @@ export function advertisingBoardFixture(
     detail: null,
     parent: null,
     pulse: [],
-    board: {
-      featuredId: selection.featuredId,
-      featuredLabel: selection.featuredLabel,
-      highlightIds: selection.highlightIds,
-      attentionIds: selection.attentionIds,
-    },
+    board: selection.board,
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge, Button, Drawer, SegmentedControl, Select } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
@@ -105,24 +105,58 @@ export function MediaImage({
   media,
   name,
   labelPosition,
+  dashboard = false,
 }: {
   media?: Media;
   name: string;
   labelPosition?: "top";
+  dashboard?: boolean;
 }) {
   const [failed, setFailed] = useState<string[]>([]);
-  const src = [media?.image, media?.fallbackImage].find(
+  const [size, setSize] = useState<{
+    src: string;
+    width: number;
+    height: number;
+  } | null>(null);
+  const src = [media?.image, ...(media?.fallbackImages ?? [media?.fallbackImage])].find(
     (url) => url && !failed.includes(url),
   );
+  const measureImage = useCallback((image: HTMLImageElement | null) => {
+    if (src && image?.complete && image.naturalWidth > 0) {
+      setSize({ src, width: image.naturalWidth, height: image.naturalHeight });
+    } else if (src && image?.complete) {
+      setFailed(old => old.includes(src) ? old : [...old, src]);
+    }
+  }, [src]);
   return (
-    <div className={classes.media}>
+    <div className={classes.media} data-compact-media={!!src && size?.src === src && (size.width < 600 || size.height < 300) || !src}>
       {src /* Synced Meta assets have variable hosts and expiring URLs. */ ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
+          ref={measureImage}
           src={src}
           alt={name}
           loading="lazy"
           referrerPolicy="no-referrer"
+          style={
+            size?.src === src &&
+            (size.width < 600 || size.height < 300)
+              ? {
+                  objectFit: "contain",
+                  width: "auto",
+                  height: "auto",
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                }
+              : undefined
+          }
+          onLoad={(event) =>
+            setSize({
+              src,
+              width: event.currentTarget.naturalWidth,
+              height: event.currentTarget.naturalHeight,
+            })
+          }
           onError={() => setFailed((old) => [...old, src])}
         />
       ) : (
@@ -130,14 +164,16 @@ export function MediaImage({
           <IconPhoto size={24} />
         </span>
       )}
-      {media && media.kind !== "image" && (
-        <span
-          className={`${classes.mediaLabel} ${labelPosition === "top" ? classes.mediaLabelTop : ""}`}
-        >
-          {media.kind === "video" && <IconPlayerPlay size={12} />}
-          {media.kind === "video" ? "Video" : "Representative asset"}
-        </span>
-      )}
+      {media &&
+        media.kind !== "image" &&
+        (!dashboard || media.kind === "video") && (
+          <span
+            className={`${classes.mediaLabel} ${labelPosition === "top" ? classes.mediaLabelTop : ""}`}
+          >
+            {media.kind === "video" && <IconPlayerPlay size={12} />}
+            {media.kind === "video" ? "Video" : "Representative asset"}
+          </span>
+        )}
     </div>
   );
 }

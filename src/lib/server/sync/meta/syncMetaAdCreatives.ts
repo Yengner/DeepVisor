@@ -9,6 +9,7 @@ import type { AdsetDimRow } from '@/lib/server/repositories/adsets/upsertAdsetDi
 import type { CampaignDimRow } from '@/lib/server/repositories/campaigns/upsertCampaignDims';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
 import { fetchMetaAdCreativeSeeds } from './fetch';
+import { enrichVideoPosters } from './videoPosters';
 
 type AdAccountRow = Database['public']['Tables']['ad_accounts']['Row'];
 type AdCreativeRow = Database['public']['Tables']['ad_creatives']['Row'];
@@ -446,6 +447,7 @@ export async function syncMetaAdCreatives(input: {
       continue;
     }
 
+    creatives = await enrichVideoPosters(creatives, input.accessToken);
     creativeInputs.push(
       ...creatives.map((creative) => ({
         businessId: input.businessId,

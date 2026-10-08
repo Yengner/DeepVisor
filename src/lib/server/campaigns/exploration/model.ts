@@ -16,7 +16,9 @@ import type {
 const valid = (n: unknown): n is number =>
   typeof n === "number" && Number.isFinite(n) && n >= 0;
 export function aggregate(rows: Daily[], currency: string | null): Metrics {
-  const sum = (key: "impressions" | "clicks" | "reach" | "inline_link_clicks") =>
+  const sum = (
+    key: "impressions" | "clicks" | "reach" | "inline_link_clicks",
+  ) =>
     rows.length && rows.every((r) => valid(r[key]))
       ? rows.reduce((n, r) => n + r[key]!, 0)
       : null;
@@ -32,7 +34,7 @@ export function aggregate(rows: Daily[], currency: string | null): Metrics {
     ...base,
     impressions,
     clicks,
-    linkClicks: sum('inline_link_clicks'),
+    linkClicks: sum("inline_link_clicks"),
     reach,
     frequency: ratio(impressions, reach),
     ctr: ratio(clicks, impressions, 100),
@@ -163,14 +165,56 @@ export function mediaFor(creative: Creative): Media {
         : creative.video_id || creative.creative_type?.toLowerCase() === "video"
           ? "video"
           : "image";
+  // Only known image/poster fields are candidates; video IDs and source URLs are not images.
+  const raw = object(creative.raw);
+  const poster = object(raw.deepvisor_video_poster);
+  const photo = object(story.photo_data);
+  const video = object(story.video_data);
+  const link = object(story.link_data);
+  const images = Array.isArray(feed.images) ? feed.images.map(object) : [];
+  const videos = Array.isArray(feed.videos) ? feed.videos.map(object) : [];
+  const attachments = Array.isArray(children) ? children.map(object) : [];
+  const candidates = [
+    { url: poster.uri, width: poster.width, height: poster.height },
+    { url: photo.url, width: photo.width, height: photo.height },
+    { url: video.image_url },
+    { url: creative.image_url },
+    { url: raw.image_url },
+    ...images.map((i) => ({ url: i.url, width: i.width, height: i.height })),
+    ...videos.map((v) => ({ url: v.thumbnail_url })),
+    ...attachments.map((a) => ({ url: a.picture })),
+    { url: link.picture },
+    { url: creative.thumbnail_url },
+  ].flatMap(({ url: value, ...dimensions }) => {
+    const url = typeof value === "string" ? safeMediaUrl(value) : null;
+    const width = "width" in dimensions ? dimensions.width : null;
+    const height = "height" in dimensions ? dimensions.height : null;
+    const known =
+      typeof width === "number" &&
+      Number.isFinite(width) &&
+      width > 0 &&
+      typeof height === "number" &&
+      Number.isFinite(height) &&
+      height > 0;
+    return url && !/\.(mp4|mov|webm)(?:$|[?#])/i.test(url)
+      ? [
+          {
+            url,
+            quality: known ? (width >= 600 && height >= 300 ? 2 : 0) : 1,
+            area: known ? width * height : 0,
+          },
+        ]
+      : [];
+  });
+  // Prefer explicit saved dimensions when present, otherwise retain semantic source order.
+  candidates.sort((a, b) => b.quality - a.quality || b.area - a.area);
+  const sources = [...new Set(candidates.map((c) => c.url))];
   return {
     creativeId: creative.platform_creative_id,
     kind,
-    image:
-      safeMediaUrl(
-        kind === "video" ? creative.thumbnail_url : creative.image_url,
-      ) ?? safeMediaUrl(creative.thumbnail_url),
-    fallbackImage: safeMediaUrl(creative.thumbnail_url),
+    image: sources[0] ?? null,
+    fallbackImage: sources[1] ?? null,
+    fallbackImages: sources.slice(1),
     headline: creative.headline,
     text: creative.primary_text,
     cta: creative.cta_type,

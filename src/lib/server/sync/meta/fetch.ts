@@ -74,6 +74,7 @@ type MetaAdNode = {
 };
 
 type MetaAdCreativeNode = {
+  video_id?: string;
   id?: string;
   name?: string;
   object_type?: string;
@@ -373,7 +374,7 @@ function normalizeMetaAdCreativeSeed(creative: MetaAdCreativeNode): MetaAdCreati
     extractUrl(asRecord(videoData.call_to_action).value),
     extractUrl(Array.isArray(assetFeedSpec.link_urls) ? assetFeedSpec.link_urls[0] : null)
   );
-  const videoId = firstNonEmptyString(videoData.video_id);
+  const videoId = firstNonEmptyString(creative.video_id, videoData.video_id);
   const pageId = firstNonEmptyString(objectStorySpec.page_id);
   const instagramActorId = firstNonEmptyString(
     creative.instagram_actor_id,
@@ -803,6 +804,7 @@ export async function fetchMetaAdCreativeSeeds(input: {
     'image_hash',
     'image_url',
     'thumbnail_url',
+    'video_id',
     'object_story_id',
     'object_story_spec',
     'asset_feed_spec',

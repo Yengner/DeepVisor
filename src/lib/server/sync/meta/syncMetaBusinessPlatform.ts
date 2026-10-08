@@ -16,6 +16,7 @@ import type { Database } from '@/lib/shared/types/supabase';
 import { RECENT_SEED_SYNC_DAYS } from '../types';
 import type { PlatformSyncMode, SyncTrigger } from '../types';
 import { resolveMetaBackfillWindow } from './client';
+import { manualMetaWindow } from './manualWindow';
 import { syncMetaAdCreatives } from './syncMetaAdCreatives';
 import { syncMetaAds } from './syncMetaAds';
 import { syncMetaAdsets } from './syncMetaAdsets';
@@ -253,7 +254,8 @@ export async function syncMetaBusinessPlatform(input: {
     supabase: input.supabase,
     adAccountId: primaryAdAccount.id,
   });
-  const performanceWindow = resolvePerformanceWindow({
+  const manualRecent = input.trigger === 'manual_refresh' && input.syncMode !== 'full_backfill';
+  const performanceWindow = manualRecent ? manualMetaWindow(primaryAdAccount.timezone) : resolvePerformanceWindow({
     syncState: adAccountSyncState,
     syncMode: input.syncMode,
     backfillDays: input.backfillDays,
@@ -380,6 +382,7 @@ export async function syncMetaBusinessPlatform(input: {
         adsByExternalId: ads.byExternalId,
         accessToken: input.accessToken,
         backfillDays: performanceWindow.backfillDays,
+        ...(manualRecent ? { dateRange: { since: performanceWindow.since, until: performanceWindow.until } } : {}),
         dataPolicy: input.dataPolicy,
         syncedAt: input.syncedAt,
       })

@@ -16,7 +16,8 @@ import type {
   HistoricalSyncType,
   SupportedIntegrationPlatform,
 } from '@/lib/shared/types/integrations';
-import { resolveMetaBackfillWindow } from './meta/client';
+import { manualMetaWindow } from './meta/manualWindow';
+import { performanceFingerprint } from './manualRefreshStatus';
 
 const RATE_LIMIT_DETAIL_KEY = 'manual_sync_rate_limit';
 const BASE_COOLDOWN_MS = 30_000;
@@ -113,6 +114,7 @@ function formatCooldownMessage(retryAfterMs: number): string {
 async function listLatestBusinessSyncTargets(input: {
   businessId: string;
   platformKey?: SupportedIntegrationPlatform;
+  integrationId?: string;
 }): Promise<IntegrationRow[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -128,6 +130,7 @@ async function listLatestBusinessSyncTargets(input: {
   const latestByPlatformId = new Map<string, IntegrationRow>();
 
   for (const row of (data ?? []) as IntegrationRow[]) {
+    if (input.integrationId && row.id !== input.integrationId) continue;
     if (latestByPlatformId.has(row.platform_id)) {
       continue;
     }
@@ -216,7 +219,10 @@ async function persistRateLimitState(input: {
         integration_details: nextDetails as Json,
         updated_at: input.requestedAt,
       })
-      .eq('id', integration.id);
+      .eq('id', integration.id)
+      .eq('updated_at', integration.updated_at)
+      .select('id')
+      .single();
 
     if (error) {
       throw error;
@@ -224,7 +230,7 @@ async function persistRateLimitState(input: {
   }
 }
 
-async function enqueueManualRefreshJobs(integrations: IntegrationRow[]): Promise<{
+async function enqueueManualRefreshJobs(integrations: IntegrationRow[], selectedAccountId?: string): Promise<{
   queuedCount: number;
   failedCount: number;
   jobs: ManualRefreshJob[];
@@ -250,13 +256,13 @@ async function enqueueManualRefreshJobs(integrations: IntegrationRow[]): Promise
         throw new Error('Meta integration has no selected ad account');
       }
 
-      const { data: adAccount, error: adAccountError } = await supabase
+      let accountQuery = supabase
         .from('ad_accounts')
-        .select('id')
+        .select('id,external_account_id,timezone')
         .eq('business_id', integration.business_id)
-        .eq('platform_id', integration.platform_id)
-        .eq('external_account_id', primarySelection.externalAccountId)
-        .maybeSingle();
+        .eq('platform_id', integration.platform_id);
+      accountQuery = selectedAccountId ? accountQuery.eq('id', selectedAccountId) : accountQuery.eq('external_account_id', primarySelection.externalAccountId);
+      const { data: adAccount, error: adAccountError } = await accountQuery.maybeSingle();
 
       if (adAccountError) {
         throw adAccountError;
@@ -266,7 +272,8 @@ async function enqueueManualRefreshJobs(integrations: IntegrationRow[]): Promise
         throw new Error('Selected Meta ad account is not registered');
       }
 
-      const syncWindow = resolveMetaBackfillWindow(30);
+      const syncWindow = manualMetaWindow(adAccount.timezone);
+      const fingerprint = await performanceFingerprint(supabase, adAccount.id, syncWindow.since, syncWindow.until);
       const job = await createOrReuseQueuedSyncJob(supabase, {
         businessId: integration.business_id,
         platformIntegrationId: integration.id,
@@ -275,14 +282,14 @@ async function enqueueManualRefreshJobs(integrations: IntegrationRow[]): Promise
         requestedEndDate: syncWindow.until,
         syncType: 'manual_refresh',
         metadata: {
-          externalAccountId: primarySelection.externalAccountId,
+          externalAccountId: adAccount.external_account_id,
           queuedFrom: 'manual_refresh',
           trigger: 'manual_refresh',
           syncMode: 'default',
           current_step: 'queued',
           date_cursor: syncWindow.since,
           attempt: 0,
-          last_processed_ids: {},
+          last_processed_ids: { performanceFingerprint: fingerprint },
         },
       });
       jobs.push({
@@ -308,6 +315,8 @@ async function enqueueManualRefreshJobs(integrations: IntegrationRow[]): Promise
 export async function runManualBusinessSync(input: {
   businessId: string;
   platformKey?: SupportedIntegrationPlatform;
+  integrationId?: string;
+  adAccountId?: string;
 }): Promise<ManualRefreshResult> {
   const integrations = await listLatestBusinessSyncTargets(input);
 
@@ -332,7 +341,7 @@ export async function runManualBusinessSync(input: {
     requestedAt,
   });
 
-  const result = await enqueueManualRefreshJobs(integrations);
+  const result = await enqueueManualRefreshJobs(integrations, input.adAccountId);
   console.info(`Enqueued ${result.queuedCount} manual sync jobs for business ${input.businessId} with ${result.failedCount} failures.`);
   return {
     allowed: true,

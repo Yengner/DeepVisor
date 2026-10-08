@@ -105,7 +105,7 @@ export function selectAdvertising(
     (id) => ranked.find((i) => i.id === id) ?? [],
   );
   const active = ranked
-    .filter((i) => i.delivery === "ACTIVE" && activity.has(i.id))
+    .filter((i) => i.delivery.trim().toUpperCase() === "ACTIVE" && activity.has(i.id))
     .sort(
       (a, b) =>
         activity.get(b.id)!.localeCompare(activity.get(a.id)!) ||
@@ -160,6 +160,57 @@ export function recordedActivity(
     }
   }
   return result;
+}
+
+export function selectBoardAdvertising(
+  items: Summary[],
+  attentionIds: string[],
+  rows: DailyRow[],
+  entities: Entity[],
+  period: Period,
+  today: string,
+) {
+  const { since, until } = periodRange(period, today);
+  const activity = recordedActivity(
+    rows.filter((r) => r.day >= since && r.day <= until),
+    entities,
+    today,
+  );
+  const active = items.filter((i) => i.delivery.trim().toUpperCase() === "ACTIVE");
+  const selected = selectAdvertising(active, attentionIds, activity);
+  const featured =
+    selected.featuredId ??
+    [...active].sort((a, b) => a.id.localeCompare(b.id))[0]?.id ??
+    null;
+  const activeIds = [
+    ...new Set([...(featured ? [featured] : []), ...selected.highlightIds]),
+  ].slice(0, 5);
+  const highlights = rank(items.filter((i) => activity.has(i.id))).slice(0, 5);
+  const attention = attentionIds
+    .flatMap((id) => items.find((i) => i.id === id) ?? [])
+    .slice(0, 5);
+  const visibleIds = new Set([
+    ...activeIds,
+    ...highlights.map((i) => i.id),
+    ...attention.map((i) => i.id),
+  ]);
+  return {
+    items: items
+      .filter((i) => visibleIds.has(i.id))
+      .map((i) => highlights.find((h) => h.id === i.id) ?? i),
+    board: {
+      activeIds,
+      activeFeaturedId: featured,
+      activeFeaturedLabel:
+        active.length === 1
+          ? "Active now"
+          : (selected.featuredLabel ?? "Active now"),
+      featuredId: null,
+      featuredLabel: null,
+      highlightIds: highlights.map((i) => i.id),
+      attentionIds: attention.map((i) => i.id),
+    },
+  };
 }
 
 export function attentionSummary(

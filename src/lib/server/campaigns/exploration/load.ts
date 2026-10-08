@@ -30,10 +30,8 @@ import type {
 } from "./types";
 import type { OverviewContext } from "../../dashboard/overview/load";
 import type { UnitState } from "../../dashboard/overview/types";
-import {
-  recordedActivity,
-  selectAdvertising,
-} from "../../dashboard/overview/controlModel";
+import { selectBoardAdvertising } from "../../dashboard/overview/controlModel";
+import { deliveryStatuses } from "./delivery";
 
 export class ExplorationNotFound extends Error {}
 type Client = ReturnType<typeof createAdminClient>;
@@ -174,6 +172,15 @@ export const loadExploration = cache(
       if (parent) query = query.eq("parent_external_id", parent.external_id);
       return query.order("id").range(from, to);
     });
+    const hierarchy = level === "campaign" ? units : await allPages((from, to) =>
+      client.from("ad_entities")
+        .select("external_id,parent_external_id,entity_level,status,raw")
+        .eq("business_id", context.businessId)
+        .eq("platform_integration_id", context.platform!.id)
+        .eq("ad_account_id", context.account!.id)
+        .order("id").range(from, to),
+    );
+    const delivery = deliveryStatuses(hierarchy, context.now);
     const [rows, decisions] = await Promise.all([
       overview
         ? loadOverviewHistory(
@@ -237,12 +244,12 @@ export const loadExploration = cache(
             : entity.entity_level === "ad"
               ? "Ad unavailable"
               : "Campaign unavailable"),
-        delivery: entity.status || "Unknown",
+        delivery: delivery.get(`${entity.entity_level}:${entity.external_id}`) ?? "UNKNOWN",
         level: entity.entity_level as Summary["level"],
         state:
           entity.entity_level === "adset"
             ? (state ??
-              (entity.status === "PAUSED" ? "Paused" : "Insufficient data"))
+              (entity.status?.trim().toUpperCase() === "PAUSED" ? "Paused" : "Insufficient data"))
             : null,
         metrics: aggregate(selected, currency),
         complete: complete(selected, range.since, range.until, currency),
@@ -269,18 +276,16 @@ export const loadExploration = cache(
         );
         return unit ? [unit.external_id] : [];
       });
-      const selection = selectAdvertising(
+      const selection = selectBoardAdvertising(
         items,
         attentionIds,
-        recordedActivity(rows, units, context.today),
+        rows,
+        units,
+        period,
+        context.today,
       );
       items = selection.items;
-      board = {
-        featuredId: selection.featuredId,
-        featuredLabel: selection.featuredLabel,
-        highlightIds: selection.highlightIds,
-        attentionIds: selection.attentionIds,
-      };
+      board = selection.board;
     }
     // Load media only for the visible hierarchy. Overview never loads every ad's daily history.
     try {
@@ -354,9 +359,10 @@ export const loadExploration = cache(
       );
       items = items.map((item) => {
         const related = ads.filter((a) =>
-          level === "ad"
+          (level === "ad"
             ? a.external_id === item.id
-            : a.parent_external_id === item.id,
+            : a.parent_external_id === item.id) &&
+          (!(overview && item.delivery === "ACTIVE") || delivery.get(`ad:${a.external_id}`) === "ACTIVE"),
         );
         const media = [
           ...new Set(related.map((a) => a.creative_external_id)),
@@ -390,7 +396,8 @@ export const loadExploration = cache(
         for (const unit of items) {
           const ranked = rank(
             ads
-              .filter((a) => a.parent_external_id === unit.id)
+              .filter((a) => a.parent_external_id === unit.id &&
+                (unit.delivery !== "ACTIVE" || delivery.get(`ad:${a.external_id}`) === "ACTIVE"))
               .map((ad) => ({
                 ...summary(
                   ad,

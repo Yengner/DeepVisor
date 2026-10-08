@@ -23,19 +23,30 @@ export default function AdvertisingBoard({ view }: { view: ExplorationView }) {
       ? (view.board?.attentionIds ?? [])
       : (view.board?.highlightIds ?? view.items.map((i) => i.id));
   const items = ids.flatMap((id) => view.items.find((i) => i.id === id) ?? []);
-  const featuredId =
-    tab === "attention" ? items[0]?.id : view.board?.featuredId;
-  const featured = items.find((i) => i.id === featuredId);
-  function card(item: Summary, prominent = false) {
+  const active = (
+    view.board?.activeIds ??
+    view.items.filter((i) => i.delivery === "ACTIVE").map((i) => i.id)
+  ).flatMap((id) => view.items.find((i) => i.id === id) ?? []);
+  const featured =
+    active.find((i) => i.id === view.board?.activeFeaturedId) ?? active[0];
+  const periodLabel =
+    view.period === "today"
+      ? "Today"
+      : view.period === "7d"
+        ? "7 days"
+        : "30 days";
+  function card(item: Summary, prominent = false, activeArea = false) {
     const label = prominent
-      ? tab === "attention"
+      ? (view.board?.activeFeaturedLabel ?? "Active now")
+      : !activeArea && tab === "attention"
         ? "Needs attention"
-        : view.board?.featuredLabel
-      : null;
+        : !activeArea && item.leader
+          ? item.tied
+            ? "Most results · tied"
+            : "Most results"
+          : null;
     const hasData =
-      item.complete &&
-      item.metrics.results !== null &&
-      item.metrics.spend !== null;
+      item.metrics.results !== null && item.metrics.spend !== null;
     return (
       <button
         type="button"
@@ -52,6 +63,7 @@ export default function AdvertisingBoard({ view }: { view: ExplorationView }) {
             media={item.media.find((m) => m.image) ?? item.media[0]}
             name={item.name}
             labelPosition="top"
+            dashboard
           />
           {label && <span className={classes.featureLabel}>{label}</span>}
           <span className={classes.openCreative}>
@@ -77,33 +89,98 @@ export default function AdvertisingBoard({ view }: { view: ExplorationView }) {
                   description={view.comparison}
                 />
               </div>
-              <div>
-                <dd>
-                  {metricValue(
-                    "costPerResult",
-                    item.metrics.costPerResult,
-                    view.currency,
-                    true,
-                  )}
-                </dd>
-                <dt>Cost / result</dt>
-                <MetricDelta
-                  change={item.deltas.costPerResult}
-                  description={view.comparison}
-                />
-              </div>
+              {item.metrics.costPerResult !== null && (
+                <div>
+                  <dd>
+                    {metricValue(
+                      "costPerResult",
+                      item.metrics.costPerResult,
+                      view.currency,
+                      true,
+                    )}
+                  </dd>
+                  <dt>Cost / result</dt>
+                  <MetricDelta
+                    change={item.deltas.costPerResult}
+                    description={view.comparison}
+                  />
+                </div>
+              )}
             </dl>
           ) : (
-            <p className={classes.insufficient}>Not enough period data</p>
+            <p className={classes.insufficient}>
+              Not enough data in this period
+            </p>
+          )}
+          {hasData && (
+            <>
+              <dl className={classes.secondaryMetrics}>
+                <div>
+                  <dt>Spend</dt>
+                  <dd>
+                    {metricValue(
+                      "spend",
+                      item.metrics.spend,
+                      view.currency,
+                      true,
+                    )}
+                  </dd>
+                </div>
+                {item.metrics.ctr !== null && (
+                  <div>
+                    <dt>CTR</dt>
+                    <dd>
+                      {metricValue("ctr", item.metrics.ctr, view.currency)}
+                    </dd>
+                  </div>
+                )}
+                {prominent && item.metrics.clicks !== null && (
+                  <div>
+                    <dt>Clicks</dt>
+                    <dd>
+                      {new Intl.NumberFormat("en", {
+                        notation: "compact",
+                      }).format(item.metrics.clicks)}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+              <p className={classes.supportMetrics}>
+                {[
+                  item.metrics.impressions !== null
+                    ? `${new Intl.NumberFormat("en", { notation: "compact" }).format(item.metrics.impressions)} impressions`
+                    : null,
+                  prominent &&
+                  view.period === "today" &&
+                  item.metrics.reach !== null
+                    ? `${new Intl.NumberFormat("en", { notation: "compact" }).format(item.metrics.reach)} reach`
+                    : null,
+                  !prominent && item.metrics.clicks !== null
+                    ? `${new Intl.NumberFormat("en", { notation: "compact" }).format(item.metrics.clicks)} clicks`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+              {!item.complete && (
+                <span className={classes.delivery}>
+                  Recorded data · partial period
+                </span>
+              )}
+            </>
           )}
           <div className={classes.adState}>
-            <StatusBadge status={item.state ?? "Insufficient data"} />
+            {item.state &&
+              item.state !== "Insufficient data" &&
+              item.state !== "Paused" && <StatusBadge status={item.state} />}
             <span className={classes.delivery}>
               {item.delivery === "ACTIVE"
                 ? "Active"
                 : item.delivery === "PAUSED"
                   ? "Paused"
-                  : "Meta"}
+                  : item.delivery === "Unknown"
+                    ? "Status unavailable"
+                    : "Inactive"}
             </span>
           </div>
         </div>
@@ -114,6 +191,34 @@ export default function AdvertisingBoard({ view }: { view: ExplorationView }) {
     <>
       <div className={classes.boardHeader}>
         <h2>Your advertising</h2>
+        <Link href="/campaigns">
+          Campaigns <IconArrowUpRight size={15} />
+        </Link>
+      </div>
+      <h3 className={classes.boardSubheading}>
+        Active now <span>{periodLabel} performance</span>
+      </h3>
+      {featured ? (
+        <div
+          className={`${classes.adBoard} ${active.length === 1 ? classes.singleActive : ""}`}
+        >
+          {card(featured, true, true)}
+          {active.length > 1 && (
+            <div className={classes.supporting}>
+              {active
+                .filter((i) => i.id !== featured.id)
+                .map((i) => card(i, false, true))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className={classes.quiet}>No active ad sets right now</p>
+      )}
+      <div className={classes.historyHeader}>
+        <h3 className={classes.boardSubheading}>
+          {tab === "attention" ? "Needs attention" : "Highlights"}{" "}
+          <span>{periodLabel}</span>
+        </h3>
         <div className={classes.boardActions}>
           <div
             className={classes.boardTabs}
@@ -135,21 +240,12 @@ export default function AdvertisingBoard({ view }: { view: ExplorationView }) {
               Needs attention
             </button>
           </div>
-          <Link href="/campaigns">
-            Campaigns <IconArrowUpRight size={15} />
-          </Link>
         </div>
       </div>
       {items.length ? (
-        <div
-          className={`${classes.adBoard} ${!featured ? classes.noFeatured : ""}`}
-        >
-          {featured && card(featured, true)}
+        <div className={`${classes.adBoard} ${classes.noFeatured}`}>
           <div className={classes.supporting}>
-            {items
-              .filter((i) => i.id !== featured?.id)
-              .slice(0, featured ? 4 : 5)
-              .map((i) => card(i))}
+            {items.slice(0, 5).map((i) => card(i))}
           </div>
         </div>
       ) : (
@@ -158,7 +254,7 @@ export default function AdvertisingBoard({ view }: { view: ExplorationView }) {
             ? view.decisionEvidenceAvailable === false
               ? "Attention status unavailable. Check Decisions for saved records."
               : "No ad sets with recorded open attention."
-            : "Your synced ad sets will appear here."}
+            : "No recorded delivery in this period."}
         </p>
       )}
       {!!view.warnings.length && (

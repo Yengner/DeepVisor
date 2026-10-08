@@ -151,10 +151,16 @@ describe("honest visual evidence", () => {
   it("uses actual images, video thumbnails, and safe media URLs", () => {
     expect(mediaFor(creativeFixture()).image).toContain("colour.jpg");
     expect(mediaFor(creativeFixture({ video_id: "123" })).image).toContain(
-      "thumb.jpg",
+      "colour.jpg",
     );
     expect(
-      mediaFor(creativeFixture({ video_id: "123", thumbnail_url: null })).image,
+      mediaFor(
+        creativeFixture({
+          video_id: "123",
+          image_url: null,
+          thumbnail_url: null,
+        }),
+      ).image,
     ).toBeNull();
     expect(safeMediaUrl("javascript:alert(1)")).toBeNull();
     expect(safeMediaUrl("http://insecure.test/image")).toBeNull();
@@ -176,5 +182,72 @@ describe("honest visual evidence", () => {
         }),
       ).kind,
     ).toBe("dynamic");
+  });
+  it("prefers persisted full photos and video posters over thumbnails", () => {
+    expect(
+      mediaFor(
+        creativeFixture({
+          object_story_spec: {
+            photo_data: {
+              url: "https://assets.test/tiny.jpg",
+              width: 100,
+              height: 100,
+            },
+          },
+          asset_feed_spec: {
+            images: [
+              {
+                url: "https://assets.test/large.jpg",
+                width: 1200,
+                height: 800,
+              },
+            ],
+          },
+        }),
+      ).image,
+    ).toBe("https://assets.test/large.jpg");
+    expect(
+      mediaFor(
+        creativeFixture({
+          object_story_spec: {
+            photo_data: { url: "https://assets.test/full.jpg" },
+          },
+        }),
+      ).image,
+    ).toBe("https://assets.test/full.jpg");
+    expect(
+      mediaFor(
+        creativeFixture({
+          video_id: "v",
+          object_story_spec: {
+            video_data: {
+              image_url: "https://assets.test/poster.jpg",
+              source: "https://assets.test/movie.mp4",
+            },
+          },
+        }),
+      ).image,
+    ).toBe("https://assets.test/poster.jpg");
+    expect(
+      mediaFor(
+        creativeFixture({
+          image_url: null,
+          asset_feed_spec: {
+            images: [{ url: "https://assets.test/feed.jpg" }],
+          },
+        }),
+      ).image,
+    ).toBe("https://assets.test/feed.jpg");
+    expect(
+      mediaFor(
+        creativeFixture({
+          image_url: "https://assets.test/movie.mp4",
+          thumbnail_url: null,
+        }),
+      ).image,
+    ).toBeNull();
+    expect(
+      mediaFor(creativeFixture({ image_url: null, thumbnail_url: null })).image,
+    ).toBeNull();
   });
 });

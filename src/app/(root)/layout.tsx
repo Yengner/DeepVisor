@@ -39,7 +39,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Sidebar />
 
         <main className="app-platform-main mx-auto flex-1 space-y-5 overflow-y-auto pb-[calc(5.5rem+env(safe-area-inset-bottom))] pl-0 pr-0 pt-3 md:space-y-6 md:pb-6 md:pl-[3.75rem] md:pr-3 md:pt-4">
-          <AutonomyChrome><Suspense fallback={<p className="px-4 text-xs text-gray-600" style={{minHeight:44}}>Loading configured mode…</p>}><AutonomyIndicator businessId={businessId}/></Suspense></AutonomyChrome>
+          {/* <AutonomyChrome><Suspense fallback={<p className="px-4 text-xs text-gray-600" style={{minHeight:44}}>Loading configured mode…</p>}><AutonomyIndicator businessId={businessId}/></Suspense></AutonomyChrome> */}
           {children}
         </main>
       </div>

@@ -34,6 +34,7 @@ export type Media = {
   creativeId: string;
   image: string | null;
   fallbackImage: string | null;
+  fallbackImages?: string[];
   kind: "image" | "video" | "carousel" | "dynamic";
   headline: string | null;
   text: string | null;
@@ -78,6 +79,9 @@ export type ExplorationView = {
   decisionEvidenceAvailable?: boolean;
   pulse: Array<{ adsetId: string; item: Summary }>;
   board?: {
+    activeIds?: string[];
+    activeFeaturedId?: string | null;
+    activeFeaturedLabel?: string | null;
     featuredId: string | null;
     featuredLabel: string | null;
     highlightIds: string[];

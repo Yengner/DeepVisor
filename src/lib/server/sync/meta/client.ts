@@ -123,12 +123,13 @@ async function parseMetaError(response: Response): Promise<MetaParsedError> {
   };
 }
 
-async function fetchMetaResponseWithRetry(url: URL): Promise<Response> {
+async function fetchMetaResponseWithRetry(url: URL, signal?: AbortSignal): Promise<Response> {
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= META_TRANSIENT_MAX_ATTEMPTS; attempt += 1) {
     try {
-      const response = await fetch(url);
+      signal?.throwIfAborted();
+      const response = await fetch(url, signal ? { signal } : undefined);
       if (response.ok) {
         return response;
       }
@@ -148,6 +149,7 @@ async function fetchMetaResponseWithRetry(url: URL): Promise<Response> {
         `Retrying Meta request after transient error (${attempt}/${META_TRANSIENT_MAX_ATTEMPTS}) for ${url.pathname}: ${parsedError.message}`
       );
     } catch (error) {
+      if (signal?.aborted) throw new Error('Meta request timed out');
       lastError = error instanceof Error ? error : new Error('Meta request failed');
       const retryable = error instanceof MetaRequestError ? error.retryable : true;
 
@@ -167,6 +169,7 @@ async function fetchMetaResponseWithRetry(url: URL): Promise<Response> {
 }
 
 export async function fetchMetaObject<T>(input: {
+  signal?: AbortSignal;
   path: string;
   accessToken: string;
   params?: Record<string, string | number | boolean | undefined>;
@@ -182,7 +185,7 @@ export async function fetchMetaObject<T>(input: {
     url.searchParams.set(key, String(value));
   }
 
-  const response = await fetchMetaResponseWithRetry(url);
+  const response = await fetchMetaResponseWithRetry(url, input.signal);
 
   return (await response.json()) as T;
 }

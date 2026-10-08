@@ -207,7 +207,7 @@ export function getCachedPlatformDetails(
       };
     },
     ['dashboard-platform-details', userId, businessId, selectedPlatformIntegrationId],
-    { revalidate: 300 }
+    { revalidate: 300, tags: [`dashboard-context:${businessId}`] }
   )();
 }
 
@@ -358,7 +358,7 @@ export function getCachedAdAccountShellData(
       selectedPlatformIntegrationId,
       selectedAdAccountId,
     ],
-    { revalidate: 60 }
+    { revalidate: 60, tags: [`dashboard-context:${businessId}`] }
   )();
 }
 

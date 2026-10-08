@@ -398,7 +398,7 @@ export function decisionViews(input: {
     );
     states.set(
       entity.id,
-      entity.status === "PAUSED"
+      entity.status?.trim().toUpperCase() === "PAUSED"
         ? "Paused"
         : attentionEntities.has(entity.external_id) ||
             attentionEntities.has(entity.id)
@@ -506,7 +506,7 @@ export function performanceView(input: {
     name: entity.name || "Ad set unavailable",
     state:
       input.states?.get(entity.id) ??
-      (entity.status === "PAUSED" ? "Paused" : "Insufficient data"),
+      (entity.status?.trim().toUpperCase() === "PAUSED" ? "Paused" : "Insufficient data"),
   }));
   units.sort(
     (a, b) =>

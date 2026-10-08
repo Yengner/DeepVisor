@@ -238,6 +238,61 @@ describe("read-only exploration loading", () => {
     expect(view.items[0].media[0].creativeId).toBe("creative-2");
     expect(view.items[0].metrics.results).toBe(25);
     expect(view.items[0].level).toBe("adset");
-    expect(view.board?.featuredLabel).toBe("Recent delivery");
+    expect(view.board?.activeFeaturedLabel).toBe("Active now");
+  });
+  it("uses today's ad-set metrics without importing historical ad totals", async () => {
+    const view = await loadExploration("today", "adset", null, true);
+    expect(view.items[0].metrics).toMatchObject({
+      results: 1,
+      spend: 6,
+      clicks: 60,
+      impressions: 1200,
+      reach: 800,
+      ctr: 5,
+    });
+    expect(view.board?.activeIds).toEqual(["set-1"]);
+  });
+  it("keeps active sets with no selected-period delivery but omits them from highlights", async () => {
+    vi.mocked(loadOverviewHistory).mockResolvedValue(
+      dailyFixture("set-1").filter((r) => r.day < fixtureToday),
+    );
+    const view = await loadExploration("today", "adset", null, true);
+    expect(view.board?.activeIds).toEqual(["set-1"]);
+    expect(view.board?.highlightIds).toEqual([]);
+    expect(view.items[0].metrics.results).toBeNull();
+  });
+  it('excludes active children of a paused campaign despite recorded performance', async () => {
+    records.ad_entities.find(r => r.id === 'campaign-1')!.status = 'paused';
+    const view = await loadExploration('today', 'adset', null, true);
+    expect(view.board?.activeIds).toEqual([]);
+    expect(view.board?.highlightIds).toEqual(['set-1']);
+    expect(view.items[0].delivery).toBe('CAMPAIGN_PAUSED');
+  });
+  it('excludes completed schedules from active while preserving historical highlights', async () => {
+    records.ad_entities.find(r => r.id === 'set-1')!.raw = { end_time: `${fixtureToday}T11:59:59Z` };
+    const view = await loadExploration('today', 'adset', null, true);
+    expect(view.board?.activeIds).toEqual([]);
+    expect(view.board?.highlightIds).toEqual(['set-1']);
+    expect(view.items[0].delivery).toBe('COMPLETED');
+  });
+  it('does not show a set as active when every child ad is paused', async () => {
+    for (const entity of records.ad_entities) {
+      if (entity.entity_level === 'ad') entity.status = 'paused';
+    }
+    const view = await loadExploration('today', 'adset', null, true);
+    expect(view.board?.activeIds).toEqual([]);
+    expect(view.items[0].delivery).toBe('NO_ACTIVE_ADS');
+  });
+  it('recognizes the lowercase effective statuses written by real Meta sync', async () => {
+    records.ad_entities.find(r => r.id === 'set-1')!.status = 'active';
+    const active = await loadExploration('today', 'adset', null, true);
+    expect(active.board?.activeIds).toEqual(['set-1']);
+    expect(active.items[0].delivery).toBe('ACTIVE');
+    records.ad_entities.find(r => r.id === 'set-1')!.status = 'paused';
+    const paused = await loadExploration('today', 'adset', null, true);
+    expect(paused.board?.activeIds).toEqual([]);
+    expect(paused.board?.highlightIds).toEqual(['set-1']);
+    expect(paused.items[0].delivery).toBe('PAUSED');
+    expect(paused.items[0].state).toBe('Paused');
   });
 });

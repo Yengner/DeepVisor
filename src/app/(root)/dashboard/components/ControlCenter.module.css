@@ -416,10 +416,14 @@
 .adMedia {
   position: relative;
   aspect-ratio: 1.7;
+  max-height: 180px;
   background: #e6ebe1;
   overflow: hidden;
 }
 .adMedia > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 100%;
   min-height: 0;
   width: 100%;
@@ -427,18 +431,32 @@
 .adMedia img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+}
+.adCard .adMedia:has([data-compact-media="true"]) {
+  max-width: 240px;
+  margin: 12px auto;
+  border-radius: 6px;
+  min-height: 140px;
+  height: 140px;
+  max-height: 140px;
+  aspect-ratio: auto;
+  flex: none;
+  align-self: center;
+  width: 100%;
 }
 .featured .adMedia {
-  flex: 1;
-  min-height: 270px;
-  aspect-ratio: 1.12;
+  flex: none;
+  min-height: 0;
+  height: 220px;
+  max-height: 220px;
+  aspect-ratio: auto;
 }
 .adBody {
   padding: 12px;
 }
 .featured .adBody {
-  padding: 20px;
+  padding: 12px;
 }
 .adBody h3 {
   margin: 0 0 10px;
@@ -448,7 +466,7 @@
   overflow-wrap: anywhere;
 }
 .featured h3 {
-  font-size: 20px;
+  font-size: 17px;
 }
 .adMetrics {
   display: grid;
@@ -467,9 +485,10 @@
   margin: 0;
 }
 .featured .adMetrics dd {
-  font-size: 32px;
+  font-size: 26px;
 }
 .adState {
+  margin-top: 10px;
   display: flex;
   gap: 6px;
   align-items: center;
@@ -483,7 +502,70 @@
 .delivery {
   color: #707a68;
 }
+.boardSubheading {
+  margin: 12px 0;
+  font-size: 18px;
+  font-weight: 650;
+}
+.boardSubheading span {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 12px;
+  color: #687064;
+  font-weight: 400;
+}
+.historyHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+  margin-bottom: 12px;
+}
+.singleActive {
+  grid-template-columns: minmax(0, 1fr);
+}
+.singleActive .featured {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+}
+.singleActive .adMedia {
+  aspect-ratio: 1.6;
+}
+.singleActive .adBody {
+  align-self: center;
+}
+.boardHeader > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.secondaryMetrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 0 0 8px;
+}
+.secondaryMetrics dt {
+  font-size: 12px;
+  color: #687064;
+}
+.secondaryMetrics dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.supportMetrics {
+  margin: 8px 0;
+  font-size: 12px;
+  color: #687064;
+  overflow-wrap: anywhere;
+}
 .featureLabel {
+  max-width: calc(100% - 24px);
   position: absolute;
   top: 12px;
   left: 12px;
@@ -503,7 +585,7 @@
 }
 .openCreative {
   position: absolute;
-  top: 10px;
+  bottom: 10px;
   right: 10px;
   background: #fffffff0;
   color: #24311c;
@@ -925,18 +1007,19 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .featured .adMedia {
-    aspect-ratio: 1.25;
+    aspect-ratio: auto;
     min-height: 0;
-    flex: auto;
+    flex: none;
+    height: 200px;
   }
   .featured .adBody {
-    padding: 16px;
+    padding: 12px;
   }
   .featured h3 {
     font-size: 18px;
   }
   .featured .adMetrics dd {
-    font-size: 28px;
+    font-size: 24px;
   }
   .adMedia {
     aspect-ratio: 1.05;
@@ -960,7 +1043,19 @@
     font-size: 10px;
   }
   .adState .delivery {
-    display: none;
+    display: inline;
+  }
+  .adState {
+    flex-wrap: wrap;
+  }
+  .singleActive .featured {
+    display: flex;
+  }
+  .singleActive .adMedia {
+    aspect-ratio: 1.2;
+  }
+  .singleActive .adBody {
+    align-self: stretch;
   }
   .adState > span {
     font-size: 10px;

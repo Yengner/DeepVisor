@@ -390,17 +390,22 @@ Main functions:
 
 What happens:
 
-1. Manual refresh uses `/api/sync/refresh` to enqueue `manual_refresh` jobs for the signed-in business.
+1. Manual refresh uses `POST /api/sync/refresh` to enqueue/reuse work for the authenticated business's selected Meta account. It returns 202 with a job ID, not a completion claim. Next.js `after()` invokes the existing targeted job processor; the durable queue remains available to the existing worker.
 2. Scheduled refresh can use `/api/sync/scheduled-refresh` or `queue_account_sync_jobs` to enqueue stale `incremental` jobs for connected Meta accounts.
 3. The worker route reads pending `initial_historical`, `incremental`, `manual_refresh`, and `backfill` jobs.
 4. For each job, it resolves the selected ad account external id.
-5. It runs the queued account sync. Backfill jobs use `full_backfill`; incremental and manual refresh jobs use the default sync mode.
+5. It runs the queued account sync. Backfill jobs use `full_backfill`; manual refresh explicitly re-reads the last 30 account-local calendar days including today, without allowing saved coverage to shrink that window. Other sync window behavior is unchanged.
 6. Failures are persisted back onto the job row and sync-state row.
 
 Operational notes:
 
 - The internal route requires `INTERNAL_API_KEY`.
 - The Supabase edge function can additionally enforce `CRON_SECRET`.
+- Dashboard polls `GET /api/sync/refresh?jobId=...` only after a user request, for up to five minutes. Reads validate the business, selected account, and integration. Successful persisted completion invalidates account-header cache tags and the Dashboard route; the selected period is retained. Failed/partial sync may have written some data, so the UI does not promise unchanged data on failure.
+- A fingerprint of the selected 30-day ad-set daily statistics distinguishes unchanged statistics from changed statistics. This does not claim identical creative/status data or real-time Meta delivery. If comparison cannot be read, completion is shown without an unchanged claim.
+- The existing account-performance writer fetches account Insights but persists account currency/status metadata, not a separate account-daily metric history. Dashboard totals remain derived from normalized ad-set daily rows. Campaign/ad-set/ad daily persistence is retained; this pass adds no table or schema.
+- The request has a 300-second server execution budget. Hosting limits still apply: a terminated worker can leave a running job requiring existing worker/operator recovery. UI polling timing out does not imply cancellation or completion. No schedule is installed by this change; deployed Supabase cron configuration must be checked separately for manual-only testing.
+- Creative sync performs at most 20 distinct video poster lookups per account, three at a time, with eight-second deadlines through the existing Meta client. It reads `/{video-id}/thumbnails` (`uri,width,height,is_preferred`), keeps the largest valid HTTPS poster in existing creative raw JSON, and retains existing assets on denied access/timeouts. No media lookup occurs on Dashboard load. Small-only previews use compact frames; tokens and raw errors are not sent to browsers.
 - Schedule `queue_account_sync_jobs` to create periodic refresh work, then schedule `process_account_sync_jobs` to drain the queue.
 - Schedule `process_account_sync_jobs` for new cron setup. `process_meta_backfill_jobs` is kept as a compatibility alias for existing schedules.
 
