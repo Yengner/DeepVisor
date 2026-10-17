@@ -831,6 +831,8 @@ export async function fetchMetaAdCreativeSeeds(input: {
               accessToken: input.accessToken,
               params: {
                 fields,
+                thumbnail_width: 800,
+                thumbnail_height: 800,
               },
             });
           } catch (error) {
@@ -856,6 +858,8 @@ export async function fetchMetaAdCreativeSeeds(input: {
     accessToken: input.accessToken,
     params: {
       fields,
+      thumbnail_width: 800,
+      thumbnail_height: 800,
       limit: 200,
     },
   });

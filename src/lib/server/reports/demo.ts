@@ -1,10 +1,13 @@
+import { buildDemoSurfaceMeasurements } from './demoSurfaces';
+import { aggregateReportMetrics, buildReportKpis } from '@/lib/shared/reports/metrics';
+import { resolveReportDates } from '@/lib/shared/reports/dates';
+import { dailyCoverage } from '@/lib/shared/reports/coverage';
 import type {
   ReportActiveDateContext,
   ReportBreakdownChartPoint,
   ReportBreakdownRow,
   ReportFilterOptions,
   ReportGroupBy,
-  ReportKpi,
   ReportMetricTotals,
   ReportPayload,
   ReportQueryInput,
@@ -372,23 +375,7 @@ function addRawTotals(target: DemoRawTotals, source: DemoRawTotals): DemoRawTota
 }
 
 function finalizeTotals(raw: DemoRawTotals): ReportMetricTotals {
-  const ctr = raw.impressions > 0 ? (raw.clicks / raw.impressions) * 100 : 0;
-  const cpc = raw.clicks > 0 ? raw.spend / raw.clicks : 0;
-  const cpm = raw.impressions > 0 ? (raw.spend / raw.impressions) * 1000 : 0;
-  const costPerResult = raw.conversion > 0 ? raw.spend / raw.conversion : raw.spend;
-  const conversionRate = raw.clicks > 0 ? (raw.conversion / raw.clicks) * 100 : 0;
-  const frequency = raw.reach > 0 ? raw.impressions / raw.reach : 0;
-
-  return {
-    ...raw,
-    spend: roundMetric(raw.spend),
-    ctr: roundMetric(ctr),
-    cpc: roundMetric(cpc),
-    cpm: roundMetric(cpm),
-    costPerResult: roundMetric(costPerResult),
-    conversionRate: roundMetric(conversionRate),
-    frequency: roundMetric(frequency),
-  };
+  return aggregateReportMetrics([{ ...raw, inline_link_clicks: raw.linkClicks, currency_code: 'USD' }]);
 }
 
 function enumerateDates(dateFrom: string, dateTo: string): string[] {
@@ -447,59 +434,7 @@ function formatCurrency(value: number, currencyCode: string | null, digits = 0):
   }).format(value);
 }
 
-function formatKpiValue(key: ReportKpi['key'], value: number, currencyCode: string | null): string {
-  switch (key) {
-    case 'spend':
-    case 'cpc':
-    case 'cpm':
-    case 'costPerResult':
-      return formatCurrency(value, currencyCode, key === 'spend' ? 0 : 2);
-    case 'ctr':
-      return `${value.toFixed(2)}%`;
-    default:
-      return value.toLocaleString('en-US');
-  }
-}
 
-function calculateDeltaPercent(current: number, previous: number | null): number | null {
-  if (previous == null) {
-    return null;
-  }
-
-  if (previous === 0) {
-    return current === 0 ? 0 : 100;
-  }
-
-  return roundMetric(((current - previous) / previous) * 100);
-}
-
-function buildKpis(
-  summary: ReportMetricTotals,
-  previousTotals: ReportMetricTotals | null,
-  currencyCode: string | null
-): ReportKpi[] {
-  const definitions: Array<{ key: ReportKpi['key']; label: string }> = [
-    { key: 'spend', label: 'Spend' },
-    { key: 'conversion', label: 'Results' },
-    { key: 'impressions', label: 'Impressions' },
-    { key: 'clicks', label: 'Clicks' },
-    { key: 'ctr', label: 'CTR' },
-    { key: 'cpc', label: 'CPC' },
-    { key: 'cpm', label: 'CPM' },
-    { key: 'costPerResult', label: 'Cost / Result' },
-  ];
-
-  return definitions.map((definition) => ({
-    key: definition.key,
-    label: definition.label,
-    value: summary[definition.key],
-    formattedValue: formatKpiValue(definition.key, summary[definition.key], currencyCode),
-    deltaPercent: calculateDeltaPercent(
-      summary[definition.key],
-      previousTotals ? previousTotals[definition.key] : null
-    ),
-  }));
-}
 
 function createBucketStart(date: Date, groupBy: ReportGroupBy): Date {
   const next = new Date(date);
@@ -1133,8 +1068,11 @@ function buildFilterSummary(query: ReportQueryInput) {
 
 export function buildDemoReportPayload(
   query: ReportQueryInput,
-  businessName: string = 'My Business'
+  businessName: string = 'My Business',
+  now = new Date()
 ): ReportPayload {
+  const dateContext = resolveReportDates(query, ['America/New_York'], now);
+  query = { ...dateContext.query, presetDays: undefined };
   const ads = getFilteredAds(query);
   const previousRange =
     query.compareMode === 'previous_period' ? getPreviousPeriodRange(query) : null;
@@ -1148,7 +1086,7 @@ export function buildDemoReportPayload(
   const summary = buildSummaryForRange(query, ads);
   const previousTotals = previousQuery ? buildSummaryForRange(previousQuery, ads) : null;
   const scopeMeta = resolveScopeMeta(query, businessName);
-  const generatedAt = new Date().toISOString();
+  const generatedAt = now.toISOString();
   const filterSummary = buildFilterSummary(query);
   const breakdownRows = buildBreakdownRows(query, ads);
   const ranking = buildDemoRanking(query, ads, breakdownRows);
@@ -1164,14 +1102,21 @@ export function buildDemoReportPayload(
       scopeLabel: scopeMeta.scopeLabel,
       currencyCode: 'USD',
       generatedAt,
+      timezone: dateContext.timezone,
+      today: dateContext.today,
+      partialDay: dateContext.partialDay,
+      comparisonDisabledReason: dateContext.comparisonDisabledReason,
+      coverage: dailyCoverage(enumerateDates(query.dateFrom, query.dateTo), query.dateFrom, query.dateTo),
     },
     summary,
-    kpis: buildKpis(summary, previousTotals, 'USD'),
+    kpis: buildReportKpis({ totals: summary, previousTotals, currencyCode: 'USD' }),
     series: buildSeries(query, ads),
     comparison: {
       previousDateFrom: previousRange?.dateFrom ?? null,
       previousDateTo: previousRange?.dateTo ?? null,
       previousTotals,
+      disabledReason: dateContext.comparisonDisabledReason,
+      previousSeries: previousQuery ? buildSeries(previousQuery, ads) : [],
     },
     findings: [],
     breakdown: {
@@ -1195,6 +1140,7 @@ export function buildDemoReportPayload(
         geo: [],
       },
       hourlyTrendExpanded: [],
+      ...(isMetaSurface ? buildDemoSurfaceMeasurements(query, summary) : {}),
     },
     export: {
       title: scopeMeta.title,

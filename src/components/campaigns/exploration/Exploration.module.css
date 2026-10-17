@@ -74,10 +74,8 @@
 .media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
-.media[data-compact-media="true"] { max-height: 140px; min-height: 100px; }
-.detailMedia:has([data-compact-media="true"]) { height: 140px; min-height: 140px; width: 240px; max-width: 100%; margin: 12px auto; }
 .mediaLabel {
   position: absolute;
   bottom: 5px;

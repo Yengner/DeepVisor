@@ -200,7 +200,7 @@ export function mediaFor(creative: Creative): Media {
       ? [
           {
             url,
-            quality: known ? (width >= 600 && height >= 300 ? 2 : 0) : 1,
+            quality: known ? (usablePreviewDimensions(width, height) ? 2 : 0) : 1,
             area: known ? width * height : 0,
           },
         ]
@@ -242,3 +242,4 @@ export function rank(items: Summary[]): Summary[] {
     tied: leaders.length > 1 && leaders.includes(item),
   }));
 }
+import { usablePreviewDimensions } from '@/lib/shared/media/preview';

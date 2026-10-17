@@ -1,7 +1,12 @@
+import { listReportCreatives, reportCreativePreview } from './creatives';
 import 'server-only';
+import { aggregateReportMetrics, sourceUnavailable, buildReportKpis as buildKpis } from '@/lib/shared/reports/metrics';
+import { resolveReportDates, previousReportRange as getPreviousPeriodRange } from '@/lib/shared/reports/dates';
+import { dailyCoverage } from '@/lib/shared/reports/coverage';
+import { loadReportSurfaces } from './surfaces';
 
 import { createSupabaseClient } from '@/lib/server/supabase/server';
-import { derivePerformanceMetrics } from '@/lib/server/repositories/campaigns/normalizers';
+import { nonOverlappingHistory } from '@/lib/shared/reports/history';
 import { chunkArray } from '@/lib/server/repositories/utils';
 import { listActiveTrendFindingViews } from '@/lib/server/intelligence/repositories/trendFindings';
 import {
@@ -11,15 +16,10 @@ import {
 import { buildReportUrl } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
 import type {
-  DashboardAudienceMetricRow,
-  DashboardTrendPoint,
-} from '@/lib/server/dashboard/types';
-import type {
   ReportActiveDateContext,
   ReportBreakdownRow,
   ReportComparisonSummary,
   ReportFilterOptions,
-  ReportKpi,
   ReportMetricTotals,
   ReportPayload,
   ReportQueryInput,
@@ -31,6 +31,7 @@ import type {
 type SupabaseClient = Awaited<ReturnType<typeof createSupabaseClient>>;
 
 type MetricsRow = {
+  unavailable?: ReportMetricTotals["unavailable"];
   day: string;
   spend: number;
   reach: number;
@@ -81,6 +82,7 @@ type ReportMetricRpcRow = {
 };
 
 type ReportBreakdownRpcRow = {
+  unavailable?: ReportMetricTotals["unavailable"];
   entity_level: ReportBreakdownRow['level'];
   entity_id: string;
   entity_external_id: string;
@@ -127,7 +129,7 @@ type ReportPlatformOption = {
 
 type AdAccountRow = Pick<
   Database['public']['Tables']['ad_accounts']['Row'],
-  'id' | 'business_id' | 'platform_id' | 'external_account_id' | 'name' | 'status' | 'currency_code'
+  'id' | 'business_id' | 'platform_id' | 'external_account_id' | 'name' | 'status' | 'currency_code' | 'timezone'
 > & {
   platform_integration_id?: string;
   platform_label?: string;
@@ -162,12 +164,10 @@ type AdDimRow = {
   creative_id: string | null;
 };
 
-type AdCreativeRow = Pick<
-  Database['public']['Tables']['ad_creatives']['Row'],
-  'id' | 'platform_creative_id' | 'name' | 'headline' | 'primary_text' | 'description' | 'creative_type'
->;
+type AdCreativeRow = Database['public']['Tables']['ad_creatives']['Row'];
 
 type EntityAggregate = {
+  unavailable?: ReportMetricTotals["unavailable"];
   spend: number;
   reach: number;
   impressions: number;
@@ -260,18 +260,8 @@ type BuildReportPayloadOptions = {
 };
 
 function isSummaryRangeReport(query: ReportQueryInput): boolean {
-  return query.scope === 'ad_account' || query.rangeMode === 'max';
+  return query.rangeMode === 'max';
 }
-
-const REPORT_AUDIENCE_BREAKDOWN_TYPES = [
-  'publisher_platform',
-  'platform_position',
-  'age_gender',
-  'country',
-  'region',
-  'impression_device',
-  'dma',
-] as const;
 
 function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -354,73 +344,7 @@ function formatDateRange(dateFrom: string, dateTo: string): string {
   return `${dateFrom} to ${dateTo}`;
 }
 
-function sumMetrics(rows: MetricsRow[]): ReportMetricTotals {
-  let spend = 0;
-  let reach = 0;
-  let impressions = 0;
-  let clicks = 0;
-  let linkClicks = 0;
-  let leads = 0;
-  let messages = 0;
-  let calls = 0;
-
-  for (const row of rows) {
-    spend += row.spend;
-    reach += row.reach;
-    impressions += row.impressions;
-    clicks += row.clicks;
-    linkClicks += row.inline_link_clicks;
-    leads += row.leads;
-    messages += row.messages;
-    calls += row.calls;
-  }
-
-  const derived = derivePerformanceMetrics({
-    spend,
-    reach,
-    impressions,
-    clicks,
-    leads,
-    messages,
-    calls,
-  });
-
-  return {
-    spend,
-    reach,
-    impressions,
-    clicks,
-    linkClicks,
-    leads,
-    messages,
-    calls,
-    conversion: derived.conversion,
-    conversionRate: derived.conversion_rate,
-    costPerResult: derived.cost_per_result,
-    ctr: derived.ctr,
-    cpc: derived.cpc,
-    cpm: derived.cpm,
-    frequency: derived.frequency,
-  };
-}
-
-function getPreviousPeriodRange(input: Pick<ReportQueryInput, 'dateFrom' | 'dateTo'>) {
-  const start = new Date(`${input.dateFrom}T00:00:00.000Z`);
-  const end = new Date(`${input.dateTo}T00:00:00.000Z`);
-  const days = Math.max(
-    1,
-    Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1
-  );
-  const previousEnd = new Date(start);
-  previousEnd.setUTCDate(previousEnd.getUTCDate() - 1);
-  const previousStart = new Date(previousEnd);
-  previousStart.setUTCDate(previousStart.getUTCDate() - (days - 1));
-
-  return {
-    dateFrom: toIsoDate(previousStart),
-    dateTo: toIsoDate(previousEnd),
-  };
-}
+const sumMetrics = aggregateReportMetrics;
 
 function groupDateKey(day: string, groupBy: ReportQueryInput['groupBy']) {
   const date = new Date(`${day}T00:00:00.000Z`);
@@ -459,26 +383,6 @@ function groupDateKey(day: string, groupBy: ReportQueryInput['groupBy']) {
   };
 }
 
-function formatCurrency(value: number, currencyCode: string | null): string {
-  if (!currencyCode || currencyCode === 'MIXED') {
-    return value.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
-
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currencyCode,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  } catch {
-    return `$${value.toFixed(2)}`;
-  }
-}
-
 function resolveCurrencyCode(rows: MetricsRow[]): string | null {
   const codes = Array.from(new Set(rows.map((row) => row.currency_code).filter(Boolean)));
   if (codes.length === 0) {
@@ -490,14 +394,6 @@ function resolveCurrencyCode(rows: MetricsRow[]): string | null {
   }
 
   return 'MIXED';
-}
-
-function formatDelta(current: number, previous: number): number | null {
-  if (!Number.isFinite(previous) || previous <= 0) {
-    return null;
-  }
-
-  return ((current - previous) / previous) * 100;
 }
 
 function emptyReportRankingContext(): ReportRankingContext {
@@ -575,75 +471,6 @@ function buildActiveDateLabel(input: {
     label: input.totalEntities === 1 ? 'Serving dates for this ad' : 'Serving dates for selected ads',
     entityLabel: input.totalEntities === 1 ? 'ad' : 'ads',
   };
-}
-
-function buildKpis(input: {
-  totals: ReportMetricTotals;
-  previousTotals: ReportMetricTotals | null;
-  currencyCode: string | null;
-}): ReportKpi[] {
-  const { totals, previousTotals, currencyCode } = input;
-
-  return [
-    {
-      key: 'spend',
-      label: 'Spend',
-      value: totals.spend,
-      formattedValue: formatCurrency(totals.spend, currencyCode),
-      deltaPercent: previousTotals ? formatDelta(totals.spend, previousTotals.spend) : null,
-    },
-    {
-      key: 'conversion',
-      label: 'Results',
-      value: totals.conversion,
-      formattedValue: totals.conversion.toLocaleString(),
-      deltaPercent: previousTotals ? formatDelta(totals.conversion, previousTotals.conversion) : null,
-    },
-    {
-      key: 'impressions',
-      label: 'Impressions',
-      value: totals.impressions,
-      formattedValue: totals.impressions.toLocaleString(),
-      deltaPercent: previousTotals ? formatDelta(totals.impressions, previousTotals.impressions) : null,
-    },
-    {
-      key: 'clicks',
-      label: 'Clicks',
-      value: totals.clicks,
-      formattedValue: totals.clicks.toLocaleString(),
-      deltaPercent: previousTotals ? formatDelta(totals.clicks, previousTotals.clicks) : null,
-    },
-    {
-      key: 'ctr',
-      label: 'CTR',
-      value: totals.ctr,
-      formattedValue: `${totals.ctr.toFixed(2)}%`,
-      deltaPercent: previousTotals ? formatDelta(totals.ctr, previousTotals.ctr) : null,
-    },
-    {
-      key: 'cpc',
-      label: 'CPC',
-      value: totals.cpc,
-      formattedValue: formatCurrency(totals.cpc, currencyCode),
-      deltaPercent: previousTotals ? formatDelta(totals.cpc, previousTotals.cpc) : null,
-    },
-    {
-      key: 'cpm',
-      label: 'CPM',
-      value: totals.cpm,
-      formattedValue: formatCurrency(totals.cpm, currencyCode),
-      deltaPercent: previousTotals ? formatDelta(totals.cpm, previousTotals.cpm) : null,
-    },
-    {
-      key: 'costPerResult',
-      label: 'Cost / Result',
-      value: totals.costPerResult,
-      formattedValue: formatCurrency(totals.costPerResult, currencyCode),
-      deltaPercent: previousTotals
-        ? formatDelta(totals.costPerResult, previousTotals.costPerResult)
-        : null,
-    },
-  ];
 }
 
 function groupSeries(rows: MetricsRow[], groupBy: ReportQueryInput['groupBy']): ReportTimeSeriesPoint[] {
@@ -746,12 +573,13 @@ async function getAdAccounts(
       throw error;
     }
 
-    platformId = data?.platform_id ?? null;
+    if (!data) throw new Error('Reporting platform is not authorized.');
+    platformId = data.platform_id;
   }
 
   let query = supabase
     .from('ad_accounts')
-    .select('id, business_id, platform_id, external_account_id, name, status, currency_code')
+    .select('id, business_id, platform_id, external_account_id, name, status, currency_code, timezone')
     .eq('business_id', input.businessId)
     .order('name', { ascending: true });
 
@@ -871,34 +699,6 @@ async function listAdDims(
   return rows;
 }
 
-async function listAdCreatives(
-  supabase: SupabaseClient,
-  input: {
-    platformCreativeIds: string[];
-  }
-): Promise<AdCreativeRow[]> {
-  if (input.platformCreativeIds.length === 0) {
-    return [];
-  }
-
-  const rows: AdCreativeRow[] = [];
-
-  for (const idsChunk of chunkArray(input.platformCreativeIds, 200)) {
-    const { data, error } = await supabase
-      .from('ad_creatives')
-      .select('id, platform_creative_id, name, headline, primary_text, description, creative_type')
-      .in('platform_creative_id', idsChunk);
-
-    if (error) {
-      throw error;
-    }
-
-    rows.push(...((data ?? []) as AdCreativeRow[]));
-  }
-
-  return rows;
-}
-
 const REPORT_ENTITY_DAILY_SELECT = [
   'business_id',
   'platform_id',
@@ -975,6 +775,7 @@ function normalizeReportEntityDailyRow(row: ReportEntityDailyViewRow): ReportEnt
 
 function normalizeReportMetricRpcRow(row: ReportMetricRpcRow): MetricsRow {
   return {
+    unavailable: sourceUnavailable(row),
     day: row.day,
     currency_code: row.currency_code ?? null,
     spend: toNumber(row.spend),
@@ -990,6 +791,7 @@ function normalizeReportMetricRpcRow(row: ReportMetricRpcRow): MetricsRow {
 
 function aggregateFromBreakdownRow(row: ReportBreakdownRpcRow): EntityAggregate {
   return {
+    unavailable: { ...sourceUnavailable(row), ...row.unavailable },
     spend: toNumber(row.spend),
     reach: toNumber(row.reach),
     impressions: toNumber(row.impressions),
@@ -1180,6 +982,7 @@ async function listSummaryBreakdownRows(
         : adset?.external_id ?? null;
 
     return {
+      unavailable: sourceUnavailable(summary ?? {}),
       entity_level: entity.entity_level,
       entity_id: entity.id,
       entity_external_id: entity.external_id,
@@ -1292,6 +1095,7 @@ async function buildAdAccountSummaryMetricRows(
   }
 
   return rows.map((row) => ({
+    unavailable: row.unavailable,
     day: row.end_date ?? row.start_date ?? input.fallbackDay,
     currency_code: row.currency_code ?? null,
     spend: toNumber(row.spend),
@@ -1365,6 +1169,7 @@ async function buildSummaryMetricRows(
   });
 
   return rows.map((row) => ({
+    unavailable: row.unavailable,
     day: row.end_date ?? row.start_date ?? input.fallbackDay,
     currency_code: row.currency_code ?? null,
     spend: toNumber(row.spend),
@@ -1461,6 +1266,7 @@ async function listAdAccountMonthlyMetricRows(
   );
 
   return rows.map((row) => ({
+    unavailable: sourceUnavailable(row),
     day: row.month_start,
     currency_code: currencyCodeByAdAccountId.get(row.ad_account_id) ?? null,
     spend: toNumber(row.spend),
@@ -1480,7 +1286,7 @@ async function buildAdAccountFullHistoryMetricRows(
     query: ReportQueryInput;
     context: FilterContext;
     adAccountIds: string[];
-    fallbackRows: MetricsRow[];
+    warnings: string[];
   }
 ): Promise<MetricsRow[]> {
   const [monthlyRows, dailyRows] = await Promise.all([
@@ -1495,13 +1301,15 @@ async function buildAdAccountFullHistoryMetricRows(
       dateTo: input.query.dateTo,
     }),
   ]);
-  const rows = [...monthlyRows, ...dailyRows];
+  const combined = nonOverlappingHistory(monthlyRows, dailyRows);
+  input.warnings.push(...combined.warnings);
+  const rows = combined.rows;
 
   if (rows.length > 0) {
     return rows;
   }
 
-  return input.fallbackRows;
+  return [];
 }
 
 function buildReportRpcArgs(input: {
@@ -1832,7 +1640,19 @@ async function getFilterContext(
       ])
     : [[], [], []];
 
-  if (options.entityMode === 'all') {
+  if (query.adAccountIds.some(id => !allowedAdAccountIds.includes(id))) throw new Error('Reporting account is not authorized.');
+  const selectedCampaigns = campaigns.filter(row => query.campaignIds.includes(row.external_id));
+  const selectedAdsets = adsets.filter(row => query.adsetIds.includes(row.external_id));
+  const selectedAds = ads.filter(row => query.adIds.includes(row.external_id));
+  for (const [requested, found] of [[query.campaignIds, selectedCampaigns], [query.adsetIds, selectedAdsets], [query.adIds, selectedAds]] as const) {
+    if (requested.some(id => !found.some(row => row.external_id === id))) throw new Error('Reporting entity is not authorized.');
+  }
+  if (selectedAdsets.some(row => query.campaignIds.length && !query.campaignIds.includes(row.campaign_external_id)) ||
+      selectedAds.some(row => (query.adsetIds.length && !query.adsetIds.includes(row.adset_external_id)) ||
+        (query.campaignIds.length && !adsets.some(parent => parent.ad_account_id === row.ad_account_id && parent.external_id === row.adset_external_id && query.campaignIds.includes(parent.campaign_external_id))))) {
+    throw new Error('Reporting hierarchy does not match the selected parents.');
+  }
+  if (options.entityMode !== 'active_recent') {
     return {
       business,
       platforms,
@@ -1937,19 +1757,16 @@ function toBreakdownRow(input: {
   primaryContext: string | null;
   secondaryContext: string | null;
   creativeContext?: string | null;
+  creativePreview?: ReportBreakdownRow['creativePreview'];
   drilldownLabel?: string | null;
   drilldownHref?: string | null;
   aggregate: EntityAggregate;
 }): ReportBreakdownRow {
-  const derived = derivePerformanceMetrics({
-    spend: input.aggregate.spend,
-    reach: input.aggregate.reach,
-    impressions: input.aggregate.impressions,
-    clicks: input.aggregate.clicks,
-    leads: input.aggregate.leads,
-    messages: input.aggregate.messages,
-    calls: input.aggregate.calls,
-  });
+  const metrics = aggregateReportMetrics([{
+    ...input.aggregate,
+    inline_link_clicks: input.aggregate.linkClicks,
+    currency_code: input.aggregate.currencyCodes.size === 1 ? [...input.aggregate.currencyCodes][0] : null,
+  }]);
 
   return {
     id: input.id,
@@ -1959,23 +1776,10 @@ function toBreakdownRow(input: {
     primaryContext: input.primaryContext,
     secondaryContext: input.secondaryContext,
     creativeContext: input.creativeContext ?? null,
+    creativePreview: input.creativePreview ?? null,
     drilldownLabel: input.drilldownLabel ?? null,
     drilldownHref: input.drilldownHref ?? null,
-    spend: input.aggregate.spend,
-    reach: input.aggregate.reach,
-    impressions: input.aggregate.impressions,
-    clicks: input.aggregate.clicks,
-    linkClicks: input.aggregate.linkClicks,
-    leads: input.aggregate.leads,
-    messages: input.aggregate.messages,
-    calls: input.aggregate.calls,
-    conversion: derived.conversion,
-    conversionRate: derived.conversion_rate,
-    costPerResult: derived.cost_per_result,
-    ctr: derived.ctr,
-    cpc: derived.cpc,
-    cpm: derived.cpm,
-    frequency: derived.frequency,
+    ...metrics,
     startDate: input.aggregate.startDate,
     endDate: input.aggregate.endDate,
   };
@@ -2181,13 +1985,15 @@ async function buildAdRows(
   const adDimByExternalId = new Map(
     ads.map((ad) => [ad.external_id, ad] satisfies [string, AdDimRow])
   );
-  const creatives = await listAdCreatives(supabase, {
+  const creatives = await listReportCreatives(supabase, {
+    businessId: input.query.businessId,
+    adAccountIds: input.adAccountIds,
     platformCreativeIds: ads
       .map((ad) => ad.creative_id)
       .filter((value): value is string => Boolean(value)),
   });
   const creativeById = new Map(
-    creatives.map((creative) => [creative.platform_creative_id, creative] satisfies [string, AdCreativeRow])
+    creatives.map((creative) => [`${creative.ad_account_id}:${creative.platform_creative_id}`, creative] satisfies [string, AdCreativeRow])
   );
 
   return rows
@@ -2210,8 +2016,9 @@ async function buildAdRows(
           row.campaign_name ??
           (campaignExternalId ? campaignNameById.get(campaignExternalId) ?? null : null),
         creativeContext: buildCreativeContext(
-          ad?.creative_id ? creativeById.get(ad.creative_id) : null
+          ad?.creative_id ? creativeById.get(`${row.ad_account_id}:${ad.creative_id}`) : null
         ),
+        creativePreview: reportCreativePreview(ad?.creative_id ? creativeById.get(`${row.ad_account_id}:${ad.creative_id}`) : undefined),
         drilldownLabel: input.includeAdReportLinks ? 'Open' : null,
         drilldownHref:
           input.includeAdReportLinks && campaignExternalId && adsetExternalId
@@ -2852,312 +2659,18 @@ function resolveSurfaceEntityIds(input: {
   };
 }
 
-async function listReportAudienceRows(
-  supabase: SupabaseClient,
-  input: {
-    adsetInternalIds: string[];
-    adInternalIds: string[];
-    adScopeOnly: boolean;
-    dateFrom: string;
-    dateTo: string;
-  }
-): Promise<DashboardAudienceMetricRow[]> {
-  if (input.adsetInternalIds.length === 0) {
-    return [];
-  }
-
-  type AudienceBreakdownSelectRow = Pick<
-    Database['public']['Views']['meta_audience_breakdowns_daily']['Row'],
-    | 'entity_level'
-    | 'adset_id'
-    | 'ad_id'
-    | 'breakdown_type'
-    | 'dimension_1_key'
-    | 'dimension_1_value'
-    | 'dimension_2_key'
-    | 'dimension_2_value'
-    | 'publisher_platform'
-    | 'platform_position'
-    | 'impression_device'
-    | 'spend'
-    | 'impressions'
-    | 'clicks'
-    | 'leads'
-    | 'messages'
-    | 'calls'
-  >;
-
-  const rows: AudienceBreakdownSelectRow[] = [];
-  const selectedAdIds = new Set(input.adInternalIds);
-
-  for (const chunk of chunkArray(input.adsetInternalIds, 200)) {
-    let query = supabase
-      .from('meta_audience_breakdowns_daily')
-      .select(
-        'entity_level, adset_id, ad_id, breakdown_type, dimension_1_key, dimension_1_value, dimension_2_key, dimension_2_value, publisher_platform, platform_position, impression_device, spend, impressions, clicks, leads, messages, calls'
-      )
-      .in('adset_id', chunk)
-      .in('breakdown_type', [...REPORT_AUDIENCE_BREAKDOWN_TYPES]);
-
-    if (input.adScopeOnly) {
-      query = query.eq('entity_level', 'ad');
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      throw error;
-    }
-
-    rows.push(...((data ?? []) as AudienceBreakdownSelectRow[]));
-  }
-
-  return rows
-    .filter((row) => {
-      if (!input.adScopeOnly) {
-        return true;
-      }
-
-      return Boolean(row.ad_id && selectedAdIds.has(row.ad_id));
-    })
-    .map((row) => ({
-      entityLevel: (row.entity_level === 'ad' ? 'ad' : 'adset') as 'ad' | 'adset',
-      adsetInternalId: row.adset_id,
-      adInternalId: row.ad_id,
-      breakdownType: row.breakdown_type ?? '',
-      dimension1Key: row.dimension_1_key ?? '',
-      dimension1Value: row.dimension_1_value ?? '',
-      dimension2Key: row.dimension_2_key ?? '',
-      dimension2Value: row.dimension_2_value ?? '',
-      publisherPlatform: row.publisher_platform,
-      platformPosition: row.platform_position,
-      impressionDevice: row.impression_device,
-      spend: row.spend ?? 0,
-      impressions: row.impressions ?? 0,
-      clicks: row.clicks ?? 0,
-      leads: row.leads ?? 0,
-      messages: row.messages ?? 0,
-      calls: row.calls ?? 0,
-    }))
-    .filter(
-      (row) =>
-        row.dimension1Value.trim().length > 0 &&
-        (row.spend > 0 ||
-          row.impressions > 0 ||
-          row.clicks > 0 ||
-          row.leads > 0 ||
-          row.messages > 0 ||
-          row.calls > 0)
-    );
-}
-
-async function listReportHourlyTrendRows(
-  supabase: SupabaseClient,
-  input: {
-    adsetInternalIds: string[];
-    adInternalIds: string[];
-    adScopeOnly: boolean;
-    dateFrom: string;
-    dateTo: string;
-  }
-): Promise<DashboardTrendPoint[]> {
-  if (input.adsetInternalIds.length === 0) {
-    return [];
-  }
-
-  type HourlySelectRow = Pick<
-    Database['public']['Views']['meta_hourly_performance']['Row'],
-    | 'day'
-    | 'hour_of_day'
-    | 'entity_level'
-    | 'ad_id'
-    | 'spend'
-    | 'reach'
-    | 'impressions'
-    | 'clicks'
-    | 'inline_link_clicks'
-    | 'leads'
-    | 'messages'
-    | 'calls'
-  >;
-
-  const selectedAdIds = new Set(input.adInternalIds);
-  const fetchRows = async (entityLevel: 'adset' | 'ad') => {
-    const rows: HourlySelectRow[] = [];
-
-    for (const chunk of chunkArray(input.adsetInternalIds, 200)) {
-      const { data, error } = await supabase
-        .from('meta_hourly_performance')
-        .select(
-          'day, hour_of_day, entity_level, ad_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls'
-        )
-        .gte('day', input.dateFrom)
-        .lte('day', input.dateTo)
-        .eq('time_basis', 'advertiser')
-        .eq('entity_level', entityLevel)
-        .in('adset_id', chunk)
-        .order('day', { ascending: true })
-        .order('hour_of_day', { ascending: true });
-
-      if (error) {
-        throw error;
-      }
-
-      rows.push(...((data ?? []) as HourlySelectRow[]));
-    }
-
-    return rows;
-  };
-
-  const primaryRows = await fetchRows(input.adScopeOnly ? 'ad' : 'adset');
-  const rows = !input.adScopeOnly && primaryRows.length === 0 ? await fetchRows('ad') : primaryRows;
-
-  const scopedRows = input.adScopeOnly
-    ? rows.filter((row) => Boolean(row.ad_id && selectedAdIds.has(row.ad_id)))
-    : rows;
-  const aggregated = new Map<
-    string,
-    {
-      day: string;
-      hour: number;
-      spend: number;
-      reach: number;
-      impressions: number;
-      clicks: number;
-      inlineLinkClicks: number;
-      leads: number;
-      messages: number;
-      calls: number;
-    }
-  >();
-
-  for (const row of scopedRows) {
-    const day = row.day;
-    const hour = row.hour_of_day ?? -1;
-
-    if (!day || hour < 0 || hour > 23) {
-      continue;
-    }
-
-    const key = `${day}:${hour}`;
-    const current = aggregated.get(key) ?? {
-      day,
-      hour,
-      spend: 0,
-      reach: 0,
-      impressions: 0,
-      clicks: 0,
-      inlineLinkClicks: 0,
-      leads: 0,
-      messages: 0,
-      calls: 0,
-    };
-
-    current.spend += row.spend ?? 0;
-    current.reach += row.reach ?? 0;
-    current.impressions += row.impressions ?? 0;
-    current.clicks += row.clicks ?? 0;
-    current.inlineLinkClicks += row.inline_link_clicks ?? 0;
-    current.leads += row.leads ?? 0;
-    current.messages += row.messages ?? 0;
-    current.calls += row.calls ?? 0;
-    aggregated.set(key, current);
-  }
-
-  return Array.from(aggregated.values())
-    .sort((left, right) => left.day.localeCompare(right.day) || left.hour - right.hour)
-    .map((row) => {
-      const results = row.leads + row.messages + row.calls;
-      const ctr = row.impressions > 0 ? (row.clicks / row.impressions) * 100 : 0;
-      const cpc = row.clicks > 0 ? row.spend / row.clicks : 0;
-      const cpm = row.impressions > 0 ? (row.spend / row.impressions) * 1000 : 0;
-      const day = new Date(`${row.day}T00:00:00Z`);
-      const utcDay = Number.isNaN(day.getTime()) ? null : day.getUTCDay();
-
-      return {
-        label: `${row.day} · ${row.hour}`,
-        dayKey: row.day,
-        dayOfWeek: utcDay == null ? null : utcDay === 0 ? 6 : utcDay - 1,
-        hourOfDay: row.hour,
-        spend: Number(row.spend.toFixed(2)),
-        results,
-        clicks: row.clicks,
-        inlineLinkClicks: row.inlineLinkClicks,
-        impressions: row.impressions,
-        reach: row.reach,
-        ctr: Number(ctr.toFixed(2)),
-        cpc: Number(cpc.toFixed(2)),
-        cpm: Number(cpm.toFixed(2)),
-        frequency: 0,
-        costPerResult: results > 0 ? Number((row.spend / results).toFixed(2)) : 0,
-      } satisfies DashboardTrendPoint;
-    });
-}
-
 async function buildSurfaceContext(
   supabase: SupabaseClient,
-  input: {
-    query: ReportQueryInput;
-    context: FilterContext;
-    adAccounts: AdAccountRow[];
-    hasReportDelivery: boolean;
-  }
+  input: { query: ReportQueryInput; context: FilterContext; adAccounts: AdAccountRow[]; hasReportDelivery: boolean }
 ): Promise<ReportSurfaceContext> {
-  const metaAdAccountIds = input.adAccounts
-    .filter((account) => isMetaAdAccount(input.context, account))
-    .map((account) => account.id);
-  const isMeta = metaAdAccountIds.length > 0;
-
-  if (!isMeta) {
-    return {
-      isMeta: false,
-      platformBreakdowns: buildPlatformBreakdowns({
-        isMeta: false,
-        hasLiveDelivery: false,
-        audienceRows: [],
-      }),
-      audienceBreakdowns: buildAudienceBreakdowns({
-        isMeta: false,
-        hasLiveDelivery: false,
-        audienceRows: [],
-      }),
-      hourlyTrendExpanded: [],
-    };
-  }
-
-  const entityIds = resolveSurfaceEntityIds({
-    query: input.query,
-    context: input.context,
-    adAccountIds: metaAdAccountIds,
+  const adAccountIds = input.adAccounts.filter(account => isMetaAdAccount(input.context, account)).map(account => account.id);
+  return loadReportSurfaces(supabase, {
+    ...resolveSurfaceEntityIds({ query: input.query, context: input.context, adAccountIds }),
+    isMeta: adAccountIds.length > 0,
+    dateFrom: input.query.dateFrom,
+    dateTo: input.query.dateTo,
+    timezone: resolveReportDates(input.query, input.adAccounts.map(row => row.timezone)).timezone,
   });
-
-  const [audienceRows, hourlyTrendExpanded] = await Promise.all([
-    listReportAudienceRows(supabase, {
-      ...entityIds,
-      dateFrom: input.query.dateFrom,
-      dateTo: input.query.dateTo,
-    }),
-    listReportHourlyTrendRows(supabase, {
-      ...entityIds,
-      dateFrom: input.query.dateFrom,
-      dateTo: input.query.dateTo,
-    }),
-  ]);
-
-  return {
-    isMeta: true,
-    platformBreakdowns: buildPlatformBreakdowns({
-      isMeta: true,
-      hasLiveDelivery: input.hasReportDelivery,
-      audienceRows,
-    }),
-    audienceBreakdowns: buildAudienceBreakdowns({
-      isMeta: true,
-      hasLiveDelivery: input.hasReportDelivery,
-      audienceRows,
-    }),
-    hourlyTrendExpanded,
-  };
 }
 
 export async function getReportFilterOptions(query: ReportQueryInput): Promise<ReportFilterOptions> {
@@ -3180,11 +2693,13 @@ export async function buildReportPayload(
   const includeSurface = options.includeSurface ?? true;
   const useSummaryMode = isSummaryRangeReport(query);
   const context = await getFilterContext(supabase, query, {
-    entityMode: useSummaryMode ? 'all' : 'active_recent',
+    entityMode: 'all',
   });
   const adAccounts = context.adAccounts.filter((row) =>
     query.adAccountIds.length > 0 ? query.adAccountIds.includes(row.id) : true
   );
+  const dateContext = resolveReportDates(query, adAccounts.map(row => row.timezone));
+  query = { ...dateContext.query, presetDays: undefined };
   const adAccountIds = adAccounts.map((row) => row.id);
   const summaryBounds = useSummaryMode
     ? await getReportSummaryDateBounds(supabase, {
@@ -3221,17 +2736,18 @@ export async function buildReportPayload(
       : Promise.resolve<MetricsRow[] | null>(null);
   const previousRange =
     effectiveQuery.compareMode === 'previous_period' ? getPreviousPeriodRange(effectiveQuery) : null;
+  const warnings: string[] = [];
   const currentRowsPromise = includeMetrics
     ? isSummaryRangeReport(effectiveQuery)
-      ? summaryRowsPromise.then((summaryMetricRows) =>
+      ? summaryRowsPromise.then(() =>
           effectiveQuery.scope === 'ad_account'
             ? buildAdAccountFullHistoryMetricRows(supabase, {
                 query: effectiveQuery,
                 context,
                 adAccountIds,
-                fallbackRows: summaryMetricRows ?? [],
+                warnings,
               })
-            : summaryMetricRows ?? []
+            : []
         )
       : buildTopLevelMetricsRows(
           supabase,
@@ -3287,7 +2803,12 @@ export async function buildReportPayload(
 
   const summaryRows = summaryMetricRows && summaryMetricRows.length > 0 ? summaryMetricRows : currentRows;
   const summary = sumMetrics(summaryRows);
-  const previousTotals = previousRows.length > 0 ? sumMetrics(previousRows) : null;
+  const coverage = dailyCoverage(currentRows.map(row => row.day), effectiveQuery.dateFrom, effectiveQuery.dateTo);
+  const previousCoverage = previousRange ? dailyCoverage(previousRows.map(row => row.day), previousRange.dateFrom, previousRange.dateTo) : undefined;
+  const comparisonDisabledReason = dateContext.comparisonDisabledReason ??
+    (previousRange && (coverage.state !== 'available' || previousCoverage?.state !== 'available')
+      ? 'Comparison unavailable: both periods require observed daily coverage.' : null);
+  const previousTotals = !comparisonDisabledReason && previousRows.length > 0 ? sumMetrics(previousRows) : null;
   const currencyCode = resolveCurrencyCode(summaryRows);
   const title = resolveTitle({
     query: effectiveQuery,
@@ -3319,6 +2840,12 @@ export async function buildReportPayload(
       scopeLabel: title.scopeLabel,
       currencyCode,
       generatedAt,
+      timezone: dateContext.timezone,
+      today: dateContext.today,
+      partialDay: dateContext.partialDay,
+      comparisonDisabledReason,
+      warnings,
+      coverage: useSummaryMode ? { state: 'unknown', basis: 'period', dateFrom: null, dateTo: null } : coverage,
     },
     summary,
     kpis: buildKpis({
@@ -3331,6 +2858,9 @@ export async function buildReportPayload(
       previousDateFrom: previousRange?.dateFrom ?? null,
       previousDateTo: previousRange?.dateTo ?? null,
       previousTotals,
+      previousSeries: previousTotals ? groupSeries(previousRows, effectiveQuery.groupBy) : [],
+      disabledReason: comparisonDisabledReason,
+      coverage: previousCoverage,
     } satisfies ReportComparisonSummary,
     findings,
     breakdown,

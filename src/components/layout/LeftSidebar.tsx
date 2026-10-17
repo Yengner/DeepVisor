@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Tooltip } from '@mantine/core';
 import { IconLogout } from '@tabler/icons-react';
 import { clientHandleSignOut } from '@/lib/client';
-import { isAppNavItemActive, primaryNavItems } from './navigation';
+import { isAppNavItemActive, primaryNavItems, secondaryNavItems } from './navigation';
 
 type RailItemProps = {
   active: boolean;
@@ -73,6 +73,7 @@ export default function Sidebar() {
       aria-label="Workspace navigation"
     >
       <div className="flex h-full flex-col justify-between px-2 py-4">
+        <div className="min-h-0 overflow-y-auto">
         <nav className="space-y-1.5">
           {primaryNavItems.map((item) => {
             const active = isAppNavItemActive(pathname, item.route);
@@ -88,7 +89,16 @@ export default function Sidebar() {
             );
           })}
         </nav>
+        <nav aria-label="Secondary workspace navigation" className="mt-5 space-y-1.5 border-t border-[#292d28] pt-3">
+          {secondaryNavItems.map(item => {
+            const active = isAppNavItemActive(pathname, item.route);
+            return <RailItem key={item.route} active={active} expanded={isExpanded}
+              icon={<item.icon size={19} stroke={active ? 2.25 : 1.8} />} label={item.name}
+              onClick={() => router.push(item.route)} />;
+          })}
+        </nav>
 
+        </div>
         <div className="space-y-1.5 border-t border-[#292d28] pt-3">
           <RailItem
             active={false}

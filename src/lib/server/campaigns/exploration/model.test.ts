@@ -184,6 +184,17 @@ describe("honest visual evidence", () => {
     ).toBe("dynamic");
   });
   it("prefers persisted full photos and video posters over thumbnails", () => {
+    const portrait = mediaFor(creativeFixture({
+      thumbnail_url: 'https://assets.test/tiny.jpg',
+      raw: { deepvisor_video_poster: { uri:'https://assets.test/portrait.jpg', width:480, height:854 } },
+    }));
+    expect(portrait.image).toBe('https://assets.test/portrait.jpg');
+    expect(portrait.fallbackImages).toContain('https://assets.test/tiny.jpg');
+    const larger = mediaFor(creativeFixture({
+      raw: { deepvisor_video_poster: { uri:'https://assets.test/portrait.jpg', width:480, height:854 } },
+      object_story_spec: { photo_data: {url:'https://assets.test/square.jpg',width:1080,height:1080} },
+    }));
+    expect(larger.image).toBe('https://assets.test/square.jpg');
     expect(
       mediaFor(
         creativeFixture({

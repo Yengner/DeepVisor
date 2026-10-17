@@ -27,9 +27,27 @@ export interface ReportQueryInput {
   groupBy: ReportGroupBy;
   compareMode: ReportCompareMode;
   rangeMode?: ReportRangeMode;
+  /** Resolved against authorized account timezone by the loader. */
+  presetDays?: 7 | 30 | 90;
+}
+
+export type ReportMetricKey =
+  | "spend" | "reach" | "impressions" | "clicks" | "linkClicks"
+  | "leads" | "messages" | "calls" | "conversion" | "conversionRate"
+  | "costPerResult" | "ctr" | "cpc" | "cpm" | "frequency";
+export type ReportMetricAvailability = Partial<Record<ReportMetricKey, string>>;
+export interface ReportCoverage {
+  state: "available" | "partial" | "mixed" | "unknown" | "empty" | "error";
+  basis: "period" | "snapshot";
+  dateFrom: string | null;
+  dateTo: string | null;
+  windows?: Array<{ dateFrom: string; dateTo: string }>;
+  observedDays?: number;
+  expectedDays?: number;
 }
 
 export interface ReportMetricTotals {
+  unavailable?: ReportMetricAvailability;
   spend: number;
   reach: number;
   impressions: number;
@@ -61,6 +79,9 @@ export interface ReportKpi {
   value: number;
   formattedValue: string;
   deltaPercent: number | null;
+  deltaUnit?: "percent" | "percentage_points";
+  direction?: "favorable" | "unfavorable" | "neutral";
+  unavailableReason?: string;
 }
 
 export interface ReportTimeSeriesPoint extends ReportMetricTotals {
@@ -78,6 +99,7 @@ export interface ReportBreakdownRow extends ReportMetricTotals {
   primaryContext: string | null;
   secondaryContext: string | null;
   creativeContext?: string | null;
+  creativePreview?: { image: string | null; fallbackImages?: string[]; fallbackImage?: string | null; kind: 'image' | 'video' | 'carousel' | 'dynamic' } | null;
   drilldownLabel?: string | null;
   drilldownHref?: string | null;
   startDate: string | null;
@@ -120,6 +142,9 @@ export interface ReportComparisonSummary {
   previousDateFrom: string | null;
   previousDateTo: string | null;
   previousTotals: ReportMetricTotals | null;
+  previousSeries?: ReportTimeSeriesPoint[];
+  disabledReason?: string | null;
+  coverage?: ReportCoverage;
 }
 
 export interface ReportExportMetadata {
@@ -132,11 +157,25 @@ export interface ReportExportMetadata {
   }>;
 }
 
+export interface ReportSnapshotMeasurement {
+  entityId: string | null;
+  entityLevel: 'adset' | 'ad';
+  breakdownType: string;
+  dimension1: { key: string; value: string };
+  dimension2: { key: string; value: string };
+  dateFrom: string | null;
+  dateTo: string | null;
+  currencyCode: string | null;
+  values: Partial<Record<ReportMetricKey, number | null>>;
+}
 export interface ReportSurfaceContext {
+  measurements?: ReportSnapshotMeasurement[];
   isMeta: boolean;
   platformBreakdowns: DashboardPlatformBreakdowns;
   audienceBreakdowns: DashboardAudienceBreakdowns;
   hourlyTrendExpanded: DashboardTrendPoint[];
+  coverage?: Record<string, ReportCoverage>;
+  unavailableMetrics?: Record<string, ReportMetricAvailability>;
 }
 
 export interface ReportPayload {
@@ -149,6 +188,12 @@ export interface ReportPayload {
     currencyCode: string | null;
     generatedAt: string;
     syncCoverage?: SyncCoverage | null;
+    timezone?: string | null;
+    today?: string | null;
+    partialDay?: boolean;
+    warnings?: string[];
+    coverage?: ReportCoverage;
+    comparisonDisabledReason?: string | null;
   };
   summary: ReportMetricTotals;
   kpis: ReportKpi[];

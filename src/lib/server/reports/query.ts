@@ -1,4 +1,4 @@
-import { getTrailingUtcDateRange } from '@/lib/shared';
+import { completedReportRange, isReportDate } from '@/lib/shared/reports/dates';
 import type {
   ReportCompareMode,
   ReportGroupBy,
@@ -15,15 +15,7 @@ function toArray(value: string | string[] | undefined): string[] {
   return raw
     .split(',')
     .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function isIsoDate(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
-function getDefaultDateRange() {
-  return getTrailingUtcDateRange(30);
+    .filter(Boolean).filter((id, index, ids) => ids.indexOf(id) === index);
 }
 
 function resolveDefaultGroupBy(dateFrom: string, dateTo: string): ReportGroupBy {
@@ -77,9 +69,10 @@ function inferScope(input: {
 
 export function parseReportQueryInput(
   businessId: string,
-  searchParams: Record<string, string | string[] | undefined>
+  searchParams: Record<string, string | string[] | undefined>,
+  now = new Date()
 ): ReportQueryInput {
-  const defaults = getDefaultDateRange();
+  const defaults = completedReportRange(now.toISOString().slice(0, 10), 30);
   const adAccountIds = toArray(searchParams.ad_account_id);
   const campaignIds = toArray(searchParams.campaign_id);
   const adsetIds = toArray(searchParams.adset_id);
@@ -90,8 +83,15 @@ export function parseReportQueryInput(
   const dateTo = toArray(searchParams.date_to)[0];
   const requestedRangeMode = toArray(searchParams.range)[0];
 
-  const normalizedDateFrom = dateFrom && isIsoDate(dateFrom) ? dateFrom : defaults.dateFrom;
-  const normalizedDateTo = dateTo && isIsoDate(dateTo) ? dateTo : defaults.dateTo;
+  if ((dateFrom || dateTo) && (!dateFrom || !dateTo || !isReportDate(dateFrom) || !isReportDate(dateTo) || dateFrom > dateTo)) {
+    throw new Error('Report dates must be a valid, ordered calendar date range.');
+  }
+  const preset = toArray(searchParams.preset)[0];
+  if (preset && !['7', '30', '90'].includes(preset)) throw new Error('Invalid report preset.');
+  const presetDays = preset ? Number(preset) as 7 | 30 | 90 : !dateFrom && requestedRangeMode !== 'max' ? 30 : undefined;
+  const placeholderRange = presetDays ? completedReportRange(now.toISOString().slice(0, 10), presetDays) : defaults;
+  const normalizedDateFrom = dateFrom ?? placeholderRange.dateFrom;
+  const normalizedDateTo = dateTo ?? placeholderRange.dateTo;
   const compare = toArray(searchParams.compare)[0];
   const groupBy = toArray(searchParams.group_by)[0] as ReportGroupBy | undefined;
   const rangeMode = requestedRangeMode === 'max' ? 'max' : 'date_range';
@@ -99,7 +99,7 @@ export function parseReportQueryInput(
   return {
     businessId,
     scope:
-      requestedScope &&
+      !adIds.length && !adsetIds.length && !campaignIds.length && !adAccountIds.length && requestedScope &&
       ['business', 'platform', 'ad_account', 'campaign', 'adset', 'ad'].includes(requestedScope)
         ? requestedScope
         : inferScope({
@@ -127,5 +127,6 @@ export function parseReportQueryInput(
         ? ('previous_period' satisfies ReportCompareMode)
         : ('none' satisfies ReportCompareMode),
     rangeMode,
+    presetDays: rangeMode === "max" ? undefined : presetDays,
   };
 }

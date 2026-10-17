@@ -433,18 +433,6 @@
   height: 100%;
   object-fit: contain;
 }
-.adCard .adMedia:has([data-compact-media="true"]) {
-  max-width: 240px;
-  margin: 12px auto;
-  border-radius: 6px;
-  min-height: 140px;
-  height: 140px;
-  max-height: 140px;
-  aspect-ratio: auto;
-  flex: none;
-  align-self: center;
-  width: 100%;
-}
 .featured .adMedia {
   flex: none;
   min-height: 0;

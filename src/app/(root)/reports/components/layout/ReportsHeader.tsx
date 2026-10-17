@@ -24,11 +24,13 @@ import {
   IconFileTypePdf,
   IconRefresh,
 } from '@tabler/icons-react';
-import type { ReportPayload } from '@/lib/server/reports/types';
+import { completedReportRange } from '@/lib/shared/reports/dates';
+import type { ReportFilterOptions, ReportPayload } from '@/lib/server/reports/types';
 import classes from '../ReportsClient.module.css';
 
 interface ReportsHeaderProps {
   payload: ReportPayload;
+  filterOptions: ReportFilterOptions;
   exportLinks: {
     pdf: string;
     csv: string;
@@ -41,7 +43,7 @@ interface ReportsHeaderProps {
   isPending?: boolean;
 }
 
-type QuickRangePreset = '7d' | '30d' | '90d' | 'mtd' | 'qtd' | 'ytd' | 'max';
+type QuickRangePreset = '7d' | '30d' | '90d' | 'max';
 
 function toIsoDate(date: Date | string): string {
   if (typeof date === 'string') {
@@ -85,79 +87,14 @@ function formatReadableDate(value: string | null): string | null {
   });
 }
 
-function presetRange(
-  preset: QuickRangePreset,
-  maxRange: { dateFrom: string; dateTo: string } | null = null
-) {
-  if (preset === 'max') {
-    return maxRange;
-  }
-
-  const anchor = maxRange ? parseLocalDate(maxRange.dateTo) : new Date();
-  anchor.setHours(0, 0, 0, 0);
-  const from = new Date(anchor);
-
-  switch (preset) {
-    case '7d':
-      from.setDate(anchor.getDate() - 6);
-      break;
-    case '30d':
-      from.setDate(anchor.getDate() - 29);
-      break;
-    case '90d':
-      from.setDate(anchor.getDate() - 89);
-      break;
-    case 'mtd':
-      from.setDate(1);
-      break;
-    case 'qtd':
-      from.setMonth(Math.floor(anchor.getMonth() / 3) * 3, 1);
-      break;
-    case 'ytd':
-      from.setMonth(0, 1);
-      break;
-    default:
-      from.setDate(anchor.getDate() - 29);
-      break;
-  }
-
-  const resolvedDateFrom = maxRange && toIsoDate(from) < maxRange.dateFrom
-    ? maxRange.dateFrom
-    : toIsoDate(from);
-  const resolvedDateTo = maxRange && toIsoDate(anchor) > maxRange.dateTo
-    ? maxRange.dateTo
-    : toIsoDate(anchor);
-
-  return {
-    dateFrom: resolvedDateFrom,
-    dateTo: resolvedDateTo,
-  };
-}
-
-function resolveActivePreset(
-  dateFrom: string,
-  dateTo: string,
-  maxRange: { dateFrom: string; dateTo: string } | null
-): QuickRangePreset | null {
-  const presetValues: QuickRangePreset[] = ['7d', '30d', '90d', 'mtd', 'qtd', 'ytd'];
-
-  for (const preset of presetValues) {
-    const range = presetRange(preset, maxRange);
-
-    if (!range) {
-      continue;
-    }
-
-    if (range.dateFrom === dateFrom && range.dateTo === dateTo) {
-      return preset;
-    }
-  }
-
-  return null;
+function presetRange(preset: QuickRangePreset, today: string | null | undefined) {
+  if (preset === 'max' || !today) return null;
+  return completedReportRange(today, preset === '7d' ? 7 : preset === '90d' ? 90 : 30);
 }
 
 export default function ReportsHeader({
   payload,
+  filterOptions,
   exportLinks,
   onUpdate,
   onRefresh,
@@ -179,37 +116,12 @@ export default function ReportsHeader({
     () => new Map((payload.activeDates?.days ?? []).map((item) => [item.date, item.activeEntityCount])),
     [payload.activeDates]
   );
-  const maxRange = useMemo(() => {
-    if (!payload.activeDates?.startDate || !payload.activeDates.endDate) {
-      return null;
-    }
-
-    return {
-      dateFrom: payload.activeDates.startDate,
-      dateTo: payload.activeDates.endDate,
-    };
-  }, [payload.activeDates]);
-  const isAccountLevelReport = payload.query.scope === 'ad_account';
   const isMaxRangeReport = payload.query.rangeMode === 'max';
-  const isSummaryRangeReport = isAccountLevelReport || isMaxRangeReport;
-  const quickRangeMaxRange = useMemo(
-    () =>
-      maxRange ??
-      (isMaxRangeReport
-        ? {
-            dateFrom: payload.query.dateFrom,
-            dateTo: payload.query.dateTo,
-          }
-        : null),
-    [isMaxRangeReport, maxRange, payload.query.dateFrom, payload.query.dateTo]
-  );
-  const activePreset = useMemo(
-    () =>
-      isMaxRangeReport
-        ? 'max'
-        : resolveActivePreset(payload.query.dateFrom, payload.query.dateTo, quickRangeMaxRange),
-    [isMaxRangeReport, quickRangeMaxRange, payload.query.dateFrom, payload.query.dateTo]
-  );
+  const isSummaryRangeReport = isMaxRangeReport;
+  const activePreset = isMaxRangeReport ? 'max' : (['7d', '30d', '90d'] as const).find(preset => {
+    const range = presetRange(preset, payload.meta.today);
+    return range?.dateFrom === payload.query.dateFrom && range?.dateTo === payload.query.dateTo;
+  });
   const reportDateSummary = `${formatReadableDate(payload.query.dateFrom) ?? 'Unknown'} through ${
     formatReadableDate(payload.query.dateTo) ?? 'Unknown'
   }`;
@@ -221,7 +133,7 @@ export default function ReportsHeader({
   const presets: Array<{ value: QuickRangePreset; label: string }> = [
     { value: '7d', label: '7D' },
     { value: '30d', label: '30D' },
-    { value: 'max', label: 'Max' },
+    { value: '90d', label: '90D' },
   ];
 
   const activeDateSummary = payload.activeDates
@@ -258,20 +170,20 @@ export default function ReportsHeader({
         >
           <div className={classes.headerMeta}>
             <Group gap="xs" align="center" wrap="wrap">
-              <Badge color="blue" variant="light" size="md">
+              <Badge color="dark" variant="light" size="md">
                 {payload.meta.scopeLabel}
               </Badge>
               {isDemo ? (
-                <Badge color="cyan" variant="outline" size="md">
+                <Badge color="cyan.9" variant="outline" size="md">
                   Demo data
                 </Badge>
               ) : null}
             </Group>
             <Text fw={900} size="1.65rem" mt="xs" className={classes.headerTitle}>
-              {payload.meta.title}
+              Reports
             </Text>
-            <Text size="sm" c="dimmed" mt={4}>
-              {reportDateSummary}
+            <Text size="sm" c="#626b5b" mt={4}>
+              {reportDateSummary} · {payload.meta.timezone ?? "Timezone unknown"}{payload.meta.partialDay ? " · Partial day" : ""}
             </Text>
           </div>
 
@@ -285,34 +197,38 @@ export default function ReportsHeader({
             >
               Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
             </Button>
-            <Menu position="bottom-end" shadow="md" width={190}>
+            <Menu position="bottom-end" shadow="md" width={250}>
               <Menu.Target>
                 <Button
                   leftSection={<IconDownload size={16} />}
                   rightSection={<IconChevronDown size={14} />}
                   radius="xl"
                   variant="filled"
+                  color="#075f3b"
                   className="app-platform-page-action-primary"
                 >
                   Export
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
+                <Menu.Label>All sections · selected scope</Menu.Label>
                 <Menu.Item component="a" href={exportLinks.pdf} leftSection={<IconFileTypePdf size={16} />}>
-                  PDF report
+                  Complete report · PDF
                 </Menu.Item>
                 <Menu.Item component="a" href={exportLinks.csv} leftSection={<IconFileSpreadsheet size={16} />}>
-                  CSV data
+                  All report data · CSV
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
-            <Tooltip label={isPending ? 'Refreshing…' : 'Refresh report'}>
+            <Tooltip label={isPending ? 'Reloading…' : 'Reload saved report data (does not sync Meta)'}>
               <ActionIcon
+                aria-label="Reload saved report data"
                 size="lg"
                 radius="xl"
                 variant="default"
                 className="app-platform-page-action-icon"
                 onClick={onRefresh}
+                disabled={isPending}
               >
                 <IconRefresh size={18} />
               </ActionIcon>
@@ -320,21 +236,32 @@ export default function ReportsHeader({
           </Group>
         </Group>
 
+        <Group gap="md" align="flex-end" wrap="wrap">
+          <Select label="Ad account" aria-label="Ad account" searchable
+            style={{ flex: '1 1 220px', minWidth: 0 }}
+            value={payload.query.adAccountIds.length === 1 ? payload.query.adAccountIds[0] : null}
+            placeholder={payload.query.adAccountIds.length > 1 ? 'Multiple accounts selected' : 'All authorized accounts'}
+            data={filterOptions.adAccounts.map(account => ({ value: account.id, label: account.label }))}
+            onChange={value => {
+              if (!value) return;
+              onUpdate(params => {
+                params.set('ad_account_id', value);
+                ['campaign_id', 'adset_id', 'ad_id', 'platform_integration_id'].forEach(key => params.delete(key));
+                if (activePreset && activePreset !== 'max') {
+                  params.set('preset', activePreset.replace('d', ''));
+                  params.delete('date_from'); params.delete('date_to');
+                }
+              });
+            }} />
+          <Switch label="Compare previous period" size="md" color="green"
+            disabled={isSummaryRangeReport || Boolean(payload.meta.comparisonDisabledReason)}
+            checked={payload.query.compareMode === 'previous_period'}
+            onChange={event => { const checked = event.currentTarget.checked; onUpdate(params => params.set('compare', checked ? 'previous_period' : 'none')); }} />
+        </Group>
+
         <div
           className={`${classes.controlBar} ${isSummaryRangeReport ? classes.controlBarSummary : ''}`}
         >
-          {isAccountLevelReport ? (
-            <div className={classes.controlField}>
-              <Text size="xs" fw={700} className={classes.controlLabel}>
-                Range
-              </Text>
-              <div className={classes.compareField}>
-                <Text size="sm" fw={700}>
-                  Full account history · {reportDateSummary}
-                </Text>
-              </div>
-            </div>
-          ) : (
             <>
               <div className={classes.controlField}>
                 <Text size="xs" fw={700} className={classes.controlLabel}>
@@ -343,7 +270,7 @@ export default function ReportsHeader({
                 <div className={classes.presetRail}>
                   {presets.map((preset) => {
                     const isActive = activePreset === preset.value;
-                    const range = presetRange(preset.value, quickRangeMaxRange);
+                    const range = presetRange(preset.value, payload.meta.today);
                     const isMaxPreset = preset.value === 'max';
 
                     return (
@@ -352,9 +279,11 @@ export default function ReportsHeader({
                         radius="xl"
                         size="xs"
                         variant={isActive ? 'filled' : 'light'}
-                        color={isActive ? 'blue' : 'gray'}
+                        color={isActive ? 'dark' : 'gray.8'}
+                        c={isActive ? '#ffffff' : '#4d5946'}
                         className={classes.presetButton}
-                        disabled={!range && !isMaxPreset}
+                        aria-pressed={isActive}
+                        disabled={isPending || (!range && !isMaxPreset)}
                         onClick={() => {
                           if (isMaxPreset) {
                             if (range) {
@@ -366,6 +295,7 @@ export default function ReportsHeader({
 
                             onUpdate((params) => {
                               params.set('range', 'max');
+                              params.delete('preset');
                               params.delete('date_from');
                               params.delete('date_to');
                               params.delete('group_by');
@@ -384,6 +314,7 @@ export default function ReportsHeader({
                           ]);
                           onUpdate((params) => {
                             params.delete('range');
+                        params.delete('preset');
                             params.set('date_from', range.dateFrom);
                             params.set('date_to', range.dateTo);
                           });
@@ -416,6 +347,7 @@ export default function ReportsHeader({
 
                       onUpdate((params) => {
                         params.delete('range');
+                        params.delete('preset');
                         params.set('date_from', toIsoDate(start));
                         params.set('date_to', toIsoDate(end));
                       });
@@ -426,8 +358,8 @@ export default function ReportsHeader({
                     size="sm"
                     placeholder="Select date range"
                     className={classes.controlInput}
-                    minDate={maxRange ? parseLocalDate(maxRange.dateFrom) : undefined}
-                    maxDate={maxRange ? parseLocalDate(maxRange.dateTo) : undefined}
+
+                    maxDate={payload.meta.today ? parseLocalDate(payload.meta.today) : undefined}
                     getDayProps={(date) => {
                       const isoDate = toIsoDate(date);
                       const activeCount = activeDateCountByIso.get(isoDate) ?? 0;
@@ -459,10 +391,8 @@ export default function ReportsHeader({
                 </div>
               ) : null}
             </>
-          )}
 
-          {!isSummaryRangeReport ? (
-            <Button
+          <Button
               variant="subtle"
               color="dark"
               rightSection={
@@ -477,11 +407,14 @@ export default function ReportsHeader({
             >
               More options
             </Button>
-          ) : null}
         </div>
 
-        <Collapse in={!isSummaryRangeReport && moreOptionsOpen}>
+        <Collapse in={moreOptionsOpen}>
           <div className={classes.advancedControlBar}>
+            <Button variant="default" onClick={() => onUpdate(params => {
+              params.set('range', 'max');
+              ['preset', 'date_from', 'date_to', 'group_by', 'compare'].forEach(key => params.delete(key));
+            })}>All saved history</Button>
             <div className={classes.controlField}>
               <Text size="xs" fw={700} className={classes.controlLabel}>
                 Group By
@@ -507,28 +440,6 @@ export default function ReportsHeader({
                 size="sm"
                 className={classes.groupBySelect}
               />
-            </div>
-
-            <div className={classes.controlField}>
-              <Text size="xs" fw={700} className={classes.controlLabel}>
-                Compare
-              </Text>
-              <div className={classes.compareField}>
-                <Switch
-                  label="Previous period"
-                  checked={payload.query.compareMode === 'previous_period'}
-                  onChange={(event) => {
-                    onUpdate((params) => {
-                      params.set(
-                        'compare',
-                        event.currentTarget.checked ? 'previous_period' : 'none'
-                      );
-                    });
-                  }}
-                  color="blue"
-                  size="md"
-                />
-              </div>
             </div>
 
             {payload.activeDates ? (

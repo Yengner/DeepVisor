@@ -32,7 +32,7 @@ export async function renderReportPdfBuffer(input: {
     : await buildReportPdfPayload(input.query, input.supabase);
   const document = React.createElement(
     ReportPdfDocument,
-    { payload }
+    { payload, demo: input.demo ?? false }
   ) as unknown as Parameters<typeof renderToBuffer>[0];
   const buffer = await renderToBuffer(document);
 

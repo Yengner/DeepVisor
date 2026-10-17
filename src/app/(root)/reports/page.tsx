@@ -5,7 +5,7 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { getAdAccountSyncCoverage } from '@/lib/server/repositories/ad_accounts/syncState';
 import { buildDemoReportPayload, getDemoReportFilterOptions } from '@/lib/server/reports/demo';
-import { parseReportQueryInput } from '@/lib/server/reports/query';
+import { resolveReportRequest } from '@/lib/server/reports/request';
 import { buildReportPayload, getReportFilterOptions } from '@/lib/server/repositories/reports/buildReportPayload';
 import { ReportsClient } from './components/ReportsClient';
 import ReportsClientFallback from './components/ReportClientFallback';
@@ -28,7 +28,7 @@ export default async function ReportsPage({
   const adminSupabase = createAdminClient();
   const { selectedPlatformId, selectedAdAccountId } = await resolveCurrentSelection(businessId);
   const params = await searchParams;
-  const query = parseReportQueryInput(businessId, params);
+  const query = await resolveReportRequest(businessId, params);
   const demoRequested = isTruthySearchParam(params.demo);
 
   const liveResult = demoRequested
@@ -59,7 +59,8 @@ export default async function ReportsPage({
     payload &&
     !shouldUseDemo &&
     coverageTargetAdAccountId &&
-    coverageTargetPlatformIntegrationId
+    coverageTargetPlatformIntegrationId &&
+    filterOptions?.adAccounts.some(account => account.id === coverageTargetAdAccountId)
   ) {
     const syncCoverage = await getAdAccountSyncCoverage(adminSupabase, coverageTargetAdAccountId);
 

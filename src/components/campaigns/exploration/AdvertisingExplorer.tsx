@@ -22,6 +22,7 @@ import type {
 } from "@/lib/server/campaigns/exploration/types";
 import type { TrendPoint } from "@/lib/server/dashboard/overview/types";
 import classes from "./Exploration.module.css";
+import { previewSources, usablePreviewDimensions } from '@/lib/shared/media/preview';
 
 type Request = {
   account: string;
@@ -118,18 +119,16 @@ export function MediaImage({
     width: number;
     height: number;
   } | null>(null);
-  const src = [media?.image, ...(media?.fallbackImages ?? [media?.fallbackImage])].find(
-    (url) => url && !failed.includes(url),
-  );
+  const src = previewSources(media, failed)[0];
   const measureImage = useCallback((image: HTMLImageElement | null) => {
-    if (src && image?.complete && image.naturalWidth > 0) {
+    if (src && image?.complete && usablePreviewDimensions(image.naturalWidth, image.naturalHeight)) {
       setSize({ src, width: image.naturalWidth, height: image.naturalHeight });
     } else if (src && image?.complete) {
       setFailed(old => old.includes(src) ? old : [...old, src]);
     }
   }, [src]);
   return (
-    <div className={classes.media} data-compact-media={!!src && size?.src === src && (size.width < 600 || size.height < 300) || !src}>
+    <div className={classes.media}>
       {src /* Synced Meta assets have variable hosts and expiring URLs. */ ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -139,24 +138,15 @@ export function MediaImage({
           loading="lazy"
           referrerPolicy="no-referrer"
           style={
-            size?.src === src &&
-            (size.width < 600 || size.height < 300)
+            size?.src === src
               ? {
                   objectFit: "contain",
-                  width: "auto",
-                  height: "auto",
-                  maxWidth: "100%",
-                  maxHeight: "100%",
+                  maxWidth: size.width,
+                  maxHeight: size.height,
                 }
               : undefined
           }
-          onLoad={(event) =>
-            setSize({
-              src,
-              width: event.currentTarget.naturalWidth,
-              height: event.currentTarget.naturalHeight,
-            })
-          }
+          onLoad={(event) => measureImage(event.currentTarget)}
           onError={() => setFailed((old) => [...old, src])}
         />
       ) : (

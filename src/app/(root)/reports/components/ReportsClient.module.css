@@ -565,3 +565,16 @@
     --state-map-tile-size: 21px;
   }
 }
+
+/* Shared workspace controls; retained analytical sections use their existing styles. */
+.headerCard { border-radius: 18px; }
+.presetButton { min-height: 44px; }
+.headerActions :global(.mantine-Button-root),
+.headerActions :global(.mantine-ActionIcon-root) { min-height: 44px; }
+@media (max-width: 760px) {
+  .headerCard { border-radius: 14px; }
+  .headerActions :global(.mantine-Button-root) { padding-inline: 10px; font-size: 12px; }
+  .headerActions :global(.mantine-Button-section[data-position='left']) { display: none; }
+  .presetRail { flex-wrap: nowrap; }
+  .presetButton { flex: 1 1 0; padding-inline: 8px; }
+}

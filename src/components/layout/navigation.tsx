@@ -1,6 +1,7 @@
 import type { Icon } from '@tabler/icons-react';
 import {
   IconBell,
+  IconChartBar,
   IconChecklist,
   IconHome2,
   IconPresentation,
@@ -25,6 +26,7 @@ export const primaryNavItems: AppNavItem[] = [
 ];
 
 export const secondaryNavItems: AppNavItem[] = [
+  { name: 'Reports', shortName: 'Reports', icon: IconChartBar, route: '/reports' },
   { name: 'Profile', shortName: 'Profile', icon: IconUser, route: '/settings/profile' },
   { name: 'Notifications', shortName: 'Alerts', icon: IconBell, route: '/notifications' },
 ];

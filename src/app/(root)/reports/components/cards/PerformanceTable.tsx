@@ -3,6 +3,7 @@
 import { Badge, Button, Card, Table, Text } from '@mantine/core';
 import { IconStarFilled } from '@tabler/icons-react';
 import type { ReportBreakdownRow } from '@/lib/server/reports/types';
+import { formatReportMetric } from '@/lib/shared/reports/metrics';
 import classes from './PerformanceTable.module.css';
 
 interface PerformanceTableProps {
@@ -29,23 +30,6 @@ const REPORT_TABLE_COLUMN_WIDTHS = [
   '126px',
 ] as const;
 const RANKED_REPORT_TABLE_COLUMN_WIDTHS = ['110px', ...REPORT_TABLE_COLUMN_WIDTHS] as const;
-
-function formatCurrency(value: number, currencyCode: string | null) {
-  if (!currencyCode || currencyCode === 'MIXED') {
-    return value.toFixed(2);
-  }
-
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currencyCode,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  } catch {
-    return `$${value.toFixed(2)}`;
-  }
-}
 
 function formatDateWindow(startDate: string | null, endDate: string | null) {
   if (!startDate && !endDate) {
@@ -226,25 +210,25 @@ export default function PerformanceTable({
                     <Text size="xs" c="dimmed" fw={700}>
                       Spend
                     </Text>
-                    <Text fw={800}>{formatCurrency(row.spend, currencyCode)}</Text>
+                    <Text fw={800}>{formatReportMetric(row, "spend", currencyCode)}</Text>
                   </div>
                   <div>
                     <Text size="xs" c="dimmed" fw={700}>
                       Results
                     </Text>
-                    <Text fw={800}>{row.conversion.toLocaleString()}</Text>
+                    <Text fw={800}>{formatReportMetric(row, "conversion", currencyCode)}</Text>
                   </div>
                   <div>
                     <Text size="xs" c="dimmed" fw={700}>
                       Cost/result
                     </Text>
-                    <Text fw={800}>{formatCurrency(row.costPerResult, currencyCode)}</Text>
+                    <Text fw={800}>{formatReportMetric(row, "costPerResult", currencyCode)}</Text>
                   </div>
                   <div>
                     <Text size="xs" c="dimmed" fw={700}>
                       CTR
                     </Text>
-                    <Text fw={800}>{row.ctr.toFixed(2)}%</Text>
+                    <Text fw={800}>{formatReportMetric(row, "ctr", currencyCode)}</Text>
                   </div>
                 </div>
               </article>
@@ -353,13 +337,13 @@ export default function PerformanceTable({
                         {dateWindow}
                       </Text>
                     </Table.Td>
-                    <Table.Td ta="right">{formatCurrency(row.spend, currencyCode)}</Table.Td>
-                    <Table.Td ta="right">{row.conversion.toLocaleString()}</Table.Td>
-                    <Table.Td ta="right">{row.impressions.toLocaleString()}</Table.Td>
-                    <Table.Td ta="right">{row.clicks.toLocaleString()}</Table.Td>
-                    <Table.Td ta="right">{row.ctr.toFixed(2)}%</Table.Td>
-                    <Table.Td ta="right">{formatCurrency(row.cpc, currencyCode)}</Table.Td>
-                    <Table.Td ta="right">{formatCurrency(row.costPerResult, currencyCode)}</Table.Td>
+                    <Table.Td ta="right">{formatReportMetric(row, "spend", currencyCode)}</Table.Td>
+                    <Table.Td ta="right">{formatReportMetric(row, "conversion", currencyCode)}</Table.Td>
+                    <Table.Td ta="right">{formatReportMetric(row, "impressions", currencyCode)}</Table.Td>
+                    <Table.Td ta="right">{formatReportMetric(row, "clicks", currencyCode)}</Table.Td>
+                    <Table.Td ta="right">{formatReportMetric(row, "ctr", currencyCode)}</Table.Td>
+                    <Table.Td ta="right">{formatReportMetric(row, "cpc", currencyCode)}</Table.Td>
+                    <Table.Td ta="right">{formatReportMetric(row, "costPerResult", currencyCode)}</Table.Td>
                     <Table.Td ta="right">
                       {row.drilldownHref ? (
                         <Button

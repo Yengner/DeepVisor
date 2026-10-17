@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUserId } from '@/lib/server/actions/user/session';
 import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
-import { parseReportQueryInput } from '@/lib/server/reports/query';
+import { resolveReportRequest } from '@/lib/server/reports/request';
 import { renderReportPdfBuffer } from '@/lib/server/reports/pdf/renderReportPdf';
 
 export const runtime = 'nodejs';
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const userId = await requireUserId();
     const context = await getOrCreateOrganizationBusinessContext(userId);
-    const query = parseReportQueryInput(
+    const query = await resolveReportRequest(
       context.businessId,
       Object.fromEntries(request.nextUrl.searchParams.entries())
     );
@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
+        'Cache-Control': 'private, no-store',
         'Content-Disposition': `attachment; filename="${fileName}"`,
       },
     });
