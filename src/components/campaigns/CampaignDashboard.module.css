@@ -222,3 +222,44 @@
     min-height: 40px;
   }
 }
+
+/* Saved active delivery is independent of table selection and historical spend. */
+.desktopDataTable tr[data-delivering] > td {
+  background: #edfacb !important;
+}
+.desktopDataTable tr[data-delivering]:hover > td {
+  background: #e2f5b3 !important;
+}
+.desktopDataTable tr[data-delivering] > td:first-child {
+  box-shadow: inset 3px 0 #559c2f;
+}
+.mobileEntityCard[data-delivering] {
+  background: #edfacb;
+  border-color: #a9cf72;
+  box-shadow: inset 3px 0 #559c2f;
+}
+.mobileEntityCard[data-delivering][data-selected] {
+  background: #e2f5b3;
+  outline: 2px solid #27784b;
+  outline-offset: -2px;
+}
+.deliveryIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #235c30;
+  background: #d5efac;
+  border: 1px solid #a9cf72;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.deliveryIndicator::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #348647;
+}

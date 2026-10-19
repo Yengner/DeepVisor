@@ -1,5 +1,7 @@
 'use client';
 
+import { DeliveryIndicator } from './DeliveryIndicator';
+
 import type { AdLifetimeRow } from '@/lib/server/data';
 import { asRecord, asString } from '@/lib/shared/utils/format';
 import {
@@ -46,7 +48,7 @@ const fmtPct = (n?: number) => {
 };
 
 interface AdsTableProps {
-  ads?: AdLifetimeRow[];
+  ads?: (AdLifetimeRow & { delivery?: boolean })[];
   loading?: boolean;
   selectedAdId?: string | null;
   onSelectAd?: (id: string) => void;
@@ -132,6 +134,7 @@ export default function AdsTable({
                 role="button"
                 tabIndex={0}
                 className={classes.mobileEntityCard}
+                data-delivering={ad.delivery || undefined}
                 data-selected={isSelected || undefined}
                 onClick={() => onSelectAd?.(id)}
                 onDoubleClick={() => onOpenAd?.(id)}
@@ -153,6 +156,7 @@ export default function AdsTable({
                       </Text>
                       <Group gap={6} mt={6} wrap="wrap">
                         <StatusBadge status={ad.status} />
+                      <DeliveryIndicator active={ad.delivery} />
                       </Group>
                     </div>
                   </Group>
@@ -337,6 +341,7 @@ export default function AdsTable({
 
               return (
                 <Table.Tr
+                  data-delivering={ad.delivery || undefined}
                   key={id}
                   style={{ background: rowBg, cursor: onSelectAd ? 'pointer' : 'default' }}
                   onClick={() => onSelectAd?.(id)}
@@ -395,6 +400,7 @@ export default function AdsTable({
                   <Table.Td>
                     <Group gap="xs" wrap="nowrap" onClick={(event) => event.stopPropagation()}>
                       <StatusBadge status={ad.status} />
+                      <DeliveryIndicator active={ad.delivery} />
                     </Group>
                   </Table.Td>
                   <Table.Td>{formatCurrencyAmount(spend, currencyCode)}</Table.Td>

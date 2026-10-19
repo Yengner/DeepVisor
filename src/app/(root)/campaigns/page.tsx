@@ -1,3 +1,4 @@
+import { loadTableDelivery } from '@/lib/server/campaigns/tableDelivery';
 import CampaignDashboard from "@/components/campaigns/CampaignDashboard";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { Suspense } from "react";
@@ -93,6 +94,9 @@ export default async function CampaignPage({
     platformDetails.vendor
   );
 
+  const deliveryState = await loadTableDelivery(businessId, selectedAdAccountId, selectedPlatformId);
+  const activeKeys = new Set(deliveryState.activeKeys);
+
   const allCampaigns: FormattedCampaign[] = (campaignsData ?? []).map((c: CampaignLifetimeRow) => {
     const totalResults = Number(c.leads || 0) + Number(c.messages || 0);
     const spendNum = Number(c.spend || 0);
@@ -100,7 +104,7 @@ export default async function CampaignPage({
     return {
       id: c.id,
       name: c.name,
-      delivery: (c.status ?? "").toUpperCase() === "ACTIVE",
+      delivery: activeKeys.has(`campaign:${c.id}`),
       type: "Manual",
       status: c.status,
       objective: c.objective,
@@ -164,6 +168,7 @@ export default async function CampaignPage({
       <Suspense fallback={<CampaignClientFallback />}>
         <CampaignDashboard
           campaigns={allCampaigns}
+          deliveryState={deliveryState}
           platform={{ id: platformDetails.id, name: platformDetails.vendor }}
           adAccountId={selectedAdAccountId}
           currencyCode={adAccountDetails.currency_code}

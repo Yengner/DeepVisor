@@ -32,6 +32,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import CampaignTable from './CampaignTable';
 import AdSetTable from './AdSetTable';
+import { activeDeliveryFirst, campaignTableSelection } from './delivery';
 import AdsTable from './AdsTable';
 import RunAgainSheet, { type RunAgainSource } from './RunAgainSheet';
 import { EmptyCampaignState } from './EmptyStates';
@@ -52,6 +53,7 @@ interface PlatformInfo {
 
 interface CampaignDashboardProps {
   campaigns: FormattedCampaign[];
+  deliveryState: { activeKeys: string[]; available: boolean };
   platform: PlatformInfo;
   adAccountId: string;
   currencyCode: string | null;
@@ -125,14 +127,17 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   const searchParams = useSearchParams();
   const platformColor = getPlatformColor(platform.name);
   const isMetaPlatform = ['facebook', 'meta'].includes(platform.name.toLowerCase());
-  const initialCampaignFallback = campaigns.length > 0 ? campaigns[0].id : null;
+  const initialCampaignId = campaignTableSelection(campaigns,
+    initialSelection?.tab && initialSelection.tab !== 'campaigns' ? initialSelection.campaignId : null);
+
 
   const [campaignData, setCampaignData] = useState(campaigns);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
-    initialSelection?.campaignId ?? initialCampaignFallback
+    initialCampaignId
   );
   const [selectedAdSetId, setSelectedAdSetId] = useState<string | null>(
-    initialSelection?.adsetId ?? null
+    initialSelection?.tab !== 'campaigns' && initialCampaignId === initialSelection?.campaignId
+      ? initialSelection?.adsetId ?? null : null
   );
   const [selectedAdId, setSelectedAdId] = useState<string | null>(null);
   const [reuseSource, setReuseSource] = useState<RunAgainSource | null>(null);
@@ -188,13 +193,13 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
 
   const filteredCampaigns = useMemo(
     () =>
-      campaignData.filter((campaign) => {
+      activeDeliveryFirst(campaignData.filter((campaign) => {
         const matchesSearch =
           !searchQuery || campaign.name.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = !statusFilter || campaign.status?.toUpperCase() === statusFilter;
         const matchesType = !typeFilter || campaign.type === typeFilter;
         return matchesSearch && matchesStatus && matchesType;
-      }),
+      })),
     [campaignData, searchQuery, statusFilter, typeFilter]
   );
 
@@ -202,12 +207,15 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     () => campaignData.find((campaign) => campaign.id === selectedCampaignId) ?? null,
     [campaignData, selectedCampaignId]
   );
-  const selectedCampaignAdSets = selectedCampaignId ? adSetsByCampaign[selectedCampaignId] ?? [] : [];
+  const activeKeys = new Set(props.deliveryState.activeKeys);
+  const selectedCampaignAdSets = activeDeliveryFirst((selectedCampaignId ? adSetsByCampaign[selectedCampaignId] ?? [] : [])
+    .map(row => ({ ...row, delivery: activeKeys.has(`adset:${row.id}`) })));
   const selectedAdSet = useMemo(
     () => selectedCampaignAdSets.find((adSet) => adSet.id === selectedAdSetId) ?? null,
     [selectedAdSetId, selectedCampaignAdSets]
   );
-  const selectedAdSetAds = selectedAdSetId ? adsByAdset[selectedAdSetId] ?? [] : [];
+  const selectedAdSetAds = activeDeliveryFirst((selectedAdSetId ? adsByAdset[selectedAdSetId] ?? [] : [])
+    .map(row => ({ ...row, delivery: activeKeys.has(`ad:${row.ad_id ?? row.id}`) })));
   const accountName = campaignData[0]?.accountName ?? 'Selected ad account';
 
   const accountSummary = useMemo(() => {
@@ -301,12 +309,11 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
 
   useEffect(() => {
     setCampaignData(campaigns);
-    setSelectedCampaignId((current) =>
-      current && campaigns.some((campaign) => campaign.id === current)
-        ? current
-        : campaigns[0]?.id ?? null
-    );
   }, [campaigns]);
+
+  useEffect(() => {
+    setSelectedCampaignId(current => campaignTableSelection(filteredCampaigns, current));
+  }, [filteredCampaigns]);
 
   useEffect(() => {
     const sp = new URLSearchParams(searchParams?.toString());
@@ -580,10 +587,10 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                 </Title>
                 <Group gap="xs" mt={8} wrap="wrap">
                   <Badge color="green" variant="light">
-                    {accountSummary.activeCampaigns} active
+                    {props.deliveryState.available ? accountSummary.activeCampaigns : '—'} with active ads
                   </Badge>
                   <Badge color="yellow" variant="light">
-                    {accountSummary.pausedCampaigns} inactive
+                    {props.deliveryState.available ? accountSummary.pausedCampaigns : '—'} without active ads
                   </Badge>
                   <Badge color="gray" variant="light">
                     {formatCurrencyAmount(accountSummary.spend, currencyCode)} spend
@@ -720,6 +727,11 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
           </div>
 
           <div className={classes.tableBody}>
+            <Text size="xs" c="dimmed" px="md" py="xs" role={props.deliveryState.available ? undefined : 'status'}>
+              {props.deliveryState.available
+                ? 'Green rows have an active campaign, ad set and ad chain in the latest saved Meta status. Active ads appear first.'
+                : 'Delivery status unavailable. Active-ad highlighting is withheld until status can be loaded.'}
+            </Text>
             <Tabs.Panel value="campaigns" className={classes.tablePanel}>
               <div className={classes.tablePanelInner}>
                 <CampaignTable
@@ -740,7 +752,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
               <div className={classes.tablePanelInner}>
                 {selectedCampaignId ? (
                   <AdSetTable
-                    adSets={adSetsByCampaign[selectedCampaignId] ?? []}
+                    adSets={selectedCampaignAdSets}
                     loading={adsetsLoading}
                     onSelectAdSet={setSelectedAdSetId}
                     onOpenAdSet={handleOpenAdSet}
@@ -760,7 +772,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
               <div className={classes.tablePanelInner}>
                 {selectedAdSetId ? (
                   <AdsTable
-                    ads={adsByAdset[selectedAdSetId] ?? []}
+                    ads={selectedAdSetAds}
                     loading={adsLoading}
                     selectedAdId={selectedAdId}
                     onSelectAd={setSelectedAdId}

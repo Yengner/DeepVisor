@@ -1,5 +1,7 @@
 'use client';
 
+import { DeliveryIndicator } from './DeliveryIndicator';
+
 import type { AdSetLifetimeRow } from '@/lib/server/data';
 import {
   ActionIcon,
@@ -27,7 +29,7 @@ const Z_STICKY_RIGHT = 4;
 const RIGHT_COL_WIDTH = 24;
 
 interface AdSetTableProps {
-  adSets?: AdSetLifetimeRow[];
+  adSets?: (AdSetLifetimeRow & { delivery?: boolean })[];
   loading?: boolean;
   onSelectAdSet?: (id: string) => void;
   onOpenAdSet?: (id: string) => void;
@@ -110,6 +112,7 @@ export default function AdSetTable({
                 role="button"
                 tabIndex={0}
                 className={classes.mobileEntityCard}
+                data-delivering={adSet.delivery || undefined}
                 data-selected={isSelected || undefined}
                 onClick={() => onSelectAdSet?.(adSet.id)}
                 onDoubleClick={() => onOpenAdSet?.(adSet.id)}
@@ -127,6 +130,7 @@ export default function AdSetTable({
                     </Text>
                     <Group gap={6} mt={6} wrap="wrap">
                       <StatusBadge status={status} />
+                      <DeliveryIndicator active={adSet.delivery} />
                       <Text size="xs" c="dimmed" lineClamp={1}>
                         {adSet.optimization_goal || adSet.objective || 'Goal unavailable'}
                       </Text>
@@ -304,6 +308,7 @@ export default function AdSetTable({
 
               return (
                 <Table.Tr
+                  data-delivering={adSet.delivery || undefined}
                   key={adSet.id}
                   style={{ background: rowBg, cursor: 'pointer' }}
                   onClick={() => handleRowClick(adSet.id)}
@@ -362,6 +367,7 @@ export default function AdSetTable({
                       onDoubleClick={(event) => event.stopPropagation()}
                     >
                       <StatusBadge status={status} />
+                      <DeliveryIndicator active={adSet.delivery} />
                     </Group>
                   </Table.Td>
 

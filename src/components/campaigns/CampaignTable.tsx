@@ -1,5 +1,7 @@
 'use client';
 
+import { DeliveryIndicator } from './DeliveryIndicator';
+
 import type { FormattedCampaign } from '@/app/(root)/campaigns/page';
 import {
   ActionIcon,
@@ -82,6 +84,7 @@ export default function CampaignTable({
                 role="button"
                 tabIndex={0}
                 className={classes.mobileEntityCard}
+                data-delivering={campaign.delivery || undefined}
                 data-selected={selected || undefined}
                 onClick={() => onSelectCampaign(campaign.id)}
                 onDoubleClick={() => onOpenCampaign?.(campaign.id)}
@@ -99,6 +102,7 @@ export default function CampaignTable({
                     </Text>
                     <Group gap={6} mt={6} wrap="wrap">
                       <StatusBadge status={campaign.status} />
+                      <DeliveryIndicator active={campaign.delivery} />
                       <Text size="xs" c="dimmed" lineClamp={1}>
                         {campaign.objective || 'Objective unavailable'}
                       </Text>
@@ -246,6 +250,7 @@ export default function CampaignTable({
 
               return (
                 <Table.Tr
+                  data-delivering={campaign.delivery || undefined}
                   key={campaign.id}
                   style={{ background: rowBg, cursor: 'pointer' }}
                   onClick={() => onSelectCampaign(campaign.id)}
@@ -318,6 +323,7 @@ export default function CampaignTable({
                   <Table.Td>
                     <Group gap="xs" wrap="nowrap">
                       <StatusBadge status={campaign.status} />
+                      <DeliveryIndicator active={campaign.delivery} />
                     </Group>
                   </Table.Td>
 
