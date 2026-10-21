@@ -36,6 +36,7 @@ export type SyncSelectedMetaAdAccountResult = {
   adAccountName: string | null;
   syncCoverage: SyncCoverage | null;
   firstSyncJob: FirstSyncJobStatus | null;
+  syncJobId: string | null;
   counts: null;
   startedAt: string | null;
   completedAt: string | null;
@@ -79,9 +80,10 @@ export async function syncSelectedMetaAdAccount(
     : syncedAccount?.ad_account_sync_state ?? null;
   let syncCoverage: SyncCoverage | null = null;
   let firstSyncJob: FirstSyncJobStatus | null = null;
+  let syncJobId: string | null = null;
   const counts = null;
-  let startedAt: string | null = null;
-  let completedAt: string | null = null;
+  const startedAt: string | null = null;
+  const completedAt: string | null = null;
 
   if (syncedAccount?.id) {
     if (!syncState?.first_full_sync_completed) {
@@ -99,9 +101,10 @@ export async function syncSelectedMetaAdAccount(
       });
       syncCoverage = await getAdAccountSyncCoverage(input.supabase, syncedAccount.id);
       firstSyncJob = buildFirstSyncJobStatus(job, syncCoverage);
+      syncJobId = job.id;
     } else {
       const syncWindow = resolveMetaBackfillWindow(input.backfillDays ?? 7);
-      await createOrReuseQueuedSyncJob(input.supabase, {
+      const job = await createOrReuseQueuedSyncJob(input.supabase, {
         businessId: input.businessId,
         platformIntegrationId: input.integrationId,
         adAccountId: syncedAccount.id,
@@ -119,6 +122,7 @@ export async function syncSelectedMetaAdAccount(
           last_processed_ids: {},
         },
       });
+      syncJobId = job.id;
       syncCoverage = await getAdAccountSyncCoverage(input.supabase, syncedAccount.id);
     }
   }
@@ -132,6 +136,7 @@ export async function syncSelectedMetaAdAccount(
     syncCoverage,
     firstSyncJob,
     counts,
+    syncJobId,
     startedAt,
     completedAt,
   };

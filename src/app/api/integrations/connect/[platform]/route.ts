@@ -1,3 +1,4 @@
+import { simulationForUser } from '@/lib/server/integrations/simulation/meta';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { requireUserId } from '@/lib/server/actions/user/session';
@@ -48,6 +49,14 @@ export async function GET(
     const baseUrl = getBaseUrl(request.url);
     const callbackUrl = new URL(`/api/integrations/callback/${platformKey}`, baseUrl);
     callbackUrl.searchParams.set('returnTo', returnTo);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    const simulation = user ? simulationForUser(user, businessContext.businessId) : null;
+    if (simulation) {
+      callbackUrl.searchParams.set('state', state);
+      callbackUrl.searchParams.set('code', 'deepvisor-simulated');
+      return NextResponse.redirect(callbackUrl);
+    }
 
     const oauthUrl = buildMetaOAuthUrl({
       state,

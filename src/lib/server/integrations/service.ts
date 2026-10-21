@@ -1,3 +1,4 @@
+import { SIMULATION_TAG, simulationToken, readSimulation, type Simulation } from './simulation/meta';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { asRecord, toSupportedIntegrationPlatform } from '@/lib/shared';
 import { generateState } from '@/lib/shared/utils/guards';
@@ -123,14 +124,7 @@ export function extractAccessToken(details: Json | null | undefined, fallback?: 
  * @returns A copy of the details object without access or refresh token fields.
  */
 function stripTokens(details: Json | Record<string, unknown> | null | undefined): IntegrationDetails {
-  const {
-    access_token: _a,
-    refresh_token: _r,
-    access_token_secret_id: _as,
-    refresh_token_secret_id: _rs,
-    ...rest
-  } = asRecord(details);
-  return rest as IntegrationDetails;
+  return sanitizeIntegrationDetails(asRecord(details)) as IntegrationDetails;
 }
 
 /**
@@ -156,7 +150,7 @@ function mergeDetails(
  * @param details - Integration-details object that may include raw OAuth token fields.
  * @returns A sanitized copy safe to store in `integration_details`.
  */
-function sanitizeIntegrationDetails(details: Record<string, any>): Record<string, any> {
+function sanitizeIntegrationDetails(details: Record<string, unknown>): Record<string, unknown> {
   const copy = { ...details };
 
   delete copy.access_token;
@@ -182,10 +176,10 @@ async function upsertSecret(
   name: string,
   description?: string | null
 ): Promise<string> {
-  const { data, error } = await (supabase as any).rpc('upsert_platform_token', {
+  const { data, error } = await supabase.rpc('upsert_platform_token', {
     secret_value: value,
     secret_name: name,
-    secret_description: description ?? null,
+    secret_description: description ?? undefined,
   });
 
   if (error) throw error;
@@ -260,16 +254,15 @@ export async function consumeOAuthState(
 ): Promise<OAuthStateRecord | null> {
   const { data, error } = await supabase
     .from('oauth_states')
-    .select('id, state, user_id, business_id, platform_id, created_at, expires_at')
+    .delete()
     .eq('state', input.state)
     .eq('user_id', input.userId)
     .eq('platform_id', input.platformId)
+    .select('id, state, user_id, business_id, platform_id, created_at, expires_at')
     .maybeSingle();
 
   if (error) throw error;
   if (!data) return null;
-
-  await supabase.from('oauth_states').delete().eq('id', data.id);
 
   if (new Date(data.expires_at).getTime() < Date.now()) {
     return null;
@@ -337,7 +330,12 @@ export async function upsertPlatformIntegration(
       )
       : existingRow?.refresh_token_secret_id ?? null;
 
-  if (input.status === 'connected' && !accessTokenSecretId) {
+  const simulation = input.integrationDetails[SIMULATION_TAG] as Simulation | undefined;
+  if (simulation) {
+    readSimulation(simulationToken(simulation));
+    if (simulation.businessId !== input.businessId || accessTokenSecretId || refreshTokenSecretId) throw new Error('Invalid simulated integration');
+  }
+  if (input.status === 'connected' && !accessTokenSecretId && !simulation) {
     throw new Error('Missing access token secret id for integration upsert');
   }
 
@@ -540,14 +538,20 @@ export async function listBusinessIntegrations(
  */
 export async function resolveIntegrationAccessToken(
   supabase: AppSupabaseClient,
-  integration: BusinessIntegration
+  integration: BusinessIntegration,
+  simulationBusinessId?: string
 ): Promise<string | null> {
+  const simulation = asRecord(integration.integrationDetails)[SIMULATION_TAG] as Simulation | undefined;
+  if (simulation) {
+    if (!simulationBusinessId || simulation.businessId !== simulationBusinessId) throw new Error('Simulated credentials are only available to the scoped sync provider');
+    return simulationToken(simulation);
+  }
   const secretId = extractAccessToken(integration.integrationDetails, integration.accessToken);
   if (!secretId) {
     return null;
   }
 
-  const { data: accessToken, error } = await (supabase as any).rpc('get_platform_token', {
+  const { data: accessToken, error } = await supabase.rpc('get_platform_token', {
     secret_id: secretId,
   });
 

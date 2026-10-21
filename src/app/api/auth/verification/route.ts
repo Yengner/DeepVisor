@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const type = searchParams.get('type') as EmailOtpType || 'signup';
 
     if (!token_hash || !type) {
-        return NextResponse.redirect('/login?error=missing_verification_params');
+        return NextResponse.redirect(new URL('/login?error=missing_verification_params', request.url));
     }
 
     const supabase = await createSupabaseClient();

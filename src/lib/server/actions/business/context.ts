@@ -1,4 +1,4 @@
-"use server";
+import 'server-only';
 
 import { unstable_cache } from 'next/cache';
 import { redirect, unstable_rethrow } from 'next/navigation';
@@ -65,156 +65,6 @@ function normalizeOrganizationRole(role: string | null | undefined): BusinessRol
     return role;
   }
   return 'member';
-}
-
-async function createDefaultBusinessContext(): Promise<{
-  organizationId: string;
-  organizationName: string;
-  organizationType: OrganizationType;
-  role: BusinessRole;
-  business: BusinessOnboarding;
-}> {
-  const timer = createServerTimer('context', { enabledEnvVar: 'CONTEXT_TIMING' });
-  const supabase = await timer.measure('create server client: default business context', () =>
-    createServerClient()
-  );
-  const defaultBusinessName = 'Business setup';
-
-  // Organization creation and owner assignment live in one RPC so the database
-  // owns the invariant that every new workspace has an owner membership.
-  const { data: organizationId, error: organizationError } = await timer.measure(
-    'create default organization rpc',
-    () =>
-      supabase.rpc('create_organization_with_owner', {
-        org_name: defaultBusinessName,
-        org_type: 'business',
-        org_primary_language: 'en',
-      })
-  );
-
-  if (organizationError || !organizationId) {
-    throw new Error(organizationError?.message || 'Failed to create organization');
-  }
-
-  const organization = await timer.measure('load default organization', () =>
-    getOrganizationById(organizationId)
-  );
-
-  const adminSupabase = timer.measureSync(
-    'create admin client: default business profile',
-    createAdminClient
-  );
-
-  const { data: business, error: businessError } = await timer.measure(
-    'create default business profile',
-    () =>
-      adminSupabase
-        .from('business_profiles')
-        .insert({
-          organization_id: organization.id,
-          business_name: organization.name,
-          onboarding_step: 0,
-          onboarding_completed: false,
-        })
-        .select('id, onboarding_completed, onboarding_step')
-        .single()
-  );
-
-  if (businessError || !business) {
-    throw new Error(businessError?.message || 'Failed to create business profile');
-  }
-
-  const result = {
-    organizationId: organization.id,
-    organizationName: defaultBusinessName,
-    organizationType: 'business' as OrganizationType,
-    role: 'owner' as const,
-    business,
-  };
-  timer.finish('create default business context total');
-  return result;
-}
-
-async function getOrganizationById(organizationId: string): Promise<OrganizationRow> {
-  const supabase = await createServerClient();
-
-  const { data: organization, error } = await supabase
-    .from('organizations')
-    .select('id, name, type')
-    .eq('id', organizationId)
-    .single();
-
-  if (error || !organization) {
-    throw new Error(error?.message || 'Failed to load organization');
-  }
-
-  return organization;
-}
-
-async function getPrimaryBusinessProfileForOrganization(organizationId: string): Promise<BusinessOnboarding | null> {
-  const supabase = await createServerClient();
-
-  const { data: business, error } = await supabase
-    .from('business_profiles')
-    .select('id, onboarding_completed, onboarding_step')
-    .eq('organization_id', organizationId)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return business;
-}
-
-async function ensureBusinessProfileForOrganization(
-  organization: OrganizationRow
-): Promise<BusinessOnboarding> {
-  const timer = createServerTimer('context', { enabledEnvVar: 'CONTEXT_TIMING' });
-  const existingBusiness = await timer.measure('ensure business profile: lookup existing', () =>
-    getPrimaryBusinessProfileForOrganization(organization.id)
-  );
-
-  if (existingBusiness) {
-    timer.finish('ensure business profile total');
-    return existingBusiness;
-  }
-
-  if (organization.type !== 'business') {
-    throw new Error(
-      'Partner organizations do not get an automatic business profile. A business must be selected explicitly.'
-    );
-  }
-
-  const supabase = timer.measureSync('create admin client: ensure business profile', () =>
-    createAdminClient()
-  );
-
-  // Business organizations have a single primary business profile. We create it on demand
-  // so new owners can complete onboarding before any deeper account setup begins.
-  const { data: createdBusiness, error: createError } = await timer.measure(
-    'ensure business profile: create missing',
-    () =>
-      supabase
-        .from('business_profiles')
-        .insert({
-          organization_id: organization.id,
-          business_name: organization.name,
-          onboarding_step: 0,
-          onboarding_completed: false,
-        })
-        .select('id, onboarding_completed, onboarding_step')
-        .single()
-  );
-
-  if (createError || !createdBusiness) {
-    throw new Error(createError?.message || 'Failed to create missing business profile');
-  }
-
-  timer.finish('ensure business profile total');
-  return createdBusiness;
 }
 
 function firstJoinedOrganization(value: JoinedMembershipRow['organizations']): JoinedOrganizationRow {
@@ -331,6 +181,7 @@ function getCachedFoundOrganizationBusinessContext(userId: string) {
     ['organization-business-context', userId],
     {
       revalidate: 30,
+      tags: [`business-context:${userId}`],
     }
   )();
 }
@@ -369,35 +220,13 @@ export async function getOrCreateOrganizationBusinessContext(
     return existing.context;
   }
 
-  if (existing.kind === 'missing_membership') {
-    const created = await createDefaultBusinessContext();
-
-    const context = {
-      organizationId: created.organizationId,
-      organizationName: created.organizationName,
-      organizationType: created.organizationType,
-      businessId: created.business.id,
-      role: created.role,
-      onboarding: created.business,
-    };
-    timer.finish('get or create business context total');
-    return context;
-  }
-
-  const business = await timer.measure('ensure business profile', () =>
-    ensureBusinessProfileForOrganization(existing.organization)
-  );
-
-  const context = {
-    organizationId: existing.organization.id,
-    organizationName: existing.organization.name,
-    organizationType: existing.organization.type,
-    businessId: business.id,
-    role: existing.role,
-    onboarding: business,
-  };
+  const supabase = await createServerClient();
+  const { error } = await supabase.rpc('ensure_onboarding_workspace');
+  if (error) throw new Error(error.message);
+  const resolved = await getExistingOrganizationBusinessContext(userId);
+  if (resolved.kind !== 'found') throw new Error('Workspace creation did not return a business');
   timer.finish('get or create business context total');
-  return context;
+  return resolved.context;
 }
 
 export async function requireBusinessContextOrRedirect(

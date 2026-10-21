@@ -49,7 +49,7 @@ async function processClaimedJob(jobId: string): Promise<{
       throw new Error('Historical sync job is missing a connected Meta integration');
     }
 
-    const accessToken = await resolveIntegrationAccessToken(supabase, integration);
+    const accessToken = await resolveIntegrationAccessToken(supabase, integration, job.business_id);
     if (!accessToken) {
       throw new Error('Historical sync job is missing a Meta access token');
     }

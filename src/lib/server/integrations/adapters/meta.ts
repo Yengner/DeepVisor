@@ -1,5 +1,5 @@
+import { readSimulation, simulationAccounts, validateSimulation } from '../simulation/meta';
 import { fetchMetaAdAccounts } from '@/lib/server/services/platforms/meta/ad_accounts/fetch';
-import type { AdAccountDetails } from '@/lib/server/services/platforms/meta/types';
 import type {
   MetaAdAccountSnapshot,
   MetaExchangeCodeInput,
@@ -124,6 +124,12 @@ export async function fetchMetaAdAccountSnapshots(
     externalAccountId?: string;
   } = {}
 ): Promise<MetaAdAccountSnapshot[]> {
+  const simulation = readSimulation(accessToken);
+  if (simulation) {
+    validateSimulation(simulation);
+    return simulationAccounts(simulation).filter(a => !options.externalAccountId || a.externalAccountId === options.externalAccountId);
+  }
+  if (options.externalAccountId?.includes('dvsim_')) throw new Error('Synthetic IDs cannot be sent to Meta');
   const raw = await fetchMetaAdAccounts(accessToken, options.externalAccountId);
   const accounts = Array.isArray(raw) ? raw : [raw];
 

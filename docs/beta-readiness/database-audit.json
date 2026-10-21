@@ -1,0 +1,275 @@
+{
+  "project": "gkdyyjqepzayjdpvqnja",
+  "url": "https://gkdyyjqepzayjdpvqnja.supabase.co",
+  "auditedOn": "2026-10-20",
+  "catalogComparison": {
+    "tables": 10,
+    "constraints": 63,
+    "functions": 17,
+    "indexes": 31,
+    "policies": 7,
+    "mismatches": 0
+  },
+  "sevenDaySqlMetrics": [
+    {
+      "name": "[SYNTHETIC] Brand · insufficient data",
+      "observed_days": 2,
+      "first_day": "2026-10-18",
+      "last_day": "2026-10-19",
+      "spend": "4",
+      "results": "0",
+      "ctr": "3.0000000000000000",
+      "cost_per_result": null
+    },
+    {
+      "name": "[SYNTHETIC] Brows · zero results",
+      "observed_days": 7,
+      "first_day": "2026-10-13",
+      "last_day": "2026-10-19",
+      "spend": "120",
+      "results": "0",
+      "ctr": "3.0000000000000000",
+      "cost_per_result": null
+    },
+    {
+      "name": "[SYNTHETIC] Facial · deteriorating",
+      "observed_days": 7,
+      "first_day": "2026-10-13",
+      "last_day": "2026-10-19",
+      "spend": "360",
+      "results": "10",
+      "ctr": "3.0000000000000000",
+      "cost_per_result": "36.0000000000000000"
+    },
+    {
+      "name": "[SYNTHETIC] Facial · deteriorating",
+      "observed_days": 7,
+      "first_day": "2026-10-13",
+      "last_day": "2026-10-19",
+      "spend": "360",
+      "results": "10",
+      "ctr": "3.0000000000000000",
+      "cost_per_result": "36.0000000000000000"
+    },
+    {
+      "name": "[SYNTHETIC] Hair color · performing",
+      "observed_days": 7,
+      "first_day": "2026-10-13",
+      "last_day": "2026-10-19",
+      "spend": "420",
+      "results": "84",
+      "ctr": "3.0000000000000000",
+      "cost_per_result": "5.0000000000000000"
+    },
+    {
+      "name": "[SYNTHETIC] Hair color · performing",
+      "observed_days": 7,
+      "first_day": "2026-10-13",
+      "last_day": "2026-10-19",
+      "spend": "420",
+      "results": "84",
+      "ctr": "3.0000000000000000",
+      "cost_per_result": "5.0000000000000000"
+    },
+    {
+      "name": "[SYNTHETIC] Seasonal · sparse history",
+      "observed_days": 7,
+      "first_day": "2026-10-13",
+      "last_day": "2026-10-19",
+      "spend": "90",
+      "results": "15",
+      "ctr": "3.0000000000000000",
+      "cost_per_result": "6.0000000000000000"
+    }
+  ],
+  "reportPlan": [
+    {
+      "QUERY PLAN": [
+        {
+          "Plan": {
+            "Node Type": "Function Scan",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Function Name": "get_report_metric_rows",
+            "Alias": "get_report_metric_rows",
+            "Startup Cost": 0.25,
+            "Total Cost": 10.25,
+            "Plan Rows": 1000,
+            "Plan Width": 124,
+            "Actual Startup Time": 122.771,
+            "Actual Total Time": 122.774,
+            "Actual Rows": 30,
+            "Actual Loops": 1,
+            "Shared Hit Blocks": 2139,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning": {
+            "Shared Hit Blocks": 3,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning Time": 0.122,
+          "Triggers": [],
+          "Execution Time": 122.938
+        }
+      ]
+    }
+  ],
+  "directPlan": [
+    {
+      "QUERY PLAN": [
+        {
+          "Plan": {
+            "Node Type": "Aggregate",
+            "Strategy": "Sorted",
+            "Partial Mode": "Simple",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 0.28,
+            "Total Cost": 84.82,
+            "Plan Rows": 80,
+            "Plan Width": 68,
+            "Actual Startup Time": 0.072,
+            "Actual Total Time": 0.308,
+            "Actual Rows": 30,
+            "Actual Loops": 1,
+            "Group Key": [
+              "day"
+            ],
+            "Shared Hit Blocks": 120,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0,
+            "Plans": [
+              {
+                "Node Type": "Index Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Scan Direction": "Forward",
+                "Index Name": "ad_entity_performance_daily_account_level_day_idx",
+                "Relation Name": "ad_entity_performance_daily",
+                "Alias": "ad_entity_performance_daily",
+                "Startup Cost": 0.28,
+                "Total Cost": 82.66,
+                "Plan Rows": 128,
+                "Plan Width": 17,
+                "Actual Startup Time": 0.045,
+                "Actual Total Time": 0.243,
+                "Actual Rows": 120,
+                "Actual Loops": 1,
+                "Index Cond": "((ad_account_id = '7e365a93-b133-4574-aa86-89deb51030bf'::uuid) AND (entity_level = 'adset'::text) AND (day >= '2026-09-21'::date) AND (day <= '2026-10-20'::date))",
+                "Rows Removed by Index Recheck": 0,
+                "Shared Hit Blocks": 120,
+                "Shared Read Blocks": 0,
+                "Shared Dirtied Blocks": 0,
+                "Shared Written Blocks": 0,
+                "Local Hit Blocks": 0,
+                "Local Read Blocks": 0,
+                "Local Dirtied Blocks": 0,
+                "Local Written Blocks": 0,
+                "Temp Read Blocks": 0,
+                "Temp Written Blocks": 0
+              }
+            ]
+          },
+          "Planning": {
+            "Shared Hit Blocks": 189,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning Time": 0.835,
+          "Triggers": [],
+          "Execution Time": 0.542
+        }
+      ]
+    }
+  ],
+  "securityAdvisories": [
+    {
+      "name": "rls_enabled_no_policy",
+      "count": 3,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+    },
+    {
+      "name": "function_search_path_mutable",
+      "count": 12,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable"
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "count": 11,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable"
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "count": 11,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable"
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection"
+    },
+    {
+      "name": "vulnerable_postgres_version",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/platform/upgrading"
+    }
+  ],
+  "performanceAdvisories": [
+    {
+      "name": "unindexed_foreign_keys",
+      "count": 40,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys"
+    },
+    {
+      "name": "auth_rls_initplan",
+      "count": 23,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan"
+    },
+    {
+      "name": "unused_index",
+      "count": 42,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index"
+    },
+    {
+      "name": "multiple_permissive_policies",
+      "count": 10,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0006_multiple_permissive_policies"
+    },
+    {
+      "name": "table_bloat",
+      "count": 1,
+      "remediation": "Consider running vacuum full (WARNING: incurs downtime) and tweaking autovacuum settings to reduce bloat."
+    }
+  ]
+}

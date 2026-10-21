@@ -35,7 +35,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/app/(root)/integration/meta/unsuccessful",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next/beta-phase2/types/**/*.ts",
+    ".next/beta-phase2/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

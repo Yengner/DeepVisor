@@ -615,13 +615,13 @@ async function listCampaignDims(
       query = query.in('external_id', input.externalIds);
     }
 
-    const { data, error } = await query;
-
-    if (error) {
-      throw error;
+    for (let from = 0; ; from += 500) {
+      const { data, error } = await query.order('id').range(from, from + 499);
+      if (error) throw error;
+      if (!data) throw new Error('Report dimensions unavailable');
+      rows.push(...(data as CampaignDimRow[]));
+      if (data.length < 500) break;
     }
-
-    rows.push(...((data ?? []) as CampaignDimRow[]));
   }
 
   return rows;
@@ -651,13 +651,13 @@ async function listAdsetDims(
       query = query.in('external_id', input.externalIds);
     }
 
-    const { data, error } = await query;
-
-    if (error) {
-      throw error;
+    for (let from = 0; ; from += 500) {
+      const { data, error } = await query.order('id').range(from, from + 499);
+      if (error) throw error;
+      if (!data) throw new Error('Report dimensions unavailable');
+      rows.push(...(data as AdsetDimRow[]));
+      if (data.length < 500) break;
     }
-
-    rows.push(...((data ?? []) as AdsetDimRow[]));
   }
 
   return rows;
@@ -687,13 +687,13 @@ async function listAdDims(
       query = query.in('external_id', input.externalIds);
     }
 
-    const { data, error } = await query;
-
-    if (error) {
-      throw error;
+    for (let from = 0; ; from += 500) {
+      const { data, error } = await query.order('id').range(from, from + 499);
+      if (error) throw error;
+      if (!data) throw new Error('Report dimensions unavailable');
+      rows.push(...(data as AdDimRow[]));
+      if (data.length < 500) break;
     }
-
-    rows.push(...((data ?? []) as AdDimRow[]));
   }
 
   return rows;

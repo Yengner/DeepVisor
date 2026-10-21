@@ -1,0 +1,14 @@
+{
+  "evidence": [
+    "Authenticated forged integration/account IDs and malformed selection rejected",
+    "Manual refresh returned 202, polled a844e92a-5a31-42f1-b791-53bb1682c917, displayed completed; rapid repeat 202",
+    "Account switch persisted; Dashboard 7D spend matches account 2 database rows ($400.00, as of 2026-10-21)",
+    "Today matches source coverage (missing remains unavailable); 30-day paused history rendered; mobile screenshot captured",
+    "Connection scenario none: callback returned error",
+    "Connection scenario permissions: callback returned error",
+    "Connection scenario expired: callback returned error",
+    "Connection scenario connection_failure: callback returned error",
+    "Disconnect showed disconnected Dashboard; reconnect reused existing account and recovered data"
+  ],
+  "errors": []
+}

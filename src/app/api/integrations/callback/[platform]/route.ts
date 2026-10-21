@@ -1,3 +1,4 @@
+import { SIMULATION_TAG, simulationForUser, simulationToken, validateSimulation } from '@/lib/server/integrations/simulation/meta';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUserId } from '@/lib/server/actions/user/session';
 import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
@@ -125,12 +126,16 @@ export async function GET(
     const redirectUri = new URL(`/api/integrations/callback/${platformKey}`, baseUrl);
     redirectUri.searchParams.set('returnTo', returnTo);
 
-    const token = await exchangeMetaCodeForToken({
+    const { data: { user } } = await supabase.auth.admin.getUserById(userId);
+    const simulation = user ? simulationForUser(user, businessContext.businessId) : null;
+    if ((code === 'deepvisor-simulated') !== Boolean(simulation)) throw new Error('Invalid simulation callback');
+    if (simulation) validateSimulation(simulation);
+    const token = simulation ? { access_token: simulationToken(simulation), refresh_token: undefined, token_type: 'simulation', expires_in: undefined } : await exchangeMetaCodeForToken({
       code,
       redirectUri: redirectUri.toString(),
     });
     
-    await validateMetaAccessToken(token.access_token);
+    if (!simulation) await validateMetaAccessToken(token.access_token);
     integrationId = await upsertPlatformIntegration(supabase, {
       businessId: businessContext.businessId,
       platformId: integrationPlatform.id,
@@ -140,7 +145,7 @@ export async function GET(
       disconnectedAt: null,
       lastError: null,
       integrationDetails: {
-        access_token_secret_id: token.access_token,
+        ...(simulation ? { [SIMULATION_TAG]: simulation } : { access_token_secret_id: token.access_token }),
         refresh_token_secret_id: token.refresh_token,
         token_type: token.token_type,
         expires_in: token.expires_in,

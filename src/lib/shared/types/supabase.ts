@@ -1,3 +1,4 @@
+// Public: Supabase MCP generated. ai/intelligence: live catalog; see scripts/beta-fixtures/reconcile-types.mjs.
 export type Json =
   | string
   | number
@@ -10,15 +11,689 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+    PostgrestVersion: "12.2.12"
   }
   ai: {
     Tables: {
+      action_outcomes: {
+        Row: {
+          id: string
+          business_id: string
+          executed_action_id: string | null
+          measurement_horizon_hours: number
+          metrics_before_json: Json
+          metrics_after_json: Json
+          calculated_change_json: Json
+          created_at: string
+          source_kind: string
+          shadow_decision_run_id: string | null
+          anchor_at: string | null
+          measurement_due_at: string | null
+          measurement_status: string
+          next_attempt_at: string | null
+          measured_at: string | null
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          executed_action_id?: string | null
+          measurement_horizon_hours: number
+          metrics_before_json: Json
+          metrics_after_json: Json
+          calculated_change_json: Json
+          created_at?: string
+          source_kind?: string
+          shadow_decision_run_id?: string | null
+          anchor_at?: string | null
+          measurement_due_at?: string | null
+          measurement_status?: string
+          next_attempt_at?: string | null
+          measured_at?: string | null
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          executed_action_id?: string | null
+          measurement_horizon_hours?: number
+          metrics_before_json?: Json
+          metrics_after_json?: Json
+          calculated_change_json?: Json
+          created_at?: string
+          source_kind?: string
+          shadow_decision_run_id?: string | null
+          anchor_at?: string | null
+          measurement_due_at?: string | null
+          measurement_status?: string
+          next_attempt_at?: string | null
+          measured_at?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "action_outcomes_business_id_executed_action_id_fkey"; columns: ["business_id","executed_action_id"]; isOneToOne: false; referencedRelation: "executed_actions"; referencedColumns: ["business_id","id"] },
+          { foreignKeyName: "action_outcomes_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "action_outcomes_shadow_run_fkey"; columns: ["business_id","shadow_decision_run_id"]; isOneToOne: false; referencedRelation: "decision_runs"; referencedColumns: ["business_id","id"] },
+        ]
+      }
+      action_proposals: {
+        Row: {
+          id: string
+          business_id: string
+          decision_run_id: string
+          action_type: string
+          target_entity_type: string
+          target_entity_id: string
+          current_state_json: Json
+          proposed_state_json: Json
+          risk_level: string
+          policy_result_json: Json
+          requires_approval: boolean
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          decision_run_id: string
+          action_type: string
+          target_entity_type: string
+          target_entity_id: string
+          current_state_json?: Json
+          proposed_state_json?: Json
+          risk_level?: string
+          policy_result_json?: Json
+          requires_approval?: boolean
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          decision_run_id?: string
+          action_type?: string
+          target_entity_type?: string
+          target_entity_id?: string
+          current_state_json?: Json
+          proposed_state_json?: Json
+          risk_level?: string
+          policy_result_json?: Json
+          requires_approval?: boolean
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "action_proposals_business_id_decision_run_id_fkey"; columns: ["business_id","decision_run_id"]; isOneToOne: false; referencedRelation: "decision_runs"; referencedColumns: ["business_id","id"] },
+          { foreignKeyName: "action_proposals_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      agent_observations: {
+        Row: {
+          id: string
+          business_id: string
+          ad_account_id: string | null
+          entity_type: string
+          entity_id: string | null
+          observation_type: string
+          title: string | null
+          observation_text: string
+          evidence_json: Json
+          confidence_score: number | null
+          source: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          ad_account_id?: string | null
+          entity_type: string
+          entity_id?: string | null
+          observation_type: string
+          title?: string | null
+          observation_text: string
+          evidence_json?: Json
+          confidence_score?: number | null
+          source?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          ad_account_id?: string | null
+          entity_type?: string
+          entity_id?: string | null
+          observation_type?: string
+          title?: string | null
+          observation_text?: string
+          evidence_json?: Json
+          confidence_score?: number | null
+          source?: string
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "agent_observations_ad_account_id_fkey"; columns: ["ad_account_id"]; isOneToOne: false; referencedRelation: "ad_accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "agent_observations_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      ai_generation_runs: {
+        Row: {
+          id: string
+          business_id: string
+          platform_integration_id: string | null
+          ad_account_id: string | null
+          queue_item_id: string | null
+          source_type: string
+          source_id: string | null
+          schema_name: string
+          prompt_version: string
+          model: string
+          input_hash: string
+          output_json: Json
+          status: string
+          fallback_reason: string | null
+          error_message: string | null
+          latency_ms: number
+          metadata_json: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          platform_integration_id?: string | null
+          ad_account_id?: string | null
+          queue_item_id?: string | null
+          source_type: string
+          source_id?: string | null
+          schema_name: string
+          prompt_version: string
+          model: string
+          input_hash: string
+          output_json?: Json
+          status: string
+          fallback_reason?: string | null
+          error_message?: string | null
+          latency_ms?: number
+          metadata_json?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          platform_integration_id?: string | null
+          ad_account_id?: string | null
+          queue_item_id?: string | null
+          source_type?: string
+          source_id?: string | null
+          schema_name?: string
+          prompt_version?: string
+          model?: string
+          input_hash?: string
+          output_json?: Json
+          status?: string
+          fallback_reason?: string | null
+          error_message?: string | null
+          latency_ms?: number
+          metadata_json?: Json
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "ai_generation_runs_ad_account_id_fkey"; columns: ["ad_account_id"]; isOneToOne: false; referencedRelation: "ad_accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "ai_generation_runs_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "ai_generation_runs_platform_integration_id_fkey"; columns: ["platform_integration_id"]; isOneToOne: false; referencedRelation: "platform_integrations"; referencedColumns: ["id"] },
+          { foreignKeyName: "ai_generation_runs_queue_item_id_fkey"; columns: ["queue_item_id"]; isOneToOne: false; referencedRelation: "calendar_queue_items"; referencedColumns: ["id"] },
+        ]
+      }
+      autonomy_policies: {
+        Row: {
+          id: string
+          business_id: string
+          mode: string
+          allowed_action_classes: string[]
+          max_budget_change_percent: number
+          budget_boundaries_json: Json
+          cooldown_config_json: Json
+          minimum_evidence_json: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          mode?: string
+          allowed_action_classes?: string[]
+          max_budget_change_percent?: number
+          budget_boundaries_json?: Json
+          cooldown_config_json?: Json
+          minimum_evidence_json?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          mode?: string
+          allowed_action_classes?: string[]
+          max_budget_change_percent?: number
+          budget_boundaries_json?: Json
+          cooldown_config_json?: Json
+          minimum_evidence_json?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "autonomy_policies_business_id_fkey"; columns: ["business_id"]; isOneToOne: true; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      business_agent_profiles: {
+        Row: {
+          id: string
+          business_id: string
+          primary_platform: string | null
+          assessment_status: string
+          history_available: boolean
+          history_start_date: string | null
+          history_end_date: string | null
+          best_objectives_json: Json
+          best_audience_patterns_json: Json
+          best_creative_patterns_json: Json
+          best_budget_patterns_json: Json
+          best_time_patterns_json: Json
+          failure_patterns_json: Json
+          forbidden_patterns_json: Json
+          recommended_defaults_json: Json
+          confidence_score: number | null
+          playbook_markdown: string | null
+          last_assessed_at: string | null
+          last_learning_update_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          primary_platform?: string | null
+          assessment_status?: string
+          history_available?: boolean
+          history_start_date?: string | null
+          history_end_date?: string | null
+          best_objectives_json?: Json
+          best_audience_patterns_json?: Json
+          best_creative_patterns_json?: Json
+          best_budget_patterns_json?: Json
+          best_time_patterns_json?: Json
+          failure_patterns_json?: Json
+          forbidden_patterns_json?: Json
+          recommended_defaults_json?: Json
+          confidence_score?: number | null
+          playbook_markdown?: string | null
+          last_assessed_at?: string | null
+          last_learning_update_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          primary_platform?: string | null
+          assessment_status?: string
+          history_available?: boolean
+          history_start_date?: string | null
+          history_end_date?: string | null
+          best_objectives_json?: Json
+          best_audience_patterns_json?: Json
+          best_creative_patterns_json?: Json
+          best_budget_patterns_json?: Json
+          best_time_patterns_json?: Json
+          failure_patterns_json?: Json
+          forbidden_patterns_json?: Json
+          recommended_defaults_json?: Json
+          confidence_score?: number | null
+          playbook_markdown?: string | null
+          last_assessed_at?: string | null
+          last_learning_update_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "business_agent_profiles_business_id_fkey"; columns: ["business_id"]; isOneToOne: true; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      business_assessments: {
+        Row: {
+          id: string
+          business_id: string
+          scope: string
+          digest_json: Json
+          assessment_json: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          scope?: string
+          digest_json?: Json
+          assessment_json?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          scope?: string
+          digest_json?: Json
+          assessment_json?: Json
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "business_assessments_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      creative_feature_snapshots: {
+        Row: {
+          id: string
+          business_id: string
+          ad_account_id: string
+          creative_id: string
+          ad_id: string | null
+          adset_id: string | null
+          campaign_id: string | null
+          snapshot_date: string
+          primary_format: string | null
+          cta_type: string | null
+          hook_style: string | null
+          offer_type: string | null
+          landing_page_type: string | null
+          headline_text: string | null
+          body_text: string | null
+          visual_style_tags: string[]
+          message_angle_tags: string[]
+          has_price: boolean | null
+          has_discount: boolean | null
+          has_testimonial: boolean | null
+          has_branding: boolean | null
+          has_urgency: boolean | null
+          has_social_proof: boolean | null
+          feature_json: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          ad_account_id: string
+          creative_id: string
+          ad_id?: string | null
+          adset_id?: string | null
+          campaign_id?: string | null
+          snapshot_date?: string
+          primary_format?: string | null
+          cta_type?: string | null
+          hook_style?: string | null
+          offer_type?: string | null
+          landing_page_type?: string | null
+          headline_text?: string | null
+          body_text?: string | null
+          visual_style_tags?: string[]
+          message_angle_tags?: string[]
+          has_price?: boolean | null
+          has_discount?: boolean | null
+          has_testimonial?: boolean | null
+          has_branding?: boolean | null
+          has_urgency?: boolean | null
+          has_social_proof?: boolean | null
+          feature_json?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          ad_account_id?: string
+          creative_id?: string
+          ad_id?: string | null
+          adset_id?: string | null
+          campaign_id?: string | null
+          snapshot_date?: string
+          primary_format?: string | null
+          cta_type?: string | null
+          hook_style?: string | null
+          offer_type?: string | null
+          landing_page_type?: string | null
+          headline_text?: string | null
+          body_text?: string | null
+          visual_style_tags?: string[]
+          message_angle_tags?: string[]
+          has_price?: boolean | null
+          has_discount?: boolean | null
+          has_testimonial?: boolean | null
+          has_branding?: boolean | null
+          has_urgency?: boolean | null
+          has_social_proof?: boolean | null
+          feature_json?: Json
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "creative_feature_snapshots_ad_account_id_fkey"; columns: ["ad_account_id"]; isOneToOne: false; referencedRelation: "ad_accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "creative_feature_snapshots_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "creative_feature_snapshots_creative_id_fkey"; columns: ["creative_id"]; isOneToOne: false; referencedRelation: "ad_creatives"; referencedColumns: ["id"] },
+        ]
+      }
+      decision_runs: {
+        Row: {
+          id: string
+          business_id: string
+          feature_snapshot_id: string
+          provider: string
+          provider_model: string | null
+          provider_version: string | null
+          model_version: string | null
+          decision_json: Json
+          confidence: number | null
+          provider_response_json: Json | null
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          feature_snapshot_id: string
+          provider: string
+          provider_model?: string | null
+          provider_version?: string | null
+          model_version?: string | null
+          decision_json?: Json
+          confidence?: number | null
+          provider_response_json?: Json | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          feature_snapshot_id?: string
+          provider?: string
+          provider_model?: string | null
+          provider_version?: string | null
+          model_version?: string | null
+          decision_json?: Json
+          confidence?: number | null
+          provider_response_json?: Json | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "decision_runs_business_id_feature_snapshot_id_fkey"; columns: ["business_id","feature_snapshot_id"]; isOneToOne: false; referencedRelation: "feature_snapshots"; referencedColumns: ["business_id","id"] },
+          { foreignKeyName: "decision_runs_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+        ]
+      }
+      executed_actions: {
+        Row: {
+          id: string
+          business_id: string
+          action_proposal_id: string
+          status: string
+          request_metadata_json: Json
+          state_before_json: Json | null
+          state_after_json: Json | null
+          error_json: Json | null
+          started_at: string | null
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          action_proposal_id: string
+          status?: string
+          request_metadata_json?: Json
+          state_before_json?: Json | null
+          state_after_json?: Json | null
+          error_json?: Json | null
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          action_proposal_id?: string
+          status?: string
+          request_metadata_json?: Json
+          state_before_json?: Json | null
+          state_after_json?: Json | null
+          error_json?: Json | null
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "executed_actions_business_id_action_proposal_id_fkey"; columns: ["business_id","action_proposal_id"]; isOneToOne: false; referencedRelation: "action_proposals"; referencedColumns: ["business_id","id"] },
+          { foreignKeyName: "executed_actions_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+        ]
+      }
       execution_controls: {
-        Row: { singleton: boolean; limited_auto_enabled: boolean }
-        Insert: { singleton?: boolean; limited_auto_enabled?: boolean }
-        Update: { singleton?: boolean; limited_auto_enabled?: boolean }
-        Relationships: []
+        Row: {
+          singleton: boolean
+          limited_auto_enabled: boolean
+        }
+        Insert: {
+          singleton?: boolean
+          limited_auto_enabled?: boolean
+        }
+        Update: {
+          singleton?: boolean
+          limited_auto_enabled?: boolean
+        }
+        Relationships: [
+        ]
+      }
+      feature_snapshots: {
+        Row: {
+          id: string
+          business_id: string
+          platform_integration_id: string
+          ad_account_id: string
+          entity_type: string
+          entity_id: string
+          feature_schema_version: number
+          feature_json: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          platform_integration_id: string
+          ad_account_id: string
+          entity_type: string
+          entity_id: string
+          feature_schema_version: number
+          feature_json: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          platform_integration_id?: string
+          ad_account_id?: string
+          entity_type?: string
+          entity_id?: string
+          feature_schema_version?: number
+          feature_json?: Json
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "feature_snapshots_ad_account_id_fkey"; columns: ["ad_account_id"]; isOneToOne: false; referencedRelation: "ad_accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "feature_snapshots_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "feature_snapshots_platform_integration_id_fkey"; columns: ["platform_integration_id"]; isOneToOne: false; referencedRelation: "platform_integrations"; referencedColumns: ["id"] },
+        ]
+      }
+      ingestion_jobs: {
+        Row: {
+          id: string
+          business_id: string
+          platform_integration_id: string
+          ad_account_id: string | null
+          sync_run_id: string | null
+          job_type: string
+          status: string
+          priority: number
+          payload_json: Json
+          result_json: Json
+          error_text: string | null
+          attempts: number
+          max_attempts: number
+          scheduled_for: string
+          started_at: string | null
+          finished_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          platform_integration_id: string
+          ad_account_id?: string | null
+          sync_run_id?: string | null
+          job_type: string
+          status?: string
+          priority?: number
+          payload_json?: Json
+          result_json?: Json
+          error_text?: string | null
+          attempts?: number
+          max_attempts?: number
+          scheduled_for?: string
+          started_at?: string | null
+          finished_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          platform_integration_id?: string
+          ad_account_id?: string | null
+          sync_run_id?: string | null
+          job_type?: string
+          status?: string
+          priority?: number
+          payload_json?: Json
+          result_json?: Json
+          error_text?: string | null
+          attempts?: number
+          max_attempts?: number
+          scheduled_for?: string
+          started_at?: string | null
+          finished_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "ingestion_jobs_ad_account_id_fkey"; columns: ["ad_account_id"]; isOneToOne: false; referencedRelation: "ad_accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "ingestion_jobs_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "ingestion_jobs_platform_integration_id_fkey"; columns: ["platform_integration_id"]; isOneToOne: false; referencedRelation: "platform_integrations"; referencedColumns: ["id"] },
+          { foreignKeyName: "ingestion_jobs_sync_run_id_fkey"; columns: ["sync_run_id"]; isOneToOne: false; referencedRelation: "platform_sync_runs"; referencedColumns: ["id"] },
+        ]
       }
       limited_auto_evaluations: {
         Row: {
@@ -58,10 +733,96 @@ export type Database = {
           completed_at?: string | null
         }
         Relationships: [
+          { foreignKeyName: "limited_auto_evaluations_business_id_action_proposal_id_fkey"; columns: ["business_id","action_proposal_id"]; isOneToOne: false; referencedRelation: "action_proposals"; referencedColumns: ["business_id","id"] },
+          { foreignKeyName: "limited_auto_evaluations_business_id_decision_run_id_fkey"; columns: ["business_id","decision_run_id"]; isOneToOne: false; referencedRelation: "decision_runs"; referencedColumns: ["business_id","id"] },
           { foreignKeyName: "limited_auto_evaluations_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
-          { foreignKeyName: "limited_auto_evaluations_business_id_source_snapshot_id_fkey"; columns: ["business_id", "source_snapshot_id"]; isOneToOne: true; referencedRelation: "feature_snapshots"; referencedColumns: ["business_id", "id"] },
-          { foreignKeyName: "limited_auto_evaluations_business_id_decision_run_id_fkey"; columns: ["business_id", "decision_run_id"]; isOneToOne: false; referencedRelation: "decision_runs"; referencedColumns: ["business_id", "id"] },
-          { foreignKeyName: "limited_auto_evaluations_business_id_action_proposal_id_fkey"; columns: ["business_id", "action_proposal_id"]; isOneToOne: false; referencedRelation: "action_proposals"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "limited_auto_evaluations_business_id_source_snapshot_id_fkey"; columns: ["business_id","source_snapshot_id"]; isOneToOne: true; referencedRelation: "feature_snapshots"; referencedColumns: ["business_id","id"] },
+        ]
+      }
+      platform_sync_runs: {
+        Row: {
+          id: string
+          business_id: string
+          platform_integration_id: string
+          ad_account_id: string | null
+          sync_type: string
+          status: string
+          started_at: string | null
+          finished_at: string | null
+          window_start: string | null
+          window_end: string | null
+          records_processed: number
+          error_text: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          platform_integration_id: string
+          ad_account_id?: string | null
+          sync_type: string
+          status?: string
+          started_at?: string | null
+          finished_at?: string | null
+          window_start?: string | null
+          window_end?: string | null
+          records_processed?: number
+          error_text?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          platform_integration_id?: string
+          ad_account_id?: string | null
+          sync_type?: string
+          status?: string
+          started_at?: string | null
+          finished_at?: string | null
+          window_start?: string | null
+          window_end?: string | null
+          records_processed?: number
+          error_text?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "platform_sync_runs_ad_account_id_fkey"; columns: ["ad_account_id"]; isOneToOne: false; referencedRelation: "ad_accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "platform_sync_runs_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "platform_sync_runs_platform_integration_id_fkey"; columns: ["platform_integration_id"]; isOneToOne: false; referencedRelation: "platform_integrations"; referencedColumns: ["id"] },
+        ]
+      }
+      review_execution_claims: {
+        Row: {
+          proposal_id: string
+          business_id: string
+          execution_id: string
+          active: boolean
+          context_json: Json
+          created_at: string
+        }
+        Insert: {
+          proposal_id: string
+          business_id: string
+          execution_id: string
+          active?: boolean
+          context_json: Json
+          created_at?: string
+        }
+        Update: {
+          proposal_id?: string
+          business_id?: string
+          execution_id?: string
+          active?: boolean
+          context_json?: Json
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "review_execution_claims_business_id_execution_id_fkey"; columns: ["business_id","execution_id"]; isOneToOne: true; referencedRelation: "executed_actions"; referencedColumns: ["business_id","id"] },
+          { foreignKeyName: "review_execution_claims_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "review_execution_claims_business_id_proposal_id_fkey"; columns: ["business_id","proposal_id"]; isOneToOne: true; referencedRelation: "action_proposals"; referencedColumns: ["business_id","id"] },
         ]
       }
       shadow_evaluation_jobs: {
@@ -107,908 +868,226 @@ export type Database = {
           started_at?: string | null
           completed_at?: string | null
         }
-        Update: Partial<Database['ai']['Tables']['shadow_evaluation_jobs']['Insert']>
+        Update: {
+          id?: string
+          business_id?: string
+          platform_integration_id?: string
+          ad_account_id?: string
+          entity_id?: string
+          evaluation_version?: string
+          source_hash?: string
+          source_json?: Json
+          source_synced_at?: string
+          source_sync_job_id?: string
+          feature_snapshot_id?: string
+          decision_run_id?: string
+          action_proposal_id?: string
+          status?: string
+          result_json?: Json | null
+          error_code?: string | null
+          created_at?: string
+          started_at?: string | null
+          completed_at?: string | null
+        }
         Relationships: [
+          { foreignKeyName: "shadow_evaluation_jobs_ad_account_id_fkey"; columns: ["ad_account_id"]; isOneToOne: false; referencedRelation: "ad_accounts"; referencedColumns: ["id"] },
           { foreignKeyName: "shadow_evaluation_jobs_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
           { foreignKeyName: "shadow_evaluation_jobs_platform_integration_id_fkey"; columns: ["platform_integration_id"]; isOneToOne: false; referencedRelation: "platform_integrations"; referencedColumns: ["id"] },
-          { foreignKeyName: "shadow_evaluation_jobs_ad_account_id_fkey"; columns: ["ad_account_id"]; isOneToOne: false; referencedRelation: "ad_accounts"; referencedColumns: ["id"] },
           { foreignKeyName: "shadow_evaluation_jobs_source_sync_job_id_fkey"; columns: ["source_sync_job_id"]; isOneToOne: false; referencedRelation: "account_sync_jobs"; referencedColumns: ["id"] },
         ]
       }
-      review_execution_claims: {
-        Row: {
-          proposal_id: string
-          business_id: string
-          execution_id: string
-          active: boolean
-          context_json: Json
-          created_at: string
-        }
-        Insert: {
-          proposal_id: string
-          business_id: string
-          execution_id: string
-          active?: boolean
-          context_json: Json
-          created_at?: string
-        }
-        Update: {
-          proposal_id?: string
-          business_id?: string
-          execution_id?: string
-          active?: boolean
-          context_json?: Json
-          created_at?: string
-        }
-        Relationships: [
-          { foreignKeyName: "review_execution_claims_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
-          { foreignKeyName: "review_execution_claims_business_id_proposal_id_fkey"; columns: ["business_id", "proposal_id"]; isOneToOne: true; referencedRelation: "action_proposals"; referencedColumns: ["business_id", "id"] },
-          { foreignKeyName: "review_execution_claims_business_id_execution_id_fkey"; columns: ["business_id", "execution_id"]; isOneToOne: true; referencedRelation: "executed_actions"; referencedColumns: ["business_id", "id"] },
-        ]
-      }
-      action_outcomes: {
-        Row: {
-          source_kind: string
-          shadow_decision_run_id: string | null
-          anchor_at: string | null
-          measurement_due_at: string | null
-          measurement_status: string
-          next_attempt_at: string | null
-          measured_at: string | null
-          business_id: string
-          calculated_change_json: Json
-          created_at: string
-          executed_action_id: string | null
-          id: string
-          measurement_horizon_hours: number
-          metrics_after_json: Json
-          metrics_before_json: Json
-        }
-        Insert: {
-          source_kind?: string
-          shadow_decision_run_id?: string | null
-          anchor_at?: string | null
-          measurement_due_at?: string | null
-          measurement_status?: string
-          next_attempt_at?: string | null
-          measured_at?: string | null
-          business_id: string
-          calculated_change_json: Json
-          created_at?: string
-          executed_action_id?: string | null
-          id?: string
-          measurement_horizon_hours: number
-          metrics_after_json: Json
-          metrics_before_json: Json
-        }
-        Update: {
-          source_kind?: string
-          shadow_decision_run_id?: string | null
-          anchor_at?: string | null
-          measurement_due_at?: string | null
-          measurement_status?: string
-          next_attempt_at?: string | null
-          measured_at?: string | null
-          business_id?: string
-          calculated_change_json?: Json
-          created_at?: string
-          executed_action_id?: string | null
-          id?: string
-          measurement_horizon_hours?: number
-          metrics_after_json?: Json
-          metrics_before_json?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "action_outcomes_business_id_executed_action_id_fkey"
-            columns: ["business_id", "executed_action_id"]
-            isOneToOne: false
-            referencedRelation: "executed_actions"
-            referencedColumns: ["business_id", "id"]
-          },
-          {
-            foreignKeyName: "action_outcomes_shadow_run_fkey"
-            columns: ["business_id", "shadow_decision_run_id"]
-            isOneToOne: false
-            referencedRelation: "decision_runs"
-            referencedColumns: ["business_id", "id"]
-          },
-        ]
-      }
-      action_proposals: {
-        Row: {
-          action_type: string
-          business_id: string
-          created_at: string
-          current_state_json: Json
-          decision_run_id: string
-          id: string
-          policy_result_json: Json
-          proposed_state_json: Json
-          requires_approval: boolean
-          risk_level: string
-          status: string
-          target_entity_id: string
-          target_entity_type: string
-          updated_at: string
-        }
-        Insert: {
-          action_type: string
-          business_id: string
-          created_at?: string
-          current_state_json?: Json
-          decision_run_id: string
-          id?: string
-          policy_result_json?: Json
-          proposed_state_json?: Json
-          requires_approval?: boolean
-          risk_level?: string
-          status?: string
-          target_entity_id: string
-          target_entity_type: string
-          updated_at?: string
-        }
-        Update: {
-          action_type?: string
-          business_id?: string
-          created_at?: string
-          current_state_json?: Json
-          decision_run_id?: string
-          id?: string
-          policy_result_json?: Json
-          proposed_state_json?: Json
-          requires_approval?: boolean
-          risk_level?: string
-          status?: string
-          target_entity_id?: string
-          target_entity_type?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "action_proposals_business_id_decision_run_id_fkey"
-            columns: ["business_id", "decision_run_id"]
-            isOneToOne: false
-            referencedRelation: "decision_runs"
-            referencedColumns: ["business_id", "id"]
-          },
-        ]
-      }
-      agent_observations: {
-        Row: {
-          ad_account_id: string | null
-          business_id: string
-          confidence_score: number | null
-          created_at: string
-          entity_id: string | null
-          entity_type: string
-          evidence_json: Json
-          id: string
-          observation_text: string
-          observation_type: string
-          source: string
-          title: string | null
-        }
-        Insert: {
-          ad_account_id?: string | null
-          business_id: string
-          confidence_score?: number | null
-          created_at?: string
-          entity_id?: string | null
-          entity_type: string
-          evidence_json?: Json
-          id?: string
-          observation_text: string
-          observation_type: string
-          source?: string
-          title?: string | null
-        }
-        Update: {
-          ad_account_id?: string | null
-          business_id?: string
-          confidence_score?: number | null
-          created_at?: string
-          entity_id?: string | null
-          entity_type?: string
-          evidence_json?: Json
-          id?: string
-          observation_text?: string
-          observation_type?: string
-          source?: string
-          title?: string | null
-        }
-        Relationships: []
-      }
-      ai_generation_runs: {
-        Row: {
-          ad_account_id: string | null
-          business_id: string
-          created_at: string
-          error_message: string | null
-          fallback_reason: string | null
-          id: string
-          input_hash: string
-          latency_ms: number
-          metadata_json: Json
-          model: string
-          output_json: Json
-          platform_integration_id: string | null
-          prompt_version: string
-          queue_item_id: string | null
-          schema_name: string
-          source_id: string | null
-          source_type: string
-          status: string
-        }
-        Insert: {
-          ad_account_id?: string | null
-          business_id: string
-          created_at?: string
-          error_message?: string | null
-          fallback_reason?: string | null
-          id?: string
-          input_hash: string
-          latency_ms?: number
-          metadata_json?: Json
-          model: string
-          output_json?: Json
-          platform_integration_id?: string | null
-          prompt_version: string
-          queue_item_id?: string | null
-          schema_name: string
-          source_id?: string | null
-          source_type: string
-          status: string
-        }
-        Update: {
-          ad_account_id?: string | null
-          business_id?: string
-          created_at?: string
-          error_message?: string | null
-          fallback_reason?: string | null
-          id?: string
-          input_hash?: string
-          latency_ms?: number
-          metadata_json?: Json
-          model?: string
-          output_json?: Json
-          platform_integration_id?: string | null
-          prompt_version?: string
-          queue_item_id?: string | null
-          schema_name?: string
-          source_id?: string | null
-          source_type?: string
-          status?: string
-        }
-        Relationships: []
-      }
-      autonomy_policies: {
-        Row: {
-          allowed_action_classes: string[]
-          budget_boundaries_json: Json
-          business_id: string
-          cooldown_config_json: Json
-          created_at: string
-          id: string
-          max_budget_change_percent: number
-          minimum_evidence_json: Json
-          mode: string
-          updated_at: string
-        }
-        Insert: {
-          allowed_action_classes?: string[]
-          budget_boundaries_json?: Json
-          business_id: string
-          cooldown_config_json?: Json
-          created_at?: string
-          id?: string
-          max_budget_change_percent?: number
-          minimum_evidence_json?: Json
-          mode?: string
-          updated_at?: string
-        }
-        Update: {
-          allowed_action_classes?: string[]
-          budget_boundaries_json?: Json
-          business_id?: string
-          cooldown_config_json?: Json
-          created_at?: string
-          id?: string
-          max_budget_change_percent?: number
-          minimum_evidence_json?: Json
-          mode?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      business_agent_profiles: {
-        Row: {
-          assessment_status: string
-          best_audience_patterns_json: Json
-          best_budget_patterns_json: Json
-          best_creative_patterns_json: Json
-          best_objectives_json: Json
-          best_time_patterns_json: Json
-          business_id: string
-          confidence_score: number | null
-          created_at: string
-          failure_patterns_json: Json
-          forbidden_patterns_json: Json
-          history_available: boolean
-          history_end_date: string | null
-          history_start_date: string | null
-          id: string
-          last_assessed_at: string | null
-          last_learning_update_at: string | null
-          playbook_markdown: string | null
-          primary_platform: string | null
-          recommended_defaults_json: Json
-          updated_at: string
-        }
-        Insert: {
-          assessment_status?: string
-          best_audience_patterns_json?: Json
-          best_budget_patterns_json?: Json
-          best_creative_patterns_json?: Json
-          best_objectives_json?: Json
-          best_time_patterns_json?: Json
-          business_id: string
-          confidence_score?: number | null
-          created_at?: string
-          failure_patterns_json?: Json
-          forbidden_patterns_json?: Json
-          history_available?: boolean
-          history_end_date?: string | null
-          history_start_date?: string | null
-          id?: string
-          last_assessed_at?: string | null
-          last_learning_update_at?: string | null
-          playbook_markdown?: string | null
-          primary_platform?: string | null
-          recommended_defaults_json?: Json
-          updated_at?: string
-        }
-        Update: {
-          assessment_status?: string
-          best_audience_patterns_json?: Json
-          best_budget_patterns_json?: Json
-          best_creative_patterns_json?: Json
-          best_objectives_json?: Json
-          best_time_patterns_json?: Json
-          business_id?: string
-          confidence_score?: number | null
-          created_at?: string
-          failure_patterns_json?: Json
-          forbidden_patterns_json?: Json
-          history_available?: boolean
-          history_end_date?: string | null
-          history_start_date?: string | null
-          id?: string
-          last_assessed_at?: string | null
-          last_learning_update_at?: string | null
-          playbook_markdown?: string | null
-          primary_platform?: string | null
-          recommended_defaults_json?: Json
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      business_assessments: {
-        Row: {
-          assessment_json: Json
-          business_id: string
-          created_at: string
-          digest_json: Json
-          id: string
-          scope: string
-        }
-        Insert: {
-          assessment_json?: Json
-          business_id: string
-          created_at?: string
-          digest_json?: Json
-          id?: string
-          scope?: string
-        }
-        Update: {
-          assessment_json?: Json
-          business_id?: string
-          created_at?: string
-          digest_json?: Json
-          id?: string
-          scope?: string
-        }
-        Relationships: []
-      }
-      creative_feature_snapshots: {
-        Row: {
-          ad_account_id: string
-          ad_id: string | null
-          adset_id: string | null
-          body_text: string | null
-          business_id: string
-          campaign_id: string | null
-          created_at: string
-          creative_id: string
-          cta_type: string | null
-          feature_json: Json
-          has_branding: boolean | null
-          has_discount: boolean | null
-          has_price: boolean | null
-          has_social_proof: boolean | null
-          has_testimonial: boolean | null
-          has_urgency: boolean | null
-          headline_text: string | null
-          hook_style: string | null
-          id: string
-          landing_page_type: string | null
-          message_angle_tags: string[]
-          offer_type: string | null
-          primary_format: string | null
-          snapshot_date: string
-          visual_style_tags: string[]
-        }
-        Insert: {
-          ad_account_id: string
-          ad_id?: string | null
-          adset_id?: string | null
-          body_text?: string | null
-          business_id: string
-          campaign_id?: string | null
-          created_at?: string
-          creative_id: string
-          cta_type?: string | null
-          feature_json?: Json
-          has_branding?: boolean | null
-          has_discount?: boolean | null
-          has_price?: boolean | null
-          has_social_proof?: boolean | null
-          has_testimonial?: boolean | null
-          has_urgency?: boolean | null
-          headline_text?: string | null
-          hook_style?: string | null
-          id?: string
-          landing_page_type?: string | null
-          message_angle_tags?: string[]
-          offer_type?: string | null
-          primary_format?: string | null
-          snapshot_date?: string
-          visual_style_tags?: string[]
-        }
-        Update: {
-          ad_account_id?: string
-          ad_id?: string | null
-          adset_id?: string | null
-          body_text?: string | null
-          business_id?: string
-          campaign_id?: string | null
-          created_at?: string
-          creative_id?: string
-          cta_type?: string | null
-          feature_json?: Json
-          has_branding?: boolean | null
-          has_discount?: boolean | null
-          has_price?: boolean | null
-          has_social_proof?: boolean | null
-          has_testimonial?: boolean | null
-          has_urgency?: boolean | null
-          headline_text?: string | null
-          hook_style?: string | null
-          id?: string
-          landing_page_type?: string | null
-          message_angle_tags?: string[]
-          offer_type?: string | null
-          primary_format?: string | null
-          snapshot_date?: string
-          visual_style_tags?: string[]
-        }
-        Relationships: []
-      }
-      decision_runs: {
-        Row: {
-          business_id: string
-          confidence: number | null
-          created_at: string
-          decision_json: Json
-          feature_snapshot_id: string
-          id: string
-          model_version: string | null
-          provider: string
-          provider_model: string | null
-          provider_response_json: Json | null
-          provider_version: string | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          business_id: string
-          confidence?: number | null
-          created_at?: string
-          decision_json?: Json
-          feature_snapshot_id: string
-          id?: string
-          model_version?: string | null
-          provider: string
-          provider_model?: string | null
-          provider_response_json?: Json | null
-          provider_version?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          business_id?: string
-          confidence?: number | null
-          created_at?: string
-          decision_json?: Json
-          feature_snapshot_id?: string
-          id?: string
-          model_version?: string | null
-          provider?: string
-          provider_model?: string | null
-          provider_response_json?: Json | null
-          provider_version?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "decision_runs_business_id_feature_snapshot_id_fkey"
-            columns: ["business_id", "feature_snapshot_id"]
-            isOneToOne: false
-            referencedRelation: "feature_snapshots"
-            referencedColumns: ["business_id", "id"]
-          },
-        ]
-      }
-      executed_actions: {
-        Row: {
-          action_proposal_id: string
-          business_id: string
-          completed_at: string | null
-          created_at: string
-          error_json: Json | null
-          id: string
-          request_metadata_json: Json
-          started_at: string | null
-          state_after_json: Json | null
-          state_before_json: Json | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          action_proposal_id: string
-          business_id: string
-          completed_at?: string | null
-          created_at?: string
-          error_json?: Json | null
-          id?: string
-          request_metadata_json?: Json
-          started_at?: string | null
-          state_after_json?: Json | null
-          state_before_json?: Json | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          action_proposal_id?: string
-          business_id?: string
-          completed_at?: string | null
-          created_at?: string
-          error_json?: Json | null
-          id?: string
-          request_metadata_json?: Json
-          started_at?: string | null
-          state_after_json?: Json | null
-          state_before_json?: Json | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "executed_actions_business_id_action_proposal_id_fkey"
-            columns: ["business_id", "action_proposal_id"]
-            isOneToOne: false
-            referencedRelation: "action_proposals"
-            referencedColumns: ["business_id", "id"]
-          },
-        ]
-      }
-      feature_snapshots: {
-        Row: {
-          ad_account_id: string
-          business_id: string
-          created_at: string
-          entity_id: string
-          entity_type: string
-          feature_json: Json
-          feature_schema_version: number
-          id: string
-          platform_integration_id: string
-        }
-        Insert: {
-          ad_account_id: string
-          business_id: string
-          created_at?: string
-          entity_id: string
-          entity_type: string
-          feature_json: Json
-          feature_schema_version: number
-          id?: string
-          platform_integration_id: string
-        }
-        Update: {
-          ad_account_id?: string
-          business_id?: string
-          created_at?: string
-          entity_id?: string
-          entity_type?: string
-          feature_json?: Json
-          feature_schema_version?: number
-          id?: string
-          platform_integration_id?: string
-        }
-        Relationships: []
-      }
-      ingestion_jobs: {
-        Row: {
-          ad_account_id: string | null
-          attempts: number
-          business_id: string
-          created_at: string
-          error_text: string | null
-          finished_at: string | null
-          id: string
-          job_type: string
-          max_attempts: number
-          payload_json: Json
-          platform_integration_id: string
-          priority: number
-          result_json: Json
-          scheduled_for: string
-          started_at: string | null
-          status: string
-          sync_run_id: string | null
-        }
-        Insert: {
-          ad_account_id?: string | null
-          attempts?: number
-          business_id: string
-          created_at?: string
-          error_text?: string | null
-          finished_at?: string | null
-          id?: string
-          job_type: string
-          max_attempts?: number
-          payload_json?: Json
-          platform_integration_id: string
-          priority?: number
-          result_json?: Json
-          scheduled_for?: string
-          started_at?: string | null
-          status?: string
-          sync_run_id?: string | null
-        }
-        Update: {
-          ad_account_id?: string | null
-          attempts?: number
-          business_id?: string
-          created_at?: string
-          error_text?: string | null
-          finished_at?: string | null
-          id?: string
-          job_type?: string
-          max_attempts?: number
-          payload_json?: Json
-          platform_integration_id?: string
-          priority?: number
-          result_json?: Json
-          scheduled_for?: string
-          started_at?: string | null
-          status?: string
-          sync_run_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ingestion_jobs_sync_run_id_fkey"
-            columns: ["sync_run_id"]
-            isOneToOne: false
-            referencedRelation: "platform_sync_runs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      platform_sync_runs: {
-        Row: {
-          ad_account_id: string | null
-          business_id: string
-          created_at: string
-          error_text: string | null
-          finished_at: string | null
-          id: string
-          metadata: Json
-          platform_integration_id: string
-          records_processed: number
-          started_at: string | null
-          status: string
-          sync_type: string
-          window_end: string | null
-          window_start: string | null
-        }
-        Insert: {
-          ad_account_id?: string | null
-          business_id: string
-          created_at?: string
-          error_text?: string | null
-          finished_at?: string | null
-          id?: string
-          metadata?: Json
-          platform_integration_id: string
-          records_processed?: number
-          started_at?: string | null
-          status?: string
-          sync_type: string
-          window_end?: string | null
-          window_start?: string | null
-        }
-        Update: {
-          ad_account_id?: string | null
-          business_id?: string
-          created_at?: string
-          error_text?: string | null
-          finished_at?: string | null
-          id?: string
-          metadata?: Json
-          platform_integration_id?: string
-          records_processed?: number
-          started_at?: string | null
-          status?: string
-          sync_type?: string
-          window_end?: string | null
-          window_start?: string | null
-        }
-        Relationships: []
-      }
       trend_findings: {
         Row: {
-          ad_account_id: string
-          ad_id: string | null
-          adset_id: string | null
+          id: string
           business_id: string
+          platform_integration_id: string
+          ad_account_id: string
           campaign_id: string | null
+          adset_id: string | null
+          ad_id: string | null
+          finding_type: string
+          severity: string
           confidence: string
-          converted_to_queue_at: string | null
-          created_at: string
+          status: string
+          source: string
+          title: string
+          summary: string
+          reason: string | null
+          metric_snapshot_json: Json
+          recommended_action_json: Json
+          snapshot_hash: string
           dedupe_key: string
           detected_at: string
-          dismissed_at: string | null
-          finding_type: string
           first_detected_at: string
-          id: string
           last_detected_at: string
-          metric_snapshot_json: Json
-          platform_integration_id: string
-          reason: string | null
-          recommended_action_json: Json
           resolved_at: string | null
-          severity: string
-          snapshot_hash: string
-          source: string
-          status: string
-          summary: string
-          title: string
+          dismissed_at: string | null
+          converted_to_queue_at: string | null
+          created_at: string
           updated_at: string
         }
         Insert: {
-          ad_account_id: string
-          ad_id?: string | null
-          adset_id?: string | null
+          id?: string
           business_id: string
+          platform_integration_id: string
+          ad_account_id: string
           campaign_id?: string | null
+          adset_id?: string | null
+          ad_id?: string | null
+          finding_type: string
+          severity?: string
           confidence?: string
-          converted_to_queue_at?: string | null
-          created_at?: string
+          status?: string
+          source?: string
+          title: string
+          summary: string
+          reason?: string | null
+          metric_snapshot_json?: Json
+          recommended_action_json?: Json
+          snapshot_hash: string
           dedupe_key: string
           detected_at?: string
-          dismissed_at?: string | null
-          finding_type: string
           first_detected_at?: string
-          id?: string
           last_detected_at?: string
-          metric_snapshot_json?: Json
-          platform_integration_id: string
-          reason?: string | null
-          recommended_action_json?: Json
           resolved_at?: string | null
-          severity?: string
-          snapshot_hash: string
-          source?: string
-          status?: string
-          summary: string
-          title: string
+          dismissed_at?: string | null
+          converted_to_queue_at?: string | null
+          created_at?: string
           updated_at?: string
         }
         Update: {
-          ad_account_id?: string
-          ad_id?: string | null
-          adset_id?: string | null
+          id?: string
           business_id?: string
+          platform_integration_id?: string
+          ad_account_id?: string
           campaign_id?: string | null
+          adset_id?: string | null
+          ad_id?: string | null
+          finding_type?: string
+          severity?: string
           confidence?: string
-          converted_to_queue_at?: string | null
-          created_at?: string
+          status?: string
+          source?: string
+          title?: string
+          summary?: string
+          reason?: string | null
+          metric_snapshot_json?: Json
+          recommended_action_json?: Json
+          snapshot_hash?: string
           dedupe_key?: string
           detected_at?: string
-          dismissed_at?: string | null
-          finding_type?: string
           first_detected_at?: string
-          id?: string
           last_detected_at?: string
-          metric_snapshot_json?: Json
-          platform_integration_id?: string
-          reason?: string | null
-          recommended_action_json?: Json
           resolved_at?: string | null
-          severity?: string
-          snapshot_hash?: string
-          source?: string
-          status?: string
-          summary?: string
-          title?: string
+          dismissed_at?: string | null
+          converted_to_queue_at?: string | null
+          created_at?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          { foreignKeyName: "trend_findings_ad_account_id_fkey"; columns: ["ad_account_id"]; isOneToOne: false; referencedRelation: "ad_accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "trend_findings_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "trend_findings_platform_integration_id_fkey"; columns: ["platform_integration_id"]; isOneToOne: false; referencedRelation: "platform_integrations"; referencedColumns: ["id"] },
+        ]
       }
     }
-    Views: {
-      [_ in never]: never
-    }
+    Views: { [_ in never]: never }
     Functions: {
-      limited_auto_history: { Args: { p_business: string }; Returns: Json }
-      claim_limited_auto_evaluation: { Args: { p_business: string; p_snapshot: string }; Returns: Json }
-      finish_limited_auto_evaluation: { Args: { p_business: string; p_snapshot: string; p_status: string; p_reason: string; p_run?: string | null; p_proposal?: string | null }; Returns: undefined }
-      claim_limited_auto_execution: { Args: { p_business: string; p_proposal: string; p_execution: string }; Returns: Json }
-      authorize_limited_auto_execution: { Args: { p_business: string; p_execution: string }; Returns: undefined }
-      checkpoint_limited_auto_execution: { Args: { p_business: string; p_execution: string; p_before: Json; p_request: Json }; Returns: undefined }
-      process_action_outcomes: {
-        Args: { p_limit?: number }
-        Returns: Json
-      }
-      measure_outcome_window: {
-        Args: { p_account: string; p_entity: string; p_currency: string; p_zone: string; p_start: string; p_end: string }
-        Returns: Json
-      }
-      outcome_observed_changes: {
-        Args: { p_before: Json; p_after: Json }
-        Returns: Json
-      }
-      enqueue_meta_shadow: {
-        Args: { p_business: string; p_integration: string; p_account: string; p_sync_job: string; p_version: string }
-        Returns: number
-      }
-      claim_meta_shadow: { Args: Record<string, never>; Returns: Json }
-      finish_meta_shadow: {
-        Args: { p_job: string; p_result: Json; p_proposal: Json; p_error: string | null }
-        Returns: undefined
-      }
-      claim_review_execution: {
-        Args: { p_business: string; p_proposal: string; p_execution: string }
-        Returns: Json
-      }
-      checkpoint_review_execution: {
-        Args: { p_business: string; p_execution: string; p_before: Json; p_request: Json }
-        Returns: undefined
-      }
-      finish_review_execution: {
-        Args: { p_business: string; p_execution: string; p_success: boolean; p_after: Json; p_error: Json }
-        Returns: undefined
+      authorize_limited_auto_execution: { Args: { p_business: string | null; p_execution: string | null }; Returns: undefined }
+      checkpoint_limited_auto_execution: { Args: { p_business: string | null; p_execution: string | null; p_before: Json | null; p_request: Json | null }; Returns: undefined }
+      checkpoint_review_execution: { Args: { p_business: string | null; p_execution: string | null; p_before: Json | null; p_request: Json | null }; Returns: undefined }
+      claim_limited_auto_evaluation: { Args: { p_business: string | null; p_snapshot: string | null }; Returns: Json }
+      claim_limited_auto_execution: { Args: { p_business: string | null; p_proposal: string | null; p_execution: string | null }; Returns: Json }
+      claim_meta_shadow: { Args: { [_ in never]: never }; Returns: Json }
+      claim_review_execution: { Args: { p_business: string | null; p_proposal: string | null; p_execution: string | null }; Returns: Json }
+      enqueue_meta_shadow: { Args: { p_business: string | null; p_integration: string | null; p_account: string | null; p_sync_job: string | null; p_version: string | null }; Returns: number }
+      finish_limited_auto_evaluation: { Args: { p_business: string | null; p_snapshot: string | null; p_status: string | null; p_reason: string | null; p_run?: string | null; p_proposal?: string | null }; Returns: undefined }
+      finish_meta_shadow: { Args: { p_job: string | null; p_result: Json | null; p_proposal: Json | null; p_error: string | null }; Returns: undefined }
+      finish_review_execution: { Args: { p_business: string | null; p_execution: string | null; p_success: boolean | null; p_after: Json | null; p_error: Json | null }; Returns: undefined }
+      limited_auto_history: { Args: { p_business: string | null }; Returns: Json }
+      measure_outcome_window: { Args: { p_account: string | null; p_entity: string | null; p_currency: string | null; p_zone: string | null; p_start: string | null; p_end: string | null }; Returns: Json }
+      outcome_observed_changes: { Args: { p_before: Json | null; p_after: Json | null }; Returns: Json }
+      process_action_outcomes: { Args: { p_limit?: number | null }; Returns: Json }
+    }
+    Enums: { [_ in never]: never }
+    CompositeTypes: { [_ in never]: never }
+  }
+  intelligence: {
+    Tables: {
+      ad_account_signals: {
+        Row: {
+          id: string
+          business_id: string
+          platform_integration_id: string
+          ad_account_id: string
+          source_assessment_id: string | null
+          source_digest_hash: string
+          signal_type: string
+          severity: string
+          status: string
+          title: string
+          reason: string
+          evidence_json: Json
+          recommended_action_json: Json
+          first_detected_at: string
+          last_detected_at: string
+          resolved_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          platform_integration_id: string
+          ad_account_id: string
+          source_assessment_id?: string | null
+          source_digest_hash: string
+          signal_type: string
+          severity: string
+          status?: string
+          title: string
+          reason: string
+          evidence_json?: Json
+          recommended_action_json?: Json
+          first_detected_at?: string
+          last_detected_at?: string
+          resolved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          platform_integration_id?: string
+          ad_account_id?: string
+          source_assessment_id?: string | null
+          source_digest_hash?: string
+          signal_type?: string
+          severity?: string
+          status?: string
+          title?: string
+          reason?: string
+          evidence_json?: Json
+          recommended_action_json?: Json
+          first_detected_at?: string
+          last_detected_at?: string
+          resolved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "ad_account_signals_ad_account_id_fkey"; columns: ["ad_account_id"]; isOneToOne: false; referencedRelation: "ad_accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "ad_account_signals_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "ad_account_signals_platform_integration_id_fkey"; columns: ["platform_integration_id"]; isOneToOne: false; referencedRelation: "platform_integrations"; referencedColumns: ["id"] },
+          { foreignKeyName: "ad_account_signals_source_assessment_id_fkey"; columns: ["source_assessment_id"]; isOneToOne: false; referencedRelation: "business_assessments"; referencedColumns: ["id"] },
+        ]
       }
     }
-    Enums: {
-      [_ in never]: never
+    Views: { [_ in never]: never }
+    Functions: {
     }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    Enums: { [_ in never]: never }
+    CompositeTypes: { [_ in never]: never }
   }
   public: {
     Tables: {
@@ -1501,6 +1580,13 @@ export type Database = {
             referencedRelation: "report_entity_daily_v"
             referencedColumns: ["entity_id"]
           },
+          {
+            foreignKeyName: "ad_audience_breakdowns_summary_scope_fkey"
+            columns: ["entity_id", "ad_account_id", "entity_level"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id", "ad_account_id", "entity_level"]
+          },
         ]
       }
       ad_creatives: {
@@ -1589,6 +1675,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ad_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_creatives_business_account_fkey"
+            columns: ["business_id", "ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["business_id", "id"]
           },
           {
             foreignKeyName: "ad_creatives_business_id_fkey"
@@ -1781,6 +1874,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "report_entity_daily_v"
             referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entities_business_account_fkey"
+            columns: ["business_id", "ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["business_id", "id"]
           },
           {
             foreignKeyName: "ad_entities_business_id_fkey"
@@ -2168,6 +2268,13 @@ export type Database = {
             referencedRelation: "report_entity_daily_v"
             referencedColumns: ["entity_id"]
           },
+          {
+            foreignKeyName: "ad_entity_performance_daily_scope_fkey"
+            columns: ["entity_id", "ad_account_id", "entity_level"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id", "ad_account_id", "entity_level"]
+          },
         ]
       }
       ad_entity_performance_hourly: {
@@ -2352,6 +2459,13 @@ export type Database = {
             referencedRelation: "report_entity_daily_v"
             referencedColumns: ["entity_id"]
           },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_scope_fkey"
+            columns: ["entity_id", "ad_account_id", "entity_level"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id", "ad_account_id", "entity_level"]
+          },
         ]
       }
       ad_entity_performance_monthly: {
@@ -2523,6 +2637,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "report_entity_daily_v"
             referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_monthly_scope_fkey"
+            columns: ["entity_id", "ad_account_id", "entity_level"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id", "ad_account_id", "entity_level"]
           },
         ]
       }
@@ -2713,6 +2834,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "report_entity_daily_v"
             referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_summary_scope_fkey"
+            columns: ["entity_id", "ad_account_id", "entity_level"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id", "ad_account_id", "entity_level"]
           },
         ]
       }
@@ -5646,6 +5774,13 @@ export type Database = {
             referencedColumns: ["entity_id"]
           },
           {
+            foreignKeyName: "ad_audience_breakdowns_summary_scope_fkey"
+            columns: ["entity_id", "ad_account_id", "entity_level"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id", "ad_account_id", "entity_level"]
+          },
+          {
             foreignKeyName: "ad_entities_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
@@ -5982,6 +6117,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "report_entity_daily_v"
             referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "ad_entity_performance_hourly_scope_fkey"
+            columns: ["entity_id", "ad_account_id", "entity_level"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id", "ad_account_id", "entity_level"]
           },
         ]
       }
@@ -6330,6 +6472,7 @@ export type Database = {
         }
         Returns: string
       }
+      ensure_onboarding_workspace: { Args: never; Returns: string }
       get_org_role: {
         Args: { p_organization_id: string }
         Returns: Database["public"]["Enums"]["org_role"]
@@ -6560,9 +6703,8 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  ai: {
-    Enums: {},
-  },
+  ai: { Enums: {} },
+  intelligence: { Enums: {} },
   public: {
     Enums: {
       business_role: ["owner", "admin", "member"],

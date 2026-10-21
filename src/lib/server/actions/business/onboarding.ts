@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidateTag } from 'next/cache';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { ok, fail, type ApiResponse, ErrorCode } from '@/lib/shared';
 import { getErrorMessage } from '@/lib/shared/utils/guards';
@@ -10,8 +11,6 @@ import {
   AVERAGE_CUSTOMER_VALUE_OPTIONS,
   CONTACT_METHOD_OPTIONS,
   CUSTOMER_RADIUS_OPTIONS,
-  DEFAULT_INTELLIGENCE_GOALS,
-  DEFAULT_WATCH_SIGNALS,
   INTELLIGENCE_GOAL_OPTIONS,
   LEAD_QUALITY_SIGNAL_OPTIONS,
   LEAD_TYPE_OPTIONS,
@@ -427,6 +426,7 @@ export async function updateBusinessProfileData(input: {
       }
     }
 
+    revalidateTag(`business-context:${contextRes.data.userId}`, { expire: 0 });
     return ok(null);
   } catch (error) {
     return fail(getErrorMessage(error), ErrorCode.UNKNOWN_ERROR);
@@ -443,7 +443,24 @@ export async function updateOnboardingProgress(input: {
     const contextRes = await requireActiveBusinessContextOrFail();
     if (!contextRes.success) return contextRes;
 
+    if (!Number.isInteger(input.step) || input.step < 0 || input.step > 2 ||
+      (input.completed !== undefined && typeof input.completed !== 'boolean') ||
+      (input.completed === true && input.step !== 2)) {
+      return fail('Invalid onboarding progress', ErrorCode.VALIDATION_ERROR);
+    }
     const { businessId } = contextRes.data;
+    if (input.step > 0) {
+      const { data: profile, error: profileError } = await supabase.from('business_profiles')
+        .select('business_name,most_valuable_service,business_location,customer_radius,preferred_contact_method')
+        .eq('id', businessId).single();
+      if (profileError) return fail(getErrorMessage(profileError), ErrorCode.DATABASE_ERROR);
+      if (!profile || !normalizeBusinessName(profile.business_name) || isPlaceholderBusinessName(profile.business_name) ||
+          !isAllowedOption(profile.most_valuable_service ?? '', SALON_SERVICE_OPTIONS) ||
+          !cleanString(profile.business_location) || !isAllowedOption(profile.customer_radius ?? '', CUSTOMER_RADIUS_OPTIONS) ||
+          !isAllowedOption(profile.preferred_contact_method ?? '', CONTACT_METHOD_OPTIONS)) {
+        return fail('Complete the required business essentials before continuing', ErrorCode.VALIDATION_ERROR);
+      }
+    }
 
     const updateData = cleanUndefined({
       onboarding_step: input.step,
@@ -460,6 +477,7 @@ export async function updateOnboardingProgress(input: {
       return fail(getErrorMessage(error), ErrorCode.DATABASE_ERROR);
     }
 
+    revalidateTag(`business-context:${contextRes.data.userId}`, { expire: 0 });
     return ok(null);
   } catch (error) {
     return fail(getErrorMessage(error), ErrorCode.UNKNOWN_ERROR);

@@ -513,3 +513,35 @@ This was added to reduce `Service temporarily unavailable` and rate-limit failur
 - The select-account route validates against `ad_accounts`, not Meta.
 - Seed sync always returns `SyncCoverage.syncMode = 'seed_recent'`.
 - Full history is handled by queued backfill work, not by blocking the initial account-selection request.
+
+## Beta fixture and token access boundaries
+
+Vault token RPCs and queue/approval mutation RPCs are executable only by the
+service role after `20261020231659_beta_access_hardening.sql`. Browser clients may
+read authorized integration metadata, but cannot modify token references. Server
+callers must first resolve the authenticated business and its integration, then
+use the server-only admin client for token lookup.
+
+The `deepvisor-beta-v1` fixture marker identifies imported synthetic accounts.
+They have no credentials. Database triggers reject credential assignment, marker
+removal, and queued/running sync jobs for these integrations. A completed fixture
+import is not a successful Meta fetch. Use `scripts/beta-fixtures/README.md` to
+reseed; manual Meta refresh is intentionally unavailable for these accounts.
+
+## Phase 2 simulated provider
+
+`deepvisor-meta-phase2` is a separate, explicitly gated development/test provider.
+Unlike Phase 1 imports, these accounts exercise the existing durable sync worker
+using controlled provider responses. See
+[setup, scenarios, assertions and cleanup](../../../../scripts/beta-phase2/README.md).
+Real Auth and RLS remain enabled. Simulated credentials cannot enter the live
+execution SDK; shared untargeted workers skip these integrations. No automatic
+schedule or external assessment/execution is enabled for them.
+
+OAuth state consumption is atomic. Authenticated incomplete onboarding can use
+account discovery/selection; each route still validates business ownership.
+Selection returns success only after its targeted initial or follow-up job has
+completed. Manual refresh retains its existing 202/job-polling contract.
+Concurrent enqueues share a job through the active account/type unique index.
+Incremental sync rereads its lookback window for attribution corrections, and
+provider requests now have a 30-second per-attempt deadline.

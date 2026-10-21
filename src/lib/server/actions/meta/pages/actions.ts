@@ -1,4 +1,5 @@
 "use server";
+import { createAdminClient } from '@/lib/server/supabase/admin';
 
 import { ApiResponse, ErrorCode } from "@/lib/shared/types/api";
 import { fail, ok } from "@/lib/shared/utils/responses";
@@ -289,7 +290,7 @@ export async function getMetaPages({
     adAccountId,
 }: GetMetaPagesParams): Promise<ApiResponse<MetaPage[]>> {
     try {
-        const { businessId } = await getRequiredAppContext();
+        const { businessId } = await getRequiredAppContext(false);
         const supabase = await createSupabaseClient();
         const integration = await getBusinessIntegrationById(supabase, {
             businessId,
@@ -302,7 +303,7 @@ export async function getMetaPages({
             });
         }
 
-        const accessToken = await resolveIntegrationAccessToken(supabase, integration);
+        const accessToken = await resolveIntegrationAccessToken(createAdminClient(), integration);
         if (!accessToken) {
             return fail('Missing Meta access token.', ErrorCode.INTEGRATION_ERROR, {
                 userMessage: 'Reconnect Meta before choosing a Facebook Page.',

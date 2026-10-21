@@ -1,4 +1,5 @@
 import 'server-only';
+import { simulatedMetaResponse } from '@/lib/server/integrations/simulation/meta';
 
 const META_GRAPH_VERSION = 'v24.0';
 const META_GRAPH_BASE_URL = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
@@ -129,7 +130,8 @@ async function fetchMetaResponseWithRetry(url: URL, signal?: AbortSignal): Promi
   for (let attempt = 1; attempt <= META_TRANSIENT_MAX_ATTEMPTS; attempt += 1) {
     try {
       signal?.throwIfAborted();
-      const response = await fetch(url, signal ? { signal } : undefined);
+      const deadline = AbortSignal.timeout(30_000);
+      const response = await fetch(url, { signal: signal ? AbortSignal.any([signal, deadline]) : deadline });
       if (response.ok) {
         return response;
       }
@@ -174,6 +176,8 @@ export async function fetchMetaObject<T>(input: {
   accessToken: string;
   params?: Record<string, string | number | boolean | undefined>;
 }): Promise<T> {
+  const simulated = simulatedMetaResponse(input.accessToken, input.path, input.params);
+  if (simulated !== null) return simulated as T;
   const url = new URL(`${META_GRAPH_BASE_URL}/${input.path}`);
   url.searchParams.set('access_token', input.accessToken);
 
@@ -195,6 +199,8 @@ export async function fetchMetaCollection<T>(input: {
   accessToken: string;
   params?: Record<string, string | number | boolean | undefined>;
 }): Promise<T[]> {
+  const simulated = simulatedMetaResponse(input.accessToken, input.path, input.params);
+  if (simulated !== null) return (simulated as { data: T[] }).data;
   let nextUrl: URL | null = new URL(`${META_GRAPH_BASE_URL}/${input.path}`);
   nextUrl.searchParams.set('access_token', input.accessToken);
 

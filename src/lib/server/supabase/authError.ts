@@ -68,14 +68,6 @@ export function fromSupabaseAuthError(e: unknown): ApiResponse<never> {
         });
     }
 
-    // 422 Unprocessable Entity (request valid but cannot be satisfied in current state)
-    if (status === 422 || code === "validation_failed" || code === "bad_json") {
-        return fail(message, ErrorCode.VALIDATION_ERROR, {
-            userMessage: "We couldn't process that request. Double-check your info and try again.",
-            details: { status, code },
-        });
-    }
-
     // Known auth-specific cases
     switch (code) {
         case "invalid_credentials":
@@ -125,6 +117,14 @@ export function fromSupabaseAuthError(e: unknown): ApiResponse<never> {
             });
 
         default:
+    // 422 Unprocessable Entity (request valid but cannot be satisfied in current state)
+    if (status === 422 || code === "validation_failed" || code === "bad_json") {
+        return fail(message, ErrorCode.VALIDATION_ERROR, {
+            userMessage: "We couldn't process that request. Double-check your info and try again.",
+            details: { status, code },
+        });
+    }
+
             // 500 / 501 etc: treat as service/config issues
             if (status === 500) {
                 return fail(message, ErrorCode.DATABASE_ERROR, {

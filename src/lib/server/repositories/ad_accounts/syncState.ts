@@ -372,6 +372,13 @@ export async function createOrReuseFirstSyncJob(
     .select('*')
     .single();
 
+  if (error?.code === '23505') {
+    const winner = await selectHistoricalSyncJobs(supabase, {
+      adAccountIds: [input.adAccountId], syncTypes: ['initial_historical'], statuses: ['queued', 'running'],
+    });
+    if (winner[0]) return winner[0];
+  }
+
   if (error || !data) {
     throw error ?? new Error('Failed to enqueue first history sync job');
   }
@@ -443,6 +450,13 @@ export async function createOrReuseQueuedSyncJob(
     .select('*')
     .single();
 
+  if (error?.code === '23505') {
+    const winner = await selectHistoricalSyncJobs(supabase, {
+      adAccountIds: [input.adAccountId], syncTypes: [input.syncType], statuses: ['queued', 'running'],
+    });
+    if (winner[0]) return winner[0];
+  }
+
   if (error || !data) {
     throw error ?? new Error('Failed to enqueue account sync job');
   }
@@ -485,6 +499,13 @@ export async function enqueueBackfillSyncJob(
     })
     .select('*')
     .single();
+
+  if (error?.code === '23505') {
+    const winner = await selectHistoricalSyncJobs(supabase, {
+      adAccountIds: [input.adAccountId], syncTypes: ['backfill'], statuses: ['queued', 'running'],
+    });
+    if (winner[0]) return winner[0];
+  }
 
   if (error || !data) {
     throw error ?? new Error('Failed to enqueue backfill sync job');

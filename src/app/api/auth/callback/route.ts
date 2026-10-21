@@ -3,7 +3,7 @@ import { resolvePostAuthRedirectPath } from '@/lib/server/auth/postAuthRedirect'
 import { createServerClient } from '@/lib/server/supabase/server';
 
 function safeNextPath(value: string | null): string {
-  if (!value || !value.startsWith('/') || value.startsWith('//')) {
+  if (!value || !value.startsWith('/') || value.startsWith('//') || /[\\\u0000-\u0020]/.test(value)) {
     return '/onboarding';
   }
 

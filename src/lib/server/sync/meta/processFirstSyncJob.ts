@@ -1,3 +1,5 @@
+import { markIntegrationSynced } from '@/lib/server/integrations/service';
+import { readSimulation } from '@/lib/server/integrations/simulation/meta';
 import 'server-only';
 import { enqueueShadowAfterSync } from '@/lib/server/decisions/shadow/service';
 
@@ -422,6 +424,7 @@ export async function processMetaFirstSyncJob(input: {
   });
 
   try {
+    if (!readSimulation(input.accessToken)) {
     const adAccountAssessment = await runMetaAdAccountAssessment({
       supabase: input.supabase,
       businessId: input.job.business_id,
@@ -438,10 +441,12 @@ export async function processMetaFirstSyncJob(input: {
       businessId: input.job.business_id,
       trigger: 'integration',
     });
+    }
   } catch (error) {
     console.error('First Meta history sync assessments failed:', error);
   }
 
+  await markIntegrationSynced(input.supabase, input.job.platform_integration_id);
   const completedAt = new Date().toISOString();
   await completeHistoricalSyncJob(input.supabase, {
     jobId: input.job.id,
@@ -456,7 +461,7 @@ export async function processMetaFirstSyncJob(input: {
     message: 'First history sync completed.',
   });
 
-  await enqueueShadowAfterSync(input.supabase, { businessId: input.job.business_id, integrationId: input.job.platform_integration_id,
+  if (!readSimulation(input.accessToken)) await enqueueShadowAfterSync(input.supabase, { businessId: input.job.business_id, integrationId: input.job.platform_integration_id,
     adAccountId: adAccount.id, syncJobId: input.job.id });
 
   return {

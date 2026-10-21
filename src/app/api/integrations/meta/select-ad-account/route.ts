@@ -1,3 +1,5 @@
+export const maxDuration = 300;
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import {
@@ -51,7 +53,7 @@ function getSelectionUserMessage(message: string): string {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { businessId } = await getRequiredAppContext();
+    const { businessId } = await getRequiredAppContext(false);
     const body = await request.json().catch(() => ({}));
     const integrationId =
       typeof body.integrationId === 'string' ? body.integrationId : null;
@@ -116,21 +118,21 @@ export async function POST(request: NextRequest) {
     let syncCoverage = result.syncCoverage;
     let firstSyncJob = result.firstSyncJob;
 
-    if (firstSyncJob?.jobId && firstSyncJob.status !== 'completed') {
+    if (result.syncJobId && firstSyncJob?.status !== 'completed') {
       const syncResult = await processMetaBackfillJobs({
         limit: 1,
-        targetJobId: firstSyncJob.jobId,
+        targetJobId: result.syncJobId,
       });
       const processedJobResult =
-        syncResult.results.find((item) => item.jobId === firstSyncJob?.jobId) ?? null;
+        syncResult.results.find((item) => item.jobId === result.syncJobId) ?? null;
 
-      const latestJob = await getAccountSyncJobById(supabase, firstSyncJob.jobId);
+      const latestJob = await getAccountSyncJobById(supabase, result.syncJobId);
 
       if (result.adAccountId) {
         syncCoverage = await getAdAccountSyncCoverage(supabase, result.adAccountId);
       }
 
-      if (latestJob) {
+      if (latestJob && firstSyncJob) {
         firstSyncJob = buildFirstSyncJobStatus(latestJob, syncCoverage);
       }
 

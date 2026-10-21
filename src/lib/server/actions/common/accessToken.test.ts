@@ -1,0 +1,34 @@
+import { beforeEach, it, expect, vi } from 'vitest';
+vi.mock('server-only', () => ({}));
+vi.mock('../../supabase/server', () => ({ createServerClient: vi.fn() }));
+vi.mock('../../supabase/admin', () => ({ createAdminClient: vi.fn() }));
+vi.mock('../app/context', () => ({ getRequiredAppContext: vi.fn() }));
+vi.mock('../../integrations/service', () => ({ getBusinessIntegrationById: vi.fn(), resolveIntegrationAccessToken: vi.fn() }));
+import { createServerClient } from '../../supabase/server';
+import { createAdminClient } from '../../supabase/admin';
+import { getRequiredAppContext } from '../app/context';
+import { getBusinessIntegrationById, resolveIntegrationAccessToken } from '../../integrations/service';
+import { getAccessToken } from './accessToken';
+beforeEach(() => { vi.resetAllMocks(); });
+it('authorizes the integration with the user client before a privileged token lookup', async () => {
+  const userClient = {} as Awaited<ReturnType<typeof createServerClient>>;
+  const adminClient = {} as ReturnType<typeof createAdminClient>;
+  vi.mocked(createServerClient).mockResolvedValue(userClient);
+  vi.mocked(createAdminClient).mockReturnValue(adminClient);
+  vi.mocked(getRequiredAppContext).mockResolvedValue({ businessId: 'business-a' } as Awaited<ReturnType<typeof getRequiredAppContext>>);
+  const integration = { platformKey: 'meta', isIntegrated: true } as NonNullable<Awaited<ReturnType<typeof getBusinessIntegrationById>>>;
+  vi.mocked(getBusinessIntegrationById).mockResolvedValue(integration);
+  vi.mocked(resolveIntegrationAccessToken).mockResolvedValue('test-token');
+  expect(await getAccessToken('integration-a')).toBe('test-token');
+  expect(getBusinessIntegrationById).toHaveBeenCalledWith(userClient, { businessId: 'business-a', integrationId: 'integration-a' });
+  expect(resolveIntegrationAccessToken).toHaveBeenCalledWith(adminClient, integration);
+});
+it('never constructs a privileged client for an inaccessible integration', async () => {
+  vi.mocked(getRequiredAppContext).mockResolvedValue({ businessId: 'business-a' } as Awaited<ReturnType<typeof getRequiredAppContext>>);
+  vi.mocked(getBusinessIntegrationById).mockResolvedValue(null);
+  const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+  await expect(getAccessToken('integration-b')).rejects.toThrow();
+  expect(createAdminClient).not.toHaveBeenCalled();
+  expect(resolveIntegrationAccessToken).not.toHaveBeenCalled();
+  errorLog.mockRestore();
+});

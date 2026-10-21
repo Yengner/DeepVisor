@@ -24,13 +24,14 @@ const snapshot = (overrides: Record<string, unknown> = {}) => ({ ...metrics, ad_
   first_day: '2026-01-01', last_day: '2026-01-14', day: '2026-01-14', breakdown_type: 'age_gender', dimension_1_key: 'age', dimension_1_value: '25-34', dimension_2_key: 'gender', dimension_2_value: 'female', ...overrides });
 let snapshots: ReturnType<typeof snapshot>[];
 let hourlyRows: Record<string, unknown>[];
+let dimensionCount = 1, failDimensionPage = false;
 let failAudience = false, failHourly = false, failMetrics = false, omitDay = false;
 const rpcCalls: Record<string, unknown>[] = [];
 const surfaceInput = { adsetInternalIds: ['set'], adInternalIds: [], adScopeOnly: false, isMeta: true, dateFrom: '2026-01-10', dateTo: '2026-01-11', timezone: 'America/New_York' };
 const query = () => parseReportQueryInput('business', { ad_account_id: 'account', date_from: '2026-01-10', date_to: '2026-01-11', compare: 'previous_period' });
 const options = { includeSurface: false, includeRanking: false, includeActiveDates: false, includeBreakdown: false };
 beforeEach(() => {
-  snapshots = [snapshot()]; hourlyRows = []; rpcCalls.length = 0;
+  snapshots = [snapshot()]; hourlyRows = []; rpcCalls.length = 0; dimensionCount = 1; failDimensionPage = false;
   failAudience = failHourly = failMetrics = omitDay = false;
   vi.mocked(createSupabaseClient).mockResolvedValue(client);
   transport.mockImplementation(async (url, init) => {
@@ -45,7 +46,10 @@ beforeEach(() => {
     if (table === 'ad_accounts') { expect(p.get('business_id')).toBe('eq.business'); return reply([account]); }
     if (['campaign_dims', 'adset_dims', 'ad_dims'].includes(table!)) {
       expect(p.get('ad_account_id')).toBe('in.(account)');
-      return reply(table === 'campaign_dims' ? [campaign] : table === 'adset_dims' ? [adset] : [ad]);
+      const offset = Number(p.get('offset') ?? 0), limit = Number(p.get('limit') ?? 1000);
+      if (failDimensionPage && offset > 0) return reply({ message: 'dimension page unavailable' }, 503);
+      const base = table === 'campaign_dims' ? campaign : table === 'adset_dims' ? adset : ad;
+      return reply(Array.from({ length: dimensionCount }, (_, i) => ({ ...base, id: i ? `${base.id}-${i}` : base.id, external_id: i ? `${base.external_id}-${i}` : base.external_id })).slice(offset, offset + limit));
     }
     if (table === 'get_report_metric_rows') {
       const args = JSON.parse(String(init?.body)); rpcCalls.push(args);
@@ -74,6 +78,18 @@ beforeEach(() => {
   });
 });
 describe('report repository correctness', () => {
+  it('paginates dimensions beyond the API row cap without losing filter options', async () => {
+    dimensionCount = 1201;
+    const filters = await getReportFilterOptions(query());
+    expect(filters.campaigns).toHaveLength(1201);
+    expect(filters.adsets).toHaveLength(1201);
+    expect(filters.ads).toHaveLength(1201);
+    expect(filters.ads.some(ad => ad.id === 'ad-external-1200')).toBe(true);
+  });
+  it('rejects a failed dimension page rather than returning a partial report', async () => {
+    dimensionCount = 1201; failDimensionPage = true;
+    await expect(getReportFilterOptions(query())).rejects.toMatchObject({ message: 'dimension page unavailable' });
+  });
   it('honors account date ranges and loads matching previous series without Max mode', async () => {
     const payload = await buildReportPayload(query(), client, options);
     expect(payload.query).toMatchObject({ dateFrom: '2026-01-10', dateTo: '2026-01-11', rangeMode: 'date_range', compareMode: 'previous_period' });

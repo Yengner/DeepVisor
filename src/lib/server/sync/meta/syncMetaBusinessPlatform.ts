@@ -1,3 +1,5 @@
+import { incrementalWindow } from './incrementalWindow';
+import { readSimulation } from '@/lib/server/integrations/simulation/meta';
 import 'server-only';
 import { enqueueShadowAfterSync } from '@/lib/server/decisions/shadow/service';
 
@@ -61,18 +63,7 @@ function resolvePerformanceWindow(input: {
     /^\d{4}-\d{2}-\d{2}$/.test(catchupAnchor) &&
     catchupAnchor <= todayIso
   ) {
-    return {
-      since: catchupAnchor,
-      until: todayIso,
-      backfillDays:
-        Math.max(
-          1,
-          Math.floor(
-            (today.getTime() - new Date(`${catchupAnchor}T00:00:00.000Z`).getTime()) /
-              86_400_000
-          ) + 1
-        ),
-    };
+    return incrementalWindow(catchupAnchor, todayIso, input.backfillDays);
   }
 
   if (input.syncMode === 'seed_recent') {
@@ -117,7 +108,8 @@ async function runMetaSyncStage<T>(label: string, operation: () => Promise<T>): 
   try {
     return await operation();
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unexpected Meta sync error';
+    const message = error instanceof Error ? error.message :
+      typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : 'Unexpected Meta sync error';
     throw new Error(`Meta ${label} sync failed: ${message}`);
   }
 }
@@ -436,7 +428,7 @@ export async function syncMetaBusinessPlatform(input: {
       }),
     ]);
 
-    await enqueueShadowAfterSync(input.supabase, { businessId: input.businessId, integrationId: input.platformIntegrationId,
+    if (!readSimulation(input.accessToken)) await enqueueShadowAfterSync(input.supabase, { businessId: input.businessId, integrationId: input.platformIntegrationId,
       adAccountId: primaryAdAccount.id, syncJobId: job.id });
 
     return {

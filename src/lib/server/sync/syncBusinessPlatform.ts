@@ -1,3 +1,4 @@
+import { readSimulation } from '@/lib/server/integrations/simulation/meta';
 import 'server-only';
 
 import { createAdminClient } from '@/lib/server/supabase/admin';
@@ -251,7 +252,7 @@ export async function syncBusinessPlatform(input: {
     throw new Error('Platform integration is not eligible for sync');
   }
 
-  const accessToken = await resolveIntegrationAccessToken(supabase, integration);
+  const accessToken = await resolveIntegrationAccessToken(supabase, integration, input.businessId);
   if (!accessToken) {
     await markIntegrationError(supabase, integration.id, 'Missing access token');
     throw new Error('Missing access token');
@@ -289,7 +290,7 @@ export async function syncBusinessPlatform(input: {
       throw new Error(`Unsupported sync platform: ${integration.platformKey}`);
     }
 
-    if (integration.platformKey === 'meta' && primaryExternalAccountId) {
+    if (integration.platformKey === 'meta' && primaryExternalAccountId && !readSimulation(accessToken)) {
       const { data: syncedAccount, error: syncedAccountError } = await supabase
         .from('ad_accounts')
         .select('id')

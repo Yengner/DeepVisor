@@ -1,4 +1,5 @@
 "use server";
+import { createAdminClient } from '@/lib/server/supabase/admin';
 
 import { getRequiredAppContext } from "@/lib/server/actions/app/context";
 import {
@@ -215,7 +216,7 @@ export async function getMetaWhatsAppPhoneNumbers({
             });
         }
 
-        const accessToken = await resolveIntegrationAccessToken(supabase, integration);
+        const accessToken = await resolveIntegrationAccessToken(createAdminClient(), integration);
         if (!accessToken) {
             return fail('Missing Meta access token.', ErrorCode.INTEGRATION_ERROR, {
                 userMessage: 'Reconnect Meta before choosing a WhatsApp Business number.',

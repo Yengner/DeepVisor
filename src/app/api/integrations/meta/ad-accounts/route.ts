@@ -9,7 +9,7 @@ import { ErrorCode, fail, ok } from '@/lib/shared';
 
 export async function GET(request: NextRequest) {
   try {
-    const { businessId } = await getRequiredAppContext();
+    const { businessId } = await getRequiredAppContext(false);
     const integrationId = request.nextUrl.searchParams.get('integrationId');
 
     if (!integrationId) {

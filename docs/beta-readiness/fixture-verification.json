@@ -1,0 +1,62 @@
+{
+  "project": "gkdyyjqepzayjdpvqnja",
+  "asOf": "2026-10-20",
+  "evidence": [
+    {
+      "business": "a",
+      "userId": "5efb0bcd-3ac9-4d42-ad28-00bad6a42610",
+      "businessId": "f6f96cff-bde3-4627-a613-4f16bfdc1d7c",
+      "accountId": "7e365a93-b133-4574-aa86-89deb51030bf",
+      "adsetDailyRows": 354,
+      "totals": {
+        "spend": 10942,
+        "impressions": 1094200,
+        "reach": 4320,
+        "clicks": 32826,
+        "inline_link_clicks": 21884,
+        "leads": 690,
+        "messages": 611,
+        "calls": 0
+      },
+      "recent7": {
+        "spend": 994,
+        "impressions": 99400,
+        "reach": 4320,
+        "clicks": 2982,
+        "inline_link_clicks": 1988,
+        "leads": 57,
+        "messages": 52,
+        "calls": 0
+      },
+      "normalClientIsolation": "passed"
+    },
+    {
+      "business": "b",
+      "userId": "cfd21931-3866-4c60-a458-7ace7279388a",
+      "businessId": "ff73ea93-7aaa-4d62-afc4-b98fe206f657",
+      "accountId": "98de1118-7867-4d20-aea2-1f1a92df6630",
+      "adsetDailyRows": 180,
+      "totals": {
+        "spend": 7428,
+        "impressions": 742800,
+        "reach": 4320,
+        "clicks": 22284,
+        "inline_link_clicks": 14856,
+        "leads": 532,
+        "messages": 532,
+        "calls": 0
+      },
+      "recent7": {
+        "spend": 780,
+        "impressions": 78000,
+        "reach": 4320,
+        "clicks": 2340,
+        "inline_link_clicks": 1560,
+        "leads": 47,
+        "messages": 47,
+        "calls": 0
+      },
+      "normalClientIsolation": "passed"
+    }
+  ]
+}

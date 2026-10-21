@@ -1,0 +1,13 @@
+[
+  "a: selected account and sync completed follow-up",
+  "a: persisted Dashboard loaded and refreshed",
+  "a: logout removes access to protected Dashboard",
+  "b: fresh signup through browser",
+  "b: unverified login rejected",
+  "b: real verification token consumed by application callback (email transport untested)",
+  "b: onboarding draft, refresh and backward navigation persisted",
+  "b: skipped Meta and reached disconnected Dashboard",
+  "b: single account automatic selection and sync completed",
+  "b: persisted Dashboard loaded and refreshed",
+  "b: logout removes access to protected Dashboard"
+]

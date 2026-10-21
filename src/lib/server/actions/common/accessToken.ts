@@ -1,3 +1,4 @@
+import { createAdminClient } from '@/lib/server/supabase/admin';
 import { createServerClient as createSupabaseClient } from '../../supabase/server'
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import {
@@ -21,7 +22,7 @@ export async function getAccessToken(platformId: string): Promise<string> {
             );
         }
 
-        const accessToken = await resolveIntegrationAccessToken(supabase, integration);
+        const accessToken = await resolveIntegrationAccessToken(createAdminClient(), integration);
         if (!accessToken) {
             throw new Error(
                 "We couldn't access your Meta account. Please reconnect your account."

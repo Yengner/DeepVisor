@@ -20,7 +20,7 @@ export async function GET(
   context: { params: Promise<{ jobId: string }> }
 ) {
   try {
-    const { businessId } = await getRequiredAppContext();
+    const { businessId } = await getRequiredAppContext(false);
     const { jobId } = await context.params;
 
     if (!jobId) {
