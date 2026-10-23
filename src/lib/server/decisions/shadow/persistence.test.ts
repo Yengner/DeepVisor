@@ -35,7 +35,7 @@ beforeAll(async () => {
       ('${entity}','${business}','${business}','adset','123','${campaign}','ACTIVE','{"daily_budget":"10000","effective_status":"ACTIVE"}');
     insert into public.ad_entity_performance_daily values('${entity}','${business}','adset',current_date-1,100,1000,2000,100,90,10,1,0,now());
   `);
-  for (const file of ['20261006000000_add_v2_decision_persistence.sql','20261008000000_add_shadow_evaluation_jobs.sql']) {
+  for (const file of ['20261006000000_add_v2_decision_persistence.sql','20261008000000_add_shadow_evaluation_jobs.sql','20261022061347_review_evaluation_pipeline.sql','20261022220851_normalize_evaluation_delivery_status.sql']) {
     await db.exec(readFileSync(new URL(`../../../../../supabase/migrations/${file}`, import.meta.url), 'utf8'));
   }
   await db.exec(`insert into ai.autonomy_policies(business_id,mode) values('${business}','observe')`);
@@ -45,6 +45,12 @@ afterEach(async () => { await db.exec('rollback; reset role'); });
 afterAll(async () => { await db?.close(); });
 
 describe('durable shadow jobs', () => {
+  it('queues normalized active sync rows and excludes paused rows', async () => {
+    await db.exec("update public.ad_entities set status=lower(status)");
+    expect((await enqueue()).rows[0].count).toBe(1);
+    await db.exec("update public.ad_entities set status='paused' where entity_level='adset'");
+    expect((await enqueue('v2')).rows[0].count).toBe(0);
+  });
   it('deduplicates the same normalized source even when refresh timestamps change', async () => {
     expect((await enqueue()).rows[0].count).toBe(1);
     await db.exec("update public.ad_entity_performance_daily set updated_at=now()+interval '1 second'");
@@ -110,5 +116,32 @@ describe('durable shadow jobs', () => {
     expect((await db.query('select * from ai.shadow_evaluation_jobs')).rows).toHaveLength(0);
     await db.exec(`set local test.organization='${business}'`);
     expect((await db.query('select * from ai.shadow_evaluation_jobs')).rows).toHaveLength(1);
+  });
+});
+
+
+describe('Review queue separation and persistence', () => {
+  it('queues fresh Review work without allowing the Shadow worker to claim it', async () => {
+    await db.exec("update ai.autonomy_policies set mode='approval_required'; update public.ad_entities set status=lower(status)");
+    expect((await enqueue()).rows[0].count).toBe(0);
+    const args=[business,business,business,business,'review:1'];
+    expect((await db.query<{n:number}>('select ai.enqueue_meta_review($1,$2,$3,$4,$5) n',args)).rows[0].n).toBe(1);
+    expect((await db.query<{n:number}>('select ai.enqueue_meta_review($1,$2,$3,$4,$5) n',args)).rows[0].n).toBe(0);
+    expect(await claim()).toBeNull();
+    const job=(await db.query<{j:{id:string;feature_snapshot_id:string;decision_run_id:string}}>('select ai.claim_meta_review() j')).rows[0].j;
+    await db.query(`insert into ai.feature_snapshots(id,business_id,platform_integration_id,ad_account_id,entity_type,entity_id,feature_schema_version,feature_json) values($1,$2,$2,$2,'adset','123',1,'{}')`,[job.feature_snapshot_id,business]);
+    await db.query(`insert into ai.decision_runs(id,business_id,feature_snapshot_id,provider,status,decision_json) values($1,$2,$3,'mock','completed','{"result":{"decision":"REDUCE_BUDGET"}}')`,[job.decision_run_id,business,job.feature_snapshot_id]);
+    const action={type:'REDUCE_BUDGET',targetBudgetMinor:9500};
+    await db.query('select ai.finish_meta_review($1,$2,$3,null)',[job.id,{mode:'REVIEW',policy:{outcome:'REQUIRE_APPROVAL',reason:'REVIEW_MODE',risk:'low',action}}, {actionType:'REDUCE_BUDGET',currentState:{metaState:{},budgetMinor:10000},proposedState:action}]);
+    expect((await db.query('select policy_result_json from ai.action_proposals')).rows[0]).toMatchObject({policy_result_json:{outcome:'REQUIRE_APPROVAL',reason:'REVIEW_MODE'}});
+    expect((await db.query('select * from ai.executed_actions')).rows).toHaveLength(0);
+  });
+  it('cannot finalize a Shadow job as Review', async () => {
+    await enqueue(); const job=await claim();
+    await expect(db.query('select ai.finish_meta_review($1,null,null,null)',[job!.id])).rejects.toThrow('Review job');
+  });
+  it.each(['anon','authenticated'])('denies Review worker RPC to %s',async role=>{
+    await db.exec(`set local role ${role}`);
+    await expect(db.query('select ai.claim_meta_review()')).rejects.toMatchObject({code:'42501'});
   });
 });

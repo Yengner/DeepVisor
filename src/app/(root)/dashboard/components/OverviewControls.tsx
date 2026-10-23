@@ -29,7 +29,7 @@ export function PeriodControl({ period }: { period: Period }) {
     />
   );
 }
-export function RefreshOverview({ disabled = false }: { disabled?: boolean }) {
+export function RefreshOverview({ disabled = false, onCompleted, label = 'Refresh Meta data' }: { disabled?: boolean; onCompleted?: () => void; label?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -66,6 +66,7 @@ export function RefreshOverview({ disabled = false }: { disabled?: boolean }) {
           setMessage(status.unchanged === true
             ? 'Refresh completed. Dashboard statistics are unchanged.'
             : `Meta data updated · ${new Date(status.completedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+          onCompleted?.();
           router.refresh();
           return;
         }
@@ -86,9 +87,9 @@ export function RefreshOverview({ disabled = false }: { disabled?: boolean }) {
   };
   return (
     <div>
-      <Tooltip label={loading ? "Refreshing Meta data…" : "Refresh Meta data"}>
+      <Tooltip label={loading ? "Refreshing Meta data…" : label}>
         <ActionIcon
-          aria-label={loading ? "Refreshing Meta data…" : "Refresh Meta data"}
+          aria-label={loading ? "Refreshing Meta data…" : label}
           variant="default"
           size="lg"
           radius="sm"

@@ -1,5 +1,20 @@
 import { buildReportUrl } from '@/lib/shared/utils/reports';
 import type { ReportPayload, ReportFilterOptions } from '@/lib/server/reports/types';
+/** Preserve cookie-resolved scope before applying a user filter mutation. */
+export function updateReportParams(search: string, query: ReportPayload['query'], mutate: (params: URLSearchParams) => void) {
+  const params = new URLSearchParams(search);
+  if (query.platformIntegrationId && !params.has('platform_integration_id')) {
+    params.set('platform_integration_id', query.platformIntegrationId);
+  }
+  for (const [key, ids] of [['ad_account_id', query.adAccountIds], ['campaign_id', query.campaignIds], ['adset_id', query.adsetIds], ['ad_id', query.adIds]] as const) {
+    if (!params.has(key) && ids.length) params.set(key, ids.join(','));
+  }
+  // Explicit clearing/switching remains authoritative, so mutate after seeding.
+  mutate(params);
+  params.set('scope', resolveScope(params));
+  return params;
+}
+
 export function resolveScope(params: URLSearchParams) {
   if (params.get('ad_id')) {
     return 'ad';

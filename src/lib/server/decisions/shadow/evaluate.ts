@@ -53,13 +53,15 @@ function currentEntity(job: ShadowJob): CurrentEntityState | null {
   if (candidates.length !== 1 || !entity.campaignId) return null;
   const budget = candidates[0];
   return { businessId: job.business_id, adAccountId: job.ad_account_id, entityId: job.entity_id, platform: 'meta', entityType: 'adset',
-    status: entity.status === 'ACTIVE' && entity.effectiveStatus === 'ACTIVE' && entity.campaignStatus === 'ACTIVE' ? 'active' : 'paused',
+    status: [entity.status, entity.effectiveStatus, entity.campaignStatus].every(
+      status => typeof status === 'string' && status.trim().toUpperCase() === 'ACTIVE'
+    ) ? 'active' : 'paused',
     locked: bounds.lockedEntityIds.includes(job.entity_id) || bounds.lockedEntityIds.includes(entity.campaignId),
     budgetOwner: budget.owner, budgetMinor: budget.amount, budgetPeriod: budget.period,
     currency: source.currency, timeZone: source.timeZone, observedAt: job.source_synced_at };
 }
 
-export function evaluateShadowPolicy(job: ShadowJob, decision: DecisionResult, now: Date) {
+export function evaluationPolicyInput(job: ShadowJob, decision: DecisionResult) {
   const saved = job.source_json.policy;
   const bounds = record(saved.budget_boundaries_json);
   const cooldown = record(saved.cooldown_config_json);
@@ -82,6 +84,13 @@ export function evaluateShadowPolicy(job: ShadowJob, decision: DecisionResult, n
   const input = { now: policyTime.toISOString(), policy, entity, snapshot, decision, proposedAction,
     history: { businessId: job.business_id, complete: job.history.length <= 10000, since: new Date(policyTime.getTime() - 366 * 86400000).toISOString(), until: policyTime.toISOString(),
       actions: job.history.filter((a) => ['pending','running','unknown'].includes(a.status) || Date.parse(a.attemptedAt) >= policyTime.getTime() - 366 * 86400000) } };
+  return input;
+}
+
+export function evaluateShadowPolicy(job: ShadowJob, decision: DecisionResult, now: Date) {
+  const input = evaluationPolicyInput(job, decision);
+  const { policy, entity, proposedAction, snapshot } = input;
+  const policyTime = new Date(input.now);
   const engine = new PolicyEngine();
   const shadowPolicy = engine.evaluate(input);
   // This counterfactual records required human review, never enables an execution mode.

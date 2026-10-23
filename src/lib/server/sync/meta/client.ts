@@ -44,14 +44,14 @@ function startOfUtcDay(date: Date): Date {
   return copy;
 }
 
-export function resolveMetaBackfillWindow(days: number): {
+export function resolveMetaBackfillWindow(days: number, options: { includePartialDayBuffer?: boolean; accountDay?: string } = {}): {
   since: string;
   until: string;
   backfillDays: number;
 } {
-  const untilDate = startOfUtcDay(new Date());
+  const untilDate = startOfUtcDay(options.accountDay ? new Date(`${options.accountDay}T00:00:00Z`) : new Date());
   const requestedSinceDate = startOfUtcDay(new Date(untilDate));
-  requestedSinceDate.setUTCDate(requestedSinceDate.getUTCDate() - Math.max(days - 1, 0));
+  requestedSinceDate.setUTCDate(requestedSinceDate.getUTCDate() - Math.max(days - (options.includePartialDayBuffer ? 0 : 1), 0));
 
   const earliestAllowedSinceDate = startOfUtcDay(new Date(untilDate));
   earliestAllowedSinceDate.setUTCMonth(

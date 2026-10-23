@@ -1,4 +1,6 @@
 import 'server-only';
+import { runReviewJob } from '../review/service';
+import { reviewVersion } from '../review/evaluate';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/shared/types/supabase';
 import { createAdminClient } from '../../supabase/admin';
@@ -12,9 +14,10 @@ import { assertFresh, evaluationVersion, evaluateShadowPolicy, featureSnapshot, 
 
 type Client = SupabaseClient<Database>;
 const enabled = () => process.env.DEEPVISOR_SHADOW_ENABLED === 'true';
-function provider(): DecisionProvider {
-  if (process.env.DEEPVISOR_SHADOW_PROVIDER === 'jev') return new JevDecisionProvider();
-  if (process.env.DEEPVISOR_SHADOW_PROVIDER === 'mock') return new DeterministicDecisionProvider();
+function provider(mode: 'SHADOW' | 'REVIEW' = 'SHADOW'): DecisionProvider {
+  const selected = process.env[`DEEPVISOR_${mode}_PROVIDER`];
+  if (selected === 'jev') return new JevDecisionProvider();
+  if (selected === 'mock' && process.env.NODE_ENV !== 'production') return new DeterministicDecisionProvider();
   throw new Error('SHADOW_PROVIDER_NOT_CONFIGURED');
 }
 function log(event: string, fields: Record<string, unknown>) {
@@ -22,7 +25,18 @@ function log(event: string, fields: Record<string, unknown>) {
 }
 
 export async function enqueueShadowAfterSync(client: Client, input: { businessId: string; integrationId: string; adAccountId: string; syncJobId: string }): Promise<number> {
-  if (!enabled()) return 0;
+  let count = 0;
+  if (process.env.DEEPVISOR_REVIEW_ENABLED === 'true') {
+    try {
+      const { data, error } = await client.schema('ai').rpc('enqueue_meta_review', {
+        p_business: input.businessId, p_integration: input.integrationId, p_account: input.adAccountId,
+        p_sync_job: input.syncJobId, p_version: reviewVersion(provider('REVIEW').identity),
+      }).abortSignal(AbortSignal.timeout(5000));
+      if (error) throw error;
+      count = data ?? 0;
+    } catch { log('review_enqueue_failed', { ...input, code: 'REVIEW_ENQUEUE_FAILED' }); }
+  }
+  if (!enabled()) return count;
   try {
     const version = evaluationVersion(provider().identity);
     const { data, error } = await client.schema('ai').rpc('enqueue_meta_shadow', {
@@ -31,10 +45,10 @@ export async function enqueueShadowAfterSync(client: Client, input: { businessId
     }).abortSignal(AbortSignal.timeout(5000));
     if (error) throw error;
     log('enqueued', { ...input, count: data ?? 0 });
-    return data ?? 0;
+    return count + (data ?? 0);
   } catch {
     log('enqueue_failed', { ...input, code: 'SHADOW_ENQUEUE_FAILED' });
-    return 0;
+    return count;
   }
 }
 
@@ -72,6 +86,15 @@ export async function runShadowJob(client: Client, job: ShadowJob, decisionProvi
 
 /** Separate post-response work; failures never propagate into Meta sync. */
 export async function drainShadowJobs(): Promise<void> {
+  if (process.env.DEEPVISOR_REVIEW_ENABLED === 'true') {
+    try {
+      const decisionProvider = provider('REVIEW');
+      const client = createAdminClient();
+      const { data, error } = await client.schema('ai').rpc('claim_meta_review', {});
+      if (error) throw error;
+      if (data) await runReviewJob(client, data as unknown as ShadowJob, decisionProvider);
+    } catch { log('review_worker_failed', { code: 'REVIEW_WORKER_FAILED' }); }
+  }
   if (!enabled()) return;
   try {
     const decisionProvider = provider();

@@ -1,5 +1,6 @@
 'use client';
 
+import { BrandLockup, BrandMark } from '@/components/brand/Brand';
 import { type FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -11,7 +12,6 @@ import {
   Stack,
   Text,
   TextInput,
-  ThemeIcon,
   Title,
 } from '@mantine/core';
 import {
@@ -40,8 +40,7 @@ function IntelligencePanel({ type }: AuthFormProps) {
   return (
     <section className={classes.intelligencePanel}>
       <div className={classes.panelBrand}>
-        <span className={classes.panelBrandMark}>DV</span>
-        <span>DEEPVISOR / AD INTELLIGENCE</span>
+        <BrandLockup inverse />
       </div>
 
       <div className={classes.panelMessage}>
@@ -240,9 +239,7 @@ export default function AuthForm({ type }: AuthFormProps) {
         <Paper radius="sm" p="xl" withBorder className={classes.loginCard}>
           <Stack gap="lg">
             <div className={classes.authHeading}>
-              <ThemeIcon size={42} radius="sm" color="green" variant="light" className={classes.authIcon}>
-                <IconShieldCheck size={22} />
-              </ThemeIcon>
+              <BrandMark tone="light" className="h-10 w-10" />
               <Title order={2} mt="md">
                 Welcome back
               </Title>
@@ -332,9 +329,7 @@ export default function AuthForm({ type }: AuthFormProps) {
       <Paper radius="sm" p="xl" withBorder className={classes.flowCard}>
         <Stack gap="lg">
           <div className={classes.authHeading}>
-            <ThemeIcon size={42} radius="sm" color="green" variant="light" className={classes.authIcon}>
-              <IconChartDots size={22} />
-            </ThemeIcon>
+            <BrandMark tone="light" className="h-10 w-10" />
             <Title order={2} mt="md">Create your account</Title>
             <Text c="dimmed" mt={6}>
               Business details take one short step after signup.

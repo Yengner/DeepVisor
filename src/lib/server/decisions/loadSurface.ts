@@ -30,10 +30,13 @@ export async function loadDecisionSurface(client: SupabaseClient<Database>, busi
     accountIds.length ? client.from('adset_dims').select('id,external_id,name,ad_account_id').in('ad_account_id', accountIds) : Promise.resolve({ data: [], error: null }),
   ]);
   if (executionResult.error) throw executionResult.error;
+  const executionIds = (executionResult.data ?? []).map(e => e.id);
+  const outcomes = executionIds.length ? await ai.from('action_outcomes').select('*').eq('business_id', businessId).in('executed_action_id', executionIds).order('measurement_horizon_hours') : { data: [], error: null };
+  if (outcomes.error) throw outcomes.error;
   const cards = runs.map((run) => {
     const snapshot = snapshots.find((s) => s.id === run.feature_snapshot_id);
     const entity = entityResult.data?.find((e) => e.ad_account_id === snapshot?.ad_account_id && (e.external_id === snapshot?.entity_id || e.id === snapshot?.entity_id));
-    return toDecisionCard({ run, snapshot, proposals, executions: executionResult.data ?? [], policy,
+    return toDecisionCard({ run, snapshot, proposals, executions: executionResult.data ?? [], outcomes: outcomes.data ?? [], policy,
       entityName: entity?.name ?? undefined, accountName: accountResult.data?.find((a) => a.id === snapshot?.ad_account_id)?.name ?? undefined });
   });
   return { cards, hasNext: (runsResult.data?.length ?? 0) > 20, findingsUnavailable: findingsResult.failed,

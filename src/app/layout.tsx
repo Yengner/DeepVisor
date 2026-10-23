@@ -21,7 +21,15 @@ const displayFont = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "DeepVisor - Empower Your Business with Advanced Ad Insights",
+  title: "DeepVisor — Advertising Intelligence",
+  applicationName: "DeepVisor",
+  icons: {
+    icon: [
+      { url: "/images/brand/deepvisor-app-icon-light-128.png", type: "image/png", media: "(prefers-color-scheme: light)" },
+      { url: "/images/brand/deepvisor-app-icon-dark-128.png", type: "image/png", media: "(prefers-color-scheme: dark)" },
+    ],
+    apple: "/apple-icon.png",
+  },
   description: "Helping businesses grow with advanced ad tools and insights.",
 };
 

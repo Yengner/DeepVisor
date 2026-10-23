@@ -1,6 +1,5 @@
 'use client';
 import product from '@/components/product/Product.module.css';
-import { ownerMessages } from '@/components/product/presentation';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -24,7 +23,6 @@ import {
   IconChevronLeft,
   IconFilterOff,
   IconPlus,
-  IconRefresh,
   IconSearch,
   IconTable,
   IconUsers,
@@ -36,12 +34,11 @@ import { activeDeliveryFirst, campaignTableSelection } from './delivery';
 import AdsTable from './AdsTable';
 import RunAgainSheet, { type RunAgainSource } from './RunAgainSheet';
 import { EmptyCampaignState } from './EmptyStates';
-import { formatRetryDelay } from '@/lib/shared';
+import { RefreshOverview } from '@/app/(root)/dashboard/components/OverviewControls';
 import type { AdLifetimeRow, AdSetLifetimeRow } from '@/lib/server/data';
-import type { RefreshIntegrationsResponse } from '@/lib/shared/types/integrations';
 import type { FormattedCampaign } from '@/app/(root)/campaigns/page';
 import { fetchAdSetsForCampaign, fetchAdsForAdset } from '@/lib/server/data/queries/components.query';
-import { formatCurrencyAmount } from '@/lib/shared';
+import { formatRecordedCurrency as formatCurrencyAmount } from './metrics';
 import classes from './CampaignDashboard.module.css';
 
 type TabKey = 'campaigns' | 'adsets' | 'ads';
@@ -83,15 +80,15 @@ function isTabKey(value: string | null): value is TabKey {
   return value === 'campaigns' || value === 'adsets' || value === 'ads';
 }
 
-function formatCompactNumber(value: number): string {
-  if (!Number.isFinite(value)) return '0';
+function formatCompactNumber(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '—';
   if (Math.abs(value) >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
   if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(1)}K`;
   return Math.round(value).toLocaleString();
 }
 
 function campaignResults(campaign: FormattedCampaign): number {
-  return Number(campaign.leads || 0) + Number(campaign.messages || 0);
+  return Number(campaign.leads || 0) + Number(campaign.messages || 0) + Number(campaign.calls || 0);
 }
 
 function getPlatformColor(platformName: string): string {
@@ -116,7 +113,6 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     adAccountId,
     currencyCode,
     accountTimezone,
-    accountMetrics,
     initialSelection,
     initialAdSets,
     initialAds,
@@ -165,13 +161,9 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     return seed;
   });
 
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [adsetsLoading, setAdsetsLoading] = useState(false);
   const [adsLoading, setAdsLoading] = useState(false);
-  const [refreshFeedback, setRefreshFeedback] = useState<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
+
   const [drilldownError, setDrilldownError] = useState<{
     scope: 'adsets' | 'ads';
     message: string;
@@ -219,10 +211,11 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   const accountName = campaignData[0]?.accountName ?? 'Selected ad account';
 
   const accountSummary = useMemo(() => {
-    const totalResults = Number(accountMetrics.leads || 0) + Number(accountMetrics.messages || 0);
+    const observed = campaignData.filter(c => c.metricsAvailable !== false);
+    const totalResults = observed.length ? observed.reduce((sum, c) => sum + campaignResults(c), 0) : null;
     const activeCampaigns = campaignData.filter((campaign) => campaign.delivery).length;
-    const spend = Number(accountMetrics.spend || 0);
-    const costPerResult = totalResults > 0 ? spend / totalResults : 0;
+    const spend = observed.length ? observed.reduce((sum, c) => sum + c.spend, 0) : null;
+    const costPerResult = totalResults && totalResults > 0 && spend !== null ? spend / totalResults : null;
 
     return {
       totalResults,
@@ -231,21 +224,21 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
       costPerResult,
       spend,
     };
-  }, [accountMetrics, campaignData]);
+  }, [campaignData]);
 
   const layerSummary = useMemo(() => {
     if (activeTab === 'adsets') {
       const spend = selectedCampaignAdSets.reduce((sum, item) => sum + Number(item.spend || 0), 0);
       const results = selectedCampaignAdSets.reduce(
-        (sum, item) => sum + Number(item.leads || 0) + Number(item.messages || 0),
+        (sum, item) => sum + Number(item.leads || 0) + Number(item.messages || 0) + Number(item.calls || 0),
         0
       );
 
       return {
         label: 'Ad sets',
         count: selectedCampaignAdSets.length,
-        spend,
-        results,
+        spend: selectedCampaignAdSets.some(item => item.metricsAvailable !== false) ? spend : null,
+        results: selectedCampaignAdSets.some(item => item.metricsAvailable !== false) ? results : null,
         helper: selectedCampaign
           ? `Showing ad sets inside ${selectedCampaign.name}`
           : 'Select a campaign to review ad sets',
@@ -259,15 +252,15 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     if (activeTab === 'ads') {
       const spend = selectedAdSetAds.reduce((sum, item) => sum + Number(item.spend || 0), 0);
       const results = selectedAdSetAds.reduce(
-        (sum, item) => sum + Number(item.leads || 0) + Number(item.messages || 0),
+        (sum, item) => sum + Number(item.leads || 0) + Number(item.messages || 0) + Number(item.calls || 0),
         0
       );
 
       return {
         label: 'Ads',
         count: selectedAdSetAds.length,
-        spend,
-        results,
+        spend: selectedAdSetAds.some(item => item.metricsAvailable !== false) ? spend : null,
+        results: selectedAdSetAds.some(item => item.metricsAvailable !== false) ? results : null,
         helper: selectedAdSet
           ? `Showing ads inside ${selectedAdSet.name}`
           : 'Select an ad set to review ads',
@@ -284,9 +277,9 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     return {
       label: 'Campaigns',
       count: filteredCampaigns.length,
-      spend,
-      results,
-      helper: 'Campaign-level table for the selected ad account',
+      spend: filteredCampaigns.some(item => item.metricsAvailable !== false) ? spend : null,
+      results: filteredCampaigns.some(item => item.metricsAvailable !== false) ? results : null,
+      helper: 'Saved campaign history for the selected ad account · dates shown per row',
       createLabel: 'Create campaign',
       createHref: `/campaigns/create?platform=${platform.id}`,
     };
@@ -326,7 +319,9 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     if (activeTab) sp.set('tab', activeTab);
 
     const query = sp.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    // These selections are already loaded by the scoped drilldown actions. Avoid
+    // a second server navigation competing with those actions on every click.
+    window.history.replaceState(null, '', query ? `${pathname}?${query}` : pathname);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCampaignId, selectedAdSetId, activeTab]);
 
@@ -426,45 +421,6 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     };
   }, [activeTab, selectedAdSetId, adAccountId, adsByAdset]);
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    setRefreshFeedback(null);
-
-    try {
-      const response = await fetch('/api/sync/refresh', {
-        method: 'POST',
-      });
-      const result = (await response.json()) as RefreshIntegrationsResponse;
-
-      if (!response.ok || !result.success) {
-        if (response.status === 429) {
-          throw new Error(result.message || formatRetryDelay(result.retryAfterMs));
-        }
-
-        throw new Error(result.message || 'Failed to refresh campaign data');
-      }
-
-      setAdSetsByCampaign({});
-      setAdsByAdset({});
-      setRefreshFeedback({
-        type: 'success',
-        message:
-          result.message ??
-          `Sync completed: ${result.refreshedCount} updated, ${result.failedCount} failed.`,
-      });
-      router.refresh();
-    } catch (error) {
-      console.error('Error refreshing campaigns data:', error);
-      setRefreshFeedback({
-        type: 'error',
-        message:
-          ownerMessages.refresh,
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   const handleOpenCampaign = (campaignId: string) => {
     setSelectedCampaignId(campaignId);
     setActiveTab('adsets');
@@ -485,7 +441,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
       status: adSet.status,
       objective: adSet.objective || adSet.optimization_goal || undefined,
       spend: Number(adSet.spend || 0),
-      results: Number(adSet.leads || 0) + Number(adSet.messages || 0),
+      results: Number(adSet.leads || 0) + Number(adSet.messages || 0) + Number(adSet.calls || 0),
       ctr: adSet.ctr != null && Number.isFinite(Number(adSet.ctr)) ? Number(adSet.ctr) : null,
       activityStart: adSet.start_date,
       activityEnd: adSet.end_date,
@@ -509,7 +465,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
       status: ad.status,
       objective: parentAdSet?.objective || parentAdSet?.optimization_goal || parentCampaign?.objective,
       spend: Number(ad.spend || 0),
-      results: Number(ad.leads || 0) + Number(ad.messages || 0),
+      results: Number(ad.leads || 0) + Number(ad.messages || 0) + Number(ad.calls || 0),
       ctr: ad.ctr != null && Number.isFinite(Number(ad.ctr)) ? Number(ad.ctr) : null,
       activityStart: ad.start_date,
       activityEnd: ad.end_date,
@@ -530,20 +486,6 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   return (
     <div className={`${classes.pageShell} ${product.page} campaigns-page-shell`}>
       <Card withBorder radius="xl" p={0} className={classes.tableSurface}>
-        {refreshFeedback ? (
-          <Alert
-            color={refreshFeedback.type === 'success' ? 'green' : 'red'}
-            icon={<IconRefresh size={16} />}
-            radius={0}
-            className={classes.feedback}
-            withCloseButton
-            closeButtonLabel="Dismiss sync notification"
-            onClose={() => setRefreshFeedback(null)}
-          >
-            {refreshFeedback.message}
-          </Alert>
-        ) : null}
-
         {drilldownError?.scope === activeTab ? (
           <Alert
             color="red"
@@ -593,13 +535,13 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                     {props.deliveryState.available ? accountSummary.pausedCampaigns : '—'} without active ads
                   </Badge>
                   <Badge color="gray" variant="light">
-                    {formatCurrencyAmount(accountSummary.spend, currencyCode)} spend
+                    {accountSummary.spend === null ? '—' : formatCurrencyAmount(accountSummary.spend, currencyCode)} spend
                   </Badge>
                   <Badge color="gray" variant="light">
                     {formatCompactNumber(accountSummary.totalResults)} results
                   </Badge>
                   <Badge color="gray" variant="light">
-                    {formatCurrencyAmount(accountSummary.costPerResult, currencyCode)} / result
+                    {accountSummary.costPerResult === null ? '—' : formatCurrencyAmount(accountSummary.costPerResult, currencyCode)} / result
                   </Badge>
                 </Group>
               </div>
@@ -641,19 +583,10 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                   </Button>
                 )}
 
-                <Tooltip label="Refresh data">
-                  <ActionIcon
-                    aria-label="Refresh campaign data"
-                    onClick={handleRefresh}
-                    loading={isRefreshing}
-                    variant="light"
-                    color="gray"
-                    size="lg"
-                    radius="xl"
-                  >
-                    <IconRefresh size={18} />
-                  </ActionIcon>
-                </Tooltip>
+                <RefreshOverview label="Refresh campaign data" onCompleted={() => {
+                  setAdSetsByCampaign({});
+                  setAdsByAdset({});
+                }} />
               </Group>
             </Group>
 

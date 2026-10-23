@@ -1,12 +1,11 @@
 'use client';
 
+import { MediaImage } from './exploration/AdvertisingExplorer';
 import { DeliveryIndicator } from './DeliveryIndicator';
 
 import type { AdLifetimeRow } from '@/lib/server/data';
-import { asRecord, asString } from '@/lib/shared/utils/format';
 import {
   ActionIcon,
-  Avatar,
   Box,
   Button,
   Group,
@@ -26,11 +25,10 @@ import {
   IconCopyPlus,
   IconDots,
   IconEye,
-  IconPhoto,
 } from '@tabler/icons-react';
 import StatusBadge from './StatusBadge';
 import { buildEntityReportUrl } from './reportLinks';
-import { formatCurrencyAmount } from '@/lib/shared';
+import { formatRecordedCurrency as formatCurrencyAmount } from './metrics';
 import classes from './CampaignDashboard.module.css';
 
 const BG = 'var(--mantine-color-body)';
@@ -108,14 +106,8 @@ export default function AdsTable({
             const spend = Number(ad.spend || 0);
             const leads = Number(ad.leads || 0);
             const messages = Number(ad.messages || 0);
-            const conversions = leads + messages;
-            const raw = asRecord(ad.raw_data);
-            const creative = asRecord(raw.creative);
-            const previewImage =
-              asString(creative.image_url) ||
-              asString(creative.video_url) ||
-              asString(raw.image_url) ||
-              null;
+            const conversions = leads + messages + Number(ad.calls || 0);
+            const previewImage = ad.creativePreview?.image ?? null;
             const isSelected = selectedAdId === id;
             const reportHref = buildEntityReportUrl({
               scope: 'ad',
@@ -147,9 +139,7 @@ export default function AdsTable({
               >
                 <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
                   <Group gap="sm" wrap="nowrap" className={classes.mobileEntityTitleBlock}>
-                    <Avatar src={previewImage} radius="md" size={42}>
-                      <IconPhoto size={16} />
-                    </Avatar>
+                    <div style={{ width: 64, height: 64, flexShrink: 0, overflow: "hidden" }}><MediaImage media={ad.creativePreview} name={ad.name} /></div>
                     <div style={{ minWidth: 0 }}>
                       <Text fw={800} size="sm" lineClamp={2}>
                         {ad.name ?? 'Unnamed ad'}
@@ -197,17 +187,17 @@ export default function AdsTable({
                 <div className={classes.mobileMetricGrid}>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
-                    <Text fw={800}>{formatCurrencyAmount(spend, currencyCode)}</Text>
+                    <Text fw={800}>{ad.metricsAvailable === false ? '—' : formatCurrencyAmount(spend, currencyCode)}</Text>
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Results</Text>
-                    <Text fw={800}>{conversions}</Text>
+                    <Text fw={800}>{ad.metricsAvailable === false ? '—' : conversions}</Text>
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
                     <Text fw={800}>
                       {formatCurrencyAmount(
-                        conversions > 0 ? spend / conversions : 0,
+                        conversions > 0 ? spend / conversions : null,
                         currencyCode
                       )}
                     </Text>
@@ -215,7 +205,7 @@ export default function AdsTable({
                   <details className={classes.moreMetrics} onClick={event=>event.stopPropagation()} onKeyDown={event=>event.stopPropagation()}>
                     <summary>More metrics</summary>
                     <Text size="xs" c="dimmed">Click-through rate</Text>
-                    <Text fw={800}>{fmtPct(ad.ctr != null ? Number(ad.ctr) : 0)}</Text>
+                    <Text fw={800}>{ad.ctr != null ? fmtPct(Number(ad.ctr)) : '—'}</Text>
                   </details>
                 </div>
 
@@ -313,13 +303,11 @@ export default function AdsTable({
               const spend = Number(ad.spend || 0);
               const clicks = Number(ad.clicks || 0);
               const impressions = Number(ad.impressions || 0);
-              const reach = Number(ad.reach || 0);
+              const reach = ad.reach;
               const linkClicks = Number(ad.link_clicks || 0);
               const leads = Number(ad.leads || 0);
               const messages = Number(ad.messages || 0);
-              const conversions = leads + messages;
-              const raw = asRecord(ad.raw_data);
-              const creative = asRecord(raw.creative);
+              const conversions = leads + messages + Number(ad.calls || 0);
               const isSelected = selectedAdId === id;
               const rowBg = isSelected ? `var(--mantine-color-${platformColor}-1)` : 'transparent';
               const stickyCellBg = isSelected ? `var(--mantine-color-${platformColor}-1)` : BG;
@@ -333,11 +321,7 @@ export default function AdsTable({
                 startDate: ad.start_date,
                 endDate: ad.end_date,
               });
-              const previewImage =
-                asString(creative.image_url) ||
-                asString(creative.video_url) ||
-                asString(raw.image_url) ||
-                null;
+              const previewImage = ad.creativePreview?.image ?? null;
 
               return (
                 <Table.Tr
@@ -391,10 +375,8 @@ export default function AdsTable({
                     </Tooltip>
                   </Table.Td>
                   <Table.Td style={{ textAlign: 'center' }}>
-                    <Box w={40} mx="auto">
-                      <Avatar src={previewImage} radius="sm">
-                        <IconPhoto size={16} />
-                      </Avatar>
+                    <Box w={64} mx="auto">
+                      <div style={{ width: 64, height: 64, flexShrink: 0, overflow: "hidden" }}><MediaImage media={ad.creativePreview} name={ad.name} /></div>
                     </Box>
                   </Table.Td>
                   <Table.Td>
@@ -403,23 +385,23 @@ export default function AdsTable({
                       <DeliveryIndicator active={ad.delivery} />
                     </Group>
                   </Table.Td>
-                  <Table.Td>{formatCurrencyAmount(spend, currencyCode)}</Table.Td>
-                  <Table.Td>{conversions > 0 ? `${conversions} ${conversions === 1 ? 'Result' : 'Results'}` : '0 Results'}</Table.Td>
+                  <Table.Td>{ad.metricsAvailable === false ? '—' : formatCurrencyAmount(spend, currencyCode)}</Table.Td>
+                  <Table.Td>{ad.metricsAvailable === false ? 'Unavailable' : `${conversions} ${conversions === 1 ? 'Result' : 'Results'}`}</Table.Td>
                   <Table.Td>
                     {formatCurrencyAmount(
-                      conversions > 0 ? spend / conversions : 0,
+                      conversions > 0 ? spend / conversions : null,
                       currencyCode
                     )}
                   </Table.Td>
-                  <Table.Td>{fmtPct(ad.ctr != null ? Number(ad.ctr) : 0)}</Table.Td>
+                  <Table.Td>{ad.ctr != null ? fmtPct(Number(ad.ctr)) : '—'}</Table.Td>
                   <Table.Td>{ad.cpc != null ? formatCurrencyAmount(Number(ad.cpc), currencyCode) : '—'}</Table.Td>
                   <Table.Td>{ad.cpm != null ? formatCurrencyAmount(Number(ad.cpm), currencyCode) : '—'}</Table.Td>
-                  <Table.Td>{impressions.toLocaleString()}</Table.Td>
-                  <Table.Td>{clicks.toLocaleString()}</Table.Td>
-                  <Table.Td>{reach.toLocaleString()}</Table.Td>
-                  <Table.Td>{linkClicks.toLocaleString()}</Table.Td>
-                  <Table.Td>{leads.toLocaleString()}</Table.Td>
-                  <Table.Td>{messages.toLocaleString()}</Table.Td>
+                  <Table.Td>{ad.metricsAvailable === false ? '—' : impressions.toLocaleString()}</Table.Td>
+                  <Table.Td>{ad.metricsAvailable === false ? '—' : clicks.toLocaleString()}</Table.Td>
+                  <Table.Td>{reach == null ? '—' : reach.toLocaleString()}</Table.Td>
+                  <Table.Td>{ad.metricsAvailable === false ? '—' : linkClicks.toLocaleString()}</Table.Td>
+                  <Table.Td>{ad.metricsAvailable === false ? '—' : leads.toLocaleString()}</Table.Td>
+                  <Table.Td>{ad.metricsAvailable === false ? '—' : messages.toLocaleString()}</Table.Td>
 
                   <Table.Td
                     style={{

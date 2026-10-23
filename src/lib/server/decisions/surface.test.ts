@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Database } from '@/lib/shared/types/supabase';
 import { canReviewProposal, toDecisionCard } from './surface';
 import { reviewProposal } from './reviewProposal';
@@ -12,6 +12,9 @@ const snapshot: Tables['feature_snapshots']['Row'] = { ...base, id: 'snapshot', 
 const policy: Tables['autonomy_policies']['Row'] = { ...base, mode: 'approval_required', allowed_action_classes: ['REDUCE_BUDGET'], max_budget_change_percent: 10, budget_boundaries_json: {}, cooldown_config_json: {}, minimum_evidence_json: {} };
 const proposal: Tables['action_proposals']['Row'] = { ...base, id: 'proposal', decision_run_id: 'run', action_type: 'REDUCE_BUDGET', target_entity_id: 'adset', target_entity_type: 'adset', current_state_json: { budgetMinor: 10000 }, proposed_state_json: { targetBudgetMinor: 9000 }, risk_level: 'low', policy_result_json: { outcome: 'REQUIRE_APPROVAL', reason: 'REVIEW_MODE' }, requires_approval: true, status: 'pending' };
 const input = { run, snapshot, policy, proposals: [proposal], executions: [], entityName: 'New clients', accountName: 'My salon' };
+
+beforeEach(() => { vi.setSystemTime(new Date(base.updated_at)); });
+afterEach(() => { vi.useRealTimers(); });
 
 describe('decision surface', () => {
   it('presents persisted mock decisions and evidence without raw provider data', () => {
@@ -43,6 +46,10 @@ describe('decision surface', () => {
     expect(toDecisionCard({ ...input, snapshot: undefined }).proposals[0].canReview).toBe(false);
     expect(toDecisionCard({ ...input, snapshot: { ...snapshot, entity_id: 'other' } }).proposals[0].canReview).toBe(false);
     expect(toDecisionCard({ ...input, run: { ...run, confidence: 2 } }).confidence).toBeNull();
+  });
+  it('rejects expired and future-dated approvals', () => {
+    expect(canReviewProposal(proposal, { ...run, updated_at: '2026-10-06T10:00:00Z' }, policy, false)).toBe(false);
+    expect(canReviewProposal(proposal, { ...run, updated_at: '2026-10-07T12:00:00Z' }, policy, false)).toBe(false);
   });
   it('formats budget changes and allows only pending REVIEW actions', () => {
     expect(toDecisionCard(input).proposals[0]).toMatchObject({ detail: '$100.00 to $90.00', canReview: true });

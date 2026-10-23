@@ -1,5 +1,6 @@
+import { BrandLockup } from '@/components/brand/Brand';
 import Link from "next/link";
-import { ArrowUpRight, ChartNoAxesCombined } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import type { FC } from "react";
 import { Container } from "@/components/marketing";
 
@@ -10,10 +11,7 @@ const Footer: FC = () => {
                 <div className="grid gap-8 border-b border-white/10 pb-8 md:grid-cols-[1.4fr_0.6fr_0.6fr]">
                     <div className="max-w-sm">
                         <a href="https://deepvisor.com" target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-2.5">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[#c8ff56] text-[#0d0f0d] transition-transform group-hover:-translate-y-px">
-                                <ChartNoAxesCombined className="h-4 w-4" aria-hidden="true" />
-                            </span>
-                            <span className="text-sm font-semibold text-white">DeepVisor</span>
+                            <BrandLockup inverse />
                             <ArrowUpRight className="h-3.5 w-3.5 text-white/40" aria-hidden="true" />
                         </a>
                         <p className="mt-4 text-sm leading-6 text-white/55">

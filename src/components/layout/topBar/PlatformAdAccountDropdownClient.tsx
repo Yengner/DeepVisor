@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useTransition } from 'react';
 import { Badge, Group, Menu, Text, ThemeIcon, UnstyledButton } from '@mantine/core';
 import { IconCheck, IconChevronDown } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
@@ -155,17 +155,8 @@ export default function PlatformAdAccountDropdownClient({
     return workspaceOptions[0]?.value ?? null;
   }, [initialAccountId, initialPlatformId, liveOptions, workspaceOptions]);
 
-  const [selectedValue, setSelectedValue] = useState<string | null>(resolvedInitialValue);
-
-  useEffect(() => {
-    if (resolvedInitialValue && !workspaceOptions.some((option) => option.value === selectedValue)) {
-      setSelectedValue(resolvedInitialValue);
-    }
-
-    if (!selectedValue && resolvedInitialValue) {
-      setSelectedValue(resolvedInitialValue);
-    }
-  }, [resolvedInitialValue, selectedValue, workspaceOptions]);
+  // Display the scope confirmed by the server, including changes made in Connections.
+  const selectedValue = resolvedInitialValue;
 
   const selectedOption =
     workspaceOptions.find((option) => option.value === selectedValue) ??
@@ -189,8 +180,6 @@ export default function PlatformAdAccountDropdownClient({
     if (option.value === selectedValue) {
       return;
     }
-
-    setSelectedValue(option.value);
 
     if (option.preview || !option.platformId) {
       return;

@@ -33,12 +33,14 @@ export interface FormattedCampaign {
   results: string;
   leads: number;
   messages?: number;
+  calls?: number;
+  metricsAvailable?: boolean;
   link_clicks?: number;
-  reach: number;
+  reach: number | null;
   clicks: number;
   impressions: number;
   frequency: string;
-  costPerResult: number;
+  costPerResult: number | null;
   cpm: number | null;
   ctr: number | null;
   cpc: number | null;
@@ -98,7 +100,7 @@ export default async function CampaignPage({
   const activeKeys = new Set(deliveryState.activeKeys);
 
   const allCampaigns: FormattedCampaign[] = (campaignsData ?? []).map((c: CampaignLifetimeRow) => {
-    const totalResults = Number(c.leads || 0) + Number(c.messages || 0);
+    const totalResults = Number(c.leads || 0) + Number(c.messages || 0) + Number(c.calls || 0);
     const spendNum = Number(c.spend || 0);
 
     return {
@@ -110,14 +112,16 @@ export default async function CampaignPage({
       objective: c.objective,
       startDate: c.start_date,
       endDate: c.end_date || "",
-      attribution: "7-day click or view",
+      attribution: "Unavailable",
       spend: spendNum,
-      results: totalResults > 0 ? `${totalResults} Results` : "0 Results",
-      reach: Number(c.reach || 0),
+      results: c.metricsAvailable ? `${totalResults} Results` : "Unavailable",
+      metricsAvailable: c.metricsAvailable,
+      calls: c.calls,
+      reach: c.reach,
       clicks: Number(c.clicks || 0),
       impressions: Number(c.impressions || 0),
-      frequency: c.reach && c.impressions ? (Number(c.impressions) / Number(c.reach)).toFixed(2) : "0",
-      costPerResult: totalResults > 0 && spendNum > 0 ? spendNum / totalResults : 0,
+      frequency: "Unavailable",
+      costPerResult: c.metricsAvailable && totalResults > 0 ? spendNum / totalResults : null,
       cpm: c.cpm != null ? Number(c.cpm) : null,
       ctr: c.ctr != null ? Number(c.ctr) : null,
       cpc: c.cpc != null ? Number(c.cpc) : null,
@@ -149,7 +153,7 @@ export default async function CampaignPage({
   let initialAdSets: AdSetLifetimeRow[] | undefined;
   let initialAds: AdLifetimeRow[] | undefined;
 
-  if (initialSelection.tab === 'adsets' && initialSelection.campaignId) {
+  if (initialSelection.tab !== 'campaigns' && initialSelection.campaignId) {
     initialAdSets = await getAdSetsLifetimeIncludingZeros(
       selectedAdAccountId,
       { campaignExternalId: initialSelection.campaignId }

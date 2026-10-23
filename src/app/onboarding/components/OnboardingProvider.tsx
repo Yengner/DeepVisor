@@ -1,5 +1,6 @@
 'use client';
 
+import { BrandLockup } from '@/components/brand/Brand';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, Progress, Text, Title } from '@mantine/core';
@@ -129,8 +130,7 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
       <Container size="xl" className={classes.onboardingShell}>
         <header className={classes.topBar}>
           <div className={classes.brandLockup}>
-            <span className={classes.brandMark}>DV</span>
-            <span>DEEPVISOR</span>
+            <BrandLockup />
             <span className={classes.brandSection}>WORKSPACE SETUP</span>
           </div>
           <span className={classes.stepStatus}>Step {active + 1} of {TOTAL_STEPS}</span>

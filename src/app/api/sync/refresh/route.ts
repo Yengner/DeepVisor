@@ -1,4 +1,5 @@
 import { after, NextRequest, NextResponse } from 'next/server';
+import { unstable_rethrow } from 'next/navigation';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
@@ -44,7 +45,8 @@ export async function POST() {
     // Durable job + existing atomic worker claim. Polling never starts another sync.
     dispatch(job.jobId, businessId);
     return NextResponse.json({ success: true, jobId: job.jobId, status: job.status, message: 'Refresh in progress.' }, { status: 202 });
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     console.error('Manual Meta refresh request failed');
     return NextResponse.json({ success: false, message: 'Could not start the Meta refresh. Please check your connection and try again.' }, { status: 500 });
   }
@@ -76,7 +78,8 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json({ success: true, status: job.status, completedAt: job.finished_at, unchanged,
       message: job.status === 'failed' || job.status === 'partial' ? 'Could not finish the Meta refresh. Some data may have updated; check your connection before trying again.' : null }, { headers: { 'Cache-Control': 'no-store' } });
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     console.error('Manual Meta refresh status unavailable');
     return NextResponse.json({ success: false, message: 'Could not confirm refresh status. The job may still be running.' }, { status: 500 });
   }

@@ -130,6 +130,7 @@ export function originatingMode(
   );
   if (["HOLD", "BLOCK", "SHADOW_ONLY"].includes(String(shadow.outcome)))
     return "SHADOW";
+  if (record(record(data.runs.find(r => r.id === runId)?.decision_json).review).mode === "REVIEW") return "REVIEW";
   const results = data.proposals
     .filter((p) => p.decision_run_id === runId)
     .map((p) => record(p.policy_result_json));
@@ -213,6 +214,7 @@ export function decisionViews(input: {
     const snapshot = snapshots.get(run.feature_snapshot_id);
     const card = toDecisionCard({
       run,
+      now: Date.parse(input.now),
       snapshot,
       proposals: data.proposals,
       executions: nameSafeExecutions,
@@ -330,16 +332,17 @@ export function decisionViews(input: {
     const runId = data.proposals.find(
       (p) => p.id === execution.action_proposal_id,
     )?.decision_run_id;
+    const simulated = data.proposals.some(p => p.id === execution.action_proposal_id && record(p.policy_result_json).simulation === true);
     if (runId && isToday(execution.completed_at))
       activity.push({
         title:
           execution.status === "succeeded"
-            ? "Advertising change completed"
+            ? simulated ? "Simulated change completed" : "Advertising change completed"
             : "Advertising change needs checking",
         entity: nameFor(runId),
         at: execution.completed_at!,
         state:
-          execution.status === "succeeded" ? "Executed" : "Needs attention",
+          execution.status === "succeeded" ? simulated ? "Simulated execution" : "Executed" : "Needs attention",
         mode: originatingMode(runId, data),
       });
   }

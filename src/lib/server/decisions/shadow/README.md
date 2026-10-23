@@ -1,7 +1,9 @@
 # Scheduled Meta shadow evaluation
 
-This pipeline observes synchronized Meta data. It never imports the advertising
-executor, sends Meta requests, approves proposals, or enables LIMITED_AUTO.
+Shadow evaluation observes synchronized Meta data without Meta requests, approvals
+or execution. Its existing post-sync coordinator also dispatches separately gated
+Review evaluations, whose current-state adapter is read-only. Neither enables
+LIMITED_AUTO.
 
 ## Enablement
 

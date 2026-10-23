@@ -1,7 +1,13 @@
 import { z } from 'zod';
 import type { ProposedAction } from '../decisions/policy/types';
 
-const id = z.string().regex(/^\d+$/);
+// Fake-adapter integration tests retain the existing simulator's opaque IDs.
+// Production and the live Meta transport continue to require numeric IDs.
+const validId = (value: string) => /^\d+$/.test(value) || (
+  process.env.NODE_ENV === 'test' && process.env.DEEPVISOR_META_SIMULATION === 'gkdyyjqepzayjdpvqnja' &&
+  /^(?:act_)?dvsim_[a-f0-9]{32}_[12](?:_campaign|_set[12])?$/.test(value)
+);
+const id = z.string().refine(validId);
 const budget = z.string().regex(/^\d+$/).refine((s) => Number.isSafeInteger(Number(s)));
 const delivery = z.object({
   id, account_id: id, status: z.string(), effective_status: z.string(),
@@ -10,7 +16,7 @@ const delivery = z.object({
 export const metaStateSchema = z.object({
   adset: delivery.extend({ campaign_id: id, is_budget_schedule_enabled: z.boolean() }),
   campaign: delivery,
-  account: z.object({ id: z.string().regex(/^act_\d+$/), account_id: id, account_status: z.number().int(), currency: z.string().regex(/^[A-Z]{3}$/), timezone_name: z.string().min(1) }),
+  account: z.object({ id: z.string().refine(value => value.startsWith('act_') && validId(value.slice(4))), account_id: id, account_status: z.number().int(), currency: z.string().regex(/^[A-Z]{3}$/), timezone_name: z.string().min(1) }),
 });
 export type AdvertisingState = z.infer<typeof metaStateSchema>;
 export interface BudgetCapability {

@@ -25,5 +25,5 @@ export function executionDisplay(execution:Execution, action:string):ExecutionDi
     const divisor=10**(new Intl.NumberFormat('en',{style:'currency',currency}).resolvedOptions().maximumFractionDigits??2);
     return `${formatCurrencyAmount(Number(value)/divisor,currency)} ${period} (${owner==='campaign'?'campaign':'ad set'})`;
   };
-  return {status:object(execution.error_json).reconciliationRequired===true?'Needs reconciliation':execution.status==='succeeded'?'Executed':execution.status==='failed'?'Execution failed':'Execution pending',startedAt:timestamp(execution.started_at),completedAt:timestamp(execution.completed_at),before:display(before),after:display(after)};
+  return {status:object(execution.error_json).reconciliationRequired===true?'Needs reconciliation':execution.status==='succeeded'?(object(execution.request_metadata_json).simulation===true?'Simulated execution':'Executed'):execution.status==='failed'?'Execution failed':'Execution pending',startedAt:timestamp(execution.started_at),completedAt:timestamp(execution.completed_at),before:display(before),after:display(after)};
 }

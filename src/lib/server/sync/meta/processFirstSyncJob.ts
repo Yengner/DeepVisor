@@ -1,6 +1,7 @@
 import { markIntegrationSynced } from '@/lib/server/integrations/service';
 import { readSimulation } from '@/lib/server/integrations/simulation/meta';
 import 'server-only';
+import { accountToday } from '@/lib/shared/reports/dates';
 import { enqueueShadowAfterSync } from '@/lib/server/decisions/shadow/service';
 
 import {
@@ -278,8 +279,12 @@ export async function processMetaFirstSyncJob(input: {
   });
 
   const dataPolicy = await getOrCreateBusinessDataPolicy(input.supabase, input.job.business_id);
+  const accountDay = accountToday(adAccount.timezone);
+  if (!accountDay) throw new Error('A valid advertiser timezone is required for initial history');
+  // Today's partial observations must not replace one of the completed history days.
   const maxSupportedWindow = resolveMetaBackfillWindow(
-    clampHistoryDays(dataPolicy.daily_history_days, dataPolicy.daily_history_days)
+    clampHistoryDays(dataPolicy.daily_history_days, dataPolicy.daily_history_days),
+    { includePartialDayBuffer: true, accountDay }
   );
   const oldestCreatedDay = resolveOldestCreatedDay({
     campaigns: campaigns.rows,
@@ -290,7 +295,7 @@ export async function processMetaFirstSyncJob(input: {
     oldestCreatedDay && oldestCreatedDay > maxSupportedWindow.since
       ? oldestCreatedDay
       : maxSupportedWindow.since;
-  const latest30DayStart = addUtcDays(maxSupportedWindow.until, -29);
+  const latest30DayStart = addUtcDays(maxSupportedWindow.until, -30);
   const performanceWindows = buildBackwardWindows({
     floorDay: oldestCreatedDay ? floorDay : latest30DayStart,
     untilDay: maxSupportedWindow.until,

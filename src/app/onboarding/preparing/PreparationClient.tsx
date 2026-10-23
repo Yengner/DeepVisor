@@ -1,5 +1,6 @@
 'use client';
 
+import { BrandLockup } from '@/components/brand/Brand';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -257,8 +258,7 @@ export default function PreparationClient({
       <Container size="xl" className={classes.shell}>
         <header className={classes.topBar}>
           <div className={classes.brandLockup}>
-            <span className={classes.brandMark}>DV</span>
-            <span>DEEPVISOR</span>
+            <BrandLockup />
             <span className={classes.brandSection}>WORKSPACE PREP</span>
           </div>
           <span className={classes.secureLabel}>SECURE INITIALIZATION</span>

@@ -11,7 +11,9 @@ export type CampaignLifetimeRow = {
   spend: string;
   leads: number;
   messages: number;
-  reach: number;
+  reach: number | null;
+  calls: number;
+  metricsAvailable: boolean;
   link_clicks: number;
   cpm: string | null;
   ctr: string | null;
@@ -46,13 +48,15 @@ export async function getCampaignLifetimeIncludingZeros(
     spend: campaign.spend.toFixed(2),
     leads: campaign.leads,
     messages: campaign.messages,
-    reach: campaign.reach,
+    reach: null, // Summary reach is not verified unique for this period.
+    calls: campaign.calls,
+    metricsAvailable: campaign.metricsAvailable,
     link_clicks: campaign.linkClicks,
     cpm: campaign.impressions > 0 ? campaign.cpm.toFixed(2) : null,
     ctr: campaign.impressions > 0 ? campaign.ctr.toFixed(2) : null,
     cpc: campaign.clicks > 0 ? campaign.cpc.toFixed(2) : null,
     cpl: campaign.leads > 0 ? (campaign.spend / campaign.leads).toFixed(2) : null,
-    frequency: campaign.reach > 0 ? campaign.frequency.toFixed(2) : null,
+    frequency: null,
     start_date: formatDisplayDate(campaign.startDay),
     end_date: formatDisplayDate(campaign.endDay),
     platform_name: vendor,

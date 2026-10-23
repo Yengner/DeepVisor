@@ -1,7 +1,8 @@
 "use client";
 
+import { BrandLockup } from '@/components/brand/Brand';
 import Link from "next/link";
-import { ArrowUpRight, ChartNoAxesCombined } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { usePathname } from "next/navigation";
 import type { FC } from "react";
 import { Container } from "@/components/marketing";
@@ -19,12 +20,7 @@ const Header: FC = () => {
         <header className="dv-public-header sticky top-0 z-40 border-b border-white/15 bg-[#0d0f0d] text-white">
             <Container className="flex h-14 items-center justify-between gap-4">
                 <Link href="/" className="group flex shrink-0 items-center gap-2.5" aria-label="DeepVisor home">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[#c8ff56]/40 bg-[#c8ff56] text-[#0d0f0d] transition-transform group-hover:-translate-y-px">
-                        <ChartNoAxesCombined className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                    <span className="text-sm font-semibold text-white">
-                        DeepVisor
-                    </span>
+                    <BrandLockup inverse />
                 </Link>
 
                 <nav className="hidden h-full items-center text-xs font-medium text-white/65 md:flex" aria-label="Primary">

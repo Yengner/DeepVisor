@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUserId } from '@/lib/server/actions/user/session';
+import { createSupabaseClient } from '@/lib/server/supabase/server';
+import { reportExportError } from '@/lib/server/reports/access';
 import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
 import { buildDemoReportPayload } from '@/lib/server/reports/demo';
 import { resolveReportRequest } from '@/lib/server/reports/request';
@@ -19,7 +20,10 @@ function isTruthySearchParam(value: string | null): boolean {
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = await requireUserId();
+    const client = await createSupabaseClient();
+    const { data: { user }, error: authError } = await client.auth.getUser();
+    if (authError || !user) return NextResponse.json({ message: 'Authentication required.' }, { status: 401 });
+    const userId = user.id;
     const context = await getOrCreateOrganizationBusinessContext(userId);
     const query = await resolveReportRequest(
       context.businessId,
@@ -40,13 +44,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Failed to export report CSV:', error);
-
-    return NextResponse.json(
-      {
-        message: error instanceof Error ? error.message : 'Failed to export report CSV',
-      },
-      { status: 500 }
-    );
+    const failure = reportExportError(error);
+    if (failure.status === 500) console.error('Report export unavailable');
+    return NextResponse.json({ message: failure.message }, { status: failure.status });
   }
 }

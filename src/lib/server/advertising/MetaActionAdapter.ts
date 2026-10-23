@@ -8,12 +8,12 @@ const fields = 'id,account_id,status,effective_status,daily_budget,lifetime_budg
 /** No generic mutation API, write retries, redirects, or credential-bearing URLs. */
 export class MetaActionAdapter implements AdvertisingPlatformAdapter {
   readonly resolveBudget = resolveBudget;
-  constructor(private readonly config: { accessToken: string; accountId: string; adsetId: string; liveEnabled: boolean }, private readonly transport: typeof fetch = fetch) {
+  constructor(private readonly config: { accessToken: string; accountId: string; adsetId: string; liveEnabled: boolean; readEnabled?: boolean }, private readonly transport: typeof fetch = fetch) {
     if (!/^\d+$/.test(config.adsetId) || !/^(act_)?\d+$/.test(config.accountId) || !config.accessToken) throw new AdvertisingError('INVALID_META_CONFIGURATION');
   }
 
   private async request(path: string, params: Record<string, string>, method: 'GET' | 'POST' = 'GET'): Promise<unknown> {
-    if (!this.config.liveEnabled) throw new AdvertisingError('EXECUTION_DISABLED');
+    if (!this.config.liveEnabled && (method === 'POST' || !this.config.readEnabled)) throw new AdvertisingError('EXECUTION_DISABLED');
     const url = new URL(`https://graph.facebook.com/v24.0/${path}`);
     if (method === 'GET') url.search = new URLSearchParams(params).toString();
     try {

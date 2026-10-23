@@ -40,7 +40,7 @@ beforeAll(async () => {
     insert into public.account_sync_jobs values('${id}','${id}','${id}','${id}','completed',now());
     insert into public.ad_entities values('${id}','${id}','${id}','adset','123',null,'ACTIVE','{}');
   `);
-  for (const file of ['20261006000000_add_v2_decision_persistence.sql','20261008000000_add_shadow_evaluation_jobs.sql','20261009000000_add_action_outcome_measurements.sql']) {
+  for (const file of ['20261006000000_add_v2_decision_persistence.sql','20261008000000_add_shadow_evaluation_jobs.sql','20261009000000_add_action_outcome_measurements.sql','20261022061347_review_evaluation_pipeline.sql']) {
     await db.exec(readFileSync(new URL(`../../../../../supabase/migrations/${file}`, import.meta.url), 'utf8'));
   }
 }, 20000);
@@ -54,7 +54,7 @@ beforeEach(async () => {
     insert into ai.executed_actions(id,business_id,action_proposal_id,status,state_before_json,started_at,completed_at)
       values('${id}','${id}','${id}','succeeded','{"account":{"timezone_name":"UTC"}}',date_trunc('day',now())-interval '5 days'+interval '12 hours',date_trunc('day',now())-interval '5 days'+interval '12 hours 30 minutes');
     insert into ai.shadow_evaluation_jobs(business_id,platform_integration_id,ad_account_id,entity_id,evaluation_version,source_hash,source_json,source_synced_at,source_sync_job_id,feature_snapshot_id,decision_run_id,action_proposal_id,status,completed_at)
-      select '${id}','${id}','${id}','123','v1','hash','{"timeZone":"UTC"}',now(),'${id}','${id}','${id}','${id}','completed',completed_at from ai.executed_actions;
+      select '${id}','${id}','${id}','123','v1','hash','{"timeZone":"UTC","policy":{"mode":"observe"}}',now(),'${id}','${id}','${id}','${id}','completed',completed_at from ai.executed_actions;
     insert into public.ad_entity_performance_hourly
       select '${id}','${id}','adset',t::date,extract(hour from t),'USD',
         case when t<date_trunc('day',now())-interval '5 days'+interval '12 hours' then 10 else 20 end,

@@ -37,7 +37,9 @@
     "src/app/(root)/integration/meta/unsuccessful",
     ".next/dev/types/**/*.ts",
     ".next/beta-phase2/types/**/*.ts",
-    ".next/beta-phase2/dev/types/**/*.ts"
+    ".next/beta-phase2/dev/types/**/*.ts",
+    ".next-beta-simulation/types/**/*.ts",
+    ".next-beta-simulation/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

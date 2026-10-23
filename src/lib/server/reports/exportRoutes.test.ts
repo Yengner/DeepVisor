@@ -1,12 +1,12 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 vi.mock('server-only', () => ({}));
-vi.mock('../actions/user/session', () => ({ requireUserId: vi.fn() }));
+const getUser = vi.hoisted(() => vi.fn());
+vi.mock('../supabase/server', () => ({ createSupabaseClient: async () => ({ auth: { getUser } }) }));
 vi.mock('../actions/business/context', () => ({ getOrCreateOrganizationBusinessContext: vi.fn() }));
 vi.mock('../actions/app/selection', () => ({ resolveCurrentSelection: vi.fn() }));
 vi.mock('../repositories/reports/buildReportPayload', () => ({ buildReportPayload: vi.fn() }));
 vi.mock('./pdf/renderReportPdf', () => ({ renderReportPdfBuffer: vi.fn() }));
-import { requireUserId } from '../actions/user/session';
 import { getOrCreateOrganizationBusinessContext } from '../actions/business/context';
 import { resolveCurrentSelection } from '../actions/app/selection';
 import { buildReportPayload } from '../repositories/reports/buildReportPayload';
@@ -16,7 +16,7 @@ import { GET as pdf } from '@/app/api/reports/pdf/route';
 import { buildReportFixture } from '@/lib/shared/reports/fixtures';
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(requireUserId).mockResolvedValue('user');
+  getUser.mockResolvedValue({ data: { user: { id: 'user' } }, error: null });
   vi.mocked(getOrCreateOrganizationBusinessContext).mockResolvedValue({ businessId: 'authorized-business', organizationName: 'Example' } as Awaited<ReturnType<typeof getOrCreateOrganizationBusinessContext>>);
   vi.mocked(resolveCurrentSelection).mockResolvedValue({ selectedAdAccountId: 'authorized-account', selectedPlatformId: 'platform' });
   vi.mocked(buildReportPayload).mockResolvedValue(buildReportFixture());
@@ -43,11 +43,11 @@ it('downloads PDF through the existing renderer with canonical scope and private
   expect(await response.text()).toBe('%PDF-fixture');
 });
 it.each([['CSV', csv], ['PDF', pdf]] as const)('requires authentication before reading %s data', async (_, get) => {
-  vi.mocked(requireUserId).mockRejectedValue(new Error('Authentication required'));
+  getUser.mockResolvedValue({ data: { user: null }, error: new Error('Authentication required') });
   const log = vi.spyOn(console, 'error').mockImplementation(() => {});
   try {
     const response = await get(new NextRequest('https://example.test/api/reports/export'));
-    expect(response.status).not.toBe(200);
+    expect(response.status).toBe(401);
     expect(getOrCreateOrganizationBusinessContext).not.toHaveBeenCalled(); expect(buildReportPayload).not.toHaveBeenCalled(); expect(renderReportPdfBuffer).not.toHaveBeenCalled();
   } finally { log.mockRestore(); }
 });

@@ -9,17 +9,6 @@ type CronSecrets = {
   bearerSecret: string | null;
 };
 
-async function secretFingerprint(value: string | null): Promise<string | null> {
-  if (!value) return null;
-  const bytes = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  const hex = Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-
-  return `${value.length}:${hex.slice(0, 10)}`;
-}
-
 function readCronSecrets(req: Request): CronSecrets {
   const authorization = req.headers.get("authorization");
   const bearerSecret = authorization?.toLowerCase().startsWith("bearer ")
@@ -34,8 +23,7 @@ function readCronSecrets(req: Request): CronSecrets {
 }
 
 function checkCronSecret(secrets: CronSecrets): boolean {
-  if (Deno.env.get("SKIP_CRON_SECRET") === "true") return true;
-  if (!secrets.expected) return true;
+  if (!secrets.expected?.trim()) return false;
 
   return secrets.headerSecret === secrets.expected || secrets.bearerSecret === secrets.expected;
 }
@@ -90,18 +78,11 @@ export async function handleProcessAccountSyncJobsRequest(
 
   const cronSecrets = readCronSecrets(req);
 
-  if (Deno.env.get("SKIP_CRON_SECRET") === "true") {
-    console.warn(`[${functionName}] cron secret check skipped by SKIP_CRON_SECRET`);
-  }
-
   if (!checkCronSecret(cronSecrets)) {
     console.warn(`[${functionName}] rejected cron request`, {
       hasExpectedSecret: Boolean(cronSecrets.expected),
       hasCronSecretHeader: Boolean(cronSecrets.headerSecret),
       hasAuthorizationHeader: Boolean(req.headers.get("authorization")),
-      expectedFingerprint: await secretFingerprint(cronSecrets.expected),
-      headerFingerprint: await secretFingerprint(cronSecrets.headerSecret),
-      bearerFingerprint: await secretFingerprint(cronSecrets.bearerSecret),
     });
 
     return new Response("forbidden", { status: 403 });

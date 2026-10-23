@@ -7,7 +7,7 @@ import { executeReview, executionEnabled, type ExecutionContext, type ExecutionS
 import { MetaActionAdapter } from './MetaActionAdapter';
 import { AdvertisingError } from './types';
 
-export async function createMetaExecutionAdapter(client: SupabaseClient<Database>, businessId: string, snapshot: ExecutionContext['snapshot'], enabled: boolean) {
+export async function createMetaExecutionAdapter(client: SupabaseClient<Database>, businessId: string, snapshot: Pick<ExecutionContext['snapshot'], 'platform_integration_id' | 'ad_account_id' | 'entity_id'>, enabled: boolean, readEnabled = false) {
   const [integration, accountResult] = await Promise.all([
     getBusinessIntegrationById(client, { businessId, integrationId: snapshot.platform_integration_id }),
     client.from('ad_accounts').select('*').eq('business_id', businessId).eq('id', snapshot.ad_account_id).single(),
@@ -16,7 +16,7 @@ export async function createMetaExecutionAdapter(client: SupabaseClient<Database
   if (accountResult.error || !account || !integration || integration.platformKey !== 'meta' || integration.status !== 'connected' || integration.platformId !== account.platform_id) throw new AdvertisingError('INVALID_META_CONNECTION');
   const token = await resolveIntegrationAccessToken(client, integration);
   if (!token) throw new AdvertisingError('MISSING_META_TOKEN');
-  return new MetaActionAdapter({ accessToken: token, accountId: account.external_account_id, adsetId: snapshot.entity_id, liveEnabled: enabled });
+  return new MetaActionAdapter({ accessToken: token, accountId: account.external_account_id, adsetId: snapshot.entity_id, liveEnabled: enabled, readEnabled });
 }
 
 export async function executeMetaProposal(client: SupabaseClient<Database>, input: { businessId: string; proposalId: string; role: string }) {

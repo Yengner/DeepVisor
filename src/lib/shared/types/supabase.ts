@@ -999,10 +999,15 @@ export type Database = {
       claim_limited_auto_evaluation: { Args: { p_business: string | null; p_snapshot: string | null }; Returns: Json }
       claim_limited_auto_execution: { Args: { p_business: string | null; p_proposal: string | null; p_execution: string | null }; Returns: Json }
       claim_meta_shadow: { Args: { [_ in never]: never }; Returns: Json }
+      claim_meta_review: { Args: { [_ in never]: never }; Returns: Json }
+      claim_meta_evaluation: { Args: { p_mode: string }; Returns: Json }
       claim_review_execution: { Args: { p_business: string | null; p_proposal: string | null; p_execution: string | null }; Returns: Json }
       enqueue_meta_shadow: { Args: { p_business: string | null; p_integration: string | null; p_account: string | null; p_sync_job: string | null; p_version: string | null }; Returns: number }
+      enqueue_meta_review: { Args: { p_business: string | null; p_integration: string | null; p_account: string | null; p_sync_job: string | null; p_version: string | null }; Returns: number }
+      enqueue_meta_evaluation: { Args: { p_business: string | null; p_integration: string | null; p_account: string | null; p_sync_job: string | null; p_version: string | null; p_mode: string }; Returns: number }
       finish_limited_auto_evaluation: { Args: { p_business: string | null; p_snapshot: string | null; p_status: string | null; p_reason: string | null; p_run?: string | null; p_proposal?: string | null }; Returns: undefined }
       finish_meta_shadow: { Args: { p_job: string | null; p_result: Json | null; p_proposal: Json | null; p_error: string | null }; Returns: undefined }
+      finish_meta_review: { Args: { p_job: string | null; p_result: Json | null; p_proposal: Json | null; p_error: string | null }; Returns: undefined }
       finish_review_execution: { Args: { p_business: string | null; p_execution: string | null; p_success: boolean | null; p_after: Json | null; p_error: Json | null }; Returns: undefined }
       limited_auto_history: { Args: { p_business: string | null }; Returns: Json }
       measure_outcome_window: { Args: { p_account: string | null; p_entity: string | null; p_currency: string | null; p_zone: string | null; p_start: string | null; p_end: string | null }; Returns: Json }

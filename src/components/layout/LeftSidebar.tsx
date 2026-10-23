@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { BrandLockup } from '@/components/brand/Brand';
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Tooltip } from '@mantine/core';
@@ -74,6 +76,9 @@ export default function Sidebar() {
     >
       <div className="flex h-full flex-col justify-between px-2 py-4">
         <div className="min-h-0 overflow-y-auto">
+        <Link href="/dashboard" aria-label="DeepVisor Overview" className="mb-4 flex h-8 items-center overflow-hidden px-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+          <BrandLockup inverse compact={!isExpanded} />
+        </Link>
         <nav className="space-y-1.5">
           {primaryNavItems.map((item) => {
             const active = isAppNavItemActive(pathname, item.route);

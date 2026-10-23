@@ -423,15 +423,15 @@ export default async function SettingsPage() {
           businessId
         )
       : Promise.resolve(null),
-    getNotificationPreference(supabase as any, {
+    getNotificationPreference(supabase, {
       businessId,
       userId: user.id,
     }),
-    getReportSubscription(supabase as any, {
+    getReportSubscription(supabase, {
       businessId,
       userId: user.id,
     }),
-    listArchivedReports(supabase as any, {
+    listArchivedReports(supabase, {
       businessId,
       limit: 60,
     }),
@@ -1228,6 +1228,12 @@ export default async function SettingsPage() {
           </SimpleGrid>
         </Card>
       </Stack>
+    <Card withBorder mt="lg" radius="md">
+        <Group justify="space-between" gap="sm">
+          <div><Text fw={600}>Beta feedback</Text><Text size="sm" c="dimmed">Tell us what happened and what you expected. Please omit passwords and access tokens.</Text></div>
+          <Button component="a" variant="default" href="mailto:info@deepvisor.com?subject=DeepVisor%20beta%20feedback">Send feedback</Button>
+        </Group>
+      </Card>
     </Container>
   );
 }

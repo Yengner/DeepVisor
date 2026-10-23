@@ -1,5 +1,5 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
-import { chunkArray } from '../utils';
+import { chunkArray, readAllPages } from '../utils';
 import { derivePerformanceMetrics } from './normalizers';
 
 type SupabaseClient = Awaited<ReturnType<typeof createSupabaseClient>>;
@@ -24,6 +24,7 @@ type CampaignPerformanceRow = {
   inline_link_clicks: number | null;
   leads: number | null;
   messages: number | null;
+  calls: number | null;
 };
 
 type CampaignPerformanceSummaryRow = {
@@ -35,6 +36,7 @@ type CampaignPerformanceSummaryRow = {
   inline_link_clicks: number | null;
   leads: number | null;
   messages: number | null;
+  calls: number | null;
   first_day: string | null;
   last_day: string | null;
 };
@@ -53,6 +55,8 @@ export interface CampaignSummary {
   linkClicks: number;
   leads: number;
   messages: number;
+  calls: number;
+  metricsAvailable: boolean;
   conversion: number;
   conversionRate: number;
   costPerResult: number;
@@ -86,29 +90,21 @@ async function listCampaignDims(input: {
 
   for (const adAccountIdsChunk of chunkArray(input.adAccountIds, 100)) {
     if (campaignExternalIds.length === 0) {
-      const { data, error } = await input.supabase
+      const data = await readAllPages((from, to) => input.supabase
         .from('campaign_dims')
         .select('id, ad_account_id, external_id, name, objective, status, created_time')
-        .in('ad_account_id', adAccountIdsChunk);
-
-      if (error) {
-        throw error;
-      }
+        .in('ad_account_id', adAccountIdsChunk).order('id').range(from, to));
 
       rows.push(...((data ?? []) as CampaignDimRow[]));
       continue;
     }
 
     for (const externalIdsChunk of chunkArray(campaignExternalIds, 200)) {
-      const { data, error } = await input.supabase
+      const data = await readAllPages((from, to) => input.supabase
         .from('campaign_dims')
         .select('id, ad_account_id, external_id, name, objective, status, created_time')
         .in('ad_account_id', adAccountIdsChunk)
-        .in('external_id', externalIdsChunk);
-
-      if (error) {
-        throw error;
-      }
+        .in('external_id', externalIdsChunk).order('id').range(from, to));
 
       rows.push(...((data ?? []) as CampaignDimRow[]));
     }
@@ -128,7 +124,7 @@ async function listCampaignPerformanceRows(input: {
     let query = input.supabase
       .from('campaigns_performance_daily')
       .select(
-        'campaign_id, day, spend, reach, impressions, clicks, inline_link_clicks, leads, messages'
+        'campaign_id, day, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls'
       )
       .in('campaign_id', campaignIdsChunk);
 
@@ -136,11 +132,7 @@ async function listCampaignPerformanceRows(input: {
       query = query.gte('day', input.sinceDay);
     }
 
-    const { data, error } = await query;
-
-    if (error) {
-      throw error;
-    }
+    const data = await readAllPages((from, to) => query.order('campaign_id').order('day').range(from, to));
 
     rows.push(...((data ?? []) as CampaignPerformanceRow[]));
   }
@@ -158,7 +150,7 @@ async function listCampaignPerformanceSummaries(input: {
     const { data, error } = await input.supabase
       .from('campaign_performance_summary')
       .select(
-        'campaign_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, first_day, last_day'
+        'campaign_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls, first_day, last_day'
       )
       .in('campaign_id', campaignIdsChunk);
 
@@ -210,6 +202,7 @@ export async function getCampaignSummaries(input: {
         linkClicks: 0,
         leads: 0,
         messages: 0,
+        calls: 0,
         firstDay: null as string | null,
         lastDay: null as string | null,
         rowCount: 0,
@@ -240,6 +233,7 @@ export async function getCampaignSummaries(input: {
       totals.linkClicks = row.inline_link_clicks ?? 0;
       totals.leads = row.leads ?? 0;
       totals.messages = row.messages ?? 0;
+      totals.calls = row.calls ?? 0;
       totals.firstDay = row.first_day ?? null;
       totals.lastDay = row.last_day ?? null;
       totals.rowCount = 1;
@@ -271,6 +265,7 @@ export async function getCampaignSummaries(input: {
       totals.linkClicks += row.inline_link_clicks ?? 0;
       totals.leads += row.leads ?? 0;
       totals.messages += row.messages ?? 0;
+      totals.calls += row.calls ?? 0;
       totals.firstDay = totals.firstDay === null || row.day < totals.firstDay ? row.day : totals.firstDay;
       totals.lastDay = totals.lastDay === null || row.day > totals.lastDay ? row.day : totals.lastDay;
       totals.rowCount += 1;
@@ -295,6 +290,7 @@ export async function getCampaignSummaries(input: {
         clicks: totals.clicks,
         leads: totals.leads,
         messages: totals.messages,
+        calls: totals.calls,
       });
 
       return {
@@ -311,6 +307,8 @@ export async function getCampaignSummaries(input: {
         linkClicks: totals.linkClicks,
         leads: totals.leads,
         messages: totals.messages,
+        calls: totals.calls,
+        metricsAvailable: totals.rowCount > 0,
         conversion: metrics.conversion,
         conversionRate: metrics.conversion_rate,
         costPerResult: metrics.cost_per_result,
@@ -318,7 +316,7 @@ export async function getCampaignSummaries(input: {
         cpc: metrics.cpc,
         cpm: metrics.cpm,
         frequency: metrics.frequency,
-        startDay: totals.firstDay ?? campaign.created_time ?? null,
+        startDay: totals.firstDay,
         endDay: totals.lastDay,
       } satisfies CampaignSummary;
     })

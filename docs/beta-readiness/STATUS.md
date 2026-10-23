@@ -1,10 +1,333 @@
 # DeepVisor beta readiness
 
-Updated: 2026-10-21. **Phases 1 and 2 complete for the development simulation scope.**
-Real Auth/onboarding and real queued sync with a scoped simulated Meta provider are
-exercised. Phase 2 typecheck, production build and eight real-database checks pass.
-The final browser reliability journey also passed with no JavaScript page errors.
-This is not approval to admit external users or deploy. Phase 3 has not started.
+## Phase 5 — assessment complete: NO-GO for an external beta user, 2026-10-22
+
+The controlled synthetic journey passes. Release configuration and security
+prerequisites below remain; this is **not deployment approval**. Phases 1–4 evidence
+was reviewed and reused. Phase 5 exposed and repaired two intelligence prerequisites
+that their isolated fixtures had missed. No new project, deployment, live Meta
+write, autonomous execution, secret exposure, or RLS bypass occurred.
+
+- **Verified with real Supabase persistence:** fresh signup, rejected unverified login,
+  verification callback, onboarding drafts/back navigation, skipping Meta, connecting
+  later through the simulated provider, account selection, durable synchronization,
+  Dashboard, campaign/ad hierarchy and creative previews, Reports and actual CSV/PDF,
+  Shadow and Review evaluations, browser approve/reject, one fake execution,
+  duplicate execution denial, pending outcomes, account switching and logout/login.
+  The same fresh identity was resumed after fixes. Verification used an official
+  Auth-admin token; external email transport was not verified.
+- **Numbers:** account 1 completed-week features **$280 / 28 results / $10 CPR**.
+  Account 2 Dashboard 7D **$480 / 48 / $10**, including today's recorded zero and
+  six completed days. October 1–19 exports agree: **$960 / 96 / $10**, **96,000
+  impressions**, **2% CTR**; unique reach/frequency remain unavailable. CSV has 43
+  records; PDF has 29 pages with matching scope, dates and currency. Fake execution
+  changed **5000 → 4750** minor units exactly once; 1/6/24/72-hour outcomes remain
+  pending, without fabricated post-action performance.
+- **Authorization:** normal authenticated clients could not read another business's
+  account, creative, feature, decision, proposal or execution records or claim worker
+  jobs. Foreign-account CSV/PDF returned 403; unauthenticated exports returned 401;
+  protected-page logout and forbidden execution requests were rejected. Simulation
+  requires an explicit development-project opt-in and server-managed designation.
+  Live transport rejects synthetic IDs. Fixture execution permission is off again.
+- **Browser/branding:** main journey and supplementary checks passed with zero page
+  errors. Header and Dashboard agree after login without selection cookies. Brand
+  images load at 1440/390px without overflow; favicon, Apple icon, metadata and
+  light/dark assets resolve. Phase 4 visual review reused; no new screenshots taken.
+  Real Meta OAuth initiation builds the redirect, but it was not followed; the local
+  callback is `http://localhost:3011`. Live Meta/Google consent remains unverified.
+- **Validation, Node 24:** **818 unit tests passed, 15 opt-in tests skipped**; both
+  Phase 5 real-database stages passed separately. Final typecheck and production
+  build passed. New/focused Phase 5 code lint passed; broader touched-file lint still
+  reports **8 pre-existing explicit-any errors and 1 unused-function warning** in
+  `buildReportPayload.ts`. The legacy `npm run lint` command remains incompatible
+  with Next 16; checks used the documented temporary compatible ESLint config.
+- **Reliability:** no queued/running sync jobs remained at final DB inspection. Existing
+  backfill worker dispatch runs every ten minutes and returned HTTP 200/202 during
+  inspection; older failed jobs remain historical. This verifies dispatch, not the
+  deployed application's latest code or live-provider success. Local warm route
+  observations were roughly Dashboard 1–1.3s, Campaigns 0.9–1s, Reports 1.5–1.7s;
+  these are development timings, not a production load benchmark.
+
+### Repairs and database changes
+
+| Priority | Verified defect and correction |
+| --- | --- |
+| P0 | Evaluation SQL required uppercase `ACTIVE` although real sync stores lowercase. Migration `20261022220851_normalize_evaluation_delivery_status.sql` replaces only `ai.enqueue_meta_evaluation`; Shadow policy classification now accepts normalized casing while still rejecting paused/unknown delivery. Applied to `gkdyyjqepzayjdpvqnja`; RPC signatures/bindings unchanged. |
+| P1 | Initial 30-day history included today and only 29 completed days, preventing adequate tracking evidence immediately after onboarding. Initial sync now includes 30 completed advertiser-local days plus today; the normal worker persisted the repaired coverage. |
+| P0 | Edge worker source accepted missing CRON_SECRET / a skip flag. Three repository worker handlers now fail closed and omit secret fingerprints. **Deployed source still needs the correction; secret configuration/exploitability was not inferred or probed.** |
+| P1 | Export routes swallowed authentication failures and exposed raw internal errors. Explicit 401/403 and sanitized failures now preserve authorization. Manual sync preserves framework authentication redirects. |
+| P1 | Header defaulted to the first account while pages resolved the saved primary account; client state could retain a stale choice. Header now shares the page resolver, offers eligible primary accounts, and displays server-confirmed selection. Real browser regression passed. |
+| P2 | Production output deleted the nested simulator cache. Separate `.next-beta-simulation` output; generated type paths updated. An invalid concurrently written dev type artifact was discarded before final typecheck. Settings now links to beta feedback via the existing contact address. |
+
+Phase 5 files: `supabase/functions/_shared/{processAccountSyncJobs,queueAccountSyncJobs}.ts`,
+`supabase/functions/process_calendar_queue/index.ts`, the migration above;
+`src/lib/server/decisions/shadow/{evaluate,persistence.test,shadow.test}.ts`;
+`src/lib/server/sync/meta/{client,processFirstSyncJob,historyWindow.test}.ts`;
+`src/app/api/reports/{csv,pdf}/route.ts`, `src/lib/server/reports/{access,exportAccess.test,exportRoutes.test}.ts`,
+`src/lib/server/repositories/reports/buildReportPayload.ts`, `src/app/api/sync/refresh/route.ts`;
+`src/components/layout/topBar/{TopBar,PlatformAdAccountDropdownClient}.tsx` and `TopBar.test.ts`;
+`src/app/(root)/settings/page.tsx`, `src/lib/server/advertising/types.ts`,
+`src/lib/server/integrations/simulation/meta.ts`, `phase5Security.test.ts`,
+`betaPhase5.live.test.ts`, `next.config.mjs`, `tsconfig.json`, `.gitignore`, and
+[Phase 5 scripts/reproduction](../../scripts/beta-phase5/README.md).
+Evidence: [browser](./phase5/evidence.json), [additional checks](./phase5/checks.json),
+[intelligence](./phase5/intelligence.json), [CSV](./phase5/journey.csv), [PDF](./phase5/journey.pdf).
+The fixture business is `8065c808-33f6-4ef4-9de3-8e8a8209034c`; existing fixture
+businesses and unrelated uncommitted code are preserved. Its execution audit is
+retained and the harness refuses replay. Current development server is stopped.
+
+### Remaining release prerequisites
+
+- **P0:** authorize and deploy the reviewed Edge authentication fix and application
+  changes; confirm deployed secrets/gates and reject unauthorized worker requests.
+  No deployment was performed under the current task authorization.
+- **P1:** public signup is currently enabled. Configure invitation-only admission
+  (including OAuth) and verify a genuinely invited user's unassisted flow.
+- **P1:** confirm hosted origin/callback allowlists, email delivery, live Meta consent
+  and read-only sync, Google login, production decision-provider configuration, and
+  deployed worker/outcome observability. No live Meta/Jev verification is claimed.
+- **P1:** address Supabase's [Postgres security patch advisory](https://supabase.com/docs/guides/platform/upgrading)
+  before external access; enable/evaluate [leaked-password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+  These managed configuration changes were not performed.
+- **P2:** confirm `info@deepvisor.com` is monitored and receives beta feedback; finish
+  legacy lint cleanup and review legacy function search-path/definer advisories.
+  RLS is enabled throughout public/ai/intelligence; internal service-only AI tables
+  intentionally have no client policies. No new privilege exposure was found.
+
+## Phase 4 — complete for the controlled synthetic scope, 2026-10-22
+
+- **Implemented:** fresh Review evaluations use the existing post-sync queue,
+  Feature Engine, DecisionEngine and PolicyEngine. Only permitted recommendations
+  create actionable proposals with current Meta state, evidence, risk and
+  fingerprint-bound owner/admin approval. Shadow proposals stay non-executable.
+  Review state reads cannot perform writes; existing execution gates remain intact.
+- **Database:** applied `20261022061347_review_evaluation_pipeline.sql` to existing
+  development project **`gkdyyjqepzayjdpvqnja`**. Added service-only
+  `enqueue_meta_evaluation`, `claim_meta_evaluation`, `enqueue_meta_review`,
+  `claim_meta_review`, `finish_meta_review`; updated Shadow wrappers/finalizer and
+  `process_action_outcomes`. Existing queue and RLS retained; bindings reconciled.
+- **Verified:** actual Supabase Auth/RLS and persisted Feature → Shadow → Review →
+  owner approval → fake execution → pending outcomes. The isolated Phase 4 account
+  belongs to existing synthetic Business A. Seven-day spend **$140**, results **21**;
+  fake budget **10000 → 9500** minor units, one write only. Duplicate execution and
+  cross-business access were denied. Four execution horizons remain honestly
+  pending; no post-action observations or causal improvement were fabricated.
+- **Fixed:** missing normal Review proposal generation; expired approvals; Review
+  evaluations being eligible for Shadow outcome classification; missing Decisions
+  outcome display; simulated execution labels across Decisions and Overview.
+- **Branding:** integrated the four supplied designs through `Brand.tsx`, public
+  header/footer, app header/sidebar/mobile navigation, auth and onboarding. Cropped
+  and combined supplied symbol/type into a horizontal wordmark; dark surfaces use
+  a monochrome treatment. Added optimized transparent assets, favicon, Apple icon
+  and metadata; removed unused legacy assets. No logos were generated. Removed
+  169 prior captures plus the two temporary Phase 4 verification captures.
+- **Validation:** Node 24; **227 targeted tests passed**, **one real-database flow
+  passed**, typecheck passed. Targeted ESLint: zero errors, two pre-existing
+  onboarding warnings, using a temporary compatible flat config. Four browser
+  checks at **1440/390px** passed with zero browser errors/overflow; temporary desktop
+  Decisions/mobile branding captures visually reviewed and deleted. Browser tested
+  login and persisted Decisions display; approve/reject services were exercised
+  separately, not through browser button clicks. Full suite/build deferred as requested.
+- **Configuration:** local Review worker enabled with the deterministic `mock`
+  provider; production requires explicit Review enablement and `jev` selection.
+  Existing Shadow configuration preserved. Live Jev/Meta were not exercised.
+  Fixture business execution permission was disabled after verification. No live
+  advertising writes, LIMITED_AUTO, schedules, RLS bypass or deployment enabled.
+- **Files:** `decisions/review/`, shared Shadow coordinator/policy inputs, approval
+  presentation/loaders, `advertising/MetaActionAdapter.ts`, Overview model, brand
+  components/assets/metadata, focused regression tests, migration above and
+  [Phase 4 reproduction/cleanup](../../scripts/beta-phase4/README.md).
+  [Database evidence](./phase4/flow.json), [browser evidence](./phase4/browser.json).
+- **P0/P1:** none found in the verified synthetic scope. Live provider behavior,
+  delayed outcome measurement and browser approval/rejection remain unverified.
+  **P2:** existing onboarding lint warnings and legacy ESLint configuration.
+- **Phase 5 focus:** fresh-proposal approve/reject browser journey; delayed outcome
+  observations and provider/read-only connection checks; then full regression,
+  production build and final release configuration/security review. Not started.
+
+## Phase 3 — complete for the development fixture scope, 2026-10-21
+
+Implementation, authenticated analytical verification and the production build
+passed. Phases 1–2 remain complete for their documented
+simulation scope. This is not production deployment approval. Phase 4 results are recorded above.
+
+Existing Supabase development project: **`gkdyyjqepzayjdpvqnja`**, URL
+`https://gkdyyjqepzayjdpvqnja.supabase.co`. MCP SQL and actual authenticated clients
+confirmed connectivity and persisted data. Both Phase 1 businesses and both Phase 2
+simulated businesses remain available. No new project, schema migration, index,
+Auth configuration, secret, schedule, RLS bypass or live Meta action was introduced.
+
+Reproduction: [Phase 3 scripts](../../scripts/beta-phase3/README.md).
+Evidence: [phase3](./phase3/), especially `expected.json`, `browser.json`,
+`interactions.json`, `periods.json`, actual CSV/PDF downloads. Prior screenshots were removed at the user’s request.
+
+### Phase 3 defects repaired
+
+| Priority | Root cause and repair |
+| --- | --- |
+| P0 | Campaigns lifetime tables omitted calls from results and treated summed daily reach as unique period reach. Include calls at every entity level, recompute CPR, and withhold unverified reach/frequency. Actual authenticated loader results match persisted summaries. |
+| P1 | Missing observations/costs/currency appeared as zero or assumed USD, and entity creation dates appeared as measurement dates. Preserve observation availability, render unavailable values, use measured dates, and remove invented attribution labels. Empty nested table summaries no longer imply recorded zero spend. |
+| P1 | Campaigns refresh treated queue acceptance as completed sync. Reuse Overview's existing durable-job polling control, clear caches only after confirmed completion, and retain truthful unchanged/cooldown/failure messages. |
+| P1 | Campaigns row/tab selection triggered redundant server navigations alongside drilldown actions and repeatedly stalled the browser journey. Update the selection URL with native history, retaining scoped server actions; direct ad-page loads also load parent ad-set context. Actual click-through and reload now pass. |
+| P1 | Changing a Reports date preset from the default URL discarded the cookie-resolved account and broadened scope to the business. Seed filter changes with the resolved scope before applying explicit clearing/switching; retain the selected account and its timezone. |
+| P1 | Ads table read media from raw ad JSON rather than persisted creative records. Batch by the actual `platform_creative_id`, scope to the account, and reuse the existing resolver and image error/dimension fallback. No synthetic Meta calls. |
+| P1 | Dimension/daily queries could stop at the PostgREST row cap. Add stable ordered paging; later-page failures propagate. A 1,201-row regression verifies completeness without loading thousands of remote fixtures. |
+| P2 | CSV lacked the business's synthetic label. Add `business_name` to every record while retaining record type, coverage and data-source fields. Campaigns now labels saved history rather than implying a selected-period scope. |
+
+During implementation, the real database test caught an incorrect creative column
+name; it was corrected and covered by a regression. Browser/build inspection also
+caught a misplaced client directive, corrected before final validation.
+
+### Phase 3 database and analytical evidence
+
+Both ordinary authenticated users read their own campaign/ad-set/ad summaries and
+receive no foreign rows. Foreign CSV/PDF, explorer account IDs and forged parent IDs
+were rejected. Normal RLS clients cannot read the other business's creatives,
+performance, dimensions or the temporary saved finding. Public synthetic Storage
+images are intentionally public test media; catalog ownership is enforced by RLS.
+
+Fixed comparable scope: **ad-set performance, October 13–19, USD,
+America/New_York**. MCP SQL, normal-client rows, Reports and CSV agree:
+
+| Business | Spend | Results | Impressions | Clicks | CTR | CPR |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| A, Aurora | 994 | 109 | 99,400 | 2,982 | 3% | 9.119266055 |
+| B, Birch | 780 | 94 | 78,000 | 2,340 | 3% | 8.297872340 |
+
+On October 21, A's Dashboard 7D is **646 / 75 / 8.613333 CPR / 3% CTR**;
+30D is **3,730 / 404 / 9.232673 CPR / 3% CTR**. Today has no observation and remains
+unavailable. B's corresponding expectations are recorded in `expected.json`.
+Campaigns tables show saved lifetime history, not the Dashboard window; the same
+period's explorer metrics were separately reconciled. Parent and child totals are
+not added together. One currently active ad set is shown once; paused historical
+advertising remains separate. Ad-set cards retain ad-set metrics with representative
+creative imagery.
+
+All seven Reports sections rendered from persisted Supabase records. Audience
+age/gender/combined views, independent geography and delivery dimensions, unsupported
+conversion and missing DMA states, keyboard snapshot inspection, mobile hourly
+selection, observed totals and historical finding evidence were exercised.
+Snapshot windows **August 21–September 19** and **October 13–19** remain distinct;
+they are not relabeled with the report dates. Unsupported comparisons remain absent.
+
+Actual A/B CSV exports contain 353/338 records. Actual PDF downloads contain
+120/114 pages; extracted text and rendered cover/middle/final samples were inspected.
+The PDF preserves hourly contexts and snapshot windows, without silently truncating
+records. A's final CSV additionally verifies the new synthetic business label.
+Large-pagination behavior has automated coverage; these are small fixture accounts,
+not a production-scale load test.
+
+### Phase 3 validation
+
+Node **24.2.0**, no dependency or lockfile changes.
+
+| Check | Result |
+| --- | --- |
+| Initial focused analytics suite | 218 passed |
+| Full final Vitest suite | **788 passed, 13 opt-in live checks skipped**, 66 passing files; `npm test -- --maxWorkers=2` |
+| Actual authenticated Phase 3 database loader/isolation suite | **2 passed**, actual network/database reads; only the server cookie-client factory is replaced with normal signed-in clients |
+| Final focused table/loader regressions | 11 passed before the last export assertion, which is included in the full final suite |
+| Broad authenticated browser harness | **68 checks passed**, no page errors; both businesses, Dashboard periods/hierarchy, exports/isolation and six requested widths |
+| Post-repair authenticated interaction journey | **11 checks passed**, no page errors; table navigation/reload, creative success/failure, findings, snapshot controls, hourly interaction, RLS and real simulated-provider manual sync |
+| Reports date presets | **5 checks passed** in the actual authenticated app: default 30 days, 7D/30D/90D retain the selected account and end October 20 in America/New_York; custom October 21 explicitly shows Partial day |
+| Isolated Reports acceptance harness | Final rerun passed: 35 section/viewport renders, seven data states, numerical/history/filter/export assertions and 14 accessibility scans; supplementary isolated payloads, not an authenticated E2E substitute |
+| TypeScript | **Passed**, exit 0 |
+| Targeted ESLint | **Passed**, no remaining warnings/errors in changed/new TypeScript files; used Next's flat presets because the existing `next lint` command is incompatible with Next 16 |
+| Production build | **Passed**, exit 0; Next 16.1.6 compiled, typechecked and generated routes. Browserslist age and experimental type-stripping warnings only. No deployment. |
+
+One concurrent full-suite attempt hit the existing PGlite test's 5-second timeout
+while browser, typecheck and lint were running. The full suite passed with two
+workers without changing test assertions or timeouts. Failed intermediate browser
+runs exposed selectors that matched hidden sections; final evidence includes only
+the successful journey. `*-failure.png` files are explicitly debugging artifacts.
+
+Screenshots cover **320, 390, 430, 768, 1280, 1440 px**. Visual inspection included
+Dashboard desktop, Reports narrow mobile/Audience, repaired Ads desktop/mobile,
+saved evidence, and PDF pages. Creative proportions and table-first layout are
+preserved. No page-level horizontal overflow was detected; wide desktop tables
+retain their own horizontal scrolling. The stable final desktop capture is
+`ads-final-1440.png`; resize settling avoids transient screenshot paint artifacts.
+
+### Phase 3 database objects modified
+
+- Temporary row in `ai.trend_findings`, ID
+  `43f28003-0709-4886-a79d-a149fdf70016`, source `deepvisor-beta-phase3`, was seeded
+  reproducibly, displayed with its actual historical dates, tested for RLS isolation,
+  then **deleted**. MCP confirmed zero remaining rows for that source. It was clearly
+  marked manually authored, with no AI evaluation or recommended action.
+- Existing simulated refresh infrastructure created/completed job
+  `6ce892e3-7f75-463f-9691-fe3383e0a425` in `public.account_sync_jobs` and performed
+  ordinary idempotent writes through the Phase 2 provider to its synthetic account's
+  `ad_entities`, `ad_creatives`, `ad_entity_performance_daily`,
+  `ad_entity_performance_summary`, `ad_entity_performance_hourly`,
+  `ad_audience_breakdowns_summary`, `ad_accounts.last_synced`, `ad_account_sync_state`,
+  `platform_integrations` freshness and `ai.creative_feature_snapshots`.
+  No real Meta account was touched. The worker's saved status
+  was independently confirmed as `completed` through MCP.
+- **No Phase 3 DDL or migration was warranted.** Prior-phase migrations remain as
+  listed below. Nothing was deployed.
+
+### Phase 3 performance and remaining issues
+
+- **Resolved:** paged dimension/daily reads prevent silent row-cap truncation;
+  creative queries are batched, not one request per ad. Campaign selection no longer
+  issues two redundant full RSC requests (observed approximately 1.3–1.6 seconds
+  each in development) before its drilldown. The corrected browser journey completes.
+- An actual 30-day ad-set query used
+  `ad_entity_performance_daily_account_level_day_idx`: 120 rows, 22.362 ms execution,
+  129 shared-buffer hits, no disk reads. This supports retaining the existing index;
+  it is not a large-account latency guarantee.
+- **P0:** no unresolved Phase 3 security/data-correctness defect established by these
+  checks. This does not override the pre-beta configuration prerequisites below.
+- **P1, inherited external-beta prerequisites:** review PostgreSQL security updates,
+  leaked-password protection, and deployed Edge Function/scheduler authentication;
+  verify real Google/Meta OAuth and live read-only media/permissions separately.
+  Those provider/configuration steps were not simulated into a passing claim.
+- **P1, portability:** the missing complete local schema baseline still prevents a
+  claimed clean-stack rebuild; see Phase 1 record.
+- **P2:** exhaustive PDFs are verbose (120/114 pages for these fixtures). Consider
+  a compact paginated layout without dropping data. Large-account end-to-end load
+  testing remains future work. Foreign export requests are denied but currently
+  return a generic server-error status; improve error classification separately.
+- **Limitations:** no live Meta media expiry, OAuth permission or video playback
+  was verified. Fixtures contain posters and controlled images. Empty/loading/error
+  states combine isolated harness coverage with actual missing-day/missing-media,
+  missing-dimension, foreign-access and cooldown checks; not every outage was induced
+  in the real database. Fixed fixture dates age naturally.
+
+### Exact Phase 3 files changed
+
+- `src/app/(root)/campaigns/page.tsx`
+- `src/app/(root)/dashboard/components/OverviewControls.tsx`
+- `src/app/(root)/reports/components/ReportsClient.tsx`
+- `src/app/(root)/reports/components/layout/reportNavigation.ts`
+- `src/app/(root)/reports/components/layout/reportNavigation.test.ts`
+- `src/components/campaigns/{CampaignDashboard,CampaignTable,AdSetTable,AdsTable}.tsx`
+- `src/components/campaigns/metrics.ts`
+- `src/components/campaigns/AdsTable.test.ts`
+- `src/lib/server/repositories/utils.ts`
+- `src/lib/server/repositories/campaigns/{getCampaignSummaries,getCampaignsMetrics}.ts`
+- `src/lib/server/repositories/adsets/getAdSetsMetrics.ts`
+- `src/lib/server/repositories/ads/getAdsMetrics.ts`
+- `src/lib/server/reports/csv.ts`
+- `src/lib/shared/reports/exports.test.ts`
+- `src/lib/server/campaigns/lifetimeMetrics.test.ts`
+- `src/lib/server/betaPhase3.live.test.ts`
+- `scripts/beta-phase3/{README.md,browser.mjs,interactions.mjs,periods.mjs,findings.mjs}`
+- `docs/beta-readiness/STATUS.md` and `docs/beta-readiness/phase3/` evidence files
+
+The exact evidence filenames are listed in `phase3/artifact-manifest.json`; final
+test/build results are retained in `phase3/validation.json` and accompanying logs.
+
+Unrelated user image files were preserved. No commit or push was made.
+
+### Recommended Phase 4 order — not started
+
+1. Resolve/review the inherited external-beta security and configuration gates.
+2. Exercise Decisions/Shadow evidence freshness, insufficient-data outcomes and
+   tenant isolation using explicit controlled providers; preserve all execution gates.
+3. Verify approval/policy/reconciliation failure paths without live advertising writes.
+4. Address PDF density and measured large-account performance after correctness gates.
 
 ## Phase 2 implementation and evidence
 

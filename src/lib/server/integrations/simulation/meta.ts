@@ -6,7 +6,7 @@ const PREFIX = `${SIMULATION_TAG}:`;
 const PROJECT = 'gkdyyjqepzayjdpvqnja';
 export const SIMULATION_DAY = '2026-10-20';
 export const scenarios = ['single', 'multiple', 'none', 'permissions', 'expired', 'connection_failure', 'rate_limit', 'timeout', 'partial'] as const;
-export type Simulation = { businessId: string; scenario: typeof scenarios[number]; revision: number };
+export type Simulation = { businessId: string; scenario: typeof scenarios[number]; revision: number; anchorDay?: string };
 
 export function assertSimulationEnabled(): void {
   if (!['development', 'test'].includes(process.env.NODE_ENV ?? '') ||
@@ -23,7 +23,7 @@ export function simulationForUser(user: User, businessId: string): Simulation | 
   if (!scenarios.includes(designation.scenario) || !Number.isInteger(designation.revision ?? 0)) {
     throw new Error('Invalid server-managed simulation designation');
   }
-  return { businessId, scenario: designation.scenario, revision: designation.revision ?? 0 };
+  return { businessId, scenario: designation.scenario, revision: designation.revision ?? 0, ...(designation.anchorDay ? { anchorDay: designation.anchorDay } : {}) };
 }
 
 export function simulationToken(simulation: Simulation): string {
@@ -39,6 +39,7 @@ export function readSimulation(token: string): Simulation | null {
       !Number.isInteger(value.revision) || value.revision < 0 || value.revision > 10) {
     throw new Error('Invalid simulation configuration');
   }
+  if (value.anchorDay && (!/^2026-\d{2}-\d{2}$/.test(value.anchorDay) || new Date(`${value.anchorDay}T00:00:00Z`).toISOString().slice(0,10) !== value.anchorDay)) throw new Error('Invalid simulation clock');
   return value;
 }
 
@@ -90,21 +91,22 @@ export function simulatedMetaResponse(token: string, path: string, params: Recor
   if (path === id) return { id, name: account.name, currency: 'USD', timezone_name: account.timezone, account_status: 1 };
   if (!path.endsWith('/insights')) throw new Error(`Unsupported simulated Meta path: ${path}`);
   if (simulation.scenario === 'partial') throw new Error('Simulated performance failure after dimensions');
+  const anchorDay = simulation.anchorDay ?? SIMULATION_DAY;
   const range = JSON.parse(String(params.time_range ?? '{}'));
   const since = range.since ?? '2026-07-23';
-  const until = range.until ?? SIMULATION_DAY;
+  const until = range.until ?? anchorDay;
   const level = String(params.level ?? 'account');
   const breakdown = String(params.breakdowns ?? '');
   const hourly = breakdown.includes('hourly_stats');
   const daily = params.time_increment === '1' || params.time_increment === 1;
   const rows: Record<string, unknown>[] = [];
   const grouped = new Map<string, { spend: number; impressions: number; clicks: number; leads: number; date: string; entity: Record<string, string> }>();
-  for (let d = new Date('2026-07-23T00:00:00Z'); d.toISOString().slice(0, 10) <= SIMULATION_DAY; d.setUTCDate(d.getUTCDate() + 1)) {
+  for (let d = new Date('2026-07-23T00:00:00Z'); d.toISOString().slice(0, 10) <= anchorDay; d.setUTCDate(d.getUTCDate() + 1)) {
     const day = d.toISOString().slice(0, 10);
     if (day < since || day > until || (hourly && day < '2026-10-14')) continue;
     setIds.forEach((set, i) => {
       if (i === 1 && day > '2026-10-10') return;
-      const spend = day === SIMULATION_DAY ? 0 : (i ? 20 : 40) + (day === '2026-10-19' ? simulation.revision * 4 : 0);
+      const spend = day === anchorDay ? 0 : (i ? 20 : 40) + (day === '2026-10-19' ? simulation.revision * 4 : 0);
       const leads = spend === 0 ? 0 : i ? 2 : 4 + (day === '2026-10-19' ? simulation.revision : 0);
       for (const n of [1, 2]) {
         const entity: Record<string, string> = level === 'ad' ? { campaign_id: campaign, adset_id: set, ad_id: `${set}_ad${n}` } : level === 'adset' ? { campaign_id: campaign, adset_id: set } : level === 'campaign' ? { campaign_id: campaign } : {};

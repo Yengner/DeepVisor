@@ -19,7 +19,7 @@ import {
 import { IconChartBar, IconCheck, IconCircle, IconCopyPlus, IconDots } from '@tabler/icons-react';
 import StatusBadge from './StatusBadge';
 import { buildEntityReportUrl } from './reportLinks';
-import { formatCurrencyAmount } from '@/lib/shared';
+import { formatRecordedCurrency as formatCurrencyAmount } from './metrics';
 import classes from './CampaignDashboard.module.css';
 
 const BG = 'var(--mantine-color-body)';
@@ -95,7 +95,7 @@ export default function AdSetTable({
             const ctr = adSet.ctr != null ? Number(adSet.ctr) : null;
             const leads = Number(adSet.leads || 0);
             const messages = Number(adSet.messages || 0);
-            const results = leads + messages;
+            const results = leads + messages + Number(adSet.calls || 0);
             const reportHref = buildEntityReportUrl({
               scope: 'adset',
               platformIntegrationId,
@@ -168,22 +168,22 @@ export default function AdSetTable({
                 <div className={classes.mobileMetricGrid}>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
-                    <Text fw={800}>{formatCurrencyAmount(spend, currencyCode)}</Text>
+                    <Text fw={800}>{adSet.metricsAvailable === false ? '—' : formatCurrencyAmount(spend, currencyCode)}</Text>
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Results</Text>
-                    <Text fw={800}>{results}</Text>
+                    <Text fw={800}>{adSet.metricsAvailable === false ? '—' : results}</Text>
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
                     <Text fw={800}>
-                      {formatCurrencyAmount(results > 0 ? spend / results : 0, currencyCode)}
+                      {formatCurrencyAmount(results > 0 ? spend / results : null, currencyCode)}
                     </Text>
                   </div>
                   <details className={classes.moreMetrics} onClick={event=>event.stopPropagation()} onKeyDown={event=>event.stopPropagation()}>
                     <summary>More metrics</summary>
                     <Text size="xs" c="dimmed">Click-through rate</Text>
-                    <Text fw={800}>{ctr != null ? `${ctr}%` : '0%'}</Text>
+                    <Text fw={800}>{ctr != null ? `${ctr}%` : '—'}</Text>
                   </details>
                 </div>
 
@@ -289,13 +289,13 @@ export default function AdSetTable({
               const ctr = adSet.ctr != null ? Number(adSet.ctr) : null;
               const cpc = adSet.cpc != null ? Number(adSet.cpc) : null;
               const cpm = adSet.cpm != null ? Number(adSet.cpm) : null;
-              const reach = Number(adSet.reach || 0);
+              const reach = adSet.reach;
               const impressions = Number(adSet.impressions || 0);
               const clicks = Number(adSet.clicks || 0);
               const linkClicks = Number(adSet.link_clicks || 0);
               const leads = Number(adSet.leads || 0);
               const messages = Number(adSet.messages || 0);
-              const results = leads + messages;
+              const results = leads + messages + Number(adSet.calls || 0);
               const reportHref = buildEntityReportUrl({
                 scope: 'adset',
                 platformIntegrationId,
@@ -378,20 +378,20 @@ export default function AdSetTable({
                   <Table.Td style={{ whiteSpace: 'nowrap' }}>
                     <Text size="sm">{adSet.end_date || '—'}</Text>
                   </Table.Td>
-                  <Table.Td><Text fw={500} size="sm">{formatCurrencyAmount(spend, currencyCode)}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{results > 0 ? `${results} Results` : '0 Results'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{formatCurrencyAmount(results > 0 ? spend / results : 0, currencyCode)}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{ctr != null ? `${ctr}%` : '0%'}</Text></Table.Td>
+                  <Table.Td><Text fw={500} size="sm">{adSet.metricsAvailable === false ? '—' : formatCurrencyAmount(spend, currencyCode)}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{adSet.metricsAvailable === false ? 'Unavailable' : `${results} Results`}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{formatCurrencyAmount(results > 0 ? spend / results : null, currencyCode)}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{ctr != null ? `${ctr}%` : '—'}</Text></Table.Td>
                   <Table.Td><Text size="sm">{cpc != null ? formatCurrencyAmount(cpc, currencyCode) : '—'}</Text></Table.Td>
                   <Table.Td><Text size="sm">{cpm != null ? formatCurrencyAmount(cpm, currencyCode) : '—'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{reach}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{impressions}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{clicks}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{linkClicks}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{leads}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{messages}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{reach > 0 ? (impressions / reach).toFixed(2) : '0.00'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{formatCurrencyAmount(leads > 0 ? spend / leads : 0, currencyCode)}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{reach ?? '—'}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{adSet.metricsAvailable === false ? '—' : impressions}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{adSet.metricsAvailable === false ? '—' : clicks}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{adSet.metricsAvailable === false ? '—' : linkClicks}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{adSet.metricsAvailable === false ? '—' : leads}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{adSet.metricsAvailable === false ? '—' : messages}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{reach != null && reach > 0 ? (impressions / reach).toFixed(2) : '—'}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{formatCurrencyAmount(leads > 0 ? spend / leads : null, currencyCode)}</Text></Table.Td>
 
                   <Table.Td
                     style={{

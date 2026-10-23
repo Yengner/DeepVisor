@@ -32,9 +32,14 @@ const policyReasons: Record<string, string> = {
   HIGH_RISK: 'This change needs a closer review.', SHADOW_MODE: 'This recommendation is being observed only.',
 };
 
-export function canReviewProposal(proposal: ActionProposalRow, run: DecisionRunRow, policy: AutonomyPolicyRow | null, hasExecution: boolean): boolean {
+export function approvalEvidenceFresh(run: DecisionRunRow, now = Date.now()): boolean {
+  const age = now - Date.parse(run.updated_at);
+  return Number.isFinite(age) && age >= 0 && age <= 3600000;
+}
+
+export function canReviewProposal(proposal: ActionProposalRow, run: DecisionRunRow, policy: AutonomyPolicyRow | null, hasExecution: boolean, now = Date.now()): boolean {
   const result = record(proposal.policy_result_json);
-  return run.status === 'completed' && proposal.status === 'pending' && proposal.requires_approval &&
+  return approvalEvidenceFresh(run, now) && result.shadowOnly !== true && run.status === 'completed' && proposal.status === 'pending' && proposal.requires_approval &&
     policy?.mode === 'approval_required' && policy.business_id === proposal.business_id && run.business_id === proposal.business_id &&
     proposal.decision_run_id === run.id && result.outcome === 'REQUIRE_APPROVAL' && result.reason === 'REVIEW_MODE' &&
     ['REDUCE_BUDGET', 'PAUSE_DELIVERY_UNIT'].includes(proposal.action_type) &&
@@ -45,12 +50,12 @@ export interface DecisionCard {
   id: string; title: string; entity: string; account: string; createdAt: string; explanation: string;
   evaluated: string[]; confidence: number | null; probability: number | null; provider: string;
   evidence: Array<{ label: string; value: string }>; period: string | null;
-  proposals: Array<{ id: string; title: string; detail: string; status: string; reason: string | null; canReview: boolean; reviewFingerprint: string | null; currentValue?: string | null; proposedValue?: string | null; executionHistory?: ExecutionDisplay[] }>;
+  proposals: Array<{ id: string; title: string; detail: string; status: string; reason: string | null; canReview: boolean; reviewFingerprint: string | null; currentValue?: string | null; proposedValue?: string | null; executionHistory?: ExecutionDisplay[]; outcomes?: string[] }>;
 }
 
 export function toDecisionCard(input: {
   run: DecisionRunRow; snapshot: FeatureSnapshotRow | undefined; proposals: ActionProposalRow[];
-  executions: ExecutedActionRow[]; policy: AutonomyPolicyRow | null; entityName?: string; accountName?: string;
+  executions: ExecutedActionRow[]; outcomes?: Tables['action_outcomes']['Row'][]; policy: AutonomyPolicyRow | null; entityName?: string; accountName?: string; now?: number;
 }): DecisionCard {
   const { run, snapshot } = input;
   const payload = record(run.decision_json);
@@ -85,12 +90,12 @@ export function toDecisionCard(input: {
       const latest = [...executions].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
       const outcome = text(policy.outcome);
       const status = executions.some((execution) => record(execution.error_json).reconciliationRequired === true) ? 'Needs reconciliation'
-        : executions.some((execution) => execution.status === 'succeeded') ? 'Executed'
+        : executions.some((execution) => execution.status === 'succeeded') ? policy.simulation === true ? 'Simulated execution' : 'Executed'
         : latest?.status === 'failed' ? 'Execution failed' : latest ? 'Execution pending'
           : proposal.status === 'rejected' ? 'Rejected' : proposal.status === 'cancelled' ? 'Cancelled'
             : proposal.status === 'approved' ? 'Approved - not executed'
               : outcome === 'BLOCK' ? 'Blocked' : outcome === 'SHADOW_ONLY' ? 'Observation only'
-                : outcome === 'REQUIRE_APPROVAL' ? 'Needs approval' : outcome === 'ALLOW_EXECUTION' ? 'Eligible - not executed' : 'Not cleared';
+                : outcome === 'REQUIRE_APPROVAL' ? approvalEvidenceFresh(run, input.now) ? 'Needs approval' : 'Evaluation expired' : outcome === 'ALLOW_EXECUTION' ? 'Eligible - not executed' : 'Not cleared';
       const current = numeric(record(proposal.current_state_json).budgetMinor);
       const proposed = record(proposal.proposed_state_json);
       const target = numeric(proposed.targetBudgetMinor) ?? numeric(proposed.budgetMinor);
@@ -101,11 +106,12 @@ export function toDecisionCard(input: {
       return { id: proposal.id, title: decisionLabels[proposal.action_type] ?? 'Proposed action', detail, status,
         currentValue: proposal.action_type === 'REDUCE_BUDGET' && current !== null && currency ? formatCurrencyAmount(current / divisor, currency) : null,
         proposedValue: proposal.action_type === 'REDUCE_BUDGET' && target !== null && currency ? formatCurrencyAmount(target / divisor, currency) : proposal.action_type === 'PAUSE_DELIVERY_UNIT' ? 'Paused' : null,
+        outcomes: (input.outcomes ?? []).filter(o => executions.some(e => e.id === o.executed_action_id)).map(o => `${o.measurement_horizon_hours}h: ${{ pending: 'Waiting for observations', complete: 'Observed comparison recorded', insufficient_data: 'Insufficient observations', unavailable: 'Measurement unavailable' }[o.measurement_status] ?? 'Measurement unavailable'}`),
         executionHistory: executions.map(execution => executionDisplay(execution, proposal.action_type)),
         reason: policyReasons[text(policy.reason) ?? ''] ?? null,
         reviewFingerprint: snapshot && input.policy ? approvalFingerprint(proposal, run, snapshot, input.policy) : null,
         canReview: Boolean(snapshot && snapshot.entity_id === proposal.target_entity_id && snapshot.entity_type === proposal.target_entity_type) &&
-          canReviewProposal(proposal, run, input.policy, executions.length > 0),
+          canReviewProposal(proposal, run, input.policy, executions.length > 0, input.now),
       };
     }),
   };

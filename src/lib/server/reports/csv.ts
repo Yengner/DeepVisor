@@ -4,7 +4,7 @@ const metricColumns = { spend: 'spend', conversion: 'conversion', costPerResult:
 export const REPORT_CSV_HEADERS = ['row_type', 'context', 'id', 'name', 'level', 'status', 'primary_context', 'secondary_context',
   ...EXPORT_METRICS.map(([key]) => metricColumns[key]), 'start_date', 'end_date', 'measurement_basis', 'coverage', 'observations',
   'report_date_from', 'report_date_to', 'range_mode', 'group_by', 'compare_mode', 'scope', 'ad_account_ids', 'campaign_ids', 'adset_ids', 'ad_ids',
-  'account_timezone', 'currency', 'unavailable_metrics', 'notes', 'data_source', 'generated_at'] as const;
+  'account_timezone', 'currency', 'unavailable_metrics', 'notes', 'business_name', 'data_source', 'generated_at'] as const;
 /** Protect spreadsheet formulas in text while preserving actual numeric values (including negatives). */
 export function escapeReportCsv(value: string | number | null | undefined): string {
   let text = String(value ?? '');
@@ -21,7 +21,7 @@ export function reportWorkspaceCsvRows(payload: ReportPayload, demo = false): Ar
     ad_account_ids: payload.query.adAccountIds.join(';'), campaign_ids: payload.query.campaignIds.join(';'), adset_ids: payload.query.adsetIds.join(';'), ad_ids: payload.query.adIds.join(';'),
     account_timezone: payload.meta.timezone ?? 'unknown', currency: row.currency ?? 'unknown',
     unavailable_metrics: EXPORT_METRICS.filter(([key]) => row.values[key] == null).map(([key]) => metricColumns[key]).join(';'),
-    notes: row.note, data_source: demo ? 'demo' : 'saved_account_data', generated_at: payload.meta.generatedAt,
+    notes: row.note, business_name: payload.meta.businessName, data_source: demo ? 'demo' : 'saved_account_data', generated_at: payload.meta.generatedAt,
   }));
 }
 export function renderReportCsv(payload: ReportPayload, demo = false) {

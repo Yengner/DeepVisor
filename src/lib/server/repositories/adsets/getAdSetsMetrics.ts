@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatDisplayDate } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
 import { derivePerformanceMetrics } from '../campaigns/normalizers';
-import { chunkArray } from '../utils';
+import { chunkArray, readAllPages } from '../utils';
 
 type QuerySupabaseClient = SupabaseClient<Database>;
 
@@ -26,6 +26,7 @@ type AdsetPerformanceRow = {
   inline_link_clicks: number;
   leads: number;
   messages: number;
+  calls: number;
   first_day: string | null;
   last_day: string | null;
 };
@@ -47,7 +48,9 @@ export interface AdSetLifetimeRow {
   impressions: number;
   spend: string;
   leads: number;
-  reach: number;
+  reach: number | null;
+  calls?: number;
+  metricsAvailable?: boolean;
   link_clicks: number;
   messages: number;
   cpm: string | null;
@@ -79,10 +82,7 @@ async function listAdsetDims(input: {
     query = query.eq('external_id', input.adsetExternalId);
   }
 
-  const { data, error } = await query;
-  if (error) {
-    throw error;
-  }
+  const data = await readAllPages((from, to) => query.order('id').range(from, to));
 
   return (data ?? []) as AdsetDimRow[];
 }
@@ -97,7 +97,7 @@ async function listAdsetPerformanceRows(input: {
     const { data, error } = await input.supabase
       .from('adset_performance_summary')
       .select(
-        'adset_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, first_day, last_day'
+        'adset_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls, first_day, last_day'
       )
       .in('adset_id', adsetIdsChunk);
 
@@ -174,6 +174,8 @@ export async function getAdSetsLifetimeIncludingZeros(
         linkClicks: 0,
         leads: 0,
         messages: 0,
+        calls: 0,
+        observations: 0,
         firstDay: null as string | null,
         lastDay: null as string | null,
       },
@@ -193,6 +195,8 @@ export async function getAdSetsLifetimeIncludingZeros(
     totals.linkClicks += row.inline_link_clicks ?? 0;
     totals.leads += row.leads ?? 0;
     totals.messages += row.messages ?? 0;
+    totals.calls += row.calls ?? 0;
+    totals.observations++;
 
     if (row.first_day && (!totals.firstDay || row.first_day < totals.firstDay)) {
       totals.firstDay = row.first_day;
@@ -220,6 +224,7 @@ export async function getAdSetsLifetimeIncludingZeros(
         clicks: totals.clicks,
         leads: totals.leads,
         messages: totals.messages,
+        calls: totals.calls,
       });
 
       return {
@@ -234,15 +239,17 @@ export async function getAdSetsLifetimeIncludingZeros(
         impressions: totals.impressions,
         spend: spend.toFixed(2),
         leads: totals.leads,
-        reach: totals.reach,
+        reach: null,
         link_clicks: totals.linkClicks,
         messages: totals.messages,
+        calls: totals.calls,
+        metricsAvailable: totals.observations > 0,
         cpm: totals.impressions > 0 ? metrics.cpm.toFixed(2) : null,
         ctr: totals.impressions > 0 ? metrics.ctr.toFixed(4) : null,
         cpc: totals.clicks > 0 ? metrics.cpc.toFixed(2) : null,
         cpl: totals.leads > 0 ? (spend / totals.leads).toFixed(2) : null,
-        frequency: totals.reach > 0 ? metrics.frequency.toFixed(2) : null,
-        start_date: formatDisplayDate(totals.firstDay || adset.created_time),
+        frequency: null,
+        start_date: formatDisplayDate(totals.firstDay),
         end_date: formatDisplayDate(totals.lastDay),
         platform_name: vendor,
       } satisfies AdSetLifetimeRow;

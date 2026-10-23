@@ -3,6 +3,17 @@ import type { Database } from '@/lib/shared/types/supabase';
 
 export type RepositoryClient = SupabaseClient<Database>;
 
+/** Traverse PostgREST's row cap. Callers provide a stable order before range(). */
+export async function readAllPages<T>(read: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>): Promise<T[]> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += 500) {
+    const { data, error } = await read(from, from + 499);
+    if (error) throw error;
+    rows.push(...(data ?? []));
+    if (!data || data.length < 500) return rows;
+  }
+}
+
 export function chunkArray<T>(items: T[], size: number): T[][] {
   if (items.length === 0) {
     return [];

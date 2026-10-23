@@ -3,7 +3,9 @@ import { formatDisplayDate } from '@/lib/shared';
 import type { Json } from '@/lib/shared/types/supabase';
 import { asRecord, asString } from '@/lib/shared/utils/format';
 import { derivePerformanceMetrics } from '../campaigns/normalizers';
-import { chunkArray } from '../utils';
+import { chunkArray, readAllPages } from '../utils';
+import { mediaFor } from '@/lib/server/campaigns/exploration/model';
+import type { Media } from '@/lib/server/campaigns/exploration/types';
 
 type SupabaseClient = Awaited<ReturnType<typeof createSupabaseClient>>;
 
@@ -27,6 +29,7 @@ type AdPerformanceRow = {
   inline_link_clicks: number | null;
   leads: number | null;
   messages: number | null;
+  calls: number | null;
   first_day: string | null;
   last_day: string | null;
 };
@@ -50,6 +53,7 @@ type AdsetDebugLookupRow = {
 };
 
 export interface AdLifetimeRow {
+  creativePreview?: Media;
   id: string;
   ad_id: string;
   name: string;
@@ -63,7 +67,9 @@ export interface AdLifetimeRow {
   impressions: number;
   spend: string;
   leads: number;
-  reach: number;
+  reach: number | null;
+  calls?: number;
+  metricsAvailable?: boolean;
   link_clicks: number;
   messages: number;
   cpm: string | null;
@@ -97,10 +103,7 @@ async function listAdDims(input: {
     query = query.eq('external_id', input.adExternalId);
   }
 
-  const { data, error } = await query;
-  if (error) {
-    throw error;
-  }
+  const data = await readAllPages((from, to) => query.order('id').range(from, to));
 
   return (data ?? []) as AdDimRow[];
 }
@@ -115,7 +118,7 @@ async function listAdPerformanceRows(input: {
     const { data, error } = await input.supabase
       .from('ad_performance_summary')
       .select(
-        'ad_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, first_day, last_day'
+        'ad_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls, first_day, last_day'
       )
       .in('ad_id', adIdsChunk);
 
@@ -278,6 +281,13 @@ export async function getAdsLifetimeIncludingZeros(
       supabase,
       adIds: ads.map((ad) => ad.id),
     });
+    const previews = new Map<string, Media>();
+    for (const ids of chunkArray([...new Set(ads.flatMap(ad => ad.creative_id ? [ad.creative_id] : []))], 200)) {
+      const { data, error } = await supabase.from('ad_creatives').select('*')
+        .eq('ad_account_id', adAccountUuid).in('platform_creative_id', ids);
+      if (error) throw error;
+      for (const creative of data ?? []) previews.set(creative.platform_creative_id, mediaFor(creative));
+    }
 
     console.info(`${ADS_METRICS_LOG_PREFIX} Loaded ad performance rows`, {
       ...debugContext,
@@ -297,6 +307,8 @@ export async function getAdsLifetimeIncludingZeros(
           linkClicks: 0,
           leads: 0,
           messages: 0,
+          calls: 0,
+          observations: 0,
           firstDay: null as string | null,
           lastDay: null as string | null,
         },
@@ -316,6 +328,8 @@ export async function getAdsLifetimeIncludingZeros(
       totals.linkClicks += row.inline_link_clicks ?? 0;
       totals.leads += row.leads ?? 0;
       totals.messages += row.messages ?? 0;
+      totals.calls += row.calls ?? 0;
+      totals.observations++;
 
       if (row.first_day && (!totals.firstDay || row.first_day < totals.firstDay)) {
         totals.firstDay = row.first_day;
@@ -380,6 +394,7 @@ export async function getAdsLifetimeIncludingZeros(
           clicks: totals.clicks,
           leads: totals.leads,
           messages: totals.messages,
+          calls: totals.calls,
         });
 
         return {
@@ -388,6 +403,7 @@ export async function getAdsLifetimeIncludingZeros(
           name: ad.name || 'Unnamed ad',
           status: ad.status || 'UNKNOWN',
           creative_id: ad.creative_id,
+          creativePreview: ad.creative_id ? previews.get(ad.creative_id) : undefined,
           adset_id: ad.adset_external_id,
           adset_name: adset?.name || 'Unnamed ad set',
           campaign_id: adset?.campaign_external_id || '',
@@ -399,15 +415,17 @@ export async function getAdsLifetimeIncludingZeros(
           impressions: totals.impressions,
           spend: spend.toFixed(2),
           leads: totals.leads,
-          reach: totals.reach,
+          reach: null,
           link_clicks: totals.linkClicks,
           messages: totals.messages,
+          calls: totals.calls,
+          metricsAvailable: totals.observations > 0,
           cpm: totals.impressions > 0 ? metrics.cpm.toFixed(2) : null,
           ctr: totals.impressions > 0 ? metrics.ctr.toFixed(4) : null,
           cpc: totals.clicks > 0 ? metrics.cpc.toFixed(2) : null,
           cpl: totals.leads > 0 ? (spend / totals.leads).toFixed(2) : null,
-          frequency: totals.reach > 0 ? metrics.frequency.toFixed(2) : null,
-          start_date: formatDisplayDate(totals.firstDay || ad.created_time),
+          frequency: null,
+          start_date: formatDisplayDate(totals.firstDay),
           end_date: formatDisplayDate(totals.lastDay),
           platform_name: vendor,
           raw_data: ad.raw,

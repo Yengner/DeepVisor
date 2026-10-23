@@ -20,7 +20,7 @@ import {
 } from '@tabler/icons-react';
 import StatusBadge from './StatusBadge';
 import { buildEntityReportUrl } from './reportLinks';
-import { formatCurrencyAmount } from '@/lib/shared';
+import { formatRecordedCurrency as formatCurrencyAmount } from './metrics';
 import classes from './CampaignDashboard.module.css';
 
 interface CampaignTableProps {
@@ -133,7 +133,7 @@ export default function CampaignTable({
                 <div className={classes.mobileMetricGrid}>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
-                    <Text fw={800}>{formatCurrencyAmount(campaign.spend, currencyCode)}</Text>
+                    <Text fw={800}>{campaign.metricsAvailable === false ? '—' : formatCurrencyAmount(campaign.spend, currencyCode)}</Text>
                   </div>
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Results</Text>
@@ -142,13 +142,13 @@ export default function CampaignTable({
                   <div>
                     <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
                     <Text fw={800}>
-                      {formatCurrencyAmount(campaign.costPerResult, currencyCode)}
+                      {campaign.costPerResult === null ? '—' : formatCurrencyAmount(campaign.costPerResult, currencyCode)}
                     </Text>
                   </div>
                   <details className={classes.moreMetrics} onClick={event=>event.stopPropagation()} onKeyDown={event=>event.stopPropagation()}>
                     <summary>More metrics</summary>
                     <Text size="xs" c="dimmed">Click-through rate</Text>
-                    <Text fw={800}>{campaign.ctr != null ? `${campaign.ctr}%` : '0%'}</Text>
+                    <Text fw={800}>{campaign.ctr != null ? `${campaign.ctr}%` : '—'}</Text>
                   </details>
                 </div>
 
@@ -332,23 +332,23 @@ export default function CampaignTable({
                   <Table.Td style={{ whiteSpace: 'nowrap' }}>
                     <Text size="sm">{campaign.endDate || '—'}</Text>
                   </Table.Td>
-                  <Table.Td><Text fw={500} size="sm">{formatCurrencyAmount(campaign.spend, currencyCode)}</Text></Table.Td>
+                  <Table.Td><Text fw={500} size="sm">{campaign.metricsAvailable === false ? '—' : formatCurrencyAmount(campaign.spend, currencyCode)}</Text></Table.Td>
                   <Table.Td><Text size="sm">{campaign.results}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{formatCurrencyAmount(campaign.costPerResult, currencyCode)}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.ctr != null ? `${campaign.ctr}%` : '0%'}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.costPerResult === null ? '—' : formatCurrencyAmount(campaign.costPerResult, currencyCode)}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.ctr != null ? `${campaign.ctr}%` : '—'}</Text></Table.Td>
                   <Table.Td><Text size="sm">{campaign.cpc != null ? formatCurrencyAmount(campaign.cpc, currencyCode) : '—'}</Text></Table.Td>
                   <Table.Td><Text size="sm">{campaign.cpm != null ? formatCurrencyAmount(campaign.cpm, currencyCode) : '—'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.reach ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.impressions ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.clicks ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.link_clicks ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.leads ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.messages ?? 0}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.reach ?? '—'}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.metricsAvailable === false ? '—' : campaign.impressions ?? 0}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.metricsAvailable === false ? '—' : campaign.clicks ?? 0}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.metricsAvailable === false ? '—' : campaign.link_clicks ?? 0}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.metricsAvailable === false ? '—' : campaign.leads ?? 0}</Text></Table.Td>
+                  <Table.Td><Text size="sm">{campaign.metricsAvailable === false ? '—' : campaign.messages ?? 0}</Text></Table.Td>
                   <Table.Td>
                     <Text size="sm">
                       {campaign.reach && campaign.impressions
                         ? (Number(campaign.impressions) / Number(campaign.reach)).toFixed(2)
-                        : '0.00'}
+                        : '—'}
                     </Text>
                   </Table.Td>
                   <Table.Td>
@@ -356,7 +356,7 @@ export default function CampaignTable({
                       {formatCurrencyAmount(
                         Number(campaign.leads) > 0
                           ? Number(campaign.spend || 0) / Number(campaign.leads)
-                          : 0,
+                          : null,
                         currencyCode
                       )}
                     </Text>

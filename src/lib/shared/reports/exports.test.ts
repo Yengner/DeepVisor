@@ -41,6 +41,7 @@ describe('complete workspace exports', () => {
     expect(records.filter(r => r.kind === 'advertising' && r.context.startsWith('Selected scope:'))).toHaveLength(40);
     expect(records.find(r => r.kind === 'period')?.values.spend).toBe(0);
     const rows = reportWorkspaceCsvRows(p);
+    expect(rows.every(row => row.business_name === p.meta.businessName)).toBe(true);
     expect(rows.find(r => r.id === 'entity-39')?.name).toBe('Entity 39');
     expect(rows.find(r => r.row_type === 'period')?.spend).toBe(0);
   });

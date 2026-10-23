@@ -54,6 +54,13 @@ function setup() {
 }
 
 describe('Meta action adapter', () => {
+  it('can read for Review while all writes remain disabled', async () => {
+    const f=setup();
+    const readOnly=new MetaActionAdapter({accessToken:'test',accountId:'456',adsetId:'123',liveEnabled:false,readEnabled:true},f.transport);
+    expect(await readOnly.read()).toEqual(state);
+    await expect(readOnly.apply({type:'PAUSE_DELIVERY_UNIT'},state)).rejects.toMatchObject({code:'EXECUTION_DISABLED'});
+    expect(f.transport.mock.calls.every(([,init])=>init?.method==='GET')).toBe(true);
+  });
   it('resolves ad-set and campaign ownership without redirecting a reduction', async () => {
     const f = setup();
     expect(resolveBudget(state)).toMatchObject({ owner: 'adset', ownerId: '123', period: 'daily', amountMinor: 10000 });

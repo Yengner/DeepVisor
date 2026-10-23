@@ -1,5 +1,6 @@
 import { listReportCreatives, reportCreativePreview } from './creatives';
 import 'server-only';
+import { ReportScopeError } from '@/lib/server/reports/access';
 import { aggregateReportMetrics, sourceUnavailable, buildReportKpis as buildKpis } from '@/lib/shared/reports/metrics';
 import { resolveReportDates, previousReportRange as getPreviousPeriodRange } from '@/lib/shared/reports/dates';
 import { dailyCoverage } from '@/lib/shared/reports/coverage';
@@ -573,7 +574,7 @@ async function getAdAccounts(
       throw error;
     }
 
-    if (!data) throw new Error('Reporting platform is not authorized.');
+    if (!data) throw new ReportScopeError('Reporting platform is not authorized.');
     platformId = data.platform_id;
   }
 
@@ -1640,17 +1641,17 @@ async function getFilterContext(
       ])
     : [[], [], []];
 
-  if (query.adAccountIds.some(id => !allowedAdAccountIds.includes(id))) throw new Error('Reporting account is not authorized.');
+  if (query.adAccountIds.some(id => !allowedAdAccountIds.includes(id))) throw new ReportScopeError('Reporting account is not authorized.');
   const selectedCampaigns = campaigns.filter(row => query.campaignIds.includes(row.external_id));
   const selectedAdsets = adsets.filter(row => query.adsetIds.includes(row.external_id));
   const selectedAds = ads.filter(row => query.adIds.includes(row.external_id));
   for (const [requested, found] of [[query.campaignIds, selectedCampaigns], [query.adsetIds, selectedAdsets], [query.adIds, selectedAds]] as const) {
-    if (requested.some(id => !found.some(row => row.external_id === id))) throw new Error('Reporting entity is not authorized.');
+    if (requested.some(id => !found.some(row => row.external_id === id))) throw new ReportScopeError('Reporting entity is not authorized.');
   }
   if (selectedAdsets.some(row => query.campaignIds.length && !query.campaignIds.includes(row.campaign_external_id)) ||
       selectedAds.some(row => (query.adsetIds.length && !query.adsetIds.includes(row.adset_external_id)) ||
         (query.campaignIds.length && !adsets.some(parent => parent.ad_account_id === row.ad_account_id && parent.external_id === row.adset_external_id && query.campaignIds.includes(parent.campaign_external_id))))) {
-    throw new Error('Reporting hierarchy does not match the selected parents.');
+    throw new ReportScopeError('Reporting hierarchy does not match the selected parents.');
   }
   if (options.entityMode !== 'active_recent') {
     return {

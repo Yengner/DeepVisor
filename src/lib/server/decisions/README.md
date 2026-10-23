@@ -171,3 +171,22 @@ PGlite tests of the actual SQL migration. PGlite uses a small test-only fixture
 for pre-existing dependencies; it is not a production schema migration. Tests
 cover tenant boundaries, RLS/grants, defaults, constraints and error propagation.
 They require neither Docker nor live Supabase/Meta credentials.
+
+## Review evaluations after sync
+
+`20261022061347_review_evaluation_pipeline.sql` extends the existing durable
+Shadow queue with mode-scoped enqueue/claim/finalize RPCs. It does not convert
+Shadow proposals. Set server-only `DEEPVISOR_REVIEW_ENABLED=true` and explicitly
+select `DEEPVISOR_REVIEW_PROVIDER=jev` (production) or `mock` (development/test).
+The existing post-sync hooks and worker drain fresh completed-day sources for
+businesses with `mode=approval_required`; no new schedule is installed. Missing
+configuration/provider failures fail closed. The built-in mock recommends only
+HOLD, INSUFFICIENT_DATA or REVIEW_CREATIVE; tests inject deterministic action
+recommendations through the same provider interface.
+
+Action recommendations acquire read-only current Meta state and pass PolicyEngine
+before a pending proposal is saved. Read permission never grants write permission.
+An owner/admin must review the exact fingerprint within one hour of evaluation.
+Execution still requires all independent gates and fresh state/history checks.
+Outcome measurement excludes Review evaluations from Shadow observations.
+See `scripts/beta-phase4/README.md` for the real-database/fake-adapter verification.

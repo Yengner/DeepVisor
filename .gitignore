@@ -10,13 +10,13 @@
 !.yarn/releases
 !.yarn/versions
 
-/docs/*
-!/docs/beta-readiness/
+/docs/
 # testing
 /coverage
 
 # next.js
 /.next/
+/.next-beta-simulation/
 /out/
 
 # production

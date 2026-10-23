@@ -280,15 +280,12 @@ describe("Overview decisions", () => {
     data.snapshots[0].feature_json = {};
     expect(evaluate(data).states.get(entity.id)).toBe("Insufficient data");
   });
-  it("retains old unresolved approvals and uses safe missing names without identifiers", () => {
+  it("does not present expired approvals as actionable attention", () => {
     const data = withProposal(records());
     data.runs[0].created_at = data.runs[0].updated_at = "2026-09-01T10:00:00Z";
     const { view } = evaluate(data, []);
-    expect(view.attention).toHaveLength(1);
-    expect(view.attention[0].entity).toBe("Ad set unavailable");
-    expect(view.attention[0].confidence).toBeNull();
+    expect(view.attention).toHaveLength(0);
     expect(view.counts.evaluations).toBe(0);
-    expect(JSON.stringify(view)).not.toContain("meta-id");
     expect(JSON.stringify(view)).not.toContain("never serialize");
   });
   it("scopes runs through snapshots, not the latest business-wide page", () => {

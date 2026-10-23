@@ -2,7 +2,8 @@ import { createServerClient } from '@/lib/server/supabase/server';
 import MobileAppChromeClient from '@/components/layout/MobileAppChromeClient';
 import TopBarClient from './TopBarClient';
 import type { Database } from '@/lib/shared/types/supabase';
-import { getCurrentSelection } from '@/lib/server/actions/app/selection';
+import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
+import { asRecord } from '@/lib/shared';
 import {
   getUnreadUserNotificationIds,
   getUserNotifications,
@@ -24,7 +25,7 @@ export default async function Topbar({ user, businessId }: TopbarProps) {
 
   const { data: integrationRows, error: integrationError } = await supabase
     .from('platform_integrations')
-    .select('id, platform_id, status, platforms ( key )')
+    .select('id, platform_id, status, integration_details, platforms ( key )')
     .eq('business_id', businessId)
     .eq('status', "connected");
 
@@ -32,7 +33,7 @@ export default async function Topbar({ user, businessId }: TopbarProps) {
     console.error('Error fetching platform integrations:', integrationError.message);
   }
 
-  const platformMap = new Map<string, { integrationId: string; key: string }>();
+  const platformMap = new Map<string, { integrationId: string; key: string; primaryExternalId: string | null }>();
 
   for (const row of integrationRows ?? []) {
     const platform = Array.isArray(row.platforms) ? row.platforms[0] : row.platforms;
@@ -42,6 +43,8 @@ export default async function Topbar({ user, businessId }: TopbarProps) {
     platformMap.set(row.platform_id, {
       integrationId: row.id,
       key,
+      primaryExternalId: typeof asRecord(row.integration_details).primary_ad_account_external_id === 'string'
+        ? asRecord(row.integration_details).primary_ad_account_external_id as string : null,
     });
   }
 
@@ -70,7 +73,11 @@ export default async function Topbar({ user, businessId }: TopbarProps) {
       console.error('Error fetching ad accounts:', adAccountError.message);
     }
 
-    adAccounts = (adAccountRows ?? []).map((row) => ({
+    // Match the shared scope resolver: only the primary account is followed per integration.
+    adAccounts = (adAccountRows ?? []).filter(row => {
+      const primary = platformMap.get(row.platform_id)?.primaryExternalId;
+      return !primary || row.external_account_id === primary;
+    }).map((row) => ({
       id: row.id,
       name: row.name,
       platform_integration_id: platformMap.get(row.platform_id)?.integrationId ?? row.platform_id,
@@ -79,23 +86,9 @@ export default async function Topbar({ user, businessId }: TopbarProps) {
   }
 
   const {
-    selectedPlatformId: platformCookie,
-    selectedAdAccountId: accountCookie,
-  } = await getCurrentSelection();
-
-  const selectedPlatformId =
-    platforms.find((platform) => platform.id === platformCookie)?.id ??
-    platforms[0]?.id ??
-    null;
-
-  const accountsForPlatform = selectedPlatformId
-    ? adAccounts.filter((account) => account.platform_integration_id === selectedPlatformId)
-    : [];
-
-  const selectedAccountId =
-    accountsForPlatform.find((account) => account.id === accountCookie)?.id ??
-    accountsForPlatform[0]?.id ??
-    null;
+    selectedPlatformId,
+    selectedAdAccountId: selectedAccountId,
+  } = await resolveCurrentSelection(businessId);
 
   return (
     <div className="w-full h-full">

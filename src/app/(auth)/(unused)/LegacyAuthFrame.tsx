@@ -1,5 +1,6 @@
+import { BrandLockup } from '@/components/brand/Brand';
 import type { ReactNode } from 'react';
-import { ChartNoAxesCombined, Check, ShieldCheck } from 'lucide-react';
+import { Check, ShieldCheck } from 'lucide-react';
 import classes from './LegacyAuth.module.css';
 
 type LegacyAuthFrameProps = {
@@ -25,10 +26,7 @@ export function LegacyAuthFrame({
     <div className={classes.shell}>
       <aside className={classes.stagePanel} aria-label="Account setup progress">
         <div className={classes.panelBrand}>
-          <span className={classes.panelBrandMark}>
-            <ChartNoAxesCombined size={16} aria-hidden="true" />
-          </span>
-          <span>DEEPVISOR / SECURE SETUP</span>
+          <BrandLockup inverse />
         </div>
 
         <div className={classes.panelIntro}>

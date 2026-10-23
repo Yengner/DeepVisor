@@ -9,7 +9,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReportFilterOptions, ReportPayload } from '@/lib/server/reports/types';
 import ReportsHeader from './layout/ReportsHeader';
 import ReportsSidebar from './layout/ReportsSidebar';
-import { buildReportBreadcrumbs, getActiveFilterCount, resolveScope } from './layout/reportNavigation';
+import { buildReportBreadcrumbs, getActiveFilterCount, updateReportParams } from './layout/reportNavigation';
 import { ReportSections, useReportSection } from './layout/ReportSections';
 import { ReportSectionPanel } from './layout/ReportSectionPanel';
 import { reportExportUrl } from '@/lib/shared/reports/exportLinks';
@@ -33,9 +33,7 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: {
   const { section, select } = useReportSection();
   const currentSearchString = searchParams?.toString() ?? '';
   const updateSearch = (mutate: (params: URLSearchParams) => void) => {
-    const params = new URLSearchParams(currentSearchString);
-    mutate(params);
-    params.set('scope', resolveScope(params));
+    const params = updateReportParams(currentSearchString, payload.query, mutate);
     startTransition(() => router.replace(`${pathname}?${params.toString()}#${section}`, { scroll: false }));
   };
   const exportLinks = useMemo(() => reportExportUrl(payload.query, isDemo), [payload.query, isDemo]);
