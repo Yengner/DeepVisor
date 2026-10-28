@@ -224,6 +224,7 @@ export async function syncMetaBusinessPlatform(input: {
   trigger: SyncTrigger;
   primaryExternalAccountId: string;
   syncMode: PlatformSyncMode;
+  dateRange?: { since: string; until: string };
 }) {
   const resolvedPrimaryAccount = await runMetaSyncStage('selected account resolution', () =>
     resolvePrimaryAdAccountForSync({
@@ -247,7 +248,7 @@ export async function syncMetaBusinessPlatform(input: {
     adAccountId: primaryAdAccount.id,
   });
   const manualRecent = input.trigger === 'manual_refresh' && input.syncMode !== 'full_backfill';
-  const performanceWindow = manualRecent ? manualMetaWindow(primaryAdAccount.timezone) : resolvePerformanceWindow({
+  const performanceWindow = input.dateRange ? { ...input.dateRange, backfillDays: Math.floor((Date.parse(input.dateRange.until)-Date.parse(input.dateRange.since))/86400000)+1 } : manualRecent ? manualMetaWindow(primaryAdAccount.timezone) : resolvePerformanceWindow({
     syncState: adAccountSyncState,
     syncMode: input.syncMode,
     backfillDays: input.backfillDays,
@@ -374,7 +375,7 @@ export async function syncMetaBusinessPlatform(input: {
         adsByExternalId: ads.byExternalId,
         accessToken: input.accessToken,
         backfillDays: performanceWindow.backfillDays,
-        ...(manualRecent ? { dateRange: { since: performanceWindow.since, until: performanceWindow.until } } : {}),
+        ...(manualRecent || input.dateRange ? { dateRange: { since: performanceWindow.since, until: performanceWindow.until } } : {}),
         dataPolicy: input.dataPolicy,
         syncedAt: input.syncedAt,
       })

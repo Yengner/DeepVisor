@@ -1271,6 +1271,7 @@ export type Database = {
           id: string
           insights_synced_through: string | null
           last_failed_sync_job_id: string | null
+          last_visit_sync_check_day: string | null
           last_incremental_sync_at: string | null
           last_successful_sync_job_id: string | null
           latest_activity_date: string | null
@@ -1288,6 +1289,7 @@ export type Database = {
           id?: string
           insights_synced_through?: string | null
           last_failed_sync_job_id?: string | null
+          last_visit_sync_check_day?: string | null
           last_incremental_sync_at?: string | null
           last_successful_sync_job_id?: string | null
           latest_activity_date?: string | null
@@ -1305,6 +1307,7 @@ export type Database = {
           id?: string
           insights_synced_through?: string | null
           last_failed_sync_job_id?: string | null
+          last_visit_sync_check_day?: string | null
           last_incremental_sync_at?: string | null
           last_successful_sync_job_id?: string | null
           latest_activity_date?: string | null
@@ -6390,6 +6393,10 @@ export type Database = {
       }
     }
     Functions: {
+      assert_account_deletable: {
+        Args: { p_user: string }
+        Returns: undefined
+      }
       accept_calendar_queue_workflow: {
         Args: { p_queue_item_id: string; p_user_id?: string }
         Returns: {
@@ -6437,6 +6444,10 @@ export type Database = {
       }
       can_access_business: { Args: { p_business_id: string }; Returns: boolean }
       can_manage_business: { Args: { p_business_id: string }; Returns: boolean }
+      enqueue_automatic_account_sync: {
+        Args: { p_business: string; p_integration: string; p_account: string; p_source: string; p_stale_minutes?: number; p_lookback_days?: number; p_allow_simulation?: boolean }
+        Returns: Json
+      }
       claim_account_sync_job: {
         Args: { allowed_sync_types?: string[]; target_job_id?: string }
         Returns: {

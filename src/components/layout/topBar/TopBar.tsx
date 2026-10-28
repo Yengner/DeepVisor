@@ -27,7 +27,7 @@ export default async function Topbar({ user, businessId }: TopbarProps) {
     .from('platform_integrations')
     .select('id, platform_id, status, integration_details, platforms ( key )')
     .eq('business_id', businessId)
-    .eq('status', "connected");
+    .in('status', ['connected', 'error', 'needs_reauth']);
 
   if (integrationError) {
     console.error('Error fetching platform integrations:', integrationError.message);

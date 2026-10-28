@@ -129,7 +129,7 @@ export async function handleQueueAccountSyncJobsRequest(
       requestUrl.searchParams.get("stale_after_minutes") ??
       jsonBody.staleAfterMinutes ??
       jsonBody.stale_after_minutes,
-    60,
+    90,
     MAX_STALE_AFTER_MINUTES,
   );
   const businessId = optionalString(requestUrl.searchParams.get("businessId") ?? requestUrl.searchParams.get("business_id") ?? jsonBody.businessId ?? jsonBody.business_id);

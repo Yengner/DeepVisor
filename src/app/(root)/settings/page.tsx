@@ -49,6 +49,8 @@ import { formatNotificationPreviewMessage } from '@/lib/shared';
 import { createServerClient } from '@/lib/server/supabase/server';
 import IntelligencePreferencesCard from './components/IntelligencePreferencesCard';
 import CampaignDefaultsForm from './components/CampaignDefaultsForm';
+import ProfileForm from './components/ProfileForm';
+import DeleteAccount from './components/DeleteAccount';
 import classes from './SettingsSurface.module.css';
 import Disclosure from '@/components/product/Disclosure';
 import product from '@/components/product/Product.module.css';
@@ -691,15 +693,7 @@ export default async function SettingsPage() {
                 </div>
               </Group>
               <Stack gap="sm">
-                <InfoRow
-                  label="Name"
-                  value={`${user.first_name} ${user.last_name}`.trim() || 'Not set'}
-                />
-                <InfoRow label="Email" value={user.email} />
-                <InfoRow
-                  label="Phone"
-                  value={user.phone_number || 'Not added'}
-                />
+                <ProfileForm initial={user} />
                 <InfoRow label="Role" value={formatStatusLabel(role)} />
                 <InfoRow label="Account status" value={formatStatusLabel(user.status)} />
               </Stack>
@@ -1213,16 +1207,7 @@ export default async function SettingsPage() {
                   </Button>
                 </Paper>
 
-                <Alert
-                  icon={<IconAlertTriangle size={16} />}
-                  title="Danger zone"
-                  color="#e76156"
-                  variant="light"
-                  radius="md"
-                >
-                  Workspace deletion is not self-serve yet. Disconnect integrations first and use
-                  support-led deletion if that workflow is needed later.
-                </Alert>
+                <DeleteAccount />
               </Stack>
             </Paper>
           </SimpleGrid>

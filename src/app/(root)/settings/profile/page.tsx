@@ -21,7 +21,6 @@ import {
   IconClock,
   IconDatabase,
   IconLock,
-  IconPlug,
   IconTargetArrow,
   IconUser,
 } from '@tabler/icons-react';
@@ -38,6 +37,7 @@ import { createServerClient } from '@/lib/server/supabase/server';
 import { formatNotificationPreviewMessage } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
 import classes from '../SettingsSurface.module.css';
+import ProfileForm from '../components/ProfileForm';
 
 type BusinessProfilePreview = Pick<
   Database['public']['Tables']['business_profiles']['Row'],
@@ -501,14 +501,12 @@ export default async function ProfilePage() {
                 <div>
                   <Text fw={700}>Personal details</Text>
                   <Text size="sm" c="dimmed">
-                    Read-only account identity for now
+                    Update your personal and contact information
                   </Text>
                 </div>
               </Group>
               <Stack gap="sm">
-                <InfoRow label="Full name" value={fullName} />
-                <InfoRow label="Email" value={user.email} />
-                <InfoRow label="Phone" value={user.phone_number || 'Not added'} />
+                <ProfileForm initial={user} />
                 <InfoRow label="Role" value={formatStatusLabel(role)} />
                 <InfoRow label="Account status" value={formatStatusLabel(user.status)} />
                 <InfoRow label="Created" value={formatDateTime(user.created_at)} />

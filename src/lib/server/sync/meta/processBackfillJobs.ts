@@ -1,4 +1,5 @@
 import 'server-only';
+import { asRecord } from '@/lib/shared';
 
 import {
   claimHistoricalSyncJob,
@@ -45,7 +46,7 @@ async function processClaimedJob(jobId: string): Promise<{
       integrationId: job.platform_integration_id,
     });
 
-    if (!integration || integration.platformKey !== 'meta') {
+    if (!integration || integration.platformKey !== 'meta' || !['connected','error'].includes(integration.status)) {
       throw new Error('Historical sync job is missing a connected Meta integration');
     }
 
@@ -91,9 +92,11 @@ async function processClaimedJob(jobId: string): Promise<{
       throw new Error('Backfill ad account is missing or no longer accessible');
     }
 
+    const automatic = ['app_visit','scheduled_refresh'].includes(String(asRecord(job.metadata).queuedFrom));
     await syncBusinessPlatform({
       businessId: job.business_id,
       integrationId: job.platform_integration_id,
+      ...(automatic && job.requested_start_date && job.requested_end_date ? { dateRange: { since: job.requested_start_date, until: job.requested_end_date } } : {}),
       trigger: job.sync_type === 'manual_refresh' ? 'manual_refresh' : 'cron',
       backfillDays: job.sync_type === 'backfill' ? FULL_HISTORY_BACKFILL_DAYS : undefined,
       syncMode: job.sync_type === 'backfill' ? 'full_backfill' : 'default',

@@ -337,7 +337,6 @@ export async function createOrReuseFirstSyncJob(
 ): Promise<AccountSyncJobRow> {
   const existingJobs = await selectHistoricalSyncJobs(supabase, {
     adAccountIds: [input.adAccountId],
-    syncTypes: ['initial_historical'],
     statuses: ['queued', 'running'],
   });
   const existing = existingJobs[0] ?? null;
@@ -374,7 +373,7 @@ export async function createOrReuseFirstSyncJob(
 
   if (error?.code === '23505') {
     const winner = await selectHistoricalSyncJobs(supabase, {
-      adAccountIds: [input.adAccountId], syncTypes: ['initial_historical'], statuses: ['queued', 'running'],
+      adAccountIds: [input.adAccountId], statuses: ['queued', 'running'],
     });
     if (winner[0]) return winner[0];
   }
@@ -411,7 +410,6 @@ export async function createOrReuseQueuedSyncJob(
 
   const existingJobs = await selectHistoricalSyncJobs(supabase, {
     adAccountIds: [input.adAccountId],
-    syncTypes: [input.syncType],
     statuses: ['queued', 'running'],
   });
   const existing = existingJobs[0] ?? null;
@@ -452,7 +450,7 @@ export async function createOrReuseQueuedSyncJob(
 
   if (error?.code === '23505') {
     const winner = await selectHistoricalSyncJobs(supabase, {
-      adAccountIds: [input.adAccountId], syncTypes: [input.syncType], statuses: ['queued', 'running'],
+      adAccountIds: [input.adAccountId], statuses: ['queued', 'running'],
     });
     if (winner[0]) return winner[0];
   }
@@ -477,7 +475,6 @@ export async function enqueueBackfillSyncJob(
 ): Promise<AccountSyncJobRow> {
   const existingJobs = await selectHistoricalSyncJobs(supabase, {
     adAccountIds: [input.adAccountId],
-    syncTypes: ['backfill'],
     statuses: ['queued', 'running'],
   });
   const existing = existingJobs[0] ?? null;
@@ -502,7 +499,7 @@ export async function enqueueBackfillSyncJob(
 
   if (error?.code === '23505') {
     const winner = await selectHistoricalSyncJobs(supabase, {
-      adAccountIds: [input.adAccountId], syncTypes: ['backfill'], statuses: ['queued', 'running'],
+      adAccountIds: [input.adAccountId], statuses: ['queued', 'running'],
     });
     if (winner[0]) return winner[0];
   }

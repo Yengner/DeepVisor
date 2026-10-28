@@ -1,25 +1,15 @@
-import { after, NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { unstable_rethrow } from 'next/navigation';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { createAdminClient } from '@/lib/server/supabase/admin';
-import { processMetaBackfillJobs } from '@/lib/server/sync/meta/processBackfillJobs';
+import { dispatchAccountSync as dispatch } from '@/lib/server/sync/dispatch';
 import { runManualBusinessSync } from '@/lib/server/sync/manualRefresh';
 import { performanceFingerprint } from '@/lib/server/sync/manualRefreshStatus';
 import { asRecord } from '@/lib/shared';
 
 export const maxDuration = 300;
-
-function dispatch(jobId: string, businessId: string) {
-  after(async () => {
-    try {
-      await processMetaBackfillJobs({ targetJobId: jobId });
-      revalidateTag(`dashboard-context:${businessId}`, { expire: 0 });
-      revalidatePath('/dashboard');
-    } catch { console.error('Manual Meta refresh worker unavailable', { jobId }); }
-  });
-}
 
 export async function POST() {
   try {

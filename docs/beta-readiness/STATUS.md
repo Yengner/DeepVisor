@@ -1,5 +1,70 @@
 # DeepVisor beta readiness
 
+## Account settings — 2026-10-28 UTC
+
+- Settings and Profile now edit first/last name and contact phone through RLS;
+  email changes use Supabase Auth verification. Sensitive changes require a recent sign-in.
+- Applied `20261028021848_account_settings.sql` to `gkdyyjqepzayjdpvqnja`:
+  restricted profile grants, verified-email synchronization, and atomic Auth deletion cleanup.
+  Shared workspaces survive; last-owner deletion is blocked. Solo workspaces and their
+  dependency graph are removed. Owned Storage files and unresolved operations block deletion.
+- Verified **33 focused tests**, typecheck, targeted lint (zero warnings/errors), production
+  build, and real authenticated browser/database checks at 1440/390px. Disposable users and
+  workspaces were removed; RLS remains enabled. No screenshots or Meta calls.
+- Application deployment remains pending; real email inbox/link verification needs a manual
+  check. Details and repeatable verification: `scripts/account-settings/README.md`.
+
+## Approved Edge deployment and storage repair — 2026-10-28 UTC
+
+- Deployed queue/canonical worker/compatibility worker versions **2/2/13**. Six
+  absent/invalid-credential probes returned 403. Aligned Edge auth with Vault,
+  disabled the global skip flag, and verified all four Edge endpoints reject
+  missing credentials. Vault-authorized queue/worker forwarding returned 200 with
+  zero jobs; no real advertising accounts were queued by the probes.
+- Secured existing worker/calendar callers using Vault; preserved their ten-minute
+  and one-minute cadences. Applied `20261028003426_cron_vault_authentication.sql`.
+- Root cause of quota: 938,442 unpruned cron records dating to December 2024 and
+  a 108 MB HTTP-response allocation holding only 396 live rows. Preserved recent
+  diagnostics and reclaimed allocated pages: **database ~509 MB → ~33 MB**.
+- Applied `20261028001536_operational_log_retention.sql`: hourly bounded pruning
+  (seven-day cron / 24-hour HTTP fallback), daily regular vacuum, admin-only routine.
+  Real prune cron and direct vacuum succeeded. Ten focused storage/security tests,
+  typecheck and targeted lint passed; no full suite/build repeated.
+- **Remaining blocker:** updated hosted app endpoint returns 404. The two-hour Meta
+  enqueue remains inactive pending Vercel deployment/access; no deployment credentials
+  were present locally. Approval is granted, but activation prerequisites are unmet.
+- Details: [storage maintenance](../../supabase/maintenance/README.md),
+  [deployment status](../../supabase/cron/README.md). No Auth/ad data or execution
+  audit was deleted; no live Meta advertising writes occurred.
+
+## Automatic Meta refresh — implemented, hosted activation pending (2026-10-27)
+
+- Added first advertiser-local daily visit check, 90-minute freshness, seven-day
+  incremental jobs and automatic state/completion display using the existing queue
+  and worker. No manual cooldown consumption or Meta advertising writes.
+- Applied `20261027022659_automatic_meta_refresh.sql` to
+  `gkdyyjqepzayjdpvqnja`: service-only atomic enqueue RPC, persisted daily check,
+  one active job per account across triggers, bounded automatic failure retry and
+  exhausted-worker recovery. Existing RLS and synthetic isolation preserved.
+- Verified real job `32ceb2b1-d9dc-4058-b6a3-c3f547c96ba5` completed once through the
+  existing worker with mock Meta responses; account 2 recorded **$480 / 48 results**
+  over six completed days plus today's zero. Login/scheduled/manual requests shared
+  that job. Manual cooldown was unchanged; authenticated RPC access was denied.
+- **41 focused tests**, one real Supabase flow, typecheck and authenticated browser
+  checks at 1440/390px passed. Targeted lint: zero errors, three existing unused
+  imports in the root layout. No full suite/build repeated. No screenshots retained.
+- Planned cron: `0 */2 * * *`, freshness 90 minutes, Vault credentials; existing
+  worker stays `*/10 * * * *`. Activation script reuses jobs 13 and 66.
+- Failure/reauthentication retains the authorized account and saved Dashboard metrics;
+  the UI shows connection attention rather than hiding existing analytics. Browser
+  verified reconnection guidance while retaining **$480 / 48**.
+- **Blocker:** deployed queue/worker/compatibility functions remain versions 1/1/12
+  with the old bypass code. Updated Next.js app, corrected Edge deployments,
+  unauthorized-request rejection and authenticated hosted processing must be verified
+  before activating cron. Neither Edge functions nor schedules were changed.
+- [Implementation and deployment instructions](../../supabase/cron/README.md);
+  local evidence: `automatic-sync/live.json` and `automatic-sync/browser.json`.
+
 ## Phase 5 — assessment complete: NO-GO for an external beta user, 2026-10-22
 
 The controlled synthetic journey passes. Release configuration and security

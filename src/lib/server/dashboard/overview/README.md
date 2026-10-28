@@ -64,3 +64,12 @@ Featured cards always represent **ad sets**. Comparable positive result leaders 
 Monitoring shows completed checks, HOLD/no-change decisions, creative-review recommendations, and all unresolved attention (not only today's items). These counts overlap. Empty attention is only called stable when every represented unit passes the existing fresh Healthy evidence rule. Configured autonomy is not runtime authorization; there are no approval or execution commands on Overview.
 
 Remaining source limitations: no scheduler heartbeat or authoritative eligible-unit population; no exact target currency/result binding; creative-specific intelligence, reliable playable video URLs, deduplicated multi-day reach, and some historical mode/event timestamps are unavailable. These are not synthesized by presentation code.
+
+## Automatic synchronization in the authenticated shell
+
+The shell's `AutomaticMetaSync` independently checks daily visit freshness and
+observes existing queue jobs; Overview loaders continue to read persisted data.
+Completed synchronization refreshes the visible analytics. Failed/reauthentication
+connections retain their selected account and saved history, with honest connection
+attention and reconnection guidance. A successful sync is not a decision evaluation
+or authorization to execute advertising actions.

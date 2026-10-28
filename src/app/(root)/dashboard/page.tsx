@@ -351,7 +351,9 @@ async function Content({ period, preview }: { period: Period; preview: boolean }
   const connected =
     context.platform?.status === "connected" &&
     context.platform.vendor === "meta";
-  if (!connected || !context.account)
+  const savedMetaAccount = context.platform?.vendor === "meta" &&
+    ["connected", "error", "needs_reauth"].includes(context.platform.status);
+  if (!savedMetaAccount || !context.account)
     return (
       <section className={classes.emptyState}>
         <h1>Connect your advertising</h1>
@@ -433,9 +435,10 @@ async function Content({ period, preview }: { period: Period; preview: boolean }
             </details>
           </div>
           <div className={classes.identityRight}>
-            <span className={classes.connected} aria-label="Meta connected">
+            <span className={classes.connected} data-connection={connected ? "connected" : "attention"}
+              aria-label={connected ? "Meta connected" : "Meta connection needs attention"}>
               <IconBrandMeta size={17} /> Meta{" "}
-              <span className={classes.connectionWord}>connected</span>
+              <span className={classes.connectionWord}>{connected ? "connected" : "needs attention"}</span>
             </span>
             <Suspense fallback={<span>Loading mode…</span>}>
               <Mode context={context} />

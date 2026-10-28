@@ -76,6 +76,9 @@
   border-radius: 50%;
   background: #c8ff56;
 }
+.connected[data-connection="attention"]::before {
+  background: #fbbf24;
+}
 .mode {
   font-size: 12px;
   text-align: right;

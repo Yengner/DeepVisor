@@ -400,11 +400,11 @@ What happens:
 Operational notes:
 
 - The internal route requires `INTERNAL_API_KEY`.
-- The Supabase edge function can additionally enforce `CRON_SECRET`.
+- The repository Edge handlers require `CRON_SECRET` and fail closed. Inspect deployed versions before activation; older versions still permit a bypass.
 - Dashboard polls `GET /api/sync/refresh?jobId=...` only after a user request, for up to five minutes. Reads validate the business, selected account, and integration. Successful persisted completion invalidates account-header cache tags and the Dashboard route; the selected period is retained. Failed/partial sync may have written some data, so the UI does not promise unchanged data on failure.
 - A fingerprint of the selected 30-day ad-set daily statistics distinguishes unchanged statistics from changed statistics. This does not claim identical creative/status data or real-time Meta delivery. If comparison cannot be read, completion is shown without an unchanged claim.
 - The existing account-performance writer fetches account Insights but persists account currency/status metadata, not a separate account-daily metric history. Dashboard totals remain derived from normalized ad-set daily rows. Campaign/ad-set/ad daily persistence is retained; this pass adds no table or schema.
-- The request has a 300-second server execution budget. Hosting limits still apply: a terminated worker can leave a running job requiring existing worker/operator recovery. UI polling timing out does not imply cancellation or completion. No schedule is installed by this change; deployed Supabase cron configuration must be checked separately for manual-only testing.
+- The request has a 300-second server execution budget. Hosting limits still apply: a terminated worker can leave a running job requiring existing worker/operator recovery. UI polling timing out does not imply cancellation or completion. Hosted scheduling remains an explicitly approved deployment step; see the automatic refresh section below.
 - Creative sync performs at most 20 distinct video poster lookups per account, three at a time, with eight-second deadlines through the existing Meta client. It reads `/{video-id}/thumbnails` (`uri,width,height,is_preferred`), keeps the largest valid HTTPS poster in existing creative raw JSON, and retains existing assets on denied access/timeouts. No media lookup occurs on Dashboard load. Small-only previews use compact frames; tokens and raw errors are not sent to browsers.
 - Schedule `queue_account_sync_jobs` to create periodic refresh work, then schedule `process_account_sync_jobs` to drain the queue.
 - Schedule `process_account_sync_jobs` for new cron setup. `process_meta_backfill_jobs` is kept as a compatibility alias for existing schedules.
@@ -545,3 +545,22 @@ completed. Manual refresh retains its existing 202/job-polling contract.
 Concurrent enqueues share a job through the active account/type unique index.
 Incremental sync rereads its lookback window for attribution corrections, and
 provider requests now have a 30-second per-attempt deadline.
+
+## Automatic refresh
+
+The authenticated shell mounts `AutomaticMetaSync`. `POST /api/sync/automatic-refresh`
+accepts no tenant/account override and requires same-origin authenticated access. It
+uses the selected scope and the service-only `enqueue_automatic_account_sync` RPC.
+The first advertiser-local daily visit checks persisted success age; a scheduled
+success within 90 minutes prevents duplication. GET observes durable state and
+last successful time; completion refreshes the visible analytics. Manual cooldown
+is never updated by automatic work.
+
+`enqueueScheduledAccountSyncJobs` uses the same atomic check, bounded seven-day
+window and queue. Expired/disconnected accounts are skipped, automatic failure
+retries are capped, and the shared unique index prevents active cross-trigger jobs.
+Existing worker claims process these jobs; no advertising execution is authorized.
+
+[Deployment, Vault cron configuration, verification and reproduction](../../../../supabase/cron/README.md)
+cover the planned `0 */2 * * *` enqueue and preserved ten-minute worker schedule.
+The script is checked in but has not been activated.

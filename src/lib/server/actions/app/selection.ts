@@ -26,7 +26,8 @@ export const resolveCurrentSelection = cache(
       .from('platform_integrations')
       .select('id, platform_id, integration_details')
       .eq('business_id', businessId)
-      .eq('status', 'connected')
+      // Failed credentials do not remove access to the business's saved analytics.
+      .in('status', ['connected', 'error', 'needs_reauth'])
       .order('created_at', { ascending: true });
 
     if (integrationError || !integrations || integrations.length === 0) {

@@ -228,6 +228,7 @@ export async function syncBusinessPlatform(input: {
   backfillDays?: number;
   syncMode?: PlatformSyncMode;
   primaryExternalAccountId?: string | null;
+  dateRange?: { since: string; until: string };
 }): Promise<BusinessPlatformSyncSummary> {
   const startedAt = new Date().toISOString();
   const syncMode = input.syncMode ?? 'default';
@@ -271,6 +272,7 @@ export async function syncBusinessPlatform(input: {
             }
 
             return syncMetaBusinessPlatform({
+              dateRange: input.dateRange,
               supabase,
               businessId: input.businessId,
               platformId: integration.platformId,

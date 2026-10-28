@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { enqueueScheduledAccountSyncJobs } from '@/lib/server/sync/scheduledRefresh';
 
+export const maxDuration = 300;
+
 function getRequestApiKey(request: NextRequest): string | null {
   const apiKeyHeader = request.headers.get('x-internal-api-key');
   if (apiKeyHeader) {
