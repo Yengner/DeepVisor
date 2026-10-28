@@ -1,0 +1,33 @@
+.form {
+  --mantine-color-text: #202b25;
+  --mantine-color-dimmed: #536159;
+  min-width: 0;
+  color: #202b25;
+  color-scheme: light;
+}
+.heading { margin: 0; color: #202b25; font-size: 18px; line-height: 1.5; font-weight: 700; }
+.helper { margin: 6px 0 4px; color: #536159; font-size: 14px; line-height: 1.65; }
+.form :global(.mantine-InputWrapper-label) { margin-bottom: 6px; color: #202b25; font-size: 14px; font-weight: 600; }
+.form :global(.mantine-InputWrapper-description) { color: #536159; font-size: 13px; line-height: 1.6; margin-bottom: 8px; }
+.form :global(.mantine-Input-input) { min-height: 44px; color: #202b25; background: #fff; border: 1px solid #829387; border-radius: 6px; font-size: 15px; }
+.form :global(.mantine-Input-input)::placeholder { color: #627368; }
+.form :global(.mantine-Input-input):focus { border-color: #0b7a4b; outline: 2px solid #0b7a4b; outline-offset: 2px; }
+.form :global(.mantine-Input-input):disabled { opacity: 1; color: #536159; background: #f1f5f2; }
+.form :global(.mantine-Button-root) { min-height: 44px; font-weight: 600; border-radius: 6px; }
+.form :global(.mantine-Button-root):focus-visible { outline: 2px solid #0b7a4b; outline-offset: 3px; }
+.form :global(.mantine-Button-root):disabled { opacity: 1; color: #59685f; background: #edf1ee; border: 1px solid #d5ded7; }
+.form :global(.mantine-Button-root[data-variant='default']) { color: #202b25; background: #fff; border-color: #829387; }
+.form :global(.mantine-Divider-root) { border-color: #dbe3dd; }
+.fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+.form :global(.mantine-Input-input)[data-disabled] { opacity: 1; color: #536159; background: #f1f5f2; }
+.currentEmail { color: #536159; overflow-wrap: anywhere; line-height: 1.6; }
+.currentEmail strong { color: #202b25; font-weight: 600; }
+.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+.emailButton:not(:disabled) { color: #226443; background: #e9f3ed; }
+.emailButton:not(:disabled):hover { background: #dbece1; }
+.saveButton:not(:disabled) { color: #fff; background: #0b7a4b; border-color: #0b7a4b; }
+.saveButton:not(:disabled):hover { background: #09623d; border-color: #09623d; }
+@media (max-width: 40em) {
+  .actions > button { flex: 1; }
+  .heading { font-size: 17px; }
+}

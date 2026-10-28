@@ -50,6 +50,7 @@ import { createServerClient } from '@/lib/server/supabase/server';
 import IntelligencePreferencesCard from './components/IntelligencePreferencesCard';
 import CampaignDefaultsForm from './components/CampaignDefaultsForm';
 import ProfileForm from './components/ProfileForm';
+import BusinessProfileForm from './components/BusinessProfileForm';
 import DeleteAccount from './components/DeleteAccount';
 import classes from './SettingsSurface.module.css';
 import Disclosure from '@/components/product/Disclosure';
@@ -711,19 +712,10 @@ export default async function SettingsPage() {
                   </Text>
                 </div>
               </Group>
-              <Stack gap="sm">
-                <InfoRow label="Business" value={businessProfile.business_name} />
-                <InfoRow label="Industry" value={businessProfile.industry || 'Not set'} />
-                <InfoRow label="Website" value={businessProfile.website || 'Not set'} />
-                <InfoRow
-                  label="Monthly budget"
-                  value={businessProfile.monthly_budget || 'Not set'}
-                />
-                <InfoRow
-                  label="Description"
-                  value={businessProfile.description || 'Not set'}
-                />
-              </Stack>
+              <BusinessProfileForm
+                canEdit={role === 'owner' || role === 'admin'}
+                initial={{ businessName: businessProfile.business_name, industry: businessProfile.industry ?? '', website: businessProfile.website ?? '', monthlyBudget: businessProfile.monthly_budget ?? '', description: businessProfile.description ?? '' }}
+              />
               <Text size="xs" c="dimmed" tt="uppercase" fw={700} mt="md" mb="xs">
                 Goals
               </Text>
@@ -760,6 +752,7 @@ export default async function SettingsPage() {
           </SimpleGrid>
 
           <CampaignDefaultsForm
+            canEdit={role === 'owner' || role === 'admin'}
             initial={{
               businessLocation: businessProfile.business_location ?? '',
               customerRadius: businessProfile.customer_radius ?? '',
@@ -767,7 +760,6 @@ export default async function SettingsPage() {
               promotedServices: businessProfile.promoted_services ?? [],
               preferredContactMethod: businessProfile.preferred_contact_method ?? '',
               bookingLink: businessProfile.booking_link ?? '',
-              monthlyBudget: businessProfile.monthly_budget ?? '',
             }}
           />
         </Card>

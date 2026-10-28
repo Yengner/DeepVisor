@@ -37,3 +37,16 @@ authenticated desktop/mobile UI, then deletes those users and their workspaces
 in `finally`. Existing fixture users are never reused or edited. No screenshots
 or credentials are saved. Inbox delivery and email confirmation links still
 require a controlled manual test with a real mailbox.
+
+Business details are editable on both Profile and Settings for owners/admins,
+using the existing authenticated onboarding update action and RLS. The budget is
+the existing planning range, not a Meta budget change. Verify persisted edits,
+optional-field clearing, workspace-name consistency, and tenant/member isolation:
+
+```sh
+DEEPVISOR_ACCOUNT_SETTINGS_TEST=gkdyyjqepzayjdpvqnja node --env-file=.env.local scripts/account-settings/verify-business.mjs
+```
+
+This command uses fresh disposable users and removes them in `finally`. It saves
+two temporary screenshots under `/tmp/dv-business-profile-*.png` for visual review;
+remove those images after inspecting them.

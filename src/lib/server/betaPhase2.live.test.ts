@@ -5,7 +5,7 @@ import type { Database } from '@/lib/shared/types/supabase';
 vi.mock('server-only', () => ({}));
 vi.mock('./supabase/server', () => ({ createServerClient: vi.fn(), createSupabaseClient: vi.fn() }));
 vi.mock('./supabase/admin', () => ({ createAdminClient: vi.fn() }));
-vi.mock('next/cache', () => ({ unstable_cache: (fn: unknown) => fn, revalidateTag: vi.fn() }));
+vi.mock('next/cache', () => ({ unstable_cache: (fn: unknown) => fn, revalidateTag: vi.fn(), revalidatePath: vi.fn() }));
 vi.mock('./actions/user/session', () => ({ requireUserId: vi.fn() }));
 import { createServerClient, createSupabaseClient } from './supabase/server';
 import { createAdminClient } from './supabase/admin';

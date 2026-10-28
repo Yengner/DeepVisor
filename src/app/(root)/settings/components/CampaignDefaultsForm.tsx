@@ -19,13 +19,13 @@ import { updateBusinessProfileData } from '@/lib/server/actions/business/onboard
 import {
   CONTACT_METHOD_OPTIONS,
   CUSTOMER_RADIUS_OPTIONS,
-  MONTHLY_AD_BUDGET_OPTIONS,
   SALON_MOST_VALUABLE_SERVICE_OPTIONS,
   SALON_SERVICE_OPTIONS,
   isAllowedOption,
 } from '@/lib/shared/onboarding/businessProfileOptions';
 
 type CampaignDefaultsFormProps = {
+  canEdit: boolean;
   initial: {
     businessLocation: string;
     customerRadius: string;
@@ -33,7 +33,6 @@ type CampaignDefaultsFormProps = {
     promotedServices: string[];
     preferredContactMethod: string;
     bookingLink: string;
-    monthlyBudget: string;
   };
 };
 
@@ -60,7 +59,7 @@ function isValidHttpUrl(value: string): boolean {
   }
 }
 
-export default function CampaignDefaultsForm({ initial }: CampaignDefaultsFormProps) {
+export default function CampaignDefaultsForm({ initial, canEdit }: CampaignDefaultsFormProps) {
   const router = useRouter();
   const [values, setValues] = useState(initial);
   const [saving, setSaving] = useState(false);
@@ -70,6 +69,7 @@ export default function CampaignDefaultsForm({ initial }: CampaignDefaultsFormPr
   } | null>(null);
 
   async function handleSave() {
+    if (!canEdit || saving) return;
     if (!values.businessLocation.trim() || !values.mainService || !values.preferredContactMethod) {
       setFeedback({
         type: 'error',
@@ -104,11 +104,6 @@ export default function CampaignDefaultsForm({ initial }: CampaignDefaultsFormPr
         mostValuableService: values.mainService,
         preferredContactMethod: values.preferredContactMethod,
         bookingLink: values.bookingLink.trim() || null,
-        ...(isAllowedOption(values.monthlyBudget, MONTHLY_AD_BUDGET_OPTIONS)
-          ? { monthlyBudget: values.monthlyBudget }
-          : values.monthlyBudget
-            ? {}
-            : { monthlyBudget: null }),
       });
 
       if (!response.success) {
@@ -154,6 +149,7 @@ export default function CampaignDefaultsForm({ initial }: CampaignDefaultsFormPr
           size="sm"
           leftSection={<IconDeviceFloppy size={16} />}
           loading={saving}
+          disabled={!canEdit}
           onClick={() => void handleSave()}
         >
           Save defaults
@@ -221,16 +217,6 @@ export default function CampaignDefaultsForm({ initial }: CampaignDefaultsFormPr
             value={values.bookingLink}
             onChange={(event) =>
               setValues((current) => ({ ...current, bookingLink: event.currentTarget.value }))
-            }
-          />
-          <Select
-            label="Monthly budget guardrail"
-            placeholder="Optional"
-            clearable
-            data={toSelectData(MONTHLY_AD_BUDGET_OPTIONS)}
-            value={values.monthlyBudget || null}
-            onChange={(value) =>
-              setValues((current) => ({ ...current, monthlyBudget: value ?? '' }))
             }
           />
         </SimpleGrid>

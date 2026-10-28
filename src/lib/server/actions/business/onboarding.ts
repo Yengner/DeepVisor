@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { ok, fail, type ApiResponse, ErrorCode } from '@/lib/shared';
 import { getErrorMessage } from '@/lib/shared/utils/guards';
@@ -36,6 +36,7 @@ type ActiveBusinessContext = {
   organizationName: string;
   organizationType: OrganizationType;
   businessId: string;
+  role: 'owner' | 'admin' | 'member';
 };
 
 async function requireActiveBusinessContextOrFail(): Promise<ApiResponse<ActiveBusinessContext>> {
@@ -48,6 +49,7 @@ async function requireActiveBusinessContextOrFail(): Promise<ApiResponse<ActiveB
       organizationName: context.organizationName,
       organizationType: context.organizationType,
       businessId: context.businessId,
+      role: context.role,
     });
   } catch (error) {
     const message = getErrorMessage(error);
@@ -319,6 +321,11 @@ export async function updateBusinessProfileData(input: {
     if (!contextRes.success) return contextRes;
 
     const { businessId, organizationId, organizationType } = contextRes.data;
+    if (!['owner', 'admin'].includes(contextRes.data.role)) {
+      return fail('Business editing requires an owner or admin', ErrorCode.FORBIDDEN, {
+        userMessage: 'Only workspace owners and admins can edit business details.',
+      });
+    }
     const businessName = input.businessName === undefined
       ? undefined
       : normalizeBusinessName(input.businessName);
@@ -335,6 +342,28 @@ export async function updateBusinessProfileData(input: {
           userMessage: 'Please replace the default name with your real business name.',
         });
       }
+      if (businessName!.length > 200) {
+        return fail('Business name is too long', ErrorCode.VALIDATION_ERROR, {
+          userMessage: 'Keep your business name under 200 characters.',
+        });
+      }
+    }
+
+    for (const [label, value] of [['Website', input.website], ['Booking link', input.bookingLink]] as const) {
+      if (value === undefined || value === null || value === '') continue;
+      let valid = false;
+      if (typeof value === 'string' && value.trim().length <= 2048) {
+        try {
+          const url = new URL(value.trim());
+          valid = ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password;
+        } catch { /* A malformed URL is a validation error. */ }
+      }
+      if (!valid) return fail(`${label} is invalid`, ErrorCode.VALIDATION_ERROR, {
+        userMessage: `${label} must be a complete http or https URL without embedded credentials.`,
+      });
+    }
+    if (input.description && input.description.length > 4000) {
+      return fail('Description is too long', ErrorCode.VALIDATION_ERROR, { userMessage: 'Keep the business description under 4,000 characters.' });
     }
 
     const validationError =
@@ -369,7 +398,7 @@ export async function updateBusinessProfileData(input: {
       });
     }
 
-    if (input.description !== undefined && !cleanString(input.description)) {
+    if (input.description !== undefined && input.description !== null && !cleanString(input.description)) {
       return fail('Business description is required', ErrorCode.VALIDATION_ERROR, {
         userMessage: 'Please describe what you sell and who you are trying to reach.',
       });
@@ -403,30 +432,44 @@ export async function updateBusinessProfileData(input: {
       updated_at: new Date().toISOString(),
     });
 
-    const { error } = await supabase
+    const { data: savedBusiness, error } = await supabase
       .from('business_profiles')
       .update(updateData)
-      .eq('id', businessId);
+      .eq('id', businessId)
+      .select('id')
+      .maybeSingle();
 
     if (error) {
       return fail(getErrorMessage(error), ErrorCode.DATABASE_ERROR);
     }
+    if (!savedBusiness) {
+      return fail('Business was not updated', ErrorCode.FORBIDDEN, {
+        userMessage: 'Business details could not be saved. Check your workspace access and try again.',
+      });
+    }
 
     if (businessName && organizationType === 'business') {
-      const { error: organizationError } = await supabase
+      const { data: savedOrganization, error: organizationError } = await supabase
         .from('organizations')
         .update({
           name: businessName,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', organizationId);
+        .eq('id', organizationId)
+        .select('id')
+        .maybeSingle();
 
-      if (organizationError) {
-        return fail(getErrorMessage(organizationError), ErrorCode.DATABASE_ERROR);
+      if (organizationError || !savedOrganization) {
+        revalidateTag(`business-context:${contextRes.data.userId}`, { expire: 0 });
+        revalidatePath('/', 'layout');
+        return fail('Workspace name could not be updated', ErrorCode.DATABASE_ERROR, {
+          userMessage: 'Business details were saved, but the workspace name could not be updated. Please try saving again.',
+        });
       }
     }
 
     revalidateTag(`business-context:${contextRes.data.userId}`, { expire: 0 });
+    revalidatePath('/', 'layout');
     return ok(null);
   } catch (error) {
     return fail(getErrorMessage(error), ErrorCode.UNKNOWN_ERROR);
