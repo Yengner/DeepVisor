@@ -29,7 +29,7 @@ export function TimeSection({ payload }: { payload: ReportPayload }) {
       <div className={styles.hourAxis}><span />{Array.from({ length: 24 }, (_, h) => <span key={h}>{h}</span>)}</div>
       {WEEKDAYS.map((label, d) => <div key={label} className={`${styles.heatRow} ${day === d ? styles.selectedDay : ''}`}><strong>{label.slice(0, 3)}</strong>{cells.filter(c => c.day === d).map(cell => <button key={cell.key} type="button" className={styles.heatCell} aria-pressed={selected === cell.key}
         aria-label={`${label} ${cell.hour}:00, ${name}: ${format(cell.value)}, ${cell.observations} observed dates`}
-        style={{ background: cell.value == null ? 'repeating-linear-gradient(135deg,#f2f3ef,#f2f3ef 4px,#e4e7df 4px,#e4e7df 5px)' : `rgba(19,131,83,${.10 + (max > 0 ? cell.value / max : 0) * .80})` }}
+        style={{ background: cell.value == null ? 'repeating-linear-gradient(135deg,#eff1f3,#eff1f3 4px,#dfe2e7 4px,#dfe2e7 5px)' : `rgba(19, 131, 83,${.10 + (max > 0 ? cell.value / max : 0) * .80})` }}
         onClick={() => setSelected(cell.key)}><span>{cell.hour}:00</span></button>)}</div>)}
     </div>}
     {current && <aside className={styles.inspector} aria-live="polite"><strong>{WEEKDAYS[current.day]} · {current.hour}:00–{current.hour}:59</strong><p>{name}: {format(current.value)} · {caption}</p><p>{current.observations} observed dates{current.dates.length ? `: ${current.dates.join(', ')}` : '. No measurements.'}</p><button type="button" onClick={() => setSelected(null)}>Clear selection</button></aside>}

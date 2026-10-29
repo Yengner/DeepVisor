@@ -52,10 +52,10 @@ export default {
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
 			ink: {
-				DEFAULT: "#0d0f0d",
-				80: "#151714",
-				70: "#242823",
-				60: "#343a33"
+				DEFAULT: "#07182d",
+				80: "#082d56",
+				70: "#16395e",
+				60: "#284665"
   			},
   			steel: {
   				DEFAULT: "#5b6b80",
@@ -63,13 +63,13 @@ export default {
   				20: "#c7d0da"
   			},
 			cloud: {
-				DEFAULT: "#f4f5ef",
-				80: "#eef0e9"
+				DEFAULT: "#f4f7fc",
+				80: "#edf3fb"
 			},
 			signal: {
-				DEFAULT: "#14a866",
-				soft: "#c8ff56",
-				muted: "#e9f7ef"
+				DEFAULT: "#0065fc",
+				soft: "#bdceff",
+				muted: "#eaf2ff"
   			},
   			aurora: {
   				DEFAULT: "#60a5fa",
@@ -97,8 +97,8 @@ export default {
 			"3xl": "0.5rem"
   		},
   		boxShadow: {
-			"card": "0 1px 2px rgba(21, 23, 20, 0.05)",
-			"card-strong": "0 8px 24px rgba(21, 23, 20, 0.08)",
+			"card": "0 1px 2px rgba(8, 45, 86, 0.05)",
+			"card-strong": "0 8px 24px rgba(8, 45, 86, 0.08)",
 			"glow-amber": "0 0 0 rgba(0, 0, 0, 0)",
 			"glow-blue": "0 0 0 rgba(0, 0, 0, 0)",
   			"inner-glow": "inset 0 1px 0 rgba(255, 255, 255, 0.35)"

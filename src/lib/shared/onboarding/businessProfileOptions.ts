@@ -14,6 +14,18 @@ export const SALON_INDUSTRY_OPTIONS: OnboardingOption[] = [
   { value: 'other', label: 'Other' },
 ];
 
+/** Profession wording for onboarding; values reuse the persisted business industry categories. */
+export const SALON_PROFESSION_OPTIONS: OnboardingOption[] = [
+  { value: 'hair_salon', label: 'Hair stylist' },
+  { value: 'beauty_salon', label: 'Cosmetologist' },
+  { value: 'barbershop', label: 'Barber' },
+  { value: 'lash_brow_studio', label: 'Lash / eyebrow specialist' },
+  { value: 'nail_salon', label: 'Nail technician' },
+  { value: 'spa_skincare', label: 'Esthetician / skincare specialist' },
+  { value: 'med_spa', label: 'Medical aesthetics professional' },
+  { value: 'other', label: 'Other beauty professional' },
+];
+
 export const CUSTOMER_RADIUS_OPTIONS: OnboardingOption[] = [
   { value: 'within_3_miles', label: 'Within 3 miles' },
   { value: 'within_5_miles', label: 'Within 5 miles' },

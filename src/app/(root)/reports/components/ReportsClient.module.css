@@ -43,7 +43,7 @@
   padding: 12px 14px;
   border: 1px solid var(--platform-border);
   border-radius: 8px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 .controlBarSummary {
@@ -83,7 +83,7 @@
 }
 
 .controlLabel {
-  color: #697067;
+  color: var(--dv-text-muted);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -94,7 +94,7 @@
   gap: 8px;
   min-height: 42px;
   padding: 6px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
   background: #ffffff;
 }
@@ -119,7 +119,7 @@
   align-items: center;
   min-height: 42px;
   padding: 0 12px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
   background: #ffffff;
 }
@@ -163,8 +163,8 @@
   align-items: start;
   min-width: 0;
   padding: 12px;
-  border-left: 3px solid rgba(20, 168, 102, 0.45);
-  background: #f4f5ef;
+  border-left: 3px solid rgba(0, 101, 252, 0.45);
+  background: var(--dv-canvas);
 }
 
 .signalItem + .signalItem {
@@ -183,7 +183,7 @@
 }
 
 .kpiValue {
-  color: #151714;
+  color: var(--dv-ink);
   letter-spacing: 0;
   line-height: 1;
 }
@@ -210,13 +210,13 @@
 }
 
 .deltaNeutral {
-  color: #697067;
+  color: var(--dv-text-muted);
   background: rgba(148, 163, 184, 0.14);
 }
 
 .cardHeader {
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(21, 23, 20, 0.12);
+  border-bottom: 1px solid rgba(8, 45, 86, 0.12);
 }
 
 .timelineChartStack {
@@ -231,7 +231,7 @@
 .timelineChartSection + .timelineChartSection {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(21, 23, 20, 0.12);
+  border-top: 1px solid rgba(8, 45, 86, 0.12);
 }
 
 .timelineSectionHeader {
@@ -252,12 +252,12 @@
 
 .insightPanel {
   height: 100%;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 .insightBlock {
   padding: 12px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
   background: #ffffff;
 }
@@ -286,13 +286,13 @@
 .reportChartTooltip {
   min-width: 170px;
   max-width: 240px;
-  border-color: rgba(21, 23, 20, 0.18);
+  border-color: rgba(8, 45, 86, 0.18);
   background: #ffffff;
-  box-shadow: 0 12px 30px rgba(21, 23, 20, 0.13);
+  box-shadow: 0 12px 30px rgba(8, 45, 86, 0.13);
 }
 
 .reportChartTooltipTitle {
-  color: #151714;
+  color: var(--dv-ink);
   line-height: 1.2;
 }
 
@@ -321,17 +321,17 @@
   width: 20px;
   height: 20px;
   padding: 0;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 999px;
-  background: #f4f5ef;
-  color: #596057;
+  background: var(--dv-canvas);
+  color: var(--dv-text-muted);
   font-size: 10px;
   font-weight: 800;
   line-height: 1;
 }
 
 .reportAnnotationTooltip {
-  border-top: 1px solid rgba(21, 23, 20, 0.12);
+  border-top: 1px solid rgba(8, 45, 86, 0.12);
 }
 
 .reportAnnotationTooltipItem {
@@ -344,9 +344,9 @@
 
 .moverRow {
   padding: 12px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 .rankingAccordion {
@@ -354,9 +354,9 @@
 }
 
 .rankingAccordionItem {
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 .rankingAccordionControl {
@@ -373,14 +373,14 @@
 
 .chartSubSection {
   padding-top: 14px;
-  border-top: 1px solid rgba(21, 23, 20, 0.12);
+  border-top: 1px solid rgba(8, 45, 86, 0.12);
 }
 
 .stateMapWrap {
   width: 100%;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
   padding: 10px;
   overflow-x: auto;
 }
@@ -402,7 +402,7 @@
   justify-content: center;
   width: var(--state-map-tile-size);
   min-height: var(--state-map-tile-size);
-  border: 1px solid rgba(21, 23, 20, 0.18);
+  border: 1px solid rgba(8, 45, 86, 0.18);
   border-radius: 8px;
   font-size: 9px;
   font-weight: 800;
@@ -440,12 +440,12 @@
 .heatmapCell {
   width: 100%;
   height: 22px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 7px;
 }
 
 .emptyPanel {
-  border-color: rgba(21, 23, 20, 0.12);
+  border-color: rgba(8, 45, 86, 0.12);
 }
 
 .tableCard {

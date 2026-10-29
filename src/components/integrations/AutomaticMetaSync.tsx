@@ -52,8 +52,9 @@ export default function AutomaticMetaSync({ accountId }: { accountId: string | n
     state.status==='initial_sync_required'?'Complete your initial account sync in Connections.':
     state.status==='timezone_unavailable'?'Account timezone unavailable. Check Connections.':
     ['failed','partial'].includes(state.status)?'Last refresh did not complete. Check Connections.':state.status==='unavailable'?'Sync status unavailable.':
-    state.lastSuccessfulAt?'Meta synchronization':'No successful synchronization yet';
+    null;
+  if(!message)return null;
   return <div className="px-3 pt-2 text-xs text-slate-500" role="status" aria-live="polite">
-    {message}{state.lastSuccessfulAt&&<> · Last successful sync <time dateTime={state.lastSuccessfulAt}>{new Date(state.lastSuccessfulAt).toLocaleString()}</time></>}
+    {message}
   </div>;
 }

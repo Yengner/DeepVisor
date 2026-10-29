@@ -1,13 +1,13 @@
 .loginShell,
 .signupShell {
-  --ink: #151714;
-  --deep-ink: #0d0f0d;
-  --canvas: #f4f5ef;
-  --line: #cfd2c8;
-  --muted: #62665d;
-  --signal: #0b7a4b;
-  --signal-bright: #14a866;
-  --lime: #c8ff56;
+  --ink: var(--dv-ink);
+  --deep-ink: var(--dv-ink-deep);
+  --canvas: var(--dv-canvas);
+  --line: #c7ccd3;
+  --muted: #56606d;
+  --signal: var(--dv-primary-strong);
+  --signal-bright: var(--dv-primary);
+  --lime: var(--dv-highlight);
   --coral: #e76156;
   min-height: calc(100svh - 72px);
   width: 100%;
@@ -38,7 +38,7 @@
   overflow: hidden;
   border: 1px solid var(--deep-ink);
   border-radius: 8px;
-  background: var(--ink);
+  background: var(--dv-agent-surface);
   color: #ffffff;
 }
 
@@ -52,7 +52,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #d8dbd3;
+  color: #d2d6dc;
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -97,7 +97,7 @@
   flex: 0 0 7px;
   border-radius: 50%;
   background: var(--lime);
-  box-shadow: 0 0 0 4px rgba(200, 255, 86, 0.14);
+  box-shadow: 0 0 0 4px rgba(168, 212, 255, 0.14);
 }
 
 .panelTitle {
@@ -117,7 +117,7 @@
   min-width: 0;
   max-width: 600px;
   margin: 20px 0 0;
-  color: #bdc1b8;
+  color: #b5bbc4;
   font-size: 1.05rem;
   line-height: 1.65;
 }
@@ -127,9 +127,9 @@
   width: min(100%, 620px);
   align-self: end;
   overflow: hidden;
-  border: 1px solid #3d413a;
+  border: 1px solid #363d45;
   border-radius: 6px;
-  background: #1c1f1b;
+  background: #1a1d20;
 }
 
 .signalPreviewHeader {
@@ -139,8 +139,8 @@
   gap: 16px;
   min-height: 42px;
   padding: 0 16px;
-  border-bottom: 1px solid #3d413a;
-  color: #aeb2aa;
+  border-bottom: 1px solid #363d45;
+  color: #a4adb8;
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -155,7 +155,7 @@
   align-items: center;
   gap: 18px;
   padding: 16px;
-  border-bottom: 1px solid #3d413a;
+  border-bottom: 1px solid #363d45;
 }
 
 .signalScoreRow > strong {
@@ -178,7 +178,7 @@
 }
 
 .signalScoreRow small {
-  color: #9da198;
+  color: #919ba8;
   font-size: 0.75rem;
 }
 
@@ -193,7 +193,7 @@
   flex-direction: column;
   gap: 5px;
   padding: 14px 16px;
-  border-right: 1px solid #3d413a;
+  border-right: 1px solid #363d45;
 }
 
 .signalRows > div:last-child {
@@ -201,7 +201,7 @@
 }
 
 .signalRows span {
-  color: #92978e;
+  color: #8591a0;
   font-size: 0.7rem;
 }
 
@@ -212,7 +212,7 @@
 }
 
 .signalRows .positiveSignal {
-  color: var(--lime);
+  color: var(--dv-success-on-dark);
 }
 
 .signalRows > div:nth-child(3) strong {
@@ -223,7 +223,7 @@
   display: flex;
   align-items: center;
   gap: 22px;
-  color: #bdc1b8;
+  color: #b5bbc4;
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -248,7 +248,7 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
-  box-shadow: 0 12px 30px rgba(21, 23, 20, 0.07);
+  box-shadow: 0 12px 30px rgba(8, 45, 86, 0.07);
 }
 
 .loginCard > :global(.mantine-Stack-root),
@@ -275,9 +275,9 @@
 }
 
 .authIcon {
-  border: 1px solid rgba(11, 122, 75, 0.24);
+  border: 1px solid rgba(0, 79, 199, 0.24);
   border-radius: 6px;
-  background: #eaf6ef;
+  background: var(--dv-primary-soft);
   color: var(--signal);
 }
 
@@ -293,7 +293,7 @@
 .loginCard :global(.mantine-Input-input),
 .flowCard :global(.mantine-Input-input) {
   min-height: 48px;
-  border: 1px solid #c7cbc0;
+  border: 1px solid #bfc5cc;
   border-radius: 4px;
   background: #ffffff;
   color: var(--ink);
@@ -302,7 +302,7 @@
 
 .loginCard :global(.mantine-Input-input:hover),
 .flowCard :global(.mantine-Input-input:hover) {
-  border-color: #979d90;
+  border-color: #8a95a3;
 }
 
 .loginCard :global(.mantine-Input-input:focus),
@@ -310,14 +310,14 @@
 .flowCard :global(.mantine-Input-input:focus),
 .flowCard :global(.mantine-Input-input:focus-within) {
   border-color: var(--signal);
-  box-shadow: 0 0 0 2px rgba(11, 122, 75, 0.12);
+  box-shadow: 0 0 0 2px rgba(0, 79, 199, 0.12);
 }
 
 .loginCard :global(.mantine-Divider-label),
 .flowCard :global(.mantine-Divider-label) {
   padding-inline: 12px;
   background: #ffffff;
-  color: #73786e;
+  color: #657181;
   font-size: 0.75rem;
 }
 
@@ -329,7 +329,7 @@
 
 .loginCard :global(.mantine-Anchor-root:hover),
 .flowCard :global(.mantine-Anchor-root:hover) {
-  color: #075d39;
+  color: var(--dv-primary-deep);
   text-decoration: underline;
 }
 
@@ -343,7 +343,7 @@
 }
 
 .googlePrimaryButton {
-  border: 1px solid #bfc4b8;
+  border: 1px solid #b6bdc6;
   background: #ffffff;
   color: var(--ink);
   box-shadow: none;
@@ -363,8 +363,8 @@
 }
 
 .authPrimaryButton:hover {
-  border-color: #08623d;
-  background: #08623d;
+  border-color: var(--dv-primary-strong);
+  background: var(--dv-primary-strong);
   color: #ffffff;
 }
 
@@ -486,7 +486,7 @@
     align-items: center;
     justify-content: space-between;
     border-right: 0;
-    border-bottom: 1px solid #3d413a;
+    border-bottom: 1px solid #363d45;
   }
 
   .signalRows > div:last-child {

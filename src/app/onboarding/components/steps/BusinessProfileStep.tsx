@@ -43,7 +43,7 @@ import {
   DEFAULT_INTELLIGENCE_GOALS,
   DEFAULT_WATCH_SIGNALS,
   MONTHLY_AD_BUDGET_OPTIONS,
-  SALON_SERVICE_OPTIONS,
+  SALON_PROFESSION_OPTIONS,
   isAllowedOption,
   labelForOption,
 } from '@/lib/shared/onboarding/businessProfileOptions';
@@ -60,7 +60,7 @@ type BusinessProfileStepProps = {
 
 type EssentialsFormValues = {
   businessName: string;
-  mainService: string;
+  profession: string;
   businessLocation: string;
   customerRadius: string;
   preferredContactMethod: string;
@@ -135,16 +135,13 @@ function leadTypeForContact(contactMethod: string): string {
   }
 }
 
-function initialMainService(userData: UserData): string {
-  const allowedServices = new Set(SALON_SERVICE_OPTIONS.map((option) => option.value));
-  if (allowedServices.has(userData.mostValuableService)) return userData.mostValuableService;
-  return userData.promotedServices.find((service) => allowedServices.has(service)) ?? '';
+function initialProfession(userData: UserData): string {
+  return isAllowedOption(userData.industry, SALON_PROFESSION_OPTIONS) ? userData.industry : '';
 }
 
 function buildDraftPayload(
   values: EssentialsFormValues,
-  dirtyFields: ReadonlySet<EssentialsField>,
-  existingPromotedServices: string[]
+  dirtyFields: ReadonlySet<EssentialsField>
 ): { payload: BusinessProfileDraft; savedFields: EssentialsField[] } {
   const payload: BusinessProfileDraft = {};
   const savedFields: EssentialsField[] = [];
@@ -154,12 +151,9 @@ function buildDraftPayload(
     savedFields.push('businessName');
   }
 
-  if (dirtyFields.has('mainService') && isAllowedOption(values.mainService, SALON_SERVICE_OPTIONS)) {
-    payload.mostValuableService = values.mainService;
-    payload.promotedServices = Array.from(
-      new Set([values.mainService, ...existingPromotedServices].filter(Boolean))
-    );
-    savedFields.push('mainService');
+  if (dirtyFields.has('profession') && isAllowedOption(values.profession, SALON_PROFESSION_OPTIONS)) {
+    payload.industry = values.profession;
+    savedFields.push('profession');
   }
 
   if (dirtyFields.has('businessLocation') && values.businessLocation.trim()) {
@@ -269,12 +263,11 @@ export default function BusinessProfileStep({
   const draftWorkerRunning = useRef(false);
   const submittingRef = useRef(false);
   const [draftChangeCount, setDraftChangeCount] = useState(0);
-  const existingPromotedServices = useRef(userData.promotedServices);
   const initialValues = useRef<EssentialsFormValues>({
     businessName: validateBusinessName(userData.businessName || '')
       ? ''
       : normalizeBusinessName(userData.businessName),
-    mainService: initialMainService(userData),
+    profession: initialProfession(userData),
     businessLocation: userData.businessLocation || '',
     customerRadius: userData.customerRadius || '',
     preferredContactMethod: userData.preferredContactMethod || '',
@@ -285,7 +278,7 @@ export default function BusinessProfileStep({
     initialValues: initialValues.current,
     validate: {
       businessName: validateBusinessName,
-      mainService: requiredString('Choose your main service'),
+      profession: requiredString('Choose your profession'),
       businessLocation: requiredString('Service address is required'),
       customerRadius: requiredString('Choose a customer radius'),
       preferredContactMethod: requiredString('Choose a preferred contact path'),
@@ -349,8 +342,7 @@ export default function BusinessProfileStep({
       const dirtyFields = new Set(dirtyDraftFields.current);
       const { payload, savedFields } = buildDraftPayload(
         latestDraftValues.current,
-        dirtyFields,
-        existingPromotedServices.current
+        dirtyFields
       );
 
       if (Object.keys(payload).length === 0) {
@@ -386,23 +378,18 @@ export default function BusinessProfileStep({
       await draftQueue.current;
 
       const businessName = normalizeBusinessName(values.businessName);
-      const serviceLabel = labelForOption(values.mainService, SALON_SERVICE_OPTIONS, 'services');
+      const professionLabel = labelForOption(values.profession, SALON_PROFESSION_OPTIONS, 'beauty professional');
       const primaryGoal = userData.primaryGoal || DEFAULT_INTELLIGENCE_GOALS.primaryGoal;
-      const promotedServices = Array.from(
-        new Set([values.mainService, ...userData.promotedServices].filter(Boolean))
-      );
       const cleanValues: Partial<UserData> = {
         businessName,
         businessLocation: values.businessLocation.trim(),
         customerRadius: values.customerRadius,
         monthlyBudget: values.monthlyBudget || 'not_sure',
-        promotedServices,
-        mostValuableService: values.mainService,
         preferredContactMethod: values.preferredContactMethod,
-        industry: userData.industry || 'other',
+        industry: values.profession,
         description:
           userData.description ||
-          `${businessName} offers ${serviceLabel.toLowerCase()} in ${values.businessLocation.trim()}.`,
+          `${businessName} provides ${professionLabel.toLowerCase()} services in ${values.businessLocation.trim()}.`,
         metaAdsStatus: userData.metaAdsStatus || 'not_sure',
         primaryGoal,
         leadType: userData.leadType || leadTypeForContact(values.preferredContactMethod),
@@ -493,15 +480,15 @@ export default function BusinessProfileStep({
                 {...form.getInputProps('businessName')}
               />
               <Select
-                label="Main service"
-                placeholder="Choose one service"
-                description="Start with the service that matters most."
+                label="Profession"
+                placeholder="Choose your profession"
+                description="Choose the type of beauty professional you are."
                 required
                 searchable
                 leftSection={<IconScissors size={16} />}
-                data={SALON_SERVICE_OPTIONS}
+                data={SALON_PROFESSION_OPTIONS}
                 {...dropdownProps}
-                {...form.getInputProps('mainService')}
+                {...form.getInputProps('profession')}
               />
               <BusinessAddressInput
                 value={form.values.businessLocation}

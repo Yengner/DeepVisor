@@ -156,7 +156,7 @@ export default function MobileAppChromeClient({
           onClick={() => setDrawerOpened((opened) => !opened)}
           aria-label="Open navigation"
           size="sm"
-          color="#f7f8f3"
+          color="#f5f9ff"
         />
 
         <BrandMark tone="light" className="h-[34px] w-[34px]" />
@@ -178,7 +178,7 @@ export default function MobileAppChromeClient({
                 size="lg"
                 variant="subtle"
                 aria-label="Open notifications"
-                style={{ color: '#d7ddd4', backgroundColor: '#20241f', border: '1px solid #343a33' }}
+                style={{ color: '#d4d8dd', backgroundColor: '#102f50', border: '1px solid #284665' }}
               >
                 <IconBell size={20} />
               </ActionIcon>
@@ -242,9 +242,9 @@ export default function MobileAppChromeClient({
                 radius="sm"
                 size={34}
                 style={{
-                  backgroundColor: '#c8ff56',
-                  color: '#151714',
-                  border: '1px solid #d7ff8a',
+                  backgroundColor: '#bdceff',
+                  color: '#082d56',
+                  border: '1px solid #bdceff',
                 }}
               >
                 {userInitials}
@@ -347,7 +347,7 @@ export default function MobileAppChromeClient({
       <Portal>
         <nav
           className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t bg-white px-1 pb-[calc(0.45rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-4px_16px_rgba(21,23,20,0.08)] md:hidden"
-          style={{ borderColor: '#dfe2da' }}
+          style={{ borderColor: '#d9e3ef' }}
           aria-label="Primary mobile navigation"
         >
           {mobileBottomNavItems.map((item) => {
@@ -362,8 +362,8 @@ export default function MobileAppChromeClient({
                 aria-current={active ? 'page' : undefined}
                 className="flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-0.5 py-1.5 text-[10px] font-semibold"
                 style={{
-                  color: active ? '#0b7a4b' : '#697067',
-                  backgroundColor: active ? '#e9f7ef' : 'transparent',
+                  color: active ? '#004fc7' : '#53677d',
+                  backgroundColor: active ? '#eaf2ff' : 'transparent',
                 }}
               >
                 <item.icon size={20} stroke={active ? 2.2 : 1.8} />

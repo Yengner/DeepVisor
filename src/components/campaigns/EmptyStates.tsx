@@ -44,7 +44,7 @@ export function EmptyCampaignState({ type, platformName }: EmptyCampaignStatePro
                     size={48}
                     radius="sm"
                     color="signal"
-                    style={{ background: '#e8f4ec', color: '#226443' }}
+                    style={{ background: '#eaf2ff', color: '#004fc7' }}
                 >
                     {content.icon}
                 </ThemeIcon>

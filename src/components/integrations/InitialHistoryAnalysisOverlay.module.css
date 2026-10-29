@@ -17,7 +17,7 @@
   overflow: hidden;
   border: 1px solid var(--dv-border-strong);
   background: var(--dv-canvas);
-  box-shadow: 0 20px 56px rgba(13, 15, 13, 0.18);
+  box-shadow: 0 20px 56px rgba(6, 28, 51, 0.18);
 }
 
 .header {
@@ -26,8 +26,8 @@
   gap: 20px;
   align-items: start;
   padding: 20px 24px;
-  color: #f7f8f3;
-  border-bottom: 1px solid #343a33;
+  color: var(--chrome-text);
+  border-bottom: 1px solid var(--chrome-border);
   background: var(--dv-ink);
 }
 
@@ -36,7 +36,7 @@
 }
 
 .title {
-  color: #f7f8f3;
+  color: var(--chrome-text);
   font-size: 2rem;
   line-height: 1.08;
 }
@@ -44,7 +44,7 @@
 .summary {
   max-width: 700px;
   margin-top: 8px;
-  color: #b6beb3;
+  color: #b0b7c1;
   font-size: 0.9rem;
   line-height: 1.45;
 }
@@ -63,17 +63,17 @@
   align-items: center;
   min-width: 230px;
   padding: 10px 12px;
-  border: 1px solid #343a33;
+  border: 1px solid var(--chrome-border);
   border-radius: 6px;
-  background: #20241f;
+  background: var(--chrome-panel);
 }
 
 .liveBadge :global(.mantine-Text-root) {
-  color: #f7f8f3;
+  color: var(--chrome-text);
 }
 
 .liveBadge :global(.mantine-Text-root[data-dimmed='true']) {
-  color: #a6ada3;
+  color: var(--chrome-muted);
 }
 
 .dashboard {
@@ -127,8 +127,8 @@
 }
 
 .phaseItemActive {
-  border-color: rgba(20, 168, 102, 0.32);
-  background: rgba(20, 168, 102, 0.08);
+  border-color: rgba(0, 101, 252, 0.32);
+  background: rgba(0, 101, 252, 0.08);
 }
 
 .phaseIndicator {
@@ -139,12 +139,12 @@
 }
 
 .phaseIndicatorIdle {
-  background: #aeb4aa;
+  background: #a5aeb9;
 }
 
 .phaseIndicatorActive {
   background: var(--dv-signal);
-  box-shadow: 0 0 0 5px rgba(20, 168, 102, 0.12);
+  box-shadow: 0 0 0 5px rgba(0, 101, 252, 0.12);
   animation: pulse 1.1s ease-in-out infinite;
 }
 
@@ -350,7 +350,7 @@
 
 .insightTilePositive {
   border-top: 3px solid var(--dv-signal);
-  background: #f0f8f3;
+  background: var(--dv-primary-soft);
 }
 
 .insightTileWarning {

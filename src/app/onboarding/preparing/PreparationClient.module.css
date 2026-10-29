@@ -1,11 +1,11 @@
 .page {
-  --ink: #151714;
-  --deep-ink: #0d0f0d;
-  --canvas: #f4f5ef;
-  --line: #ced2c7;
-  --muted: #666b61;
-  --signal: #0b7a4b;
-  --lime: #c8ff56;
+  --ink: var(--dv-ink);
+  --deep-ink: var(--dv-ink-deep);
+  --canvas: var(--dv-canvas);
+  --line: #c6ccd3;
+  --muted: #5a6472;
+  --signal: var(--dv-primary-strong);
+  --lime: var(--dv-highlight);
   --coral: #e76156;
   min-height: 100svh;
   background: var(--canvas);
@@ -51,8 +51,8 @@
 .brandSection {
   margin-left: 2px;
   padding-left: 12px;
-  border-left: 1px solid #b8bcb2;
-  color: #777c72;
+  border-left: 1px solid #aeb6c0;
+  color: #697585;
   font-weight: 700;
 }
 
@@ -97,18 +97,18 @@
   max-width: calc(100% - 64px);
   height: auto;
   padding-block: 6px;
-  border: 1px solid #4c5148;
+  border: 1px solid #434b56;
   border-radius: 3px;
-  background: #20231f;
-  color: #d7dbd2;
+  background: #1d2025;
+  color: #d2d6db;
   white-space: normal;
 }
 
 .statusIcon {
   flex: 0 0 auto;
-  border: 1px solid #4b5147;
+  border: 1px solid #434b55;
   border-radius: 4px;
-  background: #20241e;
+  background: #1d2025;
   color: var(--lime);
 }
 
@@ -144,15 +144,15 @@
 .panelCopy {
   max-width: 520px;
   margin-top: 14px;
-  color: #b9beb4;
+  color: #b1b8c1;
   font-size: 0.94rem;
   line-height: 1.65;
 }
 
 .progressBlock {
-  border: 1px solid #3c4039;
+  border: 1px solid #353c44;
   border-radius: 6px;
-  background: #1b1e1a;
+  background: #191c1f;
 }
 
 .progressBlock > :global(.mantine-Group-root) {
@@ -162,7 +162,7 @@
 .progressBlock div > span {
   display: block;
   margin-bottom: 5px;
-  color: #8f958a;
+  color: #828e9d;
   font-size: 0.64rem;
   font-weight: 900;
 }
@@ -183,13 +183,13 @@
 
 .progressBar {
   border-radius: 0;
-  background: #3b4038;
+  background: #353b43;
 }
 
 .panelFootnote {
   padding-top: 18px;
-  border-top: 1px solid #3a3e38;
-  color: #8f958a;
+  border-top: 1px solid #343a42;
+  color: #828e9d;
   font-size: 0.72rem;
   line-height: 1.5;
 }
@@ -224,7 +224,7 @@
 
 .pipelineCount {
   padding-top: 4px;
-  color: #747970;
+  color: #677382;
   font-size: 0.66rem;
   font-weight: 900;
   text-align: right;
@@ -256,9 +256,9 @@
 
 .featureIcon {
   flex: 0 0 auto;
-  border: 1px solid #bad5c4;
+  border: 1px solid #bac6d5;
   border-radius: 4px;
-  background: #ebf5ee;
+  background: var(--dv-primary-soft);
   color: var(--signal);
 }
 
@@ -282,7 +282,7 @@
 }
 
 .phaseIndex {
-  color: #8a8f85;
+  color: #7c8898;
   font-size: 0.66rem;
   font-weight: 900;
 }
@@ -318,17 +318,17 @@
 }
 
 .pulseDot {
-  background: #14a866;
-  box-shadow: 0 0 0 4px rgba(20, 168, 102, 0.12);
+  background: var(--dv-primary);
+  box-shadow: 0 0 0 4px rgba(0, 101, 252, 0.12);
   animation: pulse 1.2s ease-in-out infinite;
 }
 
 .completeDot {
-  background: #0b7a4b;
+  background: var(--dv-primary-strong);
 }
 
 .skipDot {
-  background: #a4a99e;
+  background: #99a2ae;
 }
 
 .errorDot {
@@ -373,19 +373,19 @@
 }
 
 .primaryButton:hover {
-  border-color: #08623d;
-  background: #08623d;
+  border-color: var(--dv-primary-strong);
+  background: var(--dv-primary-strong);
 }
 
 .secondaryButton {
-  border-color: #bfc4b8;
+  border-color: #b6bdc6;
   background: #ffffff;
   color: var(--ink);
 }
 
 .secondaryButton:hover {
   border-color: var(--ink);
-  background: #eceee7;
+  background: #e7eaee;
 }
 
 .errorPage {
@@ -393,17 +393,17 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: var(--canvas, #f4f5ef);
+  background: var(--canvas, var(--dv-canvas));
 }
 
 .errorPanel {
   width: min(100%, 620px);
   padding: 28px;
-  border: 1px solid #cfd2c8;
+  border: 1px solid #c7ccd3;
   border-top: 4px solid #e76156;
   border-radius: 6px;
   background: #ffffff;
-  color: #151714;
+  color: var(--dv-ink);
 }
 
 .errorKicker {
@@ -421,7 +421,7 @@
   width: fit-content;
   min-height: 44px;
   border-radius: 4px;
-  background: #151714;
+  background: var(--dv-ink);
   color: #ffffff;
 }
 

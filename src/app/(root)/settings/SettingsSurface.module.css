@@ -1,12 +1,12 @@
-.page { width: 100%; max-width: 1180px; padding: 16px 24px 32px; color: #202b25; }
+.page { width: 100%; max-width: 1180px; padding: 16px 24px 32px; color: var(--dv-text); }
 .pageStack { gap: 24px; }
-.pageStack > :global(.mantine-Card-root) { border: 0; border-top: 1px solid #dce3de; border-radius: 0; padding: 20px 0; background: transparent; }
+.pageStack > :global(.mantine-Card-root) { border: 0; border-top: 1px solid var(--dv-border); border-radius: 0; padding: 20px 0; background: transparent; }
 .pageStack > :global(.mantine-Card-root):first-child { border: 0; }
 .pageStack > details > :global(.mantine-Card-root) { padding: 0; background: transparent; border: 0; }
-.page :global(.mantine-Title-root) { color: #202b25; font-size: 18px; font-weight: 650; }
-.page :global(.mantine-Paper-root) { box-shadow: none; padding: 14px; background: transparent; border: 0; border-bottom: 1px solid #dce3de; }
+.page :global(.mantine-Title-root) { color: var(--dv-text); font-size: 18px; font-weight: 650; }
+.page :global(.mantine-Paper-root) { box-shadow: none; padding: 14px; background: transparent; border: 0; border-bottom: 1px solid var(--dv-border); }
 .page :global(.mantine-Paper-root) :global(.mantine-Paper-root) { padding-left: 0; padding-right: 0; }
-.page :global(.mantine-ThemeIcon-root) { background: #e8f4ec; color: #226443; }
+.page :global(.mantine-ThemeIcon-root) { background: var(--dv-primary-soft); color: var(--dv-primary-strong); }
 .page :global(.mantine-Card-root[id]) { scroll-margin-top: 16px; }
 @media(max-width:48em) {
   .pageStack { gap: 16px; }

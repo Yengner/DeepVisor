@@ -30,8 +30,7 @@ import {
   MONTHLY_AD_BUDGET_OPTIONS,
   RECOMMENDATION_STYLE_OPTIONS,
   SAFETY_PREFERENCE_OPTIONS,
-  SALON_INDUSTRY_OPTIONS,
-  SALON_MOST_VALUABLE_SERVICE_OPTIONS,
+  SALON_PROFESSION_OPTIONS,
   SALON_SERVICE_OPTIONS,
   WATCH_SIGNAL_OPTIONS,
   labelForOption,
@@ -91,7 +90,7 @@ export default function ReviewStartStep({
             <div className={styles.summaryBusiness}>
               <Title order={3}>{userData.businessName || 'Your salon'}</Title>
               <Text c="dimmed">
-                {labelForOption(userData.industry, SALON_INDUSTRY_OPTIONS)} in{' '}
+                {labelForOption(userData.industry, SALON_PROFESSION_OPTIONS)} in{' '}
                 {userData.businessLocation || 'your market'}
               </Text>
             </div>
@@ -114,11 +113,8 @@ export default function ReviewStartStep({
               value={labelForOption(userData.monthlyBudget, MONTHLY_AD_BUDGET_OPTIONS)}
             />
             <SummaryItem
-              label="Most valuable service"
-              value={labelForOption(userData.mostValuableService, [
-                ...SALON_SERVICE_OPTIONS,
-                ...SALON_MOST_VALUABLE_SERVICE_OPTIONS,
-              ])}
+              label="Profession"
+              value={labelForOption(userData.industry, SALON_PROFESSION_OPTIONS)}
             />
             <SummaryItem
               label="Meta ads status"

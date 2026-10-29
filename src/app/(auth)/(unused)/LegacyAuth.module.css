@@ -1,11 +1,11 @@
 .shell {
-  --legacy-ink: #151714;
-  --legacy-deep: #0d0f0d;
-  --legacy-canvas: #f4f5ef;
-  --legacy-line: #cfd3c9;
-  --legacy-muted: #686e65;
-  --legacy-signal: #0b7a4b;
-  --legacy-lime: #c8ff56;
+  --legacy-ink: var(--dv-ink);
+  --legacy-deep: var(--dv-ink-deep);
+  --legacy-canvas: var(--dv-canvas);
+  --legacy-line: #c8cdd4;
+  --legacy-muted: #5d6876;
+  --legacy-signal: var(--dv-primary-strong);
+  --legacy-lime: var(--dv-highlight);
   --legacy-coral: #e76156;
   min-height: calc(100svh - 56px);
   display: grid;
@@ -36,7 +36,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #c5c9c1;
+  color: #bec4cc;
   font-size: 0.68rem;
   font-weight: 800;
 }
@@ -78,7 +78,7 @@
 .panelIntro > p:last-child {
   max-width: 290px;
   margin: 18px 0 0;
-  color: #b8bdb4;
+  color: #b0b7c1;
   font-size: 0.9rem;
   line-height: 1.6;
 }
@@ -89,7 +89,7 @@
   margin: auto 0 0;
   padding: 0;
   list-style: none;
-  border: 1px solid #3a3e37;
+  border: 1px solid #333a42;
   border-radius: 6px;
   overflow: hidden;
 }
@@ -101,9 +101,9 @@
   gap: 12px;
   min-height: 58px;
   padding: 10px 12px;
-  border-bottom: 1px solid #3a3e37;
-  color: #aeb3aa;
-  background: #1b1e1a;
+  border-bottom: 1px solid #333a42;
+  color: #a5adb8;
+  background: #191c1f;
 }
 
 .stageList li:last-child {
@@ -112,7 +112,7 @@
 
 .stageList li.stageActive {
   color: #ffffff;
-  background: #242823;
+  background: var(--chrome-hover);
   box-shadow: inset 3px 0 0 var(--legacy-lime);
 }
 
@@ -123,9 +123,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #555b51;
+  border: 1px solid #4c5560;
   border-radius: 4px;
-  color: #cdd1c9;
+  color: #c7ccd3;
   font-size: 0.72rem;
   font-weight: 800;
 }
@@ -148,7 +148,7 @@
 }
 
 .stageList small {
-  color: #858b81;
+  color: #778495;
   font-size: 0.66rem;
 }
 
@@ -161,7 +161,7 @@
   align-items: center;
   gap: 8px;
   margin-top: 18px;
-  color: #9ea49a;
+  color: #939dab;
   font-size: 0.7rem;
   font-weight: 650;
 }
@@ -195,7 +195,7 @@
   border: 1px solid var(--legacy-line);
   border-radius: 8px;
   background: #ffffff;
-  box-shadow: 0 12px 30px rgba(21, 23, 20, 0.06);
+  box-shadow: 0 12px 30px rgba(8, 45, 86, 0.06);
 }
 
 .surfaceHeader {
@@ -240,10 +240,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #b9d8c5;
+  border: 1px solid #bac7d7;
   border-radius: 6px;
   color: var(--legacy-signal);
-  background: #eaf6ef;
+  background: var(--dv-primary-soft);
 }
 
 .statusIconError {
@@ -309,13 +309,13 @@
 }
 
 .primaryButton:hover {
-  border-color: #075f3b;
+  border-color: var(--dv-primary-deep);
   color: #ffffff;
-  background: #075f3b;
+  background: var(--dv-primary-deep);
 }
 
 .secondaryButton {
-  border-color: #bfc5ba;
+  border-color: #b8bec7;
   color: var(--legacy-ink);
   background: #ffffff;
 }
@@ -373,7 +373,7 @@ button.planCard:hover,
 button.planCard:focus-visible,
 .agencyCard:hover,
 .agencyCard:focus-visible {
-  border-color: #8d9589;
+  border-color: #828d9c;
   color: var(--legacy-ink);
   background: #fbfcf8;
   outline: none;
@@ -381,7 +381,7 @@ button.planCard:focus-visible,
 
 button.planCard:focus-visible,
 .agencyCard:focus-visible {
-  box-shadow: 0 0 0 3px rgba(11, 122, 75, 0.16);
+  box-shadow: 0 0 0 3px rgba(0, 79, 199, 0.16);
 }
 
 .planSelected {
@@ -404,7 +404,7 @@ button.planCard:focus-visible,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #cadbce;
+  border: 1px solid #cad1db;
   border-radius: 4px;
   color: var(--legacy-signal);
   background: #eff7f1;
@@ -413,17 +413,17 @@ button.planCard:focus-visible,
 .planTag {
   display: inline-flex;
   padding: 4px 7px;
-  border: 1px solid #c1c6bc;
+  border: 1px solid #bac0c8;
   border-radius: 4px;
-  color: #5f655c;
-  background: #f5f6f1;
+  color: #555f6c;
+  background: #f1f3f6;
   font-size: 0.64rem;
   font-weight: 800;
 }
 
 .planTagSignal {
-  border-color: #afd1ba;
-  color: #075f3b;
+  border-color: #b0bed0;
+  color: var(--dv-primary-deep);
   background: #e9f5ed;
 }
 
@@ -459,7 +459,7 @@ button.planCard:focus-visible,
   display: flex;
   align-items: flex-start;
   gap: 7px;
-  color: #42473f;
+  color: #3b424b;
   font-size: 0.72rem;
   line-height: 1.35;
 }
@@ -506,8 +506,8 @@ button.planCard:focus-visible,
 .comparisonTable th,
 .comparisonTable td {
   padding: 13px 14px;
-  border-right: 1px solid #e1e4dc;
-  border-bottom: 1px solid #e1e4dc;
+  border-right: 1px solid #dcdfe4;
+  border-bottom: 1px solid #dcdfe4;
   text-align: left;
   vertical-align: top;
 }
@@ -522,8 +522,8 @@ button.planCard:focus-visible,
 }
 
 .comparisonTable thead th {
-  color: #596057;
-  background: #eceee7;
+  color: var(--dv-text-muted);
+  background: #e7eaee;
   font-size: 0.68rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -532,7 +532,7 @@ button.planCard:focus-visible,
 .comparisonTable tbody td:first-child {
   color: var(--legacy-ink);
   font-weight: 800;
-  background: #f7f8f4;
+  background: #f4f6f8;
 }
 
 .checkoutBar {
@@ -545,11 +545,11 @@ button.planCard:focus-visible,
   gap: 20px;
   margin-top: 16px;
   padding: 12px 14px;
-  border: 1px solid #3d423b;
+  border: 1px solid #373e46;
   border-radius: 8px;
   color: #ffffff;
   background: var(--legacy-ink);
-  box-shadow: 0 10px 24px rgba(13, 15, 13, 0.16);
+  box-shadow: 0 10px 24px rgba(6, 28, 51, 0.16);
 }
 
 .checkoutBar > div {
@@ -563,7 +563,7 @@ button.planCard:focus-visible,
 }
 
 .checkoutBar span {
-  color: #aeb4aa;
+  color: #a5aeb9;
   font-size: 0.67rem;
 }
 
@@ -642,7 +642,7 @@ button.planCard:focus-visible,
 
   .stageList li {
     align-items: flex-start;
-    border-right: 1px solid #3a3e37;
+    border-right: 1px solid #333a42;
     border-bottom: 0;
   }
 
@@ -692,7 +692,7 @@ button.planCard:focus-visible,
   .stageList li,
   .stageList li:last-child {
     border-right: 0;
-    border-bottom: 1px solid #3a3e37;
+    border-bottom: 1px solid #333a42;
   }
 
   .stageList li:last-child {

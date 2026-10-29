@@ -27,9 +27,9 @@ export function PerformanceSection({ payload }: { payload: ReportPayload }) {
     {chart.hasData ? <div className={classes.chart} role="img" aria-label={`${label} by ${payload.query.groupBy}. Exact values are available in the data table below.`}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chart.points} margin={{ top: 20, right: 16, bottom: 8, left: 0 }} accessibilityLayer>
-          <CartesianGrid vertical={false} stroke="#e7e9e1" />
-          <XAxis dataKey="date" tickFormatter={shortDate} minTickGap={36} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#62685c' }} />
-          <YAxis width={65} tickFormatter={v => metric === 'ctr' ? `${v}%` : new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(v)} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#62685c' }} />
+          <CartesianGrid vertical={false} stroke="#e1e4e9" />
+          <XAxis dataKey="date" tickFormatter={shortDate} minTickGap={36} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#56606e' }} />
+          <YAxis width={65} tickFormatter={v => metric === 'ctr' ? `${v}%` : new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(v)} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#56606e' }} />
           <Tooltip content={({ active, payload: items }) => {
             const point = items?.[0]?.payload as PerformancePoint | undefined;
             return active && point ? <div className={classes.tooltip}>
@@ -37,7 +37,7 @@ export function PerformanceSection({ payload }: { payload: ReportPayload }) {
               {chart.showPrevious && <p>Previous: {point.previousDate ? windowLabel(point.previousDate, point.previousEndDate!) : 'No measurement'}<br />{format(point.previous)}</p>}
             </div> : null;
           }} />
-          <Line name="Selected period" dataKey="current" type="linear" stroke="#138353" strokeWidth={3} dot={{ r: chart.points.length < 12 ? 3 : 2 }} activeDot={{ r: 6 }} connectNulls={false} isAnimationActive={false} />
+          <Line name="Selected period" dataKey="current" type="linear" stroke="#0065fc" strokeWidth={3} dot={{ r: chart.points.length < 12 ? 3 : 2 }} activeDot={{ r: 6 }} connectNulls={false} isAnimationActive={false} />
           {chart.showPrevious && <Line name="Previous period" dataKey="previous" type="linear" stroke="#7463b6" strokeWidth={2} strokeDasharray="6 5" dot={false} connectNulls={false} isAnimationActive={false} />}
         </LineChart>
       </ResponsiveContainer>

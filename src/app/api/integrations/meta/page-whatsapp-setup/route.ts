@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { unstable_rethrow } from 'next/navigation';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { getMetaPages } from '@/lib/server/actions/meta/pages/actions';
 import { createAdminClient } from '@/lib/server/supabase/admin';
@@ -42,7 +43,7 @@ function parseWhatsAppNumberSource(value: unknown): WhatsAppNumberSource | null 
 
 export async function POST(request: NextRequest) {
   try {
-    const { businessId } = await getRequiredAppContext();
+    const { businessId } = await getRequiredAppContext(false);
     const body = await request.json().catch(() => ({}));
     const integrationId = cleanString(body.integrationId);
     const externalAccountId = cleanString(body.externalAccountId);
@@ -166,6 +167,7 @@ export async function POST(request: NextRequest) {
       })
     );
   } catch (error) {
+    unstable_rethrow(error);
     return NextResponse.json(
       fail(
         error instanceof Error ? error.message : 'Failed to save WhatsApp setup',

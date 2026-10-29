@@ -2,10 +2,10 @@
   position: relative;
   overflow: hidden;
   width: min(100%, 440px);
-  color: #f7f8f3;
-  border: 1px solid #343a33;
-  background: #151714;
-  box-shadow: 0 18px 48px rgba(13, 15, 13, 0.16);
+  color: var(--chrome-text);
+  border: 1px solid var(--chrome-border);
+  background: var(--dv-ink);
+  box-shadow: 0 18px 48px rgba(6, 28, 51, 0.16);
 }
 
 .content {
@@ -19,7 +19,7 @@
   align-items: center;
   justify-content: center;
   padding: 32px 20px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 .signalStage {
@@ -29,16 +29,16 @@
   gap: 6px;
   height: 56px;
   padding: 8px;
-  border: 1px solid #343a33;
+  border: 1px solid var(--chrome-border);
   border-radius: 6px;
-  background: #20241f;
+  background: var(--chrome-panel);
 }
 
 .signalStage span {
   display: block;
   height: 18%;
   border-radius: 3px 3px 1px 1px;
-  background: #c8ff56;
+  background: var(--dv-highlight);
   transform-origin: bottom;
   animation: signal 1.2s ease-in-out infinite;
 }
@@ -56,11 +56,11 @@
 }
 
 .overlayCard :global(.mantine-Title-root) {
-  color: #f7f8f3;
+  color: var(--chrome-text);
 }
 
 .overlayCard :global(.mantine-Text-root) {
-  color: #b6beb3 !important;
+  color: #b0b7c1 !important;
 }
 
 @keyframes signal {

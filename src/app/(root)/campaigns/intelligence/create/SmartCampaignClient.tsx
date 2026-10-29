@@ -143,7 +143,7 @@ export default function SmartCampaignClient({
                             <Title order={2}>Create an intelligent campaign</Title>
                             <Text c="dimmed" mt={4}>Set the outcome, lead destination, schedule, and budget.</Text>
                         </div>
-                        <IconBulb size={26} color="#0b7a4b" />
+                        <IconBulb size={26} color="#004fc7" />
                     </div>
                     <form onSubmit={form.onSubmit(handleSubmit)}>
                         <Stack gap="md">

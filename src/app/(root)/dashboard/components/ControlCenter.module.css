@@ -2,7 +2,7 @@
   max-width: 1320px;
   margin: 0 auto;
   padding: 8px 24px 32px;
-  color: #151714;
+  color: var(--ui-text, var(--dv-ink));
   font-size: 14px;
   letter-spacing: 0;
 }
@@ -19,7 +19,7 @@
 .inkBackdrop {
   grid-column: 1 / -1;
   grid-row: 1 / 4;
-  background: #151714;
+  background: var(--dv-agent-surface);
   border-radius: 8px;
   z-index: 0;
 }
@@ -29,7 +29,7 @@
 .attention {
   position: relative;
   z-index: 1;
-  color: #f5f7f2;
+  color: #f2f4f7;
 }
 .identity {
   grid-area: identity;
@@ -52,7 +52,7 @@
 }
 .identity p {
   margin: 4px 0;
-  color: #b8c0b4;
+  color: #b2b9c2;
   font-size: 12px;
 }
 .identityRight {
@@ -67,14 +67,14 @@
   gap: 6px;
   font-size: 12px;
   white-space: nowrap;
-  color: #d6e0d1;
+  color: #d1d8e0;
 }
 .connected::before {
   content: "";
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #c8ff56;
+  background: var(--dv-highlight);
 }
 .connected[data-connection="attention"]::before {
   background: #fbbf24;
@@ -87,7 +87,7 @@
 .mode summary {
   cursor: pointer;
   min-height: 32px;
-  color: #c8ff56;
+  color: var(--dv-highlight);
 }
 .mode p {
   line-height: 1.6;
@@ -95,7 +95,7 @@
 .contextDetails {
   max-width: 640px;
   font-size: 12px;
-  color: #bbc3b7;
+  color: #b5bcc5;
 }
 .contextDetails summary {
   cursor: pointer;
@@ -115,7 +115,7 @@
   gap: 24px;
 }
 .kpis dt {
-  color: #b7c1b0;
+  color: #b0b7c1;
   font-size: 12px;
   margin-bottom: 2px;
 }
@@ -140,7 +140,7 @@
   color: #b64048;
 }
 .neutral {
-  color: #667064;
+  color: #5d6877;
 }
 .metrics .positive,
 .trend .positive {
@@ -152,19 +152,19 @@
 }
 .metrics .neutral,
 .trend .neutral {
-  color: #c0c8bb;
+  color: #bac1c9;
 }
 .periodNote {
-  color: #a4afa0;
+  color: #9da6b2;
   font-size: 11px;
   margin: 6px 0 0;
 }
 .trend {
   grid-area: trend;
   padding: 18px 0 18px 28px;
-  --chart-grid: #30382d;
-  --chart-text: #a9b5a1;
-  --chart-line: #c8ff56;
+  --chart-grid: #2c3239;
+  --chart-text: #a1aab5;
+  --chart-line: var(--dv-highlight);
 }
 .chartToolbar {
   display: flex;
@@ -180,7 +180,7 @@
 .metricTabs button {
   border: 0;
   background: transparent;
-  color: #bcc6b5;
+  color: #b5bcc6;
   padding: 8px 12px;
   border-radius: 6px;
   min-height: 40px;
@@ -188,12 +188,12 @@
   cursor: pointer;
 }
 .metricTabs button[aria-pressed="true"] {
-  color: #151714;
-  background: #c8ff56;
+  color: var(--dv-ink);
+  background: var(--dv-highlight);
 }
 .chartPeriod {
   font-size: 11px;
-  color: #a9b5a1;
+  color: #a1aab5;
 }
 .chartValue {
   display: flex;
@@ -216,12 +216,12 @@
   height: 100%;
   display: grid;
   place-content: center;
-  color: #a9b5a1;
+  color: #a1aab5;
   font-size: 14px;
 }
 .chartDetails {
   font-size: 12px;
-  color: #b6c2ad;
+  color: #adb6c2;
 }
 .chartDetails summary {
   cursor: pointer;
@@ -234,7 +234,7 @@
   margin-right: 12px;
 }
 .chartDetails select {
-  color: #151714;
+  color: var(--dv-ink);
   border-radius: 6px;
   padding: 8px;
   background: white;
@@ -256,23 +256,23 @@
   max-width: 100%;
 }
 .controls :global(.mantine-SegmentedControl-root) {
-  background: #2b3327;
+  background: #272c33;
   padding: 3px;
 }
 .controls :global(.mantine-SegmentedControl-label) {
-  color: #e0e5dd;
+  color: #dde0e5;
   padding: 10px;
   font-size: 12px;
 }
 .controls :global(.mantine-SegmentedControl-label[data-active]) {
-  color: #151714;
+  color: var(--dv-ink);
 }
 .controls :global(.mantine-ActionIcon-root) {
   width: 44px;
   height: 44px;
-  background: #2b3327;
-  border-color: #47523f;
-  color: #e8ece3;
+  background: #272c33;
+  border-color: #3f4752;
+  color: #e3e7ec;
 }
 .attentionBody {
   border-left: 2px solid #e8b867;
@@ -298,26 +298,26 @@
 }
 .attentionBody details {
   font-size: 12px;
-  color: #c7ccbf;
+  color: #bfc5cc;
 }
 .attentionBody details summary {
   padding: 12px 0;
   cursor: pointer;
 }
 .attentionBody a {
-  color: #c8ff56;
+  color: var(--dv-highlight);
   min-height: 44px;
   display: inline-flex;
   gap: 6px;
   align-items: center;
 }
 .attentionBody .more {
-  color: #bbc4b4;
+  color: #b4bbc4;
   font-size: 12px;
   margin-top: 4px;
 }
 .quietAttention {
-  color: #c4cfbc;
+  color: #bcc4cf;
   padding-top: 14px;
 }
 .quietAttention strong {
@@ -360,7 +360,7 @@
   gap: 4px;
   align-items: center;
   min-height: 44px;
-  color: #39644b;
+  color: #3a4c63;
   font-size: 12px;
 }
 .boardTabs {
@@ -371,15 +371,15 @@
   background: transparent;
   border: 0;
   border-radius: 6px;
-  color: #687064;
+  color: #5d6877;
   min-height: 44px;
   padding: 8px 12px;
   cursor: pointer;
   font-size: 12px;
 }
 .boardTabs button[aria-pressed="true"] {
-  color: #192317;
-  background: #e4eade;
+  color: #171c23;
+  background: #dee3ea;
 }
 .adBoard {
   display: grid;
@@ -403,10 +403,10 @@
   display: flex;
   flex-direction: column;
   text-align: left;
-  color: #192217;
+  color: #171c22;
   background: #fff;
   padding: 0;
-  border: 1px solid #e0e5dc;
+  border: 1px solid #dce0e5;
   border-radius: 8px;
   overflow: hidden;
   min-width: 0;
@@ -420,7 +420,7 @@
   position: relative;
   aspect-ratio: 1.7;
   max-height: 180px;
-  background: #e6ebe1;
+  background: #e1e5eb;
   overflow: hidden;
 }
 .adMedia > div {
@@ -467,7 +467,7 @@
 }
 .adMetrics dt {
   font-size: 11px;
-  color: #6b7464;
+  color: #5f6a79;
 }
 .adMetrics dd {
   font-size: 23px;
@@ -491,7 +491,7 @@
   font-size: 11px;
 }
 .delivery {
-  color: #707a68;
+  color: #636f7f;
 }
 .boardSubheading {
   margin: 12px 0;
@@ -502,7 +502,7 @@
   display: inline-block;
   margin-left: 8px;
   font-size: 12px;
-  color: #687064;
+  color: #5d6877;
   font-weight: 400;
 }
 .historyHeader {
@@ -541,7 +541,7 @@
 }
 .secondaryMetrics dt {
   font-size: 12px;
-  color: #687064;
+  color: #5d6877;
 }
 .secondaryMetrics dd {
   margin: 4px 0 0;
@@ -552,7 +552,7 @@
 .supportMetrics {
   margin: 8px 0;
   font-size: 12px;
-  color: #687064;
+  color: #5d6877;
   overflow-wrap: anywhere;
 }
 .featureLabel {
@@ -561,8 +561,8 @@
   top: 12px;
   left: 12px;
   padding: 7px 10px;
-  color: #151714;
-  background: #d0fa8d;
+  color: var(--dv-ink);
+  background: var(--dv-highlight);
   font-size: 12px;
   font-weight: 600;
   border-radius: 4px;
@@ -579,7 +579,7 @@
   bottom: 10px;
   right: 10px;
   background: #fffffff0;
-  color: #24311c;
+  color: #1c2531;
   width: 32px;
   height: 32px;
   display: grid;
@@ -589,7 +589,7 @@
 .boardNotes,
 .quiet,
 .insufficient {
-  color: #697560;
+  color: #5e6977;
   font-size: 13px;
 }
 .boardNotes summary {
@@ -622,13 +622,13 @@
 }
 .monitor dt {
   font-size: 11px;
-  color: #687461;
+  color: #5e6977;
   margin-top: 4px;
 }
 .monitor details {
   font-size: 12px;
   margin-top: 14px;
-  color: #687461;
+  color: #5e6977;
 }
 .monitor summary {
   cursor: pointer;
@@ -648,16 +648,16 @@
   grid-template-columns: 1fr auto;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid #e6ebe0;
+  border-bottom: 1px solid #e0e5eb;
 }
 .activity li p {
   margin: 4px 0 0;
-  color: #687461;
+  color: #5e6977;
   font-size: 12px;
 }
 .activity time {
   font-size: 12px;
-  color: #687461;
+  color: #5e6977;
 }
 .error {
   color: #bb574f;
@@ -701,14 +701,14 @@
   font-size: 26px;
 }
 .emptyState p {
-  color: #687461;
+  color: #5e6977;
   line-height: 1.6;
 }
 .emptyState a {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  color: #27714a;
+  color: var(--dv-primary-strong);
 }
 .srOnly {
   position: absolute;
@@ -731,7 +731,7 @@
     box-shadow: 0 8px 20px #1a281010;
   }
   .metricTabs button:hover:not([aria-pressed="true"]) {
-    background: #323c2b;
+    background: #2b323c;
   }
 }
 .adCard:active {
@@ -1068,10 +1068,10 @@
   }
   .trend {
     padding: 24px 0 0;
-    color: #151714;
-    --chart-grid: #e0e6db;
-    --chart-text: #6c7865;
-    --chart-line: #328054;
+    color: var(--dv-ink);
+    --chart-grid: #dbe0e6;
+    --chart-text: #616d7c;
+    --chart-line: var(--dv-primary);
   }
   .trend .positive {
     color: #257544;
@@ -1080,17 +1080,17 @@
     color: #b64048;
   }
   .trend .neutral {
-    color: #667064;
+    color: #5d6877;
   }
   .metricTabs button {
-    color: #54624a;
+    color: #4a5462;
     padding: 8px 10px;
     min-height: 44px;
     font-size: 11px;
   }
   .metricTabs button[aria-pressed="true"] {
-    background: #151714;
-    color: #c8ff56;
+    background: var(--dv-ink);
+    color: var(--dv-highlight);
   }
   .chartPeriod {
     display: none;
@@ -1102,7 +1102,7 @@
     height: 260px;
   }
   .chartDetails {
-    color: #627457;
+    color: #576474;
   }
   .chartValue {
     padding-top: 12px;
@@ -1125,4 +1125,104 @@
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* Stage B: token-based presentation. Data, account scope and interactions stay unchanged. */
+.page { max-width: 1264px; padding: 0 28px 40px; }
+.layout { gap: 20px; grid-template-columns: minmax(0, 1fr) 290px; }
+.identity { padding: 24px 28px; background: var(--ui-gradient); border: 1px solid #426995; border-radius: var(--ui-radius); color: #f4f8ff; box-shadow: var(--ui-shadow); }
+.identity h1 { font-size: 25px; margin-bottom: 8px; letter-spacing: -.035em; }
+.identity p, .identity .contextDetails { color: #c6d9f4; font-size: 12px; }
+.identity .connected { color: #e0edff; }
+.identity .mode summary { color: #dfebff; min-height: 32px; }
+.identityRight { gap: 6px; }
+.metrics { padding: 0; color: var(--ui-text); }
+.kpis { gap: 14px; }
+.kpis > div { padding: 20px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius); background: var(--ui-panel); box-shadow: var(--ui-shadow); min-width: 0; }
+.kpis dt { color: var(--ui-muted); font-size: 12px; margin-bottom: 8px; }
+.kpis dd { font-size: clamp(25px, 2.6vw, 36px); letter-spacing: -.045em; line-height: 1.25; margin-bottom: 6px; overflow-wrap: anywhere; }
+.page .positive { color: var(--ui-positive); }
+.page .negative { color: var(--ui-negative); }
+.page .neutral, .page .periodNote { color: var(--ui-muted); }
+.periodNote { font-size: 11px; line-height: 1.6; margin-top: 8px; }
+.trend, .attention { color: var(--ui-text); background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow); padding: 22px; }
+.trend { display: flex; flex-direction: column; gap: 8px; --chart-grid: var(--ui-line); --chart-text: var(--ui-muted); --chart-line: var(--ui-accent); }
+.chartToolbar { order: 0; justify-content: space-between; }
+.chartValue { order: 1; padding: 10px 0 0; }
+.bigChart { order: 2; height: 260px; margin: 4px 0; }
+.chartDetails { order: 3; color: var(--ui-muted); }
+.chartDetails summary { min-height: 36px; display: list-item; padding-top: 8px; }
+.chartDetails select { background: var(--ui-panel); color: var(--ui-text); border: 1px solid var(--ui-line-strong); }
+.chartValue strong { font-size: 34px; letter-spacing: -.04em; }
+.metricTabs { gap: 4px; }
+.metricTabs button { color: var(--ui-muted); min-height: 44px; font-size: 12px; padding: 8px 11px; transition: background var(--ui-duration); }
+.metricTabs button[aria-pressed="true"], .boardTabs button[aria-pressed="true"] { color: var(--ui-accent); background: var(--ui-accent-soft); }
+.metricTabs button:hover:not([aria-pressed="true"]), .boardTabs button:hover:not([aria-pressed="true"]) { background: var(--ui-subtle); }
+.chartEmpty, .chartPeriod { color: var(--ui-muted); }
+.controls { justify-content: space-between; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--ui-line); gap: 8px; }
+.controls :global(.mantine-SegmentedControl-root) { background: var(--ui-subtle); }
+.controls :global(.mantine-SegmentedControl-label) { color: var(--ui-muted); min-height: 44px; display: flex; align-items: center; padding: 8px 10px; }
+.controls :global(.mantine-SegmentedControl-label[data-active]) { color: var(--ui-accent); }
+.controls :global(.mantine-SegmentedControl-indicator) { background: var(--ui-panel); }
+.controls :global(.mantine-ActionIcon-root) { background: var(--ui-panel); border-color: var(--ui-line-strong); color: var(--ui-accent); }
+.attentionBody { border-left: 0; padding-left: 0; }
+.attentionBody h2 { color: var(--ui-warning); display: flex; align-items: center; gap: 10px; font-size: 11px; text-transform: none; }
+.attentionBody h2 svg { color: var(--ui-accent); --agent-eye: var(--ui-panel); --agent-pupil: var(--ui-text); }
+.attentionBody h3 { font-size: 19px; }
+.attentionBody p { font-size: 13px; line-height: 1.7; }
+.attentionBody details, .attentionBody .more, .quietAttention { color: var(--ui-muted); }
+.attentionBody a { color: var(--ui-accent); font-weight: 650; font-size: 13px; }
+.quietAttention { padding-top: 4px; }
+.board { padding-top: 8px; }
+.boardHeader { margin-bottom: 18px; }
+.boardHeader h2, .monitor h2, .activity h2 { font-size: 19px; letter-spacing: -.03em; }
+.boardTabs button { color: var(--ui-muted); font-size: 12px; }
+.boardActions a, .activity a, .boardHeader > a { color: var(--ui-accent); font-weight: 600; }
+.adCard { color: var(--ui-text); background: var(--ui-panel); border-color: var(--ui-line); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow); transition: border-color var(--ui-duration), box-shadow var(--ui-duration); }
+.adCard:hover { transform: none; border-color: var(--ui-line-strong); box-shadow: var(--ui-shadow-raised); }
+.adMedia { background: var(--ui-subtle); }
+.singleActive .adMedia { width: 100%; height: 300px; min-height: 300px; max-height: 300px; aspect-ratio: auto; }
+.adMedia > div { background: var(--ui-subtle); }
+.adBody, .featured .adBody { padding: 18px; }
+.adBody h3 { font-size: 14px; line-height: 1.5; }
+.featured h3 { font-size: 20px; }
+.adMetrics dt, .delivery, .boardSubheading span, .secondaryMetrics dt, .supportMetrics, .boardNotes, .quiet, .insufficient { color: var(--ui-muted); }
+.adMetrics dd { letter-spacing: -.035em; }
+.featureLabel { border-radius: 6px; background: #e1ecff; color: #082d56; box-shadow: 0 1px 6px #082d5610; }
+.monitor { padding: 24px; background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); }
+.monitor dl > div { padding: 4px 16px; border-left: 1px solid var(--ui-line); }
+.monitor dl > div:first-child { border-left: 0; padding-left: 0; }
+.monitor dd { font-size: 28px; letter-spacing: -.04em; }
+.monitor dt, .monitor details, .activity li p, .activity time { color: var(--ui-muted); }
+.monitor dt { font-size: 11px; }
+.activity { padding-top: 8px; }.activity li { border-color: var(--ui-line); }
+.error { color: var(--ui-negative); }
+.loading { color: var(--ui-accent); }.loading span { background: var(--ui-line); }
+.emptyState { color: var(--ui-text); padding: 48px 24px 72px; }
+.emptyState p { color: var(--ui-muted); }.emptyState a { color: var(--ui-accent); }
+.page :is(button,a,summary,select):focus-visible { outline-color: var(--ui-focus); }
+@media(max-width: 1050px) and (min-width: 768px) { .layout { grid-template-columns: minmax(0,1fr) 250px; gap: 16px; }.trend,.attention { padding: 16px; }.metricTabs button { padding: 8px; font-size: 11px; }.kpis > div { padding: 16px; } }
+@media(max-width: 767px) {
+  .page { padding: 0 16px 24px; }
+  .layout { grid-template-columns: minmax(0,1fr); grid-template-areas: 'identity' 'metrics' 'attention' 'trend' 'board' 'monitor' 'activity'; gap: 16px; }
+  .identity { padding: 20px; flex-wrap: wrap; gap: 12px; }
+  .identity > div:first-child { flex-basis: 100%; }
+  .identity h1 { font-size: 22px; }
+  .identity .identityRight { flex-direction: row; max-width: none; flex-wrap: wrap; width: 100%; align-items: center; justify-content: space-between; }
+  .identity .connectionWord { display: inline; }
+  .identity .mode[open] { max-width: none; width: 100%; }
+  .identity .mode p { font-size: 12px; text-align: left; }
+  .identity .mode summary { min-height: 32px; }
+  .metrics { padding: 0; }.kpis { gap: 10px; }.kpis > div { padding: 16px 14px; }.kpis dd { font-size: 27px; }.kpis dt { font-size: 12px; }
+  .periodNote { font-size: 11px; }.delta { font-size: 11px; white-space: normal; }
+  .trend,.attention { padding: 18px; }.controls { margin-bottom: 16px; padding-bottom: 16px; }
+  .attentionBody { display: block; }.attentionBody h2 { font-size: 12px; }.attentionBody a { min-height: 44px; }
+  .metricTabs { gap: 2px; }.metricTabs button { font-size: 11px; padding: 8px; }
+  .chartValue strong { font-size: 32px; }.bigChart { height: 240px; }.chartValue { padding-top: 8px; }
+  .board { padding-top: 8px; }.boardHeader { gap: 8px; }.boardTabs button { font-size: 11px; }.boardActions a { font-size: 12px; }
+  .adBody, .featured .adBody { padding: 14px; }.featured h3 { font-size: 18px; }.adBody h3 { font-size: 14px; }
+  .supporting { gap: 12px; }.adMetrics dt,.adState > span,.adMetrics .delta { font-size: 11px; }.adMetrics dd { font-size: 21px; }
+  .supporting > .adCard:only-child { grid-column: 1 / -1; }
+  .singleActive .adMedia { height: 220px; min-height: 220px; }
+  .monitor { padding: 20px; }.monitor dl { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }.monitor dl > div { border-left: 0; padding: 4px 0; }.monitor dt { font-size: 11px; }
 }

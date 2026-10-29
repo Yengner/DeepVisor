@@ -11,6 +11,7 @@ import DecisionsFeed, { FindingsFeed } from './DecisionsFeed';
 import classes from './Decisions.module.css';
 import { buildDecisionPreview, isDecisionPreview } from '@/lib/server/decisions/preview';
 import DecisionPreviewBanner from '@/components/product/DecisionPreviewBanner';
+import PixelCompanion from '@/components/brand/PixelCompanion';
 
 export const metadata: Metadata = { title: 'Decisions | DeepVisor' };
 
@@ -41,7 +42,7 @@ export default async function DecisionsPage({ searchParams }: { searchParams: Pr
   const page = Number.isSafeInteger(parsed) && parsed >= 0 && parsed <= 10000 ? parsed : 0;
   const preview = isDecisionPreview(params.preview);
   return <div className={`${classes.page} ${product.page}`}>
-    <header className={classes.header}><h1>Decisions</h1><Text size="sm" c="dimmed">Reviews and next steps across your business accounts.</Text></header>
+    <header className={classes.header}><Group gap="md" wrap="nowrap"><PixelCompanion size={44} framed /><div><h1>Decisions</h1><Text size="sm" c="dimmed">Reviews and next steps across your business accounts.</Text></div></Group></header>
     {preview && <DecisionPreviewBanner page="decisions" />}
     <Suspense key={`${page}:${preview}`} fallback={<LoadingFeed />}><DecisionContent page={page} preview={preview} /></Suspense>
   </div>;

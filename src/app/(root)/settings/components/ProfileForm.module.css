@@ -1,32 +1,32 @@
 .form {
-  --mantine-color-text: #202b25;
-  --mantine-color-dimmed: #536159;
+  --mantine-color-text: var(--dv-text);
+  --mantine-color-dimmed: var(--dv-text-muted);
   min-width: 0;
-  color: #202b25;
+  color: var(--dv-text);
   color-scheme: light;
 }
-.heading { margin: 0; color: #202b25; font-size: 18px; line-height: 1.5; font-weight: 700; }
-.helper { margin: 6px 0 4px; color: #536159; font-size: 14px; line-height: 1.65; }
-.form :global(.mantine-InputWrapper-label) { margin-bottom: 6px; color: #202b25; font-size: 14px; font-weight: 600; }
-.form :global(.mantine-InputWrapper-description) { color: #536159; font-size: 13px; line-height: 1.6; margin-bottom: 8px; }
-.form :global(.mantine-Input-input) { min-height: 44px; color: #202b25; background: #fff; border: 1px solid #829387; border-radius: 6px; font-size: 15px; }
-.form :global(.mantine-Input-input)::placeholder { color: #627368; }
-.form :global(.mantine-Input-input):focus { border-color: #0b7a4b; outline: 2px solid #0b7a4b; outline-offset: 2px; }
-.form :global(.mantine-Input-input):disabled { opacity: 1; color: #536159; background: #f1f5f2; }
+.heading { margin: 0; color: var(--dv-text); font-size: 18px; line-height: 1.5; font-weight: 700; }
+.helper { margin: 6px 0 4px; color: var(--dv-text-muted); font-size: 14px; line-height: 1.65; }
+.form :global(.mantine-InputWrapper-label) { margin-bottom: 6px; color: var(--dv-text); font-size: 14px; font-weight: 600; }
+.form :global(.mantine-InputWrapper-description) { color: var(--dv-text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 8px; }
+.form :global(.mantine-Input-input) { min-height: 44px; color: var(--dv-text); background: #fff; border: 1px solid #7d8998; border-radius: 6px; font-size: 15px; }
+.form :global(.mantine-Input-input)::placeholder { color: #5e6977; }
+.form :global(.mantine-Input-input):focus { border-color: var(--dv-primary-strong); outline: 2px solid var(--dv-primary-strong); outline-offset: 2px; }
+.form :global(.mantine-Input-input):disabled { opacity: 1; color: var(--dv-text-muted); background: #f1f3f5; }
 .form :global(.mantine-Button-root) { min-height: 44px; font-weight: 600; border-radius: 6px; }
-.form :global(.mantine-Button-root):focus-visible { outline: 2px solid #0b7a4b; outline-offset: 3px; }
-.form :global(.mantine-Button-root):disabled { opacity: 1; color: #59685f; background: #edf1ee; border: 1px solid #d5ded7; }
-.form :global(.mantine-Button-root[data-variant='default']) { color: #202b25; background: #fff; border-color: #829387; }
-.form :global(.mantine-Divider-root) { border-color: #dbe3dd; }
+.form :global(.mantine-Button-root):focus-visible { outline: 2px solid var(--dv-primary-strong); outline-offset: 3px; }
+.form :global(.mantine-Button-root):disabled { opacity: 1; color: #555f6c; background: #edeff1; border: 1px solid #d5d9de; }
+.form :global(.mantine-Button-root[data-variant='default']) { color: var(--dv-text); background: #fff; border-color: #7d8998; }
+.form :global(.mantine-Divider-root) { border-color: #dbdee3; }
 .fields { min-width: 0; margin: 0; padding: 0; border: 0; }
-.form :global(.mantine-Input-input)[data-disabled] { opacity: 1; color: #536159; background: #f1f5f2; }
-.currentEmail { color: #536159; overflow-wrap: anywhere; line-height: 1.6; }
-.currentEmail strong { color: #202b25; font-weight: 600; }
+.form :global(.mantine-Input-input)[data-disabled] { opacity: 1; color: var(--dv-text-muted); background: #f1f3f5; }
+.currentEmail { color: var(--dv-text-muted); overflow-wrap: anywhere; line-height: 1.6; }
+.currentEmail strong { color: var(--dv-text); font-weight: 600; }
 .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 4px; }
-.emailButton:not(:disabled) { color: #226443; background: #e9f3ed; }
-.emailButton:not(:disabled):hover { background: #dbece1; }
-.saveButton:not(:disabled) { color: #fff; background: #0b7a4b; border-color: #0b7a4b; }
-.saveButton:not(:disabled):hover { background: #09623d; border-color: #09623d; }
+.emailButton:not(:disabled) { color: var(--dv-primary-strong); background: var(--dv-primary-soft); }
+.emailButton:not(:disabled):hover { background: var(--dv-primary-soft-hover); }
+.saveButton:not(:disabled) { color: #fff; background: var(--dv-primary-strong); border-color: var(--dv-primary-strong); }
+.saveButton:not(:disabled):hover { background: var(--dv-primary-strong); border-color: var(--dv-primary-strong); }
 @media (max-width: 40em) {
   .actions > button { flex: 1; }
   .heading { font-size: 17px; }

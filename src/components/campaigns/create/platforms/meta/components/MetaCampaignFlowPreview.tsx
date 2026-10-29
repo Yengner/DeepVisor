@@ -70,7 +70,7 @@ export default function MetaCampaignFlowPreview({
                         </div>
                     ),
                 },
-                style: { border: "2px solid #22c55e", borderRadius: 8, background: "#e6f9ed" },
+                style: { border: "2px solid #22c55e", borderRadius: 8, background: "#eaf2ff" },
             });
         }
 
@@ -138,7 +138,7 @@ export default function MetaCampaignFlowPreview({
     }
 
     return (
-        <div style={{ width: "100%", height: 340, background: "#f4f5ef", borderRadius: 8 }}>
+        <div style={{ width: "100%", height: 340, background: "#f4f7fc", borderRadius: 8 }}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}

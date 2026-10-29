@@ -4,18 +4,18 @@ import type { ReportMetricKey, ReportPayload } from '../types';
 import { EXPORT_METRICS, type ReportExportRecord } from '@/lib/shared/reports/exportRecords';
 import { moneyMetrics } from '@/lib/shared/reports/breakdowns';
 export const pdfStyles = StyleSheet.create({
-  page: { paddingTop: 90, paddingHorizontal: 30, paddingBottom: 44, fontSize: 8, color: '#182119', fontFamily: 'Helvetica' },
+  page: { paddingTop: 90, paddingHorizontal: 30, paddingBottom: 44, fontSize: 8, color: '#102c46', fontFamily: 'Helvetica' },
   header: { position: 'absolute', top: 25, left: 30, right: 30 },
-  eyebrow: { fontSize: 8, color: '#5e6b53', marginBottom: 5 },
+  eyebrow: { fontSize: 8, color: '#535d6b', marginBottom: 5 },
   title: { fontSize: 18, fontWeight: 700, marginBottom: 5 },
-  note: { fontSize: 7, color: '#5e6b53', lineHeight: 1.45 },
-  tableHeader: { flexDirection: 'row', padding: 6, backgroundColor: '#e8f0d5', marginTop: 10 },
-  row: { borderBottomWidth: 1, borderBottomColor: '#e1e6d8', padding: 7 },
+  note: { fontSize: 7, color: '#535d6b', lineHeight: 1.45 },
+  tableHeader: { flexDirection: 'row', padding: 6, backgroundColor: '#eaf2ff', marginTop: 10 },
+  row: { borderBottomWidth: 1, borderBottomColor: '#d8dee6', padding: 7 },
   line: { flexDirection: 'row' },
   label: { width: '31%', paddingRight: 8, fontWeight: 700, lineHeight: 1.4 },
   cell: { flex: 1, paddingLeft: 4, lineHeight: 1.4 },
-  detail: { fontSize: 7, color: '#5e6b53', marginTop: 4, lineHeight: 1.45 },
-  footer: { position: 'absolute', bottom: 20, left: 30, right: 30, flexDirection: 'row', justifyContent: 'space-between', fontSize: 7, color: '#5e6b53' },
+  detail: { fontSize: 7, color: '#535d6b', marginTop: 4, lineHeight: 1.45 },
+  footer: { position: 'absolute', bottom: 20, left: 30, right: 30, flexDirection: 'row', justifyContent: 'space-between', fontSize: 7, color: '#535d6b' },
 });
 export function exportValueLabel(row: ReportExportRecord, metric: ReportMetricKey): string {
   const value = row.values[metric];

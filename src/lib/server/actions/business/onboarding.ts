@@ -494,11 +494,11 @@ export async function updateOnboardingProgress(input: {
     const { businessId } = contextRes.data;
     if (input.step > 0) {
       const { data: profile, error: profileError } = await supabase.from('business_profiles')
-        .select('business_name,most_valuable_service,business_location,customer_radius,preferred_contact_method')
+        .select('business_name,industry,business_location,customer_radius,preferred_contact_method')
         .eq('id', businessId).single();
       if (profileError) return fail(getErrorMessage(profileError), ErrorCode.DATABASE_ERROR);
       if (!profile || !normalizeBusinessName(profile.business_name) || isPlaceholderBusinessName(profile.business_name) ||
-          !isAllowedOption(profile.most_valuable_service ?? '', SALON_SERVICE_OPTIONS) ||
+          !isAllowedOption(profile.industry ?? '', SALON_INDUSTRY_OPTIONS) ||
           !cleanString(profile.business_location) || !isAllowedOption(profile.customer_radius ?? '', CUSTOMER_RADIUS_OPTIONS) ||
           !isAllowedOption(profile.preferred_contact_method ?? '', CONTACT_METHOD_OPTIONS)) {
         return fail('Complete the required business essentials before continuing', ErrorCode.VALIDATION_ERROR);

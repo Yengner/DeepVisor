@@ -608,7 +608,7 @@ function CreativeAdPreview({
             h={28}
             style={{
               borderRadius: '50%',
-              background: '#14a866',
+              background: '#0065fc',
             }}
           />
           <div>

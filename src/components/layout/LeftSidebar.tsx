@@ -34,10 +34,10 @@ function RailItem({
       aria-label={label}
       className={`group relative flex h-11 w-full items-center gap-3 overflow-hidden rounded-md border px-3 text-sm font-bold transition-colors ${
         active
-          ? 'border-[#355447] bg-[#203b2f] text-[#e5f4ec]'
+          ? 'border-[#4279ad] bg-[#123d68] text-[#e5f1ff]'
           : tone === 'danger'
             ? 'border-transparent text-[#e98b83] hover:border-[#49302e] hover:bg-[#251b1a]'
-            : 'border-transparent text-[#aab2a7] hover:border-[#30352f] hover:bg-[#242823] hover:text-white'
+            : 'border-transparent text-[#b0c4da] hover:border-[#2c3138] hover:bg-[#16395e] hover:text-white'
       }`}
     >
       <span className="flex h-5 w-5 shrink-0 items-center justify-center">{icon}</span>
@@ -69,7 +69,7 @@ export default function Sidebar() {
       onMouseLeave={() => setIsExpanded(false)}
       onFocusCapture={() => setIsExpanded(true)}
       onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setIsExpanded(false); }}
-      className={`fixed bottom-0 left-0 top-16 z-40 hidden overflow-hidden border-r border-[#292d28] bg-[#0d0f0d] transition-[width] duration-200 md:block ${
+      className={`fixed bottom-0 left-0 top-16 z-40 hidden overflow-hidden border-r border-[#284665] bg-[#07182d] transition-[width] duration-200 md:block ${
         isExpanded ? 'w-[13.5rem]' : 'w-[3.75rem]'
       }`}
       aria-label="Workspace navigation"
@@ -94,7 +94,7 @@ export default function Sidebar() {
             );
           })}
         </nav>
-        <nav aria-label="Secondary workspace navigation" className="mt-5 space-y-1.5 border-t border-[#292d28] pt-3">
+        <nav aria-label="Secondary workspace navigation" className="mt-5 space-y-1.5 border-t border-[#284665] pt-3">
           {secondaryNavItems.map(item => {
             const active = isAppNavItemActive(pathname, item.route);
             return <RailItem key={item.route} active={active} expanded={isExpanded}
@@ -104,7 +104,7 @@ export default function Sidebar() {
         </nav>
 
         </div>
-        <div className="space-y-1.5 border-t border-[#292d28] pt-3">
+        <div className="space-y-1.5 border-t border-[#284665] pt-3">
           <RailItem
             active={false}
             expanded={isExpanded}

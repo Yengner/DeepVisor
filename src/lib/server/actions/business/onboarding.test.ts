@@ -15,12 +15,14 @@ vi.mock('@/lib/server/supabase/server', () => ({ createServerClient: async () =>
       eq: (field: string, value: string) => { m.scope(table, field, value); return q; },
       select: () => q,
       maybeSingle: () => table === 'business_profiles' ? m.businessResult() : m.orgResult(),
+      single: () => m.businessResult(),
+      then: (resolve: (value: { error: null }) => unknown) => Promise.resolve({ error: null }).then(resolve),
     };
     return q;
   },
 }) }));
 
-import { updateBusinessProfileData } from './onboarding';
+import { updateBusinessProfileData, updateOnboardingProgress } from './onboarding';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -82,4 +84,24 @@ it.each([
   { businessName: 'x'.repeat(201) }, { description: 'x'.repeat(4001) }, { bookingLink: 'invalid' },
 ])('rejects invalid profile inputs', async input => {
   expect((await updateBusinessProfileData(input)).success).toBe(false); expect(m.update).not.toHaveBeenCalled();
+});
+
+const completeEssentials = {
+  business_name: 'Synthetic Nail Studio', industry: 'nail_salon',
+  business_location: 'New York, NY', customer_radius: 'within_5_miles',
+  preferred_contact_method: 'phone_calls',
+};
+it('advances with a saved profession and no legacy service selection', async () => {
+  m.businessResult.mockResolvedValueOnce({ data: completeEssentials, error: null });
+  expect((await updateOnboardingProgress({ step: 1 })).success).toBe(true);
+  expect(m.update).toHaveBeenCalledWith('business_profiles', expect.objectContaining({ onboarding_step: 1 }));
+  expect(m.scope).toHaveBeenCalledWith('business_profiles', 'id', 'own-business');
+});
+it.each([
+  { industry: null }, { industry: 'invented' }, { business_location: '' },
+  { business_name: 'Business setup' }, { customer_radius: null }, { preferred_contact_method: null },
+])('still rejects genuinely incomplete essentials: %o', async missing => {
+  m.businessResult.mockResolvedValueOnce({ data: { ...completeEssentials, ...missing }, error: null });
+  expect((await updateOnboardingProgress({ step: 1 })).success).toBe(false);
+  expect(m.update).not.toHaveBeenCalled();
 });

@@ -6,17 +6,17 @@ import { formatReportMetric } from '@/lib/shared/reports/metrics';
 import { coverageLabel } from '@/lib/shared/reports/coverage';
 import { PdfFooter, ReportPdfSections } from './ReportPdfSections';
 const styles = StyleSheet.create({
-  cover: { padding: 30, paddingBottom: 50, fontFamily: 'Helvetica', color: '#182119', fontSize: 10, backgroundColor: '#fafbf7' },
-  eyebrow: { fontSize: 9, color: '#526546', marginBottom: 10, letterSpacing: 1 },
+  cover: { padding: 30, paddingBottom: 50, fontFamily: 'Helvetica', color: '#102c46', fontSize: 10, backgroundColor: '#f4f7fc' },
+  eyebrow: { fontSize: 9, color: '#465365', marginBottom: 10, letterSpacing: 1 },
   title: { fontSize: 26, fontWeight: 700, marginBottom: 10 },
-  subtitle: { fontSize: 11, color: '#526546', lineHeight: 1.5, marginBottom: 12 },
-  filters: { padding: 14, backgroundColor: '#edf3df', borderRadius: 10, marginBottom: 18 },
+  subtitle: { fontSize: 11, color: '#465365', lineHeight: 1.5, marginBottom: 12 },
+  filters: { padding: 14, backgroundColor: '#eaf2ff', borderRadius: 10, marginBottom: 18 },
   filter: { fontSize: 9, lineHeight: 1.5, marginBottom: 3 },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
-  metric: { width: '50%', padding: 14, borderBottomWidth: 1, borderBottomColor: '#dbe3ce' },
-  metricLabel: { fontSize: 9, color: '#526546', marginBottom: 8 },
+  metric: { width: '50%', padding: 14, borderBottomWidth: 1, borderBottomColor: '#ced7e3' },
+  metricLabel: { fontSize: 9, color: '#465365', marginBottom: 8 },
   metricValue: { fontSize: 21, fontWeight: 700 },
-  note: { fontSize: 9, color: '#526546', lineHeight: 1.55, marginBottom: 8 },
+  note: { fontSize: 9, color: '#465365', lineHeight: 1.55, marginBottom: 8 },
 });
 /** Existing react-pdf document pipeline; content now follows the same contracts as the workspace. */
 export function ReportPdfDocument({ payload, demo = false }: { payload: ReportPayload; demo?: boolean }) {

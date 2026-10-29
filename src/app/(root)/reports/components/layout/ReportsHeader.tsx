@@ -182,7 +182,7 @@ export default function ReportsHeader({
             <Text fw={900} size="1.65rem" mt="xs" className={classes.headerTitle}>
               Reports
             </Text>
-            <Text size="sm" c="#626b5b" mt={4}>
+            <Text size="sm" c="#57616f" mt={4}>
               {reportDateSummary} · {payload.meta.timezone ?? "Timezone unknown"}{payload.meta.partialDay ? " · Partial day" : ""}
             </Text>
           </div>
@@ -204,7 +204,7 @@ export default function ReportsHeader({
                   rightSection={<IconChevronDown size={14} />}
                   radius="xl"
                   variant="filled"
-                  color="#075f3b"
+                  color="#073d85"
                   className="app-platform-page-action-primary"
                 >
                   Export
@@ -280,7 +280,7 @@ export default function ReportsHeader({
                         size="xs"
                         variant={isActive ? 'filled' : 'light'}
                         color={isActive ? 'dark' : 'gray.8'}
-                        c={isActive ? '#ffffff' : '#4d5946'}
+                        c={isActive ? '#ffffff' : '#464e59'}
                         className={classes.presetButton}
                         aria-pressed={isActive}
                         disabled={isPending || (!range && !isMaxPreset)}

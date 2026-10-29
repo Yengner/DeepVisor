@@ -1,10 +1,10 @@
 .stepRoot {
-  color: #151714;
+  color: var(--dv-ink);
 }
 
 .stepIntro {
   padding: 4px 0 20px;
-  border-bottom: 1px solid #ced2c7;
+  border-bottom: 1px solid #c6ccd3;
 }
 
 .stepMetaRow {
@@ -17,7 +17,7 @@
 
 .stepKicker {
   display: block;
-  color: #0b7a4b;
+  color: var(--dv-primary-strong);
   font-size: 0.68rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -30,7 +30,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 5px;
-  color: #0b7a4b;
+  color: var(--dv-primary-strong);
   font-size: 0.7rem;
   font-weight: 800;
 }
@@ -52,7 +52,7 @@
 .stepCopy {
   max-width: 680px;
   margin-top: 7px;
-  color: #666b61;
+  color: #5a6472;
   font-size: 0.92rem;
   line-height: 1.55;
 }
@@ -61,9 +61,9 @@
   min-width: 0;
   margin: 0;
   padding: 20px 0 22px;
-  border-top: 3px solid #0b7a4b;
+  border-top: 3px solid var(--dv-primary-strong);
   border-right: 0;
-  border-bottom: 1px solid #ced2c7;
+  border-bottom: 1px solid #c6ccd3;
   border-left: 0;
 }
 
@@ -79,10 +79,10 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 32px;
-  border: 1px solid #bcd7c7;
+  border: 1px solid #bcc8d7;
   border-radius: 4px;
-  background: #edf6f0;
-  color: #0b7a4b;
+  background: var(--dv-primary-soft);
+  color: var(--dv-primary-strong);
 }
 
 .sectionTitle {
@@ -92,8 +92,8 @@
 
 .metaSection {
   padding: 20px;
-  border: 1px solid #ced2c7;
-  border-top: 3px solid #0b7a4b;
+  border: 1px solid #c6ccd3;
+  border-top: 3px solid var(--dv-primary-strong);
   border-radius: 6px;
   background: #ffffff;
 }
@@ -105,10 +105,10 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 42px;
-  border: 1px solid #bcd7c7;
+  border: 1px solid #bcc8d7;
   border-radius: 5px;
-  background: #edf6f0;
-  color: #0b7a4b;
+  background: var(--dv-primary-soft);
+  color: var(--dv-primary-strong);
 }
 
 .metaTitle {
@@ -118,7 +118,7 @@
 
 .connectionBadge {
   flex: 0 0 auto;
-  border: 1px solid #ccd0c5;
+  border: 1px solid #c4cad1;
 }
 
 .metaBenefits {
@@ -126,14 +126,14 @@
   gap: 10px;
   margin-top: 20px;
   padding-top: 18px;
-  border-top: 1px solid #e0e3dc;
+  border-top: 1px solid #dcdfe3;
 }
 
 .metaBenefits span {
   display: flex;
   align-items: flex-start;
   gap: 9px;
-  color: #555b52;
+  color: #4c5561;
   font-size: 0.84rem;
   line-height: 1.45;
 }
@@ -141,12 +141,12 @@
 .metaBenefits svg {
   flex: 0 0 auto;
   margin-top: 2px;
-  color: #0b7a4b;
+  color: var(--dv-primary-strong);
 }
 
 .actionBar {
   padding-top: 18px;
-  border-top: 1px solid #ced2c7;
+  border-top: 1px solid #c6ccd3;
 }
 
 .primaryButton {
@@ -154,19 +154,19 @@
 }
 
 .secondaryButton {
-  border: 1px solid #c3c7bc;
+  border: 1px solid #bac1c9;
   background: #ffffff;
-  color: #151714;
+  color: var(--dv-ink);
 }
 
 .backAction {
   width: 44px;
   min-width: 44px;
   height: 44px;
-  border: 1px solid #c3c7bc;
+  border: 1px solid #bac1c9;
   border-radius: 4px;
   background: #ffffff;
-  color: #151714;
+  color: var(--dv-ink);
 }
 
 .connectActionGroup {
@@ -177,11 +177,11 @@
 }
 
 .skipButton {
-  color: #555b52;
+  color: #4c5561;
 }
 
 .summaryHero {
-  border-top: 4px solid #0b7a4b;
+  border-top: 4px solid var(--dv-primary-strong);
 }
 
 .summaryBusiness {
@@ -193,44 +193,44 @@
 }
 
 .summaryIcon {
-  border: 1px solid #bcd7c7;
+  border: 1px solid #bcc8d7;
   border-radius: 4px;
-  background: #edf6f0;
-  color: #0b7a4b;
+  background: var(--dv-primary-soft);
+  color: var(--dv-primary-strong);
 }
 
 .summaryItem {
   min-width: 0;
   padding-top: 11px;
-  border-top: 1px solid #e1e3dd;
+  border-top: 1px solid #dce0e4;
 }
 
 .summaryItem :global(.mantine-Text-root:first-child) {
-  color: #747970;
+  color: #677382;
   letter-spacing: 0;
 }
 
 .summaryItem :global(.mantine-Text-root:last-child) {
   margin-top: 4px;
   overflow-wrap: anywhere;
-  color: #151714;
+  color: var(--dv-ink);
   font-size: 0.86rem;
   line-height: 1.4;
 }
 
 .readyBadge {
-  border: 1px solid #b7d8c4;
+  border: 1px solid #b9c6d6;
   border-radius: 3px;
-  background: #eaf5ee;
+  background: var(--dv-primary-soft);
   color: #08603a;
 }
 
 .tagGroup :global(.mantine-Badge-root) {
   height: auto;
   padding-block: 5px;
-  border: 1px solid #c3d9ca;
+  border: 1px solid #c3cdd9;
   border-radius: 3px;
-  background: #edf6f0;
+  background: var(--dv-primary-soft);
   color: #08603a;
   white-space: normal;
 }
@@ -240,23 +240,23 @@
 }
 
 .watchIcon {
-  border: 1px solid #bcd7c7;
-  background: #edf6f0;
-  color: #0b7a4b;
+  border: 1px solid #bcc8d7;
+  background: var(--dv-primary-soft);
+  color: var(--dv-primary-strong);
 }
 
 .controlPanel {
-  border-color: #0d0f0d;
-  background: #151714 !important;
+  border-color: var(--dv-ink-deep);
+  background: var(--dv-ink) !important;
   color: #ffffff;
 }
 
 .controlPanel :global(.mantine-Text-root) {
-  color: #bfc4ba;
+  color: #b7bec7;
 }
 
 .controlPanel :global(.mantine-Text-root:first-child) {
-  color: #c8ff56;
+  color: var(--dv-highlight);
 }
 
 @media (max-width: 600px) {
@@ -286,10 +286,10 @@
     bottom: calc(8px + env(safe-area-inset-bottom));
     margin-inline: -4px;
     padding: 10px;
-    border: 1px solid #c7cbc0;
+    border: 1px solid #bfc5cc;
     border-radius: 6px;
     background: rgba(244, 245, 239, 0.96);
-    box-shadow: 0 8px 24px rgba(21, 23, 20, 0.12);
+    box-shadow: 0 8px 24px rgba(8, 45, 86, 0.12);
   }
 
   .primaryButton {

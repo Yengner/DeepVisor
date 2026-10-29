@@ -5,7 +5,7 @@ export default async function AuthenticatedLayout({ children }: Readonly<{ child
   return (
     <>
       <Header />
-      <main style={{ background: '#f4f5ef' }}>{children}</main>
+      <main style={{ background: '#f4f7fc' }}>{children}</main>
       <Footer />
     </>
   );

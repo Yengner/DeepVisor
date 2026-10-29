@@ -100,10 +100,10 @@ export default function ControlTrend({
               />
               <Tooltip
                 contentStyle={{
-                  background: "#fff",
-                  color: "#151714",
-                  borderRadius: 6,
-                  border: "none",
+                  background: "var(--ui-panel, #fff)",
+                  color: "var(--ui-text, #082d56)",
+                  borderRadius: 10,
+                  border: "1px solid var(--ui-line, #d9e3ef)",
                   fontSize: 12,
                 }}
                 formatter={(value) => [
@@ -121,8 +121,8 @@ export default function ControlTrend({
                 type="linear"
                 stroke="var(--chart-line)"
                 strokeWidth={3}
-                dot={{ r: 3, strokeWidth: 0 }}
-                activeDot={{ r: 5 }}
+                dot={{ r: 4, fill: "var(--chart-line)", stroke: "var(--ui-panel, #fff)", strokeWidth: 2 }}
+                activeDot={{ r: 6, fill: "var(--chart-line)", stroke: "var(--ui-panel, #fff)", strokeWidth: 2 }}
                 connectNulls={false}
                 isAnimationActive={false}
               />

@@ -7,10 +7,10 @@ const cardVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-[#dfe2da] bg-white text-foreground shadow-card",
-        elevated: "border-[#c9cec4] bg-white text-foreground shadow-card-strong",
+        default: "border-[#d9e3ef] bg-white text-foreground shadow-card",
+        elevated: "border-[#b8c9dd] bg-white text-foreground shadow-card-strong",
         glass: "border-white/15 bg-white/5 text-white shadow-card backdrop-blur",
-        dark: "border-white/15 bg-[#151714] text-white shadow-card",
+        dark: "border-white/15 bg-[#082d56] text-white shadow-card",
       },
       padding: {
         sm: "p-4",

@@ -65,7 +65,7 @@ try {
       const essentials=page.getByLabel('Business name');
       if(await essentials.isVisible()) {
         await essentials.fill(`[SIMULATED] Phase 2 Salon ${user.key.toUpperCase()}`);
-        await select('Main service','Hair color');
+        await select('Profession','Hair stylist');
         await page.getByLabel('Service address').fill('123 Synthetic Street, Tampa, FL');
         await select('Customer radius','Within 5 miles');
         await select('Preferred contact path','Phone calls');

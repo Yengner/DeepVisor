@@ -50,7 +50,7 @@
 }
 
 .templateCardCampaignReview {
-  background: #0b7a4b;
+  background: var(--dv-primary-strong);
 }
 
 .templateCardCreativeRefresh {
@@ -121,7 +121,7 @@
 }
 
 .templateTypeButtonActive {
-  box-shadow: 0 0 0 3px rgba(20, 168, 102, 0.18);
+  box-shadow: 0 0 0 3px rgba(0, 101, 252, 0.18);
   transform: translateY(-1px);
 }
 
@@ -173,23 +173,23 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 .topStatValue {
   font-size: 20px;
   font-weight: 800;
   line-height: 1;
-  color: #151714;
+  color: var(--dv-ink);
 }
 
 .topStatLabel {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: #697067;
+  color: var(--dv-text-muted);
 }
 
 .miniCalendarPanel {
@@ -210,7 +210,7 @@
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: #697067;
+  color: var(--dv-text-muted);
   text-transform: uppercase;
 }
 
@@ -225,7 +225,7 @@
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
-  color: #151714;
+  color: var(--dv-ink);
   cursor: pointer;
   font: inherit;
   font-size: 11px;
@@ -241,7 +241,7 @@
 }
 
 .miniDayOutside {
-  color: #9aa297;
+  color: #919ba8;
 }
 
 .miniDayToday {
@@ -268,9 +268,9 @@
 .eventPopoverDropdown {
   max-width: min(360px, calc(100vw - 24px));
   padding: 0 !important;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(21, 23, 20, 0.14);
+  box-shadow: 0 10px 30px rgba(8, 45, 86, 0.14);
   background: #fff;
 }
 
@@ -296,20 +296,20 @@
   font-size: 1.35rem;
   font-weight: 800;
   line-height: 1.08;
-  color: #151714;
+  color: var(--dv-ink);
 }
 
 .eventPopoverDate {
   margin-top: 5px;
   font-size: 0.95rem;
-  color: #596057;
+  color: var(--dv-text-muted);
 }
 
 .eventPopoverDescription {
   margin-top: 14px;
   font-size: 0.95rem;
   line-height: 1.6;
-  color: #151714;
+  color: var(--dv-ink);
 }
 
 .eventPopoverMetaGrid {
@@ -321,9 +321,9 @@
 
 .eventPopoverMetaItem {
   padding: 12px 14px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 .selectedStrip {
@@ -358,8 +358,8 @@
   justify-content: space-between;
   gap: 16px;
   padding: 12px 18px;
-  border-bottom: 1px solid rgba(21, 23, 20, 0.12);
-  background: #f4f5ef;
+  border-bottom: 1px solid rgba(8, 45, 86, 0.12);
+  background: var(--dv-canvas);
 }
 
 .calendarToolbarPrimary {
@@ -375,7 +375,7 @@
   overflow: hidden;
   font-size: 2rem;
   line-height: 1.05;
-  color: #151714;
+  color: var(--dv-ink);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -408,15 +408,15 @@
   min-width: 0;
   gap: 10px;
   padding: 12px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
   text-align: left;
 }
 
 .mobileAgendaTime {
   flex: 0 0 54px;
-  color: #596057;
+  color: var(--dv-text-muted);
   font-size: 12px;
   font-weight: 800;
 }
@@ -435,14 +435,14 @@
 }
 
 .mobileAgendaTitle {
-  color: #151714;
+  color: var(--dv-ink);
   font-size: 13px;
   font-weight: 800;
 }
 
 .mobileAgendaMeta {
   margin-top: 2px;
-  color: #697067;
+  color: var(--dv-text-muted);
   font-size: 12px;
   font-weight: 700;
 }
@@ -492,18 +492,18 @@
   height: 38px;
   margin-top: 3px;
   border-radius: 999px;
-  color: #242823;
+  color: var(--chrome-hover);
   font-size: 22px;
   font-weight: 500;
   line-height: 1;
 }
 
 .mobileScheduleTodayText {
-  color: #0b7a4b;
+  color: var(--dv-primary-strong);
 }
 
 .mobileScheduleDateToday {
-  background: #0b7a4b;
+  background: var(--dv-primary-strong);
   color: #fff;
 }
 
@@ -536,7 +536,7 @@
 .mobileScheduleEventCard {
   padding: 10px 12px;
   color: #fff;
-  box-shadow: 0 1px 0 rgba(21, 23, 20, 0.05);
+  box-shadow: 0 1px 0 rgba(8, 45, 86, 0.05);
 }
 
 .mobileScheduleStatusBadge {
@@ -577,7 +577,7 @@
 }
 
 .mobileScheduleSelected {
-  outline: 2px solid rgba(20, 168, 102, 0.38);
+  outline: 2px solid rgba(0, 101, 252, 0.38);
   outline-offset: 2px;
 }
 
@@ -598,17 +598,17 @@
   min-width: 1016px;
   box-sizing: border-box;
   padding-right: var(--calendar-scrollbar-width, 0px);
-  border-bottom: 1px solid rgba(21, 23, 20, 0.12);
+  border-bottom: 1px solid rgba(8, 45, 86, 0.12);
   background: #ffffff;
 }
 
 .weekHeaderSpacer {
-  border-right: 1px solid rgba(21, 23, 20, 0.12);
+  border-right: 1px solid rgba(8, 45, 86, 0.12);
 }
 
 .weekHeaderDay {
   padding: 10px 12px 12px;
-  border-right: 1px solid rgba(21, 23, 20, 0.12);
+  border-right: 1px solid rgba(8, 45, 86, 0.12);
 }
 
 .weekHeaderDayToday {
@@ -636,7 +636,7 @@
   border-radius: 999px;
   font-size: 18px;
   font-weight: 700;
-  color: #151714;
+  color: var(--dv-ink);
 }
 
 .weekHeaderDateToday {
@@ -667,7 +667,7 @@
 .weekTimeColumn {
   position: relative;
   height: var(--calendar-week-grid-height);
-  border-right: 1px solid rgba(21, 23, 20, 0.12);
+  border-right: 1px solid rgba(8, 45, 86, 0.12);
   background: #ffffff;
   overflow: visible;
 }
@@ -679,7 +679,7 @@
   text-align: right;
   font-size: 11px;
   font-weight: 600;
-  color: #697067;
+  color: var(--dv-text-muted);
   line-height: 1;
   white-space: nowrap;
 }
@@ -687,15 +687,15 @@
 .weekDayColumn {
   position: relative;
   height: var(--calendar-week-grid-height);
-  border-right: 1px solid rgba(21, 23, 20, 0.12);
+  border-right: 1px solid rgba(8, 45, 86, 0.12);
   background-color: #ffffff;
   background-image:
     repeating-linear-gradient(
       to bottom,
       transparent 0,
       transparent calc(var(--calendar-hour-row-height) - 1px),
-      rgba(21, 23, 20, 0.12) calc(var(--calendar-hour-row-height) - 1px),
-      rgba(21, 23, 20, 0.12) var(--calendar-hour-row-height)
+      rgba(8, 45, 86, 0.12) calc(var(--calendar-hour-row-height) - 1px),
+      rgba(8, 45, 86, 0.12) var(--calendar-hour-row-height)
     );
 }
 
@@ -777,7 +777,7 @@
 }
 
 .sourceManual {
-  background: #0b7a4b;
+  background: var(--dv-primary-strong);
 }
 
 .sourceAgent {
@@ -785,12 +785,12 @@
 }
 
 .sourceAutomatic {
-  background: #14a866;
+  background: var(--dv-primary);
 }
 
 .eventManual {
-  background: #14a866;
-  border-color: #14a866;
+  background: var(--dv-primary);
+  border-color: var(--dv-primary);
   color: #fff;
 }
 
@@ -929,9 +929,9 @@
   display: grid;
   grid-template-columns: repeat(7, minmax(138px, 1fr));
   min-width: 966px;
-  border-top: 1px solid rgba(21, 23, 20, 0.12);
-  border-left: 1px solid rgba(21, 23, 20, 0.12);
-  background: #f4f5ef;
+  border-top: 1px solid rgba(8, 45, 86, 0.12);
+  border-left: 1px solid rgba(8, 45, 86, 0.12);
+  background: var(--dv-canvas);
 }
 
 .monthGrid {
@@ -939,19 +939,19 @@
   grid-template-columns: repeat(7, minmax(138px, 1fr));
   grid-auto-rows: 154px;
   min-width: 966px;
-  border-left: 1px solid rgba(21, 23, 20, 0.12);
+  border-left: 1px solid rgba(8, 45, 86, 0.12);
 }
 
 .monthHeaderCell {
   padding: 12px 14px;
-  border-right: 1px solid rgba(21, 23, 20, 0.12);
-  border-bottom: 1px solid rgba(21, 23, 20, 0.12);
-  background: #f4f5ef;
+  border-right: 1px solid rgba(8, 45, 86, 0.12);
+  border-bottom: 1px solid rgba(8, 45, 86, 0.12);
+  background: var(--dv-canvas);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #697067;
+  color: var(--dv-text-muted);
 }
 
 .monthDayCell {
@@ -960,14 +960,14 @@
   height: 154px;
   min-height: 154px;
   padding: 8px 10px 10px;
-  border-right: 1px solid rgba(21, 23, 20, 0.12);
-  border-bottom: 1px solid rgba(21, 23, 20, 0.12);
+  border-right: 1px solid rgba(8, 45, 86, 0.12);
+  border-bottom: 1px solid rgba(8, 45, 86, 0.12);
   background: #fff;
   overflow: hidden;
 }
 
 .monthDayOutside {
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 .monthDayToday {
@@ -994,7 +994,7 @@
   justify-content: center;
   font-size: 13px;
   font-weight: 700;
-  color: #151714;
+  color: var(--dv-ink);
 }
 
 .monthDayNumberToday {
@@ -1003,7 +1003,7 @@
 }
 
 .monthDayNumberOutside {
-  color: #9aa297;
+  color: #919ba8;
 }
 
 .monthDayNumberSelected {
@@ -1082,13 +1082,13 @@
   padding-left: 18px;
   font-size: 11px;
   font-weight: 700;
-  color: #697067;
+  color: var(--dv-text-muted);
 }
 
 .emptyState {
   padding: 16px 20px;
-  border-top: 1px solid rgba(21, 23, 20, 0.12);
-  background: #f4f5ef;
+  border-top: 1px solid rgba(8, 45, 86, 0.12);
+  background: var(--dv-canvas);
 }
 
 .eventModalContent {
@@ -1121,20 +1121,20 @@
   margin-top: 8px;
   font-size: 2.4rem;
   line-height: 1.08;
-  color: #151714;
+  color: var(--dv-ink);
 }
 
 .eventModalDate {
   margin-top: 8px;
   font-size: 1.05rem;
-  color: #596057;
+  color: var(--dv-text-muted);
 }
 
 .eventModalDescription {
   margin-top: 28px;
   font-size: 1.05rem;
   line-height: 1.75;
-  color: #151714;
+  color: var(--dv-ink);
 }
 
 .eventModalMetaGrid {
@@ -1146,9 +1146,9 @@
 
 .eventModalMetaItem {
   padding: 14px 16px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 @media (max-width: 960px) {
@@ -1302,7 +1302,7 @@
     padding: 10px 12px;
     border-radius: 0;
     background: #ffffff;
-    box-shadow: 0 4px 12px rgba(21, 23, 20, 0.14);
+    box-shadow: 0 4px 12px rgba(8, 45, 86, 0.14);
   }
 
   .calendarToolbarPrimary {
@@ -1346,7 +1346,7 @@
 
   .emptyState {
     margin: 18px 12px;
-    border: 1px solid rgba(21, 23, 20, 0.12);
+    border: 1px solid rgba(8, 45, 86, 0.12);
     border-radius: 8px;
   }
 
@@ -1362,9 +1362,9 @@
     height: 54px;
     border: 0;
     border-radius: 8px;
-    background: #0b7a4b;
+    background: var(--dv-primary-strong);
     color: #fff;
-    box-shadow: 0 8px 22px rgba(11, 122, 75, 0.24);
+    box-shadow: 0 8px 22px rgba(0, 79, 199, 0.24);
     cursor: pointer;
   }
 }

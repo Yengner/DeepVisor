@@ -219,8 +219,8 @@ export default function PlatformAdAccountDropdownClient({
             minWidth: compact ? 0 : drawer ? '100%' : 270,
             padding: compact ? '6px 8px' : '6px 10px',
             borderRadius: 6,
-            border: inChrome ? '1px solid #343a33' : `1px solid ${borderColor}`,
-            background: inChrome ? '#20241f' : '#ffffff',
+            border: inChrome ? '1px solid #284665' : `1px solid ${borderColor}`,
+            background: inChrome ? '#102f50' : '#ffffff',
             boxShadow: 'none',
           }}
         >
@@ -232,10 +232,10 @@ export default function PlatformAdAccountDropdownClient({
                 variant="filled"
                 style={{
                   backgroundColor: selectedOption.preview
-                    ? inChrome ? '#2a2f29' : 'rgba(148, 163, 184, 0.14)'
+                    ? inChrome ? '#16395e' : 'rgba(148, 163, 184, 0.14)'
                     : inChrome ? 'var(--platform-source-soft)' : accentSoftStrong,
-                  color: selectedOption.preview ? (inChrome ? '#a6ada3' : '#64748b') : (inChrome ? '#f7f8f3' : accentStrong),
-                  border: inChrome ? '1px solid #3b4139' : selectedOption.preview ? '1px solid rgba(148, 163, 184, 0.24)' : `1px solid ${borderColor}`,
+                  color: selectedOption.preview ? (inChrome ? '#b0c4da' : '#64748b') : (inChrome ? '#f5f9ff' : accentStrong),
+                  border: inChrome ? '1px solid #363c44' : selectedOption.preview ? '1px solid rgba(148, 163, 184, 0.24)' : `1px solid ${borderColor}`,
                 }}
               >
                 {selectedIcon}
@@ -252,7 +252,7 @@ export default function PlatformAdAccountDropdownClient({
                     </Badge>
                   ) : null}
                 </Group>
-                <Text size="xs" c={inChrome ? '#a6ada3' : 'dimmed'} lineClamp={1}>
+                <Text size="xs" c={inChrome ? '#b0c4da' : 'dimmed'} lineClamp={1}>
                   {selectedOption.accountLabel}
                   {formatAccountIdentifier(selectedOption.accountIdentifier)
                     ? ` · ${formatAccountIdentifier(selectedOption.accountIdentifier)}`
@@ -261,7 +261,7 @@ export default function PlatformAdAccountDropdownClient({
               </div>
             </Group>
 
-            <IconChevronDown size={16} color={inChrome ? '#a6ada3' : '#6b7280'} />
+            <IconChevronDown size={16} color={inChrome ? '#b0c4da' : '#6b7280'} />
           </Group>
         </UnstyledButton>
       </Menu.Target>

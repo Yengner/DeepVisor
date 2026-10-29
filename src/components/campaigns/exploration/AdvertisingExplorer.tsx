@@ -219,7 +219,7 @@ function ChangedValue({
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches
     ) {
       const animation = element.current?.animate(
-        [{ backgroundColor: "#dceee3" }, { backgroundColor: "transparent" }],
+        [{ backgroundColor: "#eaf2ff" }, { backgroundColor: "transparent" }],
         { duration: 450, easing: "ease-out" },
       );
       return () => animation?.cancel();

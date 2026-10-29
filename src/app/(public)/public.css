@@ -1,15 +1,8 @@
 .dv-public-shell {
-  --dv-ink: #151714;
-  --dv-ink-deep: #0d0f0d;
-  --dv-canvas: #f4f5ef;
   --dv-paper: #ffffff;
-  --dv-line: #d5dad0;
-  --dv-line-strong: #bfc6ba;
-  --dv-muted: #666c63;
-  --dv-green: #0b7a4b;
-  --dv-green-bright: #14a866;
-  --dv-green-soft: #e8f4ed;
-  --dv-lime: #c8ff56;
+  --dv-line: var(--dv-border);
+  --dv-line-strong: var(--dv-border-strong);
+  --dv-muted: var(--dv-text-muted);
   --dv-coral: #e76156;
   --dv-coral-soft: #fff0ee;
   --dv-violet: #6e6bf4;
@@ -33,7 +26,7 @@
 }
 
 .dv-public-shell :focus-visible {
-  outline: 2px solid var(--dv-green-bright);
+  outline: 2px solid var(--dv-primary);
   outline-offset: 3px;
 }
 
@@ -48,7 +41,7 @@
   left: 0.75rem;
   height: 2px;
   content: "";
-  background: var(--dv-lime);
+  background: var(--dv-highlight);
   transform: scaleX(0);
   transition: transform 150ms ease;
 }
@@ -80,12 +73,12 @@
   background: var(--dv-paper) !important;
 }
 
-.dv-public-main :where(h1, h2, h3, h4) {
+.dv-public-main > :not([data-dv-theme]) :where(h1, h2, h3, h4) {
   color: var(--dv-ink);
   letter-spacing: 0 !important;
 }
 
-.dv-public-main h1 {
+.dv-public-main > :not([data-dv-theme]) h1 {
   max-width: 16ch;
 }
 
@@ -94,7 +87,7 @@
 }
 
 .dv-public-main :where([class~="text-slate-800"], [class~="text-slate-700"], [class~="text-slate-600"]) {
-  color: #50564d !important;
+  color: #48505b !important;
 }
 
 .dv-public-main :where([class~="text-slate-500"], [class~="text-slate-400"]) {
@@ -109,11 +102,11 @@
   [class~="text-cyan-700"],
   [class~="text-cyan-600"]
 ) {
-  color: var(--dv-green) !important;
+  color: var(--dv-primary-strong) !important;
 }
 
 .dv-public-main :where([class~="text-emerald-700"], [class~="text-emerald-600"], [class~="text-emerald-500"]) {
-  color: var(--dv-green) !important;
+  color: var(--dv-success) !important;
 }
 
 .dv-public-main :where([class~="text-rose-700"], [class~="text-rose-600"], [class~="text-rose-500"]) {
@@ -131,12 +124,9 @@
   [class~="bg-blue-500"],
   [class~="bg-cyan-700"],
   [class~="bg-cyan-600"],
-  [class~="bg-cyan-500"],
-  [class~="bg-emerald-700"],
-  [class~="bg-emerald-600"],
-  [class~="bg-emerald-500"]
+  [class~="bg-cyan-500"]
 ) {
-  background-color: var(--dv-green) !important;
+  background-color: var(--dv-primary-strong) !important;
 }
 
 .dv-public-main :where(
@@ -144,11 +134,16 @@
   [class~="bg-blue-50"],
   [class~="bg-blue-50/60"],
   [class~="bg-blue-50/70"],
-  [class~="bg-cyan-50"],
-  [class~="bg-emerald-100"],
-  [class~="bg-emerald-50"]
+  [class~="bg-cyan-50"]
 ) {
-  background-color: var(--dv-green-soft) !important;
+  background-color: var(--dv-primary-soft) !important;
+}
+
+.dv-public-main :where([class~="bg-emerald-700"], [class~="bg-emerald-600"], [class~="bg-emerald-500"]) {
+  background-color: var(--dv-success) !important;
+}
+.dv-public-main :where([class~="bg-emerald-100"], [class~="bg-emerald-50"]) {
+  background-color: var(--dv-success-soft) !important;
 }
 
 .dv-public-main :where([class~="bg-rose-100"], [class~="bg-rose-50"], [class~="bg-orange-50"], [class~="bg-amber-50"]) {
@@ -168,7 +163,7 @@
 }
 
 .dv-public-main :where([class~="bg-slate-50"], [class~="bg-cloud"], [class~="bg-secondary"], [class~="bg-muted"]) {
-  background-color: #f1f2ec !important;
+  background-color: #eceff2 !important;
 }
 
 .dv-public-main :where([class~="bg-slate-950"], [class~="bg-slate-900"], [class~="bg-ink"], [class~="bg-ink-80"]) {
@@ -184,9 +179,9 @@
 }
 
 .dv-public-main section[class~="bg-ink"] span.inline-flex {
-  border-color: rgba(200, 255, 86, 0.35) !important;
-  background: rgba(200, 255, 86, 0.08) !important;
-  color: var(--dv-lime) !important;
+  border-color: rgba(168, 212, 255, 0.35) !important;
+  background: rgba(168, 212, 255, 0.08) !important;
+  color: var(--dv-highlight) !important;
 }
 
 .dv-public-main :where(
@@ -201,7 +196,7 @@
 }
 
 .dv-public-main :where([class~="border-emerald-200"], [class~="border-emerald-400/30"]) {
-  border-color: #9fc9b3 !important;
+  border-color: #a0b1c7 !important;
 }
 
 .dv-public-main :where([class~="border-rose-200"], [class~="border-orange-200"], [class~="border-amber-200"]) {
@@ -209,11 +204,11 @@
 }
 
 .dv-public-main :where([class~="shadow-sm"]) {
-  box-shadow: 0 1px 2px rgba(13, 15, 13, 0.07) !important;
+  box-shadow: 0 1px 2px rgba(6, 28, 51, 0.07) !important;
 }
 
 .dv-public-main :where([class~="shadow-card"], [class~="shadow-card-strong"], [class*="shadow-[0_"]) {
-  box-shadow: 0 6px 18px rgba(13, 15, 13, 0.08) !important;
+  box-shadow: 0 6px 18px rgba(6, 28, 51, 0.08) !important;
 }
 
 .dv-public-main :where([class~="backdrop-blur"], [class~="backdrop-blur-xl"]) {
@@ -234,20 +229,20 @@
 }
 
 .dv-public-main :where(a[class~="bg-blue-700"], button[class~="bg-blue-700"]) {
-  border: 1px solid var(--dv-green);
-  background: var(--dv-green) !important;
+  border: 1px solid var(--dv-primary);
+  background: var(--dv-primary) !important;
   color: #fff !important;
   box-shadow: none !important;
 }
 
 .dv-public-main :where(a[class~="bg-blue-700"], button[class~="bg-blue-700"]):hover {
-  border-color: var(--dv-ink-deep);
-  background: var(--dv-ink-deep) !important;
+  border-color: var(--dv-primary-strong);
+  background: var(--dv-primary-strong) !important;
 }
 
 .dv-public-main :where(a[class~="bg-white"], button[class~="bg-white"]):hover {
-  border-color: var(--dv-green) !important;
-  background: var(--dv-green-soft) !important;
+  border-color: var(--dv-primary-strong) !important;
+  background: var(--dv-primary-soft) !important;
 }
 
 .dv-public-main :where([class~="rounded-3xl"], [class~="rounded-2xl"], [class*="rounded-[1."]):not([class*="rounded-full"]) {
@@ -278,25 +273,25 @@
 }
 
 .dv-public-main #support [class~="text-blue-700"] {
-  color: var(--dv-lime) !important;
+  color: var(--dv-highlight) !important;
 }
 
 .dv-public-main #support span.inline-flex,
 .dv-public-main .dv-feature-cta span.inline-flex {
-  border-color: rgba(200, 255, 86, 0.35) !important;
-  background: rgba(200, 255, 86, 0.08) !important;
-  color: var(--dv-lime) !important;
+  border-color: rgba(168, 212, 255, 0.35) !important;
+  background: rgba(168, 212, 255, 0.08) !important;
+  color: var(--dv-highlight) !important;
 }
 
 .dv-public-main #support :where(a[class~="bg-blue-700"], button[class~="bg-blue-700"]) {
-  border-color: var(--dv-lime) !important;
-  background: var(--dv-lime) !important;
-  color: var(--dv-ink-deep) !important;
+  border-color: var(--dv-primary) !important;
+  background: var(--dv-primary) !important;
+  color: #fff !important;
 }
 
 .dv-public-main #support :where(a[class~="bg-blue-700"], button[class~="bg-blue-700"]):hover {
-  border-color: #fff !important;
-  background: #fff !important;
+  border-color: var(--dv-primary-strong) !important;
+  background: var(--dv-primary-strong) !important;
 }
 
 .dv-public-main #support a[class~="bg-white"] {
@@ -323,12 +318,12 @@
 }
 
 .dv-public-main .dv-feature-cta svg {
-  color: var(--dv-lime) !important;
+  color: var(--dv-highlight) !important;
 }
 
 .dv-public-main .dv-feature-cta :where(a[class~="bg-blue-700"], button[class~="bg-blue-700"]) {
-  border-color: var(--dv-lime) !important;
-  background: var(--dv-lime) !important;
+  border-color: var(--dv-highlight) !important;
+  background: var(--dv-highlight) !important;
   color: var(--dv-ink-deep) !important;
 }
 
@@ -357,14 +352,14 @@
     padding-bottom: 2.25rem !important;
   }
 
-  .dv-public-main h1 {
+  .dv-public-main > :not([data-dv-theme]) h1 {
     font-size: 2.75rem;
     line-height: 0.98;
   }
 }
 
 @media (max-width: 420px) {
-  .dv-public-main h1 {
+  .dv-public-main > :not([data-dv-theme]) h1 {
     font-size: 2.35rem;
   }
 

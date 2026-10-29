@@ -1,0 +1,18 @@
+.companion { flex-shrink: 0; vertical-align: middle; }
+.light { color: var(--dv-primary); --agent-eye: #fff; --agent-pupil: var(--dv-ink-deep); }
+.dark { color: var(--dv-highlight); --agent-eye: var(--dv-ink-deep); --agent-pupil: #fff; }
+.eyes { fill: var(--agent-eye); }
+.pupils { fill: var(--agent-pupil); }
+.framed { padding: 6px; box-sizing: border-box; border: 1px solid var(--dv-agent-border); border-radius: 8px; background: var(--dv-agent-soft); }
+.framed.dark { border-color: var(--chrome-border); background: var(--chrome-panel); }
+.body { transform-origin: center; }
+.companion[data-state="thinking"] .pupils { transform: translate(1px, -1px); }
+.companion[data-state="planning"] .pupils { transform: translate(1px, 0); }
+.companion[data-state="thinking"] .indicator,
+.companion[data-state="planning"] .indicator { animation: consider 2s steps(2, end) 3; }
+.scan { animation: scan 2.4s steps(5, end) 3; }
+.companion[data-state="completed"] .body { animation: greet 450ms ease-out 1; }
+@keyframes consider { 50% { opacity: .35; } }
+@keyframes scan { 50% { transform: translateY(8px); } }
+@keyframes greet { 50% { transform: translateY(-2px); } }
+@media(prefers-reduced-motion:reduce) { .companion * { animation: none !important; } }

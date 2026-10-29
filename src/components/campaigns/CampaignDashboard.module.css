@@ -63,7 +63,7 @@
   padding: 10px;
   border: 1px solid var(--platform-border);
   border-radius: 8px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 .searchInput {
@@ -107,11 +107,11 @@
   width: 100%;
   min-width: 0;
   padding: 14px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
   background: #ffffff;
   text-align: left;
-  box-shadow: 0 8px 22px rgba(21, 23, 20, 0.04);
+  box-shadow: 0 8px 22px rgba(8, 45, 86, 0.04);
 }
 
 .mobileEntityCard[data-selected='true'] {
@@ -130,7 +130,7 @@
   gap: 10px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid rgba(21, 23, 20, 0.12);
+  border-top: 1px solid rgba(8, 45, 86, 0.12);
 }
 
 .mobileActivity {
@@ -140,7 +140,7 @@
 .mobileMetricGrid > div > :global(.mantine-Text-root):first-child { font-size: 12px; font-weight: 500; text-transform: none; }
 .mobileMetricGrid > div > :global(.mantine-Text-root):last-child { font-size: 16px; font-weight: 650; overflow-wrap: anywhere; }
 .moreMetrics { grid-column: 1 / -1; font-size: 13px; }
-.moreMetrics summary { min-height: 44px; padding: 12px 0; cursor: pointer; color: #0b7a4b; }
+.moreMetrics summary { min-height: 44px; padding: 12px 0; cursor: pointer; color: var(--dv-primary-strong); }
 
 .mobileEntityActions,
 .mobileRunAgainButton {
@@ -225,31 +225,31 @@
 
 /* Saved active delivery is independent of table selection and historical spend. */
 .desktopDataTable tr[data-delivering] > td {
-  background: #edfacb !important;
+  background: var(--dv-primary-soft) !important;
 }
 .desktopDataTable tr[data-delivering]:hover > td {
-  background: #e2f5b3 !important;
+  background: var(--dv-primary-soft-hover) !important;
 }
 .desktopDataTable tr[data-delivering] > td:first-child {
-  box-shadow: inset 3px 0 #559c2f;
+  box-shadow: inset 3px 0 var(--dv-primary);
 }
 .mobileEntityCard[data-delivering] {
-  background: #edfacb;
-  border-color: #a9cf72;
-  box-shadow: inset 3px 0 #559c2f;
+  background: var(--dv-primary-soft);
+  border-color: var(--dv-primary);
+  box-shadow: inset 3px 0 var(--dv-primary);
 }
 .mobileEntityCard[data-delivering][data-selected] {
-  background: #e2f5b3;
-  outline: 2px solid #27784b;
+  background: var(--dv-primary-soft-hover);
+  outline: 2px solid var(--dv-primary-strong);
   outline-offset: -2px;
 }
 .deliveryIndicator {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #235c30;
-  background: #d5efac;
-  border: 1px solid #a9cf72;
+  color: var(--dv-primary-deep);
+  background: var(--dv-primary-soft-hover);
+  border: 1px solid var(--dv-primary);
   border-radius: 999px;
   padding: 3px 8px;
   font-size: 11px;
@@ -261,5 +261,5 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #348647;
+  background: var(--dv-primary);
 }

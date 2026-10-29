@@ -192,7 +192,7 @@ export default async function ArchivedReportPage({
                 minHeight: 760,
                 border: 0,
                 borderRadius: 4,
-                background: '#f4f5ef',
+                background: '#f4f7fc',
               }}
             />
           </Card>

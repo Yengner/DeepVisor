@@ -81,15 +81,15 @@ function phaseDotClass(status: PhaseStatus) {
 function statusColor(status: PhaseStatus) {
   switch (status) {
     case 'complete':
-      return '#0b7a4b';
+      return '#004fc7';
     case 'running':
-      return '#0b7a4b';
+      return '#004fc7';
     case 'error':
       return '#e76156';
     case 'skipped':
-      return '#747970';
+      return '#677382';
     default:
-      return '#747970';
+      return '#677382';
   }
 }
 
@@ -302,7 +302,7 @@ export default function PreparationClient({
                 value={progress}
                 radius={0}
                 size={7}
-                color={errorMessage ? '#e76156' : '#c8ff56'}
+                color={errorMessage ? '#e76156' : '#bdceff'}
                 animated={!done && !errorMessage}
                 className={classes.progressBar}
               />

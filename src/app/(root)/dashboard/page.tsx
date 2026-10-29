@@ -2,7 +2,6 @@ import { cache, Suspense } from "react";
 import Link from "next/link";
 import {
   IconArrowRight,
-  IconCircleCheck,
   IconBrandMeta,
 } from "@tabler/icons-react";
 import {
@@ -35,6 +34,9 @@ import AdvertisingBoard from "./components/AdvertisingBoard";
 import classes from "./components/ControlCenter.module.css";
 import { buildDecisionPreview, isDecisionPreview } from '@/lib/server/decisions/preview';
 import DecisionPreviewBanner from '@/components/product/DecisionPreviewBanner';
+import DesignSurface from '@/components/design/DesignSurface';
+import { AgentMessage } from '@/components/design/Primitives';
+import PixelCompanion from '@/components/brand/PixelCompanion';
 type OverviewContext = LiveOverviewContext & { decisionPreview?: boolean };
 
 const decisions = cache(async (context: OverviewContext) => {
@@ -90,6 +92,7 @@ function Loading({
       aria-label="Loading dashboard section"
       className={`${classes.loading} ${kind === "chart" ? classes.chartLoading : kind === "board" ? classes.boardLoading : kind === "metrics" ? classes.metricsLoading : ""}`}
     >
+      {kind === 'rows' && <PixelCompanion state="analyzing" size={28} />}
       <span />
       <span />
       <span />
@@ -192,18 +195,13 @@ async function Attention({ context }: { context: OverviewContext }) {
   if (!item)
     return (
       <div className={classes.quietAttention}>
-        <strong>
-          {title === "Everything looks stable" && <IconCircleCheck size={20} />}
-          {title}
-        </strong>
-        {title === "Everything looks stable" && (
-          <p>No action needed right now.</p>
-        )}
+        <AgentMessage title={title}>{title === "Everything looks stable" ? 'No action needed right now.' : 'Saved observations and recommendations will appear here when available.'}</AgentMessage>
       </div>
     );
   return (
     <div className={classes.attentionBody}>
       <h2>
+        <PixelCompanion size={24} state="attention" />
         {item.state === "Recommendation" ||
         item.state === "Shadow recommendation"
           ? "Worth a look"
@@ -356,6 +354,7 @@ async function Content({ period, preview }: { period: Period; preview: boolean }
   if (!savedMetaAccount || !context.account)
     return (
       <section className={classes.emptyState}>
+        <PixelCompanion size={56} />
         <h1>Connect your advertising</h1>
         <p>
           Connect Meta and choose an account to see your advertising and
@@ -375,6 +374,7 @@ async function Content({ period, preview }: { period: Period; preview: boolean }
   )
     return (
       <section className={classes.emptyState}>
+        <PixelCompanion size={56} state={sync.data?.activeJobStatus === 'failed' ? 'attention' : ['queued', 'running'].includes(sync.data?.activeJobStatus ?? '') ? 'analyzing' : 'idle'} />
         <h1>Your first sync</h1>
         <p>
           {sync.data?.activeJobStatus === "failed"
@@ -397,7 +397,6 @@ async function Content({ period, preview }: { period: Period; preview: boolean }
     <div className={classes.page}>
       {preview && <DecisionPreviewBanner page="dashboard" />}
       <div className={classes.layout}>
-        <div className={classes.inkBackdrop} aria-hidden="true" />
         <header className={classes.identity}>
           <div>
             <h1>{context.businessName}</h1>
@@ -488,6 +487,7 @@ export default async function OverviewPage({
 }) {
   const params = await searchParams;
   return (
+    <DesignSurface label="Overview / Your advertising workspace">
     <Suspense
       fallback={
         <div className={classes.page}>
@@ -498,5 +498,6 @@ export default async function OverviewPage({
     >
       <Content period={parsePeriod(params.period)} preview={isDecisionPreview(params.preview)} />
     </Suspense>
+    </DesignSurface>
   );
 }

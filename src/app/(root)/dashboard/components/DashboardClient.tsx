@@ -1646,7 +1646,7 @@ function DataSummaryBox({
         <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
           <span
             className={classes.dataSummaryDot}
-            style={{ backgroundColor: summary.color ?? '#14a866' }}
+            style={{ backgroundColor: summary.color ?? '#0065fc' }}
           />
           <div className={classes.dataSummaryText}>
             <Text size="xs" fw={800} className={classes.dataSummaryLabel}>
@@ -4675,12 +4675,12 @@ export default function DashboardClient({
                                               style={{
                                                 backgroundColor:
                                                   cell.metricAverage > 0
-                                                    ? `rgba(20, 168, 102, ${0.12 + cell.intensity * 0.76})`
+                                                    ? `rgba(0, 101, 252, ${0.12 + cell.intensity * 0.76})`
                                                     : 'rgba(238, 240, 233, 0.94)',
                                                 borderColor:
                                                   cell.metricAverage > 0
-                                                    ? 'rgba(11, 122, 75, 0.3)'
-                                                    : 'rgba(21, 23, 20, 0.12)',
+                                                    ? 'rgba(0, 79, 199, 0.3)'
+                                                    : 'rgba(8, 45, 86, 0.12)',
                                               }}
                                               title={`${cell.dayLabel} · ${formatHourLongLabel(
                                                 cell.hourOfDay
@@ -4726,17 +4726,17 @@ export default function DashboardClient({
                                             gridColumn: `${state.col}`,
                                             gridRow: `${state.row}`,
                                             backgroundColor: state.isActive
-                                              ? `rgba(20, 168, 102, ${0.18 + state.intensity * 0.68})`
+                                              ? `rgba(0, 101, 252, ${0.18 + state.intensity * 0.68})`
                                               : 'rgba(238, 240, 233, 0.96)',
                                             borderColor: state.isActive
-                                              ? 'rgba(11, 122, 75, 0.42)'
-                                              : 'rgba(21, 23, 20, 0.18)',
+                                              ? 'rgba(0, 79, 199, 0.42)'
+                                              : 'rgba(8, 45, 86, 0.18)',
                                             color:
                                               state.isActive && state.intensity > 0.45
                                                 ? '#ffffff'
                                                 : state.isActive
-                                                  ? '#075f3b'
-                                                  : '#697067',
+                                                  ? '#073d85'
+                                                  : '#53677d',
                                           }}
                                           title={
                                             state.isActive

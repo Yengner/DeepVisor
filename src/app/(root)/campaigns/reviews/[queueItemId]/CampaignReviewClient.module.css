@@ -1,12 +1,10 @@
 .page {
-  --dv-ink: #151714;
-  --dv-canvas: #f4f5ef;
-  --dv-border: #d9ddd3;
-  --dv-border-strong: #aeb5aa;
-  --dv-muted: #62685e;
-  --dv-signal: #0b7a4b;
+  --dv-border: #d3d7dd;
+  --dv-border-strong: #a6aeb9;
+  --dv-muted: #57616f;
+  --dv-signal: var(--dv-primary-strong);
   --dv-coral: #e76156;
-  --dv-lime: #c8ff56;
+  --dv-lime: var(--dv-highlight);
   width: 100%;
   min-height: calc(100vh - 7rem);
   padding: 20px;
@@ -54,13 +52,13 @@
 }
 
 .page :global(.mantine-Button-root[data-variant='light']) {
-  color: #075f3b;
-  background: #eaf6ef;
+  color: var(--dv-primary-deep);
+  background: var(--dv-primary-soft);
 }
 
 .page :global(.mantine-ThemeIcon-root) {
   color: var(--dv-signal);
-  background: #eaf6ef;
+  background: var(--dv-primary-soft);
 }
 
 .page :global(.mantine-Alert-root) {
@@ -95,17 +93,17 @@
 }
 
 .heroCopy {
-  color: #c9cec4;
+  color: var(--dv-border-strong);
 }
 
 .hero :global(.mantine-Badge-root) {
-  border: 1px solid #4b5048;
-  color: #e9ece6;
-  background: #292d26;
+  border: 1px solid #434b55;
+  color: #e6e9ec;
+  background: #25292e;
 }
 
 .hero :global(.mantine-Badge-root):first-child {
-  border-color: rgba(200, 255, 86, 0.52);
+  border-color: rgba(168, 212, 255, 0.52);
   color: var(--dv-ink);
   background: var(--dv-lime);
 }
@@ -117,9 +115,9 @@
 }
 
 .hero :global(.mantine-Button-root[data-variant='default']) {
-  border-color: #596057;
+  border-color: var(--dv-text-muted);
   color: #ffffff;
-  background: #2e322a;
+  background: #282d34;
 }
 
 .summaryCard {
@@ -147,7 +145,7 @@
   padding: 12px;
   border: 1px solid var(--dv-border);
   border-radius: 5px;
-  background: #f8f9f5;
+  background: #f5f7f9;
 }
 
 .mobileMetricGrid {
@@ -167,7 +165,7 @@
 
 .insightSummaryCard {
   height: 100%;
-  background: #f8f9f5 !important;
+  background: #f5f7f9 !important;
 }
 
 .insightDetails {
@@ -195,20 +193,20 @@
   padding-top: 9px;
   padding-bottom: 9px;
   border-bottom: 1px solid var(--dv-border-strong);
-  color: #4c534b;
-  background: #f1f3ed;
+  color: #464e58;
+  background: #edf0f3;
   font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .rankingSurface :global(.mantine-Table-td) {
-  border-bottom: 1px solid #e5e8e0;
+  border-bottom: 1px solid #e0e3e8;
   font-variant-numeric: tabular-nums;
 }
 
 .rankingSurface :global(.mantine-Table-tr:hover) :global(.mantine-Table-td) {
-  background: #f0f8f3;
+  background: var(--dv-primary-soft);
 }
 
 @media (max-width: 760px) {

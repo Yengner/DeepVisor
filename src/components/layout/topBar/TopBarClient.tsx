@@ -113,7 +113,7 @@ export default function TopBarClient({
         <Link href="/dashboard" className="shrink-0 rounded-md focus-visible:outline-none">
           <BrandLockup inverse />
         </Link>
-        <span className="hidden h-6 w-px bg-[#343a33] lg:block" aria-hidden="true" />
+        <span className="hidden h-6 w-px bg-[#284665] lg:block" aria-hidden="true" />
         <div className="min-w-0">
           <PlatformAdAccountDropdownClient
             platforms={platforms}
@@ -132,9 +132,9 @@ export default function TopBarClient({
           className="hidden sm:flex"
           styles={{
             root: {
-              color: '#151714',
-              background: '#c8ff56',
-              border: '1px solid #d7ff8a',
+              color: '#ffffff',
+              background: 'var(--dv-primary)',
+              border: '1px solid var(--dv-primary)',
             },
           }}
         >
@@ -148,7 +148,7 @@ export default function TopBarClient({
               label={notificationCount > 9 ? '9+' : notificationCount}
               size={17}
               color="red"
-              styles={{ indicator: { border: '2px solid #0d0f0d', fontWeight: 800 } }}
+              styles={{ indicator: { border: '2px solid #07182d', fontWeight: 800 } }}
             >
               <ActionIcon
                 size={38}
@@ -156,9 +156,9 @@ export default function TopBarClient({
                 aria-label="Open notifications"
                 styles={{
                   root: {
-                    color: '#d7ddd4',
-                    background: '#20241f',
-                    border: '1px solid #343a33',
+                    color: '#d4d8dd',
+                    background: '#102f50',
+                    border: '1px solid #284665',
                   },
                 }}
               >
@@ -231,7 +231,7 @@ export default function TopBarClient({
         <Menu shadow="md" width={230} position="bottom-end">
           <Menu.Target>
             <UnstyledButton
-              className="rounded-md border border-[#343a33] bg-[#20241f] px-1.5 py-1 transition-colors hover:border-[#555d52]"
+              className="rounded-md border border-[#284665] bg-[#102f50] px-1.5 py-1 transition-colors hover:border-[#4d5662]"
               aria-label="Open account menu"
             >
               <Group gap={8} wrap="nowrap">
@@ -240,9 +240,9 @@ export default function TopBarClient({
                   size={28}
                   styles={{
                     root: {
-                      color: '#151714',
-                      background: '#c8ff56',
-                      border: '1px solid #d7ff8a',
+                      color: '#082d56',
+                      background: '#bdceff',
+                      border: '1px solid #bdceff',
                       fontSize: 11,
                       fontWeight: 850,
                     },
@@ -254,11 +254,11 @@ export default function TopBarClient({
                   <Text size="xs" fw={750} c="white" lineClamp={1}>
                     {fullName || 'Account'}
                   </Text>
-                  <Text size="10px" c="#a6ada3" lineClamp={1}>
+                  <Text size="10px" c="#b0c4da" lineClamp={1}>
                     {userInfo?.business_name || 'Workspace'}
                   </Text>
                 </div>
-                <IconChevronDown size={15} color="#a6ada3" className="hidden lg:block" />
+                <IconChevronDown size={15} color="#b0c4da" className="hidden lg:block" />
               </Group>
             </UnstyledButton>
           </Menu.Target>

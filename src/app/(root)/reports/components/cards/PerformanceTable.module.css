@@ -13,9 +13,9 @@
 .mobileCard {
   min-width: 0;
   padding: 12px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 .mobileCardHeader {
@@ -40,7 +40,7 @@
 .mobileContext {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid rgba(21, 23, 20, 0.12);
+  border-top: 1px solid rgba(8, 45, 86, 0.12);
 }
 
 .mobileMetricGrid {

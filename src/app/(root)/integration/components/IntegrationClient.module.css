@@ -33,18 +33,18 @@
 .heroSidebar {
   background: transparent !important;
   border: 0 !important;
-  border-left: 1px solid #343a33 !important;
+  border-left: 1px solid var(--chrome-border) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
 }
 
 .heroSidebar :global(.mantine-Title-root),
 .heroSidebar .statusRow :global(.mantine-Text-root) {
-  color: #202b25 !important;
+  color: var(--dv-text) !important;
 }
 
 .heroSidebar .statusRow :global(.mantine-Text-root[data-dimmed]) {
-  color: #536159 !important;
+  color: var(--dv-text-muted) !important;
 }
 
 .statusRow {
@@ -66,7 +66,7 @@
 }
 
 .statusRow:focus-visible {
-  outline: 2px solid rgba(200, 255, 86, 0.55);
+  outline: 2px solid rgba(168, 212, 255, 0.55);
   outline-offset: 2px;
 }
 
@@ -76,17 +76,17 @@
   overflow: hidden;
   background: transparent !important;
   border: 0 !important;
-  border-top: 1px solid #343a33 !important;
+  border-top: 1px solid var(--chrome-border) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
 }
 
 .heroCard .summaryCard :global(.mantine-Text-root) {
-  color: #f7f8f3 !important;
+  color: var(--chrome-text) !important;
 }
 
 .heroCard .summaryCard :global(.mantine-Text-root[data-dimmed]) {
-  color: #a6ada3 !important;
+  color: var(--chrome-muted) !important;
 }
 
 .summaryAccent {
@@ -98,14 +98,14 @@
 
 .guideCard {
   background: #ffffff;
-  border-color: rgba(21, 23, 20, 0.08);
+  border-color: rgba(8, 45, 86, 0.08);
   box-shadow: none;
 }
 
 .stepCard {
   height: 100%;
-  background: #f4f5ef;
-  border-color: rgba(21, 23, 20, 0.07);
+  background: var(--dv-canvas);
+  border-color: rgba(8, 45, 86, 0.07);
 }
 
 .channelCard {
@@ -114,7 +114,7 @@
   height: 100%;
   overflow: hidden;
   background: #ffffff;
-  border-color: rgba(21, 23, 20, 0.08);
+  border-color: rgba(8, 45, 86, 0.08);
   box-shadow: none;
   transition:
     transform 180ms ease,
@@ -125,7 +125,7 @@
 .channelCard:hover {
   transform: translateY(-1px);
   border-color: var(--dv-border-strong);
-  box-shadow: 0 4px 14px rgba(21, 23, 20, 0.07);
+  box-shadow: 0 4px 14px rgba(8, 45, 86, 0.07);
 }
 
 .channelVisual {
@@ -165,13 +165,13 @@
 .platformArtwork {
   display: block;
   object-fit: contain;
-  filter: drop-shadow(0 6px 12px rgba(21, 23, 20, 0.12));
+  filter: drop-shadow(0 6px 12px rgba(8, 45, 86, 0.12));
 }
 
 .metricCard {
   height: 100%;
-  background: #f4f5ef;
-  border-color: rgba(21, 23, 20, 0.07);
+  background: var(--dv-canvas);
+  border-color: rgba(8, 45, 86, 0.07);
 }
 
 .copyPanel {

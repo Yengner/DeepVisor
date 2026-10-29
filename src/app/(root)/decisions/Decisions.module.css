@@ -1,23 +1,23 @@
-.page { max-width: 960px; margin: 0 auto; padding: 12px 24px 32px; color: var(--platform-text-strong, #20251f); }
+.page { max-width: 960px; margin: 0 auto; padding: 12px 24px 32px; color: var(--platform-text-strong, var(--dv-text)); }
 .header { margin-bottom: 24px; }
 .header h1 { font-size: 26px; line-height: 1.2; margin: 0 0 8px; }
-.card { border: 1px solid #dfe4df; border-radius: 8px; padding: 20px; background: white; overflow-wrap: anywhere; }
+.card { border: 1px solid #dee1e5; border-radius: 8px; padding: 20px; background: white; overflow-wrap: anywhere; }
 .heading { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px 16px; }
 .heading > div { min-width: 0; flex: 1; }
 .card h2, .findings h2 { font-size: 18px; line-height: 1.35; margin: 4px 0; }
 .details { margin-top: 16px; font-size: 13px; }
-.details summary { cursor: pointer; color: #40534a; padding: 8px 0; }
+.details summary { cursor: pointer; color: #404853; padding: 8px 0; }
 .metrics { display: flex; flex-wrap: wrap; gap: 12px 28px; margin: 12px 0; }
-.metrics dt { font-size: 12px; color: #637168; }
+.metrics dt { font-size: 12px; color: #5d6877; }
 .metrics dd { margin: 4px 0 0; font-size: 16px; font-weight: 650; }
-.proposal { border-top: 1px solid #e7eae6; padding-top: 16px; margin-top: 16px; }
+.proposal { border-top: 1px solid #e5e8eb; padding-top: 16px; margin-top: 16px; }
 .review { margin-top: 12px; }
-.link { display: inline-flex; align-items: center; min-height: 44px; color: #0b7a4b; font-size: 14px; font-weight: 600; margin-top: 8px; }
+.link { display: inline-flex; align-items: center; min-height: 44px; color: var(--dv-primary-strong); font-size: 14px; font-weight: 600; margin-top: 8px; }
 .details summary { min-height: 44px; }
 .card h2 { font-weight: 650; }
-.empty { padding: 48px 16px; text-align: center; color: #526158; }
+.empty { padding: 48px 16px; text-align: center; color: #4f5864; }
 .findings { margin-top: 32px; }
-.finding { border-top: 1px solid #dfe4df; padding: 16px 0; overflow-wrap: anywhere; }
+.finding { border-top: 1px solid #dee1e5; padding: 16px 0; overflow-wrap: anywhere; }
 @media (max-width: 48em) {
   .page { padding: 8px 16px 24px; }
   .header { margin-bottom: 16px; }

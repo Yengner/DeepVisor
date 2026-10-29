@@ -17,7 +17,7 @@ const Header: FC = () => {
     const pathname = usePathname();
 
     return (
-        <header className="dv-public-header sticky top-0 z-40 border-b border-white/15 bg-[#0d0f0d] text-white">
+        <header className="dv-public-header sticky top-0 z-40 border-b border-white/15 bg-[#07182d] text-white">
             <Container className="flex h-14 items-center justify-between gap-4">
                 <Link href="/" className="group flex shrink-0 items-center gap-2.5" aria-label="DeepVisor home">
                     <BrandLockup inverse />
@@ -29,7 +29,7 @@ const Header: FC = () => {
                             key={item.label}
                             href={item.href}
                             aria-current={pathname === item.match ? "page" : undefined}
-                            className="dv-public-nav-link relative flex h-full items-center px-3 transition-colors hover:text-white aria-[current=page]:text-[#c8ff56]"
+                            className="dv-public-nav-link relative flex h-full items-center px-3 transition-colors hover:text-white aria-[current=page]:text-[#bdceff]"
                         >
                             {item.label}
                         </Link>
@@ -45,7 +45,7 @@ const Header: FC = () => {
                     </Link>
                     <Link
                         href="/sign-up"
-                        className="dv-public-header-cta inline-flex h-9 items-center justify-center gap-2 rounded-md bg-[#c8ff56] px-3.5 text-xs font-semibold text-[#0d0f0d] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c8ff56] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0f0d]"
+                        className="dv-public-header-cta inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-3.5 text-xs font-semibold text-white transition-colors hover:bg-[#004fc7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#bdceff] focus-visible:ring-offset-2 focus-visible:ring-offset-[#07182d]"
                         aria-label="Start free"
                     >
                         <span className="dv-public-header-cta-label">Start free</span>
@@ -61,7 +61,7 @@ const Header: FC = () => {
                             key={item.label}
                             href={item.href}
                             aria-current={pathname === item.match ? "page" : undefined}
-                            className="shrink-0 rounded-sm px-3 py-1.5 text-[11px] font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white aria-[current=page]:bg-white/10 aria-[current=page]:text-[#c8ff56]"
+                            className="shrink-0 rounded-sm px-3 py-1.5 text-[11px] font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white aria-[current=page]:bg-white/10 aria-[current=page]:text-[#bdceff]"
                         >
                             {item.label}
                         </Link>

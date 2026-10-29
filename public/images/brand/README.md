@@ -21,3 +21,18 @@ configured in `src/app/layout.tsx`. Next.js requires the conventional filenames
 `src/app/favicon.ico` and `src/app/apple-icon.png`; those remain unchanged.
 
 This asset organization preserves the existing artwork, dimensions and transparency.
+
+## Website palette
+
+The supplied symbol defines the application palette: royal blue **#0065FC** for
+primary actions, ocean blue **#0369CC** for secondary accents, and navy **#082D56**
+for headings and dark surfaces. Midnight navy **#07182D** anchors navigation; white
+and **#F4F7FC** keep the workspace readable. Soft periwinkle **#BDCEFF** highlights
+dark surfaces, with quieter lavender accents around the decorative pixel companion.
+
+Shared CSS roles live in `src/globals.css`; Mantine's matching blue ramp is in
+`src/theme.ts`, with the existing `signal` name retained as a compatibility alias.
+Tailwind and exported chart colors follow the same palette. Green success,
+amber warnings, red errors, and third-party platform logos retain their meanings.
+The pixel companion is decorative artwork, not a live-status indicator or a new
+logo. Keep pixel details and the hero grid away from body copy and form surfaces.

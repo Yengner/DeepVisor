@@ -1,11 +1,9 @@
 .page {
-  --dv-ink: #151714;
-  --dv-canvas: #f4f5ef;
-  --dv-border: #d9ddd3;
-  --dv-muted: #62685e;
-  --dv-signal: #0b7a4b;
-  --dv-signal-bright: #14a866;
-  --dv-lime: #c8ff56;
+  --dv-border: #d3d7dd;
+  --dv-muted: #57616f;
+  --dv-signal: var(--dv-primary-strong);
+  --dv-signal-bright: var(--dv-primary);
+  --dv-lime: var(--dv-highlight);
   width: 100%;
   min-height: calc(100vh - 7rem);
   padding: 20px;
@@ -39,13 +37,13 @@
 }
 
 .page :global(.mantine-Button-root[data-variant='filled']:hover) {
-  border-color: #075f3b;
-  background: #075f3b;
+  border-color: var(--dv-primary-deep);
+  background: var(--dv-primary-deep);
 }
 
 .page :global(.mantine-Button-root[data-variant='light']) {
-  color: #075f3b;
-  background: #eaf6ef;
+  color: var(--dv-primary-deep);
+  background: var(--dv-primary-soft);
 }
 
 .page :global(.mantine-Badge-root),
@@ -56,7 +54,7 @@
 
 .page :global(.mantine-ThemeIcon-root) {
   color: var(--dv-signal);
-  background: #eaf6ef;
+  background: var(--dv-primary-soft);
 }
 
 .hero {
@@ -80,7 +78,7 @@
 }
 
 .heroBadge {
-  border: 1px solid rgba(200, 255, 86, 0.52) !important;
+  border: 1px solid rgba(168, 212, 255, 0.52) !important;
   color: var(--dv-ink) !important;
   background: var(--dv-lime) !important;
 }
@@ -92,7 +90,7 @@
 }
 
 .heroCopy {
-  color: #c9cec4;
+  color: var(--dv-border-strong);
 }
 
 .heroPrimaryAction {
@@ -102,14 +100,14 @@
 }
 
 .heroPrimaryAction:hover {
-  border-color: #d7ff83 !important;
-  background: #d7ff83 !important;
+  border-color: var(--dv-highlight-hover) !important;
+  background: var(--dv-highlight-hover) !important;
 }
 
 .heroSecondaryAction {
-  border-color: #555a50 !important;
+  border-color: #4b545f !important;
   color: #ffffff !important;
-  background: #242720 !important;
+  background: #1f2328 !important;
 }
 
 .summaryCard {
@@ -125,12 +123,12 @@
 }
 
 .notificationCard:hover {
-  border-color: #9ca499 !important;
+  border-color: #939daa !important;
 }
 
 .notificationCard.unread {
   border-left: 3px solid var(--dv-signal) !important;
-  background: #f0f8f3;
+  background: var(--dv-primary-soft);
 }
 
 .feedCard {

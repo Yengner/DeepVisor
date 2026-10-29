@@ -1,11 +1,11 @@
 .page {
-  --ink: #151714;
-  --deep-ink: #0d0f0d;
-  --canvas: #f4f5ef;
-  --line: #ced2c7;
-  --muted: #666b61;
-  --signal: #0b7a4b;
-  --lime: #c8ff56;
+  --ink: var(--dv-ink);
+  --deep-ink: var(--dv-ink-deep);
+  --canvas: var(--dv-canvas);
+  --line: #c6ccd3;
+  --muted: #5a6472;
+  --signal: var(--dv-primary-strong);
+  --lime: var(--dv-highlight);
   min-height: 100svh;
   background: var(--canvas);
   color: var(--ink);
@@ -52,8 +52,8 @@
 .brandSection {
   margin-left: 2px;
   padding-left: 12px;
-  border-left: 1px solid #b8bcb2;
-  color: #777c72;
+  border-left: 1px solid #aeb6c0;
+  color: #697585;
   font-weight: 700;
 }
 
@@ -119,7 +119,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 20px;
-  border-bottom: 1px solid #3a3e38;
+  border-bottom: 1px solid #343a42;
 }
 
 .progressHeader > div {
@@ -129,7 +129,7 @@
 }
 
 .progressHeader span {
-  color: #a9aea4;
+  color: #9fa8b3;
   font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -144,7 +144,7 @@
 
 .railProgress {
   border-radius: 0;
-  background: #393d36;
+  background: #333940;
 }
 
 .stepList {
@@ -159,18 +159,18 @@
   align-items: center;
   gap: 11px;
   padding: 15px 17px;
-  border-bottom: 1px solid #353934;
-  color: #aeb3a9;
+  border-bottom: 1px solid #30363d;
+  color: #a4adb8;
 }
 
 .progressStepActive {
-  background: #20231f;
+  background: #1d2025;
   color: #ffffff;
   box-shadow: inset 3px 0 0 var(--lime);
 }
 
 .progressStepDone {
-  color: #dce0d8;
+  color: #d8dbe0;
 }
 
 .stepNumber {
@@ -179,9 +179,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #50554c;
+  border: 1px solid #474f5a;
   border-radius: 4px;
-  color: #aeb3a9;
+  color: #a4adb8;
   font-size: 0.68rem;
   font-weight: 900;
 }
@@ -207,7 +207,7 @@
 
 .progressStep > div > span {
   overflow-wrap: anywhere;
-  color: #858b80;
+  color: #778494;
   font-size: 0.68rem;
   line-height: 1.35;
 }
@@ -221,7 +221,7 @@
   align-items: flex-start;
   gap: 10px;
   padding: 18px;
-  color: #aeb3a9;
+  color: #a4adb8;
   font-size: 0.71rem;
   line-height: 1.5;
 }
@@ -254,7 +254,7 @@
 
 .formSurface :global(.mantine-InputWrapper-description) {
   margin-bottom: 7px;
-  color: #777c72;
+  color: #697585;
   font-size: 0.7rem;
   line-height: 1.4;
 }
@@ -262,7 +262,7 @@
 .formSurface :global(.mantine-Input-input),
 .formSurface :global(.mantine-Textarea-input) {
   min-height: 46px;
-  border: 1px solid #c8ccc1;
+  border: 1px solid #c0c6cd;
   border-radius: 4px;
   background: #ffffff;
   color: var(--ink);
@@ -271,20 +271,20 @@
 
 .formSurface :global(.mantine-Input-input:hover),
 .formSurface :global(.mantine-Textarea-input:hover) {
-  border-color: #92988c;
+  border-color: #85909f;
 }
 
 .formSurface :global(.mantine-Input-input:focus),
 .formSurface :global(.mantine-Input-input:focus-within),
 .formSurface :global(.mantine-Textarea-input:focus) {
   border-color: var(--signal);
-  box-shadow: 0 0 0 2px rgba(11, 122, 75, 0.12);
+  box-shadow: 0 0 0 2px rgba(0, 79, 199, 0.12);
 }
 
 .formSurface :global(.mantine-Combobox-dropdown) {
-  border: 1px solid #bfc4b8;
+  border: 1px solid #b6bdc6;
   border-radius: 4px;
-  box-shadow: 0 14px 34px rgba(21, 23, 20, 0.12);
+  box-shadow: 0 14px 34px rgba(8, 45, 86, 0.12);
 }
 
 .formSurface :global(.mantine-Combobox-option) {
@@ -310,7 +310,7 @@
 }
 
 .formSurface :global(.mantine-Button-root[data-variant='filled']:hover) {
-  background: #08623d;
+  background: var(--dv-primary-strong);
 }
 
 .formSurface :global(.mantine-Badge-root) {
@@ -323,17 +323,17 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 .errorPanel {
   width: min(100%, 620px);
   padding: 28px;
-  border: 1px solid #cfd2c8;
+  border: 1px solid #c7ccd3;
   border-top: 4px solid #e76156;
   border-radius: 6px;
   background: #ffffff;
-  color: #151714;
+  color: var(--dv-ink);
 }
 
 .errorPanel :global(.mantine-Title-root) {
@@ -351,7 +351,7 @@
   width: fit-content;
   min-height: 44px;
   border-radius: 4px;
-  background: #151714;
+  background: var(--dv-ink);
   color: #ffffff;
 }
 

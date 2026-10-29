@@ -1,10 +1,8 @@
 .page {
-  --dv-ink: #151714;
-  --dv-canvas: #f4f5ef;
-  --dv-border: #d9ddd3;
-  --dv-border-strong: #aeb5aa;
-  --dv-signal: #0b7a4b;
-  --dv-lime: #c8ff56;
+  --dv-border: #d3d7dd;
+  --dv-border-strong: #a6aeb9;
+  --dv-signal: var(--dv-primary-strong);
+  --dv-lime: var(--dv-highlight);
   width: 100%;
   min-height: calc(100vh - 7rem);
   padding: 20px;
@@ -71,7 +69,7 @@
 }
 
 .hero :global(.app-platform-page-copy) {
-  color: #c9cec4 !important;
+  color: var(--dv-border-strong) !important;
 }
 
 .hero :global(.app-platform-page-kicker) {
@@ -79,14 +77,14 @@
 }
 
 .hero :global(.app-platform-page-badge) {
-  border: 1px solid rgba(200, 255, 86, 0.52) !important;
+  border: 1px solid rgba(168, 212, 255, 0.52) !important;
   color: var(--dv-ink) !important;
   background: var(--dv-lime) !important;
 }
 
 .hero :global(.mantine-Badge-root[data-variant='outline']) {
-  border-color: #596057;
-  color: #e5e8e1;
+  border-color: var(--dv-text-muted);
+  color: #e1e4e8;
 }
 
 .hero :global(.mantine-Button-root[data-variant='filled']) {
@@ -96,9 +94,9 @@
 }
 
 .hero :global(.mantine-Button-root[data-variant='default']) {
-  border-color: #596057;
+  border-color: var(--dv-text-muted);
   color: #ffffff;
-  background: #2e322a;
+  background: #282d34;
 }
 
 .documentFrame {

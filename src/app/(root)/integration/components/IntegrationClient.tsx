@@ -283,8 +283,8 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
         ? `Reconnect ${focusedPlatform.platformName}`
         : `Connect ${focusedPlatform.platformName}`;
   const heroCardStyle = {
-    background: '#151714',
-    borderColor: '#2d322c',
+    background: '#082d56',
+    borderColor: '#284665',
   } satisfies CSSProperties;
 
   const syncPitchDetachedState = () => {
@@ -671,8 +671,8 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                           p="sm"
                           className={`${styles.statusRow} ${isFocused ? styles.statusRowActive : ''}`}
                           style={{
-                            borderColor: isFocused ? palette.accent : '#dce3de',
-                            background: isFocused ? '#edf4ef' : '#ffffff',
+                            borderColor: isFocused ? palette.accent : '#d9e3ef',
+                            background: isFocused ? '#edf0f4' : '#ffffff',
                             boxShadow: 'none',
                           } as CSSProperties}
                           role="button"

@@ -1,22 +1,27 @@
 import { createTheme, type MantineColorsTuple } from '@mantine/core';
 
-const signal: MantineColorsTuple = [
-  '#ecfff5',
-  '#d9fbe9',
-  '#aff4d0',
-  '#81ecb5',
-  '#59e49d',
-  '#38d889',
-  '#20c979',
-  '#14a866',
-  '#0b7a4b',
-  '#075f3b',
+const brand: MantineColorsTuple = [
+  '#eef5ff',
+  '#dceaff',
+  '#b8d4ff',
+  '#8bb8ff',
+  '#5a98ff',
+  '#287bff',
+  '#0065fc',
+  '#0056db',
+  '#0048b8',
+  '#073d85',
 ];
 
 export const deepVisorTheme = createTheme({
-  primaryColor: 'signal',
-  primaryShade: { light: 8, dark: 5 },
-  colors: { signal },
+  primaryColor: 'brand',
+  primaryShade: { light: 6, dark: 6 },
+  // Keep the existing alias for components; semantic statuses use green/red/amber.
+  colors: {
+    brand,
+    signal: brand,
+    gray: ['#f7f9fd', '#eef2f8', '#dfe7f2', '#c4d0e0', '#8c9eb8', '#5f748f', '#53677d', '#405570', '#283e58', '#142a43'],
+  },
   fontFamily: 'var(--font-body), Arial, sans-serif',
   fontFamilyMonospace: 'ui-monospace, SFMono-Regular, Menlo, monospace',
   headings: {

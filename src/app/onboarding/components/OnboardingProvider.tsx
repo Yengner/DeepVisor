@@ -157,7 +157,7 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
               value={progressValue}
               size={6}
               radius={0}
-              color="#c8ff56"
+              color="#bdceff"
               className={classes.railProgress}
             />
 
@@ -198,7 +198,7 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
                 <span>STEP {active + 1} OF {TOTAL_STEPS}</span>
                 <strong>{STEP_LABELS[active]}</strong>
               </div>
-              <Progress value={progressValue} size={5} radius={0} color="#0b7a4b" />
+              <Progress value={progressValue} size={5} radius={0} color="#004fc7" />
             </div>
 
             {active === 0 ? (

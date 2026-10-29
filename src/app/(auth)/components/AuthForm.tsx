@@ -1,6 +1,7 @@
 'use client';
 
 import { BrandLockup, BrandMark } from '@/components/brand/Brand';
+import PixelCompanion from '@/components/brand/PixelCompanion';
 import { type FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -45,8 +46,8 @@ function IntelligencePanel({ type }: AuthFormProps) {
 
       <div className={classes.panelMessage}>
         <span className={classes.panelEyebrow}>
-          <span className={classes.liveDot} aria-hidden="true" />
-          Decision signal active
+          <PixelCompanion size={26} tone="dark" />
+          Your ad intelligence companion
         </span>
         <h1 className={classes.panelTitle}>
           {isLogin ? 'Know what to do next.' : 'Start with signal, not guesswork.'}
@@ -60,8 +61,8 @@ function IntelligencePanel({ type }: AuthFormProps) {
 
       <div className={classes.signalPreview} aria-label="DeepVisor intelligence preview">
         <div className={classes.signalPreviewHeader}>
-          <span>ACCOUNT SIGNAL</span>
-          <span className={classes.signalStatus}>MONITORING</span>
+          <span>INTELLIGENCE PREVIEW</span>
+          <span className={classes.signalStatus}>EXAMPLE</span>
         </div>
         <div className={classes.signalScoreRow}>
           <strong>82</strong>

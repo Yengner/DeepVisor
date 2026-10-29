@@ -6,13 +6,13 @@ import {
   CalendarDays,
   CircleDollarSign,
   ImageIcon,
-  Megaphone,
   MessageCircle,
   MousePointerClick,
   PlayCircle,
 } from "lucide-react";
 import type { IconType } from "react-icons";
 import { SiMeta } from "react-icons/si";
+import PixelCompanion from '@/components/brand/PixelCompanion';
 
 type StatCard = {
   label: string;
@@ -224,7 +224,7 @@ export default function AdIntelligenceAnimation() {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-blue-50 pb-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-blue-700 text-white shadow-[0_12px_26px_rgba(37,99,235,0.18)]">
-              <Megaphone className="h-5 w-5" aria-hidden="true" />
+              <PixelCompanion size={26} tone="dark" />
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-500">Creative intelligence</p>

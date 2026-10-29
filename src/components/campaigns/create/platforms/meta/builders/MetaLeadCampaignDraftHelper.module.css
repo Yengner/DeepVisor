@@ -80,7 +80,7 @@
     bottom: calc(5rem + env(safe-area-inset-bottom));
     margin: 0;
     padding: 10px 12px;
-    box-shadow: 0 -8px 18px rgba(21, 23, 20, 0.08);
+    box-shadow: 0 -8px 18px rgba(8, 45, 86, 0.08);
   }
 
   .desktopStageAction {

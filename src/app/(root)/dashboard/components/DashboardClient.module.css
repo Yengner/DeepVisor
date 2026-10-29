@@ -91,7 +91,7 @@
 
 .historyHeader {
   padding-bottom: 14px;
-  border-bottom: 1px solid rgba(21, 23, 20, 0.12);
+  border-bottom: 1px solid rgba(8, 45, 86, 0.12);
 }
 
 .historyHeaderBody {
@@ -127,7 +127,7 @@
 .activeFindingsPopover {
   width: min(360px, calc(100vw - 32px));
   background: #ffffff;
-  border-color: rgba(21, 23, 20, 0.12);
+  border-color: rgba(8, 45, 86, 0.12);
 }
 
 .surfacePanelActions {
@@ -150,7 +150,7 @@
 
 .sectionHeader {
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(21, 23, 20, 0.12);
+  border-bottom: 1px solid rgba(8, 45, 86, 0.12);
 }
 
 .liveDeliveryTitle {
@@ -192,7 +192,7 @@
 }
 
 .summaryLabel {
-  color: #596057;
+  color: var(--dv-text-muted);
   font-weight: 900;
   line-height: 1.25;
 }
@@ -234,8 +234,8 @@
   width: 32px;
   height: 32px;
   border-radius: 999px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
-  background: #f4f5ef;
+  border: 1px solid rgba(8, 45, 86, 0.12);
+  background: var(--dv-canvas);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -250,10 +250,10 @@
 }
 
 .tableWrap {
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
   overflow: hidden;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 .dataTable {
@@ -289,7 +289,7 @@
 }
 
 .tableMetricDivider {
-  border-left: 1px solid rgba(21, 23, 20, 0.12);
+  border-left: 1px solid rgba(8, 45, 86, 0.12);
 }
 
 .tableStatHeader,
@@ -299,7 +299,7 @@
 }
 
 .tableCellMuted {
-  color: #697067;
+  color: var(--dv-text-muted);
   font-size: 14px;
 }
 
@@ -319,18 +319,18 @@
 .tableTruncateMuted {
   width: 100%;
   max-width: 100%;
-  color: #697067;
+  color: var(--dv-text-muted);
 }
 
 .tableValueText {
   display: block;
   white-space: nowrap;
-  color: #697067;
+  color: var(--dv-text-muted);
   font-size: 14px;
 }
 
 .metricValue {
-  color: #151714;
+  color: var(--dv-ink);
   font-size: 1.55rem;
   letter-spacing: 0;
   line-height: 1;
@@ -338,7 +338,7 @@
 
 .chartSubSection {
   padding-top: 16px;
-  border-top: 1px solid rgba(21, 23, 20, 0.12);
+  border-top: 1px solid rgba(8, 45, 86, 0.12);
 }
 
 .surfaceGraphGrid {
@@ -353,7 +353,7 @@
 
 .dataSummaryBox {
   margin-top: 8px;
-  border-color: rgba(21, 23, 20, 0.12);
+  border-color: rgba(8, 45, 86, 0.12);
   background: #ffffff;
   box-shadow: none;
 }
@@ -382,7 +382,7 @@
 }
 
 .dataSummaryValue {
-  color: #151714;
+  color: var(--dv-ink);
   line-height: 1.1;
 }
 
@@ -398,39 +398,39 @@
   width: min(340px, calc(100vw - 48px));
   max-width: min(340px, calc(100vw - 48px));
   background: #ffffff;
-  border-color: rgba(21, 23, 20, 0.18);
-  box-shadow: 0 8px 24px rgba(21, 23, 20, 0.12);
+  border-color: rgba(8, 45, 86, 0.18);
+  box-shadow: 0 8px 24px rgba(8, 45, 86, 0.12);
 }
 
 .historyTooltipCopy {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
-  color: #4f574d;
+  color: #48515c;
 }
 
 .historyTooltipSignal {
-  background: #f4f5ef;
+  background: var(--dv-canvas);
   border-color: rgba(191, 219, 254, 1);
 }
 
 .approvalCard {
-  background: #f1f7f3;
-  border-color: rgba(20, 168, 102, 0.24);
+  background: #f1f4f7;
+  border-color: rgba(0, 101, 252, 0.24);
 }
 
 .approvalMeta {
   padding: 14px 16px;
-  border: 1px solid rgba(20, 168, 102, 0.22);
+  border: 1px solid rgba(0, 101, 252, 0.22);
   border-radius: 8px;
   background: #ffffff;
 }
 
 .liveRow,
 .breakdownRow {
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
 }
 
 .liveRow {
@@ -453,9 +453,9 @@
 }
 
 .placementRow {
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
   padding: 12px 14px;
 }
 
@@ -473,7 +473,7 @@
   width: 38px;
   height: 38px;
   border-radius: 999px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   background: #ffffff;
   flex-shrink: 0;
 }
@@ -483,21 +483,21 @@
   width: 100%;
   height: 10px;
   border-radius: 999px;
-  background: rgba(21, 23, 20, 0.12);
+  background: rgba(8, 45, 86, 0.12);
   overflow: hidden;
 }
 
 .placementBarFill {
   height: 100%;
   border-radius: 999px;
-  background: #14a866;
+  background: var(--dv-primary);
 }
 
 .stateMapWrap {
   width: 100%;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 8px;
-  background: #f4f5ef;
+  background: var(--dv-canvas);
   padding: 10px;
   overflow-x: auto;
 }
@@ -519,7 +519,7 @@
   justify-content: center;
   width: var(--state-map-tile-size);
   min-height: var(--state-map-tile-size);
-  border: 1px solid rgba(21, 23, 20, 0.18);
+  border: 1px solid rgba(8, 45, 86, 0.18);
   border-radius: 8px;
   font-size: 9px;
   font-weight: 800;
@@ -557,12 +557,12 @@
 .heatmapCell {
   width: 100%;
   height: 20px;
-  border: 1px solid rgba(21, 23, 20, 0.12);
+  border: 1px solid rgba(8, 45, 86, 0.12);
   border-radius: 6px;
 }
 
 .emptyPanel {
-  border-color: rgba(21, 23, 20, 0.12);
+  border-color: rgba(8, 45, 86, 0.12);
 }
 
 .subSection {
@@ -614,9 +614,9 @@
   .chartPanel,
   .metricCard,
   .emptyPanel {
-    border-color: rgba(21, 23, 20, 0.12);
+    border-color: rgba(8, 45, 86, 0.12);
     background: #ffffff;
-    box-shadow: 0 1px 2px rgba(21, 23, 20, 0.05);
+    box-shadow: 0 1px 2px rgba(8, 45, 86, 0.05);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -801,7 +801,7 @@
 
   .chartSubSection {
     padding-top: 12px;
-    border-top: 1px solid rgba(21, 23, 20, 0.12);
+    border-top: 1px solid rgba(8, 45, 86, 0.12);
   }
 
   .chartSubSection :global(.mantine-Text-root) {
@@ -894,13 +894,13 @@
   }
 
   .tableWrap {
-    border-color: rgba(21, 23, 20, 0.12);
+    border-color: rgba(8, 45, 86, 0.12);
     border-radius: 8px;
     background: #ffffff;
   }
 
   .liveRow {
-    border-color: rgba(21, 23, 20, 0.12);
+    border-color: rgba(8, 45, 86, 0.12);
     padding: 12px !important;
     border-radius: 8px;
     background: #ffffff;
@@ -962,7 +962,7 @@
   }
 
   .stateMapWrap {
-    border-color: rgba(21, 23, 20, 0.12);
+    border-color: rgba(8, 45, 86, 0.12);
     background: #ffffff;
   }
 

@@ -1,0 +1,40 @@
+.mascot { position: relative; display: inline-block; flex: 0 0 auto; width: var(--spider-size); height: var(--spider-size); vertical-align: middle; contain: layout paint; isolation: isolate; pointer-events: none; }
+.sprite {
+  position: absolute; width: 100%; height: 75%; left: 0; top: 12.5%;
+  background-image: url('/images/brand/mascot/deepvisor-spider-sprite.png');
+  background-repeat: no-repeat; background-size: 800% 900%;
+  background-position: 0 var(--spider-row); image-rendering: pixelated;
+  animation-timing-function: steps(1, end); animation-iteration-count: infinite;
+}
+.light { --spider-plate: #edf3fb; --spider-border: #d9e3ef; }
+.dark { --spider-plate: #17365d; --spider-border: #41658e; }
+.framed { background: var(--spider-plate); border-radius: 10px; box-shadow: inset 0 0 0 1px var(--spider-border); }
+.mascot[data-state="idle"] .sprite { animation-name: idle; animation-duration: 8s; }
+.mascot[data-state="blink"] .sprite { animation: blink 240ms steps(1, end) 1; }
+.mascot[data-state="walking"] .sprite { animation: cycle 960ms steps(8, end) infinite; }
+.mascot[data-state="working"] .sprite { animation: cycle 1.6s steps(8, end) infinite; }
+.mascot[data-state="thinking"] .sprite { animation: cycle 4s steps(8, end) infinite; }
+.mascot[data-state="scanning"] .sprite { animation: cycle 2.4s steps(8, end) infinite; }
+.mascot[data-state="success"] .sprite { animation: celebrate 650ms steps(1, end) 1; }
+/* Sleep and attention are still; repeated errors must not bounce. */
+.mascot[data-paused] .sprite { animation-play-state: paused; }
+@keyframes cycle { to { background-position-x: calc(var(--spider-size) * -8); } }
+@keyframes idle {
+  0%, 44%, 76%, 95%, 100% { background-position-x: 0; }
+  48%, 72% { background-position-x: calc(var(--spider-size) * -1); }
+  96%, 98% { background-position-x: calc(var(--spider-size) * -2); }
+  97% { background-position-x: calc(var(--spider-size) * -3); }
+}
+@keyframes blink {
+  0%, 100% { background-position-x: 0; }
+  20%, 80% { background-position-x: calc(var(--spider-size) * -2); }
+  40%, 60% { background-position-x: calc(var(--spider-size) * -3); }
+}
+@keyframes celebrate {
+  0%, 100% { background-position-x: 0; }
+  30% { background-position-x: calc(var(--spider-size) * -2); }
+  60% { background-position-x: calc(var(--spider-size) * -3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mascot .sprite { animation: none !important; background-position-x: 0; }
+}
