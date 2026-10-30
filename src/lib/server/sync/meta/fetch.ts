@@ -1,6 +1,7 @@
+import { actionMetric, optionalMetric, requiredMetric, metricRatio } from './normalization';
 import 'server-only';
 
-import { asNumber, asRecord, asString } from '@/lib/shared';
+import { asRecord, asString } from '@/lib/shared';
 import type { Json } from '@/lib/shared/types/supabase';
 import { fetchMetaAdAccountSnapshots } from '@/lib/server/integrations/adapters/meta';
 import { fetchMetaCollection, fetchMetaObject, getBackfillDateRange } from './client';
@@ -191,26 +192,7 @@ function extractCtaType(value: unknown): string | null {
   return firstNonEmptyString(record.type, record.call_to_action_type);
 }
 
-function extractActionMetric(
-  actions: MetaActionMetric[] | undefined,
-  actionTypes: string[]
-): number {
-  if (!Array.isArray(actions)) {
-    return 0;
-  }
-
-  let total = 0;
-
-  for (const action of actions) {
-    if (!actionTypes.includes(asString(action.action_type))) {
-      continue;
-    }
-
-    total += asNumber(action.value);
-  }
-
-  return total;
-}
+const extractActionMetric = actionMetric;
 
 function chunkStrings(values: string[], size: number): string[][] {
   if (values.length === 0) {
@@ -417,17 +399,17 @@ function normalizeMetaAdCreativeSeed(creative: MetaAdCreativeNode): MetaAdCreati
 }
 
 function normalizeInsightMetrics(row: MetaInsightRow) {
-  const directInlineLinkClicks = asNumber(row.inline_link_clicks);
+  const directInlineLinkClicks = optionalMetric(row.inline_link_clicks);
 
   return {
     day: asString(row.date_start),
     currencyCode: asString(row.account_currency) || null,
-    spend: asNumber(row.spend),
-    reach: asNumber(row.reach),
-    impressions: asNumber(row.impressions),
-    clicks: asNumber(row.clicks),
+    spend: requiredMetric(row.spend),
+    reach: optionalMetric(row.reach),
+    impressions: requiredMetric(row.impressions),
+    clicks: requiredMetric(row.clicks),
     inlineLinkClicks:
-      directInlineLinkClicks > 0
+      directInlineLinkClicks !== null
         ? directInlineLinkClicks
         : extractActionMetric(row.actions, ['link_click', 'inline_link_click']),
     leads: extractActionMetric(row.actions, [
@@ -446,29 +428,9 @@ function normalizeInsightMetrics(row: MetaInsightRow) {
   };
 }
 
-function computeCtr(clicks: number, impressions: number): number {
-  if (impressions <= 0) {
-    return 0;
-  }
-
-  return Number((((clicks / impressions) * 100) || 0).toFixed(6));
-}
-
-function computeCpc(spend: number, clicks: number): number {
-  if (clicks <= 0) {
-    return 0;
-  }
-
-  return Number((spend / clicks).toFixed(6));
-}
-
-function computeCpm(spend: number, impressions: number): number {
-  if (impressions <= 0) {
-    return 0;
-  }
-
-  return Number(((spend / impressions) * 1000).toFixed(6));
-}
+const computeCtr = (clicks:number, impressions:number) => metricRatio(clicks, impressions, 100);
+const computeCpc = (spend:number, clicks:number) => metricRatio(spend, clicks);
+const computeCpm = (spend:number, impressions:number) => metricRatio(spend, impressions, 1000);
 
 function parseAdvertiserHourBucket(bucket: string): number | null {
   const match = bucket.trim().match(/^(\d{2}):00:00\s*-\s*(\d{2}):59:59$/);
@@ -526,11 +488,8 @@ const META_AUDIENCE_BREAKDOWN_CONFIGS: MetaAudienceBreakdownConfig[] = [
     breakdowns: 'publisher_platform',
     dimension1Key: 'publisher_platform',
   },
-  {
-    breakdownType: 'platform_position',
-    breakdowns: 'platform_position',
-    dimension1Key: 'platform_position',
-  },
+  // Do not request standalone platform_position or dma: Meta rejects them for affected
+  // accounts and it must not block first sync. Existing stored rows remain readable.
   {
     breakdownType: 'age_gender',
     breakdowns: 'age,gender',
@@ -551,11 +510,6 @@ const META_AUDIENCE_BREAKDOWN_CONFIGS: MetaAudienceBreakdownConfig[] = [
     breakdownType: 'impression_device',
     breakdowns: 'impression_device',
     dimension1Key: 'impression_device',
-  },
-  {
-    breakdownType: 'dma',
-    breakdowns: 'dma',
-    dimension1Key: 'dma',
   },
 ];
 
@@ -1227,19 +1181,20 @@ async function fetchMetaAudienceBreakdownSeedsByLevel(input: {
           impressions: metrics.impressions,
           clicks: metrics.clicks,
           inlineLinkClicks: metrics.inlineLinkClicks,
-          leads: metrics.leads,
-          messages: metrics.messages,
-          calls: metrics.calls,
+          leads: isPlacementBreakdown(config.breakdownType) ? null : metrics.leads,
+          messages: isPlacementBreakdown(config.breakdownType) ? null : metrics.messages,
+          calls: isPlacementBreakdown(config.breakdownType) ? null : metrics.calls,
           actions: toJson(row.actions ?? []) ?? [],
           costPerActionType: toJson(row.cost_per_action_type ?? []) ?? [],
           raw: toJson(row),
         } satisfies MetaAudienceBreakdownSeed);
       }
     } catch (error) {
-      console.warn(
-        `Skipping Meta audience breakdown "${config.breakdownType}" at ${input.level} level for ${input.adAccountExternalId}:`,
-        error
-      );
+      // Explicitly unsupported dimensions have no observations; operational failures must retry.
+      const message = error instanceof Error ? error.message : '';
+      if (/breakdowns?.*(?:not supported|not available|cannot be combined)|(?:not supported|not available).*breakdowns?/i.test(message)) continue;
+      // Do not mark an incomplete snapshot refresh as successfully cached.
+      throw new Error(`Meta audience ${config.breakdownType} unavailable`, {cause:error});
     }
   }
 
@@ -1389,9 +1344,9 @@ async function fetchMetaHourlyPerformanceSeedsByLevel(input: {
       leads: metrics.leads,
       messages: metrics.messages,
       calls: metrics.calls,
-      ctr: asNumber(row.ctr) || computeCtr(metrics.clicks, metrics.impressions),
-      cpc: asNumber(row.cpc) || computeCpc(metrics.spend, metrics.clicks),
-      cpm: asNumber(row.cpm) || computeCpm(metrics.spend, metrics.impressions),
+      ctr: computeCtr(metrics.clicks, metrics.impressions),
+      cpc: computeCpc(metrics.spend, metrics.clicks),
+      cpm: computeCpm(metrics.spend, metrics.impressions),
       actions: (toJson(row.actions ?? []) ?? []) as Json,
       costPerActionType: (toJson(row.cost_per_action_type ?? []) ?? []) as Json,
       raw: toJson(row),

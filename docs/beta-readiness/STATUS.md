@@ -1,3 +1,21 @@
+## Sync optimization — 2026-10-29
+
+Implemented bounded Meta fetch concurrency, single-pass initial snapshots and daily snapshot cadence, batched scheduling, bounded queue draining, persisted completion comparisons, advertiser-local fallback windows, and normalization v2. Local validation: full suite 929 passed / 16 skipped before final focused additions; focused checks/typecheck/build/lint recorded in the task handoff. A prior Agency navigation expectation was updated; database tests pass with two workers.
+
+**Database prerequisite resolved:** Applied `20261029185835_allow_unknown_meta_metrics.sql` to development project `gkdyyjqepzayjdpvqnja`; verified all ten target fields nullable without defaults. Local migration version matches remote history. Public database types regenerated; existing ai/intelligence RPC annotations retained. Typecheck passed. Migration regression and actual persisted synthetic worker test passed (480 spend / 48 results, deduplication, manual cooldown preserved, normal-client access safeguards). Meta responses were simulated; no Meta writes. `AGENTS.md` now permits necessary task-scoped development migrations without separate approval. Existing hosted queue/cron settings were not changed. Separate deployment and hosted schedule approvals remain required. Details: `src/lib/server/sync/OPTIMIZATION.md`.
+
+## Meta AI Agency MVP — 2026-10-29
+
+- Implemented `/agency`: authenticated selected-account overview, saved goals, recorded performance, data freshness, existing Decisions reviews/evidence/audits, explicit missing/stale/error states, development-only isolated story preview, shared navigation and existing spider.
+- Business-objective context v1 now enters Shadow/Review evaluations; question version 2, unchanged Feature/Jev output contracts. Preferences never authorize execution. Old queued question-v1 jobs fail closed; next eligible sync creates version-2 work.
+- Reused Phase 4 fixture pipeline with isolated `eeee4445…` account; preserved old evidence. Real development Supabase (`gkdyyjqepzayjdpvqnja`) verified snapshots → Shadow → Review → owner approval → fake Meta execution → pending outcomes, duplicate rejection and normal-client A/B RLS. Stored evaluation includes goal context. Synthetic profile/selection preparation and scoped cleanup are in `scripts/agency/`.
+- Browser: actual authenticated A/B sessions, selected persisted account, 1440/390 light/dark, forged cross-business cookie denied, disabled fictional-preview approvals. Agency $120/18 current-window observations reconciled with SQL; full completed 7D snapshot $140/21. Screenshots inspected in `/tmp/deepvisor-agency`.
+- Gates: 119 targeted unit tests, 1 real Supabase synthetic flow, authenticated browser checks, typecheck, production build and targeted ESLint passed (ESLint uses existing temporary flat config because repository has legacy config). Full suite not rerun.
+- P1 hosted refresh: MCP confirms worker `*/10 * * * *` active, two-hour enqueue absent/inactive. Updated hosted app/Edge authentication and endpoint availability must be verified before separately approved activation. No hosted changes made.
+- P1 external readiness: OAuth v23.0 and sync/executor v24.0 remain pinned. Official Meta version pages could not be fetched (429/unavailable); support/deprecation and upgrade contract must be checked before live onboarding. Requested scopes in source: ads_read, business_management, pages_show_list, pages_read_engagement, instagram_basic (or configured Login config_id); app approval/granted scopes not live-verified. Jev and live OAuth remain manual prerequisites.
+- P2: exact goal budget/target currency persistence and richer observed agent progress. Current ranges are presented honestly; no automatic execution, schedules, migrations, deployment or real Meta writes enabled.
+- Next phase: controlled live read-only OAuth/sync validation, separately approved hosted refresh rollout, then fresh Review evaluation usability. See `src/lib/server/agency/README.md` and `scripts/agency/README.md` for contracts and launch commands.
+
 # DeepVisor beta readiness
 
 ## Account settings — 2026-10-28 UTC

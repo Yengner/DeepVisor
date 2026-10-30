@@ -1,4 +1,4 @@
-// Public: Supabase MCP generated. ai/intelligence: live catalog; see scripts/beta-fixtures/reconcile-types.mjs.
+// Public: Supabase CLI generated. ai/intelligence: live catalog; see scripts/beta-fixtures/reconcile-types.mjs.
 export type Json =
   | string
   | number
@@ -1271,9 +1271,9 @@ export type Database = {
           id: string
           insights_synced_through: string | null
           last_failed_sync_job_id: string | null
-          last_visit_sync_check_day: string | null
           last_incremental_sync_at: string | null
           last_successful_sync_job_id: string | null
+          last_visit_sync_check_day: string | null
           latest_activity_date: string | null
           updated_at: string
         }
@@ -1289,9 +1289,9 @@ export type Database = {
           id?: string
           insights_synced_through?: string | null
           last_failed_sync_job_id?: string | null
-          last_visit_sync_check_day?: string | null
           last_incremental_sync_at?: string | null
           last_successful_sync_job_id?: string | null
+          last_visit_sync_check_day?: string | null
           latest_activity_date?: string | null
           updated_at?: string
         }
@@ -1307,9 +1307,9 @@ export type Database = {
           id?: string
           insights_synced_through?: string | null
           last_failed_sync_job_id?: string | null
-          last_visit_sync_check_day?: string | null
           last_incremental_sync_at?: string | null
           last_successful_sync_job_id?: string | null
+          last_visit_sync_check_day?: string | null
           latest_activity_date?: string | null
           updated_at?: string
         }
@@ -1398,7 +1398,7 @@ export type Database = {
         Row: {
           ad_account_id: string
           breakdown_type: string
-          calls: number
+          calls: number | null
           clicks: number
           created_at: string
           currency_code: string | null
@@ -1413,12 +1413,12 @@ export type Database = {
           impressions: number
           inline_link_clicks: number
           last_day: string | null
-          leads: number
-          messages: number
+          leads: number | null
+          messages: number | null
           objective: string | null
           platform_position: string | null
           publisher_platform: string | null
-          reach: number
+          reach: number | null
           source: string
           spend: number
           synced_at: string | null
@@ -1427,7 +1427,7 @@ export type Database = {
         Insert: {
           ad_account_id: string
           breakdown_type: string
-          calls?: number
+          calls?: number | null
           clicks?: number
           created_at?: string
           currency_code?: string | null
@@ -1442,12 +1442,12 @@ export type Database = {
           impressions?: number
           inline_link_clicks?: number
           last_day?: string | null
-          leads?: number
-          messages?: number
+          leads?: number | null
+          messages?: number | null
           objective?: string | null
           platform_position?: string | null
           publisher_platform?: string | null
-          reach?: number
+          reach?: number | null
           source?: string
           spend?: number
           synced_at?: string | null
@@ -1456,7 +1456,7 @@ export type Database = {
         Update: {
           ad_account_id?: string
           breakdown_type?: string
-          calls?: number
+          calls?: number | null
           clicks?: number
           created_at?: string
           currency_code?: string | null
@@ -1471,12 +1471,12 @@ export type Database = {
           impressions?: number
           inline_link_clicks?: number
           last_day?: string | null
-          leads?: number
-          messages?: number
+          leads?: number | null
+          messages?: number | null
           objective?: string | null
           platform_position?: string | null
           publisher_platform?: string | null
-          reach?: number
+          reach?: number | null
           source?: string
           spend?: number
           synced_at?: string | null
@@ -2124,7 +2124,7 @@ export type Database = {
           leads: number
           messages: number
           objective: string | null
-          reach: number
+          reach: number | null
           source: string
           spend: number
           status: string | null
@@ -2144,7 +2144,7 @@ export type Database = {
           leads?: number
           messages?: number
           objective?: string | null
-          reach?: number
+          reach?: number | null
           source?: string
           spend?: number
           status?: string | null
@@ -2164,7 +2164,7 @@ export type Database = {
           leads?: number
           messages?: number
           objective?: string | null
-          reach?: number
+          reach?: number | null
           source?: string
           spend?: number
           status?: string | null
@@ -2290,10 +2290,10 @@ export type Database = {
           ad_account_id: string
           calls: number
           clicks: number
-          cpc: number
-          cpm: number
+          cpc: number | null
+          cpm: number | null
           created_at: string
-          ctr: number
+          ctr: number | null
           currency_code: string | null
           day: string
           day_of_week: number | null
@@ -2305,7 +2305,7 @@ export type Database = {
           leads: number
           messages: number
           objective: string | null
-          reach: number
+          reach: number | null
           source: string
           spend: number
           updated_at: string
@@ -2315,10 +2315,10 @@ export type Database = {
           ad_account_id: string
           calls?: number
           clicks?: number
-          cpc?: number
-          cpm?: number
+          cpc?: number | null
+          cpm?: number | null
           created_at?: string
-          ctr?: number
+          ctr?: number | null
           currency_code?: string | null
           day: string
           day_of_week?: number | null
@@ -2330,7 +2330,7 @@ export type Database = {
           leads?: number
           messages?: number
           objective?: string | null
-          reach?: number
+          reach?: number | null
           source?: string
           spend?: number
           updated_at?: string
@@ -2340,10 +2340,10 @@ export type Database = {
           ad_account_id?: string
           calls?: number
           clicks?: number
-          cpc?: number
-          cpm?: number
+          cpc?: number | null
+          cpm?: number | null
           created_at?: string
-          ctr?: number
+          ctr?: number | null
           currency_code?: string | null
           day?: string
           day_of_week?: number | null
@@ -2355,7 +2355,7 @@ export type Database = {
           leads?: number
           messages?: number
           objective?: string | null
-          reach?: number
+          reach?: number | null
           source?: string
           spend?: number
           updated_at?: string
@@ -2676,7 +2676,7 @@ export type Database = {
           last_day: string | null
           leads: number
           messages: number
-          reach: number
+          reach: number | null
           spend: number
           summary_source: string
           synced_at: string | null
@@ -2703,7 +2703,7 @@ export type Database = {
           last_day?: string | null
           leads?: number
           messages?: number
-          reach?: number
+          reach?: number | null
           spend?: number
           summary_source?: string
           synced_at?: string | null
@@ -2730,7 +2730,7 @@ export type Database = {
           last_day?: string | null
           leads?: number
           messages?: number
-          reach?: number
+          reach?: number | null
           spend?: number
           summary_source?: string
           synced_at?: string | null
@@ -6393,10 +6393,6 @@ export type Database = {
       }
     }
     Functions: {
-      assert_account_deletable: {
-        Args: { p_user: string }
-        Returns: undefined
-      }
       accept_calendar_queue_workflow: {
         Args: { p_queue_item_id: string; p_user_id?: string }
         Returns: {
@@ -6434,6 +6430,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      assert_account_deletable: { Args: { p_user: string }; Returns: undefined }
       can_access_account: {
         Args: { p_ad_account_id: string }
         Returns: boolean
@@ -6444,10 +6441,6 @@ export type Database = {
       }
       can_access_business: { Args: { p_business_id: string }; Returns: boolean }
       can_manage_business: { Args: { p_business_id: string }; Returns: boolean }
-      enqueue_automatic_account_sync: {
-        Args: { p_business: string; p_integration: string; p_account: string; p_source: string; p_stale_minutes?: number; p_lookback_days?: number; p_allow_simulation?: boolean }
-        Returns: Json
-      }
       claim_account_sync_job: {
         Args: { allowed_sync_types?: string[]; target_job_id?: string }
         Returns: {
@@ -6487,6 +6480,18 @@ export type Database = {
           org_type: Database["public"]["Enums"]["organization_type"]
         }
         Returns: string
+      }
+      enqueue_automatic_account_sync: {
+        Args: {
+          p_account: string
+          p_allow_simulation?: boolean
+          p_business: string
+          p_integration: string
+          p_lookback_days?: number
+          p_source: string
+          p_stale_minutes?: number
+        }
+        Returns: Json
       }
       ensure_onboarding_workspace: { Args: never; Returns: string }
       get_org_role: {
@@ -6564,6 +6569,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_org_admin: { Args: { p_organization_id: string }; Returns: boolean }
       is_org_member: { Args: { p_organization_id: string }; Returns: boolean }
+      maintenance_prune_operational_logs: { Args: never; Returns: Json }
       obj_code: { Args: { raw: string }; Returns: string }
       obj_label: { Args: { raw: string }; Returns: string }
       store_platform_token: {
@@ -6719,8 +6725,12 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  ai: { Enums: {} },
-  intelligence: { Enums: {} },
+  ai: {
+    Enums: {},
+  },
+  intelligence: {
+    Enums: {},
+  },
   public: {
     Enums: {
       business_role: ["owner", "admin", "member"],

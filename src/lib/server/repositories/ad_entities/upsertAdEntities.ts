@@ -179,7 +179,12 @@ export async function upsertAdEntities(
   for (const chunk of chunkArray(rowsToUpsert, 250)) {
     const { error } = await client
       .from('ad_entities')
-      .upsert(chunk, { onConflict: 'ad_account_id,entity_level,external_id' });
+      .upsert(chunk, {
+        onConflict: 'ad_account_id,entity_level,external_id',
+        // Mixed batches include IDs for existing entities but omit them for new
+        // entities. Use column defaults for missing fields, rather than NULL.
+        defaultToNull: false,
+      });
 
     if (error) {
       throw error;

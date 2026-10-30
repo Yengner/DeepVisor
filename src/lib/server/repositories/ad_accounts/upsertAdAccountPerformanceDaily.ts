@@ -7,7 +7,7 @@ export interface UpsertAdAccountPerformanceDailyInput {
   source: string | null;
   status: string | null;
   spend: number;
-  reach: number;
+  reach: number | null;
   impressions: number;
   clicks: number;
   inlineLinkClicks: number;
@@ -16,7 +16,7 @@ export interface UpsertAdAccountPerformanceDailyInput {
   syncedAt: string;
 }
 
-export async function upsertAdAccountPerformanceDaily(
+export async function updateAdAccountMetadataFromInsights(
   supabase: RepositoryClient,
   inputs: UpsertAdAccountPerformanceDailyInput[]
 ): Promise<{ count: number }> {
@@ -66,5 +66,8 @@ export async function upsertAdAccountPerformanceDaily(
     });
   }
 
-  return { count: rows.length };
+  return { count: latestByAccount.size };
 }
+
+/** @deprecated Account insights only update metadata; no daily rows are persisted here. */
+export const upsertAdAccountPerformanceDaily = updateAdAccountMetadataFromInsights;

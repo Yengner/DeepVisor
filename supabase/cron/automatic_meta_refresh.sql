@@ -32,7 +32,7 @@ select cron.alter_job((select jobid from cron.job where jobname='process-meta-ba
     url := (select decrypted_secret from vault.decrypted_secrets where name='project_url') || '/functions/v1/process_account_sync_jobs',
     headers := jsonb_build_object('Content-Type','application/json','x-cron-secret',
       (select decrypted_secret from vault.decrypted_secrets where name='CRON_SECRET')),
-    body := '{"limit":1}'::jsonb,
+    body := '{"limit":5}'::jsonb,
     timeout_milliseconds := 300000
   );
 $command$);

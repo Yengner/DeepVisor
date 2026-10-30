@@ -16,7 +16,7 @@ Existing Calendar, Reports, campaign-creation, and historical analytics code may
 2. **Honor task scope.** A request for a plan means plan only. For implementation, make the smallest coherent change that fixes the requested behavior; avoid unrelated refactors, dependency upgrades, schema changes, and UI redesigns.
 3. **Reuse existing paths.** Look for an existing endpoint, repository, media resolver, sync worker, policy rule, or UI component before introducing another one. Prefer a root-cause fix to a superficial workaround.
 4. **Avoid speculative claims.** Distinguish implemented, configured, deployed, enabled, and verified behavior. Investigate the current code and evidence rather than trusting stale README text or previous task summaries.
-5. **Keep consequential operations explicit.** Do not commit, push, deploy, apply remote migrations, change production configuration, rotate credentials, or perform live advertising writes unless the user specifically authorizes that operation. A request to implement code is not authorization to activate it.
+5. **Keep consequential operations explicit.** Do not commit, push, deploy, change production configuration, rotate credentials, or perform live advertising writes unless the user specifically authorizes that operation. A request to implement code is not authorization to activate it. Necessary remote migrations on the existing development Supabase project may be applied within an authorized implementation task without separate approval.
 6. **Stop when the task is complete.** Do not silently start the next roadmap item.
 
 ## Code map (read only what is relevant)
@@ -76,7 +76,7 @@ The root README is introductory, not the authority for execution safety or curre
 - Use **Node.js 24**, as specified by `package.json`/`.nvmrc`.
 - Store local secrets in `.env.local`; keep Jev/TypeSafe, Meta, Supabase service-role, and internal API credentials **server-side only**. Never introduce a `NEXT_PUBLIC_*` secret, check in credentials, or print them in logs/reports.
 - Follow the **actual provider contract in the code and module README** (including pinned Jev model and the current `JEV_API_KEY` naming). Don't rename environment variables or provider interfaces as a drive-by cleanup.
-- Schema changes require narrowly scoped reviewed migrations; do not reset or reconstruct a production Supabase database. Generated types should track the deployed schema, not overwrite it prematurely.
+- Schema changes require narrowly scoped reviewed migrations. Verify the target project and current schema before applying development migrations, preserve data and RLS, and keep local migration history aligned with the remote project. Destructive resets, production migrations, and changes to shared Auth configuration or secrets still require explicit authorization. Do not reset or reconstruct a production Supabase database. Generated types should track the deployed schema, not overwrite it prematurely.
 - Keep dependencies and lockfile stable unless the approved change needs them.
 
 ## Verification

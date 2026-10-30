@@ -7,7 +7,7 @@ import { canonical } from '../approval';
 import { record } from '../surface';
 
 export const SHADOW_PIPELINE_VERSION = 1;
-export const SHADOW_QUESTION_VERSION = 1;
+export const SHADOW_QUESTION_VERSION = 2;
 export const SHADOW_QUESTIONS = ['Should this ad set keep running unchanged, reduce its budget, pause delivery, or have its creative reviewed?'] as const;
 export function evaluationVersion(identity: DecisionProviderIdentity): string {
   return canonical({ pipeline: SHADOW_PIPELINE_VERSION, features: FEATURE_SCHEMA_VERSION, questions: SHADOW_QUESTION_VERSION, provider: identity });

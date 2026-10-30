@@ -79,7 +79,7 @@ export function toDecisionCard(input: {
     explanation: run.status === 'completed'
       ? text(result.explanation) || (decision === 'HOLD' ? 'No delivery change was recommended.' : decision === 'INSUFFICIENT_DATA' ? 'Wait for stronger evidence before making changes.' : 'Based on the saved performance review. No additional explanation was supplied.')
       : run.status === 'failed' ? 'No action was authorized by this evaluation.' : 'The saved evaluation is waiting for a result.',
-    evaluated: Array.isArray(payload.questions) ? payload.questions.filter((q): q is string => typeof q === 'string').slice(0, 5) : [],
+    evaluated: Array.isArray(payload.questions) ? payload.questions.filter((q): q is string => typeof q === 'string').slice(0, 5).map(q => q.startsWith('Business objectives context v1:') ? q.split(' These are descriptive preferences')[0] : q) : [],
     confidence: run.status === 'completed' ? percent(run.confidence) : null,
     probability: run.status === 'completed' ? percent(record(result.probabilities)[decision]) : null,
     provider: run.provider === 'deepvisor-mock' ? 'Sample evaluation' : run.provider === 'jev' ? 'Jev evaluation' : 'DeepVisor evaluation',

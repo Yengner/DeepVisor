@@ -29,7 +29,7 @@
 .page :global(.mantine-Button-root), .page :global(.mantine-ActionIcon-root), .page a, .page summary { transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease; }
 .page :focus-visible, .disclosure :focus-visible, .mode :focus-visible { outline: 2px solid var(--dv-primary-strong); outline-offset: 3px; }
 .values { display: flex; flex-wrap: wrap; gap: 16px 32px; margin: 12px 0; }
-.values dt { font-size: 12px; color: #56606e; }
+.values dt { font-size: 12px; color: var(--ui-muted, #56606e); }
 .values dd { margin: 4px 0 0; font-size: 16px; font-weight: 600; }
 .audit { border-top: 1px solid #e1e4e7; padding: 12px 0; }
 .skeleton { min-height: 160px; }

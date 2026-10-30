@@ -1,4 +1,6 @@
 import 'server-only';
+import { parallelTasks } from '../concurrency';
+import { accountToday } from '@/lib/shared/reports/dates';
 
 import {
   aggregateDailyMetricsRows,
@@ -7,7 +9,7 @@ import {
 } from '@/lib/server/repositories/ad_accounts/normalizers';
 import { upsertMetaAudienceBreakdownsSummary } from '@/lib/server/repositories/audience/upsertMetaAudienceBreakdownsSummary';
 import { upsertMetaHourlyPerformance } from '@/lib/server/repositories/hourly/upsertMetaHourlyPerformance';
-import { upsertAdAccountPerformanceDaily } from '@/lib/server/repositories/ad_accounts/upsertAdAccountPerformanceDaily';
+import { updateAdAccountMetadataFromInsights } from '@/lib/server/repositories/ad_accounts/upsertAdAccountPerformanceDaily';
 import { upsertAdPerformanceDaily } from '@/lib/server/repositories/ads/upsertAdPerformanceDaily';
 import { upsertAdsetPerformanceDaily } from '@/lib/server/repositories/adsets/upsertAdsetPerformanceDaily';
 import { upsertCampaignPerformanceDaily } from '@/lib/server/repositories/campaigns/upsertCampaignPerformanceDaily';
@@ -100,10 +102,11 @@ function resolveHourlyDateRange(input: {
   dateRange?: MetaDateRange;
   syncedAt: string;
   policyDays?: number;
+  accountDay?: string;
 }): MetaDateRange | { backfillDays: number } | null {
   const maxDays = Math.max(1, Math.min(input.policyDays ?? 7, META_HOURLY_SYNC_MAX_DAYS));
   if (input.dateRange) {
-    const syncedDay = input.syncedAt.slice(0, 10);
+    const syncedDay = input.accountDay ?? input.syncedAt.slice(0, 10);
     const floorDay = addUtcDays(syncedDay, -(maxDays - 1));
 
     if (input.dateRange.until < floorDay) {
@@ -122,11 +125,14 @@ function resolveHourlyDateRange(input: {
 }
 
 async function runPerformanceFetchStage<T>(label: string, operation: () => Promise<T>): Promise<T> {
+  const started = Date.now();
   try {
     return await operation();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected Meta performance fetch error';
     throw new Error(`Meta ${label} performance fetch failed: ${message}`);
+  } finally {
+    if (process.env.META_SYNC_METRICS === '1') console.info(JSON.stringify({event:'meta.performance.stage',stage:label,elapsedMs:Date.now()-started}));
   }
 }
 
@@ -175,7 +181,7 @@ export async function refreshMetaPerformanceSummaries(input: {
     entityLevel: 'campaign' | 'adset' | 'ad',
     entities: T[]
   ) =>
-    entities.map((entity) => {
+    entities.filter(entity => summarySeedsByEntityKey.has(`${entity.ad_account_id}::${entityLevel}::${entity.external_id}`)).map((entity) => {
       const seed = summarySeedsByEntityKey.get(
         `${entity.ad_account_id}::${entityLevel}::${entity.external_id}`
       );
@@ -194,7 +200,7 @@ export async function refreshMetaPerformanceSummaries(input: {
         adAccountId: entity.ad_account_id,
         entityLevel,
         spend: seed?.spend ?? 0,
-        reach: seed?.reach ?? 0,
+        reach: seed?.reach ?? null,
         impressions: seed?.impressions ?? 0,
         clicks: seed?.clicks ?? 0,
         inlineLinkClicks: seed?.inlineLinkClicks ?? 0,
@@ -243,19 +249,20 @@ export async function syncMetaPerformance(input: {
   dateRange?: MetaDateRange;
   dataPolicy?: Partial<BusinessDataPolicy>;
   refreshSummaries?: boolean;
+  refreshAudience?: boolean;
   syncedAt: string;
 }) {
   const dataPolicy = {
     ...DEFAULT_PERFORMANCE_POLICY,
     ...(input.dataPolicy ?? {}),
   };
-  const adAccountPerformanceInputs: Parameters<typeof upsertAdAccountPerformanceDaily>[1] = [];
+  const adAccountPerformanceInputs: Parameters<typeof updateAdAccountMetadataFromInsights>[1] = [];
   const campaignPerformanceInputs: Parameters<typeof upsertCampaignPerformanceDaily>[1] = [];
   const adsetPerformanceInputs: Parameters<typeof upsertAdsetPerformanceDaily>[1] = [];
   const adPerformanceInputs: Parameters<typeof upsertAdPerformanceDaily>[1] = [];
   const audienceBreakdownInputs: Parameters<typeof upsertMetaAudienceBreakdownsSummary>[1] = [];
   const hourlyPerformanceInputs: Parameters<typeof upsertMetaHourlyPerformance>[1] = [];
-  let adAccountPerformanceRows = 0;
+
   let historicalDataAvailable = false;
   let hasMeaningfulHistory = false;
   let firstActivityDate: string | null = null;
@@ -268,60 +275,60 @@ export async function syncMetaPerformance(input: {
       dateRange: input.dateRange,
       syncedAt: input.syncedAt,
       policyDays: dataPolicy.hourly_history_days,
+      accountDay: accountToday(adAccount.timezone) ?? undefined,
     });
-    const adAccountRows = await runPerformanceFetchStage('account', () =>
+    const [adAccountRows, campaignRows, adsetRows, adRows, audienceBreakdownRows, adAudienceBreakdownRows, adsetHourlyRows, adHourlyRows] = await parallelTasks([
+      () => runPerformanceFetchStage('account', () =>
       fetchMetaAdAccountPerformanceSeeds({
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
         backfillDays: input.backfillDays,
         dateRange: input.dateRange,
       })
-    );
-    const campaignRows = await runPerformanceFetchStage('campaign', () =>
+    ),
+      () => runPerformanceFetchStage('campaign', () =>
       fetchMetaCampaignPerformanceSeeds({
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
         backfillDays: input.backfillDays,
         dateRange: input.dateRange,
       })
-    );
-    const adsetRows = await runPerformanceFetchStage('ad set', () =>
+    ),
+      () => runPerformanceFetchStage('ad set', () =>
       fetchMetaAdsetPerformanceSeeds({
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
         backfillDays: input.backfillDays,
         dateRange: input.dateRange,
       })
-    );
-    const adRows = await runPerformanceFetchStage('ad', () =>
+    ),
+      () => runPerformanceFetchStage('ad', () =>
       fetchMetaAdPerformanceSeeds({
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
         backfillDays: input.backfillDays,
         dateRange: input.dateRange,
       })
-    );
-    const audienceBreakdownRows = await runPerformanceFetchStage('audience breakdown summary', () =>
+    ),
+      () => input.refreshAudience === false ? Promise.resolve([]) : runPerformanceFetchStage('audience breakdown summary', () =>
       fetchMetaAdsetAudienceBreakdownSeeds({
         accessToken: input.accessToken,
         adAccountExternalId: adAccount.external_account_id,
         allowedBreakdowns: dataPolicy.allowed_breakdowns,
       })
-    );
-    const adAudienceBreakdownRows =
-      !dataPolicy.allow_ad_level_audience
-        ? []
-        : await runPerformanceFetchStage('ad audience breakdown summary', () =>
+    ),
+      () => input.refreshAudience === false || !dataPolicy.allow_ad_level_audience
+        ? Promise.resolve([])
+        : runPerformanceFetchStage('ad audience breakdown summary', () =>
             fetchMetaAdAudienceBreakdownSeeds({
               accessToken: input.accessToken,
               adAccountExternalId: adAccount.external_account_id,
               allowedBreakdowns: dataPolicy.allowed_breakdowns,
             })
-          );
-    const adsetHourlyRows =
-      hourlyRange == null
-        ? []
-        : await runPerformanceFetchStage('ad set hourly advertiser-time', () =>
+          ),
+      () => hourlyRange == null
+        ? Promise.resolve([])
+        : runPerformanceFetchStage('ad set hourly advertiser-time', () =>
             fetchMetaAdsetHourlyPerformanceSeeds({
               accessToken: input.accessToken,
               adAccountExternalId: adAccount.external_account_id,
@@ -329,11 +336,10 @@ export async function syncMetaPerformance(input: {
                 ? { dateRange: hourlyRange }
                 : { backfillDays: hourlyRange.backfillDays }),
             })
-          );
-    const adHourlyRows =
-      hourlyRange == null || !dataPolicy.allow_ad_level_hourly
-        ? []
-        : await runPerformanceFetchStage('ad hourly advertiser-time', () =>
+          ),
+      () => hourlyRange == null || !dataPolicy.allow_ad_level_hourly
+        ? Promise.resolve([])
+        : runPerformanceFetchStage('ad hourly advertiser-time', () =>
             fetchMetaAdHourlyPerformanceSeeds({
               accessToken: input.accessToken,
               adAccountExternalId: adAccount.external_account_id,
@@ -341,7 +347,8 @@ export async function syncMetaPerformance(input: {
                 ? { dateRange: hourlyRange }
                 : { backfillDays: hourlyRange.backfillDays }),
             })
-          );
+          )
+    ] as const);
 
     console.info(`${META_HOURLY_DEBUG_PREFIX} sync:fetched`, {
       adAccountId: adAccount.id,
@@ -361,7 +368,7 @@ export async function syncMetaPerformance(input: {
 
     if (adAccountRows.length > 0) {
       historicalDataAvailable = true;
-      adAccountPerformanceRows += adAccountRows.length;
+
 
       const normalizedRows = adAccountRows
         .map(
@@ -712,7 +719,7 @@ export async function syncMetaPerformance(input: {
   }
 
   const [
-    adAccountPerformance,
+    ,
     campaignPerformance,
     adsetPerformance,
     adPerformance,
@@ -720,7 +727,7 @@ export async function syncMetaPerformance(input: {
     hourlyPerformance,
   ] =
     await Promise.all([
-      upsertAdAccountPerformanceDaily(input.supabase, adAccountPerformanceInputs),
+      updateAdAccountMetadataFromInsights(input.supabase, adAccountPerformanceInputs),
       upsertCampaignPerformanceDaily(input.supabase, campaignPerformanceInputs),
       upsertAdsetPerformanceDaily(input.supabase, adsetPerformanceInputs),
       upsertAdPerformanceDaily(input.supabase, adPerformanceInputs),
@@ -752,7 +759,7 @@ export async function syncMetaPerformance(input: {
         });
 
   return {
-    adAccountPerformanceRows: adAccountPerformance.count || adAccountPerformanceRows,
+    adAccountPerformanceRows: 0,
     campaignPerformanceRows: campaignPerformance.count,
     adsetPerformanceRows: adsetPerformance.count,
     adPerformanceRows: adPerformance.count,

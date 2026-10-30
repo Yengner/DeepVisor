@@ -14,6 +14,7 @@ export async function reviewDecisionAction(proposalId: string, choice: 'approve'
   try {
     await reviewProposal(createAdminClient(), { businessId: context.businessId, userId: context.user.id, role: context.role, proposalId, choice, reviewFingerprint });
     revalidatePath('/decisions');
+    revalidatePath('/agency');
     revalidatePath('/dashboard');
     return {};
   } catch (error) {

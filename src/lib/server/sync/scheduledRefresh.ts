@@ -1,4 +1,5 @@
 import 'server-only';
+import { parallelTasks } from './concurrency';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { getPrimaryAdAccountSelection } from '@/lib/server/integrations/service';
 import { enqueueAutomaticAccountSync, targetedSimulationAllowed, AUTO_SYNC_LOOKBACK_DAYS, AUTO_SYNC_STALE_MINUTES } from './automaticRefresh';
@@ -26,27 +27,39 @@ export async function enqueueScheduledAccountSyncJobs(input?: {
       .in('status',['connected','error']).eq('platforms.key','meta').order('updated_at',{ascending:false}).order('id').range(offset,offset+99);
     if(input?.businessId) query=query.eq('business_id',input.businessId);
     const {data: integrations,error}=await query;if(error)throw error;
-    for(const integration of integrations??[]) {
-      const key=`${integration.business_id}:${integration.platform_id}`;if(seen.has(key))continue;seen.add(key);
-      const base={businessId:integration.business_id,integrationId:integration.id};
-      try {
+    const eligible = (integrations ?? []).filter(integration => {
+      const key=`${integration.business_id}:${integration.platform_id}`;
+      if(seen.has(key)) return false; seen.add(key); return true;
+    });
+    const accounts: Array<{id:string; business_id:string; platform_id:string; external_account_id:string}> = [];
+    if (eligible.length) for(let from=0;;from+=500) {
+      let accountQuery = client.from('ad_accounts').select('id,business_id,platform_id,external_account_id')
+        .in('business_id',eligible.map(i=>i.business_id)).in('platform_id',eligible.map(i=>i.platform_id))
+        .in('external_account_id',eligible.map(i=>getPrimaryAdAccountSelection(i.integration_details).externalAccountId ?? ''))
+        .order('id').range(from,from+499);
+      if(input?.adAccountId) accountQuery=accountQuery.eq('id',input.adAccountId);
+      const {data,error}=await accountQuery; if(error) throw error;
+      accounts.push(...(data ?? [])); if(!data || data.length<500) break;
+    }
+    const byScope = new Map(accounts.map(a=>[`${a.business_id}:${a.platform_id}:${a.external_account_id}`,a]));
+    let queued = results.reduce((n,r)=>n+Number(r.status==='queued'),0);
+    for(let index=0;index<eligible.length;) {
+      const batch=eligible.slice(index,index+Math.min(3,limit-queued)); index+=batch.length;
+      const outcomes=await parallelTasks(batch.map(integration=>async ():Promise<ScheduledAccountSyncResult['results'][number]>=>{
+        const base={businessId:integration.business_id,integrationId:integration.id};
         const primary=getPrimaryAdAccountSelection(integration.integration_details);
-        let accountQuery=client.from('ad_accounts').select('id').eq('business_id',integration.business_id)
-          .eq('platform_id',integration.platform_id).eq('external_account_id',primary.externalAccountId??'');
-        if(input?.adAccountId)accountQuery=accountQuery.eq('id',input.adAccountId);
-        const {data:account,error:accountError}=await accountQuery.maybeSingle();if(accountError)throw accountError;
-        if(!account){results.push({...base,adAccountId:null,status:'skipped',message:'No selected account.'});continue;}
-        const result=await enqueueAutomaticAccountSync({...base,adAccountId:account.id,source:'scheduled_refresh',
-          staleAfterMinutes:clamp(input?.staleAfterMinutes,AUTO_SYNC_STALE_MINUTES,1440),
-          lookbackDays:clamp(input?.lookbackDays,AUTO_SYNC_LOOKBACK_DAYS,30),
-          allowSimulation:Boolean(input?.businessId&&input?.adAccountId&&targetedSimulationAllowed()),
-        });
-        results.push({...base,adAccountId:account.id,jobId:result.jobId,
-          status:result.reason==='enqueued'?'queued':'skipped',message:result.reason});
-        if(results.filter(r=>r.status==='queued').length>=limit)break outer;
-      } catch {
-        results.push({...base,adAccountId:null,status:'failed',message:'Could not queue account refresh.'});
-      }
+        const account=byScope.get(`${integration.business_id}:${integration.platform_id}:${primary.externalAccountId ?? ''}`);
+        if(!account) return {...base,adAccountId:null,status:'skipped',message:'No selected account.'};
+        try {
+          const result=await enqueueAutomaticAccountSync({...base,adAccountId:account.id,source:'scheduled_refresh',
+            staleAfterMinutes:clamp(input?.staleAfterMinutes,AUTO_SYNC_STALE_MINUTES,1440),
+            lookbackDays:clamp(input?.lookbackDays,AUTO_SYNC_LOOKBACK_DAYS,30),
+            allowSimulation:Boolean(input?.businessId&&input?.adAccountId&&targetedSimulationAllowed())});
+          return {...base,adAccountId:account.id,jobId:result.jobId,status:result.reason==='enqueued'?'queued':'skipped',message:result.reason};
+        } catch {return {...base,adAccountId:account.id,status:'failed',message:'Could not queue account refresh.'};}
+      }));
+      results.push(...outcomes); queued+=outcomes.filter(r=>r.status==='queued').length;
+      if(queued>=limit) break outer;
     }
     if(!integrations||integrations.length<100)break;
   }

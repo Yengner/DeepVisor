@@ -1,6 +1,7 @@
 import type { Icon } from '@tabler/icons-react';
 import {
   IconBell,
+  IconSparkles,
   IconChartBar,
   IconChecklist,
   IconHome2,
@@ -19,6 +20,7 @@ export type AppNavItem = {
 
 export const primaryNavItems: AppNavItem[] = [
   { name: 'Overview', shortName: 'Overview', icon: IconHome2, route: '/dashboard' },
+  { name: 'AI Agency', shortName: 'Agency', icon: IconSparkles, route: '/agency' },
   { name: 'Decisions', shortName: 'Decisions', icon: IconChecklist, route: '/decisions' },
   { name: 'Campaigns', shortName: 'Campaigns', icon: IconPresentation, route: '/campaigns' },
   { name: 'Connections', shortName: 'Connections', icon: IconPuzzle, route: '/integration' },
@@ -31,7 +33,7 @@ export const secondaryNavItems: AppNavItem[] = [
   { name: 'Notifications', shortName: 'Alerts', icon: IconBell, route: '/notifications' },
 ];
 
-export const mobileBottomNavItems: AppNavItem[] = primaryNavItems;
+export const mobileBottomNavItems: AppNavItem[] = primaryNavItems.filter(item => item.route !== '/settings');
 
 export function isAppNavItemActive(pathname: string | null, route: string): boolean {
   if (!pathname) {

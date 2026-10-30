@@ -111,7 +111,7 @@ export async function handleProcessAccountSyncJobsRequest(
   const jsonBody = await readJsonBody(req);
   const limit = positiveInteger(
     requestUrl.searchParams.get("limit") ?? jsonBody.limit,
-    1,
+    5,
     MAX_SYNC_JOB_LIMIT,
   );
   const jobId = optionalString(

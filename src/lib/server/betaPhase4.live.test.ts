@@ -18,11 +18,13 @@ import type { DecisionProvider } from './decisions/types';
 
 const project='gkdyyjqepzayjdpvqnja';
 const business='f6f96cff-bde3-4627-a613-4f16bfdc1d7c';
-const account='eeee4444-0000-4000-8000-000000000001';
-const campaign='eeee4444-0000-4000-8000-000000000002';
-const adset='eeee4444-0000-4000-8000-000000000003';
-const sync='eeee4444-0000-4000-8000-000000000004';
-const external='9000000000040001', campaignExternal='9000000000040002', entity='9000000000040003';
+const agencyDemo=process.env.DEEPVISOR_AGENCY_DEMO==='1';
+const fixtureId=(id:string)=>agencyDemo?id.replace('eeee4444','eeee4445'):id;
+const account=fixtureId('eeee4444-0000-4000-8000-000000000001');
+const campaign=fixtureId('eeee4444-0000-4000-8000-000000000002');
+const adset=fixtureId('eeee4444-0000-4000-8000-000000000003');
+const sync=fixtureId('eeee4444-0000-4000-8000-000000000004');
+const external=agencyDemo?'9000000000050001':'9000000000040001', campaignExternal=agencyDemo?'9000000000050002':'9000000000040002', entity=agencyDemo?'9000000000050003':'9000000000040003';
 const identity={providerId:'deepvisor-mock',providerVersion:'phase4-1',modelId:'deterministic-review',modelVersion:'1'};
 const provider:DecisionProvider={identity,evaluate:async()=>({...identity,decision:'REDUCE_BUDGET',confidence:0.9,explanation:'Synthetic controlled recommendation. No live advertising action.'})};
 const json=(value:unknown)=>JSON.parse(JSON.stringify(value)) as Json;
@@ -103,11 +105,13 @@ describe.skipIf(process.env.DEEPVISOR_FIXTURES!==project)('Phase 4 persisted syn
    expect(outcomes.map(o=>o.measurement_horizon_hours).sort((a,b)=>a-b)).toEqual([1,6,24,72]);
    expect(outcomes.every(o=>o.measurement_status==='pending')).toBe(true);
    expect(checked(await ai.from('action_outcomes').select('id').eq('shadow_decision_run_id',run.id))).toHaveLength(0);
-   const surface=await loadDecisionSurface(clients[0],business,0);
+   expect(JSON.stringify(run.decision_json)).toContain('Business objectives context v1:');
+   const surface=await loadDecisionSurface(clients[0],business,0,account);
    expect(surface.cards.find(c=>c.id===run.id)?.proposals[0]).toMatchObject({status:'Simulated execution',canReview:false,outcomes:expect.arrayContaining(['1h: Waiting for observations'])});
    expect((await loadDecisionSurface(clients[1],business,0)).cards).toHaveLength(0);
-   mkdirSync('docs/beta-readiness/phase4',{recursive:true});
-   writeFileSync('docs/beta-readiness/phase4/flow.json',JSON.stringify({project,business,account,runId:run.id,proposalId:proposal.id,executionId,asOfDay:day(1),spend7d:140,results7d:21,budgetBefore:10000,budgetAfter:9500,simulation:true,outcomes:'pending: 1/6/24/72h',normalClientIsolation:true,verifiedAt:new Date().toISOString()},null,2)+'\n');
+   const output=agencyDemo?'docs/beta-readiness/agency':'docs/beta-readiness/phase4';
+   mkdirSync(output,{recursive:true});
+   writeFileSync(`${output}/flow.json`,JSON.stringify({project,business,account,runId:run.id,proposalId:proposal.id,executionId,asOfDay:day(1),spend7d:140,results7d:21,budgetBefore:10000,budgetAfter:9500,simulation:true,outcomes:'pending: 1/6/24/72h',normalClientIsolation:true,verifiedAt:new Date().toISOString()},null,2)+'\n');
   } finally {
    if(previousPolicy)checked(await ai.from('autonomy_policies').upsert(previousPolicy,{onConflict:'business_id'}));
    else checked(await ai.from('autonomy_policies').update({budget_boundaries_json:{...bounds,executionEnabled:false}}).eq('business_id',business));

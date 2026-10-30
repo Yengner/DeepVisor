@@ -7,7 +7,7 @@ export interface AggregatedMetric {
   total_spend: number;
   total_leads: number;
   total_clicks: number;
-  total_ctr: number;
+  total_ctr: number | null;
   total_link_clicks: number;
   total_impressions: number;
   total_messages: number;
@@ -58,9 +58,9 @@ export interface CampaignMetric {
   conversion_rate: number;
   status: string;
   impressions: number;
-  ctr: number;
-  cpc: number;
-  cpm: number;
+  ctr: number | null;
+  cpc: number | null;
+  cpm: number | null;
   cost_per_result: number;
   ad_account_name: string;
 }
@@ -81,13 +81,13 @@ export interface AdAccountAggregatedMetrics {
   impressions: number;
   clicks: number;
   link_clicks: number;
-  reach: number;
+  reach: number | null;
   leads: number;
   messages: number;
   calls?: number;
-  ctr: number;
-  cpc: number;
-  cpm: number;
+  ctr: number | null;
+  cpc: number | null;
+  cpm: number | null;
 }
 
 export interface AdAccountTimeIncrementPoint {
@@ -97,13 +97,13 @@ export interface AdAccountTimeIncrementPoint {
   impressions: number;
   clicks: number;
   link_clicks: number;
-  reach: number;
+  reach: number | null;
   leads: number;
   messages: number;
   calls?: number;
-  ctr: number;
-  cpc: number;
-  cpm: number;
+  ctr: number | null;
+  cpc: number | null;
+  cpm: number | null;
 }
 
 export interface AdAccountTimeIncrementMetrics
@@ -118,7 +118,7 @@ export type AdAccountPerformanceSummary = AdAccountAggregatedMetrics;
 export interface AdAccountDailyMetricsRow {
   day: string;
   spend: number;
-  reach: number;
+  reach: number | null;
   impressions: number;
   clicks: number;
   inline_link_clicks: number;
@@ -172,11 +172,11 @@ export interface BusinessAdAccountRollup {
 }
 
 export interface CampaignMetrics {
-  cpc: number;
-  cpm: number;
-  ctr: number;
+  cpc: number | null;
+  cpm: number | null;
+  ctr: number | null;
   leads: number;
-  reach: number;
+  reach: number | null;
   spend: number;
   clicks: number;
   messages: number;
@@ -208,12 +208,12 @@ export interface TopAdAccountCampaign {
   impressions: number;
   spend: number;
   leads: number;
-  reach: number;
+  reach: number | null;
   link_clicks: number;
   messages: number;
-  cpm: number;
-  ctr: number;
-  cpc: number;
+  cpm: number | null;
+  ctr: number | null;
+  cpc: number | null;
   raw_data: RawCampaignData;
   created_at: string;
   updated_at: string;

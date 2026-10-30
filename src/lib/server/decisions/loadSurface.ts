@@ -4,12 +4,15 @@ import { getAutonomyPolicy } from './repository';
 import { listTrendFindingsForBusiness } from '../intelligence/repositories/trendFindings';
 import { toDecisionCard } from './surface';
 
-export async function loadDecisionSurface(client: SupabaseClient<Database>, businessId: string, page: number) {
+export async function loadDecisionSurface(client: SupabaseClient<Database>, businessId: string, page: number, accountId?: string) {
   const ai = client.schema('ai');
+  // Filter before pagination; the account belongs to the authorized selection.
+  let runsQuery = ai.from('decision_runs').select(accountId ? '*,feature_snapshots!inner(ad_account_id)' : '*,feature_snapshots(ad_account_id)').eq('business_id', businessId);
+  if (accountId) runsQuery = runsQuery.eq('feature_snapshots.ad_account_id', accountId);
   const [runsResult, policy, findingsResult] = await Promise.all([
-    ai.from('decision_runs').select('*').eq('business_id', businessId).order('created_at', { ascending: false }).order('id', { ascending: false }).range(page * 20, page * 20 + 20),
+    runsQuery.order('created_at', { ascending: false }).order('id', { ascending: false }).range(page * 20, page * 20 + 20),
     getAutonomyPolicy(client, businessId),
-    listTrendFindingsForBusiness(client, { businessId, status: 'all', limit: 10 })
+    accountId ? Promise.resolve({ findings: [], failed: false }) : listTrendFindingsForBusiness(client, { businessId, status: 'all', limit: 10 })
       .then((findings) => ({ findings, failed: false })).catch(() => ({ findings: [], failed: true })),
   ]);
   if (runsResult.error) throw runsResult.error;

@@ -1,4 +1,6 @@
 import 'server-only';
+import { loadBusinessObjectives } from '../../agency/loadObjectives';
+import { agencyQuestions } from '../../agency/objectives';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/shared/types/supabase';
 import { createMetaExecutionAdapter } from '../../advertising/executeMetaProposal';
@@ -22,7 +24,7 @@ export async function runReviewJob(client: Client, job: ShadowJob, provider: Dec
     if (!policy || policy.mode !== 'approval_required') throw new Error('REVIEW_DISABLED');
     if (canonical(Object.fromEntries(Object.entries(policy).filter(([k]) => !['created_at','updated_at'].includes(k)))) !== canonical(job.source_json.policy)) throw new Error('POLICY_CHANGED');
     const evaluated = await new DecisionEngine(client, provider).evaluate({ businessId: job.business_id, platformIntegrationId: job.platform_integration_id,
-      snapshot: featureSnapshot(job), questions: SHADOW_QUESTIONS, persistenceIds: { featureSnapshotId: job.feature_snapshot_id, decisionRunId: job.decision_run_id } });
+      snapshot: featureSnapshot(job), questions: agencyQuestions(SHADOW_QUESTIONS, await loadBusinessObjectives(client, job.business_id)), persistenceIds: { featureSnapshotId: job.feature_snapshot_id, decisionRunId: job.decision_run_id } });
     let state: AdvertisingState | null = null;
     if (['REDUCE_BUDGET','PAUSE_DELIVERY_UNIT'].includes(evaluated.result.decision)) {
       state = options.readState ? await options.readState(job) : await (await createMetaExecutionAdapter(client, job.business_id, {

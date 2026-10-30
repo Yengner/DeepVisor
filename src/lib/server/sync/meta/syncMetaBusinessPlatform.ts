@@ -1,6 +1,8 @@
 import { incrementalWindow } from './incrementalWindow';
 import { readSimulation } from '@/lib/server/integrations/simulation/meta';
 import 'server-only';
+import { accountToday } from '@/lib/shared/reports/dates';
+import { snapshotsDue } from './snapshotCadence';
 import { enqueueShadowAfterSync } from '@/lib/server/decisions/shadow/service';
 
 import { fetchMetaAdAccountSnapshots } from '@/lib/server/integrations/adapters/meta';
@@ -47,8 +49,9 @@ function resolvePerformanceWindow(input: {
   > | null;
   syncMode: PlatformSyncMode;
   backfillDays: number;
+  accountDay: string;
 }): { since: string; until: string; backfillDays: number } {
-  const today = new Date();
+  const today = new Date(`${input.accountDay}T00:00:00Z`);
   today.setUTCHours(0, 0, 0, 0);
   const todayIso = today.toISOString().slice(0, 10);
   const catchupAnchor =
@@ -67,14 +70,14 @@ function resolvePerformanceWindow(input: {
   }
 
   if (input.syncMode === 'seed_recent') {
-    return resolveMetaBackfillWindow(Math.min(input.backfillDays, RECENT_SEED_SYNC_DAYS));
+    return resolveMetaBackfillWindow(Math.min(input.backfillDays, RECENT_SEED_SYNC_DAYS), {accountDay: input.accountDay});
   }
 
   if (input.syncMode === 'full_backfill') {
-    return resolveMetaBackfillWindow(input.backfillDays);
+    return resolveMetaBackfillWindow(input.backfillDays, {accountDay: input.accountDay});
   }
 
-  return resolveMetaBackfillWindow(input.backfillDays);
+  return resolveMetaBackfillWindow(input.backfillDays, {accountDay: input.accountDay});
 }
 
 async function getAdAccountSyncStateForWindow(input: {
@@ -247,9 +250,14 @@ export async function syncMetaBusinessPlatform(input: {
     supabase: input.supabase,
     adAccountId: primaryAdAccount.id,
   });
+  const accountDay = accountToday(primaryAdAccount.timezone);
+  if (!accountDay) throw new Error('Advertiser timezone unavailable');
+  const snapshotKey = JSON.stringify({version:1, policy:input.dataPolicy});
+  const refreshSnapshots = input.trigger === 'manual_refresh' || input.syncMode === 'full_backfill' || await snapshotsDue(input.supabase,input.businessId,primaryAdAccount.id,snapshotKey,input.syncedAt);
   const manualRecent = input.trigger === 'manual_refresh' && input.syncMode !== 'full_backfill';
   const performanceWindow = input.dateRange ? { ...input.dateRange, backfillDays: Math.floor((Date.parse(input.dateRange.until)-Date.parse(input.dateRange.since))/86400000)+1 } : manualRecent ? manualMetaWindow(primaryAdAccount.timezone) : resolvePerformanceWindow({
     syncState: adAccountSyncState,
+    accountDay,
     syncMode: input.syncMode,
     backfillDays: input.backfillDays,
   });
@@ -377,6 +385,8 @@ export async function syncMetaBusinessPlatform(input: {
         backfillDays: performanceWindow.backfillDays,
         ...(manualRecent || input.dateRange ? { dateRange: { since: performanceWindow.since, until: performanceWindow.until } } : {}),
         dataPolicy: input.dataPolicy,
+        refreshSummaries: refreshSnapshots,
+        refreshAudience: refreshSnapshots,
         syncedAt: input.syncedAt,
       })
     );
@@ -408,6 +418,7 @@ export async function syncMetaBusinessPlatform(input: {
       completeHistoricalSyncJob(input.supabase, {
         jobId: job.id,
         finishedAt: completedAt,
+        snapshotKey: refreshSnapshots ? snapshotKey : undefined,
         actualStartDate: performance.firstActivityDate,
         actualEndDate: performance.insightsSyncedThrough ?? performance.latestActivityDate,
         campaignsSynced: campaigns.count,

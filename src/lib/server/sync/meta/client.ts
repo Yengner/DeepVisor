@@ -1,4 +1,7 @@
 import 'server-only';
+import { limiter } from '../concurrency';
+const admitRequest = limiter(3);
+let retryAfterUntil = 0;
 import { simulatedMetaResponse } from '@/lib/server/integrations/simulation/meta';
 
 const META_GRAPH_VERSION = 'v24.0';
@@ -124,18 +127,25 @@ async function parseMetaError(response: Response): Promise<MetaParsedError> {
   };
 }
 
-async function fetchMetaResponseWithRetry(url: URL, signal?: AbortSignal): Promise<Response> {
+async function requestWithRetry(url: URL, signal?: AbortSignal): Promise<Response> {
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= META_TRANSIENT_MAX_ATTEMPTS; attempt += 1) {
     try {
       signal?.throwIfAborted();
+      if (retryAfterUntil > Date.now()) await sleep(retryAfterUntil - Date.now());
       const deadline = AbortSignal.timeout(30_000);
       const response = await fetch(url, { signal: signal ? AbortSignal.any([signal, deadline]) : deadline });
       if (response.ok) {
         return response;
       }
 
+      if (response.status === 429) {
+        const value = response.headers.get('retry-after');
+        const seconds = value && /^\d+$/.test(value) ? Number(value) : value ? Math.max(0, (Date.parse(value) - Date.now()) / 1000) : 1;
+        if (Number.isFinite(seconds) && seconds > 30) throw new MetaRequestError('Meta rate limit requires a later job retry', false);
+        retryAfterUntil = Math.max(retryAfterUntil, Date.now() + Math.min(30, Number.isFinite(seconds) ? seconds : 1) * 1000);
+      }
       const parsedError = await parseMetaError(response);
       lastError = new MetaRequestError(parsedError.message, parsedError.retryable);
 
@@ -168,6 +178,10 @@ async function fetchMetaResponseWithRetry(url: URL, signal?: AbortSignal): Promi
   }
 
   throw lastError ?? new Error('Meta request failed');
+}
+
+function fetchMetaResponseWithRetry(url: URL, signal?: AbortSignal) {
+  return admitRequest(() => requestWithRetry(url, signal));
 }
 
 export async function fetchMetaObject<T>(input: {

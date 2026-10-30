@@ -1,3 +1,4 @@
+import { performanceFingerprint } from './manualRefreshStatus';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 vi.mock('server-only', () => ({}));
 vi.mock('@/lib/server/supabase/admin', () => ({createAdminClient: vi.fn()}));
@@ -26,12 +27,13 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 const input = {businessId:'business',platformKey:'meta' as const,integrationId:'chosen-integration',adAccountId:'chosen-account'};
-it('queues the authorized selection, not a different saved primary, with the account-local window and baseline', async () => {
+it('queues the authorized selection, not a different saved primary, with the account-local window without scanning performance in the request', async () => {
   expect(await runManualBusinessSync(input)).toMatchObject({allowed:true,refreshedCount:1});
+  expect(performanceFingerprint).not.toHaveBeenCalled();
   expect(eq).toHaveBeenCalledWith('id','chosen-account');
   expect(eq).toHaveBeenCalledWith('platform_id','meta-platform');
   expect(eq).toHaveBeenCalledWith('updated_at','version-before');
-  expect(createOrReuseQueuedSyncJob).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({adAccountId:'chosen-account',requestedStartDate:'2026-09-08',requestedEndDate:'2026-10-07',metadata:expect.objectContaining({externalAccountId:'act_selected',last_processed_ids:{performanceFingerprint:'baseline'}})}));
+  expect(createOrReuseQueuedSyncJob).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({adAccountId:'chosen-account',requestedStartDate:'2026-09-08',requestedEndDate:'2026-10-07',metadata:expect.objectContaining({externalAccountId:'act_selected'})}));
 });
 it('rejects a stale concurrent cooldown claim before queue insertion', async () => {
   claimError=new Error('concurrent update');

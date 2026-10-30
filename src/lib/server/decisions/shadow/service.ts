@@ -1,4 +1,6 @@
 import 'server-only';
+import { loadBusinessObjectives } from '../../agency/loadObjectives';
+import { agencyQuestions } from '../../agency/objectives';
 import { runReviewJob } from '../review/service';
 import { reviewVersion } from '../review/evaluate';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -65,7 +67,7 @@ export async function runShadowJob(client: Client, job: ShadowJob, decisionProvi
     if (canonical(configuration) !== canonical(job.source_json.policy)) throw new Error('POLICY_CHANGED');
     const snapshot = featureSnapshot(job);
     const evaluated = await new DecisionEngine(client, decisionProvider).evaluate({
-      businessId: job.business_id, platformIntegrationId: job.platform_integration_id, snapshot, questions: SHADOW_QUESTIONS,
+      businessId: job.business_id, platformIntegrationId: job.platform_integration_id, snapshot, questions: agencyQuestions(SHADOW_QUESTIONS, await loadBusinessObjectives(client, job.business_id)),
       persistenceIds: { featureSnapshotId: job.feature_snapshot_id, decisionRunId: job.decision_run_id },
     });
     assertFresh(job, now());

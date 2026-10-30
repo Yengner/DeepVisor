@@ -22,13 +22,13 @@ export interface UpsertMetaAudienceBreakdownsSummaryInput {
   objective: string | null;
   source: string;
   spend: number;
-  reach: number;
+  reach: number | null;
   impressions: number;
   clicks: number;
   inlineLinkClicks: number;
-  leads: number;
-  messages: number;
-  calls: number;
+  leads: number | null;
+  messages: number | null;
+  calls: number | null;
   actionsJson: Json;
   costPerActionTypeJson: Json;
   raw: Json | null;

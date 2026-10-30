@@ -338,6 +338,7 @@ export async function processMetaFirstSyncJob(input: {
       dateRange: window,
       dataPolicy,
       refreshSummaries: false,
+      refreshAudience: windowsCompleted === 0,
       syncedAt: new Date().toISOString(),
     });
 
@@ -464,6 +465,7 @@ export async function processMetaFirstSyncJob(input: {
     creativesSynced: creatives.adCreatives,
     performanceRowsSynced,
     message: 'First history sync completed.',
+    snapshotKey: JSON.stringify({version:1, policy:dataPolicy}),
   });
 
   if (!readSimulation(input.accessToken)) await enqueueShadowAfterSync(input.supabase, { businessId: input.job.business_id, integrationId: input.job.platform_integration_id,

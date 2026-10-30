@@ -17,7 +17,6 @@ import type {
   SupportedIntegrationPlatform,
 } from '@/lib/shared/types/integrations';
 import { manualMetaWindow } from './meta/manualWindow';
-import { performanceFingerprint } from './manualRefreshStatus';
 
 const RATE_LIMIT_DETAIL_KEY = 'manual_sync_rate_limit';
 const BASE_COOLDOWN_MS = 30_000;
@@ -273,7 +272,6 @@ async function enqueueManualRefreshJobs(integrations: IntegrationRow[], selected
       }
 
       const syncWindow = manualMetaWindow(adAccount.timezone);
-      const fingerprint = await performanceFingerprint(supabase, adAccount.id, syncWindow.since, syncWindow.until);
       const job = await createOrReuseQueuedSyncJob(supabase, {
         businessId: integration.business_id,
         platformIntegrationId: integration.id,
@@ -289,7 +287,7 @@ async function enqueueManualRefreshJobs(integrations: IntegrationRow[], selected
           current_step: 'queued',
           date_cursor: syncWindow.since,
           attempt: 0,
-          last_processed_ids: { performanceFingerprint: fingerprint },
+
         },
       });
       jobs.push({

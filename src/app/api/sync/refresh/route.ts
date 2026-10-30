@@ -6,7 +6,6 @@ import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { dispatchAccountSync as dispatch } from '@/lib/server/sync/dispatch';
 import { runManualBusinessSync } from '@/lib/server/sync/manualRefresh';
-import { performanceFingerprint } from '@/lib/server/sync/manualRefreshStatus';
 import { asRecord } from '@/lib/shared';
 
 export const maxDuration = 300;
@@ -58,12 +57,8 @@ export async function GET(request: NextRequest) {
     let unchanged: boolean | null = null;
     if (job.status === 'completed') {
       revalidateTag(`dashboard-context:${businessId}`, { expire: 0 });
-      const baseline = asRecord(asRecord(job.metadata).last_processed_ids).performanceFingerprint;
-      if (typeof baseline === 'string' && job.requested_start_date && job.requested_end_date) {
-        try {
-          unchanged = baseline === await performanceFingerprint(client, job.ad_account_id, job.requested_start_date, job.requested_end_date);
-        } catch { console.warn('Completed refresh comparison unavailable', { jobId: job.id }); }
-      }
+      const saved = asRecord(asRecord(job.metadata).last_processed_ids).unchanged;
+      unchanged = typeof saved === 'boolean' ? saved : null;
       revalidatePath('/dashboard');
     }
     return NextResponse.json({ success: true, status: job.status, completedAt: job.finished_at, unchanged,

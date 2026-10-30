@@ -56,10 +56,11 @@ it('fails closed on authentication and persistence errors', async () => {
   expect(after).not.toHaveBeenCalled();
 });
 it.each([true, false])('confirms persisted completion and invalidates cached account data (unchanged=%s)', async unchanged => {
-  query.maybeSingle.mockResolvedValue({ data: { id: jobId, status: 'completed', ad_account_id: 'account', requested_start_date: '2026-09-09', requested_end_date: '2026-10-08', finished_at: '2026-10-08T12:00:00Z', metadata: { last_processed_ids: { performanceFingerprint: 'before' } } } });
+  query.maybeSingle.mockResolvedValue({ data: { id: jobId, status: 'completed', ad_account_id: 'account', requested_start_date: '2026-09-09', requested_end_date: '2026-10-08', finished_at: '2026-10-08T12:00:00Z', metadata: { last_processed_ids: { performanceFingerprint: 'before', unchanged } } } });
   vi.mocked(performanceFingerprint).mockResolvedValue(unchanged ? 'before' : 'after');
   const response = await GET(new NextRequest(`https://local.test/api/sync/refresh?jobId=${jobId}`));
   expect(await response.json()).toMatchObject({ status: 'completed', unchanged });
+  expect(performanceFingerprint).not.toHaveBeenCalled();
   expect(query.eq).toHaveBeenCalledWith('business_id', 'business');
   expect(query.eq).toHaveBeenCalledWith('ad_account_id', 'account');
   expect(query.eq).toHaveBeenCalledWith('platform_integration_id', 'integration');

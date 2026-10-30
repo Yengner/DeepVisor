@@ -7,7 +7,7 @@ export type UpsertAdEntityPerformanceSummaryInput = {
   entityLevel: AdEntityLevel;
   spend: number;
   impressions: number;
-  reach: number;
+  reach: number | null;
   clicks: number;
   inlineLinkClicks: number;
   leads: number;
@@ -53,7 +53,7 @@ export async function upsertAdEntityPerformanceSummaries(
         ctr: input.impressions > 0 ? (input.clicks / input.impressions) * 100 : null,
         cpc: input.clicks > 0 ? input.spend / input.clicks : null,
         cpm: input.impressions > 0 ? input.spend / (input.impressions / 1000) : null,
-        frequency: input.reach > 0 ? input.impressions / input.reach : null,
+        frequency: input.reach !== null && input.reach > 0 ? input.impressions / input.reach : null,
         cost_per_result: results > 0 ? input.spend / results : null,
         first_day: toDay(input.firstDay),
         last_day: toDay(input.lastDay),

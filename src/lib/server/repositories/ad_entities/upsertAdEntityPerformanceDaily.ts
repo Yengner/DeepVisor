@@ -11,7 +11,7 @@ export type UpsertAdEntityPerformanceDailyInput = {
   source: string | null;
   status: string | null;
   spend: number;
-  reach: number;
+  reach: number | null;
   impressions: number;
   clicks: number;
   inlineLinkClicks: number;
@@ -31,7 +31,7 @@ type DailyRow = {
   source: string;
   status: string | null;
   spend: number;
-  reach: number;
+  reach: number | null;
   impressions: number;
   clicks: number;
   inline_link_clicks: number;

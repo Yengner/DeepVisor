@@ -10,7 +10,7 @@ export interface UpsertAdPerformanceDailyInput {
   source: string | null;
   status: string | null;
   spend: number;
-  reach: number;
+  reach: number | null;
   impressions: number;
   clicks: number;
   inlineLinkClicks: number;

@@ -1,4 +1,7 @@
 import 'server-only';
+import type { Database } from '@/lib/shared/types/supabase';
+import { performanceFingerprint } from '../manualRefreshStatus';
+import { parallelTasks } from '../concurrency';
 import { asRecord } from '@/lib/shared';
 
 import {
@@ -92,6 +95,16 @@ async function processClaimedJob(jobId: string): Promise<{
       throw new Error('Backfill ad account is missing or no longer accessible');
     }
 
+    if (job.sync_type === 'manual_refresh' && job.requested_start_date && job.requested_end_date) {
+      const metadata = asRecord(job.metadata);
+      const previous = asRecord(metadata.last_processed_ids);
+      if (typeof previous.performanceFingerprint !== 'string') {
+        const baseline = await performanceFingerprint(supabase, job.ad_account_id, job.requested_start_date, job.requested_end_date);
+        const {error} = await supabase.from('account_sync_jobs').update({metadata:{...metadata,last_processed_ids:{...previous,performanceFingerprint:baseline}} as Database['public']['Tables']['account_sync_jobs']['Update']['metadata']})
+          .eq('id',job.id).eq('business_id',job.business_id).eq('status','running');
+        if(error) throw error;
+      }
+    }
     const automatic = ['app_visit','scheduled_refresh'].includes(String(asRecord(job.metadata).queuedFrom));
     await syncBusinessPlatform({
       businessId: job.business_id,
@@ -135,7 +148,7 @@ export async function processMetaBackfillJobs(input?: {
   targetJobId?: string | null;
 }): Promise<ProcessMetaBackfillJobsResult> {
   const supabase = createAdminClient();
-  const limit = Math.max(1, input?.limit ?? 1);
+  const limit = Math.min(5, Math.max(1, input?.limit ?? 5));
   const results: ProcessMetaBackfillJobsResult['results'] = [];
 
   if (input?.targetJobId) {
@@ -156,17 +169,17 @@ export async function processMetaBackfillJobs(input?: {
     };
   }
 
-  for (let index = 0; index < limit; index += 1) {
-    const claimed = await claimHistoricalSyncJob(supabase, {
-      syncTypes: ['initial_historical', 'incremental', 'manual_refresh', 'backfill'],
-    });
-
-    if (!claimed) {
-      break;
+  const deadline = Date.now() + 45_000;
+  let claimedCount = 0;
+  const drain = async () => {
+    while (Date.now() < deadline && claimedCount < limit) {
+      claimedCount++;
+      const claimed = await claimHistoricalSyncJob(supabase, { syncTypes: ['initial_historical', 'incremental', 'manual_refresh', 'backfill'] });
+      if (!claimed) break;
+      results.push(await processClaimedJob(claimed.id));
     }
-
-    results.push(await processClaimedJob(claimed.id));
-  }
+  };
+  await parallelTasks([drain, drain], 2);
 
   return {
     processedCount: results.length,

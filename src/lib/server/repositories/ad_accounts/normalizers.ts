@@ -1,3 +1,4 @@
+import { optionalMetric, metricRatio } from '../../sync/meta/normalization';
 import { asNumber, asRecord } from '@/lib/shared';
 import type {
   AdAccountAggregatedMetrics,
@@ -12,13 +13,13 @@ const ZERO_METRICS: AdAccountAggregatedMetrics = {
   impressions: 0,
   clicks: 0,
   link_clicks: 0,
-  reach: 0,
+  reach: null,
   leads: 0,
   messages: 0,
   calls: 0,
-  ctr: 0,
-  cpc: 0,
-  cpm: 0,
+  ctr: null,
+  cpc: null,
+  cpm: null,
 };
 
 export type { AdAccountDailyMetricsRow } from '../types';
@@ -35,13 +36,13 @@ export function parseAggregatedMetrics(value: unknown): AdAccountAggregatedMetri
     impressions,
     clicks,
     link_clicks: asNumber(metrics.link_clicks ?? metrics.inline_link_clicks),
-    reach: asNumber(metrics.reach),
+    reach: optionalMetric(metrics.reach),
     leads: asNumber(metrics.leads),
     messages: asNumber(metrics.messages),
     calls: asNumber(metrics.calls),
-    ctr: asNumber(metrics.ctr) || (impressions > 0 ? (clicks / impressions) * 100 : 0),
-    cpc: asNumber(metrics.cpc) || (clicks > 0 ? spend / clicks : 0),
-    cpm: asNumber(metrics.cpm) || (impressions > 0 ? spend / (impressions / 1000) : 0),
+    ctr: metricRatio(clicks, impressions, 100),
+    cpc: metricRatio(spend, clicks),
+    cpm: metricRatio(spend, impressions, 1000),
   };
 }
 
@@ -58,13 +59,13 @@ function parseTimePoint(value: unknown): AdAccountTimeIncrementPoint {
     impressions,
     clicks,
     link_clicks: asNumber(row.link_clicks ?? row.inline_link_clicks),
-    reach: asNumber(row.reach),
+    reach: optionalMetric(row.reach),
     leads: asNumber(row.leads),
     messages: asNumber(row.messages),
     calls: asNumber(row.calls),
-    ctr: asNumber(row.ctr) || (impressions > 0 ? (clicks / impressions) * 100 : 0),
-    cpc: asNumber(row.cpc) || (clicks > 0 ? spend / clicks : 0),
-    cpm: asNumber(row.cpm) || (impressions > 0 ? spend / (impressions / 1000) : 0),
+    ctr: metricRatio(clicks, impressions, 100),
+    cpc: metricRatio(spend, clicks),
+    cpm: metricRatio(spend, impressions, 1000),
   };
 }
 
@@ -110,7 +111,7 @@ export function aggregateDailyMetricsRows(
   let impressions = 0;
   let clicks = 0;
   let linkClicks = 0;
-  let reach = 0;
+
   let leads = 0;
   let messages = 0;
   let calls = 0;
@@ -120,7 +121,7 @@ export function aggregateDailyMetricsRows(
     impressions += row.impressions;
     clicks += row.clicks;
     linkClicks += row.inline_link_clicks;
-    reach += row.reach;
+
     leads += row.leads;
     messages += row.messages;
     calls += row.calls ?? 0;
@@ -131,13 +132,13 @@ export function aggregateDailyMetricsRows(
     impressions,
     clicks,
     link_clicks: linkClicks,
-    reach,
+    reach: null,
     leads,
     messages,
     calls,
-    ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
-    cpc: clicks > 0 ? spend / clicks : 0,
-    cpm: impressions > 0 ? spend / (impressions / 1000) : 0,
+    ctr: impressions > 0 ? (clicks / impressions) * 100 : null,
+    cpc: clicks > 0 ? spend / clicks : null,
+    cpm: impressions > 0 ? spend / (impressions / 1000) : null,
   };
 }
 
@@ -158,7 +159,7 @@ export function sumPerformanceSummaries(
   let impressions = 0;
   let clicks = 0;
   let linkClicks = 0;
-  let reach = 0;
+
   let leads = 0;
   let messages = 0;
   let calls = 0;
@@ -168,7 +169,7 @@ export function sumPerformanceSummaries(
     impressions += metric.impressions;
     clicks += metric.clicks;
     linkClicks += metric.link_clicks;
-    reach += metric.reach;
+
     leads += metric.leads;
     messages += metric.messages;
     calls += metric.calls ?? 0;
@@ -179,13 +180,13 @@ export function sumPerformanceSummaries(
     impressions,
     clicks,
     link_clicks: linkClicks,
-    reach,
+    reach: null,
     leads,
     messages,
     calls,
-    ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
-    cpc: clicks > 0 ? spend / clicks : 0,
-    cpm: impressions > 0 ? spend / (impressions / 1000) : 0,
+    ctr: impressions > 0 ? (clicks / impressions) * 100 : null,
+    cpc: clicks > 0 ? spend / clicks : null,
+    cpm: impressions > 0 ? spend / (impressions / 1000) : null,
   };
 }
 
@@ -195,7 +196,7 @@ export function hasMeaningfulMetrics(metrics: AdAccountAggregatedMetrics): boole
     metrics.impressions > 0 ||
     metrics.clicks > 0 ||
     metrics.link_clicks > 0 ||
-    metrics.reach > 0 ||
+    (metrics.reach ?? 0) > 0 ||
     metrics.leads > 0 ||
     metrics.messages > 0 ||
     (metrics.calls ?? 0) > 0
@@ -302,9 +303,9 @@ export function buildTimeIncrementMetricsFromDailyRows(
       leads: row.leads,
       messages: row.messages,
       calls: row.calls ?? 0,
-      ctr: row.impressions > 0 ? (row.clicks / row.impressions) * 100 : 0,
-      cpc: row.clicks > 0 ? row.spend / row.clicks : 0,
-      cpm: row.impressions > 0 ? row.spend / (row.impressions / 1000) : 0,
+      ctr: row.impressions > 0 ? (row.clicks / row.impressions) * 100 : null,
+      cpc: row.clicks > 0 ? row.spend / row.clicks : null,
+      cpm: row.impressions > 0 ? row.spend / (row.impressions / 1000) : null,
     })),
     '7': buildBucket(dailyRows, 7),
     '30': buildBucket(dailyRows, 30),

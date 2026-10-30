@@ -1,3 +1,5 @@
+import { META_NORMALIZATION_VERSION } from '../../sync/meta/normalization';
+import { performanceFingerprint } from '../../sync/manualRefreshStatus';
 import { asRecord } from '@/lib/shared';
 import type {
   AccountSyncJobStatus,
@@ -842,6 +844,7 @@ export async function completeHistoricalSyncJob(
     creativesSynced: number;
     performanceRowsSynced: number;
     message?: string | null;
+    snapshotKey?: string;
   }
 ): Promise<void> {
   const existing = await selectHistoricalSyncJobById(supabase, input.jobId);
@@ -850,6 +853,15 @@ export async function completeHistoricalSyncJob(
   }
 
   const metadata = parseHistoricalSyncJobMetadata(existing.metadata);
+  const baseline = metadata.lastProcessedIds?.performanceFingerprint;
+  if (typeof baseline === 'string' && existing.requested_start_date && existing.requested_end_date) {
+    let unchanged: boolean | null = null;
+    try { unchanged = baseline === await performanceFingerprint(supabase, existing.ad_account_id, existing.requested_start_date, existing.requested_end_date); }
+    catch { /* Completion is valid even when comparison is unavailable. */ }
+    metadata.lastProcessedIds = { ...metadata.lastProcessedIds, unchanged };
+  }
+  if (input.snapshotKey) metadata.lastProcessedIds = {...metadata.lastProcessedIds, snapshotKey: input.snapshotKey};
+  metadata.lastProcessedIds = {...metadata.lastProcessedIds, normalizationVersion: META_NORMALIZATION_VERSION};
   metadata.currentStep = 'completed';
   metadata.dateCursor = input.actualEndDate ?? metadata.dateCursor ?? null;
   metadata.progress = {
