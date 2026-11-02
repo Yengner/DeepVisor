@@ -1,0 +1,7 @@
+import {expect,it} from 'vitest';
+import {nativeParent,selectedRenames} from './renamePlan';
+import {propose,type Snapshot} from './model';
+const snapshot:Snapshot={accountId:'a',accountName:'Fixture',capturedAt:'2026-10-31',currency:'USD',zone:'UTC',nodes:Array.from({length:6},(_,i)=>({id:`11111111-1111-4111-8111-${String(i).padStart(12,'0')}`,externalId:String(i),parentId:null,level:'campaign',name:`Original ${i}`,creativeId:null,createdAt:null,objective:null,optimization:null,status:null,image:null,spend:null,firstDelivery:null,lastDelivery:null}))};
+it('extracts only selected actual changes and preserves the exact name',()=>{const draft=propose(snapshot);draft.edits[0].selected=true;draft.edits[0].name=' Exact name ';draft.edits[1].selected=true;draft.edits[2].name='Unselected';expect(selectedRenames(snapshot,draft).map(c=>c.name)).toEqual([' Exact name ']);});
+it('rejects zero changes and oversized approval batches',()=>{const draft=propose(snapshot);expect(()=>selectedRenames(snapshot,draft)).toThrow();draft.edits.forEach(e=>{e.selected=true;e.name+=' revised';});expect(()=>selectedRenames(snapshot,draft)).toThrow('five');});
+it('retains verified native parents in restoration subsets absent from the original baseline',()=>{const node={...snapshot.nodes[0],parentId:'missing-internal',parentExternalId:'verified-meta-parent',level:'ad' as const};expect(nativeParent(node,{...snapshot,nodes:[node]},{...snapshot,nodes:[]})).toBe('verified-meta-parent');});

@@ -1,0 +1,10 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+vi.mock('server-only',()=>({}));
+vi.mock('../actions/app/context',()=>({getRequiredAppContext:vi.fn(async()=>({businessId:'business',user:{id:'user'}}))}));
+vi.mock('../dashboard/overview/load',()=>({loadOverviewContext:vi.fn(async()=>({businessId:'business',platform:{vendor:'meta'},account:{id:'11111111-1111-4111-8111-111111111111'}})),allPages:vi.fn()}));
+vi.mock('../supabase/admin',()=>({createAdminClient:vi.fn()}));
+import {createAdminClient} from '../supabase/admin';
+import {inspect,history} from './service';
+beforeEach(()=>vi.clearAllMocks());
+it('requires consent before inspecting or opening storage',async()=>{await expect(inspect('11111111-1111-4111-8111-111111111111','yes')).rejects.toThrow('authorization');expect(createAdminClient).not.toHaveBeenCalled();});
+it('rejects forged selection before privileged reads',async()=>{await expect(history('22222222-2222-4222-8222-222222222222')).rejects.toThrow('authorized');expect(createAdminClient).not.toHaveBeenCalled();});

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { loadTableDelivery } from '@/lib/server/campaigns/tableDelivery';
 import CampaignDashboard from "@/components/campaigns/CampaignDashboard";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
@@ -169,6 +170,7 @@ export default async function CampaignPage({
 
   return (
     <>
+      <div style={{padding:"16px 24px"}}><Link href="/campaigns/organize">Organize Account →</Link></div>
       <Suspense fallback={<CampaignClientFallback />}>
         <CampaignDashboard
           campaigns={allCampaigns}

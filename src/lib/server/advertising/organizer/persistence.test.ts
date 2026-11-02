@@ -1,0 +1,44 @@
+import {PGlite} from '@electric-sql/pglite';
+import {readFileSync} from 'node:fs';
+import {expect,it} from 'vitest';
+it('consumes approvals once, shares existing execution locks, and preserves audit and RLS boundaries',async()=>{
+ const db=new PGlite();const b='11111111-1111-4111-8111-111111111111',a='22222222-2222-4222-8222-222222222222',u='33333333-3333-4333-8333-333333333333',base='44444444-4444-4444-8444-444444444444',v='55555555-5555-4555-8555-555555555555',p='66666666-6666-4666-8666-666666666666';
+ try{
+ await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema ai;
+ create table business_profiles(id uuid primary key,organization_id uuid);
+ create table organization_memberships(organization_id uuid,user_id uuid,role text);
+ create table ad_accounts(id uuid primary key,business_id uuid,unique(business_id,id));
+ create table ad_entities(id uuid primary key);
+ create table ai.review_execution_claims(id uuid default gen_random_uuid(),business_id uuid,active boolean default true);
+ create function public.can_access_business(id uuid) returns boolean language sql as $$select id::text=current_setting('test.business',true)$$;`);
+ await db.exec(readFileSync('supabase/migrations/20261031034606_account_organizer.sql','utf8'));
+ await db.exec(readFileSync('supabase/migrations/20261031152423_organizer_renaming.sql','utf8'));
+ await db.exec(readFileSync('supabase/migrations/20261031154143_organizer_immutable_preview_approval.sql','utf8'));
+ await db.exec('grant usage on schema ai to service_role;grant select on business_profiles,organization_memberships,ad_accounts to service_role;grant select,insert,update on ai.review_execution_claims to service_role;');
+ await db.query('insert into business_profiles values($1,$1)',[b]);await db.query("insert into organization_memberships values($1,$2,'owner')",[b,u]);await db.query('insert into ad_accounts values($1,$2)',[a,b]);
+ await db.query("insert into account_organization_baselines(id,business_id,ad_account_id,created_by,consent_version,snapshot) values($1,$2,$3,$4,'organizer-v1','{}')",[base,b,a,u]);
+ await db.query("insert into account_organization_versions(id,baseline_id,business_id,ad_account_id,created_by,version,proposal,source_snapshot) values($1,$2,$3,$4,$5,1,'{}','{}')",[v,base,b,a,u]);
+ await db.query("insert into organization_rename_previews(id,business_id,ad_account_id,version_id,actor_id,fingerprint,simulated,changes) values($1,$2,$3,$4,$5,'exact',true,'[{}]')",[p,b,a,v,u]);
+ await db.exec('set role service_role');
+ await expect(db.query("select organizer_approve($1,$2,$3,'wrong')",[b,u,p])).rejects.toThrow();
+ await expect(db.query("select organizer_approve($1,$2,$3,'exact')",[b,a,p])).rejects.toThrow();
+ const approval=(await db.query<{id:string}>("select organizer_approve($1,$2,$3,'exact') id",[b,u,p])).rows[0].id;
+ await expect(db.query("select organizer_approve($1,$2,$3,'exact')",[b,u,p])).rejects.toThrow();
+ const first=(await db.query<{result:{claimed:boolean;run:{id:string}}}>('select organizer_claim($1,$2,$3) result',[b,u,approval])).rows[0].result;expect(first.claimed).toBe(true);
+ expect((await db.query<{r:{claimed:boolean}}>('select organizer_claim($1,$2,$3) r',[b,u,approval])).rows[0].r.claimed).toBe(false);
+ await expect(db.query('insert into ai.review_execution_claims(business_id) values($1)',[b])).rejects.toThrow('unresolved');
+ await db.query("insert into organization_rename_events(business_id,run_id,actor_id,event) values($1,$2,$3,'{}')",[b,first.run.id,u]);
+ await db.query('update organization_rename_runs set active=false where id=$1',[first.run.id]);
+ await db.query('insert into ai.review_execution_claims(business_id) values($1)',[b]);
+ const v2=(await db.query<{id:string}>("insert into account_organization_versions(baseline_id,business_id,ad_account_id,created_by,version,proposal,source_snapshot) values($1,$2,$3,$4,2,'{}','{}') returning id",[base,b,a,u])).rows[0].id;
+ const p2=(await db.query<{id:string}>("insert into organization_rename_previews(business_id,ad_account_id,version_id,actor_id,fingerprint,simulated,changes) values($1,$2,$3,$4,'second',true,'[{}]') returning id",[b,a,v2,u])).rows[0].id;
+ const a2=(await db.query<{id:string}>("select organizer_approve($1,$2,$3,'second') id",[b,u,p2])).rows[0].id;
+ await expect(db.query('select organizer_claim($1,$2,$3)',[b,u,a2])).rejects.toThrow('unresolved');
+ await db.exec('reset role');
+ await expect(db.exec("update organization_rename_events set event='{}'")).rejects.toThrow('immutable');
+ await expect(db.exec('delete from organization_rename_approvals')).rejects.toThrow('immutable');
+ await db.exec(`set role authenticated;set test.business='${b}'`);expect((await db.query('select id from organization_rename_events')).rows).toHaveLength(1);
+ await db.exec(`set test.business='${a}'`);expect((await db.query('select id from organization_rename_events')).rows).toHaveLength(0);
+ await expect(db.query('select organizer_claim($1,$2,$3)',[b,u,approval])).rejects.toThrow();
+ }finally{await db.close();}
+},15000);

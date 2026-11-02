@@ -1,4 +1,4 @@
-// Public: Supabase CLI generated. ai/intelligence: live catalog; see scripts/beta-fixtures/reconcile-types.mjs.
+// Public: Supabase CLI generated. ai/intelligence: catalog-derived nullable RPC contracts preserved.
 export type Json =
   | string
   | number
@@ -1096,6 +1096,112 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_organization_baselines: {
+        Row: {
+          ad_account_id: string
+          business_id: string
+          captured_at: string
+          consent_version: string
+          created_by: string
+          id: string
+          snapshot: Json
+        }
+        Insert: {
+          ad_account_id: string
+          business_id: string
+          captured_at?: string
+          consent_version: string
+          created_by: string
+          id?: string
+          snapshot: Json
+        }
+        Update: {
+          ad_account_id?: string
+          business_id?: string
+          captured_at?: string
+          consent_version?: string
+          created_by?: string
+          id?: string
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_organization_baselines_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_organization_baselines_business_id_ad_account_id_fkey"
+            columns: ["business_id", "ad_account_id"]
+            isOneToOne: true
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["business_id", "id"]
+          },
+          {
+            foreignKeyName: "account_organization_baselines_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      account_organization_versions: {
+        Row: {
+          ad_account_id: string
+          baseline_id: string
+          business_id: string
+          created_at: string
+          created_by: string
+          id: string
+          proposal: Json
+          restores_run_id: string | null
+          source_snapshot: Json
+          version: number
+        }
+        Insert: {
+          ad_account_id: string
+          baseline_id: string
+          business_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          proposal: Json
+          restores_run_id?: string | null
+          source_snapshot: Json
+          version: number
+        }
+        Update: {
+          ad_account_id?: string
+          baseline_id?: string
+          business_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          proposal?: Json
+          restores_run_id?: string | null
+          source_snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_organization_versions_baseline_id_business_id_ad_a_fkey"
+            columns: ["baseline_id", "business_id", "ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_organization_baselines"
+            referencedColumns: ["id", "business_id", "ad_account_id"]
+          },
+          {
+            foreignKeyName: "account_organization_versions_restores_run_id_business_id_fkey"
+            columns: ["restores_run_id", "business_id"]
+            isOneToOne: false
+            referencedRelation: "organization_rename_runs"
+            referencedColumns: ["id", "business_id"]
+          },
+        ]
+      }
       account_sync_jobs: {
         Row: {
           actual_end_date: string | null
@@ -3654,6 +3760,332 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_rename_approvals: {
+        Row: {
+          actor_id: string
+          business_id: string
+          created_at: string
+          fingerprint: string
+          id: string
+          preview_id: string
+          version_id: string
+        }
+        Insert: {
+          actor_id: string
+          business_id: string
+          created_at?: string
+          fingerprint: string
+          id?: string
+          preview_id: string
+          version_id: string
+        }
+        Update: {
+          actor_id?: string
+          business_id?: string
+          created_at?: string
+          fingerprint?: string
+          id?: string
+          preview_id?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_rename_approvals_preview_id_business_id_fkey"
+            columns: ["preview_id", "business_id"]
+            isOneToOne: false
+            referencedRelation: "organization_rename_previews"
+            referencedColumns: ["id", "business_id"]
+          },
+          {
+            foreignKeyName: "organization_rename_approvals_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: true
+            referencedRelation: "account_organization_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_rename_events: {
+        Row: {
+          actor_id: string
+          business_id: string
+          created_at: string
+          event: Json
+          id: number
+          run_id: string
+        }
+        Insert: {
+          actor_id: string
+          business_id: string
+          created_at?: string
+          event: Json
+          id?: never
+          run_id: string
+        }
+        Update: {
+          actor_id?: string
+          business_id?: string
+          created_at?: string
+          event?: Json
+          id?: never
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_rename_events_run_id_business_id_fkey"
+            columns: ["run_id", "business_id"]
+            isOneToOne: false
+            referencedRelation: "organization_rename_runs"
+            referencedColumns: ["id", "business_id"]
+          },
+        ]
+      }
+      organization_rename_previews: {
+        Row: {
+          actor_id: string
+          ad_account_id: string
+          business_id: string
+          changes: Json
+          created_at: string
+          expires_at: string
+          fingerprint: string
+          id: string
+          restores_run_id: string | null
+          simulated: boolean
+          version_id: string
+        }
+        Insert: {
+          actor_id: string
+          ad_account_id: string
+          business_id: string
+          changes: Json
+          created_at?: string
+          expires_at?: string
+          fingerprint: string
+          id?: string
+          restores_run_id?: string | null
+          simulated: boolean
+          version_id: string
+        }
+        Update: {
+          actor_id?: string
+          ad_account_id?: string
+          business_id?: string
+          changes?: Json
+          created_at?: string
+          expires_at?: string
+          fingerprint?: string
+          id?: string
+          restores_run_id?: string | null
+          simulated?: boolean
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_rename_previews_business_id_ad_account_id_fkey"
+            columns: ["business_id", "ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["business_id", "id"]
+          },
+          {
+            foreignKeyName: "organization_rename_previews_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_rename_previews_restores_run_id_business_id_fkey"
+            columns: ["restores_run_id", "business_id"]
+            isOneToOne: false
+            referencedRelation: "organization_rename_runs"
+            referencedColumns: ["id", "business_id"]
+          },
+          {
+            foreignKeyName: "organization_rename_previews_version_id_business_id_ad_acc_fkey"
+            columns: ["version_id", "business_id", "ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_organization_versions"
+            referencedColumns: ["id", "business_id", "ad_account_id"]
+          },
+          {
+            foreignKeyName: "organization_rename_previews_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "account_organization_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_rename_runs: {
+        Row: {
+          active: boolean
+          actor_id: string
+          approval_id: string
+          business_id: string
+          created_at: string
+          execution_deadline: string
+          finished_at: string | null
+          id: string
+        }
+        Insert: {
+          active?: boolean
+          actor_id: string
+          approval_id: string
+          business_id: string
+          created_at?: string
+          execution_deadline?: string
+          finished_at?: string | null
+          id?: string
+        }
+        Update: {
+          active?: boolean
+          actor_id?: string
+          approval_id?: string
+          business_id?: string
+          created_at?: string
+          execution_deadline?: string
+          finished_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_rename_runs_approval_id_business_id_fkey"
+            columns: ["approval_id", "business_id"]
+            isOneToOne: false
+            referencedRelation: "organization_rename_approvals"
+            referencedColumns: ["id", "business_id"]
+          },
+        ]
+      }
+      organization_rename_simulation: {
+        Row: {
+          ad_account_id: string
+          business_id: string
+          entity_id: string
+          state: Json
+        }
+        Insert: {
+          ad_account_id: string
+          business_id: string
+          entity_id: string
+          state: Json
+        }
+        Update: {
+          ad_account_id?: string
+          business_id?: string
+          entity_id?: string
+          state?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_rename_simulation_business_id_ad_account_id_fkey"
+            columns: ["business_id", "ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["business_id", "id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "ad_entity_report_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "adset_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_dims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_ad_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_adset_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_campaign_daily_v"
+            referencedColumns: ["entity_id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "organization_rename_simulation_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "report_entity_daily_v"
+            referencedColumns: ["entity_id"]
           },
         ]
       }
@@ -6572,6 +7004,23 @@ export type Database = {
       maintenance_prune_operational_logs: { Args: never; Returns: Json }
       obj_code: { Args: { raw: string }; Returns: string }
       obj_label: { Args: { raw: string }; Returns: string }
+      organizer_approve: {
+        Args: {
+          p_actor: string
+          p_business: string
+          p_fingerprint: string
+          p_preview: string
+        }
+        Returns: string
+      }
+      organizer_assert_owner: {
+        Args: { p_actor: string; p_business: string }
+        Returns: undefined
+      }
+      organizer_claim: {
+        Args: { p_actor: string; p_approval: string; p_business: string }
+        Returns: Json
+      }
       store_platform_token: {
         Args: {
           secret_description?: string
