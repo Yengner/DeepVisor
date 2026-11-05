@@ -1,4 +1,4 @@
-import type { ReportMetricKey, ReportMetricTotals, ReportMetricAvailability } from '@/lib/server/reports/types';
+import type { ReportMetricKey, ReportMetricTotals, ReportMetricAvailability } from '@/lib/shared/reports/types';
 
 export type ReportMetricInput = {
   spend: number | null; impressions: number | null; clicks: number | null;
@@ -74,7 +74,7 @@ export function sourceUnavailable(row: Record<string, unknown>): ReportMetricAva
 
 export function buildReportKpis(input: {
   totals: ReportMetricTotals; previousTotals: ReportMetricTotals | null; currencyCode: string | null;
-}): import('@/lib/server/reports/types').ReportKpi[] {
+}): import('@/lib/shared/reports/types').ReportKpi[] {
   const definitions = [
     ['spend', 'Spend'], ['conversion', 'Results'], ['impressions', 'Impressions'], ['clicks', 'Clicks'],
     ['ctr', 'CTR'], ['cpc', 'CPC'], ['cpm', 'CPM'], ['costPerResult', 'Cost / Result'],

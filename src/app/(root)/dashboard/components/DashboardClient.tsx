@@ -1,4 +1,5 @@
 'use client';
+import { normalizeGender, ageBucketSortValue } from '@/lib/shared/reports/audience';
 
 import '@mantine/charts/styles.css';
 import { BarChart, ChartTooltip, LineChart } from '@mantine/charts';
@@ -257,7 +258,7 @@ const numberFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 });
 
-const AGE_BUCKET_ORDER = ['13-17', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'] as const;
+
 const FEATURED_HISTORY_CHART_HEIGHT = 500;
 const DELIVERY_SURFACE_CHART_HEIGHT = 260;
 const AUDIENCE_BREAKDOWN_CHART_HEIGHT = 180;
@@ -1925,40 +1926,6 @@ function readBreakdownMetricValue(
   metric: BreakdownMetric
 ): number {
   return metric === 'results' ? item.results : metric === 'clicks' ? item.clicks : item.spend;
-}
-
-function normalizeGender(value: string): 'Female' | 'Male' | 'Unknown' {
-  const normalized = value.trim().toLowerCase();
-
-  if (normalized === 'female') {
-    return 'Female';
-  }
-
-  if (normalized === 'male') {
-    return 'Male';
-  }
-
-  return 'Unknown';
-}
-
-function ageBucketSortValue(value: string): number {
-  const normalized = value.trim();
-  const explicitIndex = AGE_BUCKET_ORDER.indexOf(normalized as (typeof AGE_BUCKET_ORDER)[number]);
-
-  if (explicitIndex >= 0) {
-    return explicitIndex;
-  }
-
-  if (/^\d+\+$/.test(normalized)) {
-    return 900 + Number.parseInt(normalized, 10);
-  }
-
-  const rangeMatch = normalized.match(/^(\d+)\s*-\s*(\d+)$/);
-  if (rangeMatch) {
-    return Number.parseInt(rangeMatch[1], 10);
-  }
-
-  return 10_000;
 }
 
 function buildAgeGenderAudienceChart(input: {

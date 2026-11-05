@@ -1,32 +1,28 @@
+import { comparisons } from '@/lib/server/dashboard/insights/comparisons';
 import { cache, Suspense } from "react";
 import Link from "next/link";
 import {
   IconArrowRight,
-  IconBrandMeta,
 } from "@tabler/icons-react";
 import {
   loadOverviewContext,
   loadOverviewHistory,
   loadOverviewDecisions,
   loadOverviewEntities,
-  loadOverviewPolicy,
   loadOverviewSync,
   type OverviewContext as LiveOverviewContext,
 } from "@/lib/server/dashboard/overview/load";
 import {
   decisionViews,
-  modeLabel,
   parsePeriod,
-  performanceView,
+  periodRange,
 } from "@/lib/server/dashboard/overview/model";
 import {
-  attentionSummary,
   controlPerformance,
   recentChanges,
 } from "@/lib/server/dashboard/overview/controlModel";
 import type { Period } from "@/lib/server/dashboard/overview/types";
 import { loadExploration } from "@/lib/server/campaigns/exploration/load";
-import StatusBadge from "@/components/product/StatusBadge";
 import { PeriodControl, RefreshOverview } from "./components/OverviewControls";
 import ControlMetrics from "./components/ControlMetrics";
 import ControlTrend from "./components/ControlTrend";
@@ -35,9 +31,13 @@ import classes from "./components/ControlCenter.module.css";
 import { buildDecisionPreview, isDecisionPreview } from '@/lib/server/decisions/preview';
 import DecisionPreviewBanner from '@/components/product/DecisionPreviewBanner';
 import DesignSurface from '@/components/design/DesignSurface';
-import { AgentMessage } from '@/components/design/Primitives';
 import PixelCompanion from '@/components/brand/PixelCompanion';
-type OverviewContext = LiveOverviewContext & { decisionPreview?: boolean };
+import { loadInsights } from '@/lib/server/dashboard/insights/load';
+import { selectRows, publisher, advertisingMetrics, livePerformance, type Publisher } from '@/lib/server/dashboard/insights/model';
+import AudienceIntelligence from './components/AudienceIntelligence';
+import { audienceObservations, hourlyObservations } from '@/lib/server/dashboard/insights/charts';
+import { PlatformControl } from './components/OverviewControls';
+type OverviewContext = LiveOverviewContext & { decisionPreview?: boolean; publisher: Publisher };
 
 const decisions = cache(async (context: OverviewContext) => {
   if (context.decisionPreview) return buildDecisionPreview(context.now, context.zone).overview;
@@ -58,17 +58,14 @@ const decisions = cache(async (context: OverviewContext) => {
   };
 });
 const performance = cache(async (context: OverviewContext, period: Period) => {
+  const live = await loadInsights(context);
+  if (live.daily !== null) return { ...livePerformance(live.daily, context.publisher, period, context.today, context.account!.currency_code), ...comparisons(live.daily, context.publisher, period, context.today, context.account!.currency_code, live.fetchedAt, context.now, { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) };
+  if (context.publisher !== 'combined') return livePerformance([], context.publisher, period, context.today, context.account!.currency_code);
   const [rows, entities] = await Promise.all([
     loadOverviewHistory(context.businessId, context.account!.id, context.today),
     loadOverviewEntities(context.businessId, context.account!.id),
   ]);
-  return controlPerformance(
-    rows,
-    entities,
-    period,
-    context.today,
-    context.account!.currency_code,
-  );
+  return { ...controlPerformance(rows, entities, period, context.today, context.account!.currency_code), deltas: {}, comparison: 'Comparison unavailable while using stored fallback data.' };
 });
 function timestamp(at: string | null | undefined, zone: string) {
   return at && Number.isFinite(Date.parse(at))
@@ -107,44 +104,6 @@ function ErrorMessage({ children }: { children: string }) {
     </p>
   );
 }
-async function Check({ context }: { context: OverviewContext }) {
-  const result = await decisions(context).catch((error) => {
-    console.error("Overview checks unavailable", error);
-    return null;
-  });
-  return (
-    <p>
-      {result
-        ? result.view.lastCheck
-          ? `Checked ${timestamp(result.view.lastCheck, context.zone)}`
-          : "No completed check recorded"
-        : "Check status unavailable"}
-    </p>
-  );
-}
-async function Mode({ context }: { context: OverviewContext }) {
-  const policy = await loadOverviewPolicy(context.businessId);
-  const mode = modeLabel(policy.data?.mode ?? null, policy.failed);
-  return (
-    <details className={classes.mode}>
-      <summary>
-        {mode === "Unavailable" ? "Mode unavailable" : `${mode} mode`}
-      </summary>
-      <p>
-        Configured business policy.
-        {mode === "Unavailable"
-          ? " The policy could not be loaded; do not assume automation is on or off."
-          : mode === "SHADOW"
-            ? " Observations do not execute advertising changes."
-            : mode === "REVIEW"
-              ? " Eligible changes require approval. Approval is not execution."
-              : mode === "LIMITED AUTO"
-                ? " Limited automation still requires all safety checks and execution controls. Configuration does not confirm execution is enabled."
-                : " Automatic changes are off."}
-      </p>
-    </details>
-  );
-}
 async function Metrics({
   context,
   period,
@@ -178,130 +137,23 @@ async function Trend({
     <ErrorMessage>Daily trend unavailable.</ErrorMessage>
   );
 }
-async function Attention({ context }: { context: OverviewContext }) {
-  const result = await decisions(context).catch(() => null);
-  if (!result)
-    return (
-      <ErrorMessage>
-        Attention status unavailable. Check Decisions for saved records.
-      </ErrorMessage>
-    );
-  const item = result.view.attention[0];
-  const title = attentionSummary(
-    result.states,
-    result.allAttention.length,
-    result.policyUnavailable,
-  );
-  if (!item)
-    return (
-      <div className={classes.quietAttention}>
-        <AgentMessage title={title}>{title === "Everything looks stable" ? 'No action needed right now.' : 'Saved observations and recommendations will appear here when available.'}</AgentMessage>
-      </div>
-    );
-  return (
-    <div className={classes.attentionBody}>
-      <h2>
-        <PixelCompanion size={24} state="attention" />
-        {item.state === "Recommendation" ||
-        item.state === "Shadow recommendation"
-          ? "Worth a look"
-          : "Needs you"}
-      </h2>
-      <h3>{item.entity}</h3>
-      <p>{item.title}</p>
-      {item.detail && <p>{item.detail}</p>}
-      <details>
-        <summary>Why this matters</summary>
-        <p>{item.reason}</p>
-        {item.detail && <p className={classes.mobileChange}>{item.detail}</p>}
-        {item.evidence && (
-          <p>
-            {item.evidence} · {item.period}
-          </p>
-        )}
-        {item.confidence !== null && (
-          <p>Confidence {Math.round(item.confidence * 100)}%</p>
-        )}
-        <p>
-          {item.state}
-          {item.mode ? ` · ${item.mode}` : ""}
-        </p>
-        {result.policyUnavailable && <p>Approval eligibility unavailable</p>}
-      </details>
-      <Link href={context.decisionPreview ? '/decisions?preview=decisions' : '/decisions'}>
-        Review decision <IconArrowRight size={16} />
-      </Link>
-      {result.allAttention.length > 1 && (
-        <p className={classes.more}>
-          +{result.allAttention.length - 1} more open{" "}
-          {result.allAttention.length === 2 ? "item" : "items"}
-        </p>
-      )}
-    </div>
-  );
-}
-async function Board({ period }: { period: Period }) {
+async function Board({ period, context }: { period: Period; context: OverviewContext }) {
   const view = await loadExploration(period, "adset", null, true).catch(
     (error) => {
       console.error("Overview advertising unavailable", error);
       return null;
     },
   );
+  if (view) {
+    const live = await loadInsights(context);
+    return <AdvertisingBoard view={{ ...view, items: advertisingMetrics(view.items, live.daily, context.publisher, period, context.today, view.currency) }} learning={live.learning} filtered={context.publisher !== 'combined'} />;
+  }
   return view ? (
     <AdvertisingBoard view={view} />
   ) : (
     <ErrorMessage>
       Advertising previews and performance are temporarily unavailable.
     </ErrorMessage>
-  );
-}
-async function Monitoring({ context }: { context: OverviewContext }) {
-  const result = await decisions(context).catch(() => null);
-  if (!result)
-    return <ErrorMessage>Today’s checks are unavailable.</ErrorMessage>;
-  const c = result.view.counts;
-  return (
-    <>
-      <div className={classes.monitorHeader}>
-        <h2>DeepVisor today</h2>
-        <StatusBadge status="Meta" />
-      </div>
-      <dl>
-        {(
-          [
-            ["CHECKED", c.evaluations],
-            ["NO CHANGE", c.holds],
-            ["WATCHING", c.recommendations],
-            [
-              "NEEDS YOU",
-              result.policyUnavailable ? null : result.allAttention.length,
-            ],
-          ] as const
-        ).map(([label, value]) => (
-          <div key={label}>
-            <dd>{value ?? "—"}</dd>
-            <dt>{label}</dt>
-          </div>
-        ))}
-      </dl>
-      <details>
-        <summary>Check details</summary>
-        <p>
-          {c.checked} distinct ad sets checked today in {context.zone}. Checks,
-          no-change decisions and recommendations can overlap. Open attention
-          includes unresolved items from earlier days. No change does not mean
-          overall account health.
-        </p>
-        <p>
-          {c.blocked} blocked · {c.shadow ?? "Unknown"} shadow observations ·{" "}
-          {c.executed} successful executions.
-        </p>
-        {result.view.provenanceUnavailable && (
-          <p>Some historical modes are unavailable.</p>
-        )}
-        <Link href={context.decisionPreview ? '/decisions?preview=decisions' : '/decisions'}>All decisions</Link>
-      </details>
-    </>
   );
 }
 async function Activity({ context }: { context: OverviewContext }) {
@@ -344,8 +196,8 @@ async function Activity({ context }: { context: OverviewContext }) {
     </section>
   );
 }
-async function Content({ period, preview }: { period: Period; preview: boolean }) {
-  const context: OverviewContext = { ...await loadOverviewContext(), decisionPreview: preview };
+async function Content({ period, preview, platform }: { period: Period; preview: boolean; platform: Publisher }) {
+  const context: OverviewContext = { ...await loadOverviewContext(), decisionPreview: preview, publisher: platform };
   const connected =
     context.platform?.status === "connected" &&
     context.platform.vendor === "meta";
@@ -385,119 +237,27 @@ async function Content({ period, preview }: { period: Period; preview: boolean }
         <Link href="/integration">Connections</Link>
       </section>
     );
-  const target = performanceView({
-    rows: [],
-    entities: [],
-    period,
-    today: context.today,
-    currency: context.account.currency_code,
-    target: context.target,
-  }).targetLabel;
-  return (
-    <div className={classes.page}>
-      {preview && <DecisionPreviewBanner page="dashboard" />}
-      <div className={classes.layout}>
-        <header className={classes.identity}>
-          <div>
-            <h1>{context.businessName}</h1>
-            <p>{context.account.name ?? "Selected Meta account"}</p>
-            <Suspense fallback={<p>Loading last check…</p>}>
-              <Check context={context} />
-            </Suspense>
-            <details className={classes.contextDetails}>
-              <summary>Account details</summary>
-              <p>
-                {sync.failed
-                  ? "Sync status unavailable"
-                  : sync.data?.activeJobStatus === "failed"
-                    ? "Last sync job failed"
-                    : ["queued", "running"].includes(
-                          sync.data?.activeJobStatus ?? "",
-                        )
-                      ? "Sync in progress"
-                      : "Last successful sync"}{" "}
-                · {timestamp(context.account.last_synced, context.zone)}
-              </p>
-              <p>
-                {context.zone}
-                {context.timezoneUnavailable
-                  ? " · Account timezone unavailable; using UTC"
-                  : ""}
-              </p>
-              <p>
-                {context.profileUnavailable
-                  ? "Saved preferences unavailable"
-                  : target
-                    ? `Saved lead-cost preference: ${target}. Target comparison unavailable.`
-                    : "No saved lead-cost preference."}
-              </p>
-            </details>
-          </div>
-          <div className={classes.identityRight}>
-            <span className={classes.connected} data-connection={connected ? "connected" : "attention"}
-              aria-label={connected ? "Meta connected" : "Meta connection needs attention"}>
-              <IconBrandMeta size={17} /> Meta{" "}
-              <span className={classes.connectionWord}>{connected ? "connected" : "needs attention"}</span>
-            </span>
-            <Suspense fallback={<span>Loading mode…</span>}>
-              <Mode context={context} />
-            </Suspense>
-          </div>
-        </header>
-        <section className={classes.metrics} aria-label="Account performance">
-          <Suspense key={period} fallback={<Loading kind="metrics" />}>
-            <Metrics context={context} period={period} />
-          </Suspense>
-        </section>
-        <section className={classes.trend} aria-label="Performance chart">
-          <Suspense key={period} fallback={<Loading kind="chart" />}>
-            <Trend context={context} period={period} />
-          </Suspense>
-        </section>
-        <aside className={classes.attention} aria-label="Attention and period">
-          <div className={classes.controls}>
-            <PeriodControl period={period} />
-            <RefreshOverview disabled={preview} />
-          </div>
-          <Suspense fallback={<Loading />}>
-            <Attention context={context} />
-          </Suspense>
-        </aside>
-        <section className={classes.board} aria-label="Your advertising">
-          <Suspense key={period} fallback={<Loading kind="board" />}>
-            <Board period={period} />
-          </Suspense>
-        </section>
-        <section className={classes.monitor} aria-label="DeepVisor today">
-          <Suspense fallback={<Loading />}>
-            <Monitoring context={context} />
-          </Suspense>
-        </section>
-        <Suspense fallback={null}>
-          <Activity context={context} />
-        </Suspense>
-      </div>
-    </div>
-  );
+  const live = await loadInsights(context);
+  const audience = live.audience === null ? null : audienceObservations(selectRows(live.audience, platform, period, context.today));
+  const hourly = live.hourly === null ? null : hourlyObservations(selectRows(live.hourly, platform, period, context.today));
+  const age = live.fetchedAt ? Date.parse(context.now) - Date.parse(live.fetchedAt) : Infinity;
+  return <div className={classes.page} data-publisher={platform}>
+    {preview && <DecisionPreviewBanner page="dashboard" />}
+    <header className={classes.workspaceHeader}><div><h1>{context.businessName}</h1><p>{context.account.name}</p></div><div><PlatformControl platform={platform} /><PeriodControl period={period} /></div></header>
+    <details className={classes.freshness}><summary>{live.source === 'api' ? age > 600000 ? 'Previously retrieved Meta data' : 'Updated recently' : platform === 'combined' ? 'Stored data · live retrieval unavailable' : 'Platform data unavailable'}</summary>
+      <p>Meta attribution may change after reporting. {live.fetchedAt ? `Retrieved ${timestamp(live.fetchedAt, context.zone)}.` : `Stored sync ${timestamp(context.account.last_synced, context.zone)}.`} Account timezone: {context.zone}.</p>
+      <p>Today is partial. Gaps and unknown metrics remain unavailable. Publisher means where an ad was delivered, not where a customer contacted you.</p>
+      <RefreshOverview disabled={preview} label="Recover stored Meta data" /><Link href="/integration">Connection settings</Link>
+    </details>
+    {!connected && <ErrorMessage>Meta connection needs attention. Saved data remains available; reconnect in Connections.</ErrorMessage>}
+    <section aria-label="Account performance"><Suspense key={`${period}:${platform}`} fallback={<Loading kind="metrics" />}><Metrics context={context} period={period} /></Suspense></section>
+    <section className={classes.workspaceChart} aria-label="Performance chart"><Suspense key={`${period}:${platform}`} fallback={<Loading kind="chart" />}><Trend context={context} period={period} /></Suspense></section>
+    <section className={classes.board}><Suspense key={`${period}:${platform}`} fallback={<Loading kind="board" />}><Board period={period} context={context} /></Suspense></section>
+    <AudienceIntelligence key={`${period}:${platform}`} audience={audience} hourly={hourly} currency={context.account.currency_code} zone={context.zone} period={period} platform={platform} fetchedAt={live.fetchedAt} since={periodRange(period, context.today).since} until={context.today} audienceCombinedOnly={live.audience?.some(r => r.publisher === 'combined-only') ?? false} hourlyCombinedOnly={live.hourly?.some(r => r.publisher === 'combined-only') ?? false} />
+    <Suspense fallback={null}><Activity context={context} /></Suspense>
+  </div>;
 }
-export default async function OverviewPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ period?: string; preview?: string }>;
-}) {
+export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ period?: string; preview?: string; publisher?: string }> }) {
   const params = await searchParams;
-  return (
-    <DesignSurface label="Overview / Your advertising workspace">
-    <Suspense
-      fallback={
-        <div className={classes.page}>
-          <Loading />
-          <Loading kind="chart" />
-        </div>
-      }
-    >
-      <Content period={parsePeriod(params.period)} preview={isDecisionPreview(params.preview)} />
-    </Suspense>
-    </DesignSurface>
-  );
+  return <DesignSurface label="Overview"><Suspense fallback={<Loading kind="chart" />}><Content period={parsePeriod(params.period)} preview={isDecisionPreview(params.preview)} platform={publisher(params.publisher)} /></Suspense></DesignSurface>;
 }

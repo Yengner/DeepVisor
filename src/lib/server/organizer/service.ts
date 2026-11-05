@@ -1,6 +1,7 @@
 import 'server-only';
+import { allPages } from '../repositories/pagination';
 import { getRequiredAppContext } from '../actions/app/context';
-import { loadOverviewContext, allPages } from '../dashboard/overview/load';
+import { loadOverviewContext } from '../dashboard/overview/load';
 import { createAdminClient } from '../supabase/admin';
 import { mediaFor } from '../campaigns/exploration/model';
 import { organizationSignature, propose, validateDraft, type Snapshot, type Level } from '@/lib/shared/organizer/model';

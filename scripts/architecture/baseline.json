@@ -1,0 +1,4 @@
+[
+  "runtime-cycle: src/components/public/depricated/Benefits/BenefitBullet.tsx <-> src/components/public/depricated/Benefits/BenefitSection.tsx",
+  "shared-boundary: src/lib/shared/reports/fixtures.ts -> src/lib/server/reports/demo.ts"
+]

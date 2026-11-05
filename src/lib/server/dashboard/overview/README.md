@@ -1,6 +1,9 @@
 # V2 Overview
 
-`/dashboard` reads persisted data only. `LegacyDashboard.tsx` preserves the former
+`/dashboard` reads persisted decision evidence and uses a separate, authorized
+read-through Meta Insights layer for recent performance. See
+[`../insights/README.md`](../insights/README.md) for caching, publisher scope and
+unavailable-data behavior. `LegacyDashboard.tsx` preserves the former
 analytics page without exposing a second route. Calendar, Reports, analytics
 components, notifications, sync and execution services are unchanged.
 
@@ -18,7 +21,8 @@ components, notifications, sync and execution services are unchanged.
 - All metadata is paginated rather than capped at the latest business-wide runs.
   Full feature JSON is loaded only for latest checks and outstanding proposals.
   This is intentionally read-only; no providers, policy evaluation, Meta actions,
-  hourly/breakdown queries or notification generation run when viewing Overview.
+  notification generation run in these persisted loaders. The separate Insights
+layer may request optional audience/hourly breakdowns when its cache is stale.
 
 React request caching deduplicates sections. Independent Suspense boundaries
 separate performance from decisions. Optional provenance/policy/outcome failures
@@ -51,8 +55,9 @@ recent, sufficient HOLD with adequate tracking and no conflicting proposal.
   `completed_at`.
 
 Run `npm test -- src/lib/server/dashboard/overview`, `npm run typecheck` and
-`npm run build`. The repository's existing `next lint` command is unsupported by
-Next 16; validation uses the Next ESLint configuration directly.
+`npm run build`. Run `npm run lint` for the installed Next/TypeScript ESLint configuration;
+see the [development guide](../../../../../docs/DEVELOPMENT_GUIDE.md) for the
+existing-debt baseline.
 # Control-Center Presentation
 
 The Overview uses a single responsive daily chart: integrated with account controls on desktop and below advertising on mobile. It does not render or load the legacy analytical breakdowns. Campaigns remains table-first; the account-scoped exploration loader and lazy drawer are reused for the dashboard's ad-set board.
@@ -73,3 +78,10 @@ Completed synchronization refreshes the visible analytics. Failed/reauthenticati
 connections retain their selected account and saved history, with honest connection
 attention and reconnection guidance. A successful sync is not a decision evaluation
 or authorization to execute advertising actions.
+
+## Loader ownership
+
+`load.ts` owns request-cached context, daily/history/sync loads and composition.
+`decisionRecords.ts` owns complete business/account-scoped decision lineage reads.
+Generic pagination lives in `server/repositories/pagination.ts`; the previous
+`load.ts` exports remain compatible. No provider/executor is invoked by either loader.

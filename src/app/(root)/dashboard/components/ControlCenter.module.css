@@ -1226,3 +1226,26 @@
   .singleActive .adMedia { height: 220px; min-height: 220px; }
   .monitor { padding: 20px; }.monitor dl { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }.monitor dl > div { border-left: 0; padding: 4px 0; }.monitor dt { font-size: 11px; }
 }
+
+/* Account workspace: restrained platform accents and scalable content. */
+.page[data-publisher="facebook"] { --chart-line: #1877d4; }
+.page[data-publisher="instagram"] { --chart-line: #ae3e9c; }
+.workspaceHeader { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 16px; }
+.workspaceHeader h1 { font-size: clamp(24px, 3vw, 34px); margin: 0; letter-spacing: -.04em; }
+.workspaceHeader p { margin: 5px 0; color: var(--ui-muted); }
+.freshness { font-size: 12px; color: var(--ui-muted); margin-bottom: 22px; }
+.freshness summary { cursor: pointer; width: fit-content; }
+.freshness p { max-width: 70ch; }
+.workspaceChart { margin: 28px 0; padding: 20px; border: 1px solid var(--ui-line); background: var(--ui-panel); border-radius: 18px; }
+
+.workspaceLinks { display: flex; gap: 24px; padding: 18px 0; }
+.adState { flex-wrap: wrap; }
+.adState > span:first-child { font-size: 11px; }
+.delivery[data-delivery="ACTIVE"] { color: #18753a; background: #e5f4e9; border-radius: 6px; padding: 3px 7px; }
+.kpis dt button { border: 0; background: none; color: inherit; cursor: help; padding: 3px; }
+@media(max-width: 850px) { .workspaceChart { padding: 12px 4px; } .workspaceHeader > div { min-width: 0; } }
+@media(prefers-reduced-motion: reduce) { .page * { scroll-behavior: auto; transition: none; } }
+.page { --chart-line: #2671d9; --chart-grid: var(--ui-line, #e6ebf2); --chart-text: var(--ui-muted, #697d92); }
+.workspaceHeader > div { max-width: 100%; }
+.workspaceHeader h1 { overflow-wrap: anywhere; }
+@media(max-width:600px) { .page { width:100%; box-sizing:border-box; padding:0 16px 36px; } .workspaceHeader { gap:14px; } }

@@ -1,566 +1,134 @@
-# Meta Integration, Account Selection, and Sync Flow
+# Meta integration and synchronization
 
-This document describes the current end-to-end Meta connection flow as implemented today.
+For the cross-system sequence and entry points, start with
+[Flows](../../../../docs/FLOWS.md#1-meta-connection-and-synchronization).
+This module owns OAuth, connection/token lifecycle, account discovery and selection.
+Sync orchestration lives in `../sync`; privileged advertising writes live in
+[`../advertising`](../advertising/README.md). Connecting or syncing never authorizes
+advertising execution.
 
-It covers:
+## Connection and selection contracts
 
-- how OAuth connect starts and completes
-- how accessible ad accounts are discovered
-- how one primary ad account is selected
-- how the 90-day seed sync runs
-- how the full-history backfill is queued and processed
-- which functions are called
-- which tables are written
+- [`service.ts`](service.ts): `createOAuthState`, atomic `consumeOAuthState`,
+  `upsertPlatformIntegration`, `resolveIntegrationAccessToken`, account listing,
+  primary selection, connection health/error updates.
+- [`adapters/meta.ts`](adapters/meta.ts): OAuth URL, token exchange/validation and
+  account discovery transport. Configuration uses `META_APP_ID`, `META_APP_SECRET`
+  and optional `META_BUSINESS_CONFIG_ID`; default requested scopes are read-oriented.
+  Read the adapter before changing Graph version or permission behavior.
+- [`metaSelection.ts`](metaSelection.ts): `syncSelectedMetaAdAccount` saves primary
+  selection and creates/reuses the correct durable job. `applyAppSelectionCookies`
+  writes `platform_integration_id` and `ad_account_row_id`.
+- [`MetaIntegrationFlow`](../../../components/integrations/MetaIntegrationFlow.tsx)
+  drives the callback/account-picker UX. Callback flags include
+  `requires_account_selection`, `auto_sync`, `integrationId` and `externalAccountId`.
 
-## Current Product Rules
+OAuth callback discovers accessible accounts once. Discovery registers metadata,
+not successful sync timestamps. The account picker and selection route read saved
+`ad_accounts`; they do not broadly rediscover accounts from Meta. Requests validate
+integration/business/platform/account relationships before selection. Exactly one
+primary external account is stored per integration in `integration_details`:
+`primary_ad_account_external_id`, `primary_ad_account_name`,
+`account_selection_completed_at`. Cookies are selection hints, not authorization.
 
-- Meta is the only supported integration platform right now.
-- One `platform_integrations` row is treated as the active Meta connection for a business.
-- One primary Meta ad account is selected per integration.
-- Only the selected primary ad account is synced.
-- OAuth discovery registers accessible accounts, but does not sync metrics for every account.
-- The first sync is a recent-first seed sync for `90` days.
-- Full history is queued as a background backfill after the seed sync finishes.
-- The full-history request uses `FULL_HISTORY_BACKFILL_DAYS = 10000`, but Meta lookback is capped in code to `37` months.
+For an uninitialized account, selection creates/reuses `initial_historical`; an
+initialized account receives queued follow-up work. The selection route processes
+the targeted job and checks actual completion before success. Its contract differs
+from manual refresh's 202/job-polling response. Older `seed_recent` compatibility
+modes remain in sync code, but are not the current selection orchestration.
 
-## High-Level Sequence
+## Sync and persistence ownership
 
-```mermaid
-sequenceDiagram
-    actor U as User
-    participant C as MetaIntegrationFlow
-    participant Connect as /api/integrations/connect/meta
-    participant Callback as /api/integrations/callback/meta
-    participant Select as /api/integrations/meta/select-ad-account
-    participant Int as integrations/service.ts
-    participant Sync as syncBusinessPlatform.ts
-    participant MetaSync as syncMetaBusinessPlatform.ts
-    participant Worker as processMetaBackfillJobs
-    participant DB as Supabase
-    participant Meta as Meta Graph API
+[`processMetaBackfillJobs`](../sync/meta/processBackfillJobs.ts) atomically claims
+`initial_historical`, `backfill`, `incremental` and `manual_refresh` jobs.
+Initial history uses [`processMetaFirstSyncJob`](../sync/meta/processFirstSyncJob.ts):
+read dimensions/creatives, then recent-to-older 30-day windows bounded by advertiser
+timezone, known entity history and business data policy, then summaries/analysis
+and completion. Other jobs use [`syncBusinessPlatform`](../sync/syncBusinessPlatform.ts)
+and [`syncMetaBusinessPlatform`](../sync/meta/syncMetaBusinessPlatform.ts).
+Only the scoped account enters its dimension/performance synchronization.
 
-    U->>C: Click "Connect Meta"
-    C->>Connect: GET /api/integrations/connect/meta
-    Connect->>Int: createOAuthState()
-    Int->>DB: insert oauth_states
-    Connect->>Meta: redirect to Meta OAuth
+[`syncMetaPerformance`](../sync/meta/syncMetaPerformance.ts) reads levels/breakdowns
+through bounded concurrency, with optional audience/hourly work governed by policy
+and cadence. Meta read transport retries/timeouts belong to
+[`client.ts`](../sync/meta/client.ts); do not reuse read retry behavior for writes.
+Manual refresh explicitly rereads 30 advertiser-local days including partial today;
+automatic jobs preserve their saved seven-day attribution window. Incremental
+coverage does not prove fresh attribution or completed decision evaluation.
 
-    Meta-->>Callback: redirect back with code + state
-    Callback->>Int: consumeOAuthState()
-    Int->>DB: read + delete oauth_states
-    Callback->>Meta: exchangeMetaCodeForToken()
-    Callback->>Meta: validateMetaAccessToken()
-    Callback->>Int: upsertPlatformIntegration()
-    Int->>DB: upsert platform_integrations
-    Int->>DB: store token refs in Vault RPCs
-    Callback->>Meta: fetchMetaAdAccountSnapshots()
-    Callback->>MetaSync: discoverMetaAdAccounts()
-    MetaSync->>DB: upsert ad_accounts
-    MetaSync->>DB: ensure ad_account_sync_state
+| Data | Writers/owner |
+| --- | --- |
+| Discovered account metadata and selection | Integration service, `sync/meta/discoverMetaAdAccounts`, `repositories/ad_accounts` |
+| Queue, progress and coverage | `repositories/ad_accounts/syncState.ts`; `account_sync_jobs`, `ad_account_sync_state`, account successful-sync timestamp |
+| Dimensions and unified hierarchy | `syncMetaCampaigns`, `syncMetaAdsets`, `syncMetaAds`; legacy dims plus `ad_entities` repositories |
+| Creatives and saved media | `syncMetaAdCreatives`; `ad_creatives`, creative feature snapshot repository |
+| Daily/summary/hourly/audience facts | `syncMetaPerformance` and corresponding repositories; preserve entity level, account currency/timezone and missingness |
+| Account Insights metadata | `updateAdAccountMetadataFromInsights`; despite the old filename, this does not persist separate daily account metrics |
+| Assessments, signals and trends | Existing `intelligence` services, including `ai.business_assessments` |
+| Versioned decisions | Separately gated post-sync enqueue and Review/Shadow workers; [decision contracts](../decisions/README.md) |
 
-    alt One accessible ad account
-        Callback->>Int: setPrimaryMetaAdAccount()
-        Int->>DB: update platform_integrations.integration_details
-        Callback-->>C: redirect with auto_sync=1
-        C->>Select: POST /api/integrations/meta/select-ad-account
-    else Multiple accessible ad accounts
-        Callback-->>C: redirect with requires_account_selection=1
-        C->>DB: load saved accounts through /api/integrations/meta/ad-accounts
-        U->>C: choose one ad account
-        C->>Select: POST /api/integrations/meta/select-ad-account
-    end
+Creative sync performs bounded video-poster reads through the existing Meta client;
+`videoPosters.ts` chooses verified HTTPS assets and preserves fallback media on denied
+access/timeouts. No media-provider request runs on Overview load. Do not log signed
+URLs or substitute an unrelated preview. See [exploration](../campaigns/exploration/README.md).
 
-    Select->>DB: validate selected account from ad_accounts
-    Select->>Int: syncSelectedMetaAdAccount()
-    Int->>DB: update primary selection on platform_integrations
-    Int->>Sync: syncBusinessPlatform(syncMode=seed_recent)
-    Sync->>Int: resolveIntegrationAccessToken()
-    Int->>DB: read Vault token with get_platform_token RPC
-    Sync->>MetaSync: syncMetaBusinessPlatform()
-    MetaSync->>DB: beginHistoricalSyncJob()
-    MetaSync->>Meta: campaigns/adsets/ads/creatives/insights fetches
-    MetaSync->>DB: write dimension + creative + performance tables
-    MetaSync->>DB: completeHistoricalSyncJob()
-    MetaSync->>DB: markAdAccountHistoricalSyncSucceeded()
-    Sync->>DB: insert AI assessments
-    Sync->>DB: markIntegrationSynced()
-    Int->>DB: getAdAccountSyncCoverage()
-    Int->>DB: enqueueBackfillSyncJob()
-    Select-->>C: return syncCoverage + selected ids
+## Manual, automatic and internal workers
 
-    Worker->>DB: listPendingBackfillSyncJobs()
-    Worker->>Sync: syncBusinessPlatform(syncMode=full_backfill)
-    Sync->>MetaSync: full-history sync for selected ad account
-    MetaSync->>DB: refresh same tables with full-history coverage
+- `/api/sync/refresh` validates the authenticated selected scope, enqueues/reuses work,
+  and returns job state. `dispatchAccountSync` uses `after()` for targeted processing.
+  The GET status path validates business/account/integration; unchanged-statistics
+  fingerprints cover the selected 30-day ad-set facts, not every creative/status field.
+- `AutomaticMetaSync` in the authenticated shell calls `/api/sync/automatic-refresh`
+  on visit/focus and observes durable state. First advertiser-local daily checks use
+  successful-sync age; a success within 90 minutes prevents unnecessary refresh.
+  Automatic work never changes manual cooldown state.
+- `enqueueScheduledAccountSyncJobs` shares atomic eligibility/deduplication and
+  bounded dates. Disconnected/expired credentials and ineligible synthetic accounts
+  are skipped. Backoff and recovery use persisted state, not browser timers.
+- `/api/integrations/meta/process-backfill-jobs` requires `INTERNAL_API_KEY`; its
+  `maxDuration` is 180 seconds. It schedules independent Review/Shadow draining and
+  outcome measurement even on idle ticks. Selection/manual routes have their own
+  execution budgets; actual hosting limits still apply.
+- Edge `process_account_sync_jobs` forwards authenticated work. The old
+  `process_meta_backfill_jobs` name remains an alias. Edge handlers require
+  `CRON_SECRET`, `APP_BASE_URL` and `INTERNAL_API_KEY` and fail closed.
+
+A unique active-account queue constraint and existing claim/recovery RPCs arbitrate
+concurrency. Never clear running claims as a retry shortcut. Partial failures may
+already have persisted observations; UI polling timeout is neither cancellation
+nor completion. See [`supabase/cron/README.md`](../../../../supabase/cron/README.md)
+for deployment/activation procedures. Historical deployment notes must be checked
+against the actual target before any activation; this documentation update neither
+verifies nor changes hosted schedules.
+
+## Credential and simulation boundaries
+
+Vault token and mutation RPCs are service-role-only after the access-hardening
+migration. Browser clients cannot modify token references. Server callers resolve
+business ownership before privileged token access. Never pass provider tokens to
+UI or accept them as user-supplied execution authority.
+
+`deepvisor-beta-v1` imports have no credentials; triggers reject credential
+assignment, marker removal and queued/running sync jobs. A fixture import is not a
+Meta fetch. [`scripts/beta-fixtures`](../../../../scripts/beta-fixtures/README.md)
+contains the explicit isolated-data workflow.
+
+`deepvisor-meta-phase2` is a distinct, gated development/test provider. It exercises
+the real queue with controlled responses while preserving Auth/RLS. Untargeted
+workers skip its integrations; simulated credentials cannot enter live execution.
+See [Phase 2 scenarios](../../../../scripts/beta-phase2/README.md). Organizer name
+simulation is separate and described in its own runbook.
+
+## Verification
+
+Use mocked transport and existing scoped fixtures first:
+
+```sh
+npm test -- src/lib/server/sync src/lib/server/integrations src/app/api/integrations/meta src/app/api/sync
+npm run typecheck
+npm run lint
+npm run build
 ```
 
-## Client Flow
-
-The client entry point is [`MetaIntegrationFlow.tsx`](../../components/integrations/MetaIntegrationFlow.tsx).
-
-The client drives the integration UX from query params returned by the callback route:
-
-- `integration=meta`
-- `status=connected|error`
-- `requires_account_selection=1`
-- `integrationId=<platform_integrations.id>`
-- `externalAccountId=<ad_accounts.external_account_id>` for the single-account auto-sync path
-- `auto_sync=1` for the single-account auto-sync path
-
-Current client behavior:
-
-1. `connectMeta()` redirects the browser to `/api/integrations/connect/meta?returnTo=...`.
-2. If the callback returns `status=error`, the client shows an error toast and exits the flow.
-3. If the callback returns `requires_account_selection=1`, the client loads the saved account list from `/api/integrations/meta/ad-accounts`.
-4. If the callback returns `auto_sync=1` and an `externalAccountId`, the client skips manual selection and immediately posts to `/api/integrations/meta/select-ad-account`.
-5. After the seed sync succeeds, the client shows a success toast and refreshes into the app.
-
-Important current behavior:
-
-- The account picker route does not re-fetch accounts from Meta.
-- The select-account route does not re-fetch accessible accounts from Meta.
-- Both now trust server-side discovered state in `ad_accounts`.
-
-## Route and Function Call Chain
-
-### 1. Connect Route
-
-Entry point:
-
-- [`src/app/api/integrations/connect/[platform]/route.ts`](../../../app/api/integrations/connect/[platform]/route.ts)
-
-Main functions:
-
-- `parseSupportedIntegrationPlatform()`
-- `sanitizeReturnTo()`
-- `resolvePlatformByKey()`
-- `createOAuthState()`
-- `buildMetaOAuthUrl()`
-
-What happens:
-
-1. Validates the platform route segment.
-2. Resolves the current user and business context.
-3. Resolves the `platforms` row for Meta.
-4. Inserts a one-time OAuth state row.
-5. Builds the Meta OAuth URL and redirects the browser there.
-
-Writes:
-
-- `public.oauth_states`
-
-### 2. OAuth Callback Route
-
-Entry point:
-
-- [`src/app/api/integrations/callback/[platform]/route.ts`](../../../app/api/integrations/callback/[platform]/route.ts)
-
-Main functions:
-
-- `consumeOAuthState()`
-- `exchangeMetaCodeForToken()`
-- `validateMetaAccessToken()`
-- `upsertPlatformIntegration()`
-- `fetchMetaAdAccountSnapshots()`
-- `discoverMetaAdAccounts()`
-- `setPrimaryMetaAdAccount()` for the single-account path
-- `markIntegrationError()` on failure
-
-What happens:
-
-1. Validates the callback payload.
-2. Consumes the saved OAuth state.
-3. Exchanges the Meta code for an access token.
-4. Validates that token.
-5. Upserts the business Meta integration row.
-6. Fetches accessible Meta ad accounts once.
-7. Registers those accounts in DeepVisor without syncing metrics yet.
-8. Redirects to:
-   - manual account selection if multiple accounts exist
-   - auto-sync if exactly one account exists
-
-Important current behavior:
-
-- The callback fetches accessible accounts once.
-- It passes those snapshots into `discoverMetaAdAccounts()`.
-- It does not queue a historical job for every discovered account.
-
-Writes:
-
-- `public.platform_integrations`
-- Vault secret storage through `upsert_platform_token` RPC
-- `public.ad_accounts`
-- `public.ad_account_sync_state`
-
-### 3. Account Picker Route
-
-Entry point:
-
-- [`src/app/api/integrations/meta/ad-accounts/route.ts`](../../../app/api/integrations/meta/ad-accounts/route.ts)
-
-Main functions:
-
-- `getBusinessIntegrationById()`
-- `getPrimaryAdAccountSelection()`
-
-What happens:
-
-1. Validates the requested integration belongs to the current business.
-2. Reads already-discovered account rows from `ad_accounts`.
-3. Reads the saved primary selection from `platform_integrations.integration_details`.
-4. Returns a normalized account list for the modal.
-
-Important current behavior:
-
-- This route reads only DeepVisor state.
-- It does not call Meta again.
-
-Reads:
-
-- `public.platform_integrations`
-- `public.ad_accounts`
-
-### 4. Select Ad Account Route
-
-Entry point:
-
-- [`src/app/api/integrations/meta/select-ad-account/route.ts`](../../../app/api/integrations/meta/select-ad-account/route.ts)
-
-Main functions:
-
-- `getBusinessIntegrationById()`
-- `getPrimaryAdAccountSelection()`
-- `syncSelectedMetaAdAccount()`
-- `applyAppSelectionCookies()`
-
-What happens:
-
-1. Validates the `integrationId` and `externalAccountId`.
-2. Confirms the selected account exists in `ad_accounts` for this business and platform.
-3. Falls back to the saved primary selection if the integration already points at the same external id.
-4. Runs the seed sync via `syncSelectedMetaAdAccount()`.
-5. Persists selection cookies for the active integration and ad account row.
-
-Important current behavior:
-
-- This route does not re-fetch accessible accounts from Meta.
-- Validation is based on server-side discovered state.
-
-Writes:
-
-- `public.platform_integrations` via primary selection update
-- response cookies: `platform_integration_id`, `ad_account_row_id`
-
-## `syncSelectedMetaAdAccount()` Flow
-
-Main file:
-
-- [`src/lib/server/integrations/metaSelection.ts`](./metaSelection.ts)
-
-Main functions:
-
-- `setPrimaryMetaAdAccount()`
-- `syncBusinessPlatform()`
-- `getAdAccountSyncCoverage()`
-- `enqueueBackfillSyncJob()`
-
-What happens:
-
-1. Saves the selected primary ad account on `platform_integrations.integration_details`.
-2. Calls `syncBusinessPlatform()` with:
-   - `trigger: 'integration'`
-   - `syncMode: 'seed_recent'`
-   - `backfillDays: 90`
-3. Reads the synced `ad_accounts` row id.
-4. Builds the `SyncCoverage` response for the client.
-5. If full history is still pending, enqueues one backfill job for the selected account.
-
-Writes:
-
-- `public.platform_integrations`
-- `public.account_sync_jobs` for queued backfill work
-
-## `syncBusinessPlatform()` Flow
-
-Main file:
-
-- [`src/lib/server/sync/syncBusinessPlatform.ts`](../sync/syncBusinessPlatform.ts)
-
-Main functions:
-
-- `getBusinessPlatformIntegration()`
-- `isSyncEligible()`
-- `resolveIntegrationAccessToken()`
-- `syncMetaBusinessPlatform()`
-- `runMetaAdAccountAssessment()`
-- `runBusinessAssessment()`
-- `markIntegrationSynced()`
-- `markIntegrationError()`
-
-What happens:
-
-1. Resolves the target Meta integration row.
-2. Rejects syncs for ineligible integration states.
-3. Loads the live access token from Vault with `get_platform_token`.
-4. Resolves the primary external ad account id.
-5. Runs the provider-specific Meta sync orchestration.
-6. Runs post-sync assessments if the selected ad account row exists.
-7. Marks the integration healthy on success.
-8. Marks the integration as errored on failure.
-
-Writes:
-
-- `public.platform_integrations`
-- `ai.business_assessments`
-
-## `syncMetaBusinessPlatform()` Flow
-
-Main file:
-
-- [`src/lib/server/sync/meta/syncMetaBusinessPlatform.ts`](../sync/meta/syncMetaBusinessPlatform.ts)
-
-Stage order:
-
-1. resolve the selected primary ad account context
-2. `ensureAdAccountSyncStates()`
-3. `beginHistoricalSyncJob()`
-4. `syncMetaCampaigns()`
-5. `syncMetaAdsets()`
-6. `syncMetaAds()`
-7. `syncMetaAdCreatives()`
-8. `syncMetaPerformance()`
-9. `completeHistoricalSyncJob()`
-10. `markAdAccountHistoricalSyncSucceeded()`
-
-What happens:
-
-1. Resolves the selected primary ad account before syncing.
-2. For `seed_recent`, it reuses the already-registered `ad_accounts` row and skips a broad Meta rediscovery.
-3. For later sync modes, it validates only the selected account against Meta and refreshes that account's metadata when needed.
-4. Ensures sync-state rows exist for that account.
-5. Opens or advances the historical sync job row.
-6. Syncs campaign, ad set, ad, creative, and performance data for the selected account only.
-7. Marks the job completed and updates sync coverage metadata.
-8. On failure, marks the job failed.
-
-Important current behavior:
-
-- The initial seed sync no longer re-discovers all accessible Meta accounts.
-- Later sync modes validate only the selected account instead of refetching the entire accessible account list.
-- Only the selected primary account enters dimension/performance sync.
-- Seed sync and full backfill use the same core path with different `syncMode` and date windows.
-
-## Seed Sync vs Full Backfill
-
-Seed sync:
-
-- Triggered immediately after account selection.
-- Uses `RECENT_SEED_SYNC_DAYS = 90`.
-- Runs with `syncMode = 'seed_recent'`.
-- Returns `SyncCoverage` to the client right away.
-
-Full backfill:
-
-- Queued after seed sync if `historicalAnalysisPending` is still true.
-- Runs with `syncMode = 'full_backfill'`.
-- Requests `FULL_HISTORY_BACKFILL_DAYS = 10000`.
-- Meta date resolution caps that to the latest supported `37` months via `resolveMetaBackfillWindow()`.
-
-## Background Account Sync Job Processing
-
-Route:
-
-- [`src/app/api/integrations/meta/process-backfill-jobs/route.ts`](../../../app/api/integrations/meta/process-backfill-jobs/route.ts)
-
-Worker function:
-
-- [`src/lib/server/sync/meta/processBackfillJobs.ts`](../sync/meta/processBackfillJobs.ts)
-
-Optional Supabase cron wrapper:
-
-- [`supabase/functions/queue_account_sync_jobs/index.ts`](../../../../supabase/functions/queue_account_sync_jobs/index.ts)
-- [`supabase/functions/process_account_sync_jobs/index.ts`](../../../../supabase/functions/process_account_sync_jobs/index.ts)
-- [`supabase/functions/process_meta_backfill_jobs/index.ts`](../../../../supabase/functions/process_meta_backfill_jobs/index.ts)
-
-Main functions:
-
-- `listPendingBackfillSyncJobs()`
-- `syncBusinessPlatform()`
-- `failHistoricalSyncJob()`
-
-What happens:
-
-1. Manual refresh uses `POST /api/sync/refresh` to enqueue/reuse work for the authenticated business's selected Meta account. It returns 202 with a job ID, not a completion claim. Next.js `after()` invokes the existing targeted job processor; the durable queue remains available to the existing worker.
-2. Scheduled refresh can use `/api/sync/scheduled-refresh` or `queue_account_sync_jobs` to enqueue stale `incremental` jobs for connected Meta accounts.
-3. The worker route reads pending `initial_historical`, `incremental`, `manual_refresh`, and `backfill` jobs.
-4. For each job, it resolves the selected ad account external id.
-5. It runs the queued account sync. Backfill jobs use `full_backfill`; manual refresh explicitly re-reads the last 30 account-local calendar days including today, without allowing saved coverage to shrink that window. Other sync window behavior is unchanged.
-6. Failures are persisted back onto the job row and sync-state row.
-
-Operational notes:
-
-- The internal route requires `INTERNAL_API_KEY`.
-- The repository Edge handlers require `CRON_SECRET` and fail closed. Inspect deployed versions before activation; older versions still permit a bypass.
-- Dashboard polls `GET /api/sync/refresh?jobId=...` only after a user request, for up to five minutes. Reads validate the business, selected account, and integration. Successful persisted completion invalidates account-header cache tags and the Dashboard route; the selected period is retained. Failed/partial sync may have written some data, so the UI does not promise unchanged data on failure.
-- A fingerprint of the selected 30-day ad-set daily statistics distinguishes unchanged statistics from changed statistics. This does not claim identical creative/status data or real-time Meta delivery. If comparison cannot be read, completion is shown without an unchanged claim.
-- The existing account-performance writer fetches account Insights but persists account currency/status metadata, not a separate account-daily metric history. Dashboard totals remain derived from normalized ad-set daily rows. Campaign/ad-set/ad daily persistence is retained; this pass adds no table or schema.
-- The request has a 300-second server execution budget. Hosting limits still apply: a terminated worker can leave a running job requiring existing worker/operator recovery. UI polling timing out does not imply cancellation or completion. Hosted scheduling remains an explicitly approved deployment step; see the automatic refresh section below.
-- Creative sync performs at most 20 distinct video poster lookups per account, three at a time, with eight-second deadlines through the existing Meta client. It reads `/{video-id}/thumbnails` (`uri,width,height,is_preferred`), keeps the largest valid HTTPS poster in existing creative raw JSON, and retains existing assets on denied access/timeouts. No media lookup occurs on Dashboard load. Small-only previews use compact frames; tokens and raw errors are not sent to browsers.
-- Schedule `queue_account_sync_jobs` to create periodic refresh work, then schedule `process_account_sync_jobs` to drain the queue.
-- Schedule `process_account_sync_jobs` for new cron setup. `process_meta_backfill_jobs` is kept as a compatibility alias for existing schedules.
-
-## Tables Written by Phase
-
-| Phase | Main writer functions | Tables written |
-| --- | --- | --- |
-| OAuth start | `createOAuthState()` | `public.oauth_states` |
-| OAuth callback integration save | `upsertPlatformIntegration()` | `public.platform_integrations` and Vault token RPC writes |
-| Account discovery | `discoverMetaAdAccounts()`, `upsertAdAccounts()`, `ensureAdAccountSyncStates()` | `public.ad_accounts`, `public.ad_account_sync_state` |
-| Primary account selection | `setPrimaryMetaAdAccount()` | `public.platform_integrations` |
-| Sync job lifecycle | `beginHistoricalSyncJob()`, `completeHistoricalSyncJob()`, `failHistoricalSyncJob()`, `enqueueBackfillSyncJob()` | `public.account_sync_jobs`, `public.ad_account_sync_state` |
-| Campaign sync | `syncMetaCampaigns()`, `upsertCampaignDims()` | `public.campaign_dims` |
-| Ad set sync | `syncMetaAdsets()`, `upsertAdsetDims()` | `public.adset_dims` |
-| Ad sync | `syncMetaAds()`, `upsertAdDims()` | `public.ad_dims` |
-| Creative sync | `syncMetaAdCreatives()`, `upsertAdCreatives()` | `public.ad_creatives` |
-| Creative AI feature extraction | `upsertCreativeFeatureSnapshots()` | `ai.creative_feature_snapshots` |
-| Ad account performance rollup | `upsertAdAccountPerformanceDaily()` | `public.ad_accounts` updates `aggregated_metrics`, `time_increment_metrics`, `currency_code`, `updated_at` |
-| Campaign daily performance | `upsertCampaignPerformanceDaily()` | `public.campaigns_performance_daily` |
-| Ad set daily performance | `upsertAdsetPerformanceDaily()` | `public.adsets_performance_daily` |
-| Ad daily performance | `upsertAdPerformanceDaily()` | `public.ads_performance_daily` |
-| Lifetime summary refresh | `upsertCampaignPerformanceSummary()`, `upsertAdsetPerformanceSummary()`, `upsertAdPerformanceSummary()` | `public.campaign_performance_summary`, `public.adset_performance_summary`, `public.ad_performance_summary` |
-| Sync completion metadata | `markAdAccountHistoricalSyncSucceeded()` | `public.ad_accounts.last_synced`, `public.ad_account_sync_state` |
-| AI assessments | `runMetaAdAccountAssessment()`, `runBusinessAssessment()`, `insertAdAccountAssessment()`, `insertBusinessAssessment()` | `ai.business_assessments` |
-| Integration health | `markIntegrationSynced()`, `markIntegrationError()` | `public.platform_integrations` |
-
-## Important State Stored on Each Core Table
-
-### `public.platform_integrations`
-
-Used for:
-
-- integration status
-- token secret ids
-- `last_synced_at`
-- `last_error`
-- selected primary ad account fields inside `integration_details`
-
-Current primary-account fields in `integration_details`:
-
-- `primary_ad_account_external_id`
-- `primary_ad_account_name`
-- `account_selection_completed_at`
-
-### `public.ad_accounts`
-
-Used for:
-
-- discovered account metadata
-- stable DeepVisor row id for the selected account
-- account-level `aggregated_metrics`
-- account-level `time_increment_metrics`
-- `last_synced`
-
-Important current rule:
-
-- discovery is metadata-only
-- `last_synced` is set only after a completed historical sync, never during initial discovery
-
-### `public.ad_account_sync_state`
-
-Used for:
-
-- whether a first full sync has completed
-- historical availability flags
-- first and latest activity dates
-- `insights_synced_through`
-- last successful and failed sync job ids
-- incremental vs full-history sync timestamps
-
-### `public.account_sync_jobs`
-
-Used for:
-
-- queued, running, completed, or failed sync jobs
-- `sync_type` such as `incremental`, `manual_refresh`, or `backfill`
-- requested and actual coverage windows
-- stage counts for synced campaigns, ad sets, ads, creatives, and performance rows
-
-### `ai.business_assessments`
-
-Used for both:
-
-- ad-account scoped Meta assessments
-- business-level synthesis assessments
-
-These assessments are written after sync and power the later AI analysis and revive-style prompts.
-
-## Performance Fetch Notes
-
-Current performance sync behavior:
-
-- account, campaign, ad set, and ad insights are fetched in separate stages
-- these stages are run sequentially
-- each level uses chunked date windows
-- transient Meta failures are retried
-
-This was added to reduce `Service temporarily unavailable` and rate-limit failures during large initial syncs.
-
-## Important Invariants As Of Now
-
-- The callback route discovers accessible ad accounts but does not sync them all.
-- Only the selected primary ad account is synced.
-- The account picker reads `ad_accounts`, not Meta.
-- The select-account route validates against `ad_accounts`, not Meta.
-- Seed sync always returns `SyncCoverage.syncMode = 'seed_recent'`.
-- Full history is handled by queued backfill work, not by blocking the initial account-selection request.
-
-## Beta fixture and token access boundaries
-
-Vault token RPCs and queue/approval mutation RPCs are executable only by the
-service role after `20261020231659_beta_access_hardening.sql`. Browser clients may
-read authorized integration metadata, but cannot modify token references. Server
-callers must first resolve the authenticated business and its integration, then
-use the server-only admin client for token lookup.
-
-The `deepvisor-beta-v1` fixture marker identifies imported synthetic accounts.
-They have no credentials. Database triggers reject credential assignment, marker
-removal, and queued/running sync jobs for these integrations. A completed fixture
-import is not a successful Meta fetch. Use `scripts/beta-fixtures/README.md` to
-reseed; manual Meta refresh is intentionally unavailable for these accounts.
-
-## Phase 2 simulated provider
-
-`deepvisor-meta-phase2` is a separate, explicitly gated development/test provider.
-Unlike Phase 1 imports, these accounts exercise the existing durable sync worker
-using controlled provider responses. See
-[setup, scenarios, assertions and cleanup](../../../../scripts/beta-phase2/README.md).
-Real Auth and RLS remain enabled. Simulated credentials cannot enter the live
-execution SDK; shared untargeted workers skip these integrations. No automatic
-schedule or external assessment/execution is enabled for them.
-
-OAuth state consumption is atomic. Authenticated incomplete onboarding can use
-account discovery/selection; each route still validates business ownership.
-Selection returns success only after its targeted initial or follow-up job has
-completed. Manual refresh retains its existing 202/job-polling contract.
-Concurrent enqueues share a job through the active account/type unique index.
-Incremental sync rereads its lookback window for attribution corrections, and
-provider requests now have a 30-second per-attempt deadline.
-
-## Automatic refresh
-
-The authenticated shell mounts `AutomaticMetaSync`. `POST /api/sync/automatic-refresh`
-accepts no tenant/account override and requires same-origin authenticated access. It
-uses the selected scope and the service-only `enqueue_automatic_account_sync` RPC.
-The first advertiser-local daily visit checks persisted success age; a scheduled
-success within 90 minutes prevents duplication. GET observes durable state and
-last successful time; completion refreshes the visible analytics. Manual cooldown
-is never updated by automatic work.
-
-`enqueueScheduledAccountSyncJobs` uses the same atomic check, bounded seven-day
-window and queue. Expired/disconnected accounts are skipped, automatic failure
-retries are capped, and the shared unique index prevents active cross-trigger jobs.
-Existing worker claims process these jobs; no advertising execution is authorized.
-
-[Deployment, Vault cron configuration, verification and reproduction](../../../../supabase/cron/README.md)
-cover the planned `0 */2 * * *` enqueue and preserved ten-minute worker schedule.
-The script is checked in but has not been activated.
+Live tests remain explicit opt-ins. Do not treat repository implementation, passed
+mock tests, configured credentials, deployed code and enabled schedules as equivalent.

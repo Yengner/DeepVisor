@@ -1,103 +1,67 @@
 # DeepVisor
 
-DeepVisor is an ad account intelligence system for ecommerce brands and lead-service businesses.
+DeepVisor is a Meta-first advertising intelligence and decision product. It connects
+an ad account, preserves history, explains observed performance, and presents
+reviewable decisions. Primary surfaces are Overview, AI Agency, Decisions,
+Campaigns, Connections and Settings. Reports, Calendar and campaign draft workflows
+remain available through existing navigation or compatibility routes.
 
-It connects to an ad account, preserves useful history, explains what is working and what is not, and turns recommendations into reviewable work across a dashboard, calendar, reports, and campaign views.
+The core architecture is **Meta data → versioned features → provider-neutral
+decisions → deterministic policy → separately authorized actions → measured
+outcomes**. Approval does not execute an ad change. Missing evidence, HOLD and
+insufficient-data results remain explicit states.
 
-DeepVisor is not meant to be another analytics wall. The product direction is simple: help operators and owners understand performance quickly, decide what to do next, and keep that work organized in one place.
+## Start here
 
-## What DeepVisor Does
+- [Architecture](docs/ARCHITECTURE.md): responsibilities, data models and security boundaries.
+- [Codebase map](docs/CODEBASE_MAP.md): directory ownership, entry points and compatibility code.
+- [Workflow traces](docs/FLOWS.md): connection/sync, intelligence, decisions, execution, organizer and Agency.
+- [Development guide](docs/DEVELOPMENT_GUIDE.md): setup, conventions, tests and migrations.
+- [Architecture audit](docs/ARCHITECTURE_AUDIT.md): improvements, retained debt and verification scope.
+- [AGENTS.md](AGENTS.md): operational instructions for engineers and coding agents.
 
-- `Dashboard`: a daily account read with spend, outcomes, strongest campaigns, weak spots, and the next thing to review
-- `Calendar`: queued work that can be approved, modified, scheduled, or ignored
-- `Reports`: owner-ready summaries of what changed, what worked, what failed, and what should happen next
-- `Campaigns`: a fuller table view for scanning campaign health without losing context
-- `Integrations`: connect platforms, choose the primary account, and control sync state
+The handbook provides navigation; module READMEs linked from it own detailed
+provider, execution and reconciliation contracts. Historical deployment notes do
+not establish current enablement.
 
-## Who It Is For
+## Local development
 
-- ecommerce businesses that want a clearer view of revenue-driving campaigns, creatives, and trends
-- lead-service businesses such as dental, roofing, tiling, home services, and other consult or quote-driven operators
-- founder-led or lean marketing teams that need one operating surface instead of jumping between ad platforms, spreadsheets, and reports
+Stack: Next.js App Router, React, TypeScript, Mantine, Supabase, Meta and optional
+inference adapters. Use Node.js **24** and the existing lockfile:
 
-## Current Product Scope
-
-- Meta is the primary live integration today
-- one primary ad account is selected per connected platform
-- the first sync is recent-first, then full history is backfilled in the background
-- recommendations are explainable and review-first
-- the product is being shaped around ecommerce and lead-service operators rather than agencies
-
-## Stack
-
-- `Next.js` + `React` + `TypeScript`
-- `Supabase` for auth, database, and server-side data access
-- `Mantine` and shared marketing/UI primitives for the product and public site
-- internal sync, repository, and assessment layers under `src/lib/server`
-
-## Local Development
-
-Node.js 24 is required. With nvm, use the checked-in `.nvmrc`:
-
-```bash
+```sh
 nvm install
 nvm use
 npm ci
 npm run dev
 ```
 
-Useful scripts:
+Obtain approved development credentials for ignored `.env.local`; see the
+[setup guide](docs/DEVELOPMENT_GUIDE.md#setup-and-safe-defaults). Default tests use
+mocks and isolated in-memory database fixtures and require no live credentials.
 
-- `npm run build`: production build check
-- `npm run types:supabase`: regenerate typed Supabase schema bindings
-
-## Tests And CI
-
-Use Node.js 24 (the CI version) and install dependencies with `npm ci`.
-
-```bash
-npm test             # Run all unit tests once
-npm run test:watch   # Re-run affected tests while editing
-npm run typecheck    # Generate Next.js route types and check TypeScript
-npm run build       # Check the production build
+```sh
+npm run typecheck
+npm test
+npm run lint
+npm run test:architecture
+npm run check:architecture
+npm run build
 ```
 
-Unit tests use [Vitest](https://vitest.dev/guide/) in a Node environment. Place
-tests beside the code as `*.test.ts` under `src`; the existing `@/` import alias
-works in tests. The initial tests cover currency formatting and recurring calendar
-items without network access, credentials, or application logic changes. Browser
-and E2E tests are not part of this baseline.
+CI runs these gates without deployment credentials. ESLint uses the installed flat
+Next/TypeScript configuration. A file/rule/count baseline retains existing lint
+errors; `npm run lint:strict` exposes that debt. See the guide before running
+remote fixture/browser scripts or `npm run types:supabase`.
 
-GitHub Actions runs installation, type checking, unit tests, and the production
-build on pushes and pull requests in a single job. It caches npm downloads and
-cancels superseded runs. Build-only Supabase and Stripe placeholders are defined
-in `.github/workflows/ci.yml`; no repository secrets or live services are needed.
-The resulting CI build is for validation, not deployment.
+Live advertising writes and Limited Auto remain independently gated and off by
+default. This repository's presence does not imply a deployed worker or active
+schedule. Do not enable execution, run operator SQL, or deploy as a setup shortcut.
 
-The existing `npm run lint` script uses `next lint`, which is unavailable in
-Next.js 16. Lint migration and existing application lint errors are not included
-in this test baseline or the CI gate.
+## Development previews
 
-## Repo Pointers
-
-- Root marketing and app routes: [src/app]()
-- Meta integration and sync flow: [src/lib/server/integrations/README.md](https://github.com/Yengner/DeepVisor/blob/main/src/lib/server/integrations/README.md)
-- Sync orchestration: [src/lib/server/sync]()
-- Assessments and account intelligence: [src/lib/server/intelligence]()
-
-## Product Direction
-
-DeepVisor should become the place where an operator can answer:
-
-- What changed in the account?
-- Which campaigns or ad sets are strongest right now?
-- What needs attention?
-- What should be approved or queued next?
-
-The long-term goal is durable account memory, better recommendations over time, and a cleaner operating workflow for businesses that rely on paid acquisition.
-
-## Local Decision Previews
-
-While signed in with `npm run dev`, open `/dashboard?preview=decisions` or `/decisions?preview=decisions` to see sample approval-required, creative-review, no-change, shadow, blocked, approved, executed and insufficient-data decisions. The banner links between both previews and back to live views.
-
-This is a development-only presentation preview, not seeded database data. Review buttons are disabled, no approval fingerprints are created, and nothing is saved or executed. Dashboard performance, advertising, connection and configured mode remain real; a selected, synchronized Meta account is still required for the normal Dashboard. Sample decision counts, checks and activity are explicitly fictional. The preview parameter is ignored in production.
+While signed in locally, `/dashboard?preview=decisions` and
+`/decisions?preview=decisions` show explicitly fictional decision presentation.
+Review controls are disabled; no approval, persistence or execution occurs. Normal
+Dashboard account/performance requirements still apply. Production ignores this
+parameter. See [development and compatibility surfaces](docs/CODEBASE_MAP.md#active-compatibility-and-development-surfaces).

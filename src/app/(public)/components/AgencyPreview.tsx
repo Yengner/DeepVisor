@@ -14,7 +14,7 @@ export default function AgencyPreview() {
   const [step, setStep] = useState(0);
   const current = steps[step];
   return <div className={classes.preview}>
-    <div className={classes.previewHeader}><span><span className={classes.pixelDot} /> THE INTELLIGENCE LOOP</span><span>Interactive illustration</span></div>
+    <div className={classes.previewHeader}><span><span className={classes.pixelDot} /> THE INTELLIGENCE LOOP</span></div>
     <div className={classes.constellation} aria-hidden="true">
       <svg viewBox="0 0 440 220" preserveAspectRatio="none"><path d="M70 65H140L220 110L300 65H370M70 165H140L220 110L300 165H370" /></svg>
       <span className={`${classes.node} ${classes.nodeOne}`}>Campaigns</span>
@@ -27,6 +27,5 @@ export default function AgencyPreview() {
       {steps.map((item, index) => <button type="button" key={item.title} aria-pressed={step === index} onClick={() => setStep(index)}><item.icon size={15} aria-hidden />{item.title}</button>)}
     </div>
     <div className={classes.previewCopy} aria-live="polite"><h3>{current.heading}</h3><p>{current.copy}</p></div>
-    <div className={classes.previewFooter}><ShieldCheck size={14} aria-hidden /> Illustration only. No account actions. <Check size={14} aria-hidden /></div>
   </div>;
 }

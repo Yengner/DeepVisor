@@ -1,9 +1,11 @@
+import type { DigestTrendSnapshot, TrackingConfidence } from '@/lib/shared/performance/signals';
+export type { DigestTrendSnapshot, DigestTrendDirection, TrackingConfidence } from '@/lib/shared/performance/signals';
 import type { Database } from '@/lib/shared/types/supabase';
 import type {
   ReportKpi,
   ReportMetricTotals,
   ReportTimeSeriesPoint,
-} from '@/lib/server/reports/types';
+} from '@/lib/shared/reports/types';
 
 export type BusinessAssessmentRow =
   Database['ai']['Tables']['business_assessments']['Row'];
@@ -23,8 +25,6 @@ export type AdAccountAssessmentState =
   | 'stale'
   | 'misconfigured';
 
-export type TrackingConfidence = 'low' | 'medium' | 'high';
-export type DigestTrendDirection = 'up' | 'down' | 'flat' | 'unknown';
 export type DigestRiskLevel = 'low' | 'medium' | 'high';
 export type TestingVelocityLabel = 'none' | 'low' | 'healthy';
 
@@ -159,14 +159,6 @@ export interface AssessmentBreakdownItem {
   ctr: number;
   costPerResult: number;
   performanceIndex: number;
-}
-
-export interface DigestTrendSnapshot {
-  direction: DigestTrendDirection;
-  deltaAbsolute: number;
-  deltaPercent: number | null;
-  currentValue: number;
-  previousValue: number;
 }
 
 export interface DigestWindowWinner {

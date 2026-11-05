@@ -2,8 +2,9 @@
 
 `buildFeatureSnapshot({ deliveryUnit, asOfDay, rows })` is a pure, synchronous
 calculation over normalized Meta ad-set daily facts. It does not fetch data,
-persist anything, call an LLM, or execute advertising actions. Existing product
-paths do not consume these snapshots yet.
+persist anything, call an LLM, or execute advertising actions. The opt-in Review and Shadow workers consume these snapshots through
+DecisionEngine; persisted results feed Overview, Decisions and Agency. See
+[the end-to-end flows](../../../../docs/FLOWS.md#3-features--decisions--policy).
 
 Supply one unsplit row per day for one ad set, scoped to the given business and
 ad account by the caller. Dates are account-calendar `YYYY-MM-DD` labels; UTC
@@ -17,7 +18,9 @@ cutoff, 7/30-day windows and equal-length preceding windows. Bump the schema
 version when changing formulas, thresholds or meanings. No generated timestamp
 is included, so identical facts and cutoff produce identical snapshots.
 
-Daily aggregation and rates reuse repository calculations. Results mean leads +
+Daily aggregation, rates and assessment signal heuristics live in
+[`shared/performance`](../../shared/performance). Repository/assessment paths retain
+compatibility exports; Features depend directly on the pure domain calculations. Results mean leads +
 messages + calls, matching repository semantics, not deduplicated customers.
 Supply explicit zeroes for known absent action types. Null or omitted metrics
 mean unknown; rates with zero denominators are null. Totals for incomplete windows

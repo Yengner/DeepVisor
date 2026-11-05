@@ -1,5 +1,5 @@
 import { ApiResponse, ErrorCode, ErrorDetails } from "@/lib/shared/types/api";
-import { showError, showSuccess } from "../toasts";
+import { showError, showSuccess } from "./toasts";
 
 interface ToastOptions {
     successTitle?: string;

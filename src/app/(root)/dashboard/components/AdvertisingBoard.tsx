@@ -14,15 +14,9 @@ import StatusBadge from "@/components/product/StatusBadge";
 import { metricValue, MetricDelta } from "./ControlMetrics";
 import classes from "./ControlCenter.module.css";
 
-export default function AdvertisingBoard({ view }: { view: ExplorationView }) {
-  const [tab, setTab] = useState("highlights");
+export default function AdvertisingBoard({ view, learning = {}, filtered = false }: { view: ExplorationView; learning?: Record<string, string>; filtered?: boolean }) {
   const [selected, setSelected] = useState<string | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
-  const ids =
-    tab === "attention"
-      ? (view.board?.attentionIds ?? [])
-      : (view.board?.highlightIds ?? view.items.map((i) => i.id));
-  const items = ids.flatMap((id) => view.items.find((i) => i.id === id) ?? []);
   const active = (
     view.board?.activeIds ??
     view.items.filter((i) => i.delivery === "ACTIVE").map((i) => i.id)
@@ -38,7 +32,7 @@ export default function AdvertisingBoard({ view }: { view: ExplorationView }) {
   function card(item: Summary, prominent = false, activeArea = false) {
     const label = prominent
       ? (view.board?.activeFeaturedLabel ?? "Active now")
-      : !activeArea && tab === "attention"
+      : !activeArea && false
         ? "Needs attention"
         : !activeArea && item.leader
           ? item.tied
@@ -53,9 +47,12 @@ export default function AdvertisingBoard({ view }: { view: ExplorationView }) {
         key={item.id}
         className={`${classes.adCard} ${prominent ? classes.featured : ""}`}
         onClick={(event) => {
+          if (filtered) return;
           trigger.current = event.currentTarget;
           setSelected(item.id);
         }}
+        aria-disabled={filtered}
+        title={filtered ? "Detailed explorer shows combined stored Meta history. Open Campaigns to inspect it." : "Open saved combined Meta history"}
         aria-label={`Explore ad set ${item.name}`}
       >
         <div className={classes.adMedia}>
@@ -170,10 +167,12 @@ export default function AdvertisingBoard({ view }: { view: ExplorationView }) {
             </>
           )}
           <div className={classes.adState}>
+            <span>Advertising health: {item.state ?? 'Insufficient data'}</span>
+            <span title="Native ad-set learning state from Meta; no completion percentage is inferred.">Meta learning: {learning[item.id] ?? 'Unavailable'}</span>
             {item.state &&
               item.state !== "Insufficient data" &&
               item.state !== "Paused" && <StatusBadge status={item.state} />}
-            <span className={classes.delivery}>
+            <span className={classes.delivery} data-delivery={item.delivery}>
               {item.delivery === "ACTIVE"
                 ? "Active"
                 : item.delivery === "PAUSED"
@@ -198,6 +197,7 @@ export default function AdvertisingBoard({ view }: { view: ExplorationView }) {
       <h3 className={classes.boardSubheading}>
         Active now <span>{periodLabel} performance</span>
       </h3>
+      {filtered && <p>Performance is filtered by delivery platform. Current status and health describe the whole Meta ad set.</p>}
       {featured ? (
         <div
           className={`${classes.adBoard} ${active.length === 1 ? classes.singleActive : ""}`}
@@ -212,50 +212,7 @@ export default function AdvertisingBoard({ view }: { view: ExplorationView }) {
           )}
         </div>
       ) : (
-        <p className={classes.quiet}>No active ad sets right now</p>
-      )}
-      <div className={classes.historyHeader}>
-        <h3 className={classes.boardSubheading}>
-          {tab === "attention" ? "Needs attention" : "Highlights"}{" "}
-          <span>{periodLabel}</span>
-        </h3>
-        <div className={classes.boardActions}>
-          <div
-            className={classes.boardTabs}
-            role="group"
-            aria-label="Advertising view"
-          >
-            <button
-              type="button"
-              aria-pressed={tab === "highlights"}
-              onClick={() => setTab("highlights")}
-            >
-              Highlights
-            </button>
-            <button
-              type="button"
-              aria-pressed={tab === "attention"}
-              onClick={() => setTab("attention")}
-            >
-              Needs attention
-            </button>
-          </div>
-        </div>
-      </div>
-      {items.length ? (
-        <div className={`${classes.adBoard} ${classes.noFeatured}`}>
-          <div className={classes.supporting}>
-            {items.slice(0, 5).map((i) => card(i))}
-          </div>
-        </div>
-      ) : (
-        <p className={classes.quiet}>
-          {tab === "attention"
-            ? view.decisionEvidenceAvailable === false
-              ? "Attention status unavailable. Check Decisions for saved records."
-              : "No ad sets with recorded open attention."
-            : "No recorded delivery in this period."}
-        </p>
+        <p className={classes.quiet}>{filtered ? "No active ad sets with recorded delivery for this platform and period." : "No active ad sets right now"}</p>
       )}
       {!!view.warnings.length && (
         <details className={classes.boardNotes}>

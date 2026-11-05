@@ -14,7 +14,6 @@ import type { ControlPerformance } from "@/lib/server/dashboard/overview/control
 import {
   metricLabels,
   metricValue,
-  MetricDelta,
   type ControlMetric,
 } from "./ControlMetrics";
 import classes from "./ControlCenter.module.css";
@@ -28,7 +27,6 @@ export default function ControlTrend({
 }) {
   const [metric, setMetric] = useState<ControlMetric>("results");
   const [day, setDay] = useState("");
-  const point = view.points.find((p) => p.day === day) ?? view.points.at(-1);
   return (
     <>
       <div className={classes.chartToolbar}>
@@ -54,31 +52,23 @@ export default function ControlTrend({
           {todayOnly ? "7-day daily trend" : "Daily trend"}
         </span>
       </div>
-      <div className={classes.chartValue}>
-        <strong>
-          {metricValue(metric, view.metrics[metric], view.currency, true)}
-        </strong>
-        <MetricDelta
-          change={view.deltas[metric]}
-          description={view.comparison}
-        />
-      </div>
       <div
         className={classes.bigChart}
         role="img"
-        aria-label={`${metricLabels[metric]} daily chart. Missing days remain gaps. Daily values available below.`}
+        aria-label={`${metricLabels[metric]} daily chart. Missing days remain gaps. Use arrow keys to inspect observations.`}
       >
         {view.points.some((p) => p[metric] !== null) ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={view.points}
+              onClick={event => { if (event?.activeLabel) setDay(String(event.activeLabel)); }}
               margin={{ top: 12, right: 14, bottom: 0, left: 0 }}
               accessibilityLayer
             >
               <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
               <XAxis
                 dataKey="day"
-                tickFormatter={(d) => String(d).slice(5)}
+                tickFormatter={(d) => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${d}T12:00:00Z`))}
                 minTickGap={35}
                 tick={{ fill: "var(--chart-text)", fontSize: 12 }}
                 axisLine={false}
@@ -94,7 +84,7 @@ export default function ControlTrend({
                 tickLine={false}
               />
               <ReferenceLine
-                x={view.points.at(-1)?.day}
+                x={day || view.points.at(-1)?.day}
                 stroke="var(--chart-text)"
                 strokeDasharray="3 5"
               />
@@ -113,7 +103,7 @@ export default function ControlTrend({
                   metricLabels[metric],
                 ]}
                 labelFormatter={(value) =>
-                  `${value}${value === view.points.at(-1)?.day ? " · Today, partial" : ""}`
+                  `${new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T12:00:00Z`))}${value === view.points.at(-1)?.day ? " · Today, partial" : ""}`
                 }
               />
               <Line
@@ -134,33 +124,7 @@ export default function ControlTrend({
           </div>
         )}
       </div>
-      <details className={classes.chartDetails}>
-        <summary>
-          Daily values{todayOnly ? " · 7-day trend, today highlighted" : ""}
-        </summary>
-        {view.partial && <p>Recorded data only. Some ad sets or days may be missing; comparisons are hidden unless both windows are complete.</p>}
-        <label>
-          Date{" "}
-          <select
-            value={point?.day ?? ""}
-            onChange={(e) => setDay(e.target.value)}
-          >
-            {view.points.map((p) => (
-              <option value={p.day} key={p.day}>
-                {p.day}
-                {p.current ? " · partial" : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-        <output>
-          {point
-            ? metricValue(metric, point[metric], view.currency)
-            : "Not recorded"}{" "}
-          {metricLabels[metric]}
-        </output>
-        {view.comparison && <p>Changes: {view.comparison}</p>}
-      </details>
+
     </>
   );
 }

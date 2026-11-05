@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ActionIcon, Alert, SegmentedControl, Tooltip } from "@mantine/core";
-import { IconRefresh } from "@tabler/icons-react";
+import { IconRefresh, IconBrandFacebook, IconBrandInstagram } from "@tabler/icons-react";
 import type { Period } from "@/lib/server/dashboard/overview/types";
 
 export function PeriodControl({ period }: { period: Period }) {
@@ -107,4 +107,18 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
       )}
     </div>
   );
+}
+
+export function PlatformControl({ platform }: { platform: 'combined' | 'facebook' | 'instagram' }) {
+  const router = useRouter();
+  const params = useSearchParams();
+  const [pending, start] = useTransition();
+  return <div role="group" aria-label="Advertising delivery platform" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+    {(['facebook', 'instagram'] as const).map(value => <button key={value} type="button" disabled={pending} aria-pressed={platform === value}
+      title={`Select ${value}; select again for combined Meta data`} onClick={() => { const next = new URLSearchParams(params); if (platform === value) next.delete('publisher'); else next.set('publisher', value); start(() => router.replace(`/dashboard?${next}`, { scroll: false })); }}
+      style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 12, padding: '9px 14px', border: platform === value ? '2px solid currentColor' : '1px solid #aebdce', background: platform === value ? value === 'facebook' ? '#e7f0ff' : '#f9e9fa' : 'transparent', color: value === 'facebook' ? '#1264cc' : '#963fa4' }}>
+      {value === 'facebook' ? <IconBrandFacebook size={23} /> : <IconBrandInstagram size={23} />}<span>{value === 'facebook' ? 'Facebook' : 'Instagram'}{platform === value ? ' ✓' : ''}</span>
+    </button>)}
+    <span style={{ alignSelf: 'center', fontSize: 12 }}>{platform === 'combined' ? 'Combined Meta' : ''}</span>
+  </div>;
 }

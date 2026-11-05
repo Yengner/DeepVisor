@@ -15,7 +15,7 @@ import DecisionsFeed from '../decisions/DecisionsFeed';
 import { metricLabels, metricValue, type ControlMetric } from '../dashboard/components/ControlMetrics';
 import classes from './Agency.module.css';
 
-export const metadata: Metadata = { title: 'AI Agency | DeepVisor' };
+export const metadata: Metadata = { title: 'Agency Control | DeepVisor' };
 const safe = async <T,>(promise: Promise<T>) => promise.catch(() => null);
 
 async function AgencyContent({ page, preview }: { page: number; preview: boolean }) {
@@ -43,7 +43,7 @@ async function AgencyContent({ page, preview }: { page: number; preview: boolean
   return <div className={classes.content}>
     <section className={classes.hero} aria-labelledby="agency-title">
       <SpiderMascot size={64} state={state} />
-      <div><p className={classes.eyebrow}>{context.businessName}</p><h1 id="agency-title">Your Meta agency.</h1>
+      <div><p className={classes.eyebrow}>{context.businessName}</p><h1 id="agency-title">Agency Control</h1>
         <p>{needsReview ? `${needsReview} recommendation${needsReview === 1 ? '' : 's'} on this page can be reviewed.` : issue ? 'Your account needs attention before relying on new recommendations.' : 'Your saved intelligence, with you in control.'}</p></div>
       <Link className={classes.button} href="/dashboard">Open Overview →</Link>
     </section>
@@ -68,7 +68,7 @@ async function AgencyContent({ page, preview }: { page: number; preview: boolean
         <nav className={classes.links} aria-label="Business controls"><Link href="/settings/profile">Edit business profile</Link><Link href="/settings">Goals & preferences</Link><Link href="/decisions">Reviews & safety checks</Link></nav>
       </section>
     </div>
-    <section aria-labelledby="activity-title"><div className={classes.activityHeading}><div><p className={classes.eyebrow}>OBSERVATION → DECISION → HUMAN REVIEW</p><h2 id="activity-title">Agency activity</h2><p>Saved evaluations for this account. Each decision keeps its own evidence period.</p></div><Link href="/decisions">All business decisions →</Link></div>
+    <section aria-labelledby="activity-title"><div className={classes.activityHeading}><div><p className={classes.eyebrow}>OBSERVATION → DECISION → HUMAN REVIEW</p><h2 id="activity-title">Decisions & activity</h2><p>Saved evaluations for this account. Each decision keeps its own evidence period.</p></div><Link href="/decisions">All business decisions →</Link></div>
       {!account ? <div className={classes.panel}>Connect Meta to begin. No evaluations have been invented for this view.</div> : !decisions ? <div className={classes.notice} role="alert">Saved evaluations could not be loaded. <Link href="/agency">Try again</Link></div> : <>
         {!['owner', 'admin'].includes(auth.role) && <p>Only business owners and admins can approve or reject recommendations.</p>}
         <DecisionsFeed cards={decisions.cards} canReview={['owner', 'admin'].includes(auth.role)} />
@@ -83,7 +83,7 @@ export default async function AgencyPage({ searchParams }: { searchParams: Promi
   const params = await searchParams;
   const value = Number(params.page ?? 0);
   const page = Number.isSafeInteger(value) && value >= 0 && value <= 10000 ? value : 0;
-  return <DesignSurface label="DeepVisor · AI Agency"><div className={classes.page}>
+  return <DesignSurface label="DeepVisor · Agency Control"><div className={classes.page}>
     <Suspense key={`${page}:${params.preview}`} fallback={<div className={classes.loading} role="status"><SpiderMascot state="scanning" size={64} />Loading saved agency intelligence…</div>}>
       <AgencyContent page={page} preview={isDecisionPreview(params.preview)} />
     </Suspense>

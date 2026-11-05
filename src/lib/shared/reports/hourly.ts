@@ -60,6 +60,11 @@ function shouldRenderHeatmapHourLabel(hour: number) {
   return hour === 0 || hour === 4 || hour === 8 || hour === 12 || hour === 16 || hour === 20;
 }
 
+/** Shared visual scale; the underlying value remains available in the cell inspector. */
+export function hourlyIntensity(value: number | null, maximum: number) {
+  return value != null && value > 0 && maximum > 0 ? Math.min(1, Math.sqrt(value / maximum)) : 0;
+}
+
 export function buildHourlyHeatmap(points: DashboardTrendPoint[]): HourlyHeatmapConfig | null {
   const hourlyPoints = points
     .filter(
@@ -153,7 +158,7 @@ export function buildHourlyHeatmap(points: DashboardTrendPoint[]): HourlyHeatmap
   const maxAverage = cells.reduce((max, cell) => Math.max(max, cell.metricAverage), 0);
   const normalizedCells = cells.map((cell) => ({
     ...cell,
-    intensity: maxAverage > 0 ? Math.min(1, Math.sqrt(cell.metricAverage / maxAverage)) : 0,
+    intensity: hourlyIntensity(cell.metricAverage, maxAverage),
   }));
   const rows: HeatmapRow[] = HEATMAP_DAY_LABELS.map((label, dayOfWeek) => ({
     dayLabel: label,

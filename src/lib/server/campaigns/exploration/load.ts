@@ -1,8 +1,8 @@
 import "server-only";
+import { allPages } from '../../repositories/pagination';
 import { cache } from "react";
 import { createAdminClient } from "../../supabase/admin";
 import {
-  allPages,
   loadOverviewContext,
   loadOverviewHistory,
   loadOverviewDecisions,

@@ -1,6 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/server/supabase/admin';
-import { allPages } from '@/lib/server/dashboard/overview/load';
+import { allPages } from '@/lib/server/repositories/pagination';
 import { activeDeliveryKeys } from './exploration/delivery';
 
 /** Called after the page validates the authenticated business's selected account. */

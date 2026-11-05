@@ -1,5 +1,5 @@
-import type { PerformanceSummaryDailyRow } from '../repositories/performanceSummary/shared';
-import type { DigestTrendSnapshot, TrackingConfidence } from '../intelligence/types';
+import type { PerformanceSummaryDailyRow } from '@/lib/shared/performance/summary';
+import type { DigestTrendSnapshot, TrackingConfidence } from '@/lib/shared/performance/signals';
 
 export const FEATURE_SCHEMA_VERSION = 1 as const;
 

@@ -21,6 +21,11 @@ Existing Calendar, Reports, campaign-creation, and historical analytics code may
 
 ## Code map (read only what is relevant)
 
+Start with [Architecture](docs/ARCHITECTURE.md), [Codebase map](docs/CODEBASE_MAP.md),
+[Flows](docs/FLOWS.md) and [Development guide](docs/DEVELOPMENT_GUIDE.md).
+The [audit](docs/ARCHITECTURE_AUDIT.md) records known exceptions and deferred work;
+module READMEs remain authoritative for detailed provider/safety contracts.
+
 | Area | Primary location |
 | --- | --- |
 | Routes and server actions | `src/app/` |
@@ -28,6 +33,8 @@ Existing Calendar, Reports, campaign-creation, and historical analytics code may
 | Ad-set/ad explorer and creative media | `src/lib/server/campaigns/exploration/`, `src/components/campaigns/exploration/` |
 | Meta account selection and sync | `src/lib/server/integrations/`, `src/lib/server/sync/`, `src/app/api/sync/` |
 | Feature snapshots | `src/lib/server/features/` |
+| Pure performance rules and report metric contracts | `src/lib/shared/performance/`, `src/lib/shared/reports/types.ts` |
+| Agency and Organizer | `src/lib/server/agency/`, `src/lib/server/organizer/`, `src/lib/shared/organizer/` |
 | Decisions, Jev, policy, Shadow, outcomes | `src/lib/server/decisions/` |
 | Authorized Meta actions and execution | `src/lib/server/advertising/` |
 | Supabase schema changes | `supabase/migrations/` |
@@ -41,6 +48,12 @@ Read the applicable module's documentation **when changing that area**:
 - Advertising execution/reconciliation: `src/lib/server/advertising/README.md`
 - Limited Auto: `src/lib/server/advertising/LIMITED_AUTO.md`
 - Outcome measurement: `src/lib/server/decisions/outcomes/README.md`
+- Organizer: `src/lib/server/organizer/README.md` and `PHASE2.md`
+
+Keep calculations independent of I/O; use explicit type-only imports and narrow
+module imports. Reuse `server/repositories/pagination.ts` with existing scope and
+null-data semantics. Do not introduce new import cycles or grow lint/architecture
+baselines to make checks pass; remove resolved entries instead.
 
 The root README is introductory, not the authority for execution safety or current API behavior.
 
@@ -87,10 +100,16 @@ Use the narrowest useful checks while iterating, then run the relevant available
 npm test -- <relevant-test-path>
 npm run typecheck
 npm test
+npm run lint
+npm run test:architecture
+npm run check:architecture
 npm run build
 ```
 
-Use `npm ci` when dependencies need installing. Use targeted ESLint where applicable; `npm run lint` currently calls `next lint`, which is unavailable in Next.js 16, so report that limitation rather than unrelatedly rewriting lint infrastructure.
+Use `npm ci` when dependencies need installing. ESLint now runs directly with the
+installed Next/TypeScript flat config. `npm run lint:strict` exposes existing debt;
+normal lint applies the reviewed file/rule/count baseline. Report warnings and
+baseline limitations honestly. Architecture checks use existing TypeScript tooling.
 
 For changes affecting external services, use mocked Meta/Jev HTTP and isolated database fixtures first. Verify failure, missing-data, stale-state, tenant isolation, and duplicate-request cases—not only the happy path. Never claim a live integration test was run when it was not.
 

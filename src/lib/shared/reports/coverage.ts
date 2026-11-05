@@ -1,4 +1,4 @@
-import type { ReportCoverage } from '@/lib/server/reports/types';
+import type { ReportCoverage } from '@/lib/shared/reports/types';
 import { isReportDate, reportDayCount } from './dates';
 
 type Window = { first_day: string | null; last_day: string | null };

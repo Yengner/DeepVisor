@@ -10,7 +10,13 @@
 !.yarn/releases
 !.yarn/versions
 
-/docs/
+# Keep generated audit evidence local; track the maintained developer handbook.
+/docs/*
+!/docs/ARCHITECTURE.md
+!/docs/CODEBASE_MAP.md
+!/docs/DEVELOPMENT_GUIDE.md
+!/docs/FLOWS.md
+!/docs/ARCHITECTURE_AUDIT.md
 # testing
 /coverage
 

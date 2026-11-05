@@ -18,8 +18,8 @@ rather than ranking a truncated sample. Drawer detail is loaded on demand.
 Requests are aborted on navigation and stale results are discarded. There is no
 shared browser cache that could leak another account's data.
 
-Campaigns defaults to visual browsing; the original tables, filters and actions
-remain available. Creation and editing flows are unchanged. Media failures do not
+Campaigns remains table-first; the existing explorer is reused for the Overview
+ad-set board and on-demand details. Tables, filters and actions remain available. Creation and editing flows are unchanged. Media failures do not
 hide performance. Explicit Meta preview requests reuse the existing read-only
 preview endpoint, rendered inside a sandboxed iframe. Videos use thumbnails;
 video IDs are never interpreted as URLs.

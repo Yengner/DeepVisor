@@ -1,3 +1,4 @@
+import { AppearanceSettings } from '@/components/design/DesignSurface';
 import {
   Alert,
   Badge,
@@ -506,6 +507,7 @@ export default async function SettingsPage() {
 
   return (
     <Container size="xl" pb="xl" className={`${classes.page} ${product.page} dv-app-page`}>
+      <AppearanceSettings />
       <Stack gap="lg" className={classes.pageStack}>
         <Card
           withBorder

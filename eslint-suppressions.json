@@ -1,0 +1,220 @@
+{
+  "src/app/(auth)/(unused)/payment-success/components/PaymentSuccessContent.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/app/(root)/calendar/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/app/(root)/campaigns/reports/[queueItemId]/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/app/(root)/dashboard/LegacyDashboard.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/app/(root)/reports/archive/[queueItemId]/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/app/(root)/reports/components/layout/ReportsSidebar.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/app/api/notifications/[notificationId]/read/route.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/campaigns/create/flows/manual/MetaCampaignBuilder.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/campaigns/create/platforms/meta/builders/MetaLeadCampaignDraftHelper.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/campaigns/create/platforms/meta/components/ManualMetaAdStarter.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/campaigns/create/platforms/meta/components/MediaSelectionModal.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/campaigns/create/platforms/meta/hooks/useFacebookPages.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/components/campaigns/create/platforms/meta/hooks/useFilePreview.ts": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/integrations/InitialHistoryAnalysisOverlay.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/layout/MobileAppChromeClient.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/layout/topBar/TopBarClient.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/public/depricated/Header.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/lib/client/hooks/useJobProgress.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/lib/server/actions/user/auth.ts": {
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "src/lib/server/actions/user/settings.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/lib/server/intelligence/assistant/service.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "src/lib/server/intelligence/campaignReviews/service.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/lib/server/intelligence/decisionSupportContext.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/lib/server/intelligence/repositories/calendarQueueTemplates.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    }
+  },
+  "src/lib/server/intelligence/repositories/notificationPreferences.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/lib/server/intelligence/repositories/notifications.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    }
+  },
+  "src/lib/server/intelligence/repositories/reportArchive.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/lib/server/intelligence/repositories/reportSubscriptions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/lib/server/intelligence/repositories/signals.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/lib/server/intelligence/repositories/trendFindings.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    }
+  },
+  "src/lib/server/intelligence/service.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/server/intelligence/trends/service.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    },
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "src/lib/server/jobs/accountIntelligenceRetention.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/server/openai/structured.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/lib/server/repositories/ad_accounts/syncState.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/server/repositories/ad_entities/refreshAdEntityPerformanceSummaries.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/server/repositories/ad_entities/upsertAdEntities.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/lib/server/repositories/ad_entities/upsertAdEntityPerformanceDaily.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/server/repositories/ad_entities/upsertAdEntityPerformanceSummaries.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/server/repositories/audience/upsertMetaAudienceBreakdownsSummary.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/server/repositories/business_data_policies/getBusinessDataPolicy.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/server/repositories/hourly/upsertMetaHourlyPerformance.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/lib/server/repositories/reports/buildReportPayload.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    }
+  }
+}

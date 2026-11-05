@@ -1,20 +1,21 @@
-# Server Data Layer
+# Server data facade
 
-This namespace standardizes database access in `lib/server`:
+`data` is an existing compatibility facade, not a replacement persistence layer.
+The repository/normalizer/query modules mostly re-export implementations under
+[`../repositories`](../repositories). `types.ts` also re-exports repository DTOs.
+`queries/components.query.ts` exposes the existing async campaign-detail actions;
+`queries/recommendations.query.ts` wraps the recommendation repository.
 
-- `repositories/`: persistence operations scoped to core entities/tables.
-  - Examples: platform integrations, ad account selections.
-- `queries/`: read models and reporting joins/views.
-  - Examples: campaign/ad/adset lifetime metrics and recommendation reads.
-- `normalizers/`: JSON and schema normalization helpers for typed DTOs.
-- `types.ts`: canonical data contracts shared by repositories/queries.
+Before adding a query, follow the export to its implementation. Extend the
+appropriate entity repository in `server/repositories`, or a domain-owned
+repository such as `decisions/repository.ts` or `intelligence/repositories`.
+Keep this facade for existing callers; do not add another data abstraction or
+assume the implementation paths are obsolete.
 
-## Usage Rule
+Authorization remains at the request/service boundary and in scoped repository
+queries. Generic paginated reads live in
+[`../repositories/pagination.ts`](../repositories/pagination.ts); callers retain
+business/account filters and stable ordering.
 
-When building root pages and API routes:
-
-1. Use `repositories/` for entity lookups and business-scoped validation.
-2. Use `queries/` for analytics/reporting fetches.
-3. Use `services/` only for orchestration and cross-provider workflows.
-
-Legacy `lib/server/repositories/*` paths remain as compatibility exports while callers migrate.
+See [Architecture](../../../../docs/ARCHITECTURE.md) and
+[Codebase map](../../../../docs/CODEBASE_MAP.md).

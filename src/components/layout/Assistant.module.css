@@ -1,0 +1,24 @@
+.workspace { display:flex; flex:1; min-height:0; overflow:hidden; }
+.main { flex:1; min-width:0; min-height:0; display:flex; overflow:hidden; }
+.panel { flex-shrink:0; position:relative; border-left:1px solid var(--mantine-color-default-border); background:var(--mantine-color-body); }
+.content { display:flex; flex-direction:column; height:100%; min-height:0; padding:20px; gap:14px; color:var(--mantine-color-text); }
+.content header { display:flex; justify-content:space-between; gap:12px; }
+.content header p,.context { font-size:12px; opacity:.75; }
+.content button { border:1px solid var(--mantine-color-default-border); border-radius:8px; padding:8px 12px; background:var(--mantine-color-default); color:inherit; }
+.thread { flex:1; min-height:0; overflow:auto; }
+.thread article { border-radius:12px; padding:12px; margin:10px 0; background:var(--mantine-color-default); }
+.thread article[data-role="user"] { border-left:3px solid #387af0; }
+.thread p { white-space:pre-wrap; font-size:14px; }
+.prompts { display:flex; flex-wrap:wrap; gap:6px; font-size:12px; }
+.content form { display:grid; gap:8px; }
+.content textarea { resize:vertical; width:100%; border:1px solid var(--mantine-color-default-border); border-radius:10px; padding:10px; background:var(--mantine-color-body); }
+.launcher { position:fixed; bottom:24px; right:24px; display:flex; align-items:center; gap:8px; background:#082d56; color:white; padding:12px 18px; border-radius:25px; box-shadow:0 6px 24px #082d5633; z-index:75; }
+.resize { position:absolute; top:0; bottom:0; left:-4px; width:8px; cursor:col-resize; touch-action:none; }
+.resize:focus-visible { outline:2px solid #387af0; }
+@media(max-width:900px) { .launcher { bottom:90px; right:16px; } .content { height:calc(100dvh - 90px); padding:12px; } }
+.workspace { min-width: 0; }
+
+.content { width:100%; min-width:0; box-sizing:border-box; overflow:hidden; }
+.content header > div { min-width:0; }
+.content header button { flex-shrink:0; align-self:flex-start; }
+@media(max-width:900px) { .content { height:100%; } }

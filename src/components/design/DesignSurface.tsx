@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useSyncExternalStore, type ReactNode } from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { useSyncExternalStore, type ReactNode } from 'react';
+import { useMantineColorScheme } from '@mantine/core';
 import classes from './DesignSurface.module.css';
 
 const key = 'deepvisor-design-theme';
@@ -27,21 +27,22 @@ function subscribe(notify: () => void) {
 /** Theme is scoped to Stage B surfaces; it does not restyle unapproved pages. */
 export default function DesignSurface({ children, label }: { children: ReactNode; label: string }) {
   const storedTheme = useSyncExternalStore(subscribe, readTheme, () => 'light');
-  const [temporaryTheme, setTemporaryTheme] = useState<'light' | 'dark' | null>(null);
-  const theme = temporaryTheme ?? storedTheme;
-  function toggle() {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    try { localStorage.setItem(key, next); setTemporaryTheme(null); } catch { setTemporaryTheme(next); }
-    window.dispatchEvent(new Event('dv-theme'));
-  }
+  const theme = storedTheme;
   return <div className={classes.surface} data-dv-theme={theme}>
     <div className={classes.toolbar}>
       <span className={classes.label}>{label}</span>
-      <button type="button" className={classes.toggle} onClick={toggle} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
-        {theme === 'dark' ? <Sun size={15} aria-hidden /> : <Moon size={15} aria-hidden />}
-        {theme === 'dark' ? 'Light' : 'Dark'}
-      </button>
+
     </div>
     {children}
   </div>;
+}
+
+export function AppearanceSettings() {
+  const theme = useSyncExternalStore(subscribe, readTheme, () => 'light');
+  const { setColorScheme } = useMantineColorScheme();
+  return <section aria-label="Appearance"><h2>Appearance</h2><label>Color theme <select value={theme} onChange={event => {
+    const next = event.target.value === 'dark' ? 'dark' : 'light';
+    try { localStorage.setItem(key, next); } catch { /* Mantine still applies this session's choice. */ }
+    setColorScheme(next); window.dispatchEvent(new Event('dv-theme'));
+  }}><option value="light">Light</option><option value="dark">Dark</option></select></label></section>;
 }

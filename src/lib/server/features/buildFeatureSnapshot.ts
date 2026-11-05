@@ -1,12 +1,12 @@
 import {
   aggregatePerformanceSummaryRows,
   deriveSummaryMetricFields,
-} from '../repositories/performanceSummary/shared';
+} from '@/lib/shared/performance/summary';
 import {
   computeTrackingConfidence,
   computeTrendSnapshot,
   ELEVATED_FREQUENCY_THRESHOLD,
-} from '../intelligence/assessments/metrics';
+} from '@/lib/shared/performance/signals';
 import {
   FEATURE_SCHEMA_VERSION,
   type FeatureComparison,

@@ -12,9 +12,12 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix",
-    "types:supabase": "node scripts/generate-supabase-types.mjs"
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "types:supabase": "node scripts/generate-supabase-types.mjs",
+    "lint:strict": "eslint src --suppressions-location scripts/architecture/empty-eslint-suppressions.json",
+    "check:architecture": "node scripts/architecture/check.mjs",
+    "test:architecture": "node --test scripts/architecture/check.test.mjs"
   },
   "dependencies": {
     "@babel/runtime": "^7.27.0",

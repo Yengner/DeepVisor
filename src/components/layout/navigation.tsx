@@ -3,7 +3,6 @@ import {
   IconBell,
   IconSparkles,
   IconChartBar,
-  IconChecklist,
   IconHome2,
   IconPresentation,
   IconPuzzle,
@@ -20,8 +19,7 @@ export type AppNavItem = {
 
 export const primaryNavItems: AppNavItem[] = [
   { name: 'Overview', shortName: 'Overview', icon: IconHome2, route: '/dashboard' },
-  { name: 'AI Agency', shortName: 'Agency', icon: IconSparkles, route: '/agency' },
-  { name: 'Decisions', shortName: 'Decisions', icon: IconChecklist, route: '/decisions' },
+  { name: 'Agency Control', shortName: 'Agency Control', icon: IconSparkles, route: '/agency' },
   { name: 'Campaigns', shortName: 'Campaigns', icon: IconPresentation, route: '/campaigns' },
   { name: 'Connections', shortName: 'Connections', icon: IconPuzzle, route: '/integration' },
   { name: 'Settings', shortName: 'Settings', icon: IconSettings, route: '/settings' },
@@ -39,6 +37,8 @@ export function isAppNavItemActive(pathname: string | null, route: string): bool
   if (!pathname) {
     return false;
   }
+
+  if (route === '/agency' && (pathname === '/decisions' || pathname.startsWith('/decisions/'))) return true;
 
   if (route === '/dashboard') {
     return pathname === '/' || pathname === '/dashboard';

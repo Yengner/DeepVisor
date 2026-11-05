@@ -4,7 +4,7 @@ import {z} from 'zod';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {createAdminClient} from '../supabase/admin';
 import {canonical} from '../decisions/approval';
-import {allPages} from '../dashboard/overview/load';
+import {allPages} from '../repositories/pagination';
 import {history,organizerScope} from './service';
 import {selectedRenames,nativeParent,sameIdentity,sameState,type RenameChange} from '@/lib/shared/organizer/renamePlan';
 import {propose,type Snapshot} from '@/lib/shared/organizer/model';

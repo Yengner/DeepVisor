@@ -15,7 +15,7 @@ function dimensionValue(row: ReportSnapshotMeasurement, key: string) {
   return [row.dimension1, row.dimension2].find(d => d.key === key)?.value || 'Unknown';
 }
 /** Sum only complete additive measurements; ratios always use the corresponding aggregate inputs. */
-export function snapshotMetric(rows: ReportSnapshotMeasurement[], metric: BreakdownMetric): number | null {
+export function snapshotMetric(rows: Pick<ReportSnapshotMeasurement, 'values' | 'currencyCode'>[], metric: BreakdownMetric): number | null {
   const sum = (key: ReportMetricKey) => rows.length && rows.every(r => typeof r.values[key] === 'number' && Number.isFinite(r.values[key]))
     ? rows.reduce((total, row) => total + row.values[key]!, 0) : null;
   if (moneyMetrics.has(metric)) {
