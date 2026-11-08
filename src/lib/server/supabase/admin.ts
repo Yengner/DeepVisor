@@ -1,4 +1,5 @@
 import 'server-only';
+import { syncLeaseHeaders } from './syncLeaseContext';
 
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/shared/types/supabase';
@@ -12,6 +13,7 @@ export function createAdminClient() {
   }
 
   return createClient<Database>(url, serviceRoleKey, {
+    global: {headers:syncLeaseHeaders()},
     auth: {
       persistSession: false,
       autoRefreshToken: false,

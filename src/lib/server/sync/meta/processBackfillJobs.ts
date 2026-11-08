@@ -1,4 +1,9 @@
 import 'server-only';
+import { withSyncLease } from '@/lib/server/supabase/syncLeaseContext';
+import { resourceRefreshEnabled } from '../resources/coordinator';
+import { withResourceBudget } from '../resources/budget';
+import { processResourceJob } from '../resources/worker';
+import { revalidateTag } from 'next/cache';
 import type { Database } from '@/lib/shared/types/supabase';
 import { performanceFingerprint } from '../manualRefreshStatus';
 import { parallelTasks } from '../concurrency';
@@ -7,7 +12,6 @@ import { asRecord } from '@/lib/shared';
 import {
   claimHistoricalSyncJob,
   failHistoricalSyncJob,
-  getAccountSyncJobById,
 } from '@/lib/server/repositories/ad_accounts/syncState';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import {
@@ -30,20 +34,26 @@ export type ProcessMetaBackfillJobsResult = {
   }>;
 };
 
-async function processClaimedJob(jobId: string): Promise<{
+async function invalidateCompleted(businessId: string) {
+  // All worker entry points, including the cron route, publish the same invalidation.
+  try { revalidateTag(`dashboard-context:${businessId}`, { expire: 0 }); }
+  catch { /* Worker tests/CLI have no Next cache; revision observers still invalidate. */ }
+}
+
+async function runClaimedJob(job: Database['public']['Tables']['account_sync_jobs']['Row']): Promise<{
   jobId: string;
   adAccountId: string;
   status: 'completed' | 'failed';
   message: string;
 }> {
   const supabase = createAdminClient();
-  const job = await getAccountSyncJobById(supabase, jobId);
-
-  if (!job) {
-    throw new Error('Historical sync job could not be found after claiming');
-  }
 
   try {
+    if (job.sync_type === 'resource_refresh') {
+      const result = await processResourceJob(job);
+      if (result.status === 'completed') await invalidateCompleted(job.business_id);
+      return result;
+    }
     const integration = await getBusinessIntegrationById(supabase, {
       businessId: job.business_id,
       integrationId: job.platform_integration_id,
@@ -65,6 +75,7 @@ async function processClaimedJob(jobId: string): Promise<{
         accessToken,
       });
 
+      await invalidateCompleted(job.business_id);
       return {
         jobId: job.id,
         adAccountId: job.ad_account_id,
@@ -105,7 +116,7 @@ async function processClaimedJob(jobId: string): Promise<{
         if(error) throw error;
       }
     }
-    const automatic = ['app_visit','scheduled_refresh'].includes(String(asRecord(job.metadata).queuedFrom));
+    const automatic = ['app_visit','scheduled_refresh','resource_maintenance'].includes(String(asRecord(job.metadata).queuedFrom));
     await syncBusinessPlatform({
       businessId: job.business_id,
       integrationId: job.platform_integration_id,
@@ -116,6 +127,7 @@ async function processClaimedJob(jobId: string): Promise<{
       primaryExternalAccountId: adAccount.external_account_id,
     });
 
+    await invalidateCompleted(job.business_id);
     return {
       jobId: job.id,
       adAccountId: job.ad_account_id,
@@ -123,6 +135,7 @@ async function processClaimedJob(jobId: string): Promise<{
       message: `${job.sync_type === 'backfill' ? 'Backfill' : 'Account sync'} completed.`,
     };
   } catch (error) {
+    if (job.sync_type === 'resource_refresh') throw error; // Never let a stale resource worker use legacy unfenced failure writes.
     const message = error instanceof Error ? error.message : 'Meta historical sync failed';
 
     await failHistoricalSyncJob(supabase, {
@@ -143,6 +156,12 @@ async function processClaimedJob(jobId: string): Promise<{
   }
 }
 
+
+async function processClaimedJob(job: Database['public']['Tables']['account_sync_jobs']['Row']) {
+  if(!resourceRefreshEnabled() || job.sync_type==='resource_refresh') return runClaimedJob(job);
+  return withResourceBudget(createAdminClient(),job.ad_account_id,()=>withSyncLease(job.id,job.lease_generation,()=>runClaimedJob(job)),{timeoutMs:240000,maxRequests:2000});
+}
+
 export async function processMetaBackfillJobs(input?: {
   limit?: number;
   targetJobId?: string | null;
@@ -151,14 +170,44 @@ export async function processMetaBackfillJobs(input?: {
   const limit = Math.min(5, Math.max(1, input?.limit ?? 5));
   const results: ProcessMetaBackfillJobsResult['results'] = [];
 
+  const claim = async (jobId?: string | null) => {
+    if (resourceRefreshEnabled()) {
+      const resource = await supabase.rpc('claim_next_account_sync', { p_job: jobId ?? undefined });
+      if (resource.error) throw resource.error;
+      return resource.data?.[0] ?? null;
+    }
+    return claimHistoricalSyncJob(supabase, { jobId, syncTypes: ['initial_historical', 'incremental', 'manual_refresh', 'backfill'] });
+  };
+  if (resourceRefreshEnabled() && !input?.targetJobId) {
+    const pending = await supabase.from('account_sync_resources').select('ad_account_id,platform_integrations!inner(integration_details)').eq('pending', true).neq('availability', 'blocked').lte('not_before', new Date().toISOString()).order('requested_at').limit(100);
+    if (pending.error) throw pending.error;
+    for (const id of new Set(pending.data.filter(row => !asRecord(row.platform_integrations?.integration_details)['deepvisor-meta-phase2']).map(row => row.ad_account_id))) {
+      const promoted = await supabase.rpc('promote_account_resource', { p_account: id });
+      if (promoted.error) throw promoted.error;
+    }
+    const pruned = await supabase.rpc('prune_account_resources');
+    if (pruned.error) throw pruned.error;
+  }
+
   if (input?.targetJobId) {
-    const claimed = await claimHistoricalSyncJob(supabase, {
-      jobId: input.targetJobId,
-      syncTypes: ['initial_historical', 'incremental', 'manual_refresh', 'backfill'],
-    });
+    const followupDeadline=Date.now()+45000;
+    const claimed = await claim(input.targetJobId);
+
 
     if (claimed) {
-      results.push(await processClaimedJob(claimed.id));
+      results.push(await processClaimedJob(claimed));
+      if(resourceRefreshEnabled()) {
+        const completed=await supabase.from('account_sync_jobs').select('metadata').eq('id',claimed.id).single();
+        if(completed.error)throw completed.error;
+        const followup=asRecord(completed.data.metadata).followupJobId;
+        const promoted=typeof followup==='string'?{data:{jobId:followup},error:null}:await supabase.rpc('promote_account_resource',{p_account:claimed.ad_account_id});
+        if(promoted.error)throw promoted.error;
+        const id=asRecord(promoted.data).jobId;
+        if(typeof id==='string' && Date.now()<followupDeadline) {
+          const next=await claim(id);
+          if(next) results.push(await processClaimedJob(next));
+        }
+      }
     }
 
     return {
@@ -174,9 +223,9 @@ export async function processMetaBackfillJobs(input?: {
   const drain = async () => {
     while (Date.now() < deadline && claimedCount < limit) {
       claimedCount++;
-      const claimed = await claimHistoricalSyncJob(supabase, { syncTypes: ['initial_historical', 'incremental', 'manual_refresh', 'backfill'] });
+      const claimed = await claim();
       if (!claimed) break;
-      results.push(await processClaimedJob(claimed.id));
+      results.push(await processClaimedJob(claimed));
     }
   };
   await parallelTasks([drain, drain], 2);

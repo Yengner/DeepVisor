@@ -119,7 +119,7 @@ export function simulatedMetaResponse(token: string, path: string, params: Recor
   }
   for (const value of grouped.values()) {
     const dims: Record<string, string> = { age: '25-34', gender: 'female', country: 'US', region: 'Florida', publisher_platform: 'facebook', platform_position: 'feed', impression_device: 'iphone', device_platform: 'mobile', dma: '539' };
-    const fields = Object.fromEntries(breakdown.split(',').filter(Boolean).map(key => [key, hourly ? '10:00:00 - 10:59:59' : dims[key]]));
+    const fields = Object.fromEntries(breakdown.split(',').filter(Boolean).map(key => [key, key === 'hourly_stats_aggregated_by_advertiser_time_zone' ? '10:00:00 - 10:59:59' : dims[key]]));
     rows.push({ ...value.entity, ...fields, date_start: daily || hourly ? value.date : since, date_stop: daily || hourly ? value.date : until,
       account_currency: 'USD', spend: String(value.spend), impressions: String(value.impressions), clicks: String(value.clicks), inline_link_clicks: String(value.clicks / 2),
       // One stable synthetic cohort; summary reach is never a sum of daily uniques.

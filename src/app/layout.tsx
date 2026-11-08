@@ -21,7 +21,7 @@ const displayFont = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "DeepVisor — Advertising Intelligence",
+  title: "DeepVisor",
   applicationName: "DeepVisor",
   icons: {
     icon: [

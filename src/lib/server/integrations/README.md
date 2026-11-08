@@ -86,7 +86,7 @@ URLs or substitute an unrelated preview. See [exploration](../campaigns/explorat
   bounded dates. Disconnected/expired credentials and ineligible synthetic accounts
   are skipped. Backoff and recovery use persisted state, not browser timers.
 - `/api/integrations/meta/process-backfill-jobs` requires `INTERNAL_API_KEY`; its
-  `maxDuration` is 180 seconds. It schedules independent Review/Shadow draining and
+  `maxDuration` is 300 seconds. It schedules independent Review/Shadow draining and
   outcome measurement even on idle ticks. Selection/manual routes have their own
   execution budgets; actual hosting limits still apply.
 - Edge `process_account_sync_jobs` forwards authenticated work. The old
@@ -132,3 +132,12 @@ npm run build
 
 Live tests remain explicit opt-ins. Do not treat repository implementation, passed
 mock tests, configured credentials, deployed code and enabled schedules as equivalent.
+
+
+## Resource-aware refresh (server feature gate)
+
+`DEEPVISOR_RESOURCE_REFRESH=true` selects the existing queue's resource-aware path.
+Keep the gate off until migrations and the hosted worker/app have been released
+together. See [`resources/README.md`](../sync/resources/README.md) for freshness,
+shared quota admission, fenced publication, validation and activation requirements.
+This does not enable advertising actions or activate cron.

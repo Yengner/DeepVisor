@@ -1,6 +1,7 @@
 import { incrementalWindow } from './incrementalWindow';
 import { readSimulation } from '@/lib/server/integrations/simulation/meta';
 import 'server-only';
+import { resourceRefreshEnabled } from '../resources/coordinator';
 import { accountToday } from '@/lib/shared/reports/dates';
 import { snapshotsDue } from './snapshotCadence';
 import { enqueueShadowAfterSync } from '@/lib/server/decisions/shadow/service';
@@ -27,6 +28,7 @@ import { syncMetaAdsets } from './syncMetaAdsets';
 import { syncMetaCampaigns } from './syncMetaCampaigns';
 import { discoverMetaAdAccounts } from './discoverMetaAdAccounts';
 import { syncMetaPerformance } from './syncMetaPerformance';
+import { syncSavedInsights } from '../resources/insights';
 
 type AdAccountRow = Database['public']['Tables']['ad_accounts']['Row'];
 type AdAccountSyncStateRow = Database['public']['Tables']['ad_account_sync_state']['Row'];
@@ -356,6 +358,7 @@ export async function syncMetaBusinessPlatform(input: {
         platformIntegrationId: input.platformIntegrationId,
         adAccounts: historicalScope,
         ads: ads.rows,
+        reuseFresh: resourceRefreshEnabled() && input.trigger === 'cron',
         adsetsByExternalId: adsets.byExternalId,
         campaignsByExternalId: campaigns.byExternalId,
         accessToken: input.accessToken,
@@ -411,6 +414,9 @@ export async function syncMetaBusinessPlatform(input: {
         creativesSynced: creatives.adCreatives,
         performanceRowsSynced,
       },
+    });
+    await syncSavedInsights(job.id, input.accessToken).catch(() => {
+      console.warn('Optional dashboard insights unavailable; previous retrieval times preserved.');
     });
     const completedAt = new Date().toISOString();
 

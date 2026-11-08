@@ -142,6 +142,7 @@ export interface LeadCampaignMethodSettings {
 }
 
 export interface ManualCampaignDraftForm {
+  assistantMedia?: import('@/lib/shared/assistant/contracts').AssistantMedia[];
   initialStatus?: 'PAUSED';
   reviewRequired?: boolean;
   reuseSource?: CampaignReuseDraftSource;

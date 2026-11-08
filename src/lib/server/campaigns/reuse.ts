@@ -281,7 +281,7 @@ function validateScheduleWindow(schedule: ParsedSchedule): void {
   }
 }
 
-function validateBudget(input: {
+export function validateBudget(input: {
   budgetType: 'daily' | 'lifetime';
   budgetAmount: number;
   durationDays: number;

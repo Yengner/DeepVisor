@@ -1,4 +1,5 @@
 import 'server-only';
+import { resourceRefreshEnabled, requestRecentPerformance } from './resources/coordinator';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { asRecord } from '@/lib/shared';
 import { assertSimulationEnabled } from '@/lib/server/integrations/simulation/meta';
@@ -18,6 +19,7 @@ export async function enqueueAutomaticAccountSync(input: {
   source: 'app_visit' | 'scheduled_refresh'; staleAfterMinutes?: number; lookbackDays?: number;
   allowSimulation?: boolean;
 }): Promise<AutomaticSyncResult> {
+  if (resourceRefreshEnabled()) return requestRecentPerformance(input, input.source);
   if (input.allowSimulation) assertSimulationEnabled();
   const { data, error } = await createAdminClient().rpc('enqueue_automatic_account_sync', {
     p_business: input.businessId, p_integration: input.integrationId, p_account: input.adAccountId,

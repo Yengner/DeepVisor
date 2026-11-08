@@ -7,9 +7,11 @@ import { fetchMetaCollection } from '../../sync/meta/client';
 import { normalize, learningLabel, type Insight, type MetaRow } from './model';
 import { shiftDay } from '../overview/model';
 import type { OverviewContext } from '../overview/load';
+import { resourceRefreshEnabled } from '../../sync/resources/coordinator';
+import { readSavedInsights } from '../../sync/resources/insights';
 
 type Scope = { business: string; account: string; integration: string; external: string; currency: string; zone: string; today: string };
-export type Insights = { daily: Insight[] | null; audience: Insight[] | null; hourly: Insight[] | null; learning: Record<string, string>; fetchedAt: string; source: 'api' | 'unavailable' };
+export type Insights = { daily: Insight[] | null; audience: Insight[] | null; hourly: Insight[] | null; learning: Record<string, string>; fetchedAt: string; canonicalFetchedAt?: string; audienceFetchedAt?: string; hourlyFetchedAt?: string; source: 'api' | 'stored' | 'unavailable' };
 const running = new Map<string, Promise<Insights>>();
 async function fetchInsights(scope: Scope): Promise<Insights> {
   const key = JSON.stringify(scope);
@@ -51,6 +53,16 @@ export const loadInsights = cache(async (context: OverviewContext): Promise<Insi
   const scope: Scope = { business: context.businessId, account: context.account.id, integration: context.platform.id, external: context.account.external_account_id,
     currency: context.account.currency_code, zone: context.zone, today: context.today };
   try {
+    // Authorized context is resolved before this call. New mode never calls Meta on render.
+    if (resourceRefreshEnabled()) {
+      const db = createAdminClient();
+      const [saved, resource] = await Promise.all([
+        readSavedInsights(scope.business, scope.account),
+        db.from('account_sync_resources').select('last_success_at').eq('business_id', scope.business).eq('ad_account_id', scope.account).eq('resource_key', 'performance:v2').maybeSingle(),
+      ]);
+      if (resource.error) throw resource.error;
+      return { ...saved, canonicalFetchedAt: [resource.data?.last_success_at, context.account.last_synced].filter((at): at is string => Boolean(at)).sort().at(-1) ?? '' };
+    }
     // No cookie access or credentials in cache arguments. Reauthorize before every cache read.
     const value = await unstable_cache(() => fetchInsights(scope), ['dashboard-insights-v3', JSON.stringify(scope), 'publisher:daily:age:gender:advertiser-hour'], { revalidate: 300 })();
     return value;

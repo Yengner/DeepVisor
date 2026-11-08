@@ -6,7 +6,7 @@ import type { ControlPerformance } from '../overview/controlModel';
 
 type ComparisonOptions = { timezone?: string; cutoff?: string };
 /** Fail closed for invalid configuration or an account-local date rollover. */
-function todayEligible(today: string, now: string, fetchedAt: string, options: ComparisonOptions) {
+export function todayEligible(today: string, now: string, fetchedAt: string, options: ComparisonOptions) {
   const cutoff = options.cutoff ?? '20:00';
   if (!options.timezone || !/^([01]\d|2[0-3]):[0-5]\d$/.test(cutoff)) return false;
   try {

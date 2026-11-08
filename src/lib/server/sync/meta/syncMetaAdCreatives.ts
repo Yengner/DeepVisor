@@ -1,4 +1,6 @@
 import 'server-only';
+import { readAllPages } from '@/lib/server/repositories/pagination';
+import { creativeNeedsRefresh } from '../resources/creativeFreshness';
 
 import { asRecord, asString, uniqueStrings } from '@/lib/shared';
 import type { Database, Json } from '@/lib/shared/types/supabase';
@@ -421,12 +423,21 @@ export async function syncMetaAdCreatives(input: {
   campaignsByExternalId: Map<string, CampaignDimRow>;
   accessToken: string;
   syncedAt: string;
+  reuseFresh?: boolean;
 }) {
   const creativeInputs: Parameters<typeof upsertAdCreatives>[1] = [];
   const creativeIdsByAdAccount = buildCreativeIdsByAdAccount(input.ads);
 
   for (const adAccount of input.adAccounts) {
-    const creativeIds = creativeIdsByAdAccount.get(adAccount.id) ?? [];
+    let creativeIds = creativeIdsByAdAccount.get(adAccount.id) ?? [];
+    if(input.reuseFresh && creativeIds.length){
+      const saved=await readAllPages((from,to)=>input.supabase.from('ad_creatives').select('platform_creative_id,updated_at,image_url,thumbnail_url')
+        .eq('business_id',input.businessId).eq('ad_account_id',adAccount.id).order('id').range(from,to));
+      const byId=new Map(saved.map(row=>[row.platform_creative_id,row]));
+      const changed=new Map<string,string>();
+      for(const ad of input.ads) if(ad.ad_account_id===adAccount.id && ad.creative_id && ad.updated_time && ad.updated_time>(changed.get(ad.creative_id)??'')) changed.set(ad.creative_id,ad.updated_time);
+      creativeIds=creativeIds.filter(id=>creativeNeedsRefresh(byId.get(id),changed.get(id)??null,Date.parse(input.syncedAt)));
+    }
     if (creativeIds.length === 0) {
       continue;
     }

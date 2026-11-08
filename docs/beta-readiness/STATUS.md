@@ -1,3 +1,31 @@
+## Resource-aware Meta freshness — implemented, hosted rollout pending (2026-11-08 UTC)
+
+- Reuses existing queue/worker with 15-minute active eligibility, 90-minute scheduled
+  eligibility, bounded recent windows, independent maintenance, shared quota admission,
+  fenced atomic resource publication, audience batches and preserved manual refresh.
+- Dashboard no longer reads Meta on render in the new mode. Combined KPIs use saved
+  ad-set facts shared with assistant; optional publisher/audience/hourly data is persisted
+  with independent retrieval times. Paid assistant calls never auto-repeat.
+- Six reproducible migrations applied to existing dev project `gkdyyjqepzayjdpvqnja`;
+  local/remote versions aligned and public bindings regenerated. See
+  `src/lib/server/sync/resources/README.md` for objects, files, commands and limits.
+- Validation: 1,103 unit tests passed / 19 opt-in skipped; separate real Supabase resource
+  flow passed. Twenty requests coalesced; 480 USD / 48 leads / 10 USD CPR verified;
+  separate snapshot windows, scoped normal-client RLS and 30-day manual handoff passed.
+  Four optional datasets persisted; desktop/mobile screenshots inspected with no JS errors.
+  Typecheck, targeted lint, production build and architecture checks passed.
+- Fixed generation/NULL guards, dropped manual-followup intent, quota waits consuming
+  failure limits, invalid Meta response handling, queue fairness, worker duration mismatch
+  and stale/mismatched Dashboard data source. No live Meta calls or advertising writes.
+- P1 rollout: no deployment/activation. Hosted enqueue remains inactive (`0 */1 * * *`);
+  worker remains active `*/10 * * * *`. Separately approve fail-closed app/Edge deployment,
+  verify authorization, apply reviewed `0 */2 * * *` Vault schedule, enable server flag,
+  then verify a controlled live read-only account. No secrets/settings changed here.
+- Limits: no live latency/quota benchmark; legacy full-history writes are still staged
+  rather than globally atomic; very large backfills still need resumable windows.
+  Optional breakdowns refresh more slowly and retain coverage. Existing security-advisor
+  warnings are unchanged; no new findings target the added insight/claim functions.
+
 ## Sync optimization — 2026-10-29
 
 Implemented bounded Meta fetch concurrency, single-pass initial snapshots and daily snapshot cadence, batched scheduling, bounded queue draining, persisted completion comparisons, advertiser-local fallback windows, and normalization v2. Local validation: full suite 929 passed / 16 skipped before final focused additions; focused checks/typecheck/build/lint recorded in the task handoff. A prior Agency navigation expectation was updated; database tests pass with two workers.

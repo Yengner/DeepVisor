@@ -1,3 +1,25 @@
+## Resource-aware mode
+
+With `DEEPVISOR_RESOURCE_REFRESH=true`, Dashboard rendering makes **no Meta calls**.
+`loadInsights` reads business/account-scoped `account_insight_snapshots`, published
+by existing initial/manual/maintenance jobs under the shared API budget. Each
+optional dataset is replaced atomically after a complete validated response;
+failures preserve its previous payload and actual retrieval timestamp. The
+worker obeys business history policy, caps daily publisher history at 60 days,
+audience/hourly at 30, and limits each dataset to 100,000 observations. It does not
+turn summary audience snapshots into daily rows. Daily audience and hourly charts
+show independent retrieval times in Source & coverage.
+
+Combined KPIs, trends and ad-set cards use canonical saved ad-set daily facts,
+the same source level used by the assistant. Facebook/Instagram views retain their
+own persisted publisher observations and retrieval time; they may be older than
+combined metrics. Optional datasets refresh with maintenance (at most hourly for
+active accounts, six-hour eligibility for background work) or explicit manual sync,
+not on every light performance refresh. Comparisons retain existing evidence gates.
+No new client provider path or independent queue is introduced.
+
+The remainder describes the compatibility path when the feature gate is off.
+
 # Overview read-through Meta Insights
 
 `loadInsights(context)` receives the existing authorized Overview context. It uses

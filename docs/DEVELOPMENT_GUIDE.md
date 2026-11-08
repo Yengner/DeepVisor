@@ -22,6 +22,9 @@ Meta OAuth configuration is owned by
 uses `CRON_SECRET` and `APP_BASE_URL`. Consult those adapters/runbooks for the
 specific workflow rather than enabling every integration during setup.
 
+Ask DeepVisor setup, private persistence, usage limits and draft-only capabilities are documented in
+[the assistant guide](../src/lib/server/intelligence/assistant/README.md).
+
 Optional provider configuration belongs to its adapter: [Jev contract and variables](../src/lib/server/decisions/README.md),
 [`openai/config.ts`](../src/lib/server/openai/config.ts) and
 [`openai/structured.ts`](../src/lib/server/openai/structured.ts). `JEV_API_KEY`

@@ -5,6 +5,7 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { enqueueAutomaticAccountSync, targetedSimulationAllowed } from '@/lib/server/sync/automaticRefresh';
+import { resourceRefreshEnabled } from '@/lib/server/sync/resources/coordinator';
 import { dispatchAccountSync } from '@/lib/server/sync/dispatch';
 export const maxDuration = 300;
 const headers = { 'Cache-Control': 'no-store' };
@@ -37,23 +38,28 @@ export async function GET(request: NextRequest) {
     const {businessId,selectedPlatformId,selectedAdAccountId}=await scope();
     if(!selectedPlatformId||!selectedAdAccountId)return NextResponse.json({status:'disconnected',lastSuccessfulAt:null},{headers});
     const client=createAdminClient();
-    const [state,latest,integration]=await Promise.all([
+    const [state,latest,integration,completed]=await Promise.all([
       client.from('ad_account_sync_state').select('last_successful_sync_job_id').eq('ad_account_id',selectedAdAccountId).maybeSingle(),
       client.from('account_sync_jobs').select('id,status,finished_at').eq('business_id',businessId)
         .eq('platform_integration_id',selectedPlatformId).eq('ad_account_id',selectedAdAccountId).order('created_at',{ascending:false}).limit(1).maybeSingle(),
       client.from('platform_integrations').select('status,token_expires_at').eq('business_id',businessId).eq('id',selectedPlatformId).maybeSingle(),
+      client.from('account_sync_jobs').select('id,finished_at').eq('business_id',businessId).eq('ad_account_id',selectedAdAccountId).eq('status','completed').order('finished_at',{ascending:false}).limit(1).maybeSingle(),
     ]);
-    if(state.error||latest.error||integration.error)throw state.error??latest.error??integration.error;
+    if(state.error||latest.error||integration.error||completed.error)throw state.error??latest.error??integration.error??completed.error;
     let lastSuccessfulAt:string|null=null;
     if(state.data?.last_successful_sync_job_id){
       const success=await client.from('account_sync_jobs').select('finished_at').eq('id',state.data.last_successful_sync_job_id)
         .eq('business_id',businessId).eq('ad_account_id',selectedAdAccountId).eq('status','completed').maybeSingle();
       if(success.error)throw success.error;lastSuccessfulAt=success.data?.finished_at??null;
     }
+    const resource = resourceRefreshEnabled() ? await client.from('account_sync_resources').select('revision,last_success_at,coverage_start,coverage_end,availability,pending').eq('business_id',businessId).eq('ad_account_id',selectedAdAccountId).eq('resource_key','performance:v2').maybeSingle() : {data:null,error:null};
+    if(resource.error)throw resource.error;
+    const revision=`${lastSuccessfulAt??''}:${resource.data?.revision??0}:${completed.data?.id??''}:${completed.data?.finished_at??''}`;
+    if(request.nextUrl.searchParams.has('knownRevision')&&request.nextUrl.searchParams.get('knownRevision')!==revision) revalidateTag(`dashboard-context:${businessId}`,{expire:0});
     if(lastSuccessfulAt&&request.nextUrl.searchParams.has('knownSuccessfulAt')&&request.nextUrl.searchParams.get('knownSuccessfulAt')!==lastSuccessfulAt)
       revalidateTag(`dashboard-context:${businessId}`,{expire:0});
     const reauth=integration.data?.status==='needs_reauth'||Boolean(integration.data?.token_expires_at&&Date.parse(integration.data.token_expires_at)<=Date.now());
-    return NextResponse.json({status:reauth?'reauthentication_required':latest.data?.status??'never_synced',jobId:latest.data?.id??null,lastSuccessfulAt},{headers});
+    return NextResponse.json({status:reauth?'reauthentication_required':latest.data?.status??'never_synced',jobId:latest.data?.id??null,lastSuccessfulAt,revision,performance:resource.data,resourceRefreshEnabled:resourceRefreshEnabled()},{headers});
   } catch(error) {
     unstable_rethrow(error);console.error('Automatic refresh status unavailable');
     return NextResponse.json({error:'Sync status unavailable.'},{status:500,headers});

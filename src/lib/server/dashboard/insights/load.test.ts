@@ -1,15 +1,18 @@
-import { beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 vi.mock('server-only',()=>({}));
 vi.mock('react',()=>({cache:(fn:unknown)=>fn}));
+const saved=vi.hoisted(()=>vi.fn());
+vi.mock('../../sync/resources/insights',()=>({readSavedInsights:saved}));
 const state=vi.hoisted(()=>({cache:new Map<string,Promise<unknown>>(),reads:vi.fn(),token:vi.fn(),account:vi.fn(),integration:vi.fn()}));
 vi.mock('next/cache',()=>({unstable_cache:(fn:()=>Promise<unknown>,key:string[])=>()=>{const k=JSON.stringify(key); if(!state.cache.has(k))state.cache.set(k,fn());return state.cache.get(k);}}));
 vi.mock('../../sync/meta/client',()=>({fetchMetaCollection:state.reads}));
 vi.mock('../../integrations/service',()=>({getBusinessIntegrationById:state.integration,resolveIntegrationAccessToken:state.token}));
-vi.mock('../../supabase/admin',()=>({createAdminClient:()=>({from:()=>{const query={select:()=>query,eq:(key:string,value:string)=>{state.account(key,value);return query;},single:async()=>({data:{external_account_id:'123'},error:null})};return query;}})}));
+vi.mock('../../supabase/admin',()=>({createAdminClient:()=>({from:()=>{const query={select:()=>query,eq:(key:string,value:string)=>{state.account(key,value);return query;},maybeSingle:async()=>({data:{last_success_at:'2026-11-01T12:00:00Z'},error:null}),single:async()=>({data:{external_account_id:'123'},error:null})};return query;}})}));
 import { loadInsights } from './load';
 import type { OverviewContext } from '../overview/load';
 const context=(business='business')=>({businessId:business,account:{id:'account',external_account_id:'123',currency_code:'USD'},platform:{id:'integration',status:'connected'},zone:'America/New_York',timezoneUnavailable:false,today:'2026-11-01'}) as unknown as OverviewContext;
-beforeEach(()=>{vi.clearAllMocks();state.cache.clear();state.integration.mockResolvedValue({status:'connected'});state.token.mockResolvedValue('private-test-token');state.reads.mockResolvedValue([]);});
+afterEach(()=>vi.unstubAllEnvs());
+beforeEach(()=>{vi.stubEnv('DEEPVISOR_RESOURCE_REFRESH','false');vi.clearAllMocks();state.cache.clear();state.integration.mockResolvedValue({status:'connected'});state.token.mockResolvedValue('private-test-token');state.reads.mockResolvedValue([]);});
 it('shares window across equivalent reads, isolates businesses and keeps credentials outside cache keys',async()=>{
  await Promise.all([loadInsights(context()),loadInsights(context())]); expect(state.reads).toHaveBeenCalledTimes(4);
  await loadInsights(context('other'));expect(state.reads).toHaveBeenCalledTimes(8);
@@ -34,4 +37,13 @@ it('keeps combined-only fallbacks separate and dates hourly delivery without req
  const result=await loadInsights(context());
  expect(result.audience).toHaveLength(1);expect(result.audience?.[0].publisher).toBe('combined-only');
  expect(result.hourly).toHaveLength(1);expect(result.hourly?.[0]).toMatchObject({publisher:'combined-only',day:'2026-11-01',leads:null});
+});
+
+it('reads saved scoped observations without Meta or token access in resource mode',async()=>{
+ vi.stubEnv('DEEPVISOR_RESOURCE_REFRESH','true');
+ saved.mockResolvedValue({daily:[],audience:null,hourly:[],learning:{},fetchedAt:'2026-11-01T10:00:00Z',source:'stored'});
+ const result=await loadInsights(context());
+ expect(saved).toHaveBeenCalledWith('business','account');expect(result.source).toBe('stored');
+ expect(result.canonicalFetchedAt).toBe('2026-11-01T12:00:00Z');
+ expect(state.reads).not.toHaveBeenCalled();expect(state.token).not.toHaveBeenCalled();
 });

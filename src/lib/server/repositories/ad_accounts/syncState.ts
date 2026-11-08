@@ -33,6 +33,9 @@ type HistoricalSyncProgress = {
 };
 
 type HistoricalSyncJobMetadata = {
+  resourceKey?: string | null;
+  resourceKind?: string | null;
+  query?: Json;
   externalAccountId?: string | null;
   queuedFrom?: string | null;
   trigger?: string | null;
@@ -100,6 +103,9 @@ function parseHistoricalSyncJobMetadata(value: Json | null | undefined): Histori
     : null;
 
   return {
+    resourceKey: asNullableString(metadata.resourceKey),
+    resourceKind: asNullableString(metadata.resourceKind),
+    query: metadata.query as Json | undefined,
     externalAccountId: asNullableString(metadata.externalAccountId),
     queuedFrom: asNullableString(metadata.queuedFrom),
     trigger: asNullableString(metadata.trigger),
@@ -132,6 +138,7 @@ function serializeHistoricalSyncJobMetadata(
   metadata: HistoricalSyncJobMetadata
 ): Database['public']['Tables']['account_sync_jobs']['Update']['metadata'] {
   return {
+    ...(metadata.resourceKey ? {resourceKey:metadata.resourceKey,resourceKind:metadata.resourceKind,query:metadata.query} : {}),
     ...(metadata.externalAccountId ? { externalAccountId: metadata.externalAccountId } : {}),
     ...(metadata.queuedFrom ? { queuedFrom: metadata.queuedFrom } : {}),
     ...(metadata.trigger ? { trigger: metadata.trigger } : {}),
@@ -417,6 +424,13 @@ export async function createOrReuseQueuedSyncJob(
   const existing = existingJobs[0] ?? null;
 
   if (existing) {
+    if (existing.sync_type === 'resource_refresh' && input.syncType === 'manual_refresh') {
+      const followup = await supabase.rpc('request_resource_followup', {p_job:existing.id,p_business:input.businessId,p_integration:input.platformIntegrationId,p_account:input.adAccountId,p_since:input.requestedStartDate,p_until:input.requestedEndDate});
+      if(followup.error)throw followup.error;
+      if(followup.data?.[0])return followup.data[0];
+      // The narrow job finished before the row lock; read the current active job again.
+      return createOrReuseQueuedSyncJob(supabase,input);
+    }
     return existing;
   }
 
@@ -454,6 +468,7 @@ export async function createOrReuseQueuedSyncJob(
     const winner = await selectHistoricalSyncJobs(supabase, {
       adAccountIds: [input.adAccountId], statuses: ['queued', 'running'],
     });
+    if (winner[0]?.sync_type === 'resource_refresh' && input.syncType === 'manual_refresh') return createOrReuseQueuedSyncJob(supabase,input);
     if (winner[0]) return winner[0];
   }
 

@@ -18,12 +18,12 @@ export async function POST() {
       return NextResponse.json({ success: false, message: 'Select a connected Meta account first.' }, { status: 400 });
     }
     const client = createAdminClient();
-    const { data: existing, error } = await client.from('account_sync_jobs').select('id,status')
+    const { data: existing, error } = await client.from('account_sync_jobs').select('id,status,sync_type,metadata')
       .eq('business_id', businessId).eq('platform_integration_id', selection.selectedPlatformId)
       .eq('ad_account_id', selection.selectedAdAccountId).in('status', ['queued', 'running'])
       .order('created_at', { ascending: false }).limit(1).maybeSingle();
     if (error) throw error;
-    if (existing) {
+    if (existing && (existing.sync_type !== 'resource_refresh' || asRecord(existing.metadata).manualFollowup)) {
       if (existing.status === 'queued') dispatch(existing.id, businessId);
       return NextResponse.json({ success: true, jobId: existing.id, status: existing.status, message: 'An account refresh is already running.' }, { status: 202 });
     }
@@ -48,12 +48,18 @@ export async function GET(request: NextRequest) {
     const jobId = request.nextUrl.searchParams.get('jobId');
     if (!jobId || !/^[0-9a-f-]{36}$/i.test(jobId)) return NextResponse.json({ success: false }, { status: 400 });
     const client = createAdminClient();
-    const { data: job, error } = await client.from('account_sync_jobs').select('*')
+    const { data: originalJob, error } = await client.from('account_sync_jobs').select('*')
       .eq('id', jobId).eq('business_id', businessId)
       .eq('ad_account_id', selection.selectedAdAccountId ?? '')
       .eq('platform_integration_id', selection.selectedPlatformId ?? '').maybeSingle();
     if (error) throw error;
-    if (!job) return NextResponse.json({ success: false, message: 'Refresh is unavailable for the selected account.' }, { status: 404 });
+    if (!originalJob) return NextResponse.json({ success: false, message: 'Refresh is unavailable for the selected account.' }, { status: 404 });
+    let job=originalJob;
+    const followupId=asRecord(job.metadata).followupJobId;
+    if(typeof followupId==='string'){
+      const followup=await client.from('account_sync_jobs').select('*').eq('id',followupId).eq('business_id',businessId).eq('ad_account_id',selection.selectedAdAccountId??'').eq('platform_integration_id',selection.selectedPlatformId??'').single();
+      if(followup.error)throw followup.error;job=followup.data;
+    }
     let unchanged: boolean | null = null;
     if (job.status === 'completed') {
       revalidateTag(`dashboard-context:${businessId}`, { expire: 0 });

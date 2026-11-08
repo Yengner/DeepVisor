@@ -1,4 +1,3 @@
-// Public: Supabase CLI generated. ai/intelligence: catalog-derived nullable RPC contracts preserved.
 export type Json =
   | string
   | number
@@ -1096,6 +1095,61 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_insight_snapshots: {
+        Row: {
+          ad_account_id: string
+          business_id: string
+          coverage_end: string
+          coverage_start: string
+          dataset: string
+          job_id: string | null
+          payload: Json
+          retrieved_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          business_id: string
+          coverage_end: string
+          coverage_start: string
+          dataset: string
+          job_id?: string | null
+          payload: Json
+          retrieved_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          business_id?: string
+          coverage_end?: string
+          coverage_start?: string
+          dataset?: string
+          job_id?: string | null
+          payload?: Json
+          retrieved_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_insight_snapshots_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_insight_snapshots_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_insight_snapshots_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "account_sync_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       account_organization_baselines: {
         Row: {
           ad_account_id: string
@@ -1216,9 +1270,13 @@ export type Database = {
           error_message: string | null
           finished_at: string | null
           id: string
+          lease_expires_at: string | null
+          lease_generation: number
           metadata: Json
+          not_before: string
           performance_rows_synced: number
           platform_integration_id: string
+          priority: number
           requested_end_date: string | null
           requested_start_date: string | null
           started_at: string | null
@@ -1239,9 +1297,13 @@ export type Database = {
           error_message?: string | null
           finished_at?: string | null
           id?: string
+          lease_expires_at?: string | null
+          lease_generation?: number
           metadata?: Json
+          not_before?: string
           performance_rows_synced?: number
           platform_integration_id: string
+          priority?: number
           requested_end_date?: string | null
           requested_start_date?: string | null
           started_at?: string | null
@@ -1262,9 +1324,13 @@ export type Database = {
           error_message?: string | null
           finished_at?: string | null
           id?: string
+          lease_expires_at?: string | null
+          lease_generation?: number
           metadata?: Json
+          not_before?: string
           performance_rows_synced?: number
           platform_integration_id?: string
+          priority?: number
           requested_end_date?: string | null
           requested_start_date?: string | null
           started_at?: string | null
@@ -1292,6 +1358,130 @@ export type Database = {
             columns: ["platform_integration_id"]
             isOneToOne: false
             referencedRelation: "platform_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      account_sync_resources: {
+        Row: {
+          ad_account_id: string
+          availability: string
+          business_id: string
+          coverage_end: string | null
+          coverage_start: string | null
+          failures: number
+          kind: string
+          last_attempt_at: string | null
+          last_job_id: string | null
+          last_success_at: string | null
+          not_before: string
+          pending: boolean
+          platform_integration_id: string
+          priority: number
+          query: Json
+          requested_at: string
+          resource_key: string
+          revision: number
+        }
+        Insert: {
+          ad_account_id: string
+          availability?: string
+          business_id: string
+          coverage_end?: string | null
+          coverage_start?: string | null
+          failures?: number
+          kind: string
+          last_attempt_at?: string | null
+          last_job_id?: string | null
+          last_success_at?: string | null
+          not_before?: string
+          pending?: boolean
+          platform_integration_id: string
+          priority?: number
+          query: Json
+          requested_at?: string
+          resource_key: string
+          revision?: number
+        }
+        Update: {
+          ad_account_id?: string
+          availability?: string
+          business_id?: string
+          coverage_end?: string | null
+          coverage_start?: string | null
+          failures?: number
+          kind?: string
+          last_attempt_at?: string | null
+          last_job_id?: string | null
+          last_success_at?: string | null
+          not_before?: string
+          pending?: boolean
+          platform_integration_id?: string
+          priority?: number
+          query?: Json
+          requested_at?: string
+          resource_key?: string
+          revision?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_sync_resources_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_sync_resources_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_sync_resources_last_job_id_fkey"
+            columns: ["last_job_id"]
+            isOneToOne: false
+            referencedRelation: "account_sync_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_sync_resources_platform_integration_id_fkey"
+            columns: ["platform_integration_id"]
+            isOneToOne: false
+            referencedRelation: "platform_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      account_sync_staging: {
+        Row: {
+          chunk: number
+          created_at: string
+          generation: number
+          job_id: string
+          rows: Json
+        }
+        Insert: {
+          chunk: number
+          created_at?: string
+          generation: number
+          job_id: string
+          rows: Json
+        }
+        Update: {
+          chunk?: number
+          created_at?: string
+          generation?: number
+          job_id?: string
+          rows?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_sync_staging_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "account_sync_jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -1366,6 +1556,7 @@ export type Database = {
       }
       ad_account_sync_state: {
         Row: {
+          active_until: string | null
           ad_account_id: string
           created_at: string
           dimensions_synced_at: string | null
@@ -1384,6 +1575,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_until?: string | null
           ad_account_id: string
           created_at?: string
           dimensions_synced_at?: string | null
@@ -1402,6 +1594,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_until?: string | null
           ad_account_id?: string
           created_at?: string
           dimensions_synced_at?: string | null
@@ -2958,6 +3151,210 @@ export type Database = {
           },
         ]
       }
+      assistant_conversations: {
+        Row: {
+          ad_account_id: string
+          business_id: string
+          generation: string
+          id: string
+          lock_id: string | null
+          locked_until: string | null
+          revision: number
+          state: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ad_account_id: string
+          business_id: string
+          generation?: string
+          id?: string
+          lock_id?: string | null
+          locked_until?: string | null
+          revision?: number
+          state?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ad_account_id?: string
+          business_id?: string
+          generation?: string
+          id?: string
+          lock_id?: string | null
+          locked_until?: string | null
+          revision?: number
+          state?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_conversations_business_id_ad_account_id_fkey"
+            columns: ["business_id", "ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["business_id", "id"]
+          },
+          {
+            foreignKeyName: "assistant_conversations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistant_usage: {
+        Row: {
+          business_id: string
+          cached_tokens: number
+          conversation_id: string
+          created_at: string
+          estimated_usd: number | null
+          generation: string
+          id: string
+          input_tokens: number
+          model: string | null
+          output_tokens: number
+          reserved_tokens: number
+          status: string
+        }
+        Insert: {
+          business_id: string
+          cached_tokens?: number
+          conversation_id: string
+          created_at?: string
+          estimated_usd?: number | null
+          generation: string
+          id: string
+          input_tokens?: number
+          model?: string | null
+          output_tokens?: number
+          reserved_tokens: number
+          status?: string
+        }
+        Update: {
+          business_id?: string
+          cached_tokens?: number
+          conversation_id?: string
+          created_at?: string
+          estimated_usd?: number | null
+          generation?: string
+          id?: string
+          input_tokens?: number
+          model?: string | null
+          output_tokens?: number
+          reserved_tokens?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_usage_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assistant_usage_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audience_snapshot_batches: {
+        Row: {
+          ad_account_id: string
+          business_id: string
+          completeness: string
+          coverage_end: string | null
+          coverage_start: string | null
+          id: string
+          job_id: string | null
+          published_at: string
+          query: Json
+          resource_key: string
+          row_count: number
+        }
+        Insert: {
+          ad_account_id: string
+          business_id: string
+          completeness: string
+          coverage_end?: string | null
+          coverage_start?: string | null
+          id?: string
+          job_id?: string | null
+          published_at?: string
+          query: Json
+          resource_key: string
+          row_count: number
+        }
+        Update: {
+          ad_account_id?: string
+          business_id?: string
+          completeness?: string
+          coverage_end?: string | null
+          coverage_start?: string | null
+          id?: string
+          job_id?: string | null
+          published_at?: string
+          query?: Json
+          resource_key?: string
+          row_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audience_snapshot_batches_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audience_snapshot_batches_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audience_snapshot_batches_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "account_sync_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audience_snapshot_rows: {
+        Row: {
+          batch_id: string
+          data: Json
+          row_number: number
+        }
+        Insert: {
+          batch_id: string
+          data: Json
+          row_number: number
+        }
+        Update: {
+          batch_id?: string
+          data?: Json
+          row_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audience_snapshot_rows_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "audience_snapshot_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_data_policies: {
         Row: {
           allow_ad_level_audience: boolean
@@ -3476,6 +3873,53 @@ export type Database = {
             columns: ["updated_by_user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meta_api_budget_state: {
+        Row: {
+          bucket: string
+          cooldown_until: string | null
+          observed_at: string | null
+          usage_percent: number | null
+        }
+        Insert: {
+          bucket: string
+          cooldown_until?: string | null
+          observed_at?: string | null
+          usage_percent?: number | null
+        }
+        Update: {
+          bucket?: string
+          cooldown_until?: string | null
+          observed_at?: string | null
+          usage_percent?: number | null
+        }
+        Relationships: []
+      }
+      meta_api_request_leases: {
+        Row: {
+          ad_account_id: string
+          expires_at: string
+          id: string
+        }
+        Insert: {
+          ad_account_id: string
+          expires_at: string
+          id?: string
+        }
+        Update: {
+          ad_account_id?: string
+          expires_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_api_request_leases_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -6862,6 +7306,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admit_meta_read: { Args: { p_account: string }; Returns: string }
       assert_account_deletable: { Args: { p_user: string }; Returns: undefined }
       can_access_account: {
         Args: { p_ad_account_id: string }
@@ -6873,6 +7318,42 @@ export type Database = {
       }
       can_access_business: { Args: { p_business_id: string }; Returns: boolean }
       can_manage_business: { Args: { p_business_id: string }; Returns: boolean }
+      claim_account_resource: {
+        Args: { p_job?: string }
+        Returns: {
+          actual_end_date: string | null
+          actual_start_date: string | null
+          ad_account_id: string
+          ads_synced: number
+          adsets_synced: number
+          business_id: string
+          campaigns_synced: number
+          created_at: string
+          creatives_synced: number
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          lease_expires_at: string | null
+          lease_generation: number
+          metadata: Json
+          not_before: string
+          performance_rows_synced: number
+          platform_integration_id: string
+          priority: number
+          requested_end_date: string | null
+          requested_start_date: string | null
+          started_at: string | null
+          status: string
+          sync_type: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "account_sync_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_account_sync_job: {
         Args: { allowed_sync_types?: string[]; target_job_id?: string }
         Returns: {
@@ -6888,9 +7369,65 @@ export type Database = {
           error_message: string | null
           finished_at: string | null
           id: string
+          lease_expires_at: string | null
+          lease_generation: number
           metadata: Json
+          not_before: string
           performance_rows_synced: number
           platform_integration_id: string
+          priority: number
+          requested_end_date: string | null
+          requested_start_date: string | null
+          started_at: string | null
+          status: string
+          sync_type: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "account_sync_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_assistant_turn: {
+        Args: {
+          p_account: string
+          p_business: string
+          p_business_requests: number
+          p_business_tokens: number
+          p_conversation_requests: number
+          p_conversation_tokens: number
+          p_lock: string
+          p_minute: number
+          p_revision: number
+          p_tokens: number
+          p_user: string
+        }
+        Returns: Json
+      }
+      claim_next_account_sync: {
+        Args: { p_job?: string }
+        Returns: {
+          actual_end_date: string | null
+          actual_start_date: string | null
+          ad_account_id: string
+          ads_synced: number
+          adsets_synced: number
+          business_id: string
+          campaigns_synced: number
+          created_at: string
+          creatives_synced: number
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          lease_expires_at: string | null
+          lease_generation: number
+          metadata: Json
+          not_before: string
+          performance_rows_synced: number
+          platform_integration_id: string
+          priority: number
           requested_end_date: string | null
           requested_start_date: string | null
           started_at: string | null
@@ -6926,6 +7463,25 @@ export type Database = {
         Returns: Json
       }
       ensure_onboarding_workspace: { Args: never; Returns: string }
+      fail_account_resource: {
+        Args: {
+          p_generation: number
+          p_job: string
+          p_reason: string
+          p_retry_seconds?: number
+        }
+        Returns: undefined
+      }
+      finish_meta_read: {
+        Args: {
+          p_account: string
+          p_account_usage?: number
+          p_app_usage?: number
+          p_lease: string
+          p_retry_seconds?: number
+        }
+        Returns: undefined
+      }
       get_org_role: {
         Args: { p_organization_id: string }
         Returns: Database["public"]["Enums"]["org_role"]
@@ -7020,6 +7576,86 @@ export type Database = {
       organizer_claim: {
         Args: { p_actor: string; p_approval: string; p_business: string }
         Returns: Json
+      }
+      promote_account_resource: { Args: { p_account: string }; Returns: Json }
+      prune_account_resources: { Args: never; Returns: undefined }
+      publish_account_insights: {
+        Args: {
+          p_dataset: string
+          p_generation: number
+          p_job: string
+          p_payload: Json
+          p_since: string
+          p_until: string
+        }
+        Returns: undefined
+      }
+      publish_account_resource: {
+        Args: { p_chunks: number; p_generation: number; p_job: string }
+        Returns: number
+      }
+      request_account_resource: {
+        Args: {
+          p_account: string
+          p_allow_simulation?: boolean
+          p_business: string
+          p_integration: string
+          p_kind: string
+          p_query: Json
+        }
+        Returns: Json
+      }
+      request_resource_followup: {
+        Args: {
+          p_account: string
+          p_business: string
+          p_integration: string
+          p_job: string
+          p_since: string
+          p_until: string
+        }
+        Returns: {
+          actual_end_date: string | null
+          actual_start_date: string | null
+          ad_account_id: string
+          ads_synced: number
+          adsets_synced: number
+          business_id: string
+          campaigns_synced: number
+          created_at: string
+          creatives_synced: number
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          lease_expires_at: string | null
+          lease_generation: number
+          metadata: Json
+          not_before: string
+          performance_rows_synced: number
+          platform_integration_id: string
+          priority: number
+          requested_end_date: string | null
+          requested_start_date: string | null
+          started_at: string | null
+          status: string
+          sync_type: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "account_sync_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      stage_account_resource: {
+        Args: {
+          p_chunk: number
+          p_generation: number
+          p_job: string
+          p_rows: Json
+        }
+        Returns: undefined
       }
       store_platform_token: {
         Args: {

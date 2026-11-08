@@ -25,14 +25,10 @@ function subscribe(notify: () => void) {
 }
 
 /** Theme is scoped to Stage B surfaces; it does not restyle unapproved pages. */
-export default function DesignSurface({ children, label }: { children: ReactNode; label: string }) {
+export default function DesignSurface({ children }: { children: ReactNode; label?: string }) {
   const storedTheme = useSyncExternalStore(subscribe, readTheme, () => 'light');
   const theme = storedTheme;
   return <div className={classes.surface} data-dv-theme={theme}>
-    <div className={classes.toolbar}>
-      <span className={classes.label}>{label}</span>
-
-    </div>
     {children}
   </div>;
 }

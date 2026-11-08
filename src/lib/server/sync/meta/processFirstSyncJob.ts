@@ -15,6 +15,7 @@ import {
   getOrCreateBusinessDataPolicy,
 } from '@/lib/server/repositories/business_data_policies/getBusinessDataPolicy';
 import { refreshMetaPerformanceSummaries, syncMetaPerformance } from '@/lib/server/sync/meta/syncMetaPerformance';
+import { syncSavedInsights } from '../resources/insights';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
 import {
   runBusinessAssessment,
@@ -452,6 +453,9 @@ export async function processMetaFirstSyncJob(input: {
     console.error('First Meta history sync assessments failed:', error);
   }
 
+  await syncSavedInsights(input.job.id, input.accessToken).catch(() => {
+    console.warn('Optional dashboard insights unavailable; previous retrieval times preserved.');
+  });
   await markIntegrationSynced(input.supabase, input.job.platform_integration_id);
   const completedAt = new Date().toISOString();
   await completeHistoricalSyncJob(input.supabase, {

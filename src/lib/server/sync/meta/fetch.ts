@@ -1063,6 +1063,7 @@ export async function fetchMetaAdsetAudienceBreakdownSeeds(input: {
   backfillDays?: number;
   dateRange?: MetaDateRange;
   allowedBreakdowns?: string[];
+  strictUnsupported?: boolean;
 }): Promise<MetaAudienceBreakdownSeed[]> {
   return fetchMetaAudienceBreakdownSeedsByLevel({
     ...input,
@@ -1076,6 +1077,7 @@ export async function fetchMetaAdAudienceBreakdownSeeds(input: {
   backfillDays?: number;
   dateRange?: MetaDateRange;
   allowedBreakdowns?: string[];
+  strictUnsupported?: boolean;
 }): Promise<MetaAudienceBreakdownSeed[]> {
   return fetchMetaAudienceBreakdownSeedsByLevel({
     ...input,
@@ -1113,6 +1115,7 @@ async function fetchMetaAudienceBreakdownSeedsByLevel(input: {
   backfillDays?: number;
   dateRange?: MetaDateRange;
   allowedBreakdowns?: string[];
+  strictUnsupported?: boolean;
   level: 'adset' | 'ad';
 }): Promise<MetaAudienceBreakdownSeed[]> {
   const rows: MetaAudienceBreakdownSeed[] = [];
@@ -1192,7 +1195,10 @@ async function fetchMetaAudienceBreakdownSeedsByLevel(input: {
     } catch (error) {
       // Explicitly unsupported dimensions have no observations; operational failures must retry.
       const message = error instanceof Error ? error.message : '';
-      if (/breakdowns?.*(?:not supported|not available|cannot be combined)|(?:not supported|not available).*breakdowns?/i.test(message)) continue;
+      if (/breakdowns?.*(?:not supported|not available|cannot be combined)|(?:not supported|not available).*breakdowns?/i.test(message)) {
+        if (input.strictUnsupported) throw new Error('Unsupported audience breakdown', { cause: error });
+        continue;
+      }
       // Do not mark an incomplete snapshot refresh as successfully cached.
       throw new Error(`Meta audience ${config.breakdownType} unavailable`, {cause:error});
     }

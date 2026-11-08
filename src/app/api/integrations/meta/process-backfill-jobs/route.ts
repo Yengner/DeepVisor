@@ -3,7 +3,7 @@ import { processMetaBackfillJobs } from '@/lib/server/sync/meta/processBackfillJ
 import { drainShadowJobs } from '@/lib/server/decisions/shadow/service';
 import { processActionOutcomes } from '@/lib/server/decisions/outcomes/service';
 
-export const maxDuration = 180;
+export const maxDuration = 300;
 
 function getRequestApiKey(request: NextRequest): string | null {
   const apiKeyHeader = request.headers.get('x-internal-api-key');

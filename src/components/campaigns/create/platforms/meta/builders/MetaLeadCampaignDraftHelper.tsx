@@ -102,6 +102,7 @@ type AdSetState = Omit<LeadCampaignAdSetDraft, 'pageId' | 'targeting' | 'creativ
 };
 
 type HelperState = {
+  assistantMedia?: ManualCampaignDraftForm['assistantMedia'];
   initialStatus?: 'PAUSED';
   reviewRequired?: boolean;
   reuseSource?: CampaignReuseDraftSource;
@@ -978,6 +979,7 @@ function buildInitialState(
   return {
     initialStatus: draft?.initialStatus,
     reviewRequired: draft?.reviewRequired,
+    assistantMedia: draft?.assistantMedia,
     reuseSource: draft?.reuseSource,
     draftTargetMode,
     existingCampaignId: draft?.draftTarget?.existingCampaignId ?? firstDraftAdSet?.existingCampaignId ?? '',
@@ -1078,6 +1080,7 @@ function buildPayload(
     form: {
       initialStatus: state.initialStatus,
       reviewRequired: state.reviewRequired,
+      assistantMedia: state.assistantMedia,
       reuseSource: state.reuseSource,
       campaignName: state.draftTargetMode === 'new_campaign'
         ? state.campaignName
@@ -2052,6 +2055,11 @@ export default function MetaLeadCampaignDraftHelper({
             publish anything on Meta.
           </Alert>
         ) : null}
+
+        {!!state.assistantMedia?.length && currentDraftId && <Alert color="blue" title="Private draft attachments">
+          These files are saved with this draft and have not been uploaded to Meta.
+          {state.assistantMedia.map(file => <div key={file.id}><a href={`/api/intelligence/assistant/media?id=${encodeURIComponent(file.id)}&draft=${encodeURIComponent(currentDraftId)}&account=${encodeURIComponent(adAccountId)}`} target="_blank" rel="noreferrer">{file.name} ↗</a></div>)}
+        </Alert>}
 
         {state.reuseSource?.configurationCoverage === 'partial' ? (
           <Alert

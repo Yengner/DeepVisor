@@ -1,4 +1,5 @@
 import 'server-only';
+import { budgetedRead, resourceSignal, ResourceDeferred, retrySeconds } from '../resources/budget';
 import { limiter } from '../concurrency';
 const admitRequest = limiter(3);
 let retryAfterUntil = 0;
@@ -135,7 +136,8 @@ async function requestWithRetry(url: URL, signal?: AbortSignal): Promise<Respons
       signal?.throwIfAborted();
       if (retryAfterUntil > Date.now()) await sleep(retryAfterUntil - Date.now());
       const deadline = AbortSignal.timeout(30_000);
-      const response = await fetch(url, { signal: signal ? AbortSignal.any([signal, deadline]) : deadline });
+      const response = await budgetedRead(budgetSignal => fetch(url, { signal: AbortSignal.any([deadline, ...(signal ? [signal] : []), ...(budgetSignal ? [budgetSignal] : [])]) }));
+      if (resourceSignal() && response.status === 429) throw new ResourceDeferred('provider_cooldown', retrySeconds(response.headers.get('retry-after')));
       if (response.ok) {
         return response;
       }
@@ -161,7 +163,8 @@ async function requestWithRetry(url: URL, signal?: AbortSignal): Promise<Respons
         `Retrying Meta request after transient error (${attempt}/${META_TRANSIENT_MAX_ATTEMPTS}) for ${url.pathname}: ${parsedError.message}`
       );
     } catch (error) {
-      if (signal?.aborted) throw new Error('Meta request timed out');
+      if (error instanceof ResourceDeferred) throw error;
+      if (signal?.aborted || resourceSignal()?.aborted) throw new Error('Meta request timed out');
       lastError = error instanceof Error ? error : new Error('Meta request failed');
       const retryable = error instanceof MetaRequestError ? error.retryable : true;
 
@@ -212,6 +215,7 @@ export async function fetchMetaCollection<T>(input: {
   path: string;
   accessToken: string;
   params?: Record<string, string | number | boolean | undefined>;
+  maxRows?: number;
 }): Promise<T[]> {
   const simulated = simulatedMetaResponse(input.accessToken, input.path, input.params);
   if (simulated !== null) return (simulated as { data: T[] }).data;
@@ -232,10 +236,14 @@ export async function fetchMetaCollection<T>(input: {
   }
 
   while (nextUrl) {
+    resourceSignal()?.throwIfAborted();
+    if (nextUrl.origin !== 'https://graph.facebook.com') throw new Error('Invalid Meta pagination origin');
     const response = await fetchMetaResponseWithRetry(nextUrl);
 
     const body = (await response.json()) as MetaCollectionResponse<T>;
-    rows.push(...(body.data ?? []));
+    if (body.error || !Array.isArray(body.data)) throw new Error('Invalid Meta collection response');
+    if (input.maxRows !== undefined && rows.length + body.data.length > input.maxRows) throw new ResourceDeferred('row_budget', 3600);
+    rows.push(...body.data);
     nextUrl = body.paging?.next ? new URL(body.paging.next) : null;
   }
   if (META_GRAPH_DEBUG) {

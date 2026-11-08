@@ -4,7 +4,7 @@ import Footer from "./components/Footer";
 import "./public.css";
 
 export const metadata: Metadata = {
-  title: "DeepVisor - Easier Paid Ads for Salons",
+  title: "DeepVisor",
   description:
     "DeepVisor makes running salon paid ads easier with Meta ad monitoring, wasted-spend detection, Scheduled Reviews, clear reports, campaign reviews, and simpler next-step approvals.",
 };
