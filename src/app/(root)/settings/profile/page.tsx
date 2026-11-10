@@ -29,10 +29,7 @@ export default async function ProfilePage() {
       <a href="/settings" className={classes.backLink}><IconArrowLeft size={16} aria-hidden />All settings</a>
       <header className={classes.header}>
         <div>
-          <Text className={classes.eyebrow}>Account settings</Text>
           <Title order={1}>Your profile</Title>
-          <Text className={classes.description}>Manage your personal details, sign-in email, and business profile.</Text>
-          <a href="#business-profile" className={classes.workspaceLink}>Business details<IconArrowUpRight size={16} aria-hidden /></a>
         </div>
       </header>
 

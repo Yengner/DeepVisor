@@ -1,3 +1,6 @@
+import { captureAccountHealth } from '@/lib/server/insights/issues';
+import { refreshLifecycleBriefs } from '@/lib/server/lifecycle/brief';
+import { captureLifecycle } from '@/lib/server/lifecycle/service';
 import 'server-only';
 import { withSyncLease } from '@/lib/server/supabase/syncLeaseContext';
 import { resourceRefreshEnabled } from '../resources/coordinator';
@@ -51,7 +54,10 @@ async function runClaimedJob(job: Database['public']['Tables']['account_sync_job
   try {
     if (job.sync_type === 'resource_refresh') {
       const result = await processResourceJob(job);
-      if (result.status === 'completed') await invalidateCompleted(job.business_id);
+      if (result.status === 'completed') {
+        await refreshLifecycleBriefs(job.business_id,job.ad_account_id).catch(()=>console.warn('Lifecycle report refresh unavailable.'));
+        await invalidateCompleted(job.business_id);
+      }
       return result;
     }
     const integration = await getBusinessIntegrationById(supabase, {
@@ -68,6 +74,11 @@ async function runClaimedJob(job: Database['public']['Tables']['account_sync_job
       throw new Error('Historical sync job is missing a Meta access token');
     }
 
+    if (process.env.DEEPVISOR_INSIGHTS_EVENTS === 'true') {
+      const account = await supabase.from('ad_accounts').select('external_account_id').eq('id',job.ad_account_id).eq('business_id',job.business_id).single();
+      if (account.data) await captureAccountHealth(job.business_id,job.ad_account_id,account.data.external_account_id,accessToken).catch(()=>console.warn('Account health observation unavailable; previous evidence retained.'));
+    }
+
     if (job.sync_type === 'initial_historical') {
       await processMetaFirstSyncJob({
         supabase,
@@ -75,6 +86,8 @@ async function runClaimedJob(job: Database['public']['Tables']['account_sync_job
         accessToken,
       });
 
+      await captureLifecycle(job).catch(() => console.warn('Lifecycle capture pending; sync data retained.'));
+      await refreshLifecycleBriefs(job.business_id,job.ad_account_id).catch(()=>console.warn('Lifecycle report refresh unavailable.'));
       await invalidateCompleted(job.business_id);
       return {
         jobId: job.id,
@@ -127,6 +140,8 @@ async function runClaimedJob(job: Database['public']['Tables']['account_sync_job
       primaryExternalAccountId: adAccount.external_account_id,
     });
 
+    await captureLifecycle(job).catch(() => console.warn('Lifecycle capture pending; sync data retained.'));
+      await refreshLifecycleBriefs(job.business_id,job.ad_account_id).catch(()=>console.warn('Lifecycle report refresh unavailable.'));
     await invalidateCompleted(job.business_id);
     return {
       jobId: job.id,

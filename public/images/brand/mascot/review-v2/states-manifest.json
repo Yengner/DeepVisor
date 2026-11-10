@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "status": "review-only",
+  "canvas": {
+    "width": 64,
+    "height": 48
+  },
+  "strip": "deepvisor-spider-states-strip.png",
+  "frames": [
+    {
+      "name": "working-a",
+      "index": 0,
+      "file": "deepvisor-spider-working-a.png",
+      "workbench": "0802eb83-d05d-46c5-8652-babf1de0678b",
+      "sha256": "64574ad07fc131b53a0b9a77281cbc63f65dedc2dd7cd2408bd8369879a68c80"
+    },
+    {
+      "name": "working-b",
+      "index": 1,
+      "file": "deepvisor-spider-working-b.png",
+      "workbench": "6eb594ec-41e5-40c9-b324-4c0a609e2865",
+      "sha256": "e3dc162d71d9817bf69ea9fd9710413563baabeddf4b1f81b9a19050d73967b5"
+    },
+    {
+      "name": "scanning-a",
+      "index": 2,
+      "file": "deepvisor-spider-scanning-a.png",
+      "workbench": "2bd0e788-bba1-46ff-89a4-178460e6dd81",
+      "sha256": "58c76759ddbc340398346ecfed469a7f37f15d95bf8232467f84c86f20f2c97d"
+    },
+    {
+      "name": "scanning-b",
+      "index": 3,
+      "file": "deepvisor-spider-scanning-b.png",
+      "workbench": "7aacb769-bb02-42f8-b7c2-e4998f801be9",
+      "sha256": "faf6d2c2f8a6010e4b33227f8e39eb16392d020211ea3714aca4ec74ddd56464"
+    },
+    {
+      "name": "success",
+      "index": 4,
+      "file": "deepvisor-spider-success.png",
+      "workbench": "cab808bc-b84f-45e1-a665-7a2eccd93e18",
+      "sha256": "a7288740b3dc61873aec12393758c0f5991fd221cfc0494d8e03db5f00889f63"
+    },
+    {
+      "name": "attention",
+      "index": 5,
+      "file": "deepvisor-spider-attention.png",
+      "workbench": "c9047390-8f63-47b3-8edc-c83e65a2d406",
+      "sha256": "06542112cdab88f96d433ef30e6b51f6f2a91440be4407ed7e99d0161df9c5b7"
+    },
+    {
+      "name": "sleep",
+      "index": 6,
+      "file": "deepvisor-spider-sleep.png",
+      "workbench": "6a34c762-d2a8-4320-8ebb-9d396e7621a5",
+      "sha256": "d7129bf544ae62de71be618a95d07cb67863a54767b38379ec644acb3ec142f8"
+    }
+  ],
+  "states": {
+    "working": {
+      "sequence": [
+        {
+          "frame": 0,
+          "durationMs": 800
+        },
+        {
+          "frame": 1,
+          "durationMs": 800
+        }
+      ],
+      "loop": true,
+      "reducedMotionFrame": 0
+    },
+    "scanning": {
+      "sequence": [
+        {
+          "frame": 2,
+          "durationMs": 900
+        },
+        {
+          "frame": 3,
+          "durationMs": 900
+        }
+      ],
+      "loop": true,
+      "reducedMotionFrame": 2
+    },
+    "success": {
+      "sequence": [
+        {
+          "frame": 4,
+          "durationMs": 1200
+        }
+      ],
+      "loop": false,
+      "reducedMotionFrame": 4
+    },
+    "attention": {
+      "sequence": [
+        {
+          "frame": 5,
+          "durationMs": 1
+        }
+      ],
+      "loop": false,
+      "reducedMotionFrame": 5
+    },
+    "sleep": {
+      "sequence": [
+        {
+          "frame": 6,
+          "durationMs": 1
+        }
+      ],
+      "loop": false,
+      "reducedMotionFrame": 6
+    }
+  },
+  "provenance": {
+    "provider": "PixelLab workbench",
+    "master": "gallery:e80c9bf7-6e92-4fbb-9b8f-497d6e77d093",
+    "stripWorkbench": "94abaca9-0341-4162-b8cf-a8ded041df54",
+    "stripGallery": "41681fb1-488c-4a85-8adc-2e8bcb9ca6a4",
+    "generationsCharged": 0
+  }
+}

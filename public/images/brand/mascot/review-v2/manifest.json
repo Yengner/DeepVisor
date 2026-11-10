@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "status": "review-only",
+  "canvas": {
+    "width": 64,
+    "height": 48
+  },
+  "strip": "deepvisor-spider-blink-strip.png",
+  "frames": [
+    {
+      "name": "open",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "width": 64,
+      "height": 48,
+      "file": "deepvisor-spider-open.png",
+      "sha256": "ab8ad33ae381a01e3c3ecc0486d28dce27f469ab7712889c491b20d1d2337ad4"
+    },
+    {
+      "name": "half",
+      "index": 1,
+      "x": 64,
+      "y": 0,
+      "width": 64,
+      "height": 48,
+      "file": "deepvisor-spider-half.png",
+      "sha256": "ac2964a55567a48c36ca897fd6bf62652353f582467ad3b0953c09e67dbe6b0c"
+    },
+    {
+      "name": "closed",
+      "index": 2,
+      "x": 128,
+      "y": 0,
+      "width": 64,
+      "height": 48,
+      "file": "deepvisor-spider-closed.png",
+      "sha256": "d7129bf544ae62de71be618a95d07cb67863a54767b38379ec644acb3ec142f8"
+    }
+  ],
+  "blink": {
+    "sequence": [
+      {
+        "frame": 1,
+        "durationMs": 40
+      },
+      {
+        "frame": 2,
+        "durationMs": 80
+      },
+      {
+        "frame": 1,
+        "durationMs": 60
+      },
+      {
+        "frame": 0,
+        "durationMs": 1
+      }
+    ],
+    "loop": false
+  },
+  "idle": {
+    "sequence": [
+      {
+        "frame": 0,
+        "durationMs": 4200
+      },
+      {
+        "frame": 1,
+        "durationMs": 40
+      },
+      {
+        "frame": 2,
+        "durationMs": 80
+      },
+      {
+        "frame": 1,
+        "durationMs": 60
+      },
+      {
+        "frame": 0,
+        "durationMs": 6200
+      },
+      {
+        "frame": 1,
+        "durationMs": 40
+      },
+      {
+        "frame": 2,
+        "durationMs": 80
+      },
+      {
+        "frame": 1,
+        "durationMs": 60
+      },
+      {
+        "frame": 0,
+        "durationMs": 5100
+      },
+      {
+        "frame": 1,
+        "durationMs": 40
+      },
+      {
+        "frame": 2,
+        "durationMs": 80
+      },
+      {
+        "frame": 1,
+        "durationMs": 60
+      }
+    ],
+    "durationMs": 16040,
+    "loop": true
+  },
+  "reducedMotionFrame": 0,
+  "provenance": {
+    "provider": "PixelLab",
+    "model": "pixen",
+    "seed": 110926,
+    "generationJob": "8c0b509b-46f7-4ab1-9173-ff02e68ca68e",
+    "masterWorkbench": "481b0154-6ef3-40fb-b0a2-d4796b57d02b",
+    "halfWorkbench": "b36892ff-b9d5-42a0-ad82-6af6ee568644",
+    "closedWorkbench": "eb772209-a7b3-4b5d-8d88-97e167364eec",
+    "stripWorkbench": "059c1f2c-af4e-4b4a-b062-24fe25149689",
+    "masterGallery": "e80c9bf7-6e92-4fbb-9b8f-497d6e77d093",
+    "stripGallery": "f9e6086e-94cf-4e71-bc33-64c7d7f77b44",
+    "generationsCharged": 1
+  }
+}

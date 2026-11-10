@@ -1095,6 +1095,227 @@ export type Database = {
   }
   public: {
     Tables: {
+      insight_seen_sources: {
+        Row: {
+          ad_account_id: string
+          source_key: string
+          user_id: string
+        }
+        Insert: {
+          ad_account_id: string
+          source_key: string
+          user_id: string
+        }
+        Update: {
+          ad_account_id?: string
+          source_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insight_seen_sources_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insight_receipts: {
+        Row: {
+          presentation_id: string
+          reviewed_at: string
+        }
+        Insert: {
+          presentation_id: string
+          reviewed_at?: string
+        }
+        Update: {
+          presentation_id?: string
+          reviewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insight_receipts_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: true
+            referencedRelation: "insight_presentations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insight_presentations: {
+        Row: {
+          ad_account_id: string
+          business_id: string
+          created_at: string
+          fingerprint: string
+          id: string
+          payload: Json
+          recap_until: string | null
+          source_keys: string[]
+          user_id: string
+        }
+        Insert: {
+          ad_account_id: string
+          business_id: string
+          created_at?: string
+          fingerprint: string
+          id?: string
+          payload: Json
+          recap_until?: string | null
+          source_keys: string[]
+          user_id: string
+        }
+        Update: {
+          ad_account_id?: string
+          business_id?: string
+          created_at?: string
+          fingerprint?: string
+          id?: string
+          payload?: Json
+          recap_until?: string | null
+          source_keys?: string[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insight_presentations_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insight_presentations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insight_reviews: {
+        Row: {
+          ad_account_id: string
+          checked_revision: string | null
+          claim_token: string | null
+          claim_until: string | null
+          presentation_id: string | null
+          reviewed_through: string | null
+          routine_day: string | null
+          user_id: string
+        }
+        Insert: {
+          ad_account_id: string
+          checked_revision?: string | null
+          claim_token?: string | null
+          claim_until?: string | null
+          presentation_id?: string | null
+          reviewed_through?: string | null
+          routine_day?: string | null
+          user_id: string
+        }
+        Update: {
+          ad_account_id?: string
+          checked_revision?: string | null
+          claim_token?: string | null
+          claim_until?: string | null
+          presentation_id?: string | null
+          reviewed_through?: string | null
+          routine_day?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insight_reviews_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insight_issues: {
+        Row: {
+          ad_account_id: string
+          business_id: string
+          evidence: Json
+          id: string
+          issue_key: string
+          observed_at: string
+          opened_at: string
+          resolved_at: string | null
+          revision: number
+          source: string
+        }
+        Insert: {
+          ad_account_id: string
+          business_id: string
+          evidence: Json
+          id?: string
+          issue_key: string
+          observed_at: string
+          opened_at?: string
+          resolved_at?: string | null
+          revision?: number
+          source: string
+        }
+        Update: {
+          ad_account_id?: string
+          business_id?: string
+          evidence?: Json
+          id?: string
+          issue_key?: string
+          observed_at?: string
+          opened_at?: string
+          resolved_at?: string | null
+          revision?: number
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insight_issues_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insight_issues_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insight_issue_sources: {
+        Row: {
+          ad_account_id: string
+          observed_at: string
+          source: string
+        }
+        Insert: {
+          ad_account_id: string
+          observed_at: string
+          source: string
+        }
+        Update: {
+          ad_account_id?: string
+          observed_at?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insight_issue_sources_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       account_insight_snapshots: {
         Row: {
           ad_account_id: string
@@ -3148,6 +3369,187 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ad_entities"
             referencedColumns: ["id", "ad_account_id", "entity_level"]
+          },
+        ]
+      }
+      ad_lifecycle_acknowledgements: {
+        Row: {
+          acknowledged_at: string
+          event_id: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          event_id: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string
+          event_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_lifecycle_acknowledgements_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "ad_lifecycle_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_lifecycle_briefs: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          payload: Json
+          revision: number
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          payload: Json
+          revision: number
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          payload?: Json
+          revision?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_lifecycle_briefs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "ad_lifecycle_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_lifecycle_events: {
+        Row: {
+          ad_account_id: string
+          affected_ids: string[]
+          after_id: string
+          before_id: string | null
+          business_id: string
+          created_at: string
+          event_key: string
+          explanation: string
+          id: string
+          kind: string
+          provenance: string
+          root_id: string
+        }
+        Insert: {
+          ad_account_id: string
+          affected_ids: string[]
+          after_id: string
+          before_id?: string | null
+          business_id: string
+          created_at?: string
+          event_key: string
+          explanation: string
+          id?: string
+          kind: string
+          provenance?: string
+          root_id: string
+        }
+        Update: {
+          ad_account_id?: string
+          affected_ids?: string[]
+          after_id?: string
+          before_id?: string | null
+          business_id?: string
+          created_at?: string
+          event_key?: string
+          explanation?: string
+          id?: string
+          kind?: string
+          provenance?: string
+          root_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_lifecycle_events_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_lifecycle_events_after_id_fkey"
+            columns: ["after_id"]
+            isOneToOne: false
+            referencedRelation: "ad_lifecycle_observations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_lifecycle_events_before_id_fkey"
+            columns: ["before_id"]
+            isOneToOne: false
+            referencedRelation: "ad_lifecycle_observations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_lifecycle_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_lifecycle_observations: {
+        Row: {
+          ad_account_id: string
+          business_id: string
+          entities: Json
+          id: string
+          job_id: string | null
+          observed_at: string
+        }
+        Insert: {
+          ad_account_id: string
+          business_id: string
+          entities: Json
+          id?: string
+          job_id?: string | null
+          observed_at?: string
+        }
+        Update: {
+          ad_account_id?: string
+          business_id?: string
+          entities?: Json
+          id?: string
+          job_id?: string | null
+          observed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_lifecycle_observations_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_lifecycle_observations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_lifecycle_observations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "account_sync_jobs"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -7269,6 +7671,45 @@ export type Database = {
       }
     }
     Functions: {
+      pending_insight_sources: {
+        Args: { p_account: string; p_user: string }
+        Returns: Json
+      }
+      acknowledge_insights: {
+        Args: {
+          p_account: string
+          p_id: string
+          p_token: string
+          p_user: string
+        }
+        Returns: boolean
+      }
+      present_insights: {
+        Args: {
+          p_account: string
+          p_business: string
+          p_day: string
+          p_expected: string | null
+          p_fingerprint: string
+          p_keys: string[]
+          p_payload: Json
+          p_token: string
+          p_until: string | null
+          p_urgent: boolean
+          p_user: string
+        }
+        Returns: string | null
+      }
+      observe_insight_issues: {
+        Args: {
+          p_account: string
+          p_at: string
+          p_business: string
+          p_issues: Json
+          p_source: string
+        }
+        Returns: undefined
+      }
       accept_calendar_queue_workflow: {
         Args: { p_queue_item_id: string; p_user_id?: string }
         Returns: {
@@ -7593,6 +8034,16 @@ export type Database = {
       publish_account_resource: {
         Args: { p_chunks: number; p_generation: number; p_job: string }
         Returns: number
+      }
+      publish_ad_lifecycle: {
+        Args: {
+          p_entities: Json
+          p_events: Json
+          p_generation: number
+          p_job: string
+          p_previous: string | null
+        }
+        Returns: string
       }
       request_account_resource: {
         Args: {

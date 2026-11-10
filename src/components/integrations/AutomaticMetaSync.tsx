@@ -1,14 +1,15 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 type SyncState = { status: string; lastSuccessfulAt: string | null; revision?: string; resourceRefreshEnabled?: boolean };
 /** A visible account lease requests shared work. Only pending jobs get frequent status polling. */
 export default function AutomaticMetaSync({ accountId }: { accountId: string | null }) {
   const router = useRouter();
+  const preview = usePathname() === '/insights/preview';
   const [state, setState] = useState<SyncState | null>(null);
   useEffect(() => {
-    if (!accountId) return;
+    if (!accountId || preview) return;
     const controller = new AbortController();
     let known: string | undefined, lastVisit = 0, checking = false;
     let timer: ReturnType<typeof setTimeout>;
@@ -48,8 +49,8 @@ export default function AutomaticMetaSync({ accountId }: { accountId: string | n
     void tick();
     window.addEventListener('focus', visible); document.addEventListener('visibilitychange', visible);
     return () => { controller.abort(); clearTimeout(timer); window.removeEventListener('focus', visible); document.removeEventListener('visibilitychange', visible); };
-  }, [accountId, router]);
-  if (!accountId || !state || state.status === 'disconnected') return null;
+  }, [accountId, router, preview]);
+  if (preview || !accountId || !state || state.status === 'disconnected') return null;
   const message = state.status === 'queued' ? 'Meta refresh queued' : state.status === 'running' ? 'Refreshing Meta data…' :
     state.status === 'reauthentication_required' ? 'Reconnect Meta in Connections to resume synchronization.' :
     state.status === 'retry_limit' ? 'Automatic refresh paused after repeated failures. Check Connections.' :

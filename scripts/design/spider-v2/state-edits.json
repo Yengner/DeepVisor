@@ -1,0 +1,1719 @@
+{
+  "master": "gallery:e80c9bf7-6e92-4fbb-9b8f-497d6e77d093",
+  "states": [
+    {
+      "name": "working-a",
+      "changes": [
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              32
+            ],
+            [
+              44,
+              32
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              33
+            ],
+            [
+              44,
+              33
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              34
+            ],
+            [
+              44,
+              34
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              35
+            ],
+            [
+              44,
+              35
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              36
+            ],
+            [
+              44,
+              36
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              37
+            ],
+            [
+              44,
+              37
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              38
+            ],
+            [
+              44,
+              38
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              39
+            ],
+            [
+              44,
+              39
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              40
+            ],
+            [
+              44,
+              40
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              41
+            ],
+            [
+              44,
+              41
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              33
+            ],
+            [
+              43,
+              33
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              34
+            ],
+            [
+              43,
+              34
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              35
+            ],
+            [
+              43,
+              35
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              36
+            ],
+            [
+              43,
+              36
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              37
+            ],
+            [
+              43,
+              37
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              38
+            ],
+            [
+              43,
+              38
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              39
+            ],
+            [
+              43,
+              39
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              33
+            ],
+            [
+              43,
+              33
+            ]
+          ],
+          "color": "#71b8ff",
+          "size": 1,
+          "reason": "Screen top highlight."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              19,
+              42
+            ],
+            [
+              46,
+              42
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Laptop base."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              19,
+              43
+            ],
+            [
+              46,
+              43
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Laptop base."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              42
+            ],
+            [
+              44,
+              42
+            ]
+          ],
+          "color": "#237beb",
+          "size": 1,
+          "reason": "Keyboard edge."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              26,
+              36
+            ],
+            [
+              29,
+              36
+            ]
+          ],
+          "color": "#14b8ee",
+          "size": 1,
+          "reason": "First quiet processing cursor."
+        }
+      ],
+      "workbench": "0802eb83-d05d-46c5-8652-babf1de0678b"
+    },
+    {
+      "name": "working-b",
+      "changes": [
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              32
+            ],
+            [
+              44,
+              32
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              33
+            ],
+            [
+              44,
+              33
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              34
+            ],
+            [
+              44,
+              34
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              35
+            ],
+            [
+              44,
+              35
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              36
+            ],
+            [
+              44,
+              36
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              37
+            ],
+            [
+              44,
+              37
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              38
+            ],
+            [
+              44,
+              38
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              39
+            ],
+            [
+              44,
+              39
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              40
+            ],
+            [
+              44,
+              40
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              41
+            ],
+            [
+              44,
+              41
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Stable compact laptop below eyes, same position in both working frames."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              33
+            ],
+            [
+              43,
+              33
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              34
+            ],
+            [
+              43,
+              34
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              35
+            ],
+            [
+              43,
+              35
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              36
+            ],
+            [
+              43,
+              36
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              37
+            ],
+            [
+              43,
+              37
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              38
+            ],
+            [
+              43,
+              38
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              39
+            ],
+            [
+              43,
+              39
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Flat blue screen with crisp outline."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              22,
+              33
+            ],
+            [
+              43,
+              33
+            ]
+          ],
+          "color": "#71b8ff",
+          "size": 1,
+          "reason": "Screen top highlight."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              19,
+              42
+            ],
+            [
+              46,
+              42
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Laptop base."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              19,
+              43
+            ],
+            [
+              46,
+              43
+            ]
+          ],
+          "color": "#07172f",
+          "size": 1,
+          "reason": "Laptop base."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              21,
+              42
+            ],
+            [
+              44,
+              42
+            ]
+          ],
+          "color": "#237beb",
+          "size": 1,
+          "reason": "Keyboard edge."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              34,
+              36
+            ],
+            [
+              37,
+              36
+            ]
+          ],
+          "color": "#14b8ee",
+          "size": 1,
+          "reason": "Second quiet processing cursor."
+        }
+      ],
+      "workbench": "6eb594ec-41e5-40c9-b324-4c0a609e2865"
+    },
+    {
+      "name": "scanning-a",
+      "changes": [
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              29,
+              7
+            ],
+            [
+              35,
+              7
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Small analysis rail above body."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              29,
+              6
+            ],
+            [
+              30,
+              6
+            ]
+          ],
+          "color": "#14b8ee",
+          "size": 1,
+          "reason": "Sweep at left without changing eyes."
+        }
+      ],
+      "workbench": "2bd0e788-bba1-46ff-89a4-178460e6dd81"
+    },
+    {
+      "name": "scanning-b",
+      "changes": [
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              29,
+              7
+            ],
+            [
+              35,
+              7
+            ]
+          ],
+          "color": "#125ac5",
+          "size": 1,
+          "reason": "Same analysis rail above body."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              34,
+              6
+            ],
+            [
+              35,
+              6
+            ]
+          ],
+          "color": "#14b8ee",
+          "size": 1,
+          "reason": "Sweep at right without changing eyes."
+        }
+      ],
+      "workbench": "7aacb769-bb02-42f8-b7c2-e4998f801be9"
+    },
+    {
+      "name": "success",
+      "changes": [
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              23
+            ],
+            [
+              29,
+              23
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              24
+            ],
+            [
+              29,
+              24
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              25
+            ],
+            [
+              29,
+              25
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              26
+            ],
+            [
+              29,
+              26
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              27
+            ],
+            [
+              29,
+              27
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              28
+            ],
+            [
+              29,
+              28
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              23
+            ],
+            [
+              41,
+              23
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              24
+            ],
+            [
+              41,
+              24
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              25
+            ],
+            [
+              41,
+              25
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              26
+            ],
+            [
+              41,
+              26
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              27
+            ],
+            [
+              41,
+              27
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              28
+            ],
+            [
+              41,
+              28
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              27
+            ],
+            [
+              24,
+              25
+            ],
+            [
+              26,
+              23
+            ],
+            [
+              27,
+              23
+            ],
+            [
+              29,
+              25
+            ],
+            [
+              29,
+              27
+            ]
+          ],
+          "color": "#14b8ee",
+          "size": 1,
+          "reason": "Restrained happy eyes from the reference, no mouth."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              27
+            ],
+            [
+              36,
+              25
+            ],
+            [
+              38,
+              23
+            ],
+            [
+              39,
+              23
+            ],
+            [
+              41,
+              25
+            ],
+            [
+              41,
+              27
+            ]
+          ],
+          "color": "#14b8ee",
+          "size": 1,
+          "reason": "Restrained happy eyes from the reference, no mouth."
+        }
+      ],
+      "workbench": "cab808bc-b84f-45e1-a665-7a2eccd93e18"
+    },
+    {
+      "name": "attention",
+      "changes": [
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              31,
+              3
+            ],
+            [
+              32,
+              3
+            ]
+          ],
+          "color": "#237beb",
+          "size": 1,
+          "reason": "Quiet attention mark; static, not a flashing alarm."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              31,
+              4
+            ],
+            [
+              32,
+              4
+            ]
+          ],
+          "color": "#237beb",
+          "size": 1,
+          "reason": "Quiet attention mark; static, not a flashing alarm."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              31,
+              5
+            ],
+            [
+              32,
+              5
+            ]
+          ],
+          "color": "#237beb",
+          "size": 1,
+          "reason": "Quiet attention mark; static, not a flashing alarm."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              31,
+              6
+            ],
+            [
+              32,
+              6
+            ]
+          ],
+          "color": "#237beb",
+          "size": 1,
+          "reason": "Quiet attention mark; static, not a flashing alarm."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              31,
+              8
+            ],
+            [
+              32,
+              8
+            ]
+          ],
+          "color": "#14b8ee",
+          "size": 1,
+          "reason": "Attention dot."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              31,
+              9
+            ],
+            [
+              32,
+              9
+            ]
+          ],
+          "color": "#14b8ee",
+          "size": 1,
+          "reason": "Attention dot."
+        }
+      ],
+      "workbench": "c9047390-8f63-47b3-8edc-c83e65a2d406"
+    },
+    {
+      "name": "sleep",
+      "changes": [
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              23
+            ],
+            [
+              29,
+              23
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              24
+            ],
+            [
+              29,
+              24
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              25
+            ],
+            [
+              29,
+              25
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              26
+            ],
+            [
+              29,
+              26
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              27
+            ],
+            [
+              29,
+              27
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              28
+            ],
+            [
+              29,
+              28
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              23
+            ],
+            [
+              41,
+              23
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              24
+            ],
+            [
+              41,
+              24
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              25
+            ],
+            [
+              41,
+              25
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              26
+            ],
+            [
+              41,
+              26
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              27
+            ],
+            [
+              41,
+              27
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              28
+            ],
+            [
+              41,
+              28
+            ]
+          ],
+          "color": "#0a2148",
+          "size": 1,
+          "reason": "Replace only eye expression; keep anatomy fixed."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              24,
+              27
+            ],
+            [
+              29,
+              27
+            ]
+          ],
+          "color": "#14b8ee",
+          "size": 1,
+          "reason": "Resting closed eyes, consistent with approved blink."
+        },
+        {
+          "operation": "brush",
+          "layer": "image",
+          "frames": [
+            1
+          ],
+          "points": [
+            [
+              36,
+              27
+            ],
+            [
+              41,
+              27
+            ]
+          ],
+          "color": "#14b8ee",
+          "size": 1,
+          "reason": "Resting closed eyes."
+        }
+      ],
+      "workbench": "6a34c762-d2a8-4320-8ebb-9d396e7621a5"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+.page { min-height:100vh; background:#eef3fa; color:#183452; padding:clamp(20px,5vw,64px); font:15px/1.6 system-ui,sans-serif; }
+.page header,.controls,.surfaces,.comparison,.notes { max-width:1120px; margin:0 auto 28px; }
+.eyebrow { text-transform:uppercase; letter-spacing:.12em; font-size:11px; font-weight:750; color:#215eb8; }
+.page h1 { font-size:clamp(27px,4vw,44px); line-height:1.15; letter-spacing:-.035em; margin:12px 0; }
+.page h2 { font-size:17px; margin:0 0 12px; }.page h3 { font-size:12px; text-transform:uppercase; letter-spacing:.08em; margin-top:24px; }
+.page p { max-width:780px; }.notice { color:#526b87; font-size:13px; }
+.controls { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+.controls button,.controls a { border:1px solid #b0c6e0; background:#fff; color:#174e98; border-radius:9px; padding:10px 14px; font:600 12px/1.5 system-ui; cursor:pointer; text-decoration:none; }
+.controls :focus-visible { outline:3px solid #237beb; outline-offset:3px; }
+.surfaces { display:grid; grid-template-columns:1fr 1fr; gap:20px; }.surface { border-radius:20px; padding:24px; border:1px solid #c7d6e8; min-width:0; }
+.light { background:#fff; color:#183452; }.dark { background:#081a30; color:#d9e8fa; border-color:#243c59; }
+.hero { display:flex; align-items:center; justify-content:center; min-height:250px; }
+.mascot { position:relative; display:inline-block; width:var(--size); height:var(--size); flex:none; contain:layout paint; }
+.sprite { position:absolute; width:100%; height:75%; top:12.5%; left:0; background-image:url('/images/brand/mascot/review-v2/deepvisor-spider-blink-strip.png'); background-size:300% 100%; background-position:0 0; background-repeat:no-repeat; image-rendering:pixelated; }
+.frames,.sizes { display:flex; align-items:center; justify-content:space-around; gap:10px; }.frames img { image-rendering:pixelated; max-width:100%; height:auto; }.frames figure,.sizes figure { margin:0; text-align:center; min-width:0; }.frames figcaption,.sizes figcaption { font-size:12px; padding-top:8px; }
+.comparison { display:flex; flex-wrap:wrap; justify-content:space-around; gap:24px; text-align:center; padding:28px; background:white; border-radius:18px; }.comparison h2 { font-size:14px; }.comparison p { font-size:12px; }
+.notes { font-size:13px; }.notes h2 { margin-top:25px; }
+@media(max-width:640px){.surfaces{grid-template-columns:1fr}.surface{padding:20px}.page{padding:22px 16px}.hero{min-height:230px}.frames{gap:5px}}
+.stateGrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:16px; }
+.stateCard { background:white; border:1px solid #c7d6e8; border-radius:18px; padding:16px; min-width:0; }
+.stateCard h3 { margin:0 0 12px; }.statePair { display:flex; justify-content:space-around; align-items:center; margin-bottom:16px; }
+.statePair > div { border-radius:12px; }
+@media(prefers-reduced-motion:reduce){.sprite{background-position-x:var(--rest-position,0%)!important}}

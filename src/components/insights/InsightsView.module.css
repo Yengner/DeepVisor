@@ -1,0 +1,71 @@
+.content,.history { color:var(--mantine-color-text); line-height:1.5; }
+.content { display:grid; gap:22px; }
+.heading { display:flex; gap:14px; align-items:center; }
+.heading h1,.heading h2 { font-size:clamp(1.3rem,3vw,1.75rem); letter-spacing:-.035em; margin:3px 0 4px; line-height:1.18; }
+.heading p,.card p { margin:7px 0; }
+.heading p,.caption,.details,.footer>span { color:var(--mantine-color-dimmed); font-size:12px; }
+.eyebrow { font-size:10px; font-weight:750; text-transform:uppercase; letter-spacing:.09em; color:var(--mantine-color-blue-6); }
+.card,.performance,.more { padding:20px; border:1px solid var(--mantine-color-default-border); border-radius:16px; background:var(--mantine-color-body); min-width:0; }
+.card h3,.performance h3 { margin:3px 0 8px; font-size:16px; letter-spacing:-.02em; }
+.attention { padding:18px; border:1px solid light-dark(#d7b16a,#95743a); background:light-dark(#fffbf2,#292318); border-radius:14px; }
+.attention .card { margin-top:14px; border:0; padding:12px 0 0; background:transparent; }
+.attention h2 { font-size:17px; }
+.metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:8px 0 20px; }
+.metrics dt { color:var(--mantine-color-dimmed); font-size:11px; margin-bottom:4px; }
+.metrics dd { font-variant-numeric:tabular-nums; font-size:clamp(18px,3vw,27px); font-weight:650; letter-spacing:-.04em; line-height:1.2; margin:0; overflow-wrap:anywhere; }
+.chartHeading { display:flex; gap:10px; align-items:center; justify-content:space-between; }
+.segment { display:flex; gap:2px; padding:3px; border-radius:8px; background:var(--mantine-color-default-hover); }
+.segment button { padding:5px 9px; font-size:11px; border:0; border-radius:6px; color:var(--mantine-color-text); background:transparent; cursor:pointer; }
+.segment button[aria-pressed=true] { background:var(--mantine-color-body); box-shadow:0 1px 3px #0002; color:var(--mantine-color-blue-6); }
+.chart { display:flex; gap:clamp(2px,1.5vw,10px); height:170px; padding-top:15px; }
+.chart[data-granularity='hour'] { gap:3px; }
+.chart[data-granularity='hour'] .date { overflow:visible; white-space:nowrap; font-size:10px; }
+.column { flex:1; min-width:0; display:flex; flex-direction:column; }
+.barTrack { height:135px; flex-shrink:0; display:flex; align-items:flex-end; justify-content:center; border-bottom:1px solid var(--mantine-color-default-border); }
+.bar { display:block; background:light-dark(#246de0,#679eff); border-radius:4px 4px 0 0; width:75%; max-width:44px; min-height:1px; transition:filter .15s; }
+.bar:hover { filter:brightness(1.15); }
+.gap { color:var(--mantine-color-dimmed); align-self:center; }
+.date { font-size:9px; white-space:nowrap; text-align:center; padding-top:7px; color:var(--mantine-color-dimmed); }
+.observation { font-size:13px; padding:10px 0; margin:0; }
+.caption { margin:8px 0; }
+.creativeHeading { display:flex; gap:14px; align-items:flex-start; }
+.creative { width:76px; height:88px; object-fit:contain; border-radius:9px; background:var(--mantine-color-default-hover); flex:none; }
+.notice { font-size:12px; color:light-dark(#75541c,#f0cc86); }
+.link,.actions a { color:var(--mantine-color-blue-6); text-decoration:underline; text-underline-offset:3px; font-size:12px; }
+.actions { display:flex; flex-wrap:wrap; gap:18px; }
+.details summary,.card summary,.performance summary,.more summary { cursor:pointer; font-size:12px; font-weight:600; }
+.content table { width:100%; font-size:12px; border-collapse:collapse; margin-top:12px; }
+.content th,.content td { text-align:left; border-bottom:1px solid var(--mantine-color-default-border); padding:7px 3px; }
+.footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding-top:20px; margin-top:18px; border-top:1px solid var(--mantine-color-default-border); }
+.footer button,.history>button { background:#246de0; color:white; border:0; padding:10px 22px; border-radius:9px; font-weight:600; cursor:pointer; }
+.footer p { width:100%; color:var(--mantine-color-red-6); }
+.historyLink { display:inline-flex; margin:0 20px; color:var(--mantine-color-blue-6); font-size:12px; text-decoration:underline; }
+.history { max-width:920px; margin:20px auto; padding:12px 20px; display:grid; gap:20px; }
+.history .historyCard { display:grid; text-align:left; gap:6px; width:100%; padding:22px; background:var(--mantine-color-body); border:1px solid var(--mantine-color-default-border); border-radius:14px; color:var(--mantine-color-text); }
+.historyCard>span:last-child { font-size:12px; color:var(--mantine-color-dimmed); }
+.filter { display:flex; align-items:center; gap:10px; font-size:13px; }
+.filter select { padding:8px; border-radius:8px; background:var(--mantine-color-body); color:var(--mantine-color-text); border:1px solid var(--mantine-color-default-border); }
+.content :is(button,a,summary):focus-visible,.history :is(button,a,select):focus-visible { outline:2px solid #5995f5; outline-offset:4px; }
+@media(max-width:440px){.card,.performance{padding:14px}.metrics{gap:8px}.metrics dd{font-size:20px}.heading{gap:9px}.content{gap:17px}.creative{width:60px;height:72px}.footer>span{max-width:140px}}
+@media(prefers-reduced-motion:reduce){.bar{transition:none}}
+
+.related { margin-top:12px; }
+.related summary { cursor:pointer; font-size:12px; font-weight:600; }
+
+.previewControls { display:flex; flex-wrap:wrap; gap:10px; align-items:end; margin-bottom:16px; }
+.previewControls label { display:grid; gap:4px; font-size:11px; min-width:0; flex:1 1 120px; }
+.previewControls :is(select,button),.previewButton { border:1px solid var(--mantine-color-default-border); border-radius:7px; padding:7px 10px; background:var(--mantine-color-default-hover); color:var(--mantine-color-text); font-size:12px; min-width:0; cursor:pointer; }
+.previewButton { display:inline-flex; margin-left:4px; text-decoration:none; }
+.previewBanner { padding:9px 12px; margin:0 0 18px; border-radius:8px; color:light-dark(#215eb8,#b1ceff); background:light-dark(#eef4ff,#132b49); font-size:12px; }
+.link,.actions a,.historyLink,.eyebrow,.segment button[aria-pressed=true] { color:light-dark(#215eb8,#9ec5ff); }
+
+.content { container-type:inline-size; container-name:insight; }
+.creativeHeading>div { min-width:0; overflow-wrap:anywhere; }
+@container insight (max-width:360px) { .metrics dd { font-size:20px; } .heading h2 { font-size:20px; } .card,.performance { padding:14px; } }
+.footer button { margin-left:auto; }
+.modalContent,.modalHeader { background:light-dark(#fff,#0c1d30); color:light-dark(#183452,#e4edf8); }
+.modalTitle,.content,.history,.previewControls { color:light-dark(#183452,#e4edf8); }
+.caption,.details,.heading p,.metrics dt,.footer>span,.date { color:light-dark(#536b86,#a9b9ce); }
+.card,.performance { background:light-dark(#fff,#11273e); }
+.previewControls :is(select,button) { color:inherit; }
+.card.attention { background:light-dark(#fffbf2,#2a2519); }

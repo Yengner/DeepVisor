@@ -1,3 +1,4 @@
+import {captureMetaLifecycle} from '@/lib/server/lifecycle/service';
 import 'server-only';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { getBusinessIntegrationById, resolveIntegrationAccessToken } from '@/lib/server/integrations/service';
@@ -44,6 +45,7 @@ export async function processResourceJob(job: Job) {
       const input = { accessToken, adAccountExternalId: account.external_account_id, dateRange: { since: job.requested_start_date, until: job.requested_end_date } };
       let rows: Json[];
       if (metadata.resourceKind === 'performance') {
+        await captureMetaLifecycle(job,accessToken,account.external_account_id).catch(()=>console.warn('Lifecycle observation unavailable; no transition inferred.'));
         const levels = await parallelTasks([
           async () => (await fetchMetaCampaignPerformanceSeeds(input)).map(seed => ({ ...seed, externalId: seed.campaignExternalId, level: 'campaign' })),
           async () => (await fetchMetaAdsetPerformanceSeeds(input)).map(seed => ({ ...seed, externalId: seed.adsetExternalId, level: 'adset' })),
