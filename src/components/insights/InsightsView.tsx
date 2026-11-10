@@ -4,12 +4,14 @@ import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import Image from 'next/image';
 import { Modal } from '@mantine/core';
+import { AlertTriangle, CircleAlert } from 'lucide-react';
 import { useMediaQuery } from '@mantine/hooks';
 import SpiderMascot from '@/components/brand/SpiderMascot';
 import {recapChart} from '@/lib/shared/insights/hourly';
 import { headline,relatedLifecycle } from '@/lib/shared/insights/model';
 import type { Issue,LifecycleCard,SavedPresentation } from '@/lib/shared/insights/model';
 import styles from './InsightsView.module.css';
+import {InsightDataNotice,MissingObservationTrack} from './InsightDataState';
 const number=(v:number|null)=>v===null?'—':new Intl.NumberFormat('en',{maximumFractionDigits:0}).format(v);
 function money(v:number|null,currency:string|null){if(v===null)return '—';return currency?new Intl.NumberFormat('en',{style:'currency',currency,maximumFractionDigits:2}).format(v):`${v.toFixed(2)} (currency unknown)`;}
 function Metrics({spend,results,cpr,currency}:{spend:number|null;results:number|null;cpr:number|null;currency:string|null}){
@@ -17,10 +19,12 @@ function Metrics({spend,results,cpr,currency}:{spend:number|null;results:number|
 }
 function Creative({card,currency,preview=false}:{card:LifecycleCard;currency:string|null;preview?:boolean}){
  const b=card.brief,creative=b.media.find(m=>m.image),config=b.configuration;
- return <section className={styles.card}>
+ const missing=!creative||!currency||b.spend===null||b.results===null;
+ return <section className={`${styles.card} ${missing?styles.dataState:''}`}>
   <div className={styles.creativeHeading}>{creative?.image&&<Image src={creative.image} alt={creative.name} width={88} height={88} unoptimized className={styles.creative} onError={e=>{e.currentTarget.style.display='none';}}/>}<div><span className={styles.eyebrow}>Advertising update · {b.affected.length} affected</span><h3>{b.title}</h3><p>{b.explanation}</p></div></div>
   {b.provenance==='reconstructed'&&<p className={styles.notice}>Reconstructed from saved state and your confirmation. Exact interruption time is unverified.</p>}
   <Metrics spend={b.spend} results={b.results} cpr={b.cpr} currency={currency}/>
+  {missing&&<div className={styles.dataInset}><InsightDataNotice title="Some advertising details aren’t available">{!creative?'No creative preview is saved. ':''}{!currency?'The account currency is unknown. ':''}{b.spend===null||b.results===null?'Unavailable metrics are shown as dashes; they do not mean zero.':'Available metrics are shown above.'}</InsightDataNotice>{!creative&&<div className={styles.missingMedia}>Creative preview unavailable</div>}</div>}
   <p className={styles.caption}>Affected-ad observations · {b.since} – {b.until}. Missing dates are not zero.</p>
   {config&&<details><summary>Schedule, audience &amp; budget</summary><p>{config.owner} · {config.dailyBudget!==null?`${money(config.dailyBudget,currency)} daily`:config.lifetimeBudget!==null?`${money(config.lifetimeBudget,currency)} lifetime`:'Budget unavailable'}</p><p>{config.audience} · {config.geography}</p><p>{config.platforms.length?config.platforms.join(' / '):'Placements not recorded'}</p>{b.affected.slice(0,5).map(e=><p key={e.id}>{e.name}: {e.start??'Start not recorded'} → {e.end??'End not recorded'}</p>)}</details>}
   {preview?<span className={styles.caption}>Report link disabled in preview</span>:<Link className={styles.link} href={`/lifecycle/${b.id}`}>Explore advertising report →</Link>}
@@ -28,25 +32,47 @@ function Creative({card,currency,preview=false}:{card:LifecycleCard;currency:str
 }
 function AttentionCard({issue:i,related,currency,preview=false}:{issue:Issue;related:LifecycleCard[];currency:string|null;preview?:boolean}){
  const creative=related.flatMap(c=>c.brief.media).find(m=>m.image);
- return <section className={`${styles.card} ${styles.attention}`}><div className={styles.creativeHeading}>{creative?.image&&<Image src={creative.image} alt={creative.name} width={56} height={64} unoptimized className={styles.creative}/>}<div><span className={styles.eyebrow}>Needs attention</span><h3>{i.title}</h3><p>{i.explanation}</p></div></div>{i.stale&&<p className={styles.notice}>Last confirmed {new Date(i.observedAt).toLocaleDateString()}. Current status needs a fresh observation.</p>}{preview?<span className={styles.caption}>{i.action} · preview only</span>:<Link className={styles.link} href={i.href}>{i.action} →</Link>}{related.length>0&&<details className={styles.related}><summary>{related.length} related advertising {related.length===1?'change':'changes'} · View performance</summary>{related.map(c=><Creative key={c.eventId} card={c} currency={currency} preview={preview}/>)}</details>}</section>;
+ const rejected=i.code==='DISAPPROVED';
+ const status=i.stale?'Status needs confirmation':rejected?'Not delivering':'Delivery issue reported';
+ return <section className={styles.urgentCard} aria-label={`Needs attention: ${i.title}`}>
+  <div className={styles.urgentHeader}><span><AlertTriangle size={16} aria-hidden="true"/>Action required · {rejected?'Ad rejected':'Needs attention'}</span><span>{status}</span></div>
+  <div className={styles.urgentBody}>
+   {creative?.image&&<div className={styles.urgentCreative}><Image src={creative.image} alt={creative.name} width={84} height={108} unoptimized onError={e=>{e.currentTarget.parentElement!.style.display='none';}}/><span>{i.stale?'Last observed':rejected?'Rejected':'Attention'}</span></div>}
+   <div className={styles.urgentDetail}><h3>{i.title}</h3><p>{i.explanation}</p>
+    <div className={styles.urgentNotice}><CircleAlert size={15} aria-hidden="true"/><span>{i.stale?`Last confirmed ${new Date(i.observedAt).toLocaleDateString()}. Refresh observations to confirm current status.`:rejected?'This ad cannot deliver while Meta reports it as rejected.':'Review the reported issue before making changes to your advertising.'}</span></div>
+    <div className={styles.urgentActions}>{preview?<button type="button" className={styles.urgentPrimary} disabled>{i.action}</button>:<Link className={styles.urgentPrimary} href={i.href}>{i.action}</Link>}</div>
+    {related.length>0&&<details className={styles.urgentRelated}><summary>View performance</summary>{related.map(c=><Creative key={c.eventId} card={c} currency={currency} preview={preview}/>)}</details>}
+    {related.length>0&&<p className={styles.caption}>{related.length} related advertising {related.length===1?'change':'changes'}{preview?' · preview only':''}</p>}
+    {preview&&!related.length&&<p className={styles.caption}>Preview only · No real advertising activity</p>}
+   </div>
+  </div>
+ </section>;
 }
 export function InsightContent({saved,preview=false}:{saved:SavedPresentation;preview?:boolean}){
  const p=saved.payload,r=p.recap,[metric,setMetric]=useState<'spend'|'results'>('spend');
  const chart=r?recapChart(r):null;
  const max=Math.max(1,...(chart?.points.map(d=>d[metric]??0)??[]));
+ const unavailableHours=Boolean(chart?.hourly&&chart.observed===0);
+ const partial=Boolean(r&&(r.observedDays<r.expectedDays||r.spend===null||r.results===null));
+ const zeroResults=r?.results===0;
+ const dataState=unavailableHours||partial||zeroResults;
+ const dataTitle=unavailableHours?(r?.hourly?.status==='error'?'Hourly breakdown couldn’t be loaded for this report':'Hourly breakdown isn’t available for this report'):partial?'This report has incomplete performance data':zeroResults?'No results were reported for this period':null;
  const related=new Set(p.issues.flatMap(i=>p.lifecycle.filter(c=>relatedLifecycle(i,c)).map(c=>c.eventId)));
  const cards:Array<{key:string;node:React.ReactNode}>=[...p.issues.map(i=>({key:i.id,node:<AttentionCard issue={i} related={p.lifecycle.filter(c=>relatedLifecycle(i,c))} currency={p.currency} preview={preview}/>})),...p.lifecycle.filter(c=>!related.has(c.eventId)).map(c=>({key:c.eventId,node:<Creative card={c} currency={p.currency} preview={preview}/>}))];
  return <div className={styles.content} data-insight-preview={preview?saved.id:undefined}>
   <header className={styles.heading}><SpiderMascot state={p.issues.length?'attention':'idle'} size={48} paused/><div><span className={styles.eyebrow}>{p.account}{p.revisionOf?' · Revised report':''}</span><h2>{headline(p)}</h2><p>{r?`${r.since} – ${r.until} · completed days`:'Saved changes from your advertising account'}</p></div></header>
   {cards.filter(c=>p.issues.some(i=>i.id===c.key)).slice(0,1).map(c=><div key={c.key}>{c.node}</div>)}
-  {!r&&!p.issues.length&&!p.lifecycle.length&&<section className={styles.card}><h3>No saved observations available</h3><p>Your updates will appear once synchronization provides usable data. Missing information is not reported as zero.</p></section>}
-  {r&&chart&&<section className={styles.performance} aria-label="Performance catch-up"><Metrics spend={r.spend} results={r.results} cpr={r.cpr} currency={p.currency}/>
+  {!r&&!p.issues.length&&!p.lifecycle.length&&<section className={`${styles.card} ${styles.dataState}`}><Metrics spend={null} results={null} cpr={null} currency={p.currency}/><div className={styles.dataInset}><InsightDataNotice title="No saved observations available">Your catch-up will appear once synchronization provides usable data. Missing information is not zero.</InsightDataNotice><MissingObservationTrack/></div></section>}
+  {r&&chart&&<section className={`${styles.performance} ${dataState?styles.dataState:''}`} aria-label="Performance catch-up"><Metrics spend={r.spend} results={r.results} cpr={r.cpr} currency={p.currency}/>
+   <div className={dataState?styles.dataInset:undefined}>
    <div className={styles.chartHeading}><h3>{chart.hourly?'Hourly':'Daily'} {metric}</h3><div className={styles.segment} aria-label="Chart metric">{(['spend','results'] as const).map(m=><button key={m} type="button" aria-pressed={metric===m} onClick={()=>setMetric(m)}>{m==='spend'?'Spend':'Results'}</button>)}</div></div>
-   {chart.hourly&&chart.observed===0?<p className={styles.notice}>{r.hourly?.status==='error'?'Hourly data could not be loaded for this saved report.':'Hourly data is unavailable for this saved report.'} Daily totals are shown above.</p>:<div className={styles.chart} data-granularity={chart.hourly?'hour':'day'} role="img" aria-label={`${chart.hourly?'Hourly':'Daily'} ${metric}, zero baseline. ${chart.observed} of ${chart.expected} ${chart.hourly?'hour slots':'days'} observed. Values in the accessible data table below.`}>{chart.points.map((d,index)=><div key={d.label} className={styles.column}><div className={styles.barTrack}>{d[metric]===null?<span className={styles.gap} title={`${d.label}: no observation`}>·</span>:<span className={styles.bar} style={{height:`${Math.max(d[metric]===0?0:2,d[metric]!/max*100)}%`}} title={`${d.label}: ${metric==='spend'?money(d.spend,p.currency):number(d.results)}`}/>}</div><span className={styles.date}>{chart.hourly?(index%6===0?d.label:''):chart.points.length<=7||index===0||index===chart.points.length-1?d.label.slice(5):''}</span></div>)}</div>}
-   {chart.hourly&&<p className={styles.caption}>{chart.observed} of 24 advertiser-local hour slots have observations · {p.timezone??'Timezone unavailable'}. Missing hours are not zero; hourly observations may not reconcile with daily totals. Repeated daylight-saving hours share a clock-hour slot.</p>}
+   {dataTitle&&<InsightDataNotice title={dataTitle} hourly={unavailableHours}>{unavailableHours?`${r.spend!==null&&r.results!==null?'Your daily totals are available above.':'Available daily totals are shown above.'} Hours with no data are not zero spend.`:partial?`${r.observedDays} of ${r.expectedDays} days have observations. Gaps and unavailable metrics are not zero.`:'Zero is an observed result count. Cost per result is unavailable when there are no results.'}</InsightDataNotice>}
+   {unavailableHours?<MissingObservationTrack hourly/>:<div className={styles.chart} data-granularity={chart.hourly?'hour':'day'} role="img" aria-label={`${chart.hourly?'Hourly':'Daily'} ${metric}, zero baseline. ${chart.observed} of ${chart.expected} ${chart.hourly?'hour slots':'days'} observed. Values in the accessible data table below.`}>{chart.points.map((d,index)=><div key={d.label} className={styles.column}><div className={styles.barTrack}>{d[metric]===null?<span className={styles.gap} title={`${d.label}: no observation`}>·</span>:<span className={styles.bar} style={{height:`${Math.max(d[metric]===0?0:2,d[metric]!/max*100)}%`}} title={`${d.label}: ${metric==='spend'?money(d.spend,p.currency):number(d.results)}`}/>}</div><span className={styles.date}>{chart.hourly?(index%6===0?d.label:''):chart.points.length<=7||index===0||index===chart.points.length-1?d.label.slice(5):''}</span></div>)}</div>}
+   {chart.hourly&&!unavailableHours&&<p className={styles.caption}>{chart.observed} of 24 advertiser-local hour slots have observations · {p.timezone??'Timezone unavailable'}. Missing hours are not zero; hourly observations may not reconcile with daily totals. Repeated daylight-saving hours share a clock-hour slot.</p>}
    {r.comparison&&<p className={styles.observation}>Reported results {r.comparison.results>=0?'increased':'decreased'} {Math.abs(r.comparison.results).toFixed(1)}% against the previous {r.expectedDays} completed days. Spend {r.comparison.spend>=0?'increased':'decreased'} {Math.abs(r.comparison.spend).toFixed(1)}%.</p>}
-   <p className={styles.caption}>{r.observedDays} of {r.expectedDays} days have observations. {r.capped?'Your catch-up is limited to the latest 30 completed days. ':''}Results combine leads, conversations and calls; they are not verified bookings.</p>
+   <p className={styles.caption}>{p.timezone??'Timezone unavailable'} · {r.observedDays} of {r.expectedDays} days have observations. {r.capped?'Your catch-up is limited to the latest 30 completed days. ':''}Results combine leads, conversations and calls; they are not verified bookings.</p>
    <details><summary>View {chart.hourly?'hourly':'daily'} values</summary><table><thead><tr><th>{chart.hourly?'Hour':'Date'}</th><th>Spend</th><th>Results</th></tr></thead><tbody>{chart.points.map(d=><tr key={d.label}><td>{d.label}</td><td>{money(d.spend,p.currency)}</td><td>{number(d.results)}</td></tr>)}</tbody></table></details>
+   </div>
   </section>}
   {cards.filter(c=>!p.issues.slice(0,1).some(i=>i.id===c.key)).slice(0,p.issues.length?2:3).map(c=><div key={c.key}>{c.node}</div>)}
   {cards.length>3&&<details className={styles.more}><summary>{cards.length-3} more updates included in this review</summary>{cards.slice(3).map(c=><div key={c.key}>{c.node}</div>)}</details>}

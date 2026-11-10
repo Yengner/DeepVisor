@@ -3,16 +3,26 @@ import {summarize} from './model';
 import {summarizeHours} from './hourly';
 import type {Issue,LifecycleCard,Presentation,SavedPresentation} from './model';
 import type {Observation} from '@/lib/shared/lifecycle/model';
-export const previewScenarios=[
- ['catch-up','Weekly catch-up + performance'],['daily','Daily catch-up · hourly bars'],['daily-missing','Daily catch-up · hourly unavailable'],['activation','Ad activated'],['resume','Ad resumed'],
- ['pause','Ad paused'],['early-stop','November 8 early interruption'],['scheduled-end','Scheduled end reached'],
- ['multiple','Campaign pause · multiple ads'],['rejection','Lifecycle + rejection'],
- ['connection','Expired Meta connection'],['restriction','Account restriction'],['billing','Confirmed billing issue · visual fixture'],
- ['catch-up-lifecycle','Catch-up + lifecycle'],['all','All categories'],['long-absence','30-day catch-up'],
- ['sparse','Missing dates & unavailable results'],['zero','Observed zero results'],['stale','Stale issue evidence'],
- ['unknown','Unknown currency & missing creative'],['many','Many updates · collapsed history'],['correction','Revised recap'],['empty','No data available'],
+/** Add new scenarios within their category; the picker and navigation derive from this registry. */
+export const previewScenarioGroups=[
+ {id:'performance',label:'Catch-Up & Performance',scenarios:[
+  ['daily','Daily catch-up · hourly bars'],['catch-up','Weekly catch-up · seven days'],['long-absence','30-day catch-up'],['correction','Revised recap'],
+ ]},
+ {id:'lifecycle',label:'Ad Lifecycle',scenarios:[
+  ['activation','Ad activated'],['resume','Ad resumed'],['pause','Ad paused'],['early-stop','November 8 early interruption'],['scheduled-end','Scheduled end reached'],['multiple','Campaign pause · multiple ads'],
+ ]},
+ {id:'attention',label:'Needs Attention',scenarios:[
+  ['connection','Expired Meta connection'],['restriction','Account restriction'],['billing','Confirmed billing issue · visual fixture'],['stale','Stale issue evidence'],
+ ]},
+ {id:'combined',label:'Combined Updates',scenarios:[
+  ['rejection','Lifecycle + rejection'],['catch-up-lifecycle','Catch-up + lifecycle'],['all','All categories'],['many','Many updates · collapsed history'],
+ ]},
+ {id:'coverage',label:'Missing Data & Edge Cases',scenarios:[
+  ['daily-missing','Daily catch-up · hourly unavailable'],['sparse','Missing dates & unavailable results'],['zero','Observed zero results'],['unknown','Unknown currency & missing creative'],['empty','No data available'],
+ ]},
 ] as const;
-export type PreviewScenario=typeof previewScenarios[number][0];
+export const previewScenarios=previewScenarioGroups.flatMap(group=>group.scenarios.map(scenario=>scenario));
+export type PreviewScenario=typeof previewScenarioGroups[number]['scenarios'][number][0];
 const at='2026-11-08T18:00:00.000Z';
 // Reuses the native SVG visual language of scripts/beta-fixtures/fixture.ts. No Meta-hosted media.
 const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="500" viewBox="0 0 400 500"><rect width="400" height="500" fill="#71415d"/><circle cx="300" cy="130" r="95" fill="#fff" opacity=".12"/><path d="M50 295 Q200 65 350 295" stroke="#f3cfa0" stroke-width="14" fill="none"/><text x="30" y="345" fill="white" font-family="sans-serif" font-size="29" font-weight="bold">AUTUMN GLOW</text><text x="30" y="380" fill="white" font-family="sans-serif" font-size="18">Salon creative preview</text><text x="30" y="464" fill="white" font-family="sans-serif" font-size="13">SYNTHETIC TEST AD · NOT AN OFFER</text></svg>');

@@ -11,14 +11,25 @@ try{
  await context.route('**/api/insights',route=>route.request().method()==='POST'?route.fulfill({status:200,contentType:'application/json',body:'{"presentation":null}'}):route.continue());
  await page.goto('http://localhost:3000/login');await page.getByLabel('Email').fill(user.email);await page.getByLabel('Password').fill(user.password);await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.waitForURL('**/dashboard',{timeout:60000});
  await page.getByRole('link',{name:'Test event scenarios',exact:true}).click();await page.waitForURL('**/insights/preview');
- const dialog=page.getByRole('dialog');await dialog.getByText('Preview only · 23 scenarios · No real advertising activity').waitFor();
+ const dialog=page.getByRole('dialog');await dialog.getByText('Preview only · 23 scenarios · No real advertising activity').waitFor().catch(async error=>{await page.screenshot({path:'/tmp/dv-edge-preview-error.png'});console.log((await page.locator('body').innerText()).slice(0,1200));throw error;});
  const requests=[];page.on('request',r=>{if(r.url().includes('/api/'))requests.push(r.url().split('?')[0]);});
  const select=dialog.getByLabel('Preview scenario');const ids=await select.locator('option').evaluateAll(nodes=>nodes.map(n=>n.value));assert.equal(ids.length,23);
+ const category=dialog.getByLabel('Preview category');
+ for(const [group,count] of [['performance',4],['lifecycle',6],['attention',4],['combined',4],['coverage',5]]){
+  await category.selectOption(group);assert.equal(await select.locator('option').count(),count);
+  const first=await select.inputValue();for(let i=0;i<count;i++)await dialog.getByRole('button',{name:'Next scenario →'}).click();assert.equal(await select.inputValue(),first);
+ }
+ await category.selectOption('all');assert.equal(await select.locator('optgroup').count(),5);
  for(const id of ids){await select.selectOption(id);await dialog.locator(`[data-insight-preview="preview-${id}"]`).waitFor();assert.equal(await dialog.locator('a[href^="/api/"]').count(),0);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
  await select.selectOption('daily');
  assert.equal(await dialog.locator('[data-granularity="hour"] > div').count(),24);
  for(const width of [1440,390,320]){await page.setViewportSize({width,height:1100});await dialog.getByRole('heading',{name:'Hourly spend',exact:true}).scrollIntoViewIfNeeded();await page.screenshot({path:`/tmp/dv-insights-hourly-${width}.png`});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
- await select.selectOption('daily-missing');await dialog.getByText('Hourly data is unavailable for this saved report. Daily totals are shown above.').waitFor();
+ await select.selectOption('daily-missing');await dialog.getByText('Hourly breakdown isn’t available for this report').waitFor();
+ for(const id of ['daily-missing','sparse','zero','unknown','empty']){
+  await select.selectOption(id);await dialog.getByRole('status').filter({hasText:/available|reported|incomplete/}).first().waitFor();
+  for(const width of [1440,390,320]){await page.setViewportSize({width,height:1100});await dialog.locator('[data-insight-preview]').scrollIntoViewIfNeeded();await page.screenshot({path:`/tmp/dv-insights-edge-${id}-${width}.png`});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
+ }
+ await page.setViewportSize({width:1440,height:1100});await select.selectOption('daily-missing');await dialog.getByRole('button',{name:'Switch to dark'}).click();await page.screenshot({path:'/tmp/dv-insights-edge-dark.png'});await dialog.getByRole('button',{name:'Switch to light'}).click();
  await select.selectOption('catch-up');assert.equal(await dialog.locator('[data-granularity="day"] > div').count(),7);
  await select.selectOption('all');
  for(const width of [1440,390,320]){await page.setViewportSize({width,height:1100});await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`/tmp/dv-insights-preview-${width}.png`,fullPage:true});}
