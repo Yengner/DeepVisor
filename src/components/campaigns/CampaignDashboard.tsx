@@ -524,14 +524,14 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                   </Badge>
                 </Group>
 
-                <Title order={2} mt={6} className={classes.title}>
+                <Title order={1} size="h2" mt={6} className={classes.title}>
                   Campaigns
                 </Title>
                 <Group gap="xs" mt={8} wrap="wrap">
                   <Badge color="green" variant="light">
                     {props.deliveryState.available ? accountSummary.activeCampaigns : '—'} with active ads
                   </Badge>
-                  <Badge color="yellow" variant="light">
+                  <Badge color="gray" variant="light">
                     {props.deliveryState.available ? accountSummary.pausedCampaigns : '—'} without active ads
                   </Badge>
                   <Badge color="gray" variant="light">
@@ -607,12 +607,16 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                 <Badge variant="light" color={platformColor}>
                   {layerSummary.count} {layerSummary.label.toLowerCase()}
                 </Badge>
-                <Badge variant="light" color="green">
-                  {formatCurrencyAmount(layerSummary.spend, currencyCode)} spend
-                </Badge>
-                <Badge variant="outline" color="gray">
-                  {formatCompactNumber(layerSummary.results)} results
-                </Badge>
+                {activeTab !== 'campaigns' ? (
+                  <>
+                    <Badge variant="light" color="gray">
+                      {formatCurrencyAmount(layerSummary.spend, currencyCode)} spend
+                    </Badge>
+                    <Badge variant="light" color="gray">
+                      {formatCompactNumber(layerSummary.results)} results
+                    </Badge>
+                  </>
+                ) : null}
                 <Text size="sm" c="dimmed" lineClamp={1}>
                   {layerSummary.helper}
                 </Text>

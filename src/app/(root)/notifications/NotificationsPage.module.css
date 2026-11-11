@@ -21,13 +21,13 @@
 .page :global(.mantine-Card-root),
 .page :global(.mantine-Paper-root) {
   border: 1px solid var(--dv-border) !important;
-  border-radius: 6px !important;
+  border-radius: var(--dv-radius-sm);
   background: #ffffff;
   box-shadow: none !important;
 }
 
 .page :global(.mantine-Button-root) {
-  border-radius: 5px !important;
+  border-radius: var(--dv-radius-sm);
   font-weight: 700;
 }
 
@@ -49,7 +49,7 @@
 .page :global(.mantine-Badge-root),
 .page :global(.mantine-ThemeIcon-root),
 .page :global(.mantine-Alert-root) {
-  border-radius: 5px !important;
+  border-radius: var(--dv-radius-sm);
 }
 
 .page :global(.mantine-ThemeIcon-root) {
@@ -62,7 +62,7 @@
   overflow: hidden;
   padding: 22px 24px;
   border: 1px solid var(--dv-ink);
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   color: #ffffff;
   background: var(--dv-ink);
 }
@@ -93,21 +93,32 @@
   color: var(--dv-border-strong);
 }
 
+.heroPrimaryAction,
+.heroSecondaryAction {
+  min-height: var(--dv-action-min-height);
+  border-radius: var(--dv-action-radius) !important;
+}
+
 .heroPrimaryAction {
-  border-color: var(--dv-lime) !important;
-  color: var(--dv-ink) !important;
-  background: var(--dv-lime) !important;
+  border-color: var(--dv-action) !important;
+  color: var(--dv-action-text) !important;
+  background: var(--dv-action) !important;
 }
 
 .heroPrimaryAction:hover {
-  border-color: var(--dv-highlight-hover) !important;
-  background: var(--dv-highlight-hover) !important;
+  border-color: var(--dv-action-hover) !important;
+  background: var(--dv-action-hover) !important;
 }
 
+/* Secondary on the navy hero: outline, matching .app-platform-page-hero secondary actions. */
 .heroSecondaryAction {
-  border-color: #4b545f !important;
-  color: #ffffff !important;
-  background: #1f2328 !important;
+  border-color: var(--chrome-border) !important;
+  color: var(--chrome-text) !important;
+  background: transparent !important;
+}
+
+.heroSecondaryAction:hover {
+  background: var(--chrome-hover) !important;
 }
 
 .summaryCard {

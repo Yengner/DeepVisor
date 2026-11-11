@@ -48,7 +48,8 @@ export default function NotificationAction({
   return (
     <Button
       variant="light"
-      size="xs"
+      size="sm"
+      mih={44}
       loading={loading}
       className={className}
       rightSection={href ? <IconArrowRight size={14} /> : <IconCheck size={14} />}

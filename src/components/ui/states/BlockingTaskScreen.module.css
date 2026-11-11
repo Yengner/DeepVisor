@@ -30,7 +30,7 @@
   height: 56px;
   padding: 8px;
   border: 1px solid var(--chrome-border);
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   background: var(--chrome-panel);
 }
 

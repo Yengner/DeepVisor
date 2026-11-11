@@ -156,6 +156,8 @@ export default function MobileAppChromeClient({
           onClick={() => setDrawerOpened((opened) => !opened)}
           aria-label="Open navigation"
           size="sm"
+          w={44}
+          h={44}
           color="#f5f9ff"
         />
 

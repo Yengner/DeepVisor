@@ -25,7 +25,7 @@
   border: 1px solid #dcdfe4;
   background: #fff;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--dv-radius-md);
   color: inherit;
   text-align: left;
   font: inherit;
@@ -56,7 +56,7 @@
   gap: 6px;
   height: 112px;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   background: #f0f1f3;
 }
 .media {
@@ -82,7 +82,7 @@
   left: 5px;
   background: #ffffffed;
   color: #232a33;
-  border-radius: 4px;
+  border-radius: var(--dv-radius-sm);
   padding: 3px 5px;
   display: flex;
   align-items: center;
@@ -109,7 +109,7 @@
   font-size: 12px;
 }
 .metrics dd {
-  font-weight: 650;
+  font-weight: 700;
   margin: 4px 0 0;
   font-size: 16px;
   overflow-wrap: anywhere;
@@ -146,7 +146,7 @@
   color: #993b33;
   background: #fff4f2;
   padding: 12px;
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
 }
 .drawer {
   display: flex;
@@ -184,28 +184,28 @@
 .detailMedia {
   height: 360px;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
 }
 .detailMedia img {
   object-fit: contain;
 }
 .preview {
   border: 1px solid #dcdfe4;
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   width: 100%;
   height: 470px;
   background: white;
 }
 .skeleton {
   min-height: 250px;
-  border-radius: 8px;
+  border-radius: var(--dv-radius-md);
   border: 1px solid #dcdfe4;
   padding: 12px;
 }
 .skeletonMedia {
   height: 112px;
   background: #edeff1;
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
 }
 .skeletonLine {
   height: 16px;
@@ -291,7 +291,7 @@
   padding: 0 0 8px;
   background: #fff;
   border: 1px solid #dcdfe4;
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   overflow: hidden;
   text-align: left;
   cursor: pointer;

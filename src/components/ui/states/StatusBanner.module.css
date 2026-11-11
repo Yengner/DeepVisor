@@ -1,0 +1,33 @@
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 0 0 14px;
+  border: 1px solid var(--dv-card-border);
+  border-radius: var(--dv-action-radius);
+  background: var(--dv-card-panel);
+  color: var(--mantine-color-text);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.banner[data-tone='gap'] { border-color: var(--dv-gap-border); background: var(--dv-gap-bg); color: var(--dv-gap-text); }
+.banner[data-tone='action'] { border-color: var(--dv-urgent-border); background: var(--dv-urgent-soft); color: var(--dv-urgent-text); font-weight: 700; }
+.icon { flex: none; }
+.message { flex: 1; min-width: 0; padding: 8px 0; overflow-wrap: anywhere; }
+.dismiss {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--dv-radius-md);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.dismiss:hover { background: rgb(0 0 0 / 0.06); }
+.dismiss:focus-visible { outline: 2px solid var(--dv-action); outline-offset: 2px; }
+.banner:not(:has(.dismiss)) { padding-right: 14px; }

@@ -49,7 +49,7 @@ export default function KpiFrequencyChart({ kpis, summary }: KpiFrequencyChartPr
               </Badge>
             </Group>
 
-            <Text fw={900} size="2rem" lh={1.1}>
+            <Text fw={800} size="2rem" lh={1.1}>
               {kpi.formattedValue}
             </Text>
           </Card>

@@ -64,7 +64,7 @@
   min-width: 230px;
   padding: 10px 12px;
   border: 1px solid var(--chrome-border);
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   background: var(--chrome-panel);
 }
 
@@ -121,7 +121,7 @@
   gap: 10px;
   padding: 10px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   background: var(--dv-canvas);
   transition: border-color 180ms ease, background-color 180ms ease;
 }
@@ -180,7 +180,7 @@
 .bestPeriodCard {
   padding: 12px 14px;
   border: 1px solid var(--dv-border);
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   background: var(--dv-canvas);
 }
 
@@ -207,7 +207,7 @@
   margin-top: 4px;
   font-size: 1.5rem;
   line-height: 1;
-  font-weight: 750;
+  font-weight: 800;
 }
 
 .signalBoard {
@@ -218,7 +218,7 @@
   min-height: 0;
   padding: 12px 14px;
   border: 1px solid var(--dv-border);
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   background: var(--dv-canvas);
 }
 
@@ -304,7 +304,7 @@
 .campaignTrack {
   overflow: hidden;
   height: 7px;
-  border-radius: 4px;
+  border-radius: var(--dv-radius-sm);
   background: var(--dv-surface-muted);
 }
 
@@ -345,7 +345,7 @@
 .insightTile {
   padding: 12px;
   border: 1px solid var(--dv-border);
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
 }
 
 .insightTilePositive {

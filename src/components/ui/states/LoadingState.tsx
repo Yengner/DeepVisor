@@ -9,7 +9,7 @@ export function LoadingState({ message = 'Loading...' }: LoadingStateProps) {
     <Center className="min-h-[300px]">
       <Stack align="center" gap="sm">
         <Loader size="sm" color="signal" />
-        <Text c="dimmed" size="sm" fw={650}>{message}</Text>
+        <Text c="dimmed" size="sm" fw={700}>{message}</Text>
       </Stack>
     </Center>
   );

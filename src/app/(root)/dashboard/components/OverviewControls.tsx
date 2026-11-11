@@ -12,8 +12,9 @@ export function PeriodControl({ period }: { period: Period }) {
   return (
     <SegmentedControl
       aria-label="Performance period"
-      size="xs"
+      size="sm"
       radius="sm"
+      styles={{ label: { minHeight: 40, display: "flex", alignItems: "center", justifyContent: "center" } }}
       value={period}
       disabled={pending}
       data={[

@@ -19,7 +19,7 @@
   display: block;
   color: var(--dv-primary-strong);
   font-size: 0.68rem;
-  font-weight: 900;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0;
 }
@@ -80,7 +80,7 @@
   justify-content: center;
   flex: 0 0 32px;
   border: 1px solid #bcc8d7;
-  border-radius: 4px;
+  border-radius: var(--dv-radius-sm);
   background: var(--dv-primary-soft);
   color: var(--dv-primary-strong);
 }
@@ -94,7 +94,7 @@
   padding: 20px;
   border: 1px solid #c6ccd3;
   border-top: 3px solid var(--dv-primary-strong);
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   background: #ffffff;
 }
 
@@ -106,7 +106,7 @@
   justify-content: center;
   flex: 0 0 42px;
   border: 1px solid #bcc8d7;
-  border-radius: 5px;
+  border-radius: var(--dv-radius-sm);
   background: var(--dv-primary-soft);
   color: var(--dv-primary-strong);
 }
@@ -164,7 +164,7 @@
   min-width: 44px;
   height: 44px;
   border: 1px solid #bac1c9;
-  border-radius: 4px;
+  border-radius: var(--dv-radius-sm);
   background: #ffffff;
   color: var(--dv-ink);
 }
@@ -194,7 +194,7 @@
 
 .summaryIcon {
   border: 1px solid #bcc8d7;
-  border-radius: 4px;
+  border-radius: var(--dv-radius-sm);
   background: var(--dv-primary-soft);
   color: var(--dv-primary-strong);
 }
@@ -220,7 +220,7 @@
 
 .readyBadge {
   border: 1px solid #b9c6d6;
-  border-radius: 3px;
+  border-radius: var(--dv-radius-sm);
   background: var(--dv-primary-soft);
   color: #08603a;
 }
@@ -229,7 +229,7 @@
   height: auto;
   padding-block: 5px;
   border: 1px solid #c3cdd9;
-  border-radius: 3px;
+  border-radius: var(--dv-radius-sm);
   background: var(--dv-primary-soft);
   color: #08603a;
   white-space: normal;
@@ -287,7 +287,7 @@
     margin-inline: -4px;
     padding: 10px;
     border: 1px solid #bfc5cc;
-    border-radius: 6px;
+    border-radius: var(--dv-radius-sm);
     background: rgba(244, 245, 239, 0.96);
     box-shadow: 0 8px 24px rgba(8, 45, 86, 0.12);
   }

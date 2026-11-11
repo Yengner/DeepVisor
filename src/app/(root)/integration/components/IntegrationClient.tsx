@@ -515,7 +515,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                   </Group>
 
                   <div>
-                    <Title order={2} className="app-platform-page-title">
+                    <Title order={1} size="h2" className="app-platform-page-title">
                       Connections
                     </Title>
                     <Text size="md" mt="sm" maw={680} className="app-platform-page-copy">

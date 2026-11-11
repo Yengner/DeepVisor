@@ -62,7 +62,7 @@
 .filterBar {
   padding: 10px;
   border: 1px solid var(--platform-border);
-  border-radius: 8px;
+  border-radius: var(--dv-radius-md);
   background: var(--dv-canvas);
 }
 
@@ -108,7 +108,7 @@
   min-width: 0;
   padding: 14px;
   border: 1px solid rgba(8, 45, 86, 0.12);
-  border-radius: 8px;
+  border-radius: var(--dv-radius-md);
   background: #ffffff;
   text-align: left;
   box-shadow: 0 8px 22px rgba(8, 45, 86, 0.04);
@@ -138,7 +138,7 @@
   flex: 1 1 auto;
 }
 .mobileMetricGrid > div > :global(.mantine-Text-root):first-child { font-size: 12px; font-weight: 500; text-transform: none; }
-.mobileMetricGrid > div > :global(.mantine-Text-root):last-child { font-size: 16px; font-weight: 650; overflow-wrap: anywhere; }
+.mobileMetricGrid > div > :global(.mantine-Text-root):last-child { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
 .moreMetrics { grid-column: 1 / -1; font-size: 13px; }
 .moreMetrics summary { min-height: 44px; padding: 12px 0; cursor: pointer; color: var(--dv-primary-strong); }
 
@@ -262,4 +262,8 @@
   height: 6px;
   border-radius: 50%;
   background: var(--dv-primary);
+}
+
+.nowrap {
+  white-space: nowrap;
 }

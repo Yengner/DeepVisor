@@ -129,14 +129,7 @@ export default function TopBarClient({
           leftSection={<IconPlus size={17} stroke={2.2} />}
           size="sm"
           onClick={() => router.push('/campaigns/create')}
-          className="hidden sm:flex"
-          styles={{
-            root: {
-              color: '#ffffff',
-              background: 'var(--dv-primary)',
-              border: '1px solid var(--dv-primary)',
-            },
-          }}
+          className="hidden sm:flex app-platform-page-action-primary"
         >
           New campaign
         </Button>
@@ -198,7 +191,7 @@ export default function TopBarClient({
                     >
                       <div className="w-full py-0.5">
                         <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
-                          <Text size="sm" fw={750} lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
+                          <Text size="sm" fw={800} lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
                             {notification.title}
                           </Text>
                           <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>
@@ -251,7 +244,7 @@ export default function TopBarClient({
                   {userInitials}
                 </Avatar>
                 <div className="hidden max-w-36 min-w-0 lg:block">
-                  <Text size="xs" fw={750} c="white" lineClamp={1}>
+                  <Text size="xs" fw={800} c="white" lineClamp={1}>
                     {fullName || 'Account'}
                   </Text>
                   <Text size="10px" c="#b0c4da" lineClamp={1}>

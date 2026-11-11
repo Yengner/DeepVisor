@@ -19,7 +19,7 @@
 
 .page :global(.mantine-Card-root) {
   border: 1px solid var(--dv-border) !important;
-  border-radius: 6px !important;
+  border-radius: var(--dv-radius-sm);
   background: #ffffff;
   box-shadow: none !important;
 }
@@ -28,7 +28,7 @@
 .page :global(.mantine-Badge-root),
 .page :global(.mantine-ThemeIcon-root),
 .page :global(.mantine-Alert-root) {
-  border-radius: 5px !important;
+  border-radius: var(--dv-radius-sm);
 }
 
 .page :global(.mantine-Button-root) {

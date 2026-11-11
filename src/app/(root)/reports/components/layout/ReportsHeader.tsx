@@ -179,7 +179,7 @@ export default function ReportsHeader({
                 </Badge>
               ) : null}
             </Group>
-            <Text fw={900} size="1.65rem" mt="xs" className={classes.headerTitle}>
+            <Text component="h1" fw={800} size="1.65rem" mt="xs" className={classes.headerTitle}>
               Reports
             </Text>
             <Text size="sm" c="#57616f" mt={4}>
@@ -204,7 +204,6 @@ export default function ReportsHeader({
                   rightSection={<IconChevronDown size={14} />}
                   radius="xl"
                   variant="filled"
-                  color="#073d85"
                   className="app-platform-page-action-primary"
                 >
                   Export

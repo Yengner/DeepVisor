@@ -192,24 +192,24 @@ export default function CampaignTable({
           <Table.Tr>
             <Table.Th style={{ width: 64, minWidth: 64, textAlign: 'center' }}>Select</Table.Th>
             <Table.Th style={{ width: 320, maxWidth: 320 }}>Campaign</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Status</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Objective</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>First activity</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Last activity</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Spend</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Results</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Cost/Result</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>CTR</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>CPC</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>CPM</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Reach</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Impressions</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Clicks</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Link Clicks</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Leads</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Messages</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Freq</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>CPL</Table.Th>
+            <Table.Th className={classes.nowrap}>Status</Table.Th>
+            <Table.Th className={classes.nowrap}>Objective</Table.Th>
+            <Table.Th className={classes.nowrap}>First activity</Table.Th>
+            <Table.Th className={classes.nowrap}>Last activity</Table.Th>
+            <Table.Th className={classes.nowrap}>Spend</Table.Th>
+            <Table.Th className={classes.nowrap}>Results</Table.Th>
+            <Table.Th className={classes.nowrap}>Cost/Result</Table.Th>
+            <Table.Th className={classes.nowrap}>CTR</Table.Th>
+            <Table.Th className={classes.nowrap}>CPC</Table.Th>
+            <Table.Th className={classes.nowrap}>CPM</Table.Th>
+            <Table.Th className={classes.nowrap}>Reach</Table.Th>
+            <Table.Th className={classes.nowrap}>Impressions</Table.Th>
+            <Table.Th className={classes.nowrap}>Clicks</Table.Th>
+            <Table.Th className={classes.nowrap}>Link Clicks</Table.Th>
+            <Table.Th className={classes.nowrap}>Leads</Table.Th>
+            <Table.Th className={classes.nowrap}>Messages</Table.Th>
+            <Table.Th className={classes.nowrap}>Freq</Table.Th>
+            <Table.Th className={classes.nowrap}>CPL</Table.Th>
             <Table.Th
               style={{
                 width: RIGHT_COL_WIDTH,
@@ -328,8 +328,8 @@ export default function CampaignTable({
                   </Table.Td>
 
                   <Table.Td><Text size="sm">{campaign.objective}</Text></Table.Td>
-                  <Table.Td style={{ whiteSpace: 'nowrap' }}><Text size="sm">{campaign.startDate || '—'}</Text></Table.Td>
-                  <Table.Td style={{ whiteSpace: 'nowrap' }}>
+                  <Table.Td className={classes.nowrap}><Text size="sm">{campaign.startDate || '—'}</Text></Table.Td>
+                  <Table.Td className={classes.nowrap}>
                     <Text size="sm">{campaign.endDate || '—'}</Text>
                   </Table.Td>
                   <Table.Td><Text fw={500} size="sm">{campaign.metricsAvailable === false ? '—' : formatCurrencyAmount(campaign.spend, currencyCode)}</Text></Table.Td>

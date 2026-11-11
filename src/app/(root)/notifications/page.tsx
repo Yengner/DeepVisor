@@ -288,7 +288,7 @@ export default async function NotificationsPage() {
                 <ThemeIcon size="xl" variant="light" color="signal" radius="md">
                   <IconInbox size={20} />
                 </ThemeIcon>
-                <Text fw={750}>Inbox clear</Text>
+                <Text fw={800}>Inbox clear</Text>
                 <Text size="sm" c="dimmed" maw={420}>
                   There are no report, workflow, sync, or account-signal notifications yet.
                 </Text>
@@ -311,7 +311,7 @@ export default async function NotificationsPage() {
                       <Badge color={typeColor(type)} variant="light">
                         {formatTypeLabel(type)}
                       </Badge>
-                      <Text size="sm" fw={750}>{count}</Text>
+                      <Text size="sm" fw={800}>{count}</Text>
                     </Group>
                   ))}
                 </Stack>

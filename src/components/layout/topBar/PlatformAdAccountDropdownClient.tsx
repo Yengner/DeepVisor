@@ -243,7 +243,7 @@ export default function PlatformAdAccountDropdownClient({
 
               <div style={{ minWidth: 0, flex: 1 }}>
                 <Group gap={6} wrap={compact ? 'nowrap' : 'wrap'}>
-                  <Text size={compact ? 'xs' : 'sm'} fw={750} lineClamp={1} c={inChrome ? 'white' : undefined}>
+                  <Text size={compact ? 'xs' : 'sm'} fw={800} lineClamp={1} c={inChrome ? 'white' : undefined}>
                       {selectedOption.platformLabel}
                     </Text>
                   {selectedOption.preview && !compact ? (

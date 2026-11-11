@@ -20,7 +20,7 @@
   grid-column: 1 / -1;
   grid-row: 1 / 4;
   background: var(--dv-agent-surface);
-  border-radius: 8px;
+  border-radius: var(--dv-radius-md);
   z-index: 0;
 }
 .identity,
@@ -131,7 +131,7 @@
   gap: 4px;
   font-size: 12px;
   white-space: nowrap;
-  font-weight: 600;
+  font-weight: 700;
 }
 .positive {
   color: #257544;
@@ -182,7 +182,7 @@
   background: transparent;
   color: #b5bcc6;
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   min-height: 40px;
   font-size: 12px;
   cursor: pointer;
@@ -203,7 +203,7 @@
 }
 .chartValue strong {
   font-size: 40px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
@@ -235,7 +235,7 @@
 }
 .chartDetails select {
   color: var(--dv-ink);
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   padding: 8px;
   background: white;
 }
@@ -286,7 +286,7 @@
 }
 .attentionBody h3 {
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.35;
   margin: 0 0 10px;
   overflow-wrap: anywhere;
@@ -370,7 +370,7 @@
 .boardTabs button {
   background: transparent;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   color: #5d6877;
   min-height: 44px;
   padding: 8px 12px;
@@ -407,7 +407,7 @@
   background: #fff;
   padding: 0;
   border: 1px solid #dce0e5;
-  border-radius: 8px;
+  border-radius: var(--dv-radius-md);
   overflow: hidden;
   min-width: 0;
   width: 100%;
@@ -453,7 +453,7 @@
   margin: 0 0 10px;
   font-size: 14px;
   line-height: 1.35;
-  font-weight: 650;
+  font-weight: 700;
   overflow-wrap: anywhere;
 }
 .featured h3 {
@@ -496,7 +496,7 @@
 .boardSubheading {
   margin: 12px 0;
   font-size: 18px;
-  font-weight: 650;
+  font-weight: 700;
 }
 .boardSubheading span {
   display: inline-block;
@@ -546,7 +546,7 @@
 .secondaryMetrics dd {
   margin: 4px 0 0;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .supportMetrics {
@@ -564,8 +564,8 @@
   color: var(--dv-ink);
   background: var(--dv-highlight);
   font-size: 12px;
-  font-weight: 600;
-  border-radius: 4px;
+  font-weight: 700;
+  border-radius: var(--dv-radius-sm);
 }
 .featured .adMedia > div > span:last-child:not([role="img"]) {
   top: auto;
@@ -673,7 +673,7 @@
 .loading span {
   display: block;
   background: #89948030;
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   min-height: 24px;
 }
 .chartLoading {
@@ -905,7 +905,7 @@
     font-size: 11px;
   }
   .periodNote {
-    font-size: 10px;
+    font-size: var(--dv-text-2xs);
   }
   .attention {
     padding: 16px;
@@ -1028,10 +1028,10 @@
     font-size: 18px;
   }
   .adMetrics dt {
-    font-size: 10px;
+    font-size: var(--dv-text-2xs);
   }
   .adMetrics .delta {
-    font-size: 10px;
+    font-size: var(--dv-text-2xs);
   }
   .adState .delivery {
     display: inline;
@@ -1049,7 +1049,7 @@
     align-self: stretch;
   }
   .adState > span {
-    font-size: 10px;
+    font-size: var(--dv-text-2xs);
   }
   .insufficient {
     font-size: 12px;
@@ -1064,7 +1064,7 @@
     font-size: 24px;
   }
   .monitor dt {
-    font-size: 9px;
+    font-size: var(--dv-text-2xs);
   }
   .trend {
     padding: 24px 0 0;
@@ -1171,13 +1171,13 @@
 .attentionBody h3 { font-size: 19px; }
 .attentionBody p { font-size: 13px; line-height: 1.7; }
 .attentionBody details, .attentionBody .more, .quietAttention { color: var(--ui-muted); }
-.attentionBody a { color: var(--ui-accent); font-weight: 650; font-size: 13px; }
+.attentionBody a { color: var(--ui-accent); font-weight: 700; font-size: 13px; }
 .quietAttention { padding-top: 4px; }
 .board { padding-top: 8px; }
 .boardHeader { margin-bottom: 18px; }
 .boardHeader h2, .monitor h2, .activity h2 { font-size: 19px; letter-spacing: -.03em; }
 .boardTabs button { color: var(--ui-muted); font-size: 12px; }
-.boardActions a, .activity a, .boardHeader > a { color: var(--ui-accent); font-weight: 600; }
+.boardActions a, .activity a, .boardHeader > a { color: var(--ui-accent); font-weight: 700; }
 .adCard { color: var(--ui-text); background: var(--ui-panel); border-color: var(--ui-line); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow); transition: border-color var(--ui-duration), box-shadow var(--ui-duration); }
 .adCard:hover { transform: none; border-color: var(--ui-line-strong); box-shadow: var(--ui-shadow-raised); }
 .adMedia { background: var(--ui-subtle); }
@@ -1188,7 +1188,7 @@
 .featured h3 { font-size: 20px; }
 .adMetrics dt, .delivery, .boardSubheading span, .secondaryMetrics dt, .supportMetrics, .boardNotes, .quiet, .insufficient { color: var(--ui-muted); }
 .adMetrics dd { letter-spacing: -.035em; }
-.featureLabel { border-radius: 6px; background: #e1ecff; color: #082d56; box-shadow: 0 1px 6px #082d5610; }
+.featureLabel { border-radius: var(--dv-radius-sm); background: #e1ecff; color: #082d56; box-shadow: 0 1px 6px #082d5610; }
 .monitor { padding: 24px; background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); }
 .monitor dl > div { padding: 4px 16px; border-left: 1px solid var(--ui-line); }
 .monitor dl > div:first-child { border-left: 0; padding-left: 0; }
@@ -1231,18 +1231,18 @@
 .page[data-publisher="facebook"] { --chart-line: #1877d4; }
 .page[data-publisher="instagram"] { --chart-line: #ae3e9c; }
 .workspaceHeader { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 16px; }
-.workspaceHeader h1 { font-size: clamp(24px, 3vw, 34px); margin: 0; letter-spacing: -.04em; }
+.workspaceHeader h1 { font-family: var(--font-display), sans-serif; font-weight: 700; font-size: clamp(24px, 3vw, 34px); margin: 0; letter-spacing: -.04em; }
 .workspaceHeader p { margin: 5px 0; color: var(--ui-muted); }
 .freshness { font-size: 12px; color: var(--ui-muted); margin-bottom: 22px; }
 .freshness summary { cursor: pointer; width: fit-content; }
 .freshness p { max-width: 70ch; }
-.workspaceChart { margin: 28px 0; padding: 20px; border: 1px solid var(--ui-line); background: var(--ui-panel); border-radius: 18px; }
+.workspaceChart { margin: 28px 0; padding: 20px; border: 1px solid var(--ui-line); background: var(--ui-panel); border-radius: var(--dv-radius-lg); }
 
 .workspaceLinks { display: flex; gap: 24px; padding: 18px 0; }
 .adState { flex-wrap: wrap; }
 .adState > span:first-child { font-size: 11px; }
-.delivery[data-delivery="ACTIVE"] { color: #18753a; background: #e5f4e9; border-radius: 6px; padding: 3px 7px; }
-.kpis dt button { border: 0; background: none; color: inherit; cursor: help; padding: 3px; }
+.delivery[data-delivery="ACTIVE"] { color: #18753a; background: #e5f4e9; border-radius: var(--dv-radius-sm); padding: 3px 7px; }
+.kpis dt button { display: inline-grid; place-items: center; width: 44px; height: 44px; margin: -14px -12px; border: 0; background: none; color: inherit; cursor: help; padding: 0; }
 @media(max-width: 850px) { .workspaceChart { padding: 12px 4px; } .workspaceHeader > div { min-width: 0; } }
 @media(prefers-reduced-motion: reduce) { .page * { scroll-behavior: auto; transition: none; } }
 .page { --chart-line: #2671d9; --chart-grid: var(--ui-line, #e6ebf2); --chart-text: var(--ui-muted, #697d92); }

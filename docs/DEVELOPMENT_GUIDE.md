@@ -159,6 +159,24 @@ the card should feel. Tokens live in [`src/globals.css`](../src/globals.css) as
 | **Primary action** | The single primary button of a surface (e.g. *Got it*) | `--dv-action` `#3A67DB`, white text, `--dv-action-radius` 10px, `--dv-action-min-height` 44px |
 | **Neutral card** | Card container and inner panels | `--dv-card-radius` 16px, `--dv-card-border` `#C3CBD9`, `--dv-card-panel` white, `--dv-card-inset` |
 
+Token sources, in order of authority: `--dv-*` in `src/globals.css` is the single
+source of color, radius and action values. `DesignSurface`'s `--ui-*` variables alias
+`--dv-*` for light mode (dark values remain local to that surface). The Mantine theme in
+`src/theme.ts` mirrors the brand tuple for Mantine components. Add new values to
+`--dv-*` first; don't introduce new hex values in component CSS.
+
+Type and radius scales are tokens too: `--dv-text-2xs` (11px, the floor for chart axes
+and labels), `--dv-text-xs` (12px, the floor for body text), `--dv-text-sm/md/lg/xl`, and
+`--dv-radius-sm` (6px), `--dv-radius-md` (10px), `--dv-radius-lg` (16px), `--dv-radius-pill`.
+Use weights 500/700/800 only. Primary buttons use `.app-platform-page-action-primary`
+(the `--dv-action` color); Mantine's default filled `Button` still uses the brand tuple
+in `src/theme.ts`.
+
+Page-level status (sync progress, refresh failures, unavailable updates) uses
+`src/components/ui/states/StatusBanner.tsx` with the same tones: `info` (navy/neutral,
+expected), `gap` (amber), `action` (red, not dismissible). Banners render in the layout's
+`.app-status-region`, above page content.
+
 Rules: never use amber for an expected state (an ad reaching its scheduled end is
 navy, not a warning). Red is reserved for something the owner must act on, and its
 primary button stays red. Status bands use 12px/800 uppercase text with 0.12em

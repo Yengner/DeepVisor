@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import StatusBanner, { type StatusTone } from '@/components/ui/states/StatusBanner';
 
 type SyncState = { status: string; lastSuccessfulAt: string | null; revision?: string; resourceRefreshEnabled?: boolean };
 /** A visible account lease requests shared work. Only pending jobs get frequent status polling. */
@@ -59,5 +60,7 @@ export default function AutomaticMetaSync({ accountId }: { accountId: string | n
     state.status === 'timezone_unavailable' ? 'Account timezone unavailable. Check Connections.' :
     ['failed', 'partial'].includes(state.status) ? 'Last refresh did not complete. Check Connections.' :
     state.status === 'unavailable' ? 'Sync status unavailable.' : null;
-  return message ? <div className="px-3 pt-2 text-xs text-slate-500" role="status" aria-live="polite">{message}</div> : null;
+  const tone: StatusTone = ['queued', 'running'].includes(state.status) ? 'info' :
+    ['reauthentication_required', 'retry_limit', 'initial_sync_required'].includes(state.status) ? 'action' : 'gap';
+  return message ? <StatusBanner key={state.status} tone={tone}>{message}</StatusBanner> : null;
 }

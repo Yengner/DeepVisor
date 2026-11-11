@@ -1,25 +1,25 @@
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 22px; margin: 32px 0; container-type: inline-size; }
-.panel { min-width: 0; padding: 24px; border: 1px solid var(--ui-line); border-radius: 18px; background: var(--ui-panel); box-shadow: 0 3px 16px rgb(17 37 70 / 3%); }
+.panel { min-width: 0; padding: 24px; border: 1px solid var(--ui-line); border-radius: var(--dv-radius-lg); background: var(--ui-panel); box-shadow: 0 3px 16px rgb(17 37 70 / 3%); }
 .header { margin-bottom: 22px; }
-.eyebrow { display: block; color: var(--ui-muted); font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; margin-bottom: 8px; }
-.header h2 { font-size: 20px; line-height: 1.25; letter-spacing: -.025em; margin: 0 0 7px; color: var(--ui-text); font-weight: 650; }
+.eyebrow { display: block; color: var(--ui-muted); font-size: var(--dv-text-2xs); font-weight: 700; letter-spacing: .09em; text-transform: uppercase; margin-bottom: 8px; }
+.header h2 { font-size: 20px; line-height: 1.25; letter-spacing: -.025em; margin: 0 0 7px; color: var(--ui-text); font-weight: 700; }
 .header p { margin: 0; font-size: 11px; color: var(--ui-muted); }
 .controls { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 34px; }
-.segmented { display: inline-flex; gap: 2px; padding: 3px; background: var(--ui-subtle); border: 1px solid var(--ui-line); border-radius: 9px; }
-.segmented button { border: 0; border-radius: 6px; padding: 6px 9px; background: transparent; color: var(--ui-muted); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.segmented { display: inline-flex; gap: 2px; padding: 3px; background: var(--ui-subtle); border: 1px solid var(--ui-line); border-radius: var(--dv-radius-md); }
+.segmented button { border: 0; border-radius: var(--dv-radius-sm); padding: 6px 9px; background: transparent; color: var(--ui-muted); font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .segmented button[aria-pressed='true'] { background: var(--ui-panel); color: var(--chart-line); box-shadow: 0 1px 4px rgb(12 32 62 / 10%); }
 .segmented button:disabled { opacity: .45; cursor: default; }
-.select select { max-width: 180px; padding: 8px 24px 8px 10px; border: 1px solid var(--ui-line); border-radius: 8px; background: var(--ui-panel); color: var(--ui-text); font-size: 11px; font-weight: 600; cursor: pointer; }
-.legend { display: flex; flex-wrap: wrap; align-items: center; gap: 13px; min-height: 42px; color: var(--ui-muted); font-size: 10px; }
+.select select { max-width: 180px; padding: 8px 24px 8px 10px; border: 1px solid var(--ui-line); border-radius: var(--dv-radius-md); background: var(--ui-panel); color: var(--ui-text); font-size: 11px; font-weight: 700; cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; align-items: center; gap: 13px; min-height: 42px; color: var(--ui-muted); font-size: var(--dv-text-2xs); }
 .legend span, .scale span { display: inline-flex; align-items: center; gap: 5px; }
 .legend i { width: 7px; height: 7px; border-radius: 50%; }
-.legend small { margin-left: auto; font-size: 10px; }
+.legend small { margin-left: auto; font-size: var(--dv-text-2xs); }
 .audienceChart { width: 100%; height: 272px; min-width: 0; }
-.tooltip { min-width: 145px; padding: 12px 14px; background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: 10px; box-shadow: 0 5px 24px #142c4b20; font-size: 11px; }
+.tooltip { min-width: 145px; padding: 12px 14px; background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: var(--dv-radius-md); box-shadow: 0 5px 24px #142c4b20; font-size: 11px; }
 .tooltip strong { display: block; margin-bottom: 8px; }
 .tooltip div { display: flex; justify-content: space-between; gap: 20px; padding: 3px 0; }
 .tooltip span { color: var(--ui-muted); }
-.note { color: var(--ui-muted); font-size: 10px; line-height: 1.6; margin: 12px 0; }
+.note { color: var(--ui-muted); font-size: var(--dv-text-xs); line-height: 1.6; margin: 12px 0; }
 .details { border-top: 1px solid var(--ui-line); padding-top: 11px; margin-top: 12px; font-size: 11px; color: var(--ui-muted); }
 .details summary { cursor: pointer; width: fit-content; }
 .details p { line-height: 1.6; margin-bottom: 0; }
@@ -30,36 +30,36 @@
 .heatScroll { overflow-x: auto; padding: 2px 3px 7px; margin: 0 -3px; }
 .heatGrid { display: grid; grid-template-columns: 31px repeat(24, minmax(12px, 1fr)); column-gap: 3px; row-gap: 7px; min-width: 440px; padding: 2px; }
 .heatRow { display: contents; }
-.hourLabel { font-size: 9px; color: var(--ui-muted); white-space: nowrap; height: 18px; }
-.dayLabel { font-size: 10px; color: var(--ui-muted); display: flex; align-items: center; }
-.heatCell { width: 100%; height: 22px; border: 1px solid transparent; border-radius: 3px; padding: 0; cursor: pointer; }
+.hourLabel { font-size: var(--dv-text-2xs); color: var(--ui-muted); white-space: nowrap; height: 18px; }
+.dayLabel { font-size: var(--dv-text-2xs); color: var(--ui-muted); display: flex; align-items: center; }
+.heatCell { width: 100%; height: 22px; border: 1px solid transparent; border-radius: var(--dv-radius-sm); padding: 0; cursor: pointer; }
 .heatCell[data-missing='true'], .missingSwatch, .hourBar[data-missing='true'] > span { background: repeating-linear-gradient(135deg, var(--ui-subtle), var(--ui-subtle) 3px, var(--ui-line) 3px, var(--ui-line) 4px); }
 .heatCell[data-zero='true'], .zeroSwatch { background: var(--ui-panel) !important; border: 1px solid var(--ui-line); }
 .heatCell[aria-pressed='true'] { outline: 2px solid var(--ui-text); outline-offset: 1px; }
-.scale { display: flex; align-items: center; gap: 12px; font-size: 9px; color: var(--ui-muted); padding: 12px 0 16px; }
-.scale i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; }
+.scale { display: flex; align-items: center; gap: 12px; font-size: var(--dv-text-2xs); color: var(--ui-muted); padding: 12px 0 16px; }
+.scale i { display: inline-block; width: 9px; height: 9px; border-radius: var(--dv-radius-sm); }
 .gradientLegend { margin-left: auto; }
 .gradientLegend i { width: 62px; height: 7px; background: linear-gradient(90deg, color-mix(in srgb,var(--chart-line) 12%,var(--ui-panel)),var(--chart-line)); }
-.inspector { display: flex; justify-content: space-between; gap: 12px; padding: 13px 14px; border-radius: 10px; background: var(--ui-subtle); min-height: 65px; }
+.inspector { display: flex; justify-content: space-between; gap: 12px; padding: 13px 14px; border-radius: var(--dv-radius-md); background: var(--ui-subtle); min-height: 65px; }
 .inspector div { display: flex; flex-direction: column; gap: 5px; }
 .inspector div:last-child { text-align: right; }
-.inspector strong { font-size: 11px; font-weight: 600; }
-.inspector b { font-size: 16px; line-height: 1; font-weight: 650; font-variant-numeric: tabular-nums; }
-.inspector span { font-size: 10px; color: var(--ui-muted); }
+.inspector strong { font-size: 11px; font-weight: 700; }
+.inspector b { font-size: 16px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+.inspector span { font-size: var(--dv-text-xs); color: var(--ui-muted); }
 .todayChart { display: flex; gap: 8px; height: 220px; min-width: 440px; padding-top: 8px; padding-bottom: 25px; }
-.barAxis { display: flex; flex-direction: column; justify-content: space-between; font-size: 9px; color: var(--ui-muted); min-width: 40px; }
+.barAxis { display: flex; flex-direction: column; justify-content: space-between; font-size: var(--dv-text-2xs); color: var(--ui-muted); min-width: 40px; }
 .hourBars { flex: 1; display: grid; grid-template-columns: repeat(24, minmax(10px, 1fr)); gap: 4px; border-bottom: 1px solid var(--ui-line); background: repeating-linear-gradient(to top, transparent, transparent calc(50% - 1px), var(--ui-line) calc(50% - 1px),var(--ui-line) 50%); }
 .hourBar { position: relative; border: 0; padding: 0; background: transparent; display: flex; align-items: end; height: 100%; cursor: pointer; }
 .hourBar > span { width: 100%; min-height: 2px; border-radius: 3px 3px 0 0; background: var(--chart-line); opacity: .75; }
 .hourBar[aria-pressed='true'] > span { opacity: 1; outline: 1px solid var(--ui-text); }
-.hourBar small { position: absolute; top: calc(100% + 9px); left: 0; color: var(--ui-muted); font-size: 9px; white-space: nowrap; }
-.empty { padding: 32px 10px; text-align: center; border-radius: 12px; background: var(--ui-subtle); }
+.hourBar small { position: absolute; top: calc(100% + 9px); left: 0; color: var(--ui-muted); font-size: var(--dv-text-2xs); white-space: nowrap; }
+.empty { padding: 32px 10px; text-align: center; border-radius: var(--dv-radius-md); background: var(--ui-subtle); }
 .empty strong { font-size: 14px; }
 .empty p { font-size: 12px; line-height: 1.6; color: var(--ui-muted); max-width: 320px; margin: 10px auto 16px; }
-.empty a { font-size: 12px; color: var(--chart-line); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.empty a { font-size: 12px; color: var(--chart-line); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .srOnly { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .panel :is(button, select, summary, [tabindex], a):focus-visible { outline: 2px solid var(--chart-line); outline-offset: 3px; }
 @media (max-width: 1150px) { .grid { grid-template-columns: 1fr; } }
-@media (max-width: 500px) { .grid { gap: 18px; margin: 24px 0; } .panel { padding: 18px 14px; border-radius: 14px; } .header h2 { font-size: 19px; } .header { margin-bottom: 16px; } .controls { gap: 8px; } .legend { gap: 10px; } .legend small { font-size: 9px; } .select select { max-width: 155px; } }
+@media (max-width: 500px) { .grid { gap: 18px; margin: 24px 0; } .panel { padding: 18px 14px; border-radius: var(--dv-radius-lg); } .header h2 { font-size: 19px; } .header { margin-bottom: 16px; } .controls { gap: 8px; } .legend { gap: 10px; } .legend small { font-size: var(--dv-text-2xs); } .select select { max-width: 155px; } }
 
 .hourBar[data-zero='true'] > span { background: var(--ui-panel); border: 1px solid var(--ui-line); }

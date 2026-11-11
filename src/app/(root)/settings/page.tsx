@@ -507,7 +507,6 @@ export default async function SettingsPage() {
 
   return (
     <Container size="xl" pb="xl" className={`${classes.page} ${product.page} dv-app-page`}>
-      <AppearanceSettings />
       <Stack gap="lg" className={classes.pageStack}>
         <Card
           withBorder
@@ -533,7 +532,7 @@ export default async function SettingsPage() {
                 <Text size="sm" fw={600} className="app-platform-page-kicker">
                   {formatOrgType(organizationType)} workspace
                 </Text>
-                <Title order={2} mt={4} className="app-platform-page-title">
+                <Title order={1} size="h2" mt={4} className="app-platform-page-title">
                   Settings
                 </Title>
                 <Text size="md" maw={620} mt="xs" className="app-platform-page-copy">
@@ -595,20 +594,20 @@ export default async function SettingsPage() {
           </Group>
         </Card>
 
-        <Group gap="xs" wrap="wrap">
-          <Button component="a" href="#workspace" variant="subtle" size="xs">
+        <Group component="nav" aria-label="Settings sections" gap="xs" wrap="wrap">
+          <Button component="a" href="#workspace" variant="subtle" size="sm" mih={44}>
             Workspace
           </Button>
-          <Button component="a" href="#signals" variant="subtle" size="xs">
+          <Button component="a" href="#signals" variant="subtle" size="sm" mih={44}>
             Signals
           </Button>
-          <Button component="a" href="#report-archive" variant="subtle" size="xs">
+          <Button component="a" href="#report-archive" variant="subtle" size="sm" mih={44}>
             Reports
           </Button>
-          <Button component="a" href="#connections" variant="subtle" size="xs">
+          <Button component="a" href="#connections" variant="subtle" size="sm" mih={44}>
             Connections
           </Button>
-          <Button component="a" href="#access" variant="subtle" size="xs">
+          <Button component="a" href="#access" variant="subtle" size="sm" mih={44}>
             Access
           </Button>
         </Group>
@@ -684,17 +683,6 @@ export default async function SettingsPage() {
 
           <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
             <Paper withBorder radius="md" p="md">
-              <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="signal" radius="md">
-                  <IconUser size={16} />
-                </ThemeIcon>
-                <div>
-                  <Text fw={700}>You</Text>
-                  <Text size="sm" c="dimmed">
-                    Identity and access in this workspace
-                  </Text>
-                </div>
-              </Group>
               <Stack gap="sm">
                 <ProfileForm initial={user} />
                 <InfoRow label="Role" value={formatStatusLabel(role)} />
@@ -703,17 +691,6 @@ export default async function SettingsPage() {
             </Paper>
 
             <Paper withBorder radius="md" p="md">
-              <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="signal" radius="md">
-                  <IconChartBar size={16} />
-                </ThemeIcon>
-                <div>
-                  <Text fw={700}>Business profile</Text>
-                  <Text size="sm" c="dimmed">
-                    What DeepVisor knows about the business
-                  </Text>
-                </div>
-              </Group>
               <BusinessProfileForm
                 canEdit={role === 'owner' || role === 'admin'}
                 initial={{ businessName: businessProfile.business_name, industry: businessProfile.industry ?? '', website: businessProfile.website ?? '', monthlyBudget: businessProfile.monthly_budget ?? '', description: businessProfile.description ?? '' }}
@@ -855,6 +832,8 @@ export default async function SettingsPage() {
 
           </SimpleGrid>
         </Card>
+
+        <AppearanceSettings />
 
         <Disclosure title="Saved reports" id="report-archive">
         <Card withBorder radius="lg" p="xl">

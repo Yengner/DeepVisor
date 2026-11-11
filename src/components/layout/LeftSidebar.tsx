@@ -5,7 +5,7 @@ import { BrandLockup } from '@/components/brand/Brand';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Tooltip } from '@mantine/core';
-import { IconBell, IconFlask, IconLogout } from '@tabler/icons-react';
+import { IconFlask, IconLogout, IconTimeline } from '@tabler/icons-react';
 import { clientHandleSignOut } from '@/lib/client';
 import { isAppNavItemActive, primaryNavItems, secondaryNavItems } from './navigation';
 
@@ -106,7 +106,7 @@ function DevInsightsNavigation({ expanded, accountId, showHistory }: { expanded:
       {showHistory && <RailItem
         active={pathname === '/insights'}
         expanded={expanded}
-        icon={<IconBell size={19} stroke={1.8} />}
+        icon={<IconTimeline size={19} stroke={1.8} />}
         label="Insights & Events"
         badge={attention}
         onClick={() => router.push('/insights')}

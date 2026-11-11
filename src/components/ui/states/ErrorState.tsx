@@ -28,7 +28,7 @@ export function ErrorState({
 
   return (
     <Stack align="center" className="max-w-md mx-auto py-12 text-center">
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-md border border-[#f0bbb7] bg-[#fcedeb] text-[#ba3e36]">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-md border border-[var(--dv-urgent-border)] bg-[var(--dv-urgent-soft)] text-[var(--dv-urgent-text)]">
         <IconAlertTriangle size={24} />
       </div>
       
@@ -40,7 +40,7 @@ export function ErrorState({
       {(primaryAction || secondaryAction) && (
         <Group mt="xl">
           {primaryAction && (
-            <Button onClick={() => router.push(primaryAction.href)} size="md">
+            <Button onClick={() => router.push(primaryAction.href)} size="md" className="app-platform-page-action-primary">
               {primaryAction.label}
             </Button>
           )}
@@ -50,6 +50,7 @@ export function ErrorState({
               variant="outline" 
               onClick={secondaryAction.onClick}
               size="md"
+              mih={44}
             >
               {secondaryAction.label}
             </Button>

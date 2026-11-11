@@ -32,7 +32,7 @@
   gap: 10px;
   color: var(--ink);
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0;
 }
 
@@ -43,7 +43,7 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 32px;
-  border-radius: 4px;
+  border-radius: var(--dv-radius-sm);
   background: var(--ink);
   color: var(--lime);
   font-size: 0.7rem;
@@ -74,7 +74,7 @@
   margin-bottom: 9px;
   color: var(--signal);
   font-size: 0.68rem;
-  font-weight: 900;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0;
 }
@@ -108,7 +108,7 @@
   top: 20px;
   overflow: hidden;
   border: 1px solid var(--deep-ink);
-  border-radius: 8px;
+  border-radius: var(--dv-radius-md);
   background: var(--ink);
   color: #ffffff;
 }
@@ -180,10 +180,10 @@
   align-items: center;
   justify-content: center;
   border: 1px solid #474f5a;
-  border-radius: 4px;
+  border-radius: var(--dv-radius-sm);
   color: #a4adb8;
   font-size: 0.68rem;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .progressStepActive .stepNumber,
@@ -263,7 +263,7 @@
 .formSurface :global(.mantine-Textarea-input) {
   min-height: 46px;
   border: 1px solid #c0c6cd;
-  border-radius: 4px;
+  border-radius: var(--dv-radius-sm);
   background: #ffffff;
   color: var(--ink);
   font-size: 0.9rem;
@@ -283,12 +283,12 @@
 
 .formSurface :global(.mantine-Combobox-dropdown) {
   border: 1px solid #b6bdc6;
-  border-radius: 4px;
+  border-radius: var(--dv-radius-sm);
   box-shadow: 0 14px 34px rgba(8, 45, 86, 0.12);
 }
 
 .formSurface :global(.mantine-Combobox-option) {
-  border-radius: 3px;
+  border-radius: var(--dv-radius-sm);
   font-size: 0.86rem;
 }
 
@@ -299,7 +299,7 @@
 
 .formSurface :global(.mantine-Button-root) {
   min-height: 44px;
-  border-radius: 4px;
+  border-radius: var(--dv-radius-sm);
   font-weight: 800;
   letter-spacing: 0;
 }
@@ -314,7 +314,7 @@
 }
 
 .formSurface :global(.mantine-Badge-root) {
-  border-radius: 3px;
+  border-radius: var(--dv-radius-sm);
   letter-spacing: 0;
 }
 
@@ -331,7 +331,7 @@
   padding: 28px;
   border: 1px solid #c7ccd3;
   border-top: 4px solid #e76156;
-  border-radius: 6px;
+  border-radius: var(--dv-radius-sm);
   background: #ffffff;
   color: var(--dv-ink);
 }
@@ -343,14 +343,14 @@
 .errorKicker {
   color: #b33f36;
   font-size: 0.68rem;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0;
 }
 
 .errorPanel :global(.mantine-Button-root) {
   width: fit-content;
   min-height: 44px;
-  border-radius: 4px;
+  border-radius: var(--dv-radius-sm);
   background: var(--dv-ink);
   color: #ffffff;
 }
@@ -375,7 +375,7 @@
     margin-bottom: 18px;
     padding: 13px 14px;
     border: 1px solid var(--line);
-    border-radius: 6px;
+    border-radius: var(--dv-radius-sm);
     background: #ffffff;
   }
 
@@ -389,7 +389,7 @@
   .mobileProgress span {
     color: var(--signal);
     font-size: 0.64rem;
-    font-weight: 900;
+    font-weight: 800;
   }
 
   .mobileProgress strong {

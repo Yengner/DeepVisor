@@ -95,6 +95,18 @@
     --dv-card-panel: #ffffff;
     --dv-card-inset: #f2f4f8;
 
+    /* Type and radius scales. 11px is the floor for chart axes and labels; body text is 12px or larger. */
+    --dv-text-2xs: 11px;
+    --dv-text-xs: 12px;
+    --dv-text-sm: 14px;
+    --dv-text-md: 16px;
+    --dv-text-lg: 20px;
+    --dv-text-xl: 26px;
+    --dv-radius-sm: 6px;
+    --dv-radius-md: 10px;
+    --dv-radius-lg: 16px;
+    --dv-radius-pill: 999px;
+
     --platform-accent: var(--dv-signal-strong);
     --platform-accent-strong: var(--dv-primary-deep);
     --platform-accent-bright: var(--dv-signal-bright);
@@ -360,16 +372,19 @@
     color: #b0b7c1 !important;
   }
 
+  /* The single primary action style (docs/DEVELOPMENT_GUIDE.md › Status colors). */
   .app-platform-page-action-primary {
-    color: var(--dv-ink) !important;
-    background: var(--dv-signal-bright) !important;
-    border: 1px solid var(--dv-signal-bright) !important;
+    min-height: var(--dv-action-min-height);
+    color: var(--dv-action-text) !important;
+    background: var(--dv-action) !important;
+    border: 1px solid var(--dv-action) !important;
+    border-radius: var(--dv-action-radius) !important;
     box-shadow: none !important;
   }
 
   .app-platform-page-action-primary:hover {
-    background: var(--dv-highlight-hover) !important;
-    border-color: var(--dv-highlight-hover) !important;
+    background: var(--dv-action-hover) !important;
+    border-color: var(--dv-action-hover) !important;
   }
 
   .app-platform-page-action-secondary,
@@ -571,8 +586,20 @@
     padding-bottom: 0.375rem;
   }
 
+  /* Global sync/insights banners; collapses to nothing when no banner renders. */
+  .app-status-region {
+    display: grid;
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .app-status-region:not(:has(> *)) {
+    display: none;
+  }
+
   .app-platform-main:has(.campaigns-page-shell) {
     display: flex;
+    flex-direction: column;
     min-height: 0;
     overflow: hidden;
     padding-top: 0.375rem;
@@ -585,7 +612,8 @@
     .app-platform-main:has(.dashboard-page-shell),
     .app-platform-main:has(.reports-page-shell),
     .app-platform-main:has(.campaigns-page-shell) {
-      padding: 0.5rem 0 calc(7rem + env(safe-area-inset-bottom));
+      /* Clears the mobile nav and the fixed "Ask DeepVisor" launcher (Assistant.module.css). */
+      padding: 0.5rem 0 calc(9rem + env(safe-area-inset-bottom));
     }
 
     .app-platform-main:has(.calendar-page-shell) {

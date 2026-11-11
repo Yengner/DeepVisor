@@ -19,7 +19,7 @@
   min-height: 44px;
   color: var(--dv-primary-strong);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
 }
 .backLink:hover, .workspaceLink:hover { text-decoration: underline; }
@@ -29,7 +29,7 @@
 .header h1 { color: var(--dv-text); font-size: 28px; line-height: 1.25; letter-spacing: -.02em; }
 .description { color: var(--dv-text-muted); margin-top: 10px; font-size: 15px; line-height: 1.6; }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 24px; align-items: start; }
-.editor, .card { background: #fff; color: var(--dv-text); border: 1px solid #d5d9df; border-radius: 12px; box-shadow: none; }
+.editor, .card { background: #fff; color: var(--dv-text); border: 1px solid #d5d9df; border-radius: var(--dv-radius-md); box-shadow: none; }
 .editor { padding: 28px; min-width: 0; }
 .content { display: grid; gap: 24px; min-width: 0; }
 .content > section { scroll-margin-top: 20px; }
@@ -47,7 +47,7 @@
 .details > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid #edeff1; font-size: 13px; }
 .details > div:last-child { border-bottom: 0; padding-bottom: 0; }
 .details dt { color: var(--dv-text-muted); flex-shrink: 0; }
-.details dd { color: var(--dv-text); margin: 0; text-align: right; font-weight: 600; overflow-wrap: anywhere; min-width: 0; }
+.details dd { color: var(--dv-text); margin: 0; text-align: right; font-weight: 700; overflow-wrap: anywhere; min-width: 0; }
 .role { text-transform: capitalize; }
 .status { color: #424a54; background: #edeff1; }
 .activeStatus { color: #226443; background: #e9f3ed; }

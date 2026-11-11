@@ -260,19 +260,19 @@ export default function AdsTable({
             <Table.Th style={{ width: 64, minWidth: 64, textAlign: 'center' }}>Select</Table.Th>
             <Table.Th style={{ width: 340, maxWidth: 340 }}>Ad Name</Table.Th>
             <Table.Th style={{ width: 60, textAlign: 'center', whiteSpace: 'nowrap' }}>Preview</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Status</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Spend</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Results</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Cost/Result</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>CTR</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>CPC</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>CPM</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Impressions</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Clicks</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Reach</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Link Clicks</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Leads</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Messages</Table.Th>
+            <Table.Th className={classes.nowrap}>Status</Table.Th>
+            <Table.Th className={classes.nowrap}>Spend</Table.Th>
+            <Table.Th className={classes.nowrap}>Results</Table.Th>
+            <Table.Th className={classes.nowrap}>Cost/Result</Table.Th>
+            <Table.Th className={classes.nowrap}>CTR</Table.Th>
+            <Table.Th className={classes.nowrap}>CPC</Table.Th>
+            <Table.Th className={classes.nowrap}>CPM</Table.Th>
+            <Table.Th className={classes.nowrap}>Impressions</Table.Th>
+            <Table.Th className={classes.nowrap}>Clicks</Table.Th>
+            <Table.Th className={classes.nowrap}>Reach</Table.Th>
+            <Table.Th className={classes.nowrap}>Link Clicks</Table.Th>
+            <Table.Th className={classes.nowrap}>Leads</Table.Th>
+            <Table.Th className={classes.nowrap}>Messages</Table.Th>
             <Table.Th
               style={{
                 width: RIGHT_COL_WIDTH,

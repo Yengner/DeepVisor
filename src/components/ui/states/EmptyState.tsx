@@ -15,8 +15,8 @@ export function EmptyState({
   onAction
 }: EmptyStateProps) {
   return (
-    <Stack align="center" className="mx-auto max-w-lg border-y border-[#d9e3ef] py-14 text-center">
-      <span className="flex h-11 w-11 items-center justify-center rounded-md border border-[#b8c9dd] bg-white text-[#53677d]">
+    <Stack align="center" className="mx-auto max-w-lg border-y border-[var(--dv-border)] py-14 text-center">
+      <span className="flex h-11 w-11 items-center justify-center rounded-md border border-[var(--dv-border-strong)] bg-[var(--dv-surface)] text-[var(--dv-text-muted)]">
         <IconInbox size={22} />
       </span>
       <Title order={3}>{title}</Title>

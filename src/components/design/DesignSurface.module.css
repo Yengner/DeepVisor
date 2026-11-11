@@ -1,23 +1,24 @@
 .surface {
-  --ui-bg: #f4f7fc;
-  --ui-panel: #ffffff;
-  --ui-subtle: #edf3fb;
-  --ui-text: #102c46;
-  --ui-muted: #53677d;
-  --ui-line: #d9e3ef;
-  --ui-line-strong: #7c91ac;
+  /* Light values alias the global --dv-* tokens (src/globals.css); dark values below stay local. */
+  --ui-bg: var(--dv-canvas);
+  --ui-panel: var(--dv-surface);
+  --ui-subtle: var(--dv-surface-muted);
+  --ui-text: var(--dv-text);
+  --ui-muted: var(--dv-text-muted);
+  --ui-line: var(--dv-border);
+  --ui-line-strong: var(--dv-input-border);
   --ui-accent: #0056db;
-  --ui-accent-soft: #eaf2ff;
-  --ui-positive: #226443;
+  --ui-accent-soft: var(--dv-primary-soft);
+  --ui-positive: var(--dv-success);
   --ui-negative: #ad343f;
   --ui-warning: #855a13;
-  --ui-positive-soft: #e8f4ec;
+  --ui-positive-soft: var(--dv-success-soft);
   --ui-negative-soft: #fbece9;
   --ui-warning-soft: #fff3d9;
-  --ui-focus: #0065fc;
+  --ui-focus: var(--dv-primary);
   --ui-gradient: linear-gradient(125deg, #082d56, #073d85 62%, #0369cc);
   --ui-radius-sm: 8px;
-  --ui-radius: 16px;
+  --ui-radius: var(--dv-card-radius);
   --ui-radius-lg: 24px;
   --ui-shadow: 0 4px 20px #082d5608, 0 1px 3px #082d5606;
   --ui-shadow-raised: 0 20px 64px #082d5614;
@@ -36,7 +37,7 @@
   --ui-text-sm: 14px;
   --ui-text-md: 16px;
   --ui-text-lg: 20px;
-  --ui-control-height: 44px;
+  --ui-control-height: var(--dv-action-min-height);
   --ui-table-header: var(--ui-subtle);
   --ui-table-divider: var(--ui-line);
   --ui-chart-primary: var(--ui-accent);
@@ -72,19 +73,19 @@
 .surface :where(h1,h2,h3) { color: inherit; letter-spacing: -.035em; }
 .surface :where(button,a,summary,select,input):focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 4px; }
 .toolbar { max-width: 1264px; margin: auto; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.label { font-size: 12px; font-weight: 600; color: var(--ui-muted); display: flex; align-items: center; gap: 10px; }
+.label { font-size: 12px; font-weight: 700; color: var(--ui-muted); display: flex; align-items: center; gap: 10px; }
 .label::before { content: ''; width: 6px; height: 6px; background: var(--ui-accent); box-shadow: 8px 0 0 var(--ui-line-strong); margin-right: 8px; }
 .toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius-sm); color: var(--ui-text); background: var(--ui-panel); cursor: pointer; font: inherit; font-size: 12px; transition: border-color var(--ui-duration); }
 .toggle:hover { border-color: var(--ui-line-strong); }
 .panel { border: 1px solid var(--ui-line); border-radius: var(--ui-radius); background: var(--ui-panel); box-shadow: var(--ui-shadow); padding: var(--ui-space-6); min-width: 0; }
-.action { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 12px 22px; border: 1px solid transparent; border-radius: 10px; text-decoration: none; font-size: 14px; font-weight: 650; transition: background var(--ui-duration), transform var(--ui-duration), box-shadow var(--ui-duration); }
-.primary { color: white; background: #0065fc; box-shadow: 0 3px 0 #0049ba; }
-.primary:hover { background: #0056db; transform: translateY(-1px); }
+.action { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 12px 22px; border: 1px solid transparent; border-radius: var(--dv-radius-md); text-decoration: none; font-size: 14px; font-weight: 700; transition: background var(--ui-duration), transform var(--ui-duration), box-shadow var(--ui-duration); }
+.primary { color: var(--dv-action-text); background: var(--dv-action); box-shadow: 0 3px 0 var(--dv-action-hover); }
+.primary:hover { background: var(--dv-action-hover); transform: translateY(-1px); }
 .secondary { background: var(--ui-panel); border-color: var(--ui-line); color: var(--ui-text); }
 .secondary:hover { background: var(--ui-subtle); }
 .action:active { transform: translateY(1px); box-shadow: none; }
 .agent { display: flex; gap: 14px; align-items: flex-start; }
-.agent strong { display: block; font-size: 14px; font-weight: 650; }
+.agent strong { display: block; font-size: 14px; font-weight: 700; }
 .agent p { margin: 4px 0 0; color: var(--ui-muted); font-size: 13px; line-height: 1.65; }
 .agent [data-pixel-companion] { color: var(--ui-accent); --agent-eye: var(--ui-panel); --agent-pupil: var(--ui-text); }
 .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ui-accent); }
