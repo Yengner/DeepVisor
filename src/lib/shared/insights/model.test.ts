@@ -1,6 +1,8 @@
 import {describe,expect,it} from 'vitest';
 import {accountToday} from '@/lib/shared/reports/dates';
-import {recapWindow,summarize,hierarchyIssues,completeComparable,headline} from './model';
+import {recapWindow,summarize,hierarchyIssues,completeComparable,headline,lifecycleStatus} from './model';
+import {changes} from '@/lib/shared/lifecycle/model';
+import {previewPresentation} from './preview';
 import type {Presentation,PerformanceRow} from './model';
 import type {Observation} from '@/lib/shared/lifecycle/model';
 import {exportCsv} from './export';
@@ -42,4 +44,13 @@ it('retains the last known issue when entities disappear or only show a paused s
  expect(unresolvedEvidence(issues,[],[])).toHaveLength(1);
  expect(unresolvedEvidence(issues,[{...e,effective:'PAUSED'}],[])).toHaveLength(1);
  expect(unresolvedEvidence(issues,[{...e,effective:'ACTIVE'}],[])).toEqual([]);
+});
+
+describe('lifecycle card status',()=>{
+ const obs=(level:string,end:string|null):Observation=>({id:`${level}1`,level,parent:null,campaign:null,name:level,configured:'ACTIVE',effective:'ACTIVE',start:null,end,dailyBudget:null,lifetimeBudget:null,targeting:{}});
+ const card=(explanation:string)=>({...previewPresentation('scheduled-end').payload.lifecycle[0],brief:{...previewPresentation('scheduled-end').payload.lifecycle[0].brief,explanation}});
+ it('recognizes both generated scheduled-end explanations',()=>{
+  for(const level of ['ad','adset']){const [c]=changes([obs(level,'2026-11-05T00:00:00Z')],[obs(level,'2026-11-05T00:00:00Z')],'2026-11-04T00:00:00Z','2026-11-06T00:00:00Z');expect(c.kind).toBe('scheduled_end');expect(lifecycleStatus(card(c.explanation))).toBe('ended');}
+ });
+ it('treats every other change as a generic update',()=>{expect(lifecycleStatus(previewPresentation('pause').payload.lifecycle[0])).toBe('update');expect(lifecycleStatus(card('Meta now reports this advertising as active.'))).toBe('update');});
 });

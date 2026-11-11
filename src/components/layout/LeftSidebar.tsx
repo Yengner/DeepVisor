@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { BrandLockup } from '@/components/brand/Brand';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Tooltip } from '@mantine/core';
-import { IconLogout } from '@tabler/icons-react';
+import { IconBell, IconFlask, IconLogout } from '@tabler/icons-react';
 import { clientHandleSignOut } from '@/lib/client';
 import { isAppNavItemActive, primaryNavItems, secondaryNavItems } from './navigation';
 
@@ -14,6 +14,7 @@ type RailItemProps = {
   expanded: boolean;
   icon: React.ReactNode;
   label: string;
+  badge?: number;
   onClick: () => void;
   tone?: 'default' | 'danger';
 };
@@ -23,15 +24,17 @@ function RailItem({
   expanded,
   icon,
   label,
+  badge,
   onClick,
   tone = 'default',
 }: RailItemProps) {
+  const accessibleLabel = badge ? `${label} · ${badge} to check` : label;
   const control = (
     <button
       type="button"
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
-      aria-label={label}
+      aria-label={accessibleLabel}
       className={`group relative flex h-11 w-full items-center gap-3 overflow-hidden rounded-md border px-3 text-sm font-bold transition-colors ${
         active
           ? 'border-[#4279ad] bg-[#123d68] text-[#e5f1ff]'
@@ -42,23 +45,84 @@ function RailItem({
     >
       <span className="flex h-5 w-5 shrink-0 items-center justify-center">{icon}</span>
       <span
-        className={`whitespace-nowrap transition-opacity duration-150 ${
+        className={`min-w-0 truncate transition-opacity duration-150 ${
           expanded ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
         {label}
       </span>
+      {badge ? (
+        <span aria-hidden="true" className={`rounded-full bg-[#2860a0] text-[10px] leading-none text-white ${expanded ? 'ml-auto shrink-0 px-1.5 py-1' : 'absolute right-0.5 top-0.5 px-1 py-0.5'}`}>
+          {badge > 99 ? '99+' : badge}
+        </span>
+      ) : null}
     </button>
   );
 
   return (
-    <Tooltip label={label} disabled={expanded} position="right" withArrow openDelay={220}>
+    <Tooltip label={accessibleLabel} disabled={expanded} position="right" withArrow openDelay={220}>
       {control}
     </Tooltip>
   );
 }
 
-export default function Sidebar() {
+function DevInsightsNavigation({ expanded, accountId, showHistory }: { expanded: boolean; accountId: string | null; showHistory: boolean }) {
+  const [attention, setAttention] = useState(0);
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!showHistory || !accountId || pathname === '/insights/preview') return;
+
+    const controller = new AbortController();
+    const refresh = async () => {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        const response = await fetch('/api/insights', { signal: controller.signal });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!controller.signal.aborted) {
+          setAttention(data.issueCount ?? data.issues.filter((issue: { resolvedAt: string | null }) => !issue.resolvedAt).length);
+        }
+      } catch {
+        // Keep the last known count if a refresh fails.
+      }
+    };
+
+    void refresh();
+    window.addEventListener('deepvisor:data-updated', refresh);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      controller.abort();
+      window.removeEventListener('deepvisor:data-updated', refresh);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [accountId, pathname, showHistory]);
+
+  return (
+    <>
+      {showHistory && <RailItem
+        active={pathname === '/insights'}
+        expanded={expanded}
+        icon={<IconBell size={19} stroke={1.8} />}
+        label="Insights & Events"
+        badge={attention}
+        onClick={() => router.push('/insights')}
+      />}
+      <RailItem
+        active={isAppNavItemActive(pathname, '/insights/preview')}
+        expanded={expanded}
+        icon={<IconFlask size={19} stroke={1.8} />}
+        label="Insights preview"
+        onClick={() => router.push('/insights/preview')}
+      />
+    </>
+  );
+}
+
+export default function Sidebar({ showInsightsPreview, accountId, insightsEnabled }: { showInsightsPreview: boolean; accountId: string | null; insightsEnabled: boolean }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -101,6 +165,9 @@ export default function Sidebar() {
               icon={<item.icon size={19} stroke={active ? 2.25 : 1.8} />} label={item.name}
               onClick={() => router.push(item.route)} />;
           })}
+          {showInsightsPreview && (
+            <DevInsightsNavigation key={accountId} expanded={isExpanded} accountId={accountId} showHistory={insightsEnabled} />
+          )}
         </nav>
 
         </div>

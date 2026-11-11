@@ -5,7 +5,7 @@ import { currentSyncLease } from '@/lib/server/supabase/syncLeaseContext';
 import { accountToday, shiftReportDay } from '@/lib/shared/reports/dates';
 import { fetchMetaCollection } from '../meta/client';
 import { resourceRefreshEnabled } from './coordinator';
-import { normalize, learningLabel } from './insightModel';
+import { normalize, learningLabel, readInsightActions } from './insightModel';
 import type { MetaRow } from './insightModel';
 
 const metric = z.number().finite().nonnegative().nullable();
@@ -53,9 +53,9 @@ export async function syncSavedInsights(jobId: string, accessToken: string) {
     if (result.error) throw result.error;
   };
   const read = async (breakdowns: string, level: string, since: string, hourly: boolean) => {
-    const rows = await fetchMetaCollection<MetaRow>({ path: `${path}/insights`, accessToken, maxRows: 100000,
-      params: { fields: `date_start,${level === 'adset' ? 'adset_id,' : ''}spend,impressions,clicks${hourly ? '' : ',actions'}`, level, time_increment: 1,
-        time_range: JSON.stringify({ since, until: today }), breakdowns, limit: 500 } });
+    const rows = await readInsightActions(includeActions => fetchMetaCollection<MetaRow>({ path: `${path}/insights`, accessToken, maxRows: 100000,
+      params: { fields: `date_start,${level === 'adset' ? 'adset_id,' : ''}spend,impressions,clicks${includeActions ? ',actions' : ''}`, level, time_increment: 1,
+        time_range: JSON.stringify({ since, until: today }), breakdowns, limit: 500 } }), hourly);
     if (rows.length > 100000) throw new Error('Insight row budget exceeded');
     return normalize(breakdowns.includes('publisher_platform') ? rows : rows.map(r => ({ ...r, publisher_platform: 'combined-only' })), currency, hourly);
   };

@@ -58,6 +58,15 @@ export function headline(p: Presentation): string {
  return p.lifecycle.length?'Your advertising changed':'No new observations yet';
 }
 
+/**
+ * Presentation-only status for a lifecycle card. Saved briefs carry no change kind, so this
+ * matches the explanation shared by both scheduled-end generators in lifecycle/model.ts.
+ * Anything unrecognized is shown as a generic update rather than guessed.
+ */
+export function lifecycleStatus(card: LifecycleCard): 'ended' | 'update' {
+ return card.brief.explanation.startsWith('The saved scheduled end has been reached')?'ended':'update';
+}
+
 /** Absence, UNKNOWN, or a pause is not proof that an earlier rejection was cleared. */
 export function unresolvedEvidence(previous:IssueEvidence[],entities:Observation[],current:IssueEvidence[]):Array<IssueEvidence&{_unobserved:true}>{
  const states=new Map(entities.map(e=>[e.id,e.effective])),keys=new Set(current.map(i=>i.key));

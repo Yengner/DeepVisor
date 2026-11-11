@@ -16,6 +16,6 @@ export function hourlyObservations(rows: Insight[]): HourlyObservation[] {
     const match = row.label.match(/^(\d{2}):00:00\s*-\s*(\d{2}):59:59$/);
     if (!match || match[1] !== match[2] || Number(match[1]) > 23) return [];
     return [{ dayKey: row.day, hourOfDay: Number(match[1]), spend: row.spend, impressions: row.impressions,
-      clicks: row.clicks, results: null, inlineLinkClicks: null }];
+      clicks: row.clicks, results: aggregate([row], row.currency_code).results, inlineLinkClicks: null }];
   });
 }

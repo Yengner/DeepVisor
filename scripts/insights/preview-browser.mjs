@@ -8,9 +8,12 @@ try{
  const context=await browser.newContext({viewport:{width:1440,height:1100},reducedMotion:'reduce'}),page=await context.newPage(),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  await context.route('**/api/sync/**',route=>route.fulfill({status:409,contentType:'application/json',body:'{"error":"Read-only visual verification"}'}));
- await context.route('**/api/insights',route=>route.request().method()==='POST'?route.fulfill({status:200,contentType:'application/json',body:'{"presentation":null}'}):route.continue());
+ await context.route('**/api/insights',route=>route.fulfill({json:route.request().method()==='POST'?{presentation:null}:{items:[],issues:[],issueCount:1,next:null}}));
  await page.goto('http://localhost:3000/login');await page.getByLabel('Email').fill(user.email);await page.getByLabel('Password').fill(user.password);await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.waitForURL('**/dashboard',{timeout:60000});
- await page.getByRole('link',{name:'Test event scenarios',exact:true}).click();await page.waitForURL('**/insights/preview');
+ const sidebar=page.getByRole('complementary',{name:'Workspace navigation'});
+ await sidebar.getByRole('button',{name:'Insights & Events · 1 to check',exact:true}).click();await page.waitForURL('**/insights');
+ await page.getByRole('heading',{name:'Insights & Events',exact:true}).waitFor();
+ await sidebar.getByRole('button',{name:'Insights preview',exact:true}).click();await page.waitForURL('**/insights/preview');
  const dialog=page.getByRole('dialog');await dialog.getByText('Preview only · 23 scenarios · No real advertising activity').waitFor().catch(async error=>{await page.screenshot({path:'/tmp/dv-edge-preview-error.png'});console.log((await page.locator('body').innerText()).slice(0,1200));throw error;});
  const requests=[];page.on('request',r=>{if(r.url().includes('/api/'))requests.push(r.url().split('?')[0]);});
  const select=dialog.getByLabel('Preview scenario');const ids=await select.locator('option').evaluateAll(nodes=>nodes.map(n=>n.value));assert.equal(ids.length,23);

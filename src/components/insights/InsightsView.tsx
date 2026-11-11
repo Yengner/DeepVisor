@@ -4,11 +4,11 @@ import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import Image from 'next/image';
 import { Modal } from '@mantine/core';
-import { AlertTriangle, CircleAlert } from 'lucide-react';
+import { AlertTriangle, CircleAlert, Flag, Info } from 'lucide-react';
 import { useMediaQuery } from '@mantine/hooks';
 import SpiderMascot from '@/components/brand/SpiderMascot';
 import {recapChart} from '@/lib/shared/insights/hourly';
-import { headline,relatedLifecycle } from '@/lib/shared/insights/model';
+import { headline,lifecycleStatus,relatedLifecycle } from '@/lib/shared/insights/model';
 import type { Issue,LifecycleCard,SavedPresentation } from '@/lib/shared/insights/model';
 import styles from './InsightsView.module.css';
 import {InsightDataNotice,MissingObservationTrack} from './InsightDataState';
@@ -19,15 +19,27 @@ function Metrics({spend,results,cpr,currency}:{spend:number|null;results:number|
 }
 function Creative({card,currency,preview=false}:{card:LifecycleCard;currency:string|null;preview?:boolean}){
  const b=card.brief,creative=b.media.find(m=>m.image),config=b.configuration;
- const missing=!creative||!currency||b.spend===null||b.results===null;
- return <section className={`${styles.card} ${missing?styles.dataState:''}`}>
-  <div className={styles.creativeHeading}>{creative?.image&&<Image src={creative.image} alt={creative.name} width={88} height={88} unoptimized className={styles.creative} onError={e=>{e.currentTarget.style.display='none';}}/>}<div><span className={styles.eyebrow}>Advertising update · {b.affected.length} affected</span><h3>{b.title}</h3><p>{b.explanation}</p></div></div>
+ const ended=lifecycleStatus(card)==='ended',adLevel=b.affected.length>0&&b.affected.every(a=>a.level==='ad');
+ const ads=b.affected.filter(a=>a.level==='ad').length;
+ const count=ads?`${ads} ${ads===1?'ad':'ads'} affected`:`${b.affected.length} affected`;
+ // Budget owner: the ad set when it holds the budget, otherwise the campaign. Shown by name only.
+ const group=config&&config.owner!=='Budget owner unavailable'?config.owner:null;
+ const label=ended?`${adLevel?'Ad':'Delivery'} ended · Scheduled end reached`:'Advertising update';
+ const noMetrics=b.spend===null&&b.results===null&&b.cpr===null;
+ // A scheduled end is expected; the timeline already states that missing dates are not zero.
+ const missing=!ended&&(!creative||!currency||b.spend===null||b.results===null);
+ return <section className={styles.lifecycleCard} aria-label={`${label}: ${b.title}`}>
+  <header className={styles.statusBand}>{ended?<Flag size={18} aria-hidden="true"/>:<Info size={18} aria-hidden="true"/>}<div><strong>{label}</strong><span>{count}{group?` · ${group}`:''}</span></div></header>
+  <div className={styles.lifecycleBody}>
+  <div className={styles.creativeHeading}>{creative?.image&&<div className={styles.lifecycleCreative}><Image src={creative.image} alt={creative.name} width={72} height={92} unoptimized onError={e=>{e.currentTarget.parentElement!.style.display='none';}}/>{ended&&<span>Ended</span>}</div>}<div><h3>{b.title}</h3><p>{b.explanation}</p></div></div>
   {b.provenance==='reconstructed'&&<p className={styles.notice}>Reconstructed from saved state and your confirmation. Exact interruption time is unverified.</p>}
-  <Metrics spend={b.spend} results={b.results} cpr={b.cpr} currency={currency}/>
+  {ended&&<div className={styles.timeline}><div className={styles.timelineLabels}><span>Reporting window starts · {b.since}</span><strong>Scheduled end reached</strong></div><div className={styles.timelineTrack} aria-hidden="true"><span/><span/></div><p>Observations through {b.until} · missing dates are not zero</p></div>}
+  {!(ended&&noMetrics)&&<Metrics spend={b.spend} results={b.results} cpr={b.cpr} currency={currency}/>}
   {missing&&<div className={styles.dataInset}><InsightDataNotice title="Some advertising details aren’t available">{!creative?'No creative preview is saved. ':''}{!currency?'The account currency is unknown. ':''}{b.spend===null||b.results===null?'Unavailable metrics are shown as dashes; they do not mean zero.':'Available metrics are shown above.'}</InsightDataNotice>{!creative&&<div className={styles.missingMedia}>Creative preview unavailable</div>}</div>}
-  <p className={styles.caption}>Affected-ad observations · {b.since} – {b.until}. Missing dates are not zero.</p>
+  {!ended&&<p className={styles.caption}>Affected-ad observations · {b.since} – {b.until}. Missing dates are not zero.</p>}
   {config&&<details><summary>Schedule, audience &amp; budget</summary><p>{config.owner} · {config.dailyBudget!==null?`${money(config.dailyBudget,currency)} daily`:config.lifetimeBudget!==null?`${money(config.lifetimeBudget,currency)} lifetime`:'Budget unavailable'}</p><p>{config.audience} · {config.geography}</p><p>{config.platforms.length?config.platforms.join(' / '):'Placements not recorded'}</p>{b.affected.slice(0,5).map(e=><p key={e.id}>{e.name}: {e.start??'Start not recorded'} → {e.end??'End not recorded'}</p>)}</details>}
   {preview?<span className={styles.caption}>Report link disabled in preview</span>:<Link className={styles.link} href={`/lifecycle/${b.id}`}>Explore advertising report →</Link>}
+  </div>
  </section>;
 }
 function AttentionCard({issue:i,related,currency,preview=false}:{issue:Issue;related:LifecycleCard[];currency:string|null;preview?:boolean}){
@@ -80,8 +92,8 @@ export function InsightContent({saved,preview=false}:{saved:SavedPresentation;pr
   {!preview&&<div className={styles.actions}><a href={`/api/insights/export?id=${saved.id}&format=pdf`}>Download PDF</a><a href={`/api/insights/export?id=${saved.id}&format=csv`}>Download CSV</a><Link href="/insights">All updates</Link></div>}
  </div>;
 }
-export default function InsightsPopup({accountId,developmentPreview=false}:{accountId:string|null;developmentPreview?:boolean}){
- const [saved,setSaved]=useState<SavedPresentation|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[attention,setAttention]=useState(0),[additional,setAdditional]=useState(false);
+export default function InsightsPopup({accountId}:{accountId:string|null}){
+ const [saved,setSaved]=useState<SavedPresentation|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[additional,setAdditional]=useState(false);
  const active=useRef<SavedPresentation|null>(null),token=useRef(''),inflight=useRef(false),mounted=useRef(true);
  const mobile=useMediaQuery('(max-width: 600px)'),pathname=usePathname();
  const load=useCallback(async()=>{
@@ -92,9 +104,9 @@ export default function InsightsPopup({accountId,developmentPreview=false}:{acco
   try{const res=await fetch('/api/insights',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token.current})});if(!res.ok)throw new Error();const data=await res.json();if(mounted.current)setAdditional(Boolean(data.presentation?.additionalUpdates));if(mounted.current&&data.presentation&&!active.current&&!document.querySelector('[role="dialog"],dialog[open]')){active.current=data.presentation;setSaved(data.presentation);setError('');}}
   catch{if(mounted.current)setError('Updates are temporarily unavailable. Your advertising is unchanged.');}finally{inflight.current=false;}
  },[accountId,pathname]);
- useEffect(()=>{mounted.current=true;if(!token.current)token.current=crypto.randomUUID();void load();const refresh=()=>{if(pathname==='/insights/preview')return;void load();void fetch('/api/insights').then(r=>r.ok?r.json():null).then(d=>{if(mounted.current&&d)setAttention(d.issueCount??d.issues.filter((i:Issue)=>!i.resolvedAt).length);}).catch(()=>{});};refresh();window.addEventListener('deepvisor:data-updated',refresh);window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);const interval=window.setInterval(()=>{if(active.current)void load();},120000);return()=>{mounted.current=false;window.clearInterval(interval);window.removeEventListener('deepvisor:data-updated',refresh);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};},[load,pathname]);
+ useEffect(()=>{mounted.current=true;if(!token.current)token.current=crypto.randomUUID();const refresh=()=>{void load();};refresh();window.addEventListener('deepvisor:data-updated',refresh);window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);const interval=window.setInterval(()=>{if(active.current)void load();},120000);return()=>{mounted.current=false;window.clearInterval(interval);window.removeEventListener('deepvisor:data-updated',refresh);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};},[load,pathname]);
  async function dismiss(){if(!saved||busy)return;setBusy(true);try{const r=await fetch('/api/insights/ack',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:saved.id,token:token.current})});if(!r.ok)throw new Error();active.current=null;setSaved(null);setError('');}catch{setError('Could not save your review. Please try again.');}finally{setBusy(false);}}
- return <><Link className={styles.historyLink} href="/insights">Insights &amp; Events{attention>0?` · ${attention} to check`:''}</Link>{developmentPreview&&<Link href="/insights/preview" className={styles.previewButton}>Test event scenarios</Link>}{!saved&&error&&<span className={styles.caption} role="status">{error}</span>}<Modal opened={Boolean(saved)} onClose={()=>void dismiss()} title="Insights & Events" size={740} fullScreen={mobile} radius="lg" closeOnClickOutside={false} closeOnEscape={!busy} classNames={{content:styles.modalContent,header:styles.modalHeader,title:styles.modalTitle}}>{saved&&<InsightContent saved={saved}/>}<footer className={styles.footer}>{error&&<p role="alert">{error}</p>}<span>{additional?'Additional updates are available. They remain unread until presented.':'Keep this update in your history.'}</span><button type="button" onClick={()=>void dismiss()} disabled={busy}>{busy?'Saving…':'Got it'}</button></footer></Modal></>;
+ return <>{!saved&&error&&<span className={styles.caption} role="status">{error}</span>}<Modal opened={Boolean(saved)} onClose={()=>void dismiss()} title="Insights & Events" size={740} fullScreen={mobile} radius="lg" closeOnClickOutside={false} closeOnEscape={!busy} classNames={{content:styles.modalContent,header:styles.modalHeader,title:styles.modalTitle}}>{saved&&<InsightContent saved={saved}/>}<footer className={styles.footer}>{error&&<p role="alert">{error}</p>}<span>{additional?'Additional updates are available. They remain unread until presented.':'Keep this update in your history.'}</span><button type="button" onClick={()=>void dismiss()} disabled={busy}>{busy?'Saving…':'Got it'}</button></footer></Modal></>;
 }
 export function InsightsHistory(){
  const [items,setItems]=useState<SavedPresentation[]>([]),[issues,setIssues]=useState<Issue[]>([]),[next,setNext]=useState<string|null>(null),[selected,setSelected]=useState<SavedPresentation|null>(null),[filter,setFilter]=useState('all'),[error,setError]=useState(''),[loading,setLoading]=useState(false);

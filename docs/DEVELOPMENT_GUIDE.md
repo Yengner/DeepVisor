@@ -143,6 +143,30 @@ computed imports, package internals, type-only cycles, transitive client reachab
 and Edge functions require review/Next build. Do not mistake passing it for full
 tenant or secret-safety verification.
 
+### Status colors
+
+Status color carries meaning; pick it from what the evidence says, not from how
+the card should feel. Tokens live in [`src/globals.css`](../src/globals.css) as
+`--dv-*` custom properties, with light values on `:root` and dark overrides on
+`:root[data-mantine-color-scheme='dark']`. (Don't use `light-dark()` on `:root`:
+`postcss-preset-mantine` can't rewrite it there. It works in CSS modules.)
+
+| Meaning | Use for | Tokens (light) |
+| --- | --- | --- |
+| **Navy: expected / finished** | Scheduled end reached, paused, activated, other lifecycle updates | `--dv-status-navy` `#243556` band, `--dv-status-navy-text` white |
+| **Red: needs action** | Rejected ads, expired connection, account restriction | `--dv-urgent` `#B42318`, `--dv-urgent-border` `#F1B5AE`, `--dv-urgent-soft`, `--dv-urgent-shadow` |
+| **Amber: real data gap only** | Missing hours/days, unknown currency, unavailable metrics or creative | `--dv-gap-bg` `#FFF8E1`, `--dv-gap-border` `#EBCB7A`, `--dv-gap-text` `#7A4B00`, dashed empty strip |
+| **Primary action** | The single primary button of a surface (e.g. *Got it*) | `--dv-action` `#3A67DB`, white text, `--dv-action-radius` 10px, `--dv-action-min-height` 44px |
+| **Neutral card** | Card container and inner panels | `--dv-card-radius` 16px, `--dv-card-border` `#C3CBD9`, `--dv-card-panel` white, `--dv-card-inset` |
+
+Rules: never use amber for an expected state (an ad reaching its scheduled end is
+navy, not a warning). Red is reserved for something the owner must act on, and its
+primary button stays red. Status bands use 12px/800 uppercase text with 0.12em
+letter spacing and an icon (`Flag` for ended, `AlertTriangle` for urgent). All text
+pairs meet 4.5:1 (white on navy ≈ 12:1, white on red ≈ 6.6:1, white on primary ≈ 5:1,
+amber text on amber background ≈ 7:1). Typography is Manrope (the `--font-body`
+variable font; use weights 500/700/800).
+
 ## Extending the product
 
 For a new feature, start from the [map](CODEBASE_MAP.md), add pure rules/contracts

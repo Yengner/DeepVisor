@@ -40,7 +40,7 @@ Separate queries request:
 - ad-set daily `publisher_platform`, including reported action families;
 - account daily `publisher_platform,age,gender`;
 - account daily `publisher_platform,hourly_stats_aggregated_by_advertiser_time_zone`,
-  requesting delivery metrics only;
+  requesting delivery metrics and reported actions;
 - native ad-set `learning_stage_info`.
 
 Meta can reject these combinations or omit metrics. Each optional dataset fails
@@ -48,7 +48,7 @@ independently. Rejected publisher combinations try their combined-only age/gende
 or hourly alternative. Those rows carry an explicit combined-only scope and are
 excluded from Facebook/Instagram selections. Never substitute a combined query
 in a filtered view. Missing actions are unknown; explicit empty action lists mean
-no reported actions. Hourly results/CPR are always unavailable in this contract.
+no reported actions. Hourly Results uses reported leads, messaging conversations and calls. If Meta explicitly rejects the actions field, the hourly query retries with delivery fields only. Hourly cost per result divides total spend by reported results for each time cell. It requires a known currency and a positive result count.
 Reach/frequency are not summed. Ratios are recomputed from compatible totals.
 Learning recognizes native LEARNING/LEARNING_LIMITED/SUCCESS only; no progress or
 elapsed-day estimate is invented. Advertising health remains the existing

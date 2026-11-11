@@ -69,6 +69,32 @@
     --dv-violet: #6e6bf4;
     --dv-amber: #d69324;
 
+    /* Status semantics (see docs/DEVELOPMENT_GUIDE.md › Status colors):
+       navy = expected/finished, red = needs action, amber = real data gap only.
+       Dark values live in :root[data-mantine-color-scheme='dark'] below; light-dark()
+       is not used here because postcss-preset-mantine cannot rewrite it on :root. */
+    --dv-status-navy: #243556;
+    --dv-status-navy-text: #ffffff;
+    --dv-status-navy-line: #243556;
+    --dv-urgent: #b42318;
+    --dv-urgent-hover: #912018;
+    --dv-urgent-text: #b42318;
+    --dv-urgent-soft: #fef3f2;
+    --dv-urgent-border: #f1b5ae;
+    --dv-urgent-shadow: 0 10px 26px rgb(180 35 24 / 0.12);
+    --dv-gap-bg: #fff8e1;
+    --dv-gap-border: #ebcb7a;
+    --dv-gap-text: #7a4b00;
+    --dv-action: #3a67db;
+    --dv-action-hover: #2f55b8;
+    --dv-action-text: #ffffff;
+    --dv-action-radius: 10px;
+    --dv-action-min-height: 44px;
+    --dv-card-radius: 16px;
+    --dv-card-border: #c3cbd9;
+    --dv-card-panel: #ffffff;
+    --dv-card-inset: #f2f4f8;
+
     --platform-accent: var(--dv-signal-strong);
     --platform-accent-strong: var(--dv-primary-deep);
     --platform-accent-bright: var(--dv-signal-bright);
@@ -97,6 +123,21 @@
     --chrome-active: var(--dv-signal-bright);
     --platform-source: #6e6bf4;
     --platform-source-soft: rgba(110, 107, 244, 0.12);
+  }
+
+  :root[data-mantine-color-scheme='dark'] {
+    --dv-status-navy: #2b3f66;
+    --dv-status-navy-line: #9fb4dc;
+    --dv-urgent-text: #ffb9b2;
+    --dv-urgent-soft: #3b2528;
+    --dv-urgent-border: #99443f;
+    --dv-urgent-shadow: 0 10px 26px rgb(0 0 0 / 0.25);
+    --dv-gap-bg: #282516;
+    --dv-gap-border: #8d7134;
+    --dv-gap-text: #f2ce87;
+    --dv-card-border: #3a4d66;
+    --dv-card-panel: #11273e;
+    --dv-card-inset: #182f49;
   }
 
   [data-platform-theme='meta'] {

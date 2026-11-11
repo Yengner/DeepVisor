@@ -5,6 +5,7 @@ import { createAdminClient } from '../../supabase/admin';
 import { getBusinessIntegrationById, resolveIntegrationAccessToken } from '../../integrations/service';
 import { fetchMetaCollection } from '../../sync/meta/client';
 import { normalize, learningLabel, type Insight, type MetaRow } from './model';
+import { readInsightActions } from '../../sync/resources/insightModel';
 import { shiftDay } from '../overview/model';
 import type { OverviewContext } from '../overview/load';
 import { resourceRefreshEnabled } from '../../sync/resources/coordinator';
@@ -26,9 +27,9 @@ async function fetchInsights(scope: Scope): Promise<Insights> {
     if (!token) throw new Error('INSIGHTS_UNAVAILABLE');
     const read = async (breakdowns: string, level: string, hourly = false) => {
       try {
-        const rows = await fetchMetaCollection<MetaRow>({ path: `act_${scope.external.replace(/^act_/, '')}/insights`, accessToken: token,
-          params: { fields: `date_start,${level === 'adset' ? 'adset_id,' : ''}spend,impressions,clicks${hourly ? '' : ',actions'}`, level, time_increment: 1,
-            time_range: JSON.stringify({ since: shiftDay(scope.today, breakdowns === 'publisher_platform' && level === 'adset' ? -59 : -29), until: scope.today }), breakdowns, limit: 500 } });
+        const rows = await readInsightActions(includeActions => fetchMetaCollection<MetaRow>({ path: `act_${scope.external.replace(/^act_/, '')}/insights`, accessToken: token,
+          params: { fields: `date_start,${level === 'adset' ? 'adset_id,' : ''}spend,impressions,clicks${includeActions ? ',actions' : ''}`, level, time_increment: 1,
+            time_range: JSON.stringify({ since: shiftDay(scope.today, breakdowns === 'publisher_platform' && level === 'adset' ? -59 : -29), until: scope.today }), breakdowns, limit: 500 } }), hourly);
         return normalize(breakdowns.includes('publisher_platform') ? rows : rows.map(r => ({ ...r, publisher_platform: 'combined-only' })), scope.currency, hourly);
       } catch { return null; }
     };
@@ -64,7 +65,7 @@ export const loadInsights = cache(async (context: OverviewContext): Promise<Insi
       return { ...saved, canonicalFetchedAt: [resource.data?.last_success_at, context.account.last_synced].filter((at): at is string => Boolean(at)).sort().at(-1) ?? '' };
     }
     // No cookie access or credentials in cache arguments. Reauthorize before every cache read.
-    const value = await unstable_cache(() => fetchInsights(scope), ['dashboard-insights-v3', JSON.stringify(scope), 'publisher:daily:age:gender:advertiser-hour'], { revalidate: 300 })();
+    const value = await unstable_cache(() => fetchInsights(scope), ['dashboard-insights-v4', JSON.stringify(scope), 'publisher:daily:age:gender:advertiser-hour'], { revalidate: 300 })();
     return value;
   } catch { return empty; }
 });

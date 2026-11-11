@@ -15,3 +15,12 @@ it('preserves advertiser date/hour and does not infer hourly actions', () => {
   expect(hourlyObservations(rows)[0]).toMatchObject({ dayKey: '2026-11-04', hourOfDay: 9, spend: 12, results: null });
   expect(hourlyObservations([{ ...rows[0], label: 'Unknown hour' }])).toEqual([]);
 });
+
+it('preserves reported hourly results and distinguishes an explicit zero from missing actions', () => {
+  const rows = normalize([
+    { ...raw, publisher_platform: 'facebook', actions: [{ action_type: 'lead', value: '2' }] },
+    { ...raw, publisher_platform: 'facebook', actions: [] },
+    { ...raw, publisher_platform: 'facebook' },
+  ], 'USD', true);
+  expect(hourlyObservations(rows).map(row => row.results)).toEqual([2, 0, null]);
+});

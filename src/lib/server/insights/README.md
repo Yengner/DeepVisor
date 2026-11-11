@@ -6,7 +6,7 @@ and evidence-backed attention issues. No AI provider or advertising executor is 
 ## Local preview
 
 - Set the **server-only** `DEEPVISOR_INSIGHTS_EVENTS=true` in `.env.local`.
-- Sign in on `localhost:3000`. **Test event scenarios** opens `/insights/preview`.
+- Sign in on `localhost:3000`. Choose **Insights preview** in the desktop sidebar to open `/insights/preview`.
 - The development preview has 23 synthetic scenarios, width controls, light/dark
   switching, and the same content renderer/CSS as real updates. Actions/exports,
   automatic sync and review acknowledgements are disabled there. Hot reload works.
@@ -60,6 +60,18 @@ pause time is unverified. A parent pause is not an account-problem alert.
   webhook, continuous Meta polling, or live advertising actions.
 - Audience breakdowns retain original snapshot windows and entity scope in reports.
   No unique period reach, verified bookings, or causal outcomes are fabricated.
+
+## Presentation colors
+
+The modal follows the status color rules in
+[Development guide › Status colors](../../../../docs/DEVELOPMENT_GUIDE.md#status-colors):
+attention issues use the red band, lifecycle cards use one navy-banded card (status,
+`N ads affected` and the budget owner's name in the band, then the ad, then metrics),
+and amber is reserved for real data gaps (unavailable hours, missing metrics, currency or
+creative). A scheduled end is classified for display only by `lifecycleStatus()` in
+`src/lib/shared/insights/model.ts`. Ended cards replace the amber "details aren't
+available" notice with the reporting-window timeline, and hide the metrics row only when
+all three metrics are unavailable.
 
 ## Focused verification
 

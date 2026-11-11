@@ -8,12 +8,27 @@ export function normalize(rows: MetaRow[], currency: string, hourly = false): In
     return { entity_id: r.adset_id ?? 'account', externalId: r.adset_id ?? '', day: r.date_start, currency_code: currency,
       publisher: r.publisher_platform, label: hourly ? r.hourly_stats_aggregated_by_advertiser_time_zone ?? 'Unknown hour' : [r.age, r.gender].filter(Boolean).join(' · '),
       spend: requiredMetric(r.spend), impressions: requiredMetric(r.impressions), clicks: requiredMetric(r.clicks), reach: null, inline_link_clicks: null,
-      leads: hourly || actions === undefined ? null : actionMetric(actions, ['onsite_conversion.lead_grouped', 'lead', 'offsite_conversion.fb_pixel_lead']),
-      messages: hourly || actions === undefined ? null : actionMetric(actions, ['onsite_conversion.messaging_conversation_started_7d']),
-      calls: hourly || actions === undefined ? null : actionMetric(actions, ['onsite_conversion.phone_call_click', 'phone_call']) };
+      leads: actions === undefined ? null : actionMetric(actions, ['onsite_conversion.lead_grouped', 'lead', 'offsite_conversion.fb_pixel_lead']),
+      messages: actions === undefined ? null : actionMetric(actions, ['onsite_conversion.messaging_conversation_started_7d']),
+      calls: actions === undefined ? null : actionMetric(actions, ['onsite_conversion.phone_call_click', 'phone_call']) };
   });
 }
 export function learningLabel(value: unknown): string {
   const state = value && typeof value === 'object' ? (value as Record<string, unknown>).status : null;
   return state === 'LEARNING' ? 'Learning' : state === 'LEARNING_LIMITED' ? 'Learning limited' : state === 'SUCCESS' ? 'Learning complete' : 'Unavailable';
+}
+
+/** Some Meta hourly breakdowns reject action fields while still returning delivery metrics. */
+export async function readInsightActions<T>(
+  read: (includeActions: boolean) => Promise<T>,
+  hourly: boolean,
+): Promise<T> {
+  try {
+    return await read(true);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    if (!hourly || !/\bactions?\b/i.test(message) ||
+        !/not supported|unsupported|not available|cannot be combined|not compatible|invalid field/i.test(message)) throw error;
+    return read(false);
+  }
 }

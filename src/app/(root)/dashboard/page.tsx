@@ -261,7 +261,7 @@ async function Content({ period, preview, platform }: { period: Period; preview:
     <section aria-label="Account performance"><Suspense key={`${period}:${platform}`} fallback={<Loading kind="metrics" />}><Metrics context={context} period={period} /></Suspense></section>
     <section className={classes.workspaceChart} aria-label="Performance chart"><Suspense key={`${period}:${platform}`} fallback={<Loading kind="chart" />}><Trend context={context} period={period} /></Suspense></section>
     <section className={classes.board}><Suspense key={`${period}:${platform}`} fallback={<Loading kind="board" />}><Board period={period} context={context} /></Suspense></section>
-    <AudienceIntelligence key={`${period}:${platform}`} audience={audience} hourly={hourly} currency={context.account.currency_code} zone={context.zone} period={period} platform={platform} fetchedAt={live.fetchedAt} audienceFetchedAt={live.audienceFetchedAt} hourlyFetchedAt={live.hourlyFetchedAt} since={periodRange(period, context.today).since} until={context.today} audienceCombinedOnly={live.audience?.some(r => r.publisher === 'combined-only') ?? false} hourlyCombinedOnly={live.hourly?.some(r => r.publisher === 'combined-only') ?? false} />
+    <AudienceIntelligence key={`${period}:${platform}`} audience={audience} hourly={hourly} currency={context.account.currency_code} zone={context.zone} period={period} platform={platform} since={periodRange(period, context.today).since} until={context.today} audienceCombinedOnly={live.audience?.some(r => r.publisher === 'combined-only') ?? false} hourlyCombinedOnly={live.hourly?.some(r => r.publisher === 'combined-only') ?? false} />
     <Suspense fallback={null}><Activity context={context} /></Suspense>
   </div>;
 }

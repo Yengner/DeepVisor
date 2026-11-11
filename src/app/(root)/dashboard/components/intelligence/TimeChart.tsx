@@ -5,7 +5,7 @@ import { formatHourLongLabel, hourlyIntensity } from '@/lib/shared/reports/hourl
 import { performanceValueLabel, type PerformanceMetric } from '@/lib/shared/reports/performance';
 import styles from './Intelligence.module.css';
 
-const METRICS = [['spend', 'Spend'], ['impressions', 'Impressions'], ['clicks', 'Clicks'], ['ctr', 'CTR'], ['cpc', 'Cost per click'], ['conversion', 'Results · unavailable'], ['costPerResult', 'Cost per result · unavailable']] as const;
+const METRICS = [['spend', 'Spend'], ['impressions', 'Impressions'], ['clicks', 'Clicks'], ['ctr', 'CTR'], ['cpc', 'Cost per click'], ['conversion', 'Results'], ['costPerResult', 'Cost per result']] as const;
 export default function TimeChart({ rows, currency, today }: { rows: HourlyObservation[]; currency: string | null; today: boolean }) {
   const [metric, setMetric] = useState<PerformanceMetric>('spend');
   const [mode, setMode] = useState<'total' | 'average'>('total');
@@ -17,11 +17,34 @@ export default function TimeChart({ rows, currency, today }: { rows: HourlyObser
   const maximum = Math.max(0, ...displayed.map(c => c.value ?? 0));
   const current = displayed.find(c => c.key === selected) ?? displayed.find(c => c.observations) ?? displayed[0];
   const format = (value: number | null) => performanceValueLabel(value, metric, currency);
+  const resultsAvailable = rows.some(row => row.results !== null);
+  const costPerResultAvailable = Boolean(currency && currency !== 'MIXED') &&
+    rows.some(row => row.spend !== null && row.results !== null && row.results > 0);
   const label = METRICS.find(([key]) => key === metric)![1];
   const calculation = cells[0].isRatio ? 'Ratio of observed totals' : mode === 'average' && !today ? 'Average per observed date' : 'Total across observed dates';
   return <>
-    <div className={styles.controls}><label className={styles.select}><span className={styles.srOnly}>Time metric</span><select aria-label="Time metric" value={metric} onChange={e => setMetric(e.target.value as PerformanceMetric)}>{METRICS.map(([key, text]) => <option key={key} value={key} disabled={key === 'conversion' || key === 'costPerResult'}>{text}</option>)}</select></label>{!today && <div className={styles.segmented} role="group" aria-label="Time calculation">{(['total', 'average'] as const).map(value => <button key={value} type="button" disabled={cells[0].isRatio} aria-pressed={mode === value} onClick={() => setMode(value)}>{value === 'total' ? 'Total' : 'Daily average'}</button>)}</div>}</div>
-    <div className={styles.legend}><span>{today ? 'Hourly activity' : calculation}</span><small>{label}{currency && (metric === 'spend' || metric === 'cpc') ? ` · ${currency}` : ''}</small></div>
+    <div className={styles.controls}>
+      <label className={styles.select}>
+        <span className={styles.srOnly}>Time metric</span>
+        <select aria-label="Time metric" value={metric} onChange={e => setMetric(e.target.value as PerformanceMetric)}>
+          {METRICS.map(([key, text]) => {
+            const unavailable = (key === 'conversion' && !resultsAvailable)
+              || (key === 'costPerResult' && !costPerResultAvailable);
+            return <option key={key} value={key} disabled={unavailable}>{text}{unavailable ? ' · unavailable' : ''}</option>;
+          })}
+        </select>
+      </label>
+      {!today && (
+        <div className={styles.segmented} role="group" aria-label="Time calculation">
+          {(['total', 'average'] as const).map(value => (
+            <button key={value} type="button" disabled={cells[0].isRatio} aria-pressed={mode === value} onClick={() => setMode(value)}>
+              {value === 'total' ? 'Total' : 'Daily average'}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+    <div className={styles.legend}><span>{today ? 'Hourly activity' : calculation}</span><small>{label}{currency && (metric === 'spend' || metric === 'cpc' || metric === 'costPerResult') ? ` · ${currency}` : ''}</small></div>
     <div className={styles.heatScroll} role="region" aria-label={today ? 'Hourly activity chart' : 'Weekday by hour heatmap'} tabIndex={0}>
       {today ? <div className={styles.todayChart}><div className={styles.barAxis}><span>{format(maximum)}</span><span>0</span></div><div className={styles.hourBars}>{displayed.map((cell, index) => <button type="button" key={cell.key} className={styles.hourBar} data-missing={cell.value == null} data-zero={cell.value === 0} aria-label={`${formatHourLongLabel(cell.hour)}: ${format(cell.value)}`} aria-pressed={current?.key === cell.key} onFocus={() => setSelected(cell.key)} onMouseEnter={() => setSelected(cell.key)} onClick={() => setSelected(cell.key)}><span style={{ height: cell.value == null ? '100%' : `${maximum ? cell.value / maximum * 100 : 0}%` }} /><small>{index % 4 === 0 ? formatHourLongLabel(cell.hour) : ''}</small></button>)}</div></div> : <div className={styles.heatGrid}>
         <span />{Array.from({ length: 24 }, (_, hour) => <span className={styles.hourLabel} key={hour}>{hour % 4 === 0 ? formatHourLongLabel(hour) : ''}</span>)}
