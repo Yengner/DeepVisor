@@ -1,5 +1,9 @@
 # Ask DeepVisor
 
+> **Currently hidden:** the floating "Ask DeepVisor" launcher was removed from
+> `AiAssistantDrawer.tsx`, so the drawer has no entry point. Restore the launcher button
+> to re-enable it.
+
 The existing docked [assistant](../../../../components/layout/AiAssistantDrawer.tsx)
 uses the official installed OpenAI SDK and Responses API through
 [`openai/conversation.ts`](../../openai/conversation.ts). It replaces the route's

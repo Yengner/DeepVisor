@@ -251,7 +251,7 @@ export default function AdSetStep({
 
                                 <Paper p="md" radius="md" withBorder shadow="sm">
                                     {isSmart ? (
-                                        <Paper withBorder p="md" radius="md" bg="blue.0" shadow="xs">
+                                        <Paper withBorder p="md" radius="md" bg="var(--dv-primary-soft)" shadow="xs">
                                             <Group align="flex-start">
                                                 <ThemeIcon size="lg" color="violet" variant="light">
                                                     <IconTarget size={20} />
@@ -351,7 +351,7 @@ export default function AdSetStep({
                                         </Text>
 
                                         {form.values.adSets[idx].targeting?.location?.markerPosition && (
-                                            <Paper withBorder p="sm" radius="md" bg="green.0" shadow="xs" mt="md">
+                                            <Paper withBorder p="sm" radius="md" bg="var(--dv-success-soft)" shadow="xs" mt="md">
                                                 <Group>
                                                     <ThemeIcon size="sm" variant="light" color="green" radius="xl">
                                                         <IconMapPin size={14} />
@@ -553,7 +553,7 @@ export default function AdSetStep({
                                     </ThemeIcon>
                                 </Group>
 
-                                <Paper withBorder p="md" radius="md" mb="md" shadow="xs" bg="blue.0">
+                                <Paper withBorder p="md" radius="md" mb="md" shadow="xs" bg="var(--dv-primary-soft)">
                                     <Stack gap="xs">
                                         <Group justify="apart">
                                             <Text fw={600} size="sm">Estimated Audience Size</Text>
@@ -593,7 +593,7 @@ export default function AdSetStep({
                                         </Text>
 
                                         {audienceEstimate.qualityScore > 80 ? (
-                                            <Paper withBorder p="xs" radius="md" bg="green.0" mt="xs">
+                                            <Paper withBorder p="xs" radius="md" bg="var(--dv-success-soft)" mt="xs">
                                                 <Group>
                                                     <ThemeIcon variant="light" size="sm" color="green" radius="xl">
                                                         <IconTarget size={14} />
@@ -602,7 +602,7 @@ export default function AdSetStep({
                                                 </Group>
                                             </Paper>
                                         ) : (
-                                            <Paper withBorder p="xs" radius="md" bg="yellow.0" mt="xs">
+                                            <Paper withBorder p="xs" radius="md" bg="var(--dv-gap-bg)" mt="xs">
                                                 <Group>
                                                     <ThemeIcon variant="light" size="sm" color="yellow" radius="xl">
                                                         <IconAdjustments size={14} />
@@ -638,7 +638,7 @@ export default function AdSetStep({
                                             </Paper>
                                         ) : (
                                             <>
-                                                <Paper withBorder p="sm" radius="md" bg="blue.0" shadow="xs">
+                                                <Paper withBorder p="sm" radius="md" bg="var(--dv-primary-soft)" shadow="xs">
                                                     <Group>
                                                         <ThemeIcon variant="light" size="md" color="blue" radius="xl">
                                                             <IconUsers size={18} />
@@ -650,7 +650,7 @@ export default function AdSetStep({
                                                     </Text>
                                                 </Paper>
 
-                                                <Paper withBorder p="sm" radius="md" bg="blue.0" shadow="xs" mt="xs">
+                                                <Paper withBorder p="sm" radius="md" bg="var(--dv-primary-soft)" shadow="xs" mt="xs">
                                                     <Group>
                                                         <ThemeIcon variant="light" size="md" color="blue" radius="xl">
                                                             <IconMapPin size={18} />

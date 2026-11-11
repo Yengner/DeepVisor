@@ -168,9 +168,16 @@ source of color, radius and action values. `DesignSurface`'s `--ui-*` variables 
 Type and radius scales are tokens too: `--dv-text-2xs` (11px, the floor for chart axes
 and labels), `--dv-text-xs` (12px, the floor for body text), `--dv-text-sm/md/lg/xl`, and
 `--dv-radius-sm` (6px), `--dv-radius-md` (10px), `--dv-radius-lg` (16px), `--dv-radius-pill`.
-Use weights 500/700/800 only. Primary buttons use `.app-platform-page-action-primary`
-(the `--dv-action` color); Mantine's default filled `Button` still uses the brand tuple
-in `src/theme.ts`.
+Use weights 500/700/800 only. Primary buttons use `--dv-action`: Mantine's default filled
+`Button` (no explicit `color`) gets it from the theme's `vars` resolver, and non-Mantine or
+explicitly colored primaries use `.app-platform-page-action-primary`.
+
+Dark mode has one source: Mantine's color scheme (`data-mantine-color-scheme` on `<html>`).
+`--dv-*` tokens carry dark values under `:root[data-mantine-color-scheme='dark']`, the theme's
+`dark` tuple matches them, and `DesignSurface` reads the same attribute. Use tokens, not
+Mantine `*.0`/`*-0` shades, for tinted backgrounds; those stay light in dark mode.
+The theme contains functions, so it is provided from the client boundary
+`src/components/providers/AppMantineProvider.tsx`, not directly from the root layout.
 
 Page-level status (sync progress, refresh failures, unavailable updates) uses
 `src/components/ui/states/StatusBanner.tsx` with the same tones: `info` (navy/neutral,

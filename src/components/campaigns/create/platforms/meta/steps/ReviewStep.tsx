@@ -86,7 +86,7 @@ export default function ReviewStep({ form, setActive }: ReviewStepProps) {
                 <Text size="xs" c="dimmed">No creatives added.</Text>
             ) : (
                 adSet.creatives.map((creative: any, idx: number) => (
-                    <Paper key={idx} withBorder p="sm" radius="md" bg="violet.0">
+                    <Paper key={idx} withBorder p="sm" radius="md" bg="var(--dv-agent-soft)">
                         <Group align="flex-start" gap="sm">
                             <ThemeIcon color="violet" size="sm" variant="light">
                                 <IconPhoto size={14} />
@@ -445,7 +445,7 @@ export default function ReviewStep({ form, setActive }: ReviewStepProps) {
                                 </Paper>
 
                                 {/* Budget Summary */}
-                                <Paper withBorder radius="md" p="md" bg="blue.0">
+                                <Paper withBorder radius="md" p="md" bg="var(--dv-primary-soft)">
                                     <Group mb="xs">
                                         <ThemeIcon size="sm" color="green" radius="xl">
                                             <IconCurrencyDollar size={14} />

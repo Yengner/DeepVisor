@@ -22,8 +22,8 @@ import { buildEntityReportUrl } from './reportLinks';
 import { formatRecordedCurrency as formatCurrencyAmount } from './metrics';
 import classes from './CampaignDashboard.module.css';
 
-const BG = 'var(--mantine-color-body)';
-const BORDER = 'var(--mantine-color-gray-3)';
+const BG = 'var(--dv-surface)';
+const BORDER = 'var(--dv-border)';
 const Z_HEADER = 2;
 const Z_STICKY_RIGHT = 4;
 const RIGHT_COL_WIDTH = 24;
@@ -167,15 +167,15 @@ export default function AdSetTable({
 
                 <div className={classes.mobileMetricGrid}>
                   <div>
-                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
+                    <Text size="var(--dv-text-2xs)" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
                     <Text fw={800}>{adSet.metricsAvailable === false ? '—' : formatCurrencyAmount(spend, currencyCode)}</Text>
                   </div>
                   <div>
-                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Results</Text>
+                    <Text size="var(--dv-text-2xs)" c="dimmed" tt="uppercase" fw={800}>Results</Text>
                     <Text fw={800}>{adSet.metricsAvailable === false ? '—' : results}</Text>
                   </div>
                   <div>
-                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
+                    <Text size="var(--dv-text-2xs)" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
                     <Text fw={800}>
                       {formatCurrencyAmount(results > 0 ? spend / results : null, currencyCode)}
                     </Text>
@@ -282,8 +282,8 @@ export default function AdSetTable({
           ) : (
             adSets.map((adSet) => {
               const isSelected = selectedAdSetId === adSet.id;
-              const rowBg = isSelected ? `var(--mantine-color-${platformColor}-1)` : 'transparent';
-              const stickyCellBg = isSelected ? `var(--mantine-color-${platformColor}-1)` : BG;
+              const rowBg = isSelected ? 'var(--dv-primary-soft-hover)' : 'transparent';
+              const stickyCellBg = isSelected ? 'var(--dv-primary-soft-hover)' : BG;
               const status = (adSet.status || '').toString();
               const spend = Number(adSet.spend || 0);
               const ctr = adSet.ctr != null ? Number(adSet.ctr) : null;

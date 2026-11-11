@@ -1,9 +1,9 @@
 .status { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 3px 7px; border-radius: var(--dv-radius-sm); font-size: 12px; line-height: 1.4; font-weight: 700; white-space: normal; letter-spacing: 0; }
-.positive { background: #e8f4ec; color: #226443; }
-.information { background: #edf1f7; color: #3b566f; }
-.attention { background: #fff3d9; color: #76500b; }
-.problem { background: #fbece9; color: #9a3c32; }
-.neutral { background: #edeef0; color: #4e5763; }
+.positive { background: var(--dv-success-soft); color: var(--dv-success); }
+.information { background: var(--dv-info-soft); color: var(--dv-info-text); }
+.attention { background: var(--dv-gap-bg); color: var(--dv-gap-text); }
+.problem { background: var(--dv-urgent-soft); color: var(--dv-urgent-text); }
+.neutral { background: var(--dv-neutral-soft); color: var(--dv-neutral-text); }
 .disclosure { border-top: 1px solid var(--dv-border); padding: 12px 0; min-width: 0; scroll-margin-top: 16px; }
 .disclosure > summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-size: 14px; font-weight: 700; }
 .disclosure > summary:hover { color: var(--dv-primary-strong); }
@@ -16,8 +16,8 @@
 .page :global(.app-platform-page-copy), .page :global(.app-platform-page-kicker), .page :global(.app-platform-page-hero-panel) :global(.mantine-Text-root) { color: var(--dv-text-muted) !important; }
 .page :global(.app-platform-page-hero) { color: var(--dv-text) !important; }
 .page :global(.app-platform-page-hero)::after { display: none; }
-.page :global(.app-platform-page-badge) { color: #334154 !important; background: #eaedf2 !important; border-color: #d6dce4 !important; }
-.page :global(.app-platform-page-hero) :global(.app-platform-page-action-secondary) { color: #334154 !important; background: white !important; border-color: #bac0c8 !important; }
+.page :global(.app-platform-page-badge) { color: var(--dv-neutral-text) !important; background: var(--dv-neutral-soft) !important; border-color: var(--dv-border) !important; }
+.page :global(.app-platform-page-hero) :global(.app-platform-page-action-secondary) { color: var(--dv-text) !important; background: var(--dv-surface) !important; border-color: var(--dv-border-strong) !important; }
 .page :global(.app-platform-page-hero) { border: 0 !important; box-shadow: none !important; background: transparent !important; padding: 0 0 20px !important; }
 .page :global(.app-platform-page-hero-panel) { background: transparent !important; border: 0 !important; box-shadow: none !important; }
 .page :global(.mantine-Button-root) { font-weight: 700; border-radius: var(--dv-radius-sm); }
@@ -27,9 +27,9 @@
 .page :global(.mantine-Button-root), .page :global(.mantine-ActionIcon-root), .page a, .page summary { transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease; }
 .page :focus-visible, .disclosure :focus-visible, .mode :focus-visible { outline: 2px solid var(--dv-primary-strong); outline-offset: 3px; }
 .values { display: flex; flex-wrap: wrap; gap: 16px 32px; margin: 12px 0; }
-.values dt { font-size: 12px; color: var(--ui-muted, #56606e); }
+.values dt { font-size: 12px; color: var(--dv-text-muted); }
 .values dd { margin: 4px 0 0; font-size: 16px; font-weight: 700; }
-.audit { border-top: 1px solid #e1e4e7; padding: 12px 0; }
+.audit { border-top: 1px solid var(--dv-border); padding: 12px 0; }
 .skeleton { min-height: 160px; }
 .tiles { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; min-height: 132px; }
 @media(max-width:48em) {

@@ -1,12 +1,10 @@
 .page {
-  --dv-border: #d3d7dd;
-  --dv-border-strong: #a6aeb9;
   --dv-signal: var(--dv-primary-strong);
   --dv-lime: var(--dv-highlight);
   width: 100%;
   min-height: calc(100vh - 7rem);
   padding: 20px;
-  color: var(--dv-ink);
+  color: var(--dv-text);
   background: var(--dv-canvas);
 }
 
@@ -20,7 +18,7 @@
 .page :global(.mantine-Card-root) {
   border: 1px solid var(--dv-border) !important;
   border-radius: var(--dv-radius-sm);
-  background: #ffffff;
+  background: var(--dv-surface);
   box-shadow: none !important;
 }
 
@@ -42,8 +40,8 @@
 
 .page :global(.mantine-Button-root[data-variant='default']) {
   border: 1px solid var(--dv-border-strong);
-  color: var(--dv-ink);
-  background: #ffffff;
+  color: var(--dv-text);
+  background: var(--dv-surface);
 }
 
 .page :global(.mantine-ThemeIcon-root) {
@@ -90,19 +88,19 @@
 
 .hero :global(.mantine-Badge-root[data-variant='outline']) {
   border-color: var(--dv-text-muted);
-  color: #e1e4e8;
+  color: var(--chrome-text);
 }
 
 .hero :global(.mantine-Button-root[data-variant='filled']) {
   border-color: var(--dv-lime);
-  color: var(--dv-ink);
+  color: var(--dv-text);
   background: var(--dv-lime);
 }
 
 .hero :global(.mantine-Button-root[data-variant='default']) {
   border-color: var(--dv-text-muted);
   color: #ffffff;
-  background: #282d34;
+  background: var(--chrome-panel);
 }
 
 .summaryCard {
@@ -116,7 +114,7 @@
 .documentFrame {
   overflow: hidden;
   padding: 6px !important;
-  background: #ffffff;
+  background: var(--dv-surface);
 }
 
 .documentFrame iframe {

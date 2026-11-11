@@ -135,7 +135,7 @@ export default function ManualMetaAdSetStarter({
                         radius="xl"
                         p="xl"
                         style={{
-                            background: '#f4f7fc',
+                            background: 'var(--dv-canvas)',
                         }}
                     >
                         {selectedCampaign ? (

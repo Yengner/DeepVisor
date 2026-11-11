@@ -372,7 +372,7 @@ export default function CampaignDetailsStep({
                                                 style={{
                                                     cursor: 'pointer',
                                                     borderColor: form.values.campaign.destinationType === destType ? 'var(--mantine-color-indigo-6)' : undefined,
-                                                    backgroundColor: form.values.campaign.destinationType === destType ? 'var(--mantine-color-indigo-0)' : undefined,
+                                                    backgroundColor: form.values.campaign.destinationType === destType ? 'var(--dv-primary-soft)' : undefined,
                                                     transform: form.values.campaign.destinationType === destType ? 'translateY(-2px)' : undefined,
                                                     transition: 'all 0.2s ease'
                                                 }}
@@ -422,7 +422,7 @@ export default function CampaignDetailsStep({
                             </Text>
 
                             <Stack gap="xs">
-                                <Paper withBorder p="xs" radius="sm" bg="blue.0">
+                                <Paper withBorder p="xs" radius="sm" bg="var(--dv-primary-soft)">
                                     <Group justify="apart">
                                         <Text size="sm" fw={500}>Buying Type:</Text>
                                         <Badge color="blue" size="lg">
@@ -431,7 +431,7 @@ export default function CampaignDetailsStep({
                                     </Group>
                                 </Paper>
 
-                                <Paper withBorder p="xs" radius="sm" bg="blue.0">
+                                <Paper withBorder p="xs" radius="sm" bg="var(--dv-primary-soft)">
                                     <Group justify="apart">
                                         <Text size="sm" fw={500}>Campaign Budget Optimization:</Text>
                                         <Badge color="blue" size="lg">
@@ -440,7 +440,7 @@ export default function CampaignDetailsStep({
                                     </Group>
                                 </Paper>
 
-                                <Paper withBorder p="xs" radius="sm" bg="blue.0">
+                                <Paper withBorder p="xs" radius="sm" bg="var(--dv-primary-soft)">
                                     <Group justify="apart">
                                         <Text size="sm" fw={500}>Budget Type:</Text>
                                         <Badge color="blue" size="lg">
@@ -449,14 +449,14 @@ export default function CampaignDetailsStep({
                                     </Group>
                                 </Paper>
 
-                                <Paper withBorder p="xs" radius="sm" bg="blue.0">
+                                <Paper withBorder p="xs" radius="sm" bg="var(--dv-primary-soft)">
                                     <Group justify="apart">
                                         <Text size="sm" fw={500}>Minimum Budget:</Text>
                                         <Badge color="blue" size="lg">${recommended.minBudget}</Badge>
                                     </Group>
                                 </Paper>
 
-                                <Paper withBorder p="xs" radius="sm" bg="blue.0">
+                                <Paper withBorder p="xs" radius="sm" bg="var(--dv-primary-soft)">
                                     <Group justify="apart">
                                         <Text size="sm" fw={500}>Bid Strategy:</Text>
                                         <Badge color="blue" size="lg">
@@ -467,7 +467,7 @@ export default function CampaignDetailsStep({
                                     </Group>
                                 </Paper>
 
-                                <Paper withBorder p="xs" radius="sm" bg="blue.0">
+                                <Paper withBorder p="xs" radius="sm" bg="var(--dv-primary-soft)">
                                     <Group justify="apart">
                                         <Text size="sm" fw={500}>A/B Testing:</Text>
                                         <Badge color="blue" size="lg">
@@ -478,7 +478,7 @@ export default function CampaignDetailsStep({
                             </Stack>
                         </Paper>
 
-                        {/* <Paper withBorder p="md" radius="md" mb="md" shadow="xs" bg="blue.0">
+                        {/* <Paper withBorder p="md" radius="md" mb="md" shadow="xs" bg="var(--dv-primary-soft)">
                             <Group justify="apart" mb="xs">
                                 <Text fw={600}>Your Settings Comparison</Text>
                                 <ThemeIcon size="md" variant="light" radius="xl" color="blue">
@@ -554,7 +554,7 @@ export default function CampaignDetailsStep({
                             </Group>
 
                             <Stack gap="md" mt="md">
-                                <Paper withBorder p="md" radius="md" bg="green.0">
+                                <Paper withBorder p="md" radius="md" bg="var(--dv-success-soft)">
                                     <Text size="sm">
                                         {form.values.objective === 'LEAD_GENERATION' ?
                                             "For lead generation campaigns, consider enabling A/B testing and Campaign Budget Optimization for better results." :

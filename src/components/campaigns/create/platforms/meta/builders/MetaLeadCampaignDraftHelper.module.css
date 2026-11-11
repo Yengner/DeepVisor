@@ -38,7 +38,7 @@
   min-width: 0;
   padding: 12px 0;
   border-top: 1px solid var(--dv-border);
-  background: #ffffff;
+  background: var(--dv-surface);
 }
 
 .stageFooterLabel {

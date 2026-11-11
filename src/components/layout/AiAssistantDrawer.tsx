@@ -108,7 +108,7 @@ export default function AiAssistantDrawer({ payload, children }: { payload: Glob
           onPointerDown={e => { drag.current = true; e.currentTarget.setPointerCapture(e.pointerId); }} onPointerMove={e => { if (drag.current) setWidth(assistantWidth(window.innerWidth - e.clientX, window.innerWidth - 60)); }} onPointerUp={() => { drag.current = false; }} onPointerCancel={() => { drag.current = false; }} />{content}
       </aside>}
     </div>
-    {!opened && <button ref={trigger} className={classes.launcher} aria-expanded={opened} aria-label="Open DeepVisor assistant" onClick={() => setOpened(v => !v)}><IconSparkles size={20} /> Ask DeepVisor</button>}
+    {/* "Ask DeepVisor" launcher removed for now; the drawer has no other entry point. */}
     <Drawer onEnterTransitionEnd={scrollToLatest} opened={opened && mobile} onClose={close} position="right" size="100%" title="DeepVisor AI" withCloseButton={false} styles={{ body: { height: 'calc(100dvh - 60px)', padding: 0 } }} trapFocus returnFocus>{content}</Drawer>
   </>;
 }

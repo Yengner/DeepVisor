@@ -1,12 +1,12 @@
 .modalContent {
   overflow: hidden;
-  border: 1px solid rgba(8, 45, 86, 0.16);
+  border: 1px solid var(--platform-card-border);
 }
 
 .modalHeader {
   min-height: 66px;
   padding: 14px 18px;
-  border-bottom: 1px solid rgba(8, 45, 86, 0.12);
+  border-bottom: 1px solid var(--platform-card-border);
 }
 
 .modalBody {
@@ -29,7 +29,7 @@
 }
 
 .sourcePanel {
-  background: #f5f7f9;
+  background: var(--dv-surface-muted);
 }
 
 .sourceTitle {
@@ -42,7 +42,7 @@
   gap: 10px;
   margin-top: 14px;
   padding-top: 14px;
-  border-top: 1px solid rgba(8, 45, 86, 0.12);
+  border-top: 1px solid var(--platform-card-border);
 }
 
 .metricGrid > div {
@@ -55,9 +55,9 @@
   justify-content: space-between;
   gap: 14px;
   padding: 11px 12px;
-  border: 1px solid rgba(8, 45, 86, 0.12);
+  border: 1px solid var(--platform-card-border);
   border-radius: var(--dv-radius-sm);
-  background: #ffffff;
+  background: var(--dv-surface);
 }
 
 .section,
@@ -71,7 +71,7 @@
 .section + .section,
 .reviewSection {
   padding-top: 18px;
-  border-top: 1px solid rgba(8, 45, 86, 0.12);
+  border-top: 1px solid var(--platform-card-border);
 }
 
 .sectionHeading {
@@ -91,7 +91,7 @@
   align-items: start;
   gap: 16px;
   padding: 9px 0;
-  border-bottom: 1px solid rgba(8, 45, 86, 0.08);
+  border-bottom: 1px solid var(--platform-card-border);
 }
 
 .reviewRow:last-child {
@@ -108,8 +108,8 @@
   gap: 16px;
   flex: 0 0 auto;
   padding: 13px 18px calc(13px + env(safe-area-inset-bottom));
-  border-top: 1px solid rgba(8, 45, 86, 0.14);
-  background: rgba(255, 255, 255, 0.98);
+  border-top: 1px solid var(--platform-card-border);
+  background: var(--dv-surface);
 }
 
 .footerCopy {

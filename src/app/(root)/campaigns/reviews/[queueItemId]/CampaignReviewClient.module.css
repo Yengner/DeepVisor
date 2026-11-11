@@ -1,14 +1,10 @@
 .page {
-  --dv-border: #d3d7dd;
-  --dv-border-strong: #a6aeb9;
-  --dv-muted: #57616f;
   --dv-signal: var(--dv-primary-strong);
-  --dv-coral: #e76156;
   --dv-lime: var(--dv-highlight);
   width: 100%;
   min-height: calc(100vh - 7rem);
   padding: 20px;
-  color: var(--dv-ink);
+  color: var(--dv-text);
   background: var(--dv-canvas);
 }
 
@@ -24,7 +20,7 @@
 .page :global(.mantine-Paper-root) {
   border: 1px solid var(--dv-border) !important;
   border-radius: var(--dv-radius-sm);
-  background: #ffffff;
+  background: var(--dv-surface);
   box-shadow: none !important;
 }
 
@@ -47,8 +43,8 @@
 
 .page :global(.mantine-Button-root[data-variant='default']) {
   border: 1px solid var(--dv-border-strong);
-  color: var(--dv-ink);
-  background: #ffffff;
+  color: var(--dv-text);
+  background: var(--dv-surface);
 }
 
 .page :global(.mantine-Button-root[data-variant='light']) {
@@ -97,27 +93,27 @@
 }
 
 .hero :global(.mantine-Badge-root) {
-  border: 1px solid #434b55;
-  color: #e6e9ec;
-  background: #25292e;
+  border: 1px solid var(--chrome-border);
+  color: var(--chrome-text);
+  background: var(--chrome-panel);
 }
 
 .hero :global(.mantine-Badge-root):first-child {
   border-color: rgba(168, 212, 255, 0.52);
-  color: var(--dv-ink);
+  color: var(--dv-text);
   background: var(--dv-lime);
 }
 
 .hero :global(.mantine-Button-root[data-variant='filled']) {
   border-color: var(--dv-lime);
-  color: var(--dv-ink);
+  color: var(--dv-text);
   background: var(--dv-lime);
 }
 
 .hero :global(.mantine-Button-root[data-variant='default']) {
   border-color: var(--dv-text-muted);
   color: #ffffff;
-  background: #282d34;
+  background: var(--chrome-panel);
 }
 
 .summaryCard {
@@ -145,7 +141,7 @@
   padding: 12px;
   border: 1px solid var(--dv-border);
   border-radius: var(--dv-radius-sm);
-  background: #f5f7f9;
+  background: var(--dv-surface-muted);
 }
 
 .mobileMetricGrid {
@@ -160,12 +156,12 @@
   padding: 10px;
   border: 1px solid var(--dv-border);
   border-radius: var(--dv-radius-sm);
-  background: #ffffff;
+  background: var(--dv-surface);
 }
 
 .insightSummaryCard {
   height: 100%;
-  background: #f5f7f9 !important;
+  background: var(--dv-surface-muted) !important;
 }
 
 .insightDetails {
@@ -186,22 +182,22 @@
 .insightDetails :global(.mantine-Accordion-item) {
   border-color: var(--dv-border);
   border-radius: var(--dv-radius-sm);
-  background: #ffffff;
+  background: var(--dv-surface);
 }
 
 .rankingSurface :global(.mantine-Table-th) {
   padding-top: 9px;
   padding-bottom: 9px;
   border-bottom: 1px solid var(--dv-border-strong);
-  color: #464e58;
-  background: #edf0f3;
+  color: var(--dv-text-muted);
+  background: var(--dv-surface-muted);
   font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .rankingSurface :global(.mantine-Table-td) {
-  border-bottom: 1px solid #e0e3e8;
+  border-bottom: 1px solid var(--dv-border);
   font-variant-numeric: tabular-nums;
 }
 

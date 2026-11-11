@@ -131,14 +131,14 @@ export default function MetaCampaignFlowPreview({
 
     if (!campaign || !campaign.values) {
         return (
-            <div style={{ textAlign: "center", color: "#888", padding: 32 }}>
+            <div style={{ textAlign: "center", color: "var(--dv-text-muted)", padding: 32 }}>
                 <b>Fill out campaign details to see a live preview</b>
             </div>
         );
     }
 
     return (
-        <div style={{ width: "100%", height: 340, background: "#f4f7fc", borderRadius: 8 }}>
+        <div style={{ width: "100%", height: 340, background: "var(--dv-canvas)", borderRadius: 8 }}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -152,7 +152,7 @@ export default function MetaCampaignFlowPreview({
                 elementsSelectable={false}
                 proOptions={{ hideAttribution: true }}
             >
-                <Background color="#e0e7ef" gap={24} />
+                <Background color="var(--dv-border)" gap={24} />
             </ReactFlow>
         </div>
     );

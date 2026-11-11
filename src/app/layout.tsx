@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import "@mantine/core/styles.css";
-import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from "@mantine/core";
+import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
 import { Manrope, Sora } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import PendingAuthToast from "@/components/ui/toasts/PendingAuthToast";
 import FirstSyncTracker from "@/components/integrations/FirstSyncTracker";
-import { deepVisorTheme } from "@/theme";
+import AppMantineProvider from "@/components/providers/AppMantineProvider";
 import "../globals.css";
 
 const bodyFont = Manrope({
@@ -44,12 +44,12 @@ export default function MainLayout({
         <ColorSchemeScript />
       </head>
       <body className={`${bodyFont.variable} ${displayFont.variable}`}>
-        <MantineProvider theme={deepVisorTheme} defaultColorScheme="light">
+        <AppMantineProvider>
           <Toaster />
           <PendingAuthToast />
           <FirstSyncTracker />
           {children}
-        </MantineProvider>
+        </AppMantineProvider>
       </body>
     </html>
   );

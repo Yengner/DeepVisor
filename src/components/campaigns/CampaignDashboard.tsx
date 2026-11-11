@@ -512,38 +512,19 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
           <div className={classes.tableHeader}>
             <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
               <div className={classes.titleBlock}>
-                <Group gap="xs" wrap="wrap">
-                  <Badge variant="light" className="app-platform-page-badge">
-                    Campaigns
-                  </Badge>
-                  <Badge color={platformColor} variant="light">
-                    {platform.name}
-                  </Badge>
-                  <Badge color="gray" variant="outline">
-                    {accountName}
-                  </Badge>
-                </Group>
-
-                <Title order={1} size="h2" mt={6} className={classes.title}>
+                <Title order={1} className={classes.title}>
                   Campaigns
                 </Title>
-                <Group gap="xs" mt={8} wrap="wrap">
-                  <Badge color="green" variant="light">
-                    {props.deliveryState.available ? accountSummary.activeCampaigns : '—'} with active ads
-                  </Badge>
-                  <Badge color="gray" variant="light">
-                    {props.deliveryState.available ? accountSummary.pausedCampaigns : '—'} without active ads
-                  </Badge>
-                  <Badge color="gray" variant="light">
-                    {accountSummary.spend === null ? '—' : formatCurrencyAmount(accountSummary.spend, currencyCode)} spend
-                  </Badge>
-                  <Badge color="gray" variant="light">
-                    {formatCompactNumber(accountSummary.totalResults)} results
-                  </Badge>
-                  <Badge color="gray" variant="light">
-                    {accountSummary.costPerResult === null ? '—' : formatCurrencyAmount(accountSummary.costPerResult, currencyCode)} / result
-                  </Badge>
-                </Group>
+                <Text className={classes.subtitle}>
+                  <span className={classes.platformName}>{platform.name}</span> · {accountName}
+                </Text>
+                <dl className={classes.summary} aria-label="Account summary">
+                  <div><dt>Spend</dt><dd>{accountSummary.spend === null ? '—' : formatCurrencyAmount(accountSummary.spend, currencyCode)}</dd></div>
+                  <div><dt>Results</dt><dd>{formatCompactNumber(accountSummary.totalResults)}</dd></div>
+                  <div><dt>Cost / result</dt><dd>{accountSummary.costPerResult === null ? '—' : formatCurrencyAmount(accountSummary.costPerResult, currencyCode)}</dd></div>
+                  <div><dt>With active ads</dt><dd>{props.deliveryState.available ? accountSummary.activeCampaigns : '—'}</dd></div>
+                  <div><dt>Without active ads</dt><dd>{props.deliveryState.available ? accountSummary.pausedCampaigns : '—'}</dd></div>
+                </dl>
               </div>
 
               <Group gap="sm" wrap="wrap" className={classes.actionGroup}>

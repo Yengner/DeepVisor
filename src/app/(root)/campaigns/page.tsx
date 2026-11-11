@@ -170,7 +170,6 @@ export default async function CampaignPage({
 
   return (
     <>
-      <div style={{}}></div>
       <Suspense fallback={<CampaignClientFallback />}>
         <CampaignDashboard
           campaigns={allCampaigns}

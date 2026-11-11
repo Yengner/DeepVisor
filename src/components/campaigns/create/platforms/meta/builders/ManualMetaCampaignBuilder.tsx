@@ -78,7 +78,7 @@ export default function ManualMetaCampaignBuilder({ platformData, adAccountId, d
                     }}
                     styles={{
                         content: { padding: 0, minHeight: 420, minWidth: 700 },
-                        header: { borderBottom: '1px solid #eee' },
+                        header: { borderBottom: '1px solid var(--dv-border)' },
                     }}
                 >
                     <div style={{ padding: 24 }}>

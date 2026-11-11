@@ -273,7 +273,7 @@ export default async function CampaignReportPage({
                 minHeight: 640,
                 border: 0,
                 borderRadius: 4,
-                background: '#f4f7fc',
+                background: 'var(--dv-canvas)',
               }}
             />
           </Card>

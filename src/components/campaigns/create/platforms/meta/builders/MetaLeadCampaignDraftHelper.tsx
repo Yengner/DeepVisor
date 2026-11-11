@@ -539,8 +539,8 @@ function LeadEstimateChart({
   return (
     <Box>
       <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} role="img" aria-label="Estimated leads by budget">
-        <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="var(--mantine-color-gray-3)" />
-        <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="var(--mantine-color-gray-3)" />
+        <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="var(--dv-border)" />
+        <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="var(--dv-border)" />
         <path d={path} fill="none" stroke="var(--mantine-color-blue-6)" strokeWidth="3" strokeLinecap="round" />
         {points.map((point) => {
           const x = padding + ((point.budget - minBudget) / Math.max(maxBudget - minBudget, 1)) * usableWidth;
@@ -601,7 +601,7 @@ function CreativeAdPreview({
   const showVideoPreview = Boolean(previewUrl && uploadedFile && isMetaVideoFile(uploadedFile) && !previewFailed);
 
   return (
-    <Paper withBorder radius="md" p="sm" bg="gray.0" h={fullHeight ? '100%' : undefined}>
+    <Paper withBorder radius="md" p="sm" bg="var(--dv-surface-muted)" h={fullHeight ? '100%' : undefined}>
       <Stack gap="xs" h={fullHeight ? '100%' : undefined}>
         <Group gap="xs" align="center">
           <Box
@@ -609,7 +609,7 @@ function CreativeAdPreview({
             h={28}
             style={{
               borderRadius: '50%',
-              background: '#0065fc',
+              background: 'var(--dv-primary)',
             }}
           />
           <div>
@@ -632,7 +632,7 @@ function CreativeAdPreview({
           style={{
             borderRadius: 8,
             overflow: 'hidden',
-            border: '1px solid var(--mantine-color-gray-3)',
+            border: '1px solid var(--dv-border)',
             background: 'white',
             display: 'flex',
             flex: fullHeight ? 1 : undefined,
@@ -1758,7 +1758,7 @@ export default function MetaLeadCampaignDraftHelper({
 
   function renderLeadMethodSetup() {
     return (
-      <Paper withBorder radius="lg" p="md" bg={state.leadMethod === 'messages' ? 'green.0' : undefined}>
+      <Paper withBorder radius="lg" p="md" bg={state.leadMethod === 'messages' ? 'var(--dv-success-soft)' : undefined}>
         <Stack gap="md">
           <Group gap="sm">
             <ThemeIcon color={state.leadMethod === 'messages' ? 'green' : 'blue'} variant="light" radius="xl">
@@ -1934,7 +1934,7 @@ export default function MetaLeadCampaignDraftHelper({
                       }}
                     />
                     {selectedWhatsAppPhoneNumber ? (
-                      <Paper withBorder radius="md" p="sm" bg="green.0">
+                      <Paper withBorder radius="md" p="sm" bg="var(--dv-success-soft)">
                         <Group justify="space-between" gap="sm" align="center" wrap="nowrap">
                           <Group gap="sm" wrap="nowrap">
                             <Avatar
@@ -2044,7 +2044,7 @@ export default function MetaLeadCampaignDraftHelper({
             </Badge>
             <Title order={1}>{state.reuseSource ? 'Review run-again draft' : 'Create a lead campaign'}</Title>
           </Stack>
-          <Badge size="lg" variant="outline" color="gray">
+          <Badge size="lg" variant="outline" color="gray" c="var(--chrome-text)" bd="1px solid var(--chrome-muted)">
             Draft review only
           </Badge>
         </Group>
@@ -2200,7 +2200,7 @@ export default function MetaLeadCampaignDraftHelper({
                               withBorder
                               radius="lg"
                               p="md"
-                              bg="yellow.0"
+                              bg="var(--dv-gap-bg)"
                               style={{
                                 borderColor: 'var(--mantine-color-yellow-6)',
                                 boxShadow: '0 12px 28px rgba(245, 159, 0, 0.14)',
@@ -2268,7 +2268,7 @@ export default function MetaLeadCampaignDraftHelper({
                               withBorder
                               radius="md"
                               p="sm"
-                              bg={selectedCampaign.isBest ? 'yellow.0' : 'gray.0'}
+                              bg={selectedCampaign.isBest ? 'var(--dv-gap-bg)' : 'gray.0'}
                               style={{
                                 borderColor: selectedCampaign.isBest ? 'var(--mantine-color-yellow-5)' : undefined,
                               }}
@@ -2312,7 +2312,7 @@ export default function MetaLeadCampaignDraftHelper({
                                   withBorder
                                   radius="md"
                                   p="sm"
-                                  bg={selectedAdSet.isBest ? 'yellow.0' : 'gray.0'}
+                                  bg={selectedAdSet.isBest ? 'var(--dv-gap-bg)' : 'gray.0'}
                                   style={{
                                     borderColor: selectedAdSet.isBest ? 'var(--mantine-color-yellow-5)' : undefined,
                                   }}
@@ -2452,7 +2452,7 @@ export default function MetaLeadCampaignDraftHelper({
                     }}
                   />
 
-                  <Paper withBorder radius="md" p="sm" bg={selectedInstagramLabel ? 'pink.0' : 'gray.0'}>
+                  <Paper withBorder radius="md" p="sm" bg={selectedInstagramLabel ? 'pink.0' : 'var(--dv-surface-muted)'}>
                     <Group gap="sm" wrap="nowrap" align="center">
                       {selectedInstagramLabel ? (
                         <Avatar
@@ -2590,7 +2590,7 @@ export default function MetaLeadCampaignDraftHelper({
                                 <summary style={{ cursor: 'pointer', fontWeight: 700 }}>
                                   Advanced targeting
                                 </summary>
-                                <Paper withBorder radius="md" p="md" mt="sm" bg="gray.0">
+                                <Paper withBorder radius="md" p="md" mt="sm" bg="var(--dv-surface-muted)">
                                   <Grid gutter="md">
                                     <Grid.Col span={{ base: 6, md: 3 }}>
                                       <NumberInput
@@ -2803,7 +2803,7 @@ export default function MetaLeadCampaignDraftHelper({
                       clearable={false}
                       required
                     />
-                    <Paper withBorder radius="md" p="md" bg="green.0">
+                    <Paper withBorder radius="md" p="md" bg="var(--dv-success-soft)">
                       <Text fw={800}>
                         {dailyEquivalent
                           ? `${formatMoney(dailyEquivalent.amount, currencyCode)}/day equivalent`
@@ -2840,11 +2840,11 @@ export default function MetaLeadCampaignDraftHelper({
                           <Stack gap="sm" mt="sm">
                             <LeadEstimateChart points={leadEstimate.points} currencyCode={currencyCode} />
                             <SimpleGrid cols={2} spacing="xs">
-                              <Paper withBorder radius="sm" p="xs" bg="gray.0">
+                              <Paper withBorder radius="sm" p="xs" bg="var(--dv-surface-muted)">
                                 <Text size="xs" c="dimmed">Modeled cost</Text>
                                 <Text size="sm" fw={800}>{formatMoney(leadEstimate.costPerOutcome, currencyCode)}</Text>
                               </Paper>
-                              <Paper withBorder radius="sm" p="xs" bg="gray.0">
+                              <Paper withBorder radius="sm" p="xs" bg="var(--dv-surface-muted)">
                                 <Text size="xs" c="dimmed">Data source</Text>
                                 <Text size="sm" fw={800} lineClamp={1}>
                                   {leadEstimate.sourceLabel}

@@ -19,7 +19,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--dv-surface);
 }
 
 .feedback {
@@ -38,7 +38,7 @@
   flex: 0 0 auto;
   padding: 16px 18px 14px;
   border-bottom: 1px solid var(--platform-border);
-  background: #ffffff;
+  background: var(--dv-surface);
 }
 
 .titleBlock {
@@ -46,8 +46,59 @@
 }
 
 .title {
-  color: var(--platform-text-strong);
-  letter-spacing: 0;
+  margin: 0;
+  color: var(--dv-text);
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -.03em;
+}
+
+.subtitle {
+  margin-top: 4px;
+  color: var(--dv-text-muted);
+  font-size: var(--dv-text-sm);
+}
+
+.platformName {
+  text-transform: capitalize;
+}
+
+/* Compact account summary, matching Overview's KPI hierarchy without displacing the table. */
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0 0;
+}
+
+.summary > div {
+  min-width: 128px;
+  padding: 10px 14px;
+  border: 1px solid var(--dv-card-border);
+  border-radius: var(--dv-radius-md);
+  background: var(--dv-surface);
+}
+
+.summary dt {
+  color: var(--dv-text-muted);
+  font-size: var(--dv-text-xs);
+  font-weight: 500;
+}
+
+.summary dd {
+  margin: 2px 0 0;
+  color: var(--dv-text);
+  font-size: var(--dv-text-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+
+@media (max-width: 760px) {
+  .summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .summary > div { min-width: 0; }
 }
 
 .actionGroup {
@@ -107,11 +158,11 @@
   width: 100%;
   min-width: 0;
   padding: 14px;
-  border: 1px solid rgba(8, 45, 86, 0.12);
+  border: 1px solid var(--platform-card-border);
   border-radius: var(--dv-radius-md);
-  background: #ffffff;
+  background: var(--dv-surface);
   text-align: left;
-  box-shadow: 0 8px 22px rgba(8, 45, 86, 0.04);
+  box-shadow: var(--platform-card-shadow);
 }
 
 .mobileEntityCard[data-selected='true'] {
@@ -130,7 +181,7 @@
   gap: 10px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid rgba(8, 45, 86, 0.12);
+  border-top: 1px solid var(--platform-card-border);
 }
 
 .mobileActivity {

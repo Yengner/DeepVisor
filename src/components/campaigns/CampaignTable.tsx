@@ -35,8 +35,8 @@ interface CampaignTableProps {
   fillHeight?: boolean;
 }
 
-const BG = 'var(--mantine-color-body)';
-const BORDER = 'var(--mantine-color-gray-3)';
+const BG = 'var(--dv-surface)';
+const BORDER = 'var(--dv-border)';
 const Z_HEADER = 2;
 const Z_STICKY_RIGHT = 4;
 const RIGHT_COL_WIDTH = 24;
@@ -132,15 +132,15 @@ export default function CampaignTable({
 
                 <div className={classes.mobileMetricGrid}>
                   <div>
-                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
+                    <Text size="var(--dv-text-2xs)" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
                     <Text fw={800}>{campaign.metricsAvailable === false ? '—' : formatCurrencyAmount(campaign.spend, currencyCode)}</Text>
                   </div>
                   <div>
-                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Results</Text>
+                    <Text size="var(--dv-text-2xs)" c="dimmed" tt="uppercase" fw={800}>Results</Text>
                     <Text fw={800}>{campaign.results}</Text>
                   </div>
                   <div>
-                    <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
+                    <Text size="var(--dv-text-2xs)" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
                     <Text fw={800}>
                       {campaign.costPerResult === null ? '—' : formatCurrencyAmount(campaign.costPerResult, currencyCode)}
                     </Text>
@@ -237,8 +237,8 @@ export default function CampaignTable({
           ) : (
             campaigns.map((campaign) => {
               const selected = selectedCampaignId === campaign.id;
-              const rowBg = selected ? `var(--mantine-color-${platformColor}-1)` : 'transparent';
-              const stickyCellBg = selected ? `var(--mantine-color-${platformColor}-1)` : BG;
+              const rowBg = selected ? 'var(--dv-primary-soft-hover)' : 'transparent';
+              const stickyCellBg = selected ? 'var(--dv-primary-soft-hover)' : BG;
               const reportHref = buildEntityReportUrl({
                 scope: 'campaign',
                 platformIntegrationId,

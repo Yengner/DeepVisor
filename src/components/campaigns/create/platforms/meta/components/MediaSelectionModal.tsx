@@ -152,7 +152,7 @@ function StatsGrid({
       {items.map((item) => {
         const Icon = item.icon;
         return (
-          <Paper key={item.label} withBorder radius="md" p="xs" bg="gray.0">
+          <Paper key={item.label} withBorder radius="md" p="xs" bg="var(--dv-surface-muted)">
             <Group gap={5} wrap="nowrap">
               <Icon size={13} color="var(--mantine-color-blue-6)" />
               <Text size="10px" c="dimmed" tt="uppercase" fw={800} style={{ letterSpacing: 0.3 }}>
@@ -188,9 +188,9 @@ function CreativeCard({
       onClick={onClick}
       style={{
         cursor: 'pointer',
-        borderColor: selected ? 'var(--mantine-color-blue-6)' : 'var(--mantine-color-gray-2)',
+        borderColor: selected ? 'var(--mantine-color-blue-6)' : 'var(--dv-border)',
         borderWidth: selected ? 2 : 1,
-        background: selected ? 'var(--mantine-color-blue-0)' : 'white',
+        background: selected ? 'var(--dv-primary-soft)' : 'white',
       }}
     >
       <Stack gap="xs">
@@ -459,7 +459,7 @@ export default function MediaSelectionModal({
           </ScrollArea>
         </Stack>
 
-        <Paper withBorder radius="xl" p="md" bg="gray.0" style={{ minHeight: 0 }}>
+        <Paper withBorder radius="xl" p="md" bg="var(--dv-surface-muted)" style={{ minHeight: 0 }}>
           {selectedCreative ? (
             <Stack gap="md" h="100%">
               <Group justify="space-between" align="flex-start" gap="sm">
@@ -507,7 +507,7 @@ export default function MediaSelectionModal({
                       width: '100%',
                       height: '100%',
                       minHeight: 430,
-                      border: '1px solid var(--mantine-color-gray-2)',
+                      border: '1px solid var(--dv-border)',
                       borderRadius: 8,
                       overflow: 'hidden',
                       background: 'white',
@@ -520,7 +520,7 @@ export default function MediaSelectionModal({
                     h="100%"
                     mih={430}
                     style={{
-                      border: '1px solid var(--mantine-color-gray-2)',
+                      border: '1px solid var(--dv-border)',
                       borderRadius: 8,
                       overflow: 'hidden',
                       background: 'white',
@@ -596,7 +596,7 @@ export default function MediaSelectionModal({
           bottom: 0,
           padding: '14px 18px',
           background: 'white',
-          borderTop: '1px solid var(--mantine-color-gray-2)',
+          borderTop: '1px solid var(--dv-border)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',

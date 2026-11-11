@@ -151,7 +151,7 @@ export default function CreativeAssetsStep({
                                         withBorder
                                         p="md"
                                         radius="md"
-                                        bg={creative.contentSource === 'upload' ? 'blue.0' : undefined}
+                                        bg={creative.contentSource === 'upload' ? 'var(--dv-primary-soft)' : undefined}
                                         style={{
                                             cursor: 'pointer',
                                             borderColor: creative.contentSource === 'upload' ? 'var(--mantine-color-blue-6)' : undefined
@@ -173,7 +173,7 @@ export default function CreativeAssetsStep({
                                         withBorder
                                         p="md"
                                         radius="md"
-                                        bg={creative.contentSource === 'existing' ? 'blue.0' : undefined}
+                                        bg={creative.contentSource === 'existing' ? 'var(--dv-primary-soft)' : undefined}
                                         style={{
                                             cursor: 'pointer',
                                             borderColor: creative.contentSource === 'existing' ? 'var(--mantine-color-blue-6)' : undefined
@@ -197,7 +197,7 @@ export default function CreativeAssetsStep({
                                         withBorder
                                         p="md"
                                         radius="md"
-                                        bg={creative.contentSource === 'auto' ? 'blue.0' : undefined}
+                                        bg={creative.contentSource === 'auto' ? 'var(--dv-primary-soft)' : undefined}
                                         style={{
                                             cursor: 'pointer',
                                             borderColor: creative.contentSource === 'auto' ? 'var(--mantine-color-blue-6)' : undefined
@@ -342,7 +342,7 @@ export default function CreativeAssetsStep({
                                         }
                                     />
                                 </Center>
-                                <Paper p="md" withBorder radius="md" bg="blue.0" shadow="xs">
+                                <Paper p="md" withBorder radius="md" bg="var(--dv-primary-soft)" shadow="xs">
                                     <Stack gap="sm">
                                         <Title order={5}>How AI Content Selection Works:</Title>
 
@@ -477,7 +477,7 @@ export default function CreativeAssetsStep({
                                                     className="creative-preview"
                                                     dangerouslySetInnerHTML={{ __html: previewHtml }}
                                                     style={{
-                                                        border: '1px solid #eee',
+                                                        border: '1px solid var(--dv-border)',
                                                         borderRadius: '8px',
                                                         overflow: 'hidden',
                                                         width: '100%',

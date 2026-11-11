@@ -120,7 +120,7 @@ function StatCard({
   icon: any;
 }) {
   return (
-    <Card withBorder radius="md" p="md" style={{ borderColor: 'var(--mantine-color-gray-3)' }}>
+    <Card withBorder radius="md" p="md" style={{ borderColor: 'var(--dv-border)' }}>
       <Group justify="space-between" mb="xs">
         <Group gap="xs">
           <ThemeIcon size="md" radius="md" color={color} variant="light">

@@ -48,7 +48,7 @@ export default function ObjectiveStep({
                                         withBorder
                                         p="md"
                                         radius="md"
-                                        bg={form.values.campaign.objective === value ? 'blue.0' : undefined}
+                                        bg={form.values.campaign.objective === value ? 'var(--dv-primary-soft)' : undefined}
                                         style={{
                                             borderColor: form.values.campaign.objective === value ? 'var(--mantine-color-blue-6)' : undefined,
                                             borderWidth: form.values.campaign.objective === value ? 2 : 1,
@@ -172,7 +172,7 @@ export default function ObjectiveStep({
 
                 {/* Additional info for smart campaigns */}
                 {isFast && (
-                    <Paper withBorder p="md" radius="md" bg="green.0" mt="md">
+                    <Paper withBorder p="md" radius="md" bg="var(--dv-success-soft)" mt="md">
                         <Group>
                             <ThemeIcon color="green" variant="light" size="lg" radius="xl">
                                 <IconCheckbox size={20} />
@@ -215,7 +215,7 @@ function ObjectiveDetails({
                         position: 'absolute',
                         top: 0,
                         right: 0,
-                        backgroundColor: 'var(--mantine-color-blue-0)',
+                        backgroundColor: 'var(--dv-primary-soft)',
                         borderRadius: '50%',
                         padding: '10px',
                         width: 80,

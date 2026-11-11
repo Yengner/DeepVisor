@@ -94,6 +94,10 @@
     --dv-card-border: #c3cbd9;
     --dv-card-panel: #ffffff;
     --dv-card-inset: #f2f4f8;
+    --dv-info-soft: #edf1f7;
+    --dv-info-text: #3b566f;
+    --dv-neutral-soft: #edeef0;
+    --dv-neutral-text: #4e5763;
 
     /* Type and radius scales. 11px is the floor for chart axes and labels; body text is 12px or larger. */
     --dv-text-2xs: 11px;
@@ -137,7 +141,34 @@
     --platform-source-soft: rgba(110, 107, 244, 0.12);
   }
 
+  /* Dark values reuse DesignSurface's dark palette so all surfaces agree. */
   :root[data-mantine-color-scheme='dark'] {
+    --dv-canvas: #09172a;
+    --dv-surface: #10233c;
+    --dv-surface-muted: #172e49;
+    --dv-border: #2a4361;
+    --dv-border-strong: #3a5677;
+    --dv-input-border: #6d88aa;
+    --dv-input-border-hover: #8aa3c2;
+    --dv-text: #edf4ff;
+    --dv-text-muted: #afc1d8;
+    --dv-primary-strong: #91bbff;
+    --dv-primary-deep: #b8d4ff;
+    --dv-primary-soft: #17365d;
+    --dv-primary-soft-hover: #1d4271;
+    --dv-success: #8cdeb3;
+    --dv-success-soft: #163c30;
+    --dv-info-soft: #1b3150;
+    --dv-info-text: #c3d4ea;
+    --dv-neutral-soft: #22344c;
+    --dv-neutral-text: #c9d4e3;
+    --dv-agent-soft: #232a52;
+    --platform-accent-soft: rgba(0, 101, 252, 0.22);
+    --platform-accent-soft-strong: rgba(0, 101, 252, 0.32);
+    --platform-border: rgba(175, 193, 216, 0.16);
+    --platform-border-strong: rgba(145, 187, 255, 0.4);
+    --platform-card-border: rgba(175, 193, 216, 0.16);
+    --platform-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     --dv-status-navy: #2b3f66;
     --dv-status-navy-line: #9fb4dc;
     --dv-urgent-text: #ffb9b2;
@@ -273,7 +304,7 @@
   .mantine-Select-input,
   .mantine-Textarea-input {
     border-color: var(--dv-input-border);
-    background: #fff;
+    background: var(--dv-surface);
   }
 
   .mantine-Input-input:hover,
@@ -390,7 +421,7 @@
   .app-platform-page-action-secondary,
   .app-platform-page-action-icon {
     color: var(--dv-text) !important;
-    background: #fff !important;
+    background: var(--dv-surface) !important;
     border: 1px solid var(--dv-border-strong) !important;
   }
 
@@ -612,7 +643,6 @@
     .app-platform-main:has(.dashboard-page-shell),
     .app-platform-main:has(.reports-page-shell),
     .app-platform-main:has(.campaigns-page-shell) {
-      /* Clears the mobile nav and the fixed "Ask DeepVisor" launcher (Assistant.module.css). */
       padding: 0.5rem 0 calc(9rem + env(safe-area-inset-bottom));
     }
 
