@@ -18,7 +18,7 @@ insufficient-data results remain explicit states.
 - [Workflow traces](docs/FLOWS.md): connection/sync, intelligence, decisions, execution, organizer and Agency.
 - [Development guide](docs/DEVELOPMENT_GUIDE.md): setup, conventions, tests and migrations.
 - [Architecture audit](docs/ARCHITECTURE_AUDIT.md): improvements, retained debt and verification scope.
-- [AGENTS.md](AGENTS.md): operational instructions for engineers and coding agents.
+- [AGENTS.md](AGENTS.md): shared operational instructions and agent roles; [CLAUDE.md](CLAUDE.md) (lead engineer) and the [Codex release-review skill](.agents/skills/deepvisor-release-review/SKILL.md) (review, docs, Jira).
 
 The handbook provides navigation; module READMEs linked from it own detailed
 provider, execution and reconciliation contracts. Historical deployment notes do
