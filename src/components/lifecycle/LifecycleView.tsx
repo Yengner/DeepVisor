@@ -15,7 +15,7 @@ export function LifecycleReport({id}:{id:string}){
  const date=(at:string)=>new Intl.DateTimeFormat('en',{dateStyle:'medium',timeStyle:'short',timeZone:data.timezone}).format(new Date(at));
  const peak=Math.max(1,...data.days.map(d=>d.spend??0));
  return <Stack gap="lg">
-  <Group><SpiderMascot state="idle" size={48}/><div><Badge variant="light">{data.provenance==='reconstructed'?'Reconstructed interruption':'Meta lifecycle update'}</Badge><Title order={2} size="h3" mt={8}>{data.title}</Title></div></Group>
+  <Group><SpiderMascot state="idle" size={64}/><div><Badge variant="light">{data.provenance==='reconstructed'?'Reconstructed interruption':'Meta lifecycle update'}</Badge><Title order={2} size="h3" mt={8}>{data.title}</Title></div></Group>
   {data.media?.length>0&&<Group>{data.media.slice(0,4).map((m,i)=>m.image?<Image key={i} src={m.image} alt={m.name} width={160} height={160} unoptimized style={{objectFit:'contain',borderRadius:12,maxWidth:'40%'}} onError={e=>{e.currentTarget.style.display='none';}}/>:null)}</Group>}
   <Text size="lg">{data.explanation}</Text>
   <Text size="sm" c="dimmed">Observed {date(data.observedAt)} · {data.affected.length} affected ad{data.affected.length===1?'':'s'}</Text>

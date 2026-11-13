@@ -1,7 +1,8 @@
 "use client";
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { IconArrowUpRight } from "@tabler/icons-react";
+import { IconArrowUpRight, IconSparkles } from "@tabler/icons-react";
+import { askDeepVisor } from "@/lib/shared/assistant/askEvent";
 import type {
   ExplorationView,
   Summary,
@@ -11,10 +12,13 @@ import {
   MediaImage,
 } from "@/components/campaigns/exploration/AdvertisingExplorer";
 import StatusBadge from "@/components/product/StatusBadge";
+import { LiveIndicator } from "@/components/design/LiveIndicator";
+import AdSignals from "./AdSignals";
+import type { AdSignals as AdSignalsData } from "@/lib/server/dashboard/insights/signals";
 import { metricValue, MetricDelta } from "./ControlMetrics";
 import classes from "./ControlCenter.module.css";
 
-export default function AdvertisingBoard({ view, learning = {}, filtered = false }: { view: ExplorationView; learning?: Record<string, string>; filtered?: boolean }) {
+export default function AdvertisingBoard({ view, learning = {}, signals = {}, filtered = false }: { view: ExplorationView; learning?: Record<string, string>; signals?: Record<string, AdSignalsData>; filtered?: boolean }) {
   const [selected, setSelected] = useState<string | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const active = (
@@ -29,6 +33,11 @@ export default function AdvertisingBoard({ view, learning = {}, filtered = false
       : view.period === "7d"
         ? "7 days"
         : "30 days";
+  function open(id: string, from: HTMLButtonElement) {
+    if (filtered) return;
+    trigger.current = from;
+    setSelected(id);
+  }
   function card(item: Summary, prominent = false, activeArea = false) {
     const label = prominent
       ? (view.board?.activeFeaturedLabel ?? "Active now")
@@ -42,18 +51,10 @@ export default function AdvertisingBoard({ view, learning = {}, filtered = false
     const hasData =
       item.metrics.results !== null && item.metrics.spend !== null;
     return (
-      <button
-        type="button"
+      <article
         key={item.id}
         className={`${classes.adCard} ${prominent ? classes.featured : ""}`}
-        onClick={(event) => {
-          if (filtered) return;
-          trigger.current = event.currentTarget;
-          setSelected(item.id);
-        }}
-        aria-disabled={filtered}
-        title={filtered ? "Detailed explorer shows combined stored Meta history. Open Campaigns to inspect it." : "Open saved combined Meta history"}
-        aria-label={`Explore ad set ${item.name}`}
+        aria-labelledby={`ad-${item.id}`}
       >
         <div className={classes.adMedia}>
           <MediaImage
@@ -63,13 +64,45 @@ export default function AdvertisingBoard({ view, learning = {}, filtered = false
             dashboard
           />
           {label && <span className={classes.featureLabel}>{label}</span>}
-          <span className={classes.openCreative}>
+          <span className={classes.openCreative} aria-hidden="true">
             <IconArrowUpRight size={18} />
           </span>
         </div>
         <div className={classes.adBody}>
-          <h3>{item.name}</h3>
-          {hasData ? (
+          <h3>
+            {/* Stretched control: the whole card opens details, but only the name is announced. */}
+            <button
+              type="button"
+              id={`ad-${item.id}`}
+              className={classes.cardOpen}
+              aria-disabled={filtered}
+              title={filtered ? "Detailed history uses combined Meta data. Switch to All Meta to open it." : undefined}
+              onClick={(event) => open(item.id, event.currentTarget)}
+            >
+              {item.name}
+            </button>
+          </h3>
+          {prominent && hasData ? (
+            <>
+              <dl className={classes.statGrid}>
+                {(["results", "costPerResult", "spend", "ctr"] as const).map((key) => (
+                  <div key={key}>
+                    <dt>{key === "results" ? "Results" : key === "costPerResult" ? "Cost / result" : key === "spend" ? "Spend" : "CTR"}</dt>
+                    <dd>{metricValue(key, item.metrics[key], view.currency, true)}</dd>
+                    {(key === "results" || key === "costPerResult") && (
+                      <MetricDelta change={item.deltas[key]} description={view.comparison} />
+                    )}
+                  </div>
+                ))}
+              </dl>
+              <p className={classes.supportMetrics}>
+                {[
+                  item.metrics.clicks !== null ? `${new Intl.NumberFormat("en").format(item.metrics.clicks)} clicks` : null,
+                  item.metrics.impressions !== null ? `${new Intl.NumberFormat("en").format(item.metrics.impressions)} impressions` : null,
+                ].filter(Boolean).join(" · ")}
+              </p>
+            </>
+          ) : hasData ? (
             <dl className={classes.adMetrics}>
               <div>
                 <dd>
@@ -109,7 +142,7 @@ export default function AdvertisingBoard({ view, learning = {}, filtered = false
               Not enough data in this period
             </p>
           )}
-          {hasData && (
+          {hasData && !prominent && (
             <>
               <dl className={classes.secondaryMetrics}>
                 <div>
@@ -159,31 +192,51 @@ export default function AdvertisingBoard({ view, learning = {}, filtered = false
                   .filter(Boolean)
                   .join(" · ")}
               </p>
-              {!item.complete && (
-                <span className={classes.delivery}>
-                  Recorded data · partial period
-                </span>
-              )}
             </>
           )}
-          <div className={classes.adState}>
-            <span>Advertising health: {item.state ?? 'Insufficient data'}</span>
-            <span title="Native ad-set learning state from Meta; no completion percentage is inferred.">Meta learning: {learning[item.id] ?? 'Unavailable'}</span>
-            {item.state &&
-              item.state !== "Insufficient data" &&
-              item.state !== "Paused" && <StatusBadge status={item.state} />}
-            <span className={classes.delivery} data-delivery={item.delivery}>
-              {item.delivery === "ACTIVE"
-                ? "Active"
-                : item.delivery === "PAUSED"
-                  ? "Paused"
-                  : item.delivery === "Unknown"
-                    ? "Status unavailable"
-                    : "Inactive"}
-            </span>
+          {signals[item.id] ? (
+            <AdSignals signals={signals[item.id]} currency={view.currency} />
+          ) : null}
+          {(() => {
+            const badge = item.state && item.state !== "Insufficient data" && item.state !== "Paused";
+            // "Active" is implied by the Active now section; only non-active delivery is labeled.
+            const inactive = item.delivery !== "ACTIVE";
+            if (signals[item.id] && !badge && !inactive) return null;
+            return (
+              <div className={classes.adState}>
+                {!signals[item.id] && <span>Meta learning: {learning[item.id] ?? 'Unavailable'}</span>}
+                {badge && <StatusBadge status={item.state!} />}
+                {inactive && (
+                  <span className={classes.delivery} data-delivery={item.delivery}>
+                    {item.delivery === "PAUSED"
+                      ? "Paused"
+                      : item.delivery === "Unknown"
+                        ? "Status unavailable"
+                        : "Inactive"}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+          <div className={classes.cardActions}>
+            {!filtered && (
+              <button type="button" onClick={(event) => open(item.id, event.currentTarget)}>
+                View details
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() =>
+                askDeepVisor(
+                  `How is my ad set "${item.name}" doing over the ${periodLabel === "Today" ? "day so far" : `last ${periodLabel}`}, and what should I do next?`,
+                )
+              }
+            >
+              <IconSparkles size={14} aria-hidden="true" /> Ask DeepVisor
+            </button>
           </div>
         </div>
-      </button>
+      </article>
     );
   }
   return (
@@ -195,7 +248,7 @@ export default function AdvertisingBoard({ view, learning = {}, filtered = false
         </Link>
       </div>
       <h3 className={classes.boardSubheading}>
-        Active now <span>{periodLabel} performance</span>
+        {featured && <LiveIndicator label={null} title="Ad sets delivering now" />} Active now <span>{periodLabel} performance</span>
       </h3>
       {filtered && <p>Performance is filtered by delivery platform. Current status and health describe the whole Meta ad set.</p>}
       {featured ? (

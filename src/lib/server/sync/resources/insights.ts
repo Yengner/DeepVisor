@@ -53,11 +53,11 @@ export async function syncSavedInsights(jobId: string, accessToken: string) {
     if (result.error) throw result.error;
   };
   const read = async (breakdowns: string, level: string, since: string, hourly: boolean) => {
-    const rows = await readInsightActions(includeActions => fetchMetaCollection<MetaRow>({ path: `${path}/insights`, accessToken, maxRows: 100000,
+    const { rows, actionsRequested } = await readInsightActions(includeActions => fetchMetaCollection<MetaRow>({ path: `${path}/insights`, accessToken, maxRows: 100000,
       params: { fields: `date_start,${level === 'adset' ? 'adset_id,' : ''}spend,impressions,clicks${includeActions ? ',actions' : ''}`, level, time_increment: 1,
         time_range: JSON.stringify({ since, until: today }), breakdowns, limit: 500 } }), hourly);
     if (rows.length > 100000) throw new Error('Insight row budget exceeded');
-    return normalize(breakdowns.includes('publisher_platform') ? rows : rows.map(r => ({ ...r, publisher_platform: 'combined-only' })), currency, hourly);
+    return normalize(breakdowns.includes('publisher_platform') ? rows : rows.map(r => ({ ...r, publisher_platform: 'combined-only' })), currency, hourly, actionsRequested);
   };
   // Optional source failure preserves its previous complete batch and retrieval time.
   // No synthetic daily observations are manufactured from summarized audience snapshots.

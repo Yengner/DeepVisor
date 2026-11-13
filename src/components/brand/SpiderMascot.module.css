@@ -1,40 +1,65 @@
+/* Pixel-exact sprite: the frame is always a whole-number multiple of the 32px grid and
+   every offset is a whole CSS pixel, so no frame ever samples a neighbour or a half pixel. */
 .mascot { position: relative; display: inline-block; flex: 0 0 auto; width: var(--spider-size); height: var(--spider-size); vertical-align: middle; contain: layout paint; isolation: isolate; pointer-events: none; }
 .sprite {
-  position: absolute; width: 100%; height: 75%; left: 0; top: 12.5%;
+  --f: var(--spider-frame);
+  position: absolute; left: var(--spider-inset); top: var(--spider-inset); width: var(--f); height: var(--f);
   background-image: url('/images/brand/mascot/deepvisor-spider-sprite.png');
-  background-repeat: no-repeat; background-size: 800% 900%;
-  background-position: 0 var(--spider-row); image-rendering: pixelated;
-  animation-timing-function: steps(1, end); animation-iteration-count: infinite;
+  background-repeat: no-repeat;
+  background-size: calc(var(--f) * 8) calc(var(--f) * var(--spider-rows));
+  background-position-x: calc(var(--f) * var(--spider-still, 0) * -1);
+  background-position-y: var(--spider-row);
+  image-rendering: pixelated;
 }
+.dark .sprite { background-image: url('/images/brand/mascot/deepvisor-spider-sprite-dark.png'); }
 .light { --spider-plate: #edf3fb; --spider-border: #d9e3ef; }
 .dark { --spider-plate: #17365d; --spider-border: #41658e; }
 .framed { background: var(--spider-plate); border-radius: 10px; box-shadow: inset 0 0 0 1px var(--spider-border); }
-.mascot[data-state="idle"] .sprite { animation-name: idle; animation-duration: 8s; }
-.mascot[data-state="blink"] .sprite { animation: blink 240ms steps(1, end) 1; }
-.mascot[data-state="walking"] .sprite { animation: cycle 960ms steps(8, end) infinite; }
-.mascot[data-state="working"] .sprite { animation: cycle 1.6s steps(8, end) infinite; }
-.mascot[data-state="thinking"] .sprite { animation: cycle 4s steps(8, end) infinite; }
-.mascot[data-state="scanning"] .sprite { animation: cycle 2.4s steps(8, end) infinite; }
-.mascot[data-state="success"] .sprite { animation: celebrate 650ms steps(1, end) 1; }
-/* Sleep and attention are still; repeated errors must not bounce. */
+
+/* Choreography. Rows are documented in SPIDER.md; frames are chosen with discrete steps. */
+.mascot[data-state="idle"] .sprite { animation: idle 9.6s steps(1, end) infinite; }
+.mascot[data-state="blink"] .sprite { animation: blink 300ms steps(1, end) 1; }
+.mascot[data-state="walking"] .sprite { animation: loop8 800ms steps(8, end) infinite; }
+.mascot[data-state="working"] .sprite { animation: loop8 1.2s steps(8, end) infinite; }
+.mascot[data-state="thinking"] .sprite { animation: loop8 2.8s steps(8, end) infinite; }
+.mascot[data-state="scanning"] .sprite { animation: loop8 1.6s steps(8, end) infinite; }
+/* Finite feedback: success jumps once and keeps the happy pose; attention startles twice
+   and then holds a steady exclamation mark (no endless flashing for errors). */
+.mascot[data-state="success"] .sprite { animation: once8 800ms steps(8, jump-none) 1 forwards; }
+.mascot[data-state="attention"] .sprite { animation: once8 900ms steps(8, jump-none) 2 forwards; }
+.mascot[data-state="sleep"] .sprite { animation: loop8 4.8s steps(8, end) infinite; }
+.mascot[data-state="wave"] .sprite { animation: wave 1.05s steps(7, end) infinite; }
+.mascot[data-state="idea"] .sprite { animation: ideaPop 480ms steps(4, jump-none) 1 forwards, ideaGlow 1.6s steps(4, end) 480ms infinite; }
+.mascot[data-state="dangle"] .sprite { animation: loop8 2.4s steps(8, end) infinite; }
 .mascot[data-paused] .sprite { animation-play-state: paused; }
-@keyframes cycle { to { background-position-x: calc(var(--spider-size) * -8); } }
+
+@keyframes loop8 { from { background-position-x: 0; } to { background-position-x: calc(var(--f) * -8); } }
+@keyframes once8 { from { background-position-x: 0; } to { background-position-x: calc(var(--f) * -7); } }
+@keyframes wave { from { background-position-x: calc(var(--f) * -1); } to { background-position-x: calc(var(--f) * -8); } }
+@keyframes ideaPop { from { background-position-x: 0; } to { background-position-x: calc(var(--f) * -3); } }
+@keyframes ideaGlow { from { background-position-x: calc(var(--f) * -4); } to { background-position-x: calc(var(--f) * -8); } }
+/* Idle row is a pose library: 0 rest, 1 breathe, 2 half-lid, 3 closed, 4 look left,
+   5 look right, 6 look up, 7 foot tap. Uneven holds keep it from feeling mechanical. */
 @keyframes idle {
-  0%, 44%, 76%, 95%, 100% { background-position-x: 0; }
-  48%, 72% { background-position-x: calc(var(--spider-size) * -1); }
-  96%, 98% { background-position-x: calc(var(--spider-size) * -2); }
-  97% { background-position-x: calc(var(--spider-size) * -3); }
+  0%, 16%, 36%, 47.5%, 64%, 72%, 86%, 92%, 95%, 100% { background-position-x: 0; }
+  10%, 30%, 80% { background-position-x: calc(var(--f) * -1); }
+  44%, 46.5% { background-position-x: calc(var(--f) * -2); }
+  45% { background-position-x: calc(var(--f) * -3); }
+  58% { background-position-x: calc(var(--f) * -4); }
+  66% { background-position-x: calc(var(--f) * -5); }
+  90%, 93% { background-position-x: calc(var(--f) * -7); }
 }
 @keyframes blink {
-  0%, 100% { background-position-x: 0; }
-  20%, 80% { background-position-x: calc(var(--spider-size) * -2); }
-  40%, 60% { background-position-x: calc(var(--spider-size) * -3); }
+  0%, 90%, 100% { background-position-x: 0; }
+  20%, 70% { background-position-x: calc(var(--f) * -1); }
+  40% { background-position-x: calc(var(--f) * -2); }
 }
-@keyframes celebrate {
-  0%, 100% { background-position-x: 0; }
-  30% { background-position-x: calc(var(--spider-size) * -2); }
-  60% { background-position-x: calc(var(--spider-size) * -3); }
-}
+
+/* Reduced motion: no animation; each state shows its most meaningful still frame. */
+.mascot[data-state="thinking"] { --spider-still: 4; }
+.mascot[data-state="success"] { --spider-still: 7; }
+.mascot[data-state="wave"] { --spider-still: 2; }
+.mascot[data-state="idea"] { --spider-still: 2; }
 @media (prefers-reduced-motion: reduce) {
-  .mascot .sprite { animation: none !important; background-position-x: 0; }
+  .mascot .sprite { animation: none !important; }
 }

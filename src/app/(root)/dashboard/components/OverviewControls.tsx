@@ -1,8 +1,9 @@
 "use client";
+import type React from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ActionIcon, Alert, SegmentedControl, Tooltip } from "@mantine/core";
-import { IconRefresh, IconBrandFacebook, IconBrandInstagram } from "@tabler/icons-react";
+import { IconRefresh, IconBrandFacebook, IconBrandInstagram, IconBrandMeta } from "@tabler/icons-react";
 import type { Period } from "@/lib/server/dashboard/overview/types";
 
 export function PeriodControl({ period }: { period: Period }) {
@@ -114,12 +115,28 @@ export function PlatformControl({ platform }: { platform: 'combined' | 'facebook
   const router = useRouter();
   const params = useSearchParams();
   const [pending, start] = useTransition();
-  return <div role="group" aria-label="Advertising delivery platform" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-    {(['facebook', 'instagram'] as const).map(value => <button key={value} type="button" disabled={pending} aria-pressed={platform === value}
-      title={`Select ${value}; select again for combined Meta data`} onClick={() => { const next = new URLSearchParams(params); if (platform === value) next.delete('publisher'); else next.set('publisher', value); start(() => router.replace(`/dashboard?${next}`, { scroll: false })); }}
-      style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 12, padding: '9px 14px', border: platform === value ? '2px solid currentColor' : '1px solid #aebdce', background: platform === value ? value === 'facebook' ? '#e7f0ff' : '#f9e9fa' : 'transparent', color: value === 'facebook' ? '#1264cc' : '#963fa4' }}>
-      {value === 'facebook' ? <IconBrandFacebook size={23} /> : <IconBrandInstagram size={23} />}<span>{value === 'facebook' ? 'Facebook' : 'Instagram'}{platform === value ? ' ✓' : ''}</span>
-    </button>)}
-    <span style={{ alignSelf: 'center', fontSize: 12 }}>{platform === 'combined' ? 'Combined Meta' : ''}</span>
-  </div>;
+  const option = (icon: React.ReactNode, text: string) => (
+    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>{icon}{text}</span>
+  );
+  return (
+    <SegmentedControl
+      aria-label="Advertising delivery platform"
+      size="sm"
+      radius="sm"
+      styles={{ label: { minHeight: 40, display: "flex", alignItems: "center", justifyContent: "center", paddingInline: 12 } }}
+      value={platform}
+      disabled={pending}
+      data={[
+        { value: "combined", label: option(<IconBrandMeta size={16} />, "All Meta") },
+        { value: "facebook", label: option(<IconBrandFacebook size={16} color="#1264cc" />, "Facebook") },
+        { value: "instagram", label: option(<IconBrandInstagram size={16} color="#c13584" />, "Instagram") },
+      ]}
+      onChange={(value) => {
+        const next = new URLSearchParams(params);
+        if (value === "combined") next.delete("publisher");
+        else next.set("publisher", value);
+        start(() => router.replace(`/dashboard?${next}`, { scroll: false }));
+      }}
+    />
+  );
 }

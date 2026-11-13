@@ -1,4 +1,4 @@
-.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 22px; margin: 32px 0; container-type: inline-size; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 22px; margin: 32px 0; container-type: inline-size; }
 .panel { min-width: 0; padding: 24px; border: 1px solid var(--ui-line); border-radius: var(--dv-radius-lg); background: var(--ui-panel); box-shadow: 0 3px 16px rgb(17 37 70 / 3%); }
 .header { margin-bottom: 22px; }
 .eyebrow { display: block; color: var(--ui-muted); font-size: var(--dv-text-2xs); font-weight: 700; letter-spacing: .09em; text-transform: uppercase; margin-bottom: 8px; }
@@ -33,7 +33,8 @@
 .hourLabel { font-size: var(--dv-text-2xs); color: var(--ui-muted); white-space: nowrap; height: 18px; }
 .dayLabel { font-size: var(--dv-text-2xs); color: var(--ui-muted); display: flex; align-items: center; }
 .heatCell { width: 100%; height: 22px; border: 1px solid transparent; border-radius: var(--dv-radius-sm); padding: 0; cursor: pointer; }
-.heatCell[data-missing='true'], .missingSwatch, .hourBar[data-missing='true'] > span { background: repeating-linear-gradient(135deg, var(--ui-subtle), var(--ui-subtle) 3px, var(--ui-line) 3px, var(--ui-line) 4px); }
+/* Missing hours: a quiet dotted fill so they read as absent, not as data. */
+.heatCell[data-missing='true'], .missingSwatch, .hourBar[data-missing='true'] > span { background: radial-gradient(circle, var(--ui-line) 0.8px, transparent 1.2px) 0 0 / 6px 6px; opacity: .7; }
 .heatCell[data-zero='true'], .zeroSwatch { background: var(--ui-panel) !important; border: 1px solid var(--ui-line); }
 .heatCell[aria-pressed='true'] { outline: 2px solid var(--ui-text); outline-offset: 1px; }
 .scale { display: flex; align-items: center; gap: 12px; font-size: var(--dv-text-2xs); color: var(--ui-muted); padding: 12px 0 16px; }
@@ -63,3 +64,10 @@
 @media (max-width: 500px) { .grid { gap: 18px; margin: 24px 0; } .panel { padding: 18px 14px; border-radius: var(--dv-radius-lg); } .header h2 { font-size: 19px; } .header { margin-bottom: 16px; } .controls { gap: 8px; } .legend { gap: 10px; } .legend small { font-size: var(--dv-text-2xs); } .select select { max-width: 155px; } }
 
 .hourBar[data-zero='true'] > span { background: var(--ui-panel); border: 1px solid var(--ui-line); }
+
+.topSegment { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; padding: 13px 14px; border-radius: var(--dv-radius-md); background: var(--ui-subtle); min-height: 65px; }
+.topSegment span { display: block; color: var(--ui-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.topSegment strong { display: block; margin-top: 4px; font-size: 15px; }
+.topSegment div:last-child { text-align: right; }
+.topSegment b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+.topSegment small { color: var(--ui-muted); font-size: 12px; }

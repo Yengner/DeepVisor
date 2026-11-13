@@ -17,13 +17,12 @@ export default function AudienceIntelligence(props: Props) {
   const params = useSearchParams();
   const combined = new URLSearchParams(params.toString()); combined.delete('publisher');
   const name = props.platform === 'combined' ? 'Combined Meta' : props.platform === 'facebook' ? 'Facebook' : 'Instagram';
-  const scope = `${name} · ${props.since === props.until ? dateLabel(props.until) : `${dateLabel(props.since)}–${dateLabel(props.until)}`}`;
   const unavailable = (combinedOnly: boolean) => <div className={styles.empty}><strong>This breakdown isn’t available</strong><p>{combinedOnly && props.platform !== 'combined' ? `Meta returned combined data only. It cannot be attributed to ${name}.` : 'No compatible observations were returned for this period and platform.'}</p>{combinedOnly && props.platform !== 'combined' ? <Link href={`?${combined}`} scroll={false}>View combined Meta data →</Link> : <Link href="/reports">Explore saved reports →</Link>}</div>;
   return <div className={styles.grid}>
-    <section className={styles.panel} aria-labelledby="audience-title"><header className={styles.header}><span className={styles.eyebrow}>Who your ads reach</span><h2 id="audience-title">Audience breakdown</h2><p>{scope}</p></header>
+    <section className={styles.panel} aria-labelledby="audience-title"><header className={styles.header}><span className={styles.eyebrow}>Who your ads reach</span><h2 id="audience-title">Audience breakdown</h2></header>
       {props.audience?.length ? <AudienceChart rows={props.audience} currency={props.currency} /> : unavailable(props.audienceCombinedOnly)}
     </section>
-    <section className={styles.panel} aria-labelledby="time-title"><header className={styles.header}><span className={styles.eyebrow}>When your ads deliver</span><h2 id="time-title">Performance by time</h2><p>{scope} · {props.zone}</p></header>
+    <section className={styles.panel} aria-labelledby="time-title"><header className={styles.header}><span className={styles.eyebrow}>When your ads deliver</span><h2 id="time-title">Performance by time</h2></header>
       {props.hourly?.length ? <TimeChart rows={props.hourly} currency={props.currency} today={props.period === 'today'} /> : unavailable(props.hourlyCombinedOnly)}
     </section>
   </div>;

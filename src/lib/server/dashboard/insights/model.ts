@@ -1,6 +1,6 @@
 import { shiftDay } from '../overview/model';
 import type { Metrics, Summary } from '../../campaigns/exploration/types';
-import type { ControlPerformance } from '../overview/controlModel';
+import { chartPoint, runningCostPerResult, type ControlPerformance } from '../overview/controlModel';
 import { periodRange } from '../overview/model';
 import type { Period } from '../overview/types';
 export type Publisher = 'combined' | 'facebook' | 'instagram';
@@ -29,9 +29,15 @@ export function aggregate(rows: Insight[], currency: string | null): Metrics {
 export function livePerformance(rows: Insight[], platform: Publisher, period: Period, today: string, currency: string | null): ControlPerformance {
   const points: ControlPerformance['points'] = [];
   for (let day = periodRange(period === 'today' ? '7d' : period, today).since; day <= today; day = shiftDay(day, 1)) {
-    points.push({ ...aggregate(selectRows(rows, platform, '30d', today).filter(r => r.day === day), currency), day, current: day === today });
+    points.push({ ...chartPoint(aggregate(selectRows(rows, platform, '30d', today).filter(r => r.day === day), currency)), day, current: day === today });
   }
-  return { metrics: aggregate(selectRows(rows, platform, period, today), currency), points, currency, deltas: {}, comparison: null, partial: true };
+  return { metrics: aggregate(selectRows(rows, platform, period, today), currency), points: runningCostPerResult(points), currency, deltas: {}, comparison: null, partial: true };
+}
+
+/** True when Meta reported spend or impressions today for the selected platform. */
+export function deliveredToday(rows: Insight[] | null, platform: Publisher, today: string) {
+  return (rows ?? []).some(r => r.day === today && (platform === 'combined' || r.publisher === platform) &&
+    ((r.spend ?? 0) > 0 || (r.impressions ?? 0) > 0));
 }
 
 /** Explorer summaries use external Meta IDs, not database dimension UUIDs. */

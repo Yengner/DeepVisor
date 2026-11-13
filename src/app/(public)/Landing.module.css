@@ -14,7 +14,7 @@
 .constellation { height: 220px; position: relative; background-image: radial-gradient(#bfd5ff30 .7px, transparent .7px); background-size: 20px 20px; }
 .constellation > svg { width: 100%; height: 100%; position: absolute; inset: 0; }
 .constellation > svg path { fill: none; stroke: #8cbcff80; stroke-width: 1; stroke-dasharray: 3 5; }
-.spiderCore { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); border: 1px solid #7ba4e778; border-radius: 24px; background: #0c2851; padding: 14px; box-shadow: 0 12px 30px #001b4940; }
+.spiderCore { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); border: 1px solid #b9d0f2; border-radius: 24px; background: #eef4fd; padding: 12px; box-shadow: 0 12px 30px #001b4955, inset 0 -3px 0 #d3e2f7; }
 .node { position: absolute; padding: 7px 12px; font-size: 11px; border: 1px solid #8daedf55; background: #0d2e58; border-radius: 8px; color: #d9e7fb; }
 .nodeOne { top: 42px; left: 7%; }.nodeTwo { top: 42px; right: 7%; }.nodeThree { bottom: 35px; left: 7%; }.nodeFour { bottom: 35px; right: 7%; }
 .previewTabs { display: flex; gap: 5px; padding: 0 20px; }
@@ -26,8 +26,28 @@
 .previewCopy p { font-size: 13px; line-height: 1.7; color: #c6d9f4; margin: 0; }
 .previewFooter { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #c6d9f4; padding: 13px 20px; background: #041a3960; border-top: 1px solid #ffffff20; }
 .previewFooter > svg:last-child { margin-left: auto; }
-.principles { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 20px 40px; border-top: 1px solid var(--ui-line); border-bottom: 1px solid var(--ui-line); padding: 24px 0; font-size: 12px; color: var(--ui-muted); }
-.principles i { width: 3px; height: 3px; background: var(--ui-line-strong); }
+.previewHeading { animation: stepIn 360ms var(--ui-ease, ease) both; }
+@keyframes stepIn { from { opacity: 0; transform: translateY(4px); } }
+.platforms { display: flex; align-items: center; gap: 28px; border-top: 1px solid var(--ui-line); border-bottom: 1px solid var(--ui-line); padding: 18px 0; }
+.platformsLabel { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; font-size: 11px; color: var(--ui-muted); }
+.liveChip { display: inline-flex; align-items: center; gap: 7px; width: fit-content; padding: 6px 10px; border: 1px solid var(--ui-line); border-radius: 999px; background: var(--ui-panel); color: var(--ui-text); font-size: 12px; font-weight: 650; }
+.liveChip svg { color: #0866ff; font-size: 15px; }
+.liveChip em { font-style: normal; font-weight: 500; font-size: 10px; color: var(--ui-positive); padding-left: 7px; border-left: 1px solid var(--ui-line); }
+.marquee { position: relative; flex: 1; min-width: 0; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); }
+.marqueeTrack { display: flex; width: max-content; animation: marquee 42s linear infinite; }
+.marquee:hover .marqueeTrack { animation-play-state: paused; }
+.marqueeGroup { display: flex; align-items: center; gap: 44px; margin: 0; padding: 0 22px; list-style: none; }
+.marqueeGroup li { display: inline-flex; align-items: center; gap: 9px; white-space: nowrap; font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ui-muted); opacity: .78; transition: opacity var(--ui-duration), color var(--ui-duration); }
+.marqueeGroup li:hover { opacity: 1; color: var(--ui-text); }
+.marqueeGroup svg { font-size: 19px; flex-shrink: 0; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .marqueeTrack { animation: none; width: auto; }
+  .marqueeGroup { flex-wrap: wrap; gap: 14px 28px; }
+  .marqueeGroup[aria-hidden] { display: none; }
+  .marquee { -webkit-mask-image: none; mask-image: none; }
+  .previewHeading { animation: none; }
+}
 .section { padding: 80px 0; scroll-margin-top: 110px; }
 .sectionHeading { display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; margin-bottom: 32px; }
 .sectionHeading h2, .agencySection h2, .finalCta h2 { font: 600 34px/1.2 var(--font-display), sans-serif; letter-spacing: -.045em; margin: 16px 0 0; }
@@ -35,7 +55,7 @@
 .pillars { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px; }
 .pillar { display: flex; flex-direction: column; }
 .pillarTop { display: flex; justify-content: space-between; align-items: center; color: var(--ui-accent); }
-.pillarTop span { color: var(--ui-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.pillarTop span { color: var(--ui-muted); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .pillar h3 { font-size: 17px; font-weight: 650; margin: 28px 0 12px; }
 .pillar p { color: var(--ui-muted); line-height: 1.8; margin: 0 0 24px; font-size: 13px; }
 .pillarDetail { border-top: 1px solid var(--ui-line); padding-top: 16px; font-size: 11px; font-weight: 650; margin-top: auto; }
@@ -43,7 +63,9 @@
 .agencySection p { color: var(--ui-muted); font-size: 14px; line-height: 1.8; margin: 20px 0; }
 .textLink { display: inline-flex; gap: 6px; align-items: center; color: var(--ui-accent); min-height: 44px; font-weight: 600; font-size: 13px; text-decoration: none; }
 .textLink:hover { text-decoration: underline; }
-.companionNote { padding: 28px; }
+.companionNote { padding: 28px; position: relative; }
+.noteSpider { position: absolute; top: 0; right: 24px; }
+.ctaAction { display: flex; align-items: center; gap: 12px; flex: none; }
 .noteLabel { display: flex; align-items: center; gap: 10px; color: var(--ui-muted); font-size: 10px; font-weight: 650; letter-spacing: .08em; margin-bottom: 28px; }
 .companionNote p { font-size: 13px; margin: 6px 0 0; }
 .noteFooter { border-top: 1px solid var(--ui-line); padding-top: 16px; margin-top: 24px; color: var(--ui-muted); font-size: 11px; }
@@ -65,10 +87,64 @@
   .previewCopy { padding: 18px; min-height: 140px; }.previewFooter { font-size: 9px; padding: 12px 14px; }
   .node { font-size: 10px; padding: 6px 9px; }
   .nodeOne,.nodeThree { left: 4%; }.nodeTwo,.nodeFour { right: 4%; }
-  .principles { gap: 12px; font-size: 10px; }.principles i { display: none; }
+  .platforms { flex-direction: column; align-items: stretch; gap: 14px; padding: 18px 0 20px; }
+  .platformsLabel { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+  .marqueeGroup { gap: 32px; padding: 0 16px; }.marqueeGroup li { font-size: 13px; }
   .section { padding: 48px 0; }.sectionHeading { display: block; margin-bottom: 24px; }
   .sectionHeading h2,.agencySection h2 { font-size: 29px; }.sectionHeading > p { margin-top: 20px; }
   .pillars,.agencySection { grid-template-columns: 1fr; gap: 16px; }.pillar h3 { margin-top: 20px; }
   .agencySection { gap: 24px; padding-bottom: 44px; }.companionNote { padding: 22px; }
-  .finalCta { display: block; padding: 36px 0 48px; }.finalCta h2 { font-size: 27px; }.finalCta > a { display: flex; margin-top: 24px; }
+  .finalCta { display: block; padding: 36px 0 48px; }.finalCta h2 { font-size: 27px; }.ctaAction { margin-top: 20px; }.ctaAction > a { flex: 1; display: flex; }
+}
+
+/* ---- Motion -------------------------------------------------------------------------
+   CSS-only and progressive: content is fully visible without animation support, and
+   everything is disabled for prefers-reduced-motion. Pixel sprites are never scaled. */
+.heroCopy > * { animation: rise 720ms cubic-bezier(.2, .7, .2, 1) both; }
+.heroCopy > :nth-child(1) { animation-delay: 40ms; }
+.heroCopy > :nth-child(2) { animation-delay: 120ms; }
+.heroCopy > :nth-child(3) { animation-delay: 220ms; }
+.heroCopy > :nth-child(4) { animation-delay: 320ms; }
+.heroCopy > :nth-child(5) { animation-delay: 420ms; }
+.preview { animation: previewIn 900ms cubic-bezier(.2, .7, .2, 1) 200ms both; }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } }
+@keyframes previewIn { from { opacity: 0; transform: translateY(28px) scale(.98); } }
+
+/* Data flowing along the web toward the spider. */
+.constellation > svg path { animation: flow 1.6s linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -16; } }
+.node { animation: float 6s ease-in-out infinite; transition: background var(--ui-duration), border-color var(--ui-duration); }
+.nodeTwo { animation-delay: -1.5s; }.nodeThree { animation-delay: -3s; }.nodeFour { animation-delay: -4.5s; }
+@keyframes float { 50% { translate: 0 -4px; } }
+/* Highlight the threads each step reads from. */
+.constellation[data-step="0"] :is(.nodeOne, .nodeThree),
+.constellation[data-step="1"] :is(.nodeTwo, .nodeThree),
+.constellation[data-step="2"] :is(.nodeTwo, .nodeFour) { background: #1d4f8f; border-color: #9cc4ff; }
+/* Auto-advance progress on the active step. */
+.previewTabs button { position: relative; overflow: hidden; }
+.preview[data-auto] .previewTabs button[aria-pressed="true"]::after {
+  content: ''; position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--ui-accent, #1f6fe0);
+  transform-origin: left; animation: advance var(--advance-ms, 5200ms) linear both;
+}
+@keyframes advance { from { transform: scaleX(0); } }
+.previewCopy p { animation: stepIn 420ms 60ms var(--ui-ease, ease) both; }
+
+/* Hover polish. `translate` composes with the reveal animation's transform. */
+.pillar { transition: translate 260ms cubic-bezier(.2, .7, .2, 1), box-shadow 260ms; }
+.pillar:hover { translate: 0 -4px; box-shadow: 0 16px 36px #0b2a5a1f; }
+.pillarTop svg { transition: transform 260ms cubic-bezier(.2, .7, .2, 1); }
+.pillar:hover .pillarTop svg { transform: scale(1.12) rotate(-4deg); }
+
+/* Scroll reveals (scroll-driven where supported; otherwise content is simply visible). */
+@supports (animation-timeline: view()) {
+  .reveal { animation: reveal linear both; animation-timeline: view(); animation-range: entry 5% entry 70%; }
+  .pillars > .reveal:nth-child(2) { animation-range: entry 15% entry 80%; }
+  .pillars > .reveal:nth-child(3) { animation-range: entry 25% entry 90%; }
+  @keyframes reveal { from { opacity: 0; transform: translateY(32px); } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroCopy > *, .preview, .constellation > svg path, .node, .previewCopy p, .reveal,
+  .preview[data-auto] .previewTabs button[aria-pressed="true"]::after { animation: none !important; }
+  .pillar, .pillarTop svg { transition: none; }
 }

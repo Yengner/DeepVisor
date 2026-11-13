@@ -46,7 +46,7 @@ function IntelligencePanel({ type }: AuthFormProps) {
 
       <div className={classes.panelMessage}>
         <span className={classes.panelEyebrow}>
-          <PixelCompanion size={26} tone="dark" />
+          <PixelCompanion size={32} tone="dark" />
           Your ad intelligence companion
         </span>
         <h1 className={classes.panelTitle}>

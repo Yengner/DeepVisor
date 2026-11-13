@@ -15,7 +15,9 @@ export default function TimeChart({ rows, currency, today }: { rows: HourlyObser
   const todayDay = cells.find(c => c.observations)?.day;
   const displayed = today ? cells.filter(c => c.day === todayDay) : cells;
   const maximum = Math.max(0, ...displayed.map(c => c.value ?? 0));
-  const current = displayed.find(c => c.key === selected) ?? displayed.find(c => c.observations) ?? displayed[0];
+  // Default to the peak hour so the inspector opens on the most informative cell.
+  const peak = displayed.reduce<typeof displayed[number] | undefined>((best, c) => c.value != null && (best?.value == null || c.value > best.value) ? c : best, undefined);
+  const current = displayed.find(c => c.key === selected) ?? peak ?? displayed.find(c => c.observations) ?? displayed[0];
   const format = (value: number | null) => performanceValueLabel(value, metric, currency);
   const resultsAvailable = rows.some(row => row.results !== null);
   const costPerResultAvailable = Boolean(currency && currency !== 'MIXED') &&
@@ -61,6 +63,5 @@ export default function TimeChart({ rows, currency, today }: { rows: HourlyObser
     </div>
     <div className={styles.scale}><span><i className={styles.missingSwatch} />Missing</span><span><i className={styles.zeroSwatch} />Zero</span>{!today && <span className={styles.gradientLegend}>Low <i /> High</span>}</div>
     <div className={styles.inspector} aria-live="polite" aria-atomic="true"><div><strong>{current ? `${today ? 'Today' : WEEKDAYS[current.day]} · ${formatHourLongLabel(current.hour)}` : 'No observations'}</strong><span>{current ? `${current.observations} observed date${current.observations === 1 ? '' : 's'}` : ''}</span></div><div><b>{format(current?.value ?? null)}</b><span>{label}{cells[0].isRatio ? ' · aggregate ratio' : mode === 'average' && !today ? ' · daily average' : ' · total'}</span></div></div>
-    <p className={styles.note}>{today ? 'Bar height shows' : 'Darker means more'} {label.toLowerCase()}, not better performance. {today ? 'Unreported hours remain missing.' : 'Use arrow keys or select a cell to inspect.'}</p>
   </>;
 }

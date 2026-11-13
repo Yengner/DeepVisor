@@ -1181,7 +1181,14 @@
 .adCard { color: var(--ui-text); background: var(--ui-panel); border-color: var(--ui-line); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow); transition: border-color var(--ui-duration), box-shadow var(--ui-duration); }
 .adCard:hover { transform: none; border-color: var(--ui-line-strong); box-shadow: var(--ui-shadow-raised); }
 .adMedia { background: var(--ui-subtle); }
-.singleActive .adMedia { width: 100%; height: 300px; min-height: 300px; max-height: 300px; aspect-ratio: auto; }
+.singleActive .adMedia { width: 100%; height: auto; min-height: 320px; max-height: none; aspect-ratio: auto; align-self: stretch; }
+/* Media fills the card height set by the body instead of driving it with its natural size. */
+.singleActive .adMedia > div { position: absolute; inset: 0; height: auto; }
+.singleActive .adMedia img:not([aria-hidden]) { max-height: 100% !important; }
+.singleActive .featured { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); }
+.singleActive .adBody { align-self: stretch; display: flex; flex-direction: column; justify-content: center; padding: 24px 28px; }
+.featureLabel, .openCreative { z-index: 2; }
+.featureLabel { backdrop-filter: blur(6px); background: color-mix(in srgb, #e1ecff 88%, transparent); }
 .adMedia > div { background: var(--ui-subtle); }
 .adBody, .featured .adBody { padding: 18px; }
 .adBody h3 { font-size: 14px; line-height: 1.5; }
@@ -1234,7 +1241,10 @@
 .workspaceHeader h1 { font-family: var(--font-display), sans-serif; font-weight: 700; font-size: clamp(24px, 3vw, 34px); margin: 0; letter-spacing: -.04em; }
 .workspaceHeader p { margin: 5px 0; color: var(--ui-muted); }
 .freshness { font-size: 12px; color: var(--ui-muted); margin-bottom: 22px; }
-.freshness summary { cursor: pointer; width: fit-content; }
+.freshness summary { cursor: pointer; width: fit-content; display: flex; align-items: center; gap: 10px; list-style: none; }
+.freshness summary::-webkit-details-marker { display: none; }
+.freshness summary > span:last-child { text-decoration: underline dotted; text-underline-offset: 3px; }
+.headerControls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .freshness p { max-width: 70ch; }
 .workspaceChart { margin: 28px 0; padding: 20px; border: 1px solid var(--ui-line); background: var(--ui-panel); border-radius: var(--dv-radius-lg); }
 
@@ -1249,3 +1259,76 @@
 .workspaceHeader > div { max-width: 100%; }
 .workspaceHeader h1 { overflow-wrap: anywhere; }
 @media(max-width:600px) { .page { width:100%; box-sizing:border-box; padding:0 16px 36px; } .workspaceHeader { gap:14px; } }
+
+/* Featured ad card: one even row of key stats. */
+.statGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 4px 0 6px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius-sm, 8px); overflow: hidden; }
+.statGrid > div { padding: 12px 14px; border-left: 1px solid var(--ui-line); min-width: 0; }
+.statGrid > div:first-child { border-left: 0; }
+.statGrid dt { color: var(--ui-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.statGrid dd { margin: 6px 0 0; font-size: 22px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 600px) { .statGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .statGrid > div:nth-child(3) { border-left: 0; } .statGrid > div:nth-child(n+3) { border-top: 1px solid var(--ui-line); } }
+
+/* KPI cards: value + 7/30-day sparkline, then delta and comparison reference. */
+/* Yahoo-style: value on the left, sparkline centered in the remaining space. The value
+   never wraps; the sparkline shrinks (and hides when too narrow) instead. */
+.kpiValueRow { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.kpiValueRow dd { flex: none; white-space: nowrap; }
+.sparkline { flex: 1 1 auto; min-width: 0; max-width: 120px; height: 34px; margin: 0 auto; color: var(--chart-line, var(--ui-accent)); opacity: .85; pointer-events: none; overflow: visible; }
+@container (max-width: 177px) { .sparkline { display: none; } }
+.kpis > div { container-type: inline-size; }
+.kpiFoot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-height: 18px; margin-top: 6px; }
+.kpiReference { color: var(--ui-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* Chart legend: current period, faint comparison line, change markers. */
+.chartLegend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; color: var(--ui-muted); font-size: 12px; }
+.chartLegend span { display: inline-flex; align-items: center; gap: 6px; }
+.chartLegend i { display: inline-block; width: 18px; height: 0; border-top: 3px solid var(--chart-line); border-radius: 2px; }
+.chartLegend .legendPrevious { border-top: 2px dashed var(--chart-text); opacity: .6; }
+.chartLegend .legendMarker { width: 8px; height: 8px; border: 0; background: var(--ui-warning, #855a13); transform: rotate(45deg); border-radius: 1px; }
+.chartToolbar { flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+
+/* Layout-matched loading skeletons. */
+.skeleton { display: block; border-radius: var(--ui-radius-sm, 8px); background: linear-gradient(90deg, var(--ui-subtle) 0%, var(--ui-line) 50%, var(--ui-subtle) 100%) 0 0 / 200% 100%; animation: skShimmer 1.4s ease-in-out infinite; }
+@keyframes skShimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+.skeletonKpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.skeletonKpis > div { display: grid; gap: 10px; padding: 18px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius); background: var(--ui-panel); }
+.skLabel { width: 45%; height: 12px; } .skValue { width: 70%; height: 30px; } .skFoot { width: 55%; height: 12px; }
+.skeletonChart { display: grid; gap: 14px; }
+.skeletonChart > div { display: flex; gap: 8px; }
+.skTab { width: 72px; height: 32px; } .skPlot { height: 260px; }
+.skeletonBoard { display: grid; gap: 14px; }
+.skHeading { width: 180px; height: 20px; }
+.skCard { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); min-height: 300px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius); background: var(--ui-panel); overflow: hidden; }
+.skMedia { height: 100%; border-radius: 0; }
+.skCard > div { display: grid; align-content: center; gap: 14px; padding: 24px 28px; }
+.skTitle { width: 70%; height: 22px; } .skStats { height: 70px; }
+.skMeters { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .skMeters > span { height: 72px; }
+@media (max-width: 767px) { .skeletonKpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .skCard { grid-template-columns: 1fr; } .skMedia { height: 220px; } }
+
+/* Ad card: article with a stretched title button and actions layered above it. */
+article.adCard { position: relative; cursor: default; }
+.cardOpen { all: unset; cursor: pointer; overflow-wrap: anywhere; }
+.cardOpen::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.cardOpen[aria-disabled="true"] { cursor: default; }
+.cardOpen:focus-visible { outline: none; }
+.cardOpen:focus-visible::after { outline: 3px solid var(--ui-focus); outline-offset: -3px; border-radius: var(--ui-radius); }
+.cardActions { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.cardActions button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--ui-line-strong); background: var(--ui-panel); color: var(--ui-text); font-size: 13px; font-weight: 600; cursor: pointer; transition: background var(--ui-duration), border-color var(--ui-duration); }
+.cardActions button:hover { background: var(--ui-subtle); }
+.cardActions button:last-child { border-color: transparent; background: var(--ui-accent-soft); color: var(--ui-accent); }
+.cardActions button:focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 2px; }
+.openCreative, .featureLabel { pointer-events: none; }
+
+/*
+ * KPI sizing measured against Manrope 600 (widest USD value "$9,999.99" ≈ 4.92em; larger
+ * amounts switch to compact "$12.3K"). The value font follows the card width, so values
+ * never truncate; the grid drops to two columns below 922px, the narrowest width where four
+ * cards still fit the widest value at 24px plus a sparkline (24px × 4.92 + 12px gap + 48px
+ * sparkline + 42px padding/border per card, 14px gaps).
+ */
+.kpiSection { container-type: inline-size; container-name: kpis; }
+.kpis .kpiValueRow dd { font-size: clamp(24px, calc((100cqi - 64px) / 4.95), 36px); overflow-wrap: normal; }
+.kpis > div { container-type: inline-size; }
+@container kpis (max-width: 921px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container kpis (max-width: 380px) { .kpis { grid-template-columns: minmax(0, 1fr); } }

@@ -1,37 +1,69 @@
-# DeepVisor spider mascot
+# DeepVisor spider mascot (v3)
 
-The approved reference is `Pixel Spider Robot Mascot Sheet.png` at the repository root.
-The new artwork recreates its compact navy body, two cyan square eyes and blue/light-blue
-legs on a consistent 64×48 grid. It has no mouth, glow, gradient, drop shadow, white matte,
-or presentation labels. The company logo is unchanged.
+The approved character reference is `Pixel Spider Robot Mascot Sheet.png` at the repository
+root: compact navy dome body, two square cyan eyes, blue legs with light-blue joints, no mouth.
+v3 redraws it on a **32×32 grid** so it can always be shown at a whole-number scale.
+Keep it small and simple: two short legs per side (upper one darker) built from straight
+2px segments, plain cyan eyes with no white glint. Long, spread-out spider legs were tried
+and rejected as too creepy; the eye glint was rejected as too cute. The
+company logo is unchanged.
 
 ```tsx
 import SpiderMascot from '@/components/brand/SpiderMascot';
 
-<SpiderMascot state="idle" size={48} />
+<SpiderMascot state="idle" size={32} />
 <SpiderMascot state="working" size={64} label="Preparing your report" />
 <SpiderMascot state="sleep" size={48} tone="dark" framed />
 ```
 
-- `state`: idle, blink, walking, working, thinking, scanning, success, sleep, attention.
-- `size`: square layout box in CSS pixels (default 48); artwork keeps a 4:3 frame inside
-  it. Prefer 32/48/64/96. Rendering uses nearest pixels and fixed frame registration.
-- `tone`: light/dark backplate colors; `framed` opts into a quiet backplate. The spider's
-  palette is identical on both backgrounds. `className` styles the wrapper.
+- `state`: idle, blink, walking, working, thinking, scanning, success, sleep, attention,
+  wave, idea, dangle.
+- `size`: square layout box in CSS pixels (default 48). The artwork is drawn at the
+  largest whole multiple of 32 that fits (minimum 1×) and centred on whole pixels, so
+  **use 32, 64, 96 or 128** to fill the box. Other sizes keep the art crisp and add space
+  around it; sizes under 32 grow the box to 32.
+- `tone`: the surface the mascot sits on. `dark` loads a sheet with a 1px outer rim so the
+  ink outline stays visible on navy; for large hero placements a light tile reads better.
+  `framed` adds a quiet backplate. `className` styles the wrapper.
 - `label`: accessible image name. Omit when adjacent text already explains the state;
-  the default is decorative and hidden from assistive technology. No automatic live
-  announcements. Caller-owned task text can use `role="status"` when appropriate.
+  the default is decorative and hidden from assistive technology. No live announcements.
 - `paused`: freeze animation when a placement is inactive. `sleep` is a deliberate
   inactive expression, never inferred from advertising status or time online.
 
+## Why v2 looked glitchy (fixed)
+
+v2 drew a 64×48 sheet into 48/28/26/76px boxes using percentage background sizes. Those
+are 0.75×/0.44×/0.41×/1.19× scales, so nearest-neighbour rendering dropped or doubled
+pixel columns differently in each frame, and the four overlapping legs per side plus front
+legs drawn across the face turned into noise. v3 renders only at integer scales with
+pixel-valued offsets (verified in-browser: every art pixel is a uniform device-pixel block).
+Its legs all sit behind the body, and the outline is generated, so it is always one
+continuous pixel.
+
+## States and timing
+
 State must come from the real task or an explicitly labeled illustration. The component
-never starts AI work, syncs accounts, changes advertising, or infers success. Success
-finishes a 650ms nod and keeps its completed expression until the caller changes state.
-Blink is a single 240ms blink. Idle gently lifts the body one grid pixel and blinks every
-8 seconds. Walking is an eight-frame 960ms anchored loop; move the wrapper separately
-if a future interaction needs travel. Working adds the reference laptop with subtle
-hand/keyboard movement. Sleep and attention are still. No random timers or endless
-success celebrations.
+never starts AI work, syncs accounts, changes advertising, or infers success.
+
+| State | Motion |
+| --- | --- |
+| idle | 9.6s loop with uneven holds: breathes, blinks, glances left/right, taps a foot |
+| blink | one 300ms blink |
+| walking | alternating gait with 1px body bob, 800ms loop, in place (move the wrapper for travel) |
+| working | eyes down, typing on a keyboard (two staggered key rows and a space bar); feet tap in turn and the pressed key lights up (1.2s loop) |
+| thinking | looks up; three dots appear one by one (2.8s loop) |
+| scanning | eyes sweep while a beam passes over the frame (1.6s loop) |
+| success | crouch, jump, burst, land in 800ms, then **keeps** the happy pose |
+| sleep | slow breathing and drifting z’s (4.8s loop) |
+| attention | startles twice, then holds a steady “!” (no endless flashing) |
+| wave | lifts the whole upper arm and holds it; the forearm tips back and forth by 1–2px so the arm stays solid (1.05s loop) |
+| idea | lightbulb pops in, then glows softly |
+| dangle | bobs up and down on a straight silk thread, legs kicking (2.4s loop); no sideways swing so the thread never kinks |
+
+CSS only: discrete background-position steps, no React effects, JS timers or cleanup.
+Changing state remounts the visual span so finite feedback restarts reliably.
+`prefers-reduced-motion: reduce` disables all animation and shows each state's most
+meaningful still (thinking → dots, success → happy, wave/idea → raised leg/bulb).
 
 ## Assets and regeneration
 
@@ -39,31 +71,21 @@ success celebrations.
 node scripts/design/export-mascots.mjs
 ```
 
-Source: `scripts/design/spider-art.mjs` (integer geometry, fixed opaque palette).
-Output: `public/images/brand/mascot/deepvisor-spider-sprite.png` (512×432, eight frames
-per row, nine rows, ~3 KB), plus `deepvisor-spider-idle.svg` for static use. One shared
-sheet is fetched regardless of component count/state; no state-dependent downloads.
-Rows must match `spiderStates` in the component; a regression test verifies the order
-and every encoded pixel. Asset editing needs no external image service or new dependency.
-The original sheet stays as a reference and is never loaded by the application.
+Source: `scripts/design/spider-art.mjs`. It contains the body bitmap, leg solver, per-state
+choreography and the locked 16-colour palette, plus one extra rim colour for the dark
+sheet. Output: `public/images/brand/mascot/deepvisor-spider-sprite.png` and
+`deepvisor-spider-sprite-dark.png` (each 256×384: 8 frames × 12 rows, about 3–4 KB) plus
+`deepvisor-spider-idle.svg`. Rows must match `spiderStates`. Tests verify the row order,
+every pixel of both sheets, integer scaling, and the walking body anchor.
 
-CSS uses discrete background-position frames, isolated paint, and fixed dimensions.
-There are no React effects, JS timers, subscriptions, or unmount cleanup obligations.
-Changing state remounts only the visual span so finite feedback restarts reliably.
-`prefers-reduced-motion: reduce` disables all animations and selects each state's useful
-first frame. Avoid CSS transitions that interpolate pixels or enlarge low-res artwork
-with smoothing. At small sizes, use adjacent text for meaning rather than relying on
-fine details such as the laptop or scan brackets.
+PixelLab was used to explore proportions (pixflux img2img from the reference sheet), and
+its workbench was used for QA. The latest sheet scored 87/100 and the idle frame linted
+with 0 errors/warnings; the six "holes" are the gaps between legs, which are intended.
+Raw AI output was not shipped because it had 54–57 noisy colours and was not symmetric.
 
 `PixelCompanion` remains a compatibility wrapper for existing auth, marketing,
-Dashboard, and Decisions placements. It maps analyzing→scanning, planning→thinking,
-and completed→success. The earlier Weaver/Scout/Orbit exports are superseded design
-explorations, not runtime assets. New interfaces should import `SpiderMascot` directly.
-
-## Validation
-
-Node 24: five focused tests cover accessibility, invalid sizes, state mapping, all sprite
-pixels/alpha/row order, and walking eye registration. Browser review covers all nine
-states on light/dark backgrounds at 1440px and 390px, eight distinct walking frames,
-finite feedback, pause, reduced motion, and actual landing-page state changes/login
-placement. Typecheck and targeted lint pass. No database or advertising logic changed.
+Dashboard, and Decisions placements (default 32px). It maps analyzing→scanning,
+planning→thinking, completed→success. New interfaces should import `SpiderMascot`.
+`/mascot-preview` (development only, behind the normal auth middleware) shows every state
+on light and dark surfaces at 32/64/96/128px. `review-v2/` assets are a superseded
+exploration and are no longer loaded.

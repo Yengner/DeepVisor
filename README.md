@@ -13,6 +13,8 @@ insufficient-data results remain explicit states.
 
 ## Start here
 
+- [Documentation index](docs/INDEX.md): handbook structure and maintenance.
+
 - [Architecture](docs/ARCHITECTURE.md): responsibilities, data models and security boundaries.
 - [Codebase map](docs/CODEBASE_MAP.md): directory ownership, entry points and compatibility code.
 - [Workflow traces](docs/FLOWS.md): connection/sync, intelligence, decisions, execution, organizer and Agency.

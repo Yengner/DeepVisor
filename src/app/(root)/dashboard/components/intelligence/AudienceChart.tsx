@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useMediaQuery } from '@mantine/hooks';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { buildAgeGenderAudienceChart, type AudienceObservation } from '@/lib/shared/reports/audience';
+import { buildAgeGenderAudienceChart, normalizeGender, type AudienceObservation } from '@/lib/shared/reports/audience';
 import type { AudienceView } from '@/lib/shared/reports/breakdowns';
 import { performanceValueLabel, type PerformanceMetric } from '@/lib/shared/reports/performance';
 import styles from './Intelligence.module.css';
@@ -17,10 +17,24 @@ export default function AudienceChart({ rows, currency }: { rows: AudienceObserv
   const format = (value: number | null) => performanceValueLabel(value, metric, currency);
   const hasResults = rows.some(r => r.values.conversion != null);
   const label = METRICS.find(([key]) => key === metric)![1];
+  // Best-performing segment by cost per result (needs ≥2 results); otherwise the biggest spender.
+  const segments = new Map<string, { spend: number; results: number | null }>();
+  for (const r of rows) {
+    const g = normalizeGender(r.gender);
+    const key = `${g === 'Female' ? 'Women' : g === 'Male' ? 'Men' : 'Unknown gender'} ${r.age}`;
+    const seg = segments.get(key) ?? { spend: 0, results: 0 };
+    seg.spend += r.values.spend ?? 0;
+    seg.results = seg.results === null || r.values.conversion == null ? null : seg.results + r.values.conversion;
+    segments.set(key, seg);
+  }
+  const ranked = [...segments].filter(([, v]) => v.spend > 0);
+  const efficient = ranked.filter(([, v]) => (v.results ?? 0) >= 2).sort((a, b) => a[1].spend / a[1].results! - b[1].spend / b[1].results!)[0];
+  const top = efficient ?? ranked.sort((a, b) => b[1].spend - a[1].spend)[0];
+  const money = (v: number) => performanceValueLabel(v, 'spend', currency);
   return <>
     <div className={styles.controls}><div className={styles.segmented} role="group" aria-label="Audience dimension">{([['age_gender', 'Age × Gender'], ['age', 'Age'], ['gender', 'Gender']] as const).map(([key, text]) => <button key={key} type="button" aria-pressed={view === key} onClick={() => setView(key)}>{text}</button>)}</div><label className={styles.select}><span className={styles.srOnly}>Audience metric</span><select aria-label="Audience metric" value={metric} onChange={e => setMetric(e.target.value as PerformanceMetric)}>{METRICS.map(([key, text]) => <option key={key} value={key} disabled={!hasResults && (key === 'conversion' || key === 'costPerResult')}>{text}{!hasResults && (key === 'conversion' || key === 'costPerResult') ? ' · unavailable' : ''}</option>)}</select></label></div>
     <div className={styles.legend}>{model.series.map(key => <span key={key}><i style={{ background: COLORS[key] }} />{key === 'total' ? label : key}</span>)}<small>{model.stacked ? 'Stacked totals' : view === 'age_gender' ? 'Rates by gender' : label}{currency && ['spend', 'costPerResult'].includes(metric) ? ` · ${currency}` : ''}</small></div>
-    <div className={styles.audienceChart} style={view === 'gender' ? { height: 180 } : undefined} role="img" aria-label={`${label} by ${view === 'gender' ? 'gender' : 'age'}. Exact values are in Segment details below.`}>
+    <div className={styles.audienceChart} style={view === 'gender' ? { height: 180 } : undefined} role="img" aria-label={`${label} by ${view === 'gender' ? 'gender' : 'age'}.`}>
       <ResponsiveContainer width="100%" height="100%"><BarChart data={model.rows} layout="vertical" margin={{ top: 4, right: 12, bottom: 0, left: 0 }} barSize={model.stacked ? 20 : view === 'age_gender' ? 6 : 22} accessibilityLayer>
         <CartesianGrid horizontal={false} stroke="var(--ui-line)" strokeDasharray="3 5" />
         <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: 'var(--ui-muted)', fontSize: 10 }} tickFormatter={value => metric === 'ctr' ? `${value}%` : new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)} />
@@ -29,7 +43,9 @@ export default function AudienceChart({ rows, currency }: { rows: AudienceObserv
         {model.series.map(key => <Bar key={key} dataKey={key} stackId={model.stacked ? 'audience' : undefined} fill={COLORS[key]} radius={3} isAnimationActive={false} />)}
       </BarChart></ResponsiveContainer>
     </div>
-    <p className={styles.note}>{model.stacked ? 'Each bar combines reported gender segments within an age group.' : view === 'age_gender' ? 'Rates use each segment’s aggregate inputs; they are not added together.' : 'Unknown demographics remain included.'}{!hasResults ? ' Results unavailable for this source.' : ''}</p>
-    <details className={styles.details}><summary>Segment details</summary><div className={styles.tableScroll} tabIndex={0} role="region" aria-label="Audience segment values"><table><caption>{label}{['ctr', 'costPerResult'].includes(metric) ? ' · recomputed from aggregate inputs' : ''}</caption><thead><tr><th scope="col">{view === 'gender' ? 'Gender' : 'Age'}</th>{model.series.map(key => <th scope="col" key={key}>{key === 'total' ? label : key}</th>)}</tr></thead><tbody>{model.rows.map(row => <tr key={row.label}><th scope="row">{row.label}</th>{model.series.map(key => <td key={key}>{format(row[key as keyof typeof row] as number | null)}</td>)}</tr>)}</tbody></table></div></details>
+    {top && <div className={styles.topSegment}>
+      <div><span>{efficient ? 'Best cost per result' : 'Top spending segment'}</span><strong>{top[0]}</strong></div>
+      <div>{efficient ? <><b>{money(top[1].spend / top[1].results!)}</b><small>{top[1].results} results · {money(top[1].spend)} spend</small></> : <><b>{money(top[1].spend)}</b><small>spend{top[1].results !== null ? ` · ${top[1].results} results` : ''}</small></>}</div>
+    </div>}
   </>;
 }

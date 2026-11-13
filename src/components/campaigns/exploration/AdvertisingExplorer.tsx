@@ -129,6 +129,11 @@ export function MediaImage({
   }, [src]);
   return (
     <div className={classes.media}>
+      {dashboard && src && (
+        // Decorative fill from the same creative, so letterboxing never shows empty bands.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className={classes.mediaBackdrop} src={src} alt="" aria-hidden="true" referrerPolicy="no-referrer" loading="lazy" />
+      )}
       {src /* Synced Meta assets have variable hosts and expiring URLs. */ ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

@@ -6,6 +6,7 @@ import {
 } from "@tabler/icons-react";
 import {
   loadOverviewContext,
+  loadChartMarkerSources,
   loadOverviewHistory,
   loadOverviewDecisions,
   loadOverviewEntities,
@@ -34,7 +35,11 @@ import DesignSurface from '@/components/design/DesignSurface';
 import PixelCompanion from '@/components/brand/PixelCompanion';
 import { resourceRefreshEnabled } from '@/lib/server/sync/resources/coordinator';
 import { loadInsights } from '@/lib/server/dashboard/insights/load';
-import { selectRows, publisher, advertisingMetrics, livePerformance, type Publisher } from '@/lib/server/dashboard/insights/model';
+import { selectRows, publisher, advertisingMetrics, livePerformance, deliveredToday, type Publisher, type Insight } from '@/lib/server/dashboard/insights/model';
+import { LiveIndicator } from '@/components/design/LiveIndicator';
+import { adSetSignals } from '@/lib/server/dashboard/insights/signals';
+import { periodContext } from '@/lib/server/dashboard/insights/compare';
+import { chartMarkers } from '@/lib/server/dashboard/overview/markers';
 import AudienceIntelligence from './components/AudienceIntelligence';
 import { audienceObservations, hourlyObservations } from '@/lib/server/dashboard/insights/charts';
 import { PlatformControl } from './components/OverviewControls';
@@ -60,19 +65,23 @@ const decisions = cache(async (context: OverviewContext) => {
 });
 const performance = cache(async (context: OverviewContext, period: Period) => {
   const live = await loadInsights(context);
-  if (live.daily !== null && !(resourceRefreshEnabled() && context.publisher === 'combined')) return { ...livePerformance(live.daily, context.publisher, period, context.today, context.account!.currency_code), ...comparisons(live.daily, context.publisher, period, context.today, context.account!.currency_code, live.fetchedAt, context.now, { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) };
-  if (context.publisher !== 'combined') return livePerformance([], context.publisher, period, context.today, context.account!.currency_code);
+  const withContext = <T extends object>(view: T, daily: Insight[] | null) => ({
+    ...view,
+    context: periodContext({ daily, hourly: live.hourly, platform: context.publisher, period, today: context.today, now: context.now, zone: context.zone, currency: context.account!.currency_code }),
+  });
+  if (live.daily !== null && !(resourceRefreshEnabled() && context.publisher === 'combined')) return withContext({ ...livePerformance(live.daily, context.publisher, period, context.today, context.account!.currency_code), ...comparisons(live.daily, context.publisher, period, context.today, context.account!.currency_code, live.fetchedAt, context.now, { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) }, live.daily);
+  if (context.publisher !== 'combined') return withContext(livePerformance([], context.publisher, period, context.today, context.account!.currency_code), null);
   const [rows, entities] = await Promise.all([
     loadOverviewHistory(context.businessId, context.account!.id, context.today),
     loadOverviewEntities(context.businessId, context.account!.id),
   ]);
+  const dated: Insight[] = rows.map(row => ({ ...row, externalId: row.entity_id, publisher: 'combined', label: '' }));
   if (resourceRefreshEnabled()) {
-    const dated = rows.map(row => ({ ...row, externalId: row.entity_id, publisher: 'combined', label: '' }));
-    return { ...controlPerformance(rows, entities, period, context.today, context.account!.currency_code),
+    return withContext({ ...controlPerformance(rows, entities, period, context.today, context.account!.currency_code),
       ...comparisons(dated, 'combined', period, context.today, context.account!.currency_code, live.canonicalFetchedAt ?? '', context.now,
-        { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) };
+        { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) }, dated);
   }
-  return { ...controlPerformance(rows, entities, period, context.today, context.account!.currency_code), deltas: {}, comparison: 'Comparison unavailable while using stored fallback data.' };
+  return withContext({ ...controlPerformance(rows, entities, period, context.today, context.account!.currency_code), deltas: {}, comparison: 'Comparison unavailable while using stored fallback data.' }, dated);
 });
 function timestamp(at: string | null | undefined, zone: string) {
   return at && Number.isFinite(Date.parse(at))
@@ -90,17 +99,34 @@ function Loading({
 }: {
   kind?: "rows" | "metrics" | "chart" | "board";
 }) {
+  // Skeletons mirror the final layouts so sections don't jump as they stream in.
+  const bar = (className = "") => <span className={`${classes.skeleton} ${className}`} />;
+  if (kind === "metrics") return (
+    <div role="status" aria-label="Loading performance" className={classes.skeletonKpis}>
+      {[0, 1, 2, 3].map(i => <div key={i}>{bar(classes.skLabel)}{bar(classes.skValue)}{bar(classes.skFoot)}</div>)}
+    </div>
+  );
+  if (kind === "chart") return (
+    <div role="status" aria-label="Loading chart" className={classes.skeletonChart}>
+      <div>{[0, 1, 2, 3].map(i => <span key={i} className={`${classes.skeleton} ${classes.skTab}`} />)}</div>
+      {bar(classes.skPlot)}
+    </div>
+  );
+  if (kind === "board") return (
+    <div role="status" aria-label="Loading advertising" className={classes.skeletonBoard}>
+      {bar(classes.skHeading)}
+      <div className={classes.skCard}>
+        {bar(classes.skMedia)}
+        <div>{bar(classes.skTitle)}{bar(classes.skStats)}{bar(classes.skFoot)}<div className={classes.skMeters}>{bar()}{bar()}</div></div>
+      </div>
+    </div>
+  );
   return (
-    <div
-      role="status"
-      aria-label="Loading dashboard section"
-      className={`${classes.loading} ${kind === "chart" ? classes.chartLoading : kind === "board" ? classes.boardLoading : kind === "metrics" ? classes.metricsLoading : ""}`}
-    >
-      {kind === 'rows' && <PixelCompanion state="analyzing" size={28} />}
+    <div role="status" aria-label="Loading dashboard section" className={classes.loading}>
+      <PixelCompanion state="analyzing" size={32} />
       <span />
       <span />
       <span />
-      {kind === "metrics" && <span />}
     </div>
   );
 }
@@ -137,9 +163,15 @@ async function Trend({
   context: OverviewContext;
   period: Period;
 }) {
-  const view = await performance(context, period).catch(() => null);
+  const [view, markers] = await Promise.all([
+    performance(context, period).catch(() => null),
+    // Markers are optional context; their failure never hides the chart.
+    loadChartMarkerSources(context.businessId, context.account!.id, periodRange(period === "today" ? "7d" : period, context.today).since)
+      .then(({ entities, events }) => chartMarkers(entities, events, periodRange(period === "today" ? "7d" : period, context.today).since, context.today, context.zone))
+      .catch(() => []),
+  ]);
   return view ? (
-    <ControlTrend view={view} todayOnly={period === "today"} />
+    <ControlTrend view={view} markers={markers} />
   ) : (
     <ErrorMessage>Daily trend unavailable.</ErrorMessage>
   );
@@ -153,7 +185,8 @@ async function Board({ period, context }: { period: Period; context: OverviewCon
   );
   if (view) {
     const live = await loadInsights(context);
-    return <AdvertisingBoard view={{ ...view, items: advertisingMetrics(view.items, resourceRefreshEnabled() && context.publisher === 'combined' ? null : live.daily, context.publisher, period, context.today, view.currency) }} learning={live.learning} filtered={context.publisher !== 'combined'} />;
+    const signals = adSetSignals(live.daily, view.items.map(i => i.id), live.learningDetail ?? {}, context.today, context.now, context.target);
+    return <AdvertisingBoard view={{ ...view, items: advertisingMetrics(view.items, resourceRefreshEnabled() && context.publisher === 'combined' ? null : live.daily, context.publisher, period, context.today, view.currency) }} learning={live.learning} signals={signals} filtered={context.publisher !== 'combined'} />;
   }
   return view ? (
     <AdvertisingBoard view={view} />
@@ -203,7 +236,7 @@ async function Activity({ context }: { context: OverviewContext }) {
     </section>
   );
 }
-async function Content({ period, preview, platform }: { period: Period; preview: boolean; platform: Publisher }) {
+async function Content({ requestedPeriod, preview, platform }: { requestedPeriod: Period | null; preview: boolean; platform: Publisher }) {
   const context: OverviewContext = { ...await loadOverviewContext(), decisionPreview: preview, publisher: platform };
   const connected =
     context.platform?.status === "connected" &&
@@ -213,7 +246,7 @@ async function Content({ period, preview, platform }: { period: Period; preview:
   if (!savedMetaAccount || !context.account)
     return (
       <section className={classes.emptyState}>
-        <PixelCompanion size={56} />
+        <PixelCompanion size={64} />
         <h1>Connect your advertising</h1>
         <p>
           Connect Meta and choose an account to see your advertising and
@@ -233,7 +266,7 @@ async function Content({ period, preview, platform }: { period: Period; preview:
   )
     return (
       <section className={classes.emptyState}>
-        <PixelCompanion size={56} state={sync.data?.activeJobStatus === 'failed' ? 'attention' : ['queued', 'running'].includes(sync.data?.activeJobStatus ?? '') ? 'analyzing' : 'idle'} />
+        <PixelCompanion size={64} state={sync.data?.activeJobStatus === 'failed' ? 'attention' : ['queued', 'running'].includes(sync.data?.activeJobStatus ?? '') ? 'analyzing' : 'idle'} />
         <h1>Your first sync</h1>
         <p>
           {sync.data?.activeJobStatus === "failed"
@@ -245,20 +278,23 @@ async function Content({ period, preview, platform }: { period: Period; preview:
       </section>
     );
   const live = await loadInsights(context);
+  // Reuses the already-loaded daily insights: open on Today only when something delivered today.
+  const delivering = deliveredToday(live.daily, platform, context.today);
+  const period: Period = requestedPeriod ?? (delivering ? "today" : "7d");
   const audience = live.audience === null ? null : audienceObservations(selectRows(live.audience, platform, period, context.today));
   const hourly = live.hourly === null ? null : hourlyObservations(selectRows(live.hourly, platform, period, context.today));
   const retrievedAt = resourceRefreshEnabled() && platform === 'combined' ? live.canonicalFetchedAt : live.fetchedAt;
   const age = retrievedAt ? Date.parse(context.now) - Date.parse(retrievedAt) : Infinity;
   return <div className={classes.page} data-publisher={platform}>
     {preview && <DecisionPreviewBanner page="dashboard" />}
-    <header className={classes.workspaceHeader}><div><h1>{context.businessName}</h1><p>{context.account.name}</p></div><div><PlatformControl platform={platform} /><PeriodControl period={period} /></div></header>
-    <details className={classes.freshness}><summary>{live.source === 'api' || live.source === 'stored' ? age > 600000 ? 'Previously retrieved Meta data' : 'Updated recently' : platform === 'combined' ? 'Stored data · live retrieval unavailable' : 'Platform data unavailable'}</summary>
+    <header className={classes.workspaceHeader}><div><h1>{context.businessName}</h1><p>{context.account.name}</p></div><div className={classes.headerControls}><PlatformControl platform={platform} /><PeriodControl period={period} /></div></header>
+    <details className={classes.freshness}><summary>{delivering && <LiveIndicator />}<span>{live.source === 'api' || live.source === 'stored' ? `${age > 600000 ? 'Last updated' : 'Updated'} ${retrievedAt ? timestamp(retrievedAt, context.zone) : 'recently'}` : platform === 'combined' ? 'Stored data · live retrieval unavailable' : 'Platform data unavailable'}</span></summary>
       <p>Meta attribution may change after reporting. {retrievedAt ? `Retrieved ${timestamp(retrievedAt, context.zone)}.` : `Stored sync ${timestamp(context.account.last_synced, context.zone)}.`} Account timezone: {context.zone}.</p>
-      <p>Today is partial. Gaps and unknown metrics remain unavailable. Publisher means where an ad was delivered, not where a customer contacted you.</p>
+      <p>Today is live and updates as Meta reports delivery.</p>
       <RefreshOverview disabled={preview} label="Recover stored Meta data" /><Link href="/integration">Connection settings</Link>
     </details>
     {!connected && <ErrorMessage>Meta connection needs attention. Saved data remains available; reconnect in Connections.</ErrorMessage>}
-    <section aria-label="Account performance"><Suspense key={`${period}:${platform}`} fallback={<Loading kind="metrics" />}><Metrics context={context} period={period} /></Suspense></section>
+    <section aria-label="Account performance" className={classes.kpiSection}><Suspense key={`${period}:${platform}`} fallback={<Loading kind="metrics" />}><Metrics context={context} period={period} /></Suspense></section>
     <section className={classes.workspaceChart} aria-label="Performance chart"><Suspense key={`${period}:${platform}`} fallback={<Loading kind="chart" />}><Trend context={context} period={period} /></Suspense></section>
     <section className={classes.board}><Suspense key={`${period}:${platform}`} fallback={<Loading kind="board" />}><Board period={period} context={context} /></Suspense></section>
     <AudienceIntelligence key={`${period}:${platform}`} audience={audience} hourly={hourly} currency={context.account.currency_code} zone={context.zone} period={period} platform={platform} since={periodRange(period, context.today).since} until={context.today} audienceCombinedOnly={live.audience?.some(r => r.publisher === 'combined-only') ?? false} hourlyCombinedOnly={live.hourly?.some(r => r.publisher === 'combined-only') ?? false} />
@@ -267,5 +303,5 @@ async function Content({ period, preview, platform }: { period: Period; preview:
 }
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ period?: string; preview?: string; publisher?: string }> }) {
   const params = await searchParams;
-  return <DesignSurface label="Overview"><Suspense fallback={<Loading kind="chart" />}><Content period={parsePeriod(params.period)} preview={isDecisionPreview(params.preview)} platform={publisher(params.publisher)} /></Suspense></DesignSurface>;
+  return <DesignSurface label="Overview"><Suspense fallback={<Loading kind="chart" />}><Content requestedPeriod={params.period === undefined ? null : parsePeriod(params.period)} preview={isDecisionPreview(params.preview)} platform={publisher(params.publisher)} /></Suspense></DesignSurface>;
 }

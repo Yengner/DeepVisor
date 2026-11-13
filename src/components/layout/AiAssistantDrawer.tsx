@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import { Drawer, Menu, Tooltip } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
+import { ASK_EVENT, type AskDetail } from '@/lib/shared/assistant/askEvent';
 import { IconSparkles, IconX, IconPlus, IconArrowUp, IconArrowDown, IconDots, IconPaperclip, IconTrash, IconInfoCircle } from '@tabler/icons-react';
 import AssistantAnswer from './AssistantAnswer';
 import AssistantDraftCard from './AssistantDraftCard';
@@ -14,6 +15,17 @@ export default function AiAssistantDrawer({ payload, children }: { payload: Glob
   const [opened, setOpened] = useState(false);
   const [width, setWidth] = useState(380);
   const [draft, setDraft] = useState('');
+  // Other surfaces (e.g. dashboard ad cards) open the assistant with a pre-filled draft.
+  useEffect(() => {
+    const onAsk = (event: Event) => {
+      const question = (event as CustomEvent<AskDetail>).detail?.question;
+      if (typeof question !== 'string' || !question.trim()) return;
+      setDraft(question.slice(0, 2000));
+      setOpened(true);
+    };
+    window.addEventListener(ASK_EVENT, onAsk);
+    return () => window.removeEventListener(ASK_EVENT, onAsk);
+  }, []);
   const [newData, setNewData] = useState(false);
   useEffect(() => {
     const updated = (event: Event) => { if ((event as CustomEvent<{accountId:string}>).detail?.accountId === payload?.selectedAdAccountId) setNewData(true); };
@@ -103,12 +115,12 @@ export default function AiAssistantDrawer({ payload, children }: { payload: Glob
     <div className={classes.workspace}>
       <div className={classes.main}>{children}</div>
       {opened && !mobile && <aside className={classes.panel} style={{ width }} aria-label="DeepVisor assistant" onKeyDown={e => { if (e.key === 'Escape') close(); }}>
-        <div role="separator" aria-label="Resize assistant" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={typeof window === 'undefined' ? 600 : Math.floor((window.innerWidth - 60) / 2)} aria-valuenow={Math.round(width)} tabIndex={0} className={classes.resize}
+        <div role="separator" aria-label="Resize assistant" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={typeof window === 'undefined' ? 600 : Math.floor(assistantWidth(Infinity, window.innerWidth - 60))} aria-valuenow={Math.round(width)} tabIndex={0} className={classes.resize}
           onKeyDown={e => { if (['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) { e.preventDefault(); setWidth(w => assistantWidth(e.key === 'Home' ? 320 : e.key === 'End' ? window.innerWidth : w + (e.key === 'ArrowLeft' ? 24 : -24), window.innerWidth - 60)); } }}
           onPointerDown={e => { drag.current = true; e.currentTarget.setPointerCapture(e.pointerId); }} onPointerMove={e => { if (drag.current) setWidth(assistantWidth(window.innerWidth - e.clientX, window.innerWidth - 60)); }} onPointerUp={() => { drag.current = false; }} onPointerCancel={() => { drag.current = false; }} />{content}
       </aside>}
     </div>
-    {/* "Ask DeepVisor" launcher removed for now; the drawer has no other entry point. */}
+    {!opened && <button ref={trigger} className={classes.launcher} aria-expanded={opened} aria-label="Open DeepVisor assistant" onClick={() => setOpened(v => !v)}><IconSparkles size={20} /> Ask DeepVisor</button>}
     <Drawer onEnterTransitionEnd={scrollToLatest} opened={opened && mobile} onClose={close} position="right" size="100%" title="DeepVisor AI" withCloseButton={false} styles={{ body: { height: 'calc(100dvh - 60px)', padding: 0 } }} trapFocus returnFocus>{content}</Drawer>
   </>;
 }
