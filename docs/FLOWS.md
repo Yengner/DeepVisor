@@ -62,25 +62,93 @@ forwards to it; `process_meta_backfill_jobs` is a compatibility function name.
 Browser `router.refresh()` only reloads persisted views. Existing cron SQL is an
 operator deployment procedure, not a setup command for this refactor.
 
+### Webhook boundary and refresh sequence
+
+Purpose: show how observations actually arrive. No Meta webhook receiver, challenge
+handler, signature validator or subscription setup was found in committed `src` or
+`supabase`. External dashboard subscriptions are unverified; no webhook delivery is
+assumed below. OAuth callback is not a webhook ingestion path.
+
+```mermaid
+sequenceDiagram
+  participant B as Browser
+  participant C as pg_cron / Edge
+  participant A as Next.js API
+  participant D as PostgreSQL queue
+  participant W as Next.js worker
+  participant M as Meta Graph / Insights
+  Note over A,M: No implemented Meta webhook ingestion path found
+  alt Authorized manual or app freshness request
+    B->>A: Refresh selected account
+    A->>A: Validate session, business, selection and eligibility
+  else Scheduled enqueue (currently inactive in development)
+    C->>A: Scheduled refresh with internal credential
+    A->>A: Validate internal credential and eligibility
+  end
+  A->>D: Atomically create/reuse account job
+  A-->>B: Job/coverage status (browser requests only)
+  Note over A,W: Manual/app dispatch can run after response
+  C->>A: Existing worker tick via authenticated Edge forwarder
+  A->>W: Process bounded queued work
+  W->>D: Atomic claim; generation/lease when resource mode enabled
+  W->>M: Read hierarchy, creatives and date-scoped Insights
+  alt Complete provider response
+    M-->>W: Observations, coverage and quota headers
+    W->>D: Persist facts; mark coverage/job state
+    Note over W,D: Resource jobs stage then atomically publish a window
+    W->>W: Invalidate saved read models; gated downstream work
+  else Deferred, failed or interrupted read
+    W->>D: Defer/backoff or fail; expired claim recovery
+    Note over D,M: Missing data is unavailable; never inferred zero
+  end
+  B->>A: Poll scoped durable status then reload views
+```
+
+The queue owns accepted work, Meta owns observations, and coverage/revision records
+own the app's freshness claim. One active job per account deduplicates triggers;
+resource demand may coalesce or persist a follow-up. Resource mode is implemented
+behind `DEEPVISOR_RESOURCE_REFRESH`; hosted enablement is unverified. Its worker
+uses generation fencing, request admission, quota deferral and staged publication.
+Legacy full sync can expose partially updated stages. See the
+[resource contract](../src/lib/server/sync/resources/README.md) for exact retry,
+window, circuit-breaker and publication semantics. Cron dispatch success is not job
+completion, completed sync is not completed inference, and Meta attribution can lag.
+The [infrastructure ledger](SYSTEM_DIAGRAM.md#verification-ledger--2026-11-13)
+records observed schedules without claiming remote handler parity or successful runs.
+
 ## 2. Ingestion through account intelligence
 
 ```mermaid
-flowchart LR
-  M[Meta reads] --> N[Normalization]
-  N --> F[Entity, creative and performance facts]
-  F --> A[Account assessments]
-  A --> S[Signals and business synthesis]
-  F --> T[Trend findings and queue context]
+flowchart TD
+  M[Meta hierarchy, creative and Insights reads] --> F[(Normalized entities and performance facts)]
+  F --> A[Account assessment and trends]
+  A --> S[(Assessments, signals and findings)]
+  A -.->|optional summary| O[OpenAI structured adapter]
+  S --> Q[Calendar queue, notifications and report context]
   F --> V[Overview, Campaigns and Reports read models]
   S --> V
-  T --> V
+  F --> L[Observed lifecycle and health evidence]
+  L --> I[(Issues, lifecycle events and briefs)]
+  I --> P[Immutable per-user Insights presentations]
+  F --> P
+  F --> J[Eligible sync completion: gated evaluation enqueue]
+  J --> E[(Captured source rows, hash and evaluation job)]
+  E --> B[Pure versioned feature calculation]
+  B --> D[DecisionEngine and validated provider result]
+  D --> JE[Jev DecisionProvider]
+  D --> PO[Deterministic PolicyEngine via orchestration]
+  PO --> R[(Proposal and policy audit)]
+  R --> X[Separate approval and gated executor]
+  X --> U[(Execution audit and observed outcomes)]
+  classDef data fill:#f3eeff,stroke:#b9a6f0,color:#1b1f24
+  class F,S,I,E,R,U data
 ```
 
 [`sync/meta/fetch.ts`](../src/lib/server/sync/meta/fetch.ts) and
 [`normalization.ts`](../src/lib/server/sync/meta/normalization.ts) handle provider
 reads and shapes. `syncMetaCampaigns`, `syncMetaAdsets`, `syncMetaAds`,
-`syncMetaAdCreatives` and `syncMetaPerformance` write legacy and unified records
-through their repositories. Creative media follows Meta response → `ad_creatives`
+`syncMetaAdCreatives` and `syncMetaPerformance` write normalized records; legacy
+repository names/views retain compatibility contracts. Creative media follows Meta response → `ad_creatives`
 → [`exploration/model.ts`](../src/lib/server/campaigns/exploration/model.ts) / shared
 media helpers → presentation. Ad-set card metrics remain ad-set metrics.
 
@@ -99,6 +167,23 @@ Overview reads normalized persisted facts through
 lineage in [`decisionRecords.ts`](../src/lib/server/dashboard/overview/decisionRecords.ts).
 No provider is called by those Overview loaders. Optional missing evidence is
 reported unavailable; a successful sync is not a completed decision evaluation.
+
+The assessment branch and Jev branch have different ownership: assessment/trend
+services own digests and workflow suggestions; versioned features and validated
+runs own decision evidence. OpenAI summary failure can fall back to deterministic
+assessment text; Jev failure produces a failed decision run, never a fallback HOLD.
+[Assessment service](../src/lib/server/intelligence/assessments/service.ts),
+[evaluation orchestration](../src/lib/server/decisions/shadow/service.ts).
+
+Insights & Events is a third, deterministic saved-evidence path: no inference provider
+or advertising executor. [Issue capture](../src/lib/server/insights/issues.ts) and
+[lifecycle capture](../src/lib/server/lifecycle/service.ts) run within existing sync
+work; failures preserve prior evidence instead of asserting resolution. Per-user
+presentation receipts/reviews do not resolve underlying issues. Its
+[contract](../src/lib/server/insights/README.md) owns flags, claims and delivery rules.
+These arrows indicate derivation/calls, not FKs; physical lineage is in the
+[ERDs](DATABASE_RELATIONSHIPS.md). Rates require compatible coverage and currency;
+Feature V1 frequency uses summed daily reach, not unique period reach.
 
 ## 3. Features → decisions → policy
 

@@ -61,6 +61,9 @@ integration and validate before side effects.
 
 ## Data model and lineage
 
+See the [domain ERDs](DATABASE_RELATIONSHIPS.md) for physical keys, logical references
+and cardinality, and the [container view and infrastructure evidence](SYSTEM_DIAGRAM.md).
+
 The [generated bindings](../src/lib/shared/types/supabase.ts) cover `public`, `ai`
 and `intelligence`. The [migration directory](../supabase/migrations) records
 incremental changes and security constraints, but does not contain a complete
@@ -73,7 +76,7 @@ bootstrap schema.
 | `ad_account_sync_state`, `account_sync_jobs` | Coverage, durable queued/running/completed work and recovery state. |
 | `ad_entities`, `ad_creatives` | Unified campaign → ad set → ad hierarchy and recognizable media. External Meta IDs differ from internal UUIDs. |
 | `ad_entity_performance_*`, `ad_account_performance_*` | Normalized daily/hourly/monthly/summary observations; preserve account timezone, currency, entity level and missingness. |
-| `campaign_dims`, `adset_dims`, `ad_dims` and legacy performance tables | Compatibility reads/writes still used by reports, campaign tables and intelligence. Not replaceable merely because unified entities exist. |
+| `campaign_dims`, `adset_dims`, `ad_dims` and legacy performance names | Compatibility views over unified storage in the inspected development schema; repository writers delegate to normalized tables. They are not separate physical stores. |
 | `ai.business_assessments`, intelligence findings/signals/calendar/report records | Existing account digests, findings, workflow queues, notifications and archives. |
 | `ai.feature_snapshots` → `decision_runs` → `action_proposals` → `executed_actions` → `action_outcomes` | Versioned evidence, provider result, proposed intent, execution audit and observational measurements. |
 | `ai.autonomy_policies`, evaluation jobs, execution claims/controls | Independent policy configuration, inference deduplication and durable execution exclusion. |

@@ -8,6 +8,7 @@ Deployment, configuration and enabled execution require separate evidence.
 | [Architecture](ARCHITECTURE.md) | Responsibilities, identity, data lineage and safety boundaries |
 | [System diagram](SYSTEM_DIAGRAM.md) | Editable system view, source evidence and verification limits |
 | [Codebase map](CODEBASE_MAP.md) | Directory ownership, routes and compatibility surfaces |
+| [Database relationships](DATABASE_RELATIONSHIPS.md) | Domain ERDs, physical constraints, logical references and cardinality |
 | [Flows](FLOWS.md) | Workflow sequences and entry points |
 | [Development guide](DEVELOPMENT_GUIDE.md) | Setup, validation, configuration and migration process |
 | [Architecture audit](ARCHITECTURE_AUDIT.md) | Historical findings; recheck before treating as current debt |
