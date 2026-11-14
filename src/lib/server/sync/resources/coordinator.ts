@@ -16,7 +16,8 @@ export function performanceRange(timezone: string | null, source: 'app_visit' | 
   if (!today) throw new Error('Advertiser timezone unavailable');
   return { since: shiftReportDay(today, source === 'app_visit' ? -1 : -6), until: today };
 }
-export async function requestResource(scope: ResourceScope, kind: 'performance' | 'audience' | 'maintenance', query: { since: string; until: string; source: string; breakdown?: SnapshotBreakdown }): Promise<ResourceResult> {
+export type EventObject = { id: string; level: 'campaign' | 'adset' | 'ad' | 'creative' };
+export async function requestResource(scope: ResourceScope, kind: 'performance' | 'audience' | 'maintenance' | 'events', query: { since: string; until: string; source: string; breakdown?: SnapshotBreakdown; objects?: EventObject[] }): Promise<ResourceResult> {
   if (!resourceRefreshEnabled()) return { status: 'skipped', reason: 'disabled' };
   if (scope.allowSimulation) assertSimulationEnabled();
   const { data, error } = await createAdminClient().rpc('request_account_resource', {
@@ -45,4 +46,18 @@ export async function requestRecentPerformance(scope: ResourceScope, source: 'ap
   if(correction.error)throw correction.error;
   const maintenance=await requestResource(scope,'maintenance',{since:correction.data?shiftReportDay(range.until,-Math.min(6,Math.max(1,policy.data?.daily_history_days??30)-1)):since,until:range.until,source});
   return result.jobId ? result : maintenance.jobId ? maintenance : result;
+}
+
+/**
+ * A provider event (verified webhook) asks for a status/issue re-read of the hierarchy through the
+ * same queue as every other trigger. `objects` narrows the read; null means read everything.
+ * It never reads or rewrites performance facts.
+ */
+export async function requestAccountEvents(scope: ResourceScope, objects: EventObject[] | null): Promise<ResourceResult> {
+  if (!resourceRefreshEnabled()) return { status: 'skipped', reason: 'disabled' };
+  const { data, error } = await createAdminClient().from('ad_accounts').select('timezone').eq('id', scope.adAccountId).eq('business_id', scope.businessId).single();
+  if (error) throw error;
+  const today = accountToday(data.timezone);
+  if (!today) return { status: 'skipped', reason: 'timezone_unavailable' };
+  return requestResource(scope, 'events', { since: today, until: today, source: 'webhook', ...(objects ? { objects } : {}) });
 }

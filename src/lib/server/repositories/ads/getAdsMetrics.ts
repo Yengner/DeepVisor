@@ -79,6 +79,8 @@ export interface AdLifetimeRow {
   frequency: string | null;
   start_date: string;
   end_date: string;
+  /** Raw last reported day (YYYY-MM-DD); may exceed today for lifetime summaries. */
+  last_day?: string | null;
   platform_name: 'meta' | 'google' | 'tiktok';
   raw_data: Json | null;
   ad_format: string | null;
@@ -427,6 +429,7 @@ export async function getAdsLifetimeIncludingZeros(
           frequency: null,
           start_date: formatDisplayDate(totals.firstDay),
           end_date: formatDisplayDate(totals.lastDay),
+          last_day: totals.lastDay ?? null,
           platform_name: vendor,
           raw_data: ad.raw,
           ad_format: deriveAdFormat(ad.raw),

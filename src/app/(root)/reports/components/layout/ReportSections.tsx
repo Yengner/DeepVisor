@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import classes from '../Workspace.module.css';
 export const REPORT_SECTIONS = [
-  ['performance', 'Performance'], ['audience', 'Audience'], ['geography', 'Geography'],
+  ['performance', 'Overview'], ['audience', 'Audience'], ['geography', 'Geography'],
   ['delivery', 'Placements & devices'], ['time', 'Time & day'], ['advertising', 'Advertising'], ['findings', 'Findings'],
 ] as const;
 export type ReportSection = typeof REPORT_SECTIONS[number][0];

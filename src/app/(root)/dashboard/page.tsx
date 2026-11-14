@@ -43,6 +43,8 @@ import { chartMarkers } from '@/lib/server/dashboard/overview/markers';
 import AudienceIntelligence from './components/AudienceIntelligence';
 import { audienceObservations, hourlyObservations } from '@/lib/server/dashboard/insights/charts';
 import { PlatformControl } from './components/OverviewControls';
+import InsightsEntry from '@/components/insights/InsightsEntry';
+import { insightsEnabled } from '@/lib/server/insights/issues';
 type OverviewContext = LiveOverviewContext & { decisionPreview?: boolean; publisher: Publisher };
 
 const decisions = cache(async (context: OverviewContext) => {
@@ -287,7 +289,7 @@ async function Content({ requestedPeriod, preview, platform }: { requestedPeriod
   const age = retrievedAt ? Date.parse(context.now) - Date.parse(retrievedAt) : Infinity;
   return <div className={classes.page} data-publisher={platform}>
     {preview && <DecisionPreviewBanner page="dashboard" />}
-    <header className={classes.workspaceHeader}><div><h1>{context.businessName}</h1><p>{context.account.name}</p></div><div className={classes.headerControls}><PlatformControl platform={platform} /><PeriodControl period={period} /></div></header>
+    <header className={classes.workspaceHeader}><div><h1>{context.businessName}</h1><p>{context.account.name}</p>{insightsEnabled() && <InsightsEntry />}</div><div className={classes.headerControls}><PlatformControl platform={platform} /><PeriodControl period={period} /></div></header>
     <details className={classes.freshness}><summary>{delivering && <LiveIndicator />}<span>{live.source === 'api' || live.source === 'stored' ? `${age > 600000 ? 'Last updated' : 'Updated'} ${retrievedAt ? timestamp(retrievedAt, context.zone) : 'recently'}` : platform === 'combined' ? 'Stored data · live retrieval unavailable' : 'Platform data unavailable'}</span></summary>
       <p>Meta attribution may change after reporting. {retrievedAt ? `Retrieved ${timestamp(retrievedAt, context.zone)}.` : `Stored sync ${timestamp(context.account.last_synced, context.zone)}.`} Account timezone: {context.zone}.</p>
       <p>Today is live and updates as Meta reports delivery.</p>

@@ -4,6 +4,7 @@ import { ReportScopeError } from '@/lib/server/reports/access';
 import { aggregateReportMetrics, sourceUnavailable, buildReportKpis as buildKpis } from '@/lib/shared/reports/metrics';
 import { resolveReportDates, previousReportRange as getPreviousPeriodRange } from '@/lib/shared/reports/dates';
 import { dailyCoverage } from '@/lib/shared/reports/coverage';
+import { matchComparisonDays } from '@/lib/shared/reports/comparison';
 import { loadReportSurfaces } from './surfaces';
 
 import { createSupabaseClient } from '@/lib/server/supabase/server';
@@ -2806,10 +2807,17 @@ export async function buildReportPayload(
   const summary = sumMetrics(summaryRows);
   const coverage = dailyCoverage(currentRows.map(row => row.day), effectiveQuery.dateFrom, effectiveQuery.dateTo);
   const previousCoverage = previousRange ? dailyCoverage(previousRows.map(row => row.day), previousRange.dateFrom, previousRange.dateTo) : undefined;
-  const comparisonDisabledReason = dateContext.comparisonDisabledReason ??
-    (previousRange && (coverage.state !== 'available' || previousCoverage?.state !== 'available')
-      ? 'Comparison unavailable: both periods require observed daily coverage.' : null);
-  const previousTotals = !comparisonDisabledReason && previousRows.length > 0 ? sumMetrics(previousRows) : null;
+  // Compare day-for-day: full coverage compares everything; partial coverage compares only the
+  // days observed in both periods (gaps are never zero). Too few matched days → no comparison.
+  const match = previousRange && !dateContext.comparisonDisabledReason
+    ? matchComparisonDays(currentRows.map(row => row.day), previousRows.map(row => row.day), effectiveQuery, previousRange)
+    : null;
+  const comparisonDisabledReason = dateContext.comparisonDisabledReason ?? match?.reason ?? null;
+  const matchedOnly = match?.basis === 'matched_days';
+  const comparablePreviousRows = matchedOnly ? previousRows.filter(row => match.previousDays.has(row.day)) : previousRows;
+  const previousTotals = !comparisonDisabledReason && comparablePreviousRows.length > 0 ? sumMetrics(comparablePreviousRows) : null;
+  const currentComparableTotals = previousTotals && matchedOnly
+    ? sumMetrics(currentRows.filter(row => match.currentDays.has(row.day))) : null;
   const currencyCode = resolveCurrencyCode(summaryRows);
   const title = resolveTitle({
     query: effectiveQuery,
@@ -2851,6 +2859,7 @@ export async function buildReportPayload(
     summary,
     kpis: buildKpis({
       totals: summary,
+      comparisonTotals: currentComparableTotals,
       previousTotals,
       currencyCode,
     }),
@@ -2859,8 +2868,11 @@ export async function buildReportPayload(
       previousDateFrom: previousRange?.dateFrom ?? null,
       previousDateTo: previousRange?.dateTo ?? null,
       previousTotals,
-      previousSeries: previousTotals ? groupSeries(previousRows, effectiveQuery.groupBy) : [],
+      previousSeries: previousTotals ? groupSeries(comparablePreviousRows, effectiveQuery.groupBy) : [],
       disabledReason: comparisonDisabledReason,
+      basis: previousTotals ? match?.basis ?? null : null,
+      matchedDays: previousTotals ? match?.matchedDays ?? null : null,
+      currentComparableTotals,
       coverage: previousCoverage,
     } satisfies ReportComparisonSummary,
     findings,

@@ -2,9 +2,10 @@ import {Clock3,Info} from 'lucide-react';
 import type {CSSProperties,ReactNode} from 'react';
 import styles from './InsightsView.module.css';
 
-export function InsightDataNotice({title,children,hourly=false}:{title:string;children:ReactNode;hourly?:boolean}){
+/** `gap` (amber) is for real missing data; `neutral` for observed facts such as a zero count. */
+export function InsightDataNotice({title,children,hourly=false,tone='gap'}:{title:string;children:ReactNode;hourly?:boolean;tone?:'gap'|'neutral'}){
  const Icon=hourly?Clock3:Info;
- return <div className={styles.dataNotice} role="status"><Icon size={18} aria-hidden="true"/><div><strong>{title}</strong><p>{children}</p></div></div>;
+ return <div className={styles.dataNotice} data-tone={tone} role="status"><Icon size={18} aria-hidden="true"/><div><strong>{title}</strong><p>{children}</p></div></div>;
 }
 /** An availability diagram, never a substitute for measured performance. */
 export function MissingObservationTrack({hourly=false}:{hourly?:boolean}){

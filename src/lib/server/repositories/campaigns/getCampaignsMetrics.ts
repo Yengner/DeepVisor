@@ -22,6 +22,8 @@ export type CampaignLifetimeRow = {
   frequency: string | null;
   start_date: string;
   end_date: string;
+  /** Raw last reported day (YYYY-MM-DD); may exceed today for lifetime summaries. */
+  last_day?: string | null;
   platform_name: 'meta' | 'google' | 'tiktok';
 };
 
@@ -59,6 +61,7 @@ export async function getCampaignLifetimeIncludingZeros(
     frequency: null,
     start_date: formatDisplayDate(campaign.startDay),
     end_date: formatDisplayDate(campaign.endDay),
+    last_day: campaign.endDay ?? null,
     platform_name: vendor,
   }));
 }

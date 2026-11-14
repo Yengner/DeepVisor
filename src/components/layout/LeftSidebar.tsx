@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { BrandLockup } from '@/components/brand/Brand';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Tooltip } from '@mantine/core';
-import { IconFlask, IconLogout, IconTimeline } from '@tabler/icons-react';
+import { IconFlask, IconLogout } from '@tabler/icons-react';
 import { clientHandleSignOut } from '@/lib/client';
 import { isAppNavItemActive, primaryNavItems, secondaryNavItems } from './navigation';
 
@@ -66,63 +66,26 @@ function RailItem({
   );
 }
 
-function DevInsightsNavigation({ expanded, accountId, showHistory }: { expanded: boolean; accountId: string | null; showHistory: boolean }) {
-  const [attention, setAttention] = useState(0);
+/**
+ * Development-only link to the Insights & Events preview workbench. The saved-updates history
+ * (/insights) is intentionally not in the sidebar: owners reach it from a notification, the
+ * update popup ("All updates") or an issue link, never as a destination of its own.
+ */
+function DevInsightsNavigation({ expanded }: { expanded: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
-
-  useEffect(() => {
-    if (!showHistory || !accountId || pathname === '/insights/preview') return;
-
-    const controller = new AbortController();
-    const refresh = async () => {
-      if (document.visibilityState !== 'visible') return;
-      try {
-        const response = await fetch('/api/insights', { signal: controller.signal });
-        if (!response.ok) return;
-        const data = await response.json();
-        if (!controller.signal.aborted) {
-          setAttention(data.issueCount ?? data.issues.filter((issue: { resolvedAt: string | null }) => !issue.resolvedAt).length);
-        }
-      } catch {
-        // Keep the last known count if a refresh fails.
-      }
-    };
-
-    void refresh();
-    window.addEventListener('deepvisor:data-updated', refresh);
-    window.addEventListener('focus', refresh);
-    document.addEventListener('visibilitychange', refresh);
-    return () => {
-      controller.abort();
-      window.removeEventListener('deepvisor:data-updated', refresh);
-      window.removeEventListener('focus', refresh);
-      document.removeEventListener('visibilitychange', refresh);
-    };
-  }, [accountId, pathname, showHistory]);
-
   return (
-    <>
-      {showHistory && <RailItem
-        active={pathname === '/insights'}
-        expanded={expanded}
-        icon={<IconTimeline size={19} stroke={1.8} />}
-        label="Insights & Events"
-        badge={attention}
-        onClick={() => router.push('/insights')}
-      />}
-      <RailItem
-        active={isAppNavItemActive(pathname, '/insights/preview')}
-        expanded={expanded}
-        icon={<IconFlask size={19} stroke={1.8} />}
-        label="Insights preview"
-        onClick={() => router.push('/insights/preview')}
-      />
-    </>
+    <RailItem
+      active={isAppNavItemActive(pathname, '/insights/preview')}
+      expanded={expanded}
+      icon={<IconFlask size={19} stroke={1.8} />}
+      label="Insights preview"
+      onClick={() => router.push('/insights/preview')}
+    />
   );
 }
 
-export default function Sidebar({ showInsightsPreview, accountId, insightsEnabled }: { showInsightsPreview: boolean; accountId: string | null; insightsEnabled: boolean }) {
+export default function Sidebar({ showInsightsPreview }: { showInsightsPreview: boolean }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -166,7 +129,7 @@ export default function Sidebar({ showInsightsPreview, accountId, insightsEnable
               onClick={() => router.push(item.route)} />;
           })}
           {showInsightsPreview && (
-            <DevInsightsNavigation key={accountId} expanded={isExpanded} accountId={accountId} showHistory={insightsEnabled} />
+            <DevInsightsNavigation expanded={isExpanded} />
           )}
         </nav>
 

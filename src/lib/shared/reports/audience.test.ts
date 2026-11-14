@@ -42,3 +42,22 @@ describe('dated hourly delivery chart', () => {
     expect(buildTimeAnalysis(source, 'costPerResult', 'total', 'USD').every(c => c.value === null)).toBe(true);
   });
 });
+
+describe('buildAudiencePyramid', () => {
+  it('pairs female and male values per age in age order, keeping missing cells null', async () => {
+    const { buildAudiencePyramid } = await import('./audience');
+    const pyramid = buildAudiencePyramid([
+      { key: '35-44 · female', value: 4 }, { key: '18-24 · male', value: 2 },
+      { key: '18-24 · female', value: 6 }, { key: '35-44 · unknown', value: 1 },
+    ])!;
+    expect(pyramid.rows.map(r => r.age)).toEqual(['18-24', '35-44']);
+    expect(pyramid.rows[0]).toMatchObject({ Female: { value: 6 }, Male: { value: 2 }, Unknown: null });
+    expect(pyramid.rows[1].Male).toBeNull();
+    expect(pyramid.max).toBe(6);
+    expect(pyramid.hasUnknown).toBe(true);
+  });
+  it('declines labels that are not age · gender pairs', async () => {
+    const { buildAudiencePyramid } = await import('./audience');
+    expect(buildAudiencePyramid([{ key: '18-24 · female · ad 1', value: 1 }])).toBeNull();
+  });
+});

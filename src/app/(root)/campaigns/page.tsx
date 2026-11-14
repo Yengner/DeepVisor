@@ -29,6 +29,8 @@ export interface FormattedCampaign {
   objective: string;
   startDate: string;
   endDate: string;
+  /** Raw last reported day (YYYY-MM-DD) for "Today" handling. */
+  lastDay?: string | null;
   attribution: string;
   spend: number;
   results: string;
@@ -113,9 +115,10 @@ export default async function CampaignPage({
       objective: c.objective,
       startDate: c.start_date,
       endDate: c.end_date || "",
+      lastDay: c.last_day ?? null,
       attribution: "Unavailable",
       spend: spendNum,
-      results: c.metricsAvailable ? `${totalResults} Results` : "Unavailable",
+      results: c.metricsAvailable ? totalResults.toLocaleString('en-US') : "—",
       metricsAvailable: c.metricsAvailable,
       calls: c.calls,
       reach: c.reach,

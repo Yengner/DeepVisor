@@ -1236,6 +1236,32 @@ export type Database = {
           },
         ]
       }
+      insight_history_views: {
+        Row: {
+          presentation_id: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          presentation_id: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          presentation_id?: string
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insight_history_views_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: true
+            referencedRelation: "insight_presentations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insight_issues: {
         Row: {
           ad_account_id: string
@@ -4326,6 +4352,84 @@ export type Database = {
           },
         ]
       }
+      meta_webhook_events: {
+        Row: {
+          dedupe_key: string
+          detail: Json
+          external_account_id: string
+          field: string
+          id: string
+          matched_accounts: number
+          object_id: string | null
+          object_level: string | null
+          received_at: string
+          sent_at: string | null
+        }
+        Insert: {
+          dedupe_key: string
+          detail?: Json
+          external_account_id: string
+          field: string
+          id?: string
+          matched_accounts?: number
+          object_id?: string | null
+          object_level?: string | null
+          received_at?: string
+          sent_at?: string | null
+        }
+        Update: {
+          dedupe_key?: string
+          detail?: Json
+          external_account_id?: string
+          field?: string
+          id?: string
+          matched_accounts?: number
+          object_id?: string | null
+          object_level?: string | null
+          received_at?: string
+          sent_at?: string | null
+        }
+        Relationships: []
+      }
+      meta_webhook_subscriptions: {
+        Row: {
+          ad_account_id: string
+          business_id: string
+          checked_at: string
+          reason: string | null
+          status: string
+        }
+        Insert: {
+          ad_account_id: string
+          business_id: string
+          checked_at?: string
+          reason?: string | null
+          status: string
+        }
+        Update: {
+          ad_account_id?: string
+          business_id?: string
+          checked_at?: string
+          reason?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_webhook_subscriptions_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: true
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_webhook_subscriptions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_delivery_log: {
         Row: {
           business_id: string
@@ -5076,6 +5180,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      report_saved_views: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          query: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          query: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          query?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_saved_views_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       report_subscriptions: {
         Row: {
@@ -8031,6 +8173,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      complete_account_events: {
+        Args: { p_generation: number; p_job: string }
+        Returns: number
+      }
       publish_account_resource: {
         Args: { p_chunks: number; p_generation: number; p_job: string }
         Returns: number
@@ -8042,6 +8188,18 @@ export type Database = {
           p_generation: number
           p_job: string
           p_previous: string | null
+        }
+        Returns: string
+      }
+      record_meta_webhook_event: {
+        Args: {
+          p_account: string
+          p_detail: Json
+          p_field: string
+          p_key: string
+          p_level?: string
+          p_object?: string
+          p_sent?: string
         }
         Returns: string
       }

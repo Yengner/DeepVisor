@@ -1,49 +1,27 @@
 'use client';
 
 import { MediaImage } from './exploration/AdvertisingExplorer';
-import { DeliveryIndicator } from './DeliveryIndicator';
 
 import type { AdLifetimeRow } from '@/lib/server/data';
+import { Button, Group, Menu, ScrollArea, Table, Text } from '@mantine/core';
+import { IconChartBar, IconCopyPlus, IconExternalLink } from '@tabler/icons-react';
 import {
-  ActionIcon,
-  Box,
-  Button,
-  Group,
-  Loader,
-  Menu,
-  Paper,
-  ScrollArea,
-  Skeleton,
-  Table,
-  Text,
-  Tooltip,
-} from '@mantine/core';
-import {
-  IconChartBar,
-  IconCheck,
-  IconCircle,
-  IconCopyPlus,
-  IconDots,
-  IconEye,
-} from '@tabler/icons-react';
-import StatusBadge from './StatusBadge';
+  EmptyRow,
+  lastActivity,
+  METRIC_COLUMN_COUNT,
+  MetricCells,
+  MetricHeaders,
+  MobileMetrics,
+  RowActions, TruncatedName,
+  rowMetrics,
+  SelectCell,
+  SortHeader,
+  StatusCell,
+  TableSkeleton,
+  useTableRows,
+} from './tableKit';
 import { buildEntityReportUrl } from './reportLinks';
-import { formatRecordedCurrency as formatCurrencyAmount } from './metrics';
 import classes from './CampaignDashboard.module.css';
-
-const BG = 'var(--dv-surface)';
-const BORDER = 'var(--dv-border)';
-const Z_HEADER = 2;
-const Z_STICKY_RIGHT = 4;
-const RIGHT_COL_WIDTH = 24;
-
-const fmtPct = (n?: number) => {
-  if (n == null || !Number.isFinite(n)) {
-    return '0%';
-  }
-
-  return `${n.toFixed(2)}%`;
-};
 
 interface AdsTableProps {
   ads?: (AdLifetimeRow & { delivery?: boolean })[];
@@ -57,6 +35,21 @@ interface AdsTableProps {
   currencyCode?: string | null;
   platformColor?: string;
   fillHeight?: boolean;
+  timezone?: string | null;
+}
+
+const EMPTY_TITLE = 'No ads in this ad set';
+const EMPTY_HINT = 'Ads appear here after the next Meta sync that includes them.';
+
+/** Only formats with an unambiguous owner-facing label; Meta's SHARE/STATUS types are omitted. */
+const FORMAT_LABELS: Record<string, string> = {
+  VIDEO: 'Video',
+  PHOTO: 'Image',
+  IMAGE: 'Image',
+  CAROUSEL: 'Carousel',
+};
+function formatLabel(value?: string | null): string | null {
+  return value ? FORMAT_LABELS[value.toUpperCase()] ?? null : null;
 }
 
 export default function AdsTable({
@@ -71,401 +64,208 @@ export default function AdsTable({
   currencyCode,
   platformColor = 'dark',
   fillHeight = false,
+  timezone = null,
 }: AdsTableProps) {
-  const maxRowsBeforeScroll = 12;
-  const headerH = 44;
-  const rowH = 48;
-  const rows = ads.length;
-  const tableHeight = Math.min(rows, maxRowsBeforeScroll) * rowH + headerH + 8;
-  const scrollHeight = fillHeight ? '100%' : rows > maxRowsBeforeScroll ? tableHeight : undefined;
+  const { sorted, sort, toggle, benchmarkFor } = useTableRows(
+    ads,
+    (ad) => ({ name: ad.name || 'Unnamed ad', metrics: rowMetrics(ad) }),
+    () => 'all',
+    () => 'ads in this ad set',
+  );
+  if (loading) return <TableSkeleton label="ads" />;
 
-  if (loading) {
-    return (
-      <Paper p="md" radius="md" h={fillHeight ? '100%' : undefined}>
-        <Group justify="apart" mb="md">
-          <Text size="lg" fw={600}>Ads</Text>
-          <Loader size="sm" />
-        </Group>
-        <Skeleton h={40} mb="sm" />
-        <Skeleton h={40} mb="sm" />
-        <Skeleton h={40} mb="sm" />
-      </Paper>
-    );
-  }
+  const rows = sorted.map((ad) => {
+    const id = ad.ad_id ?? ad.id;
+    return {
+      ad,
+      id,
+      name: ad.name || 'Unnamed ad',
+      metrics: rowMetrics(ad),
+      benchmark: benchmarkFor(ad),
+      selected: selectedAdId === id,
+      format: formatLabel(ad.ad_format),
+      last: lastActivity(ad.end_date, ad.last_day, timezone),
+      previewImage: ad.creativePreview?.image ?? null,
+      reportHref: buildEntityReportUrl({
+        scope: 'ad',
+        platformIntegrationId,
+        adAccountId,
+        campaignId: ad.campaign_id,
+        adsetId: ad.adset_id,
+        adId: id,
+        startDate: ad.start_date,
+        endDate: ad.end_date,
+      }),
+    };
+  });
+
+  const menuItems = (ad: AdLifetimeRow, previewImage: string | null, reportHref: string) => (
+    <>
+      {onRunAgain ? (
+        <Menu.Item leftSection={<IconCopyPlus size={16} />} onClick={() => onRunAgain(ad)}>
+          Run again
+        </Menu.Item>
+      ) : null}
+      {previewImage ? (
+        <Menu.Item
+          leftSection={<IconExternalLink size={16} />}
+          component="a"
+          href={previewImage}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open creative
+        </Menu.Item>
+      ) : null}
+      <Menu.Item leftSection={<IconChartBar size={16} />} component="a" href={reportHref}>
+        View analytics
+      </Menu.Item>
+    </>
+  );
 
   return (
     <>
       <div className={classes.mobileEntityList}>
-        {ads.length === 0 ? (
-          <Text ta="center" py="md" c="dimmed">
-            No ads found for this ad set
-          </Text>
+        {rows.length === 0 ? (
+          <div className={classes.emptyRow}>
+            <Text fw={600} size="sm">{EMPTY_TITLE}</Text>
+            <Text size="sm" c="dimmed">{EMPTY_HINT}</Text>
+          </div>
         ) : (
-          ads.map((ad) => {
-            const id = ad.ad_id ?? ad.id;
-            const spend = Number(ad.spend || 0);
-            const leads = Number(ad.leads || 0);
-            const messages = Number(ad.messages || 0);
-            const conversions = leads + messages + Number(ad.calls || 0);
-            const previewImage = ad.creativePreview?.image ?? null;
-            const isSelected = selectedAdId === id;
-            const reportHref = buildEntityReportUrl({
-              scope: 'ad',
-              platformIntegrationId,
-              adAccountId,
-              campaignId: ad.campaign_id,
-              adsetId: ad.adset_id,
-              adId: id,
-              startDate: ad.start_date,
-              endDate: ad.end_date,
-            });
-
-            return (
-              <div
-                key={id}
-                role="button"
-                tabIndex={0}
-                className={classes.mobileEntityCard}
-                data-delivering={ad.delivery || undefined}
-                data-selected={isSelected || undefined}
-                onClick={() => onSelectAd?.(id)}
-                onDoubleClick={() => onOpenAd?.(id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    onSelectAd?.(id);
-                  }
-                }}
-              >
-                <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
-                  <Group gap="sm" wrap="nowrap" className={classes.mobileEntityTitleBlock}>
-                    <div style={{ width: 64, height: 64, flexShrink: 0, overflow: "hidden" }}><MediaImage media={ad.creativePreview} name={ad.name} /></div>
-                    <div style={{ minWidth: 0 }}>
-                      <Text fw={800} size="sm" lineClamp={2}>
-                        {ad.name ?? 'Unnamed ad'}
-                      </Text>
-                      <Group gap={6} mt={6} wrap="wrap">
-                        <StatusBadge status={ad.status} />
-                      <DeliveryIndicator active={ad.delivery} />
-                      </Group>
-                    </div>
-                  </Group>
-                  <Menu position="bottom-end" withArrow offset={4}>
-                    <Menu.Target>
-                      <ActionIcon
-                        variant="light"
-                        color={platformColor}
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        <IconDots size={16} />
-                      </ActionIcon>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      {onRunAgain ? (
-                        <Menu.Item
-                          leftSection={<IconCopyPlus size={16} />}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onRunAgain(ad);
-                          }}
-                        >
-                          Run again
-                        </Menu.Item>
-                      ) : null}
-                      {previewImage ? (
-                        <Menu.Item leftSection={<IconEye size={16} />} component="a" href={previewImage} target="_blank">
-                          Preview
-                        </Menu.Item>
-                      ) : null}
-                      <Menu.Item leftSection={<IconChartBar size={16} />} component="a" href={reportHref}>
-                        View Analytics
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
+          rows.map(({ ad, id, name, metrics, benchmark, selected, format, last, previewImage, reportHref }) => (
+            <div
+              key={id}
+              role="button"
+              tabIndex={0}
+              aria-pressed={selected}
+              className={classes.mobileEntityCard}
+              data-delivering={ad.delivery || undefined}
+              data-selected={selected || undefined}
+              onClick={() => onSelectAd?.(id)}
+              onDoubleClick={() => onOpenAd?.(id)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onSelectAd?.(id);
+                }
+              }}
+            >
+              <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
+                <Group gap="sm" wrap="nowrap" className={classes.mobileEntityTitleBlock}>
+                  <div className={`${classes.thumb} ${classes.thumbLarge}`}>
+                    <MediaImage media={ad.creativePreview} name={name} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <Text fw={700} size="sm" lineClamp={2}>{name}</Text>
+                    <Group gap={6} mt={6} wrap="wrap">
+                      <StatusCell status={ad.status} delivering={ad.delivery} />
+                      {format ? <Text size="xs" c="dimmed">{format}</Text> : null}
+                    </Group>
+                  </div>
                 </Group>
+                <RowActions name={name}>{menuItems(ad, previewImage, reportHref)}</RowActions>
+              </Group>
 
-                <div className={classes.mobileMetricGrid}>
-                  <div>
-                    <Text size="var(--dv-text-2xs)" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
-                    <Text fw={800}>{ad.metricsAvailable === false ? '—' : formatCurrencyAmount(spend, currencyCode)}</Text>
-                  </div>
-                  <div>
-                    <Text size="var(--dv-text-2xs)" c="dimmed" tt="uppercase" fw={800}>Results</Text>
-                    <Text fw={800}>{ad.metricsAvailable === false ? '—' : conversions}</Text>
-                  </div>
-                  <div>
-                    <Text size="var(--dv-text-2xs)" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
-                    <Text fw={800}>
-                      {formatCurrencyAmount(
-                        conversions > 0 ? spend / conversions : null,
-                        currencyCode
-                      )}
-                    </Text>
-                  </div>
-                  <details className={classes.moreMetrics} onClick={event=>event.stopPropagation()} onKeyDown={event=>event.stopPropagation()}>
-                    <summary>More metrics</summary>
-                    <Text size="xs" c="dimmed">Click-through rate</Text>
-                    <Text fw={800}>{ad.ctr != null ? fmtPct(Number(ad.ctr)) : '—'}</Text>
-                  </details>
-                </div>
+              <MobileMetrics metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} />
 
-                <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
-                  <Text size="xs" c="dimmed" lineClamp={1} className={classes.mobileActivity}>
-                    Activity: {ad.start_date || '—'} - {ad.end_date || '—'}
-                  </Text>
-                  <Group gap={4} wrap="nowrap" className={classes.mobileEntityActions}>
-                    {onRunAgain ? (
-                      <Button
-                        size="compact-xs"
-                        variant="light"
-                        color={platformColor}
-                        leftSection={<IconCopyPlus size={14} />}
-                        className={classes.mobileRunAgainButton}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onRunAgain(ad);
-                        }}
-                      >
-                        Run again
-                      </Button>
-                    ) : null}
-                    <Text component="a" href={reportHref} size="xs" fw={800} c={platformColor} onClick={(event) => event.stopPropagation()}>
-                      Report
-                    </Text>
-                  </Group>
-                </Group>
-              </div>
-            );
-          })
+              <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
+                <Text size="xs" c="dimmed" lineClamp={1} className={classes.mobileActivity}>
+                  {ad.start_date || '—'} – {last}
+                </Text>
+                {onRunAgain ? (
+                  <Button
+                    size="compact-xs"
+                    variant="light"
+                    color={platformColor}
+                    leftSection={<IconCopyPlus size={14} />}
+                    className={classes.mobileRunAgainButton}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onRunAgain(ad);
+                    }}
+                  >
+                    Run again
+                  </Button>
+                ) : null}
+              </Group>
+            </div>
+          ))
         )}
       </div>
 
-    <ScrollArea
-      className={classes.desktopDataTable}
-      h={scrollHeight}
-      type="always"
-      offsetScrollbars
-      style={{ borderRadius: 8, height: fillHeight ? '100%' : undefined }}
-    >
-      <Table
-        highlightOnHover
-        stickyHeader
-        verticalSpacing="sm"
-        horizontalSpacing="md"
-        withColumnBorders={false}
-        style={{ minWidth: 1200, tableLayout: 'auto', marginBottom: fillHeight ? 18 : undefined }}
+      <ScrollArea
+        className={classes.desktopDataTable}
+        h={fillHeight ? '100%' : undefined}
+        type="auto"
+        offsetScrollbars="present"
+        style={{ borderRadius: 8, height: fillHeight ? '100%' : undefined }}
       >
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th style={{ width: 64, minWidth: 64, textAlign: 'center' }}>Select</Table.Th>
-            <Table.Th style={{ width: 340, maxWidth: 340 }}>Ad Name</Table.Th>
-            <Table.Th style={{ width: 60, textAlign: 'center', whiteSpace: 'nowrap' }}>Preview</Table.Th>
-            <Table.Th className={classes.nowrap}>Status</Table.Th>
-            <Table.Th className={classes.nowrap}>Spend</Table.Th>
-            <Table.Th className={classes.nowrap}>Results</Table.Th>
-            <Table.Th className={classes.nowrap}>Cost/Result</Table.Th>
-            <Table.Th className={classes.nowrap}>CTR</Table.Th>
-            <Table.Th className={classes.nowrap}>CPC</Table.Th>
-            <Table.Th className={classes.nowrap}>CPM</Table.Th>
-            <Table.Th className={classes.nowrap}>Impressions</Table.Th>
-            <Table.Th className={classes.nowrap}>Clicks</Table.Th>
-            <Table.Th className={classes.nowrap}>Reach</Table.Th>
-            <Table.Th className={classes.nowrap}>Link Clicks</Table.Th>
-            <Table.Th className={classes.nowrap}>Leads</Table.Th>
-            <Table.Th className={classes.nowrap}>Messages</Table.Th>
-            <Table.Th
-              style={{
-                width: RIGHT_COL_WIDTH,
-                minWidth: RIGHT_COL_WIDTH,
-                position: 'sticky',
-                right: 0,
-                top: 0,
-                zIndex: Z_HEADER,
-                background: BG,
-                boxShadow: `inset 1px 0 0 ${BORDER}, inset 0 -1px 0 ${BORDER}`,
-              }}
-            />
-          </Table.Tr>
-        </Table.Thead>
-
-        <Table.Tbody>
-          {ads.length === 0 ? (
+        <Table
+          highlightOnHover
+          stickyHeader
+          verticalSpacing="sm"
+          horizontalSpacing="md"
+          withColumnBorders={false}
+          style={{ minWidth: 1100, tableLayout: 'auto', marginBottom: fillHeight ? 18 : undefined }}
+        >
+          <Table.Thead>
             <Table.Tr>
-              <Table.Td colSpan={20}>
-                <Text ta="center" py="md" c="dimmed">
-                  No ads found for this ad set
-                </Text>
-              </Table.Td>
+              <Table.Th style={{ width: 48, minWidth: 48 }}><span className={classes.srOnly}>Select</span></Table.Th>
+              <SortHeader label="Ad" sortKey="name" sort={sort} onSort={toggle} style={{ width: 360, maxWidth: 360 }} />
+              <Table.Th className={classes.nowrap}>Status</Table.Th>
+              <MetricHeaders sort={sort} onSort={toggle} />
+              <Table.Th className={classes.nowrap}>First activity</Table.Th>
+              <Table.Th className={classes.nowrap}>Last activity</Table.Th>
+              <Table.Th className={classes.actionCell}><span className={classes.srOnly}>Actions</span></Table.Th>
             </Table.Tr>
-          ) : (
-            ads.map((ad) => {
-              const id = ad.ad_id ?? ad.id;
-              const spend = Number(ad.spend || 0);
-              const clicks = Number(ad.clicks || 0);
-              const impressions = Number(ad.impressions || 0);
-              const reach = ad.reach;
-              const linkClicks = Number(ad.link_clicks || 0);
-              const leads = Number(ad.leads || 0);
-              const messages = Number(ad.messages || 0);
-              const conversions = leads + messages + Number(ad.calls || 0);
-              const isSelected = selectedAdId === id;
-              const rowBg = isSelected ? 'var(--dv-primary-soft-hover)' : 'transparent';
-              const stickyCellBg = isSelected ? 'var(--dv-primary-soft-hover)' : BG;
-              const reportHref = buildEntityReportUrl({
-                scope: 'ad',
-                platformIntegrationId,
-                adAccountId,
-                campaignId: ad.campaign_id,
-                adsetId: ad.adset_id,
-                adId: id,
-                startDate: ad.start_date,
-                endDate: ad.end_date,
-              });
-              const previewImage = ad.creativePreview?.image ?? null;
+          </Table.Thead>
 
-              return (
+          <Table.Tbody>
+            {rows.length === 0 ? (
+              <EmptyRow colSpan={METRIC_COLUMN_COUNT + 6} title={EMPTY_TITLE} hint={EMPTY_HINT} />
+            ) : (
+              rows.map(({ ad, id, name, metrics, benchmark, selected, format, last, previewImage, reportHref }) => (
                 <Table.Tr
-                  data-delivering={ad.delivery || undefined}
                   key={id}
-                  style={{ background: rowBg, cursor: onSelectAd ? 'pointer' : 'default' }}
+                  data-delivering={ad.delivery || undefined}
+                  data-selected={selected || undefined}
+                  aria-selected={selected}
+                  style={{ cursor: onSelectAd ? 'pointer' : 'default' }}
                   onClick={() => onSelectAd?.(id)}
                   onDoubleClick={() => onOpenAd?.(id)}
                 >
-                  <Table.Td ta="center">
-                    <Tooltip
-                      label={isSelected ? 'Selected ad' : 'Select ad'}
-                      withArrow
-                      withinPortal
-                      openDelay={150}
-                    >
-                      <ActionIcon
-                        aria-label={isSelected ? 'Selected ad' : 'Select ad'}
-                        variant={isSelected ? 'filled' : 'default'}
-                        color={isSelected ? platformColor : 'gray'}
-                        radius="xl"
-                        size="sm"
-                        disabled={!onSelectAd}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onSelectAd?.(id);
-                        }}
-                        onDoubleClick={(event) => event.stopPropagation()}
-                      >
-                        {isSelected ? <IconCheck size={14} /> : <IconCircle size={13} />}
-                      </ActionIcon>
-                    </Tooltip>
-                  </Table.Td>
-                  <Table.Td style={{ width: 340, maxWidth: 340 }}>
-                    <Tooltip
-                      label={ad.name ?? '—'}
-                      multiline
-                      withArrow
-                      withinPortal
-                      position="top-start"
-                      maw={420}
-                      openDelay={200}
-                    >
-                      <Text
-                        size="sm"
-                        fw={500}
-                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                      >
-                        {ad.name ?? '—'}
-                      </Text>
-                    </Tooltip>
-                  </Table.Td>
-                  <Table.Td style={{ textAlign: 'center' }}>
-                    <Box w={64} mx="auto">
-                      <div style={{ width: 64, height: 64, flexShrink: 0, overflow: "hidden" }}><MediaImage media={ad.creativePreview} name={ad.name} /></div>
-                    </Box>
-                  </Table.Td>
                   <Table.Td>
-                    <Group gap="xs" wrap="nowrap" onClick={(event) => event.stopPropagation()}>
-                      <StatusBadge status={ad.status} />
-                      <DeliveryIndicator active={ad.delivery} />
-                    </Group>
+                    <SelectCell
+                      selected={selected}
+                      disabled={!onSelectAd}
+                      label={`Select ${name}`}
+                      onSelect={() => onSelectAd?.(id)}
+                    />
                   </Table.Td>
-                  <Table.Td>{ad.metricsAvailable === false ? '—' : formatCurrencyAmount(spend, currencyCode)}</Table.Td>
-                  <Table.Td>{ad.metricsAvailable === false ? 'Unavailable' : `${conversions} ${conversions === 1 ? 'Result' : 'Results'}`}</Table.Td>
-                  <Table.Td>
-                    {formatCurrencyAmount(
-                      conversions > 0 ? spend / conversions : null,
-                      currencyCode
-                    )}
+                  <Table.Td style={{ width: 360, maxWidth: 360 }}>
+                    <div className={classes.adIdentity}>
+                      <div className={classes.thumb}>
+                        <MediaImage media={ad.creativePreview} name={name} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <TruncatedName name={name} />
+                        {format ? <Text size="xs" c="dimmed">{format}</Text> : null}
+                      </div>
+                    </div>
                   </Table.Td>
-                  <Table.Td>{ad.ctr != null ? fmtPct(Number(ad.ctr)) : '—'}</Table.Td>
-                  <Table.Td>{ad.cpc != null ? formatCurrencyAmount(Number(ad.cpc), currencyCode) : '—'}</Table.Td>
-                  <Table.Td>{ad.cpm != null ? formatCurrencyAmount(Number(ad.cpm), currencyCode) : '—'}</Table.Td>
-                  <Table.Td>{ad.metricsAvailable === false ? '—' : impressions.toLocaleString()}</Table.Td>
-                  <Table.Td>{ad.metricsAvailable === false ? '—' : clicks.toLocaleString()}</Table.Td>
-                  <Table.Td>{reach == null ? '—' : reach.toLocaleString()}</Table.Td>
-                  <Table.Td>{ad.metricsAvailable === false ? '—' : linkClicks.toLocaleString()}</Table.Td>
-                  <Table.Td>{ad.metricsAvailable === false ? '—' : leads.toLocaleString()}</Table.Td>
-                  <Table.Td>{ad.metricsAvailable === false ? '—' : messages.toLocaleString()}</Table.Td>
-
-                  <Table.Td
-                    style={{
-                      width: RIGHT_COL_WIDTH,
-                      minWidth: RIGHT_COL_WIDTH,
-                      position: 'sticky',
-                      right: 0,
-                      zIndex: Z_STICKY_RIGHT,
-                      background: stickyCellBg,
-                      boxShadow: `inset 1px 0 0 ${BORDER}`,
-                    }}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <Group gap={8} justify="center">
-                      {previewImage && (
-                        <Tooltip label="Preview">
-                          <ActionIcon
-                            variant="filled"
-                            color={platformColor}
-                            component="a"
-                            href={previewImage}
-                            target="_blank"
-                          >
-                            <IconEye size={16} />
-                          </ActionIcon>
-                        </Tooltip>
-                      )}
-                      <Menu position="bottom-end" withArrow>
-                        <Menu.Target>
-                          <ActionIcon>
-                            <IconDots size={16} />
-                          </ActionIcon>
-                        </Menu.Target>
-                        <Menu.Dropdown>
-                          {onRunAgain ? (
-                            <Menu.Item
-                              leftSection={<IconCopyPlus size={16} />}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                onRunAgain(ad);
-                              }}
-                            >
-                              Run again
-                            </Menu.Item>
-                          ) : null}
-                          <Menu.Item
-                            leftSection={<IconChartBar size={16} />}
-                            component="a"
-                            href={reportHref}
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            View Analytics
-                          </Menu.Item>
-                        </Menu.Dropdown>
-                      </Menu>
-                    </Group>
+                  <Table.Td><StatusCell status={ad.status} delivering={ad.delivery} /></Table.Td>
+                  <MetricCells metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} />
+                  <Table.Td className={classes.nowrap}><Text size="sm">{ad.start_date || '—'}</Text></Table.Td>
+                  <Table.Td className={classes.nowrap}><Text size="sm">{last}</Text></Table.Td>
+                  <Table.Td className={classes.actionCell}>
+                    <RowActions name={name}>{menuItems(ad, previewImage, reportHref)}</RowActions>
                   </Table.Td>
                 </Table.Tr>
-              );
-            })
-          )}
-        </Table.Tbody>
-      </Table>
-    </ScrollArea>
+              ))
+            )}
+          </Table.Tbody>
+        </Table>
+      </ScrollArea>
     </>
   );
 }

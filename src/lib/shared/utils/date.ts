@@ -184,13 +184,16 @@ export function parseTimestampMs(value: string | null | undefined): number | nul
  * @returns A short display date like `Apr 14, 2026`, or an empty string when missing.
  */
 export function formatDisplayDate(value?: string | null): string {
-  return value
-    ? new Date(value).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : '';
+  if (!value) return '';
+  // A date-only value ("2026-10-28") is a calendar day. Parsing it as UTC midnight and
+  // formatting in the local zone shifts it to the previous day west of UTC.
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  return new Date(dateOnly ? `${value}T12:00:00Z` : value).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    ...(dateOnly ? { timeZone: 'UTC' } : {}),
+  });
 }
 
 function formatUtcChartDateToken(

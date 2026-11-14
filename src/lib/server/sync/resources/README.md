@@ -37,6 +37,13 @@ Implemented and verified against existing development project `gkdyyjqepzayjdpvq
   `account_insight_snapshots` under the same worker and quota controls. Page renders no
   longer fetch Meta in this mode. Combined Dashboard and assistant use canonical daily facts.
 
+## Provider events (webhooks)
+
+Resource kind `events` (`events:v2`, migration `20261114002047_meta_webhook_events`) is a status
+re-read requested by a verified Meta webhook. It uses this queue's single-job-per-account rule,
+leases, admission budget and failure handling, is never skipped as fresh, and never reads or
+replaces performance rows. Details: [webhooks README](../../webhooks/README.md).
+
 ## Database and rollout
 
 Applied migrations (local names match remote history):

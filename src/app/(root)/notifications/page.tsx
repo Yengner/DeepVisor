@@ -65,6 +65,7 @@ function typeColor(value: string): string {
     case 'sync':
       return 'signal';
     case 'insight':
+    case 'insights':
       return '#6e6bf4';
     case 'workflow':
       return 'signal';

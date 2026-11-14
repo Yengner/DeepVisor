@@ -141,3 +141,10 @@ Keep the gate off until migrations and the hosted worker/app have been released
 together. See [`resources/README.md`](../sync/resources/README.md) for freshness,
 shared quota admission, fenced publication, validation and activation requirements.
 This does not enable advertising actions or activate cron.
+
+## Meta webhook subscription
+
+With `DEEPVISOR_META_WEBHOOKS=true`, the refresh worker connects this app to the selected ad
+account's webhooks (`act_<id>/subscribed_apps`) and disconnect releases it when no other business
+uses that account. This changes notification routing only and is not an advertising write. See
+[`src/lib/server/webhooks/README.md`](../webhooks/README.md). Not active on hosted infrastructure.

@@ -11,32 +11,32 @@ try{
  await context.route('**/api/insights',route=>route.fulfill({json:route.request().method()==='POST'?{presentation:null}:{items:[],issues:[],issueCount:1,next:null}}));
  await page.goto('http://localhost:3000/login');await page.getByLabel('Email').fill(user.email);await page.getByLabel('Password').fill(user.password);await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.waitForURL('**/dashboard',{timeout:60000});
  const sidebar=page.getByRole('complementary',{name:'Workspace navigation'});
- await sidebar.getByRole('button',{name:'Insights & Events · 1 to check',exact:true}).click();await page.waitForURL('**/insights');
- await page.getByRole('heading',{name:'Insights & Events',exact:true}).waitFor();
- await sidebar.getByRole('button',{name:'Insights preview',exact:true}).click();await page.waitForURL('**/insights/preview');
- const dialog=page.getByRole('dialog');await dialog.getByText('Preview only · 23 scenarios · No real advertising activity').waitFor().catch(async error=>{await page.screenshot({path:'/tmp/dv-edge-preview-error.png'});console.log((await page.locator('body').innerText()).slice(0,1200));throw error;});
+ // The saved-updates history is reached from notifications and the popup, not the sidebar.
+ assert.equal(await sidebar.getByRole('button',{name:/^Insights & Events/}).count(),0);
+ await page.goto('http://localhost:3000/insights');await page.getByRole('heading',{name:'Insights & Events',exact:true}).waitFor();
+ await sidebar.getByRole('button',{name:'Insights preview',exact:true}).click();await page.waitForURL('**/insights/preview**');
+ await page.getByRole('heading',{name:'Insights & Events preview',exact:true}).waitFor();
  const requests=[];page.on('request',r=>{if(r.url().includes('/api/'))requests.push(r.url().split('?')[0]);});
- const select=dialog.getByLabel('Preview scenario');const ids=await select.locator('option').evaluateAll(nodes=>nodes.map(n=>n.value));assert.equal(ids.length,23);
- const category=dialog.getByLabel('Preview category');
- for(const [group,count] of [['performance',4],['lifecycle',6],['attention',4],['combined',4],['coverage',5]]){
-  await category.selectOption(group);assert.equal(await select.locator('option').count(),count);
-  const first=await select.inputValue();for(let i=0;i<count;i++)await dialog.getByRole('button',{name:'Next scenario →'}).click();assert.equal(await select.inputValue(),first);
- }
- await category.selectOption('all');assert.equal(await select.locator('optgroup').count(),5);
- for(const id of ids){await select.selectOption(id);await dialog.locator(`[data-insight-preview="preview-${id}"]`).waitFor();assert.equal(await dialog.locator('a[href^="/api/"]').count(),0);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
- await select.selectOption('daily');
- assert.equal(await dialog.locator('[data-granularity="hour"] > div').count(),24);
- for(const width of [1440,390,320]){await page.setViewportSize({width,height:1100});await dialog.getByRole('heading',{name:'Hourly spend',exact:true}).scrollIntoViewIfNeeded();await page.screenshot({path:`/tmp/dv-insights-hourly-${width}.png`});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
- await select.selectOption('daily-missing');await dialog.getByText('Hourly breakdown isn’t available for this report').waitFor();
- for(const id of ['daily-missing','sparse','zero','unknown','empty']){
-  await select.selectOption(id);await dialog.getByRole('status').filter({hasText:/available|reported|incomplete/}).first().waitFor();
-  for(const width of [1440,390,320]){await page.setViewportSize({width,height:1100});await dialog.locator('[data-insight-preview]').scrollIntoViewIfNeeded();await page.screenshot({path:`/tmp/dv-insights-edge-${id}-${width}.png`});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
- }
- await page.setViewportSize({width:1440,height:1100});await select.selectOption('daily-missing');await dialog.getByRole('button',{name:'Switch to dark'}).click();await page.screenshot({path:'/tmp/dv-insights-edge-dark.png'});await dialog.getByRole('button',{name:'Switch to light'}).click();
- await select.selectOption('catch-up');assert.equal(await dialog.locator('[data-granularity="day"] > div').count(),7);
- await select.selectOption('all');
- for(const width of [1440,390,320]){await page.setViewportSize({width,height:1100});await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`/tmp/dv-insights-preview-${width}.png`,fullPage:true});}
- await dialog.getByRole('button',{name:'Switch to dark'}).click();await page.screenshot({path:'/tmp/dv-insights-preview-dark.png',fullPage:true});
- await dialog.getByRole('button',{name:'Switch to light'}).click();await dialog.getByRole('button',{name:'Dismiss preview'}).click();await dialog.waitFor({state:'hidden'});await page.getByRole('button',{name:'Open scenario preview'}).click();await dialog.waitFor();
- assert.deepEqual(requests,[]);assert.deepEqual(errors,[]);console.log('23 development scenarios rendered; 1440/390/320px, dark/light, reopen, and zero preview API requests passed.');
+ const list=page.getByRole('navigation',{name:'Preview scenarios'});const buttons=list.getByRole('button');
+ const total=await buttons.count();assert.ok(total>=32,`expected at least 32 scenarios, got ${total}`);
+ const category=page.getByLabel('Preview category');
+ for(const [group,count] of [['performance',6],['lifecycle',8],['attention',8],['live',5],['combined',5],['coverage',7]]){await category.selectOption(group);assert.equal(await buttons.count(),count);}
+ await category.selectOption('all');
+ const frame=page.locator('[data-insight-preview]');
+ for(let i=0;i<total;i++){await buttons.nth(i).click();await frame.first().waitFor();assert.equal(await page.locator('a[href^="/api/"]').count(),0);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
+ const pick=async id=>{await list.locator(`[data-scenario="${id}"]`).click();await page.locator(`[data-insight-preview="preview-${id}"]`).waitFor();};
+ await pick('daily');assert.equal(await page.locator('[data-granularity="hour"] > div').count(),24);
+ for(const width of ['Desktop','390px','320px']){await page.getByRole('group',{name:'Preview width'}).getByRole('button',{name:width}).click();await page.screenshot({path:`/tmp/dv-insights-hourly-${width}.png`,fullPage:true});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
+ await pick('daily-missing');await page.getByText('Hourly breakdown isn’t available for this report').waitFor();
+ for(const id of ['daily-missing','hourly-partial','sparse','zero','unknown','empty','long-names']){await pick(id);await page.screenshot({path:`/tmp/dv-insights-edge-${id}.png`,fullPage:true});}
+ for(const id of ['live-rejection','live-delivery','fatigue','fatigue-recap','live-mixed']){await pick(id);await page.screenshot({path:`/tmp/dv-insights-live-${id}.png`,fullPage:true});}
+ await pick('fatigue');assert.equal(await page.locator('[data-level="notice"]').count(),1);await page.getByText('Worth a look').first().waitFor();
+ await page.getByRole('group',{name:'Preview width'}).getByRole('button',{name:'390px'}).click();await page.getByRole('button',{name:'Switch to dark'}).click();await page.screenshot({path:'/tmp/dv-insights-live-fatigue-390-dark.png',fullPage:true});
+ await page.getByRole('button',{name:'Switch to light'}).click();await page.getByRole('group',{name:'Preview width'}).getByRole('button',{name:'Desktop'}).click();
+ await pick('catch-up');assert.equal(await page.locator('[data-granularity="day"] > div').count(),7);
+ await page.getByRole('group',{name:'Preview layout'}).getByRole('button',{name:'Gallery'}).click();assert.equal(await frame.count(),total);
+ await page.getByRole('button',{name:'Switch to dark'}).click();await page.screenshot({path:'/tmp/dv-insights-gallery-dark.png',fullPage:true});await page.getByRole('button',{name:'Switch to light'}).click();
+ await page.getByRole('button',{name:'Open as real modal'}).click();const dialog=page.getByRole('dialog');await dialog.waitFor();await dialog.getByRole('button',{name:'Dismiss preview'}).click();await dialog.waitFor({state:'hidden'});
+ for(const width of [390,320]){await page.setViewportSize({width,height:1100});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
+ assert.deepEqual(requests,[]);assert.deepEqual(errors,[]);console.log(`${total} development scenarios rendered; widths, gallery, dark/light, real modal, and zero preview API requests passed.`);
 }finally{await browser.close();}

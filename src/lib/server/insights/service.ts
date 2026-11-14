@@ -4,13 +4,14 @@ import { createAdminClient } from '@/lib/server/supabase/admin';
 import { readAllPages } from '@/lib/server/repositories/pagination';
 import { accountToday, previousReportRange } from '@/lib/shared/reports/dates';
 import {recapRevision} from '@/lib/shared/insights/revision';
-import { recapWindow, summarize, completeComparable } from '@/lib/shared/insights/model';
+import {urgentIssues, recapWindow, summarize, completeComparable } from '@/lib/shared/insights/model';
 import type { Issue, IssueEvidence, Presentation, SavedPresentation, PerformanceRow } from '@/lib/shared/insights/model';
 import type { Database, Json } from '@/lib/shared/types/supabase';
 import type { Observation } from '@/lib/shared/lifecycle/model';
 import { lifecycleBrief } from '@/lib/server/lifecycle/brief';
 import { observeIssues, observeHierarchyIssues } from './issues';
 import {loadHourlyRecap} from './hourly';
+import { dailyNotification, presentationDay, type DailyBundle } from '@/lib/shared/insights/notification';
 export type Scope={business:string;account:string;user:string;integration:string|null};
 const db=()=>createAdminClient();
 export async function savedPresentation(scope:Scope,id:string):Promise<SavedPresentation|null>{
@@ -23,7 +24,45 @@ export async function history(scope:Scope,before:string|null){
  const r=await q;if(r.error)throw r.error;
  const issues=await db().from('insight_issues').select('id,evidence,observed_at,resolved_at,revision',{count:'exact'}).eq('business_id',scope.business).eq('ad_account_id',scope.account).is('resolved_at',null).order('opened_at',{ascending:false}).limit(50);
  if(issues.error)throw issues.error;
- return {items:r.data.slice(0,20) as unknown as SavedPresentation[],next:r.data.length>20?r.data[19].id:null,issues:issues.data.map(issue),issueCount:issues.count??issues.data.length};
+ const page=r.data.slice(0,20) as unknown as SavedPresentation[];
+ const reads=await readTimes(scope,page.map(p=>p.id));
+ return {items:page.map(p=>({...p,readAt:reads.get(p.id)??null})),next:r.data.length>20?r.data[19].id:null,issues:issues.data.map(issue),issueCount:issues.count??issues.data.length};
+}
+/** Read = reviewed in the popup (receipt) or opened from history (view), whichever came first. */
+async function readTimes(scope:Scope,ids:string[]){
+ const times=new Map<string,string>();
+ if(!ids.length)return times;
+ const [receipts,views]=await Promise.all([
+  db().from('insight_receipts').select('presentation_id,reviewed_at').in('presentation_id',ids),
+  db().from('insight_history_views').select('presentation_id,viewed_at').eq('user_id',scope.user).in('presentation_id',ids)]);
+ if(receipts.error)throw receipts.error;if(views.error)throw views.error;
+ for(const r of receipts.data)times.set(r.presentation_id,r.reviewed_at);
+ for(const v of views.data){const prior=times.get(v.presentation_id);if(!prior||v.viewed_at<prior)times.set(v.presentation_id,v.viewed_at);}
+ return times;
+}
+/** Mark saved updates read for this person. Only their own presentations in this account are accepted. */
+export async function markViewed(scope:Scope,ids:string[]):Promise<number>{
+ if(!ids.length)return 0;
+ const owned=await db().from('insight_presentations').select('id').eq('business_id',scope.business).eq('ad_account_id',scope.account).eq('user_id',scope.user).in('id',ids);
+ if(owned.error)throw owned.error;
+ if(!owned.data.length)return 0;
+ const r=await db().from('insight_history_views').upsert(owned.data.map(o=>({presentation_id:o.id,user_id:scope.user})),{onConflict:'presentation_id',ignoreDuplicates:true});
+ if(r.error)throw r.error;
+ return owned.data.length;
+}
+/** Unread updates for the Overview entry point: newest first, bounded. */
+export async function unreadSummary(scope:Scope){
+ const r=await db().from('insight_presentations').select('id,created_at,payload').eq('business_id',scope.business).eq('ad_account_id',scope.account).eq('user_id',scope.user).order('created_at',{ascending:false}).limit(20);
+ if(r.error)throw r.error;
+ const items=r.data as unknown as SavedPresentation[];
+ const reads=await readTimes(scope,items.map(i=>i.id));
+ const unread=items.filter(i=>!reads.has(i.id));
+ const open=await db().from('insight_issues').select('evidence').eq('business_id',scope.business).eq('ad_account_id',scope.account).is('resolved_at',null).order('opened_at',{ascending:false}).limit(100);
+ if(open.error)throw open.error;
+ // Only urgent issues raise the chip; Meta's notices (creative fatigue) are counted separately.
+ const evidence=open.data.map(r=>r.evidence as unknown as IssueEvidence),urgent=urgentIssues(evidence);
+ const topIssue=urgent[0]?.title??null;
+ return {unread:unread.length,openIssues:urgent.length,notices:evidence.length-urgent.length,topIssue,latest:items[0]?{id:items[0].id,created_at:items[0].created_at,payload:items[0].payload}:null};
 }
 function issue(r:{id:string;evidence:Json;observed_at:string;resolved_at:string|null;revision:number}):Issue{
  return {...r.evidence as unknown as IssueEvidence,id:r.id,revision:r.revision,observedAt:r.observed_at,resolvedAt:r.resolved_at,stale:Date.now()-Date.parse(r.observed_at)>24*3600000};
@@ -109,10 +148,29 @@ export async function prepare(s:Scope,token:string):Promise<(SavedPresentation&{
  await reviseSavedRecap(s,pub,review.data?.checked_revision);
  const keys=[...issues.map(i=>`issue:${i.id}:${i.revision}`),...lifecycle.map(e=>`lifecycle:${e.eventId}`)];
  const fingerprint=createHash('sha256').update(JSON.stringify([keys,recap,pub.signature])).digest('hex');
- const result=await c.rpc('present_insights',{p_business:s.business,p_account:s.account,p_user:s.user,p_token:token,p_day:today??new Date().toISOString().slice(0,10),p_expected:review.data?.reviewed_through??null,p_payload:payload as unknown as Json,p_keys:keys,p_fingerprint:fingerprint,p_until:recap?.until??null,p_urgent:issues.length>0});
+ const result=await c.rpc('present_insights',{p_business:s.business,p_account:s.account,p_user:s.user,p_token:token,p_day:today??new Date().toISOString().slice(0,10),p_expected:review.data?.reviewed_through??null,p_payload:payload as unknown as Json,p_keys:keys,p_fingerprint:fingerprint,p_until:recap?.until??null,p_urgent:urgentIssues(issues).length>0});
  if(result.error)throw result.error;if(!result.data)return null;
  const saved=await savedPresentation(s,result.data);
- if(saved){const notification=await c.from('notifications').insert({business_id:s.business,user_id:s.user,dedupe_key:`insights:${saved.id}`,source_type:'insights',source_id:saved.id,title:'Your advertising update',message:issues.length?'An advertising update needs your attention.':'Your saved advertising catch-up is ready.',link:`/insights?id=${saved.id}`,type:'insights',severity:issues.length?'warning':'info',payload_json:{surface:'bell'}});if(notification.error&&notification.error.code!=='23505')console.warn('Insights notification pointer unavailable');}
+ if(saved)await notifyDaily(s,saved,urgentIssues(issues).length>0).catch(()=>console.warn('Insights notification pointer unavailable'));
  if(saved){const delivered=new Set([...saved.payload.issues.map(i=>`issue:${i.id}:${i.revision}`),...saved.payload.lifecycle.map(e=>`lifecycle:${e.eventId}`)]);return {...saved,additionalUpdates:keys.some(key=>!delivered.has(key))};}
  return saved;
+}
+
+/** One bell item per account per day: a later update the same day refreshes it and marks it unread. */
+async function notifyDaily(s:Scope,saved:SavedPresentation,urgent:boolean){
+ const c=db(),day=presentationDay(saved.created_at,saved.payload.timezone),key=`insights:${s.account}:${day}`;
+ for(let attempt=0;attempt<2;attempt++){
+  const existing=await c.from('notifications').select('id,payload_json').eq('user_id',s.user).eq('dedupe_key',key).maybeSingle();
+  if(existing.error)throw existing.error;
+  const prior=existing.data?.payload_json as unknown as Partial<DailyBundle>|null;
+  const next=dailyNotification(prior&&Array.isArray(prior.presentationIds)?{day,presentationIds:prior.presentationIds,urgent:Boolean(prior.urgent)}:null,{id:saved.id,urgent,day});
+  const fields={title:next.title,message:next.message,link:next.link,severity:next.severity,source_id:saved.id,payload_json:{surface:'bell',...next.bundle} as unknown as Json};
+  if(existing.data){
+   const r=await c.from('notifications').update({...fields,read:false,read_at:null,updated_at:new Date().toISOString()}).eq('id',existing.data.id);
+   if(r.error)throw r.error;return;
+  }
+  const r=await c.from('notifications').insert({...fields,business_id:s.business,user_id:s.user,dedupe_key:key,source_type:'insights',type:'insights'});
+  if(!r.error)return;
+  if(r.error.code!=='23505')throw r.error; // Another tab created today's bundle first: update it instead.
+ }
 }

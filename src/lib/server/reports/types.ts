@@ -87,6 +87,11 @@ export interface ReportComparisonSummary {
   previousSeries?: ReportTimeSeriesPoint[];
   disabledReason?: string | null;
   coverage?: ReportCoverage;
+  /** 'matched_days': only days observed in both periods are compared (see shared/reports/comparison). */
+  basis?: 'full' | 'matched_days' | null;
+  matchedDays?: number | null;
+  /** Selected-period totals over the matched days; changes are measured from these, not the full summary. */
+  currentComparableTotals?: ReportMetricTotals | null;
 }
 
 export interface ReportExportMetadata {

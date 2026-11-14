@@ -6,7 +6,7 @@ let retryAfterUntil = 0;
 import { simulatedMetaResponse } from '@/lib/server/integrations/simulation/meta';
 
 const META_GRAPH_VERSION = 'v24.0';
-const META_GRAPH_BASE_URL = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
+export const META_GRAPH_BASE_URL = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 const META_MAX_LOOKBACK_MONTHS = 37;
 const META_TRANSIENT_MAX_ATTEMPTS = 3;
 const META_TRANSIENT_RETRY_BASE_MS = 700;

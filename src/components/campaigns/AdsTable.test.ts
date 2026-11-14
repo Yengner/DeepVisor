@@ -17,9 +17,10 @@ it('distinguishes missing ad observations from recorded zero results on desktop 
         metricsAvailable }], currencyCode: 'USD', onSelectAd: () => {},
     })));
   const missing = render(false), observed = render(true);
-  expect(missing).toContain('Unavailable');
-  expect(missing).not.toContain('0 Results');
+  // A recorded zero renders as 0 / $0.00; a missing observation renders as an em dash.
+  expect(missing).not.toMatch(/>0</);
   expect(missing).not.toContain('$0.00');
-  expect(observed).toContain('0 Results');
+  expect(missing).toContain('>—<');
+  expect(observed).toMatch(/>0</);
   expect(observed).toContain('$0.00');
 });

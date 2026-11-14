@@ -1,9 +1,9 @@
 import {describe,expect,it} from 'vitest';
 import {accountToday} from '@/lib/shared/reports/dates';
-import {recapWindow,summarize,hierarchyIssues,completeComparable,headline,lifecycleStatus} from './model';
+import {recapWindow,summarize,hierarchyIssues,fatigueIssues,issueLevel,urgentIssues,completeComparable,headline,lifecycleStatus} from './model';
 import {changes} from '@/lib/shared/lifecycle/model';
 import {previewPresentation} from './preview';
-import type {Presentation,PerformanceRow} from './model';
+import type {Presentation,PerformanceRow,Recap} from './model';
 import type {Observation} from '@/lib/shared/lifecycle/model';
 import {exportCsv} from './export';
 const row=(day:string,spend:number|null=10):PerformanceRow=>({day,spend,leads:0,messages:2,calls:0,currency_code:'USD',entity_external_id:'set1'});
@@ -53,4 +53,53 @@ describe('lifecycle card status',()=>{
   for(const level of ['ad','adset']){const [c]=changes([obs(level,'2026-11-05T00:00:00Z')],[obs(level,'2026-11-05T00:00:00Z')],'2026-11-04T00:00:00Z','2026-11-06T00:00:00Z');expect(c.kind).toBe('scheduled_end');expect(lifecycleStatus(card(c.explanation))).toBe('ended');}
  });
  it('treats every other change as a generic update',()=>{expect(lifecycleStatus(previewPresentation('pause').payload.lifecycle[0])).toBe('update');expect(lifecycleStatus(card('Meta now reports this advertising as active.'))).toBe('update');});
+});
+
+describe('lifecycleKind', () => {
+ const card=(explanation:string)=>({eventId:'e',rootId:'r',affectedIds:[],brief:{explanation}} as unknown as import('./model').LifecycleCard);
+ it('labels each saved lifecycle explanation without inventing a cause', async () => {
+  const {lifecycleKind}=await import('./model');
+  expect(lifecycleKind(card('The saved scheduled end has been reached. This alone does not confirm the exact time delivery stopped.'))).toBe('ended');
+  expect(lifecycleKind(card('Meta now reports this advertising as active. Delivery and results are not guaranteed.'))).toBe('active');
+  expect(lifecycleKind(card('Delivery is interrupted because Spring campaign is paused.'))).toBe('interrupted');
+  expect(lifecycleKind(card('Meta now reports this ad as paused.'))).toBe('paused');
+  expect(lifecycleKind(card('Meta reports this advertising as archived or deleted.'))).toBe('archived');
+  expect(lifecycleKind(card('Delivery eligibility changed. The available evidence does not establish a more specific cause.'))).toBe('update');
+ });
+});
+
+describe('specific headlines', () => {
+ const card=(explanation:string,levels:string[]=['ad'])=>({eventId:'e',rootId:'r',affectedIds:[],brief:{explanation,affected:levels.map((level,i)=>({id:`x${i}`,level}))}} as unknown as LifecycleCard);
+ const p=(extra:Partial<Presentation>)=>({recap:null,issues:[],lifecycle:[],...extra} as Presentation);
+ it('says what changed for a single change', () => {
+  expect(headline(p({lifecycle:[card('Meta now reports this ad as paused.')]}))).toBe('An ad was paused');
+  expect(headline(p({lifecycle:[card('Delivery is interrupted because Spring is paused.',['ad','ad','ad'])]}))).toBe('Delivery stopped for 3 ads');
+  expect(headline(p({lifecycle:[card('The saved scheduled end has been reached. This alone does not confirm when delivery stopped.',['adset'])]}))).toBe('Your advertising reached its scheduled end');
+  expect(headline(p({lifecycle:[card('Delivery eligibility changed.')]}))).toBe('Your advertising changed');
+ });
+ it('counts several changes and names the recap period', () => {
+  expect(headline(p({lifecycle:[card('Meta now reports this ad as paused.'),card('Meta now reports this ad as paused.')]}))).toBe('2 changes to your advertising');
+  expect(headline(p({recap:{since:'2026-11-07',until:'2026-11-07',expectedDays:1} as Recap}))).toBe('Your results for Nov 7');
+  expect(headline(p({recap:{since:'2026-11-01',until:'2026-11-07',expectedDays:7} as Recap}))).toBe('Your last 7 days of results');
+ });
+});
+
+describe('Meta notices', () => {
+  const entity = (over: Record<string, unknown>) => ({ id: '9', level: 'ad', parent: 's', campaign: 'c', name: 'Autumn', configured: 'ACTIVE', effective: 'ACTIVE', start: null, end: null, dailyBudget: null, lifetimeBudget: null, targeting: null, ...over });
+  it('quotes Meta’s wording only for a state the read observed', () => {
+    const notices = new Map([['9', { code: '1', summary: 'Card declined' }]]);
+    expect(hierarchyIssues([entity({ effective: 'WITH_ISSUES' })], notices)[0].explanation).toBe('Autumn has a delivery issue. Meta’s notice: “Card declined”');
+    expect(hierarchyIssues([entity({ effective: 'DISAPPROVED' })], notices)[0].explanation).toContain('Meta’s notice: “Card declined”');
+    expect(hierarchyIssues([entity({ effective: 'WITH_ISSUES' })])[0].explanation).toContain('does not establish its cause');
+    expect(hierarchyIssues([entity({})], notices)).toEqual([]);
+  });
+  it('raises fatigue as a notice for active ads only, never as urgent', () => {
+    const notices = new Map([['9', { level: 'HIGH', message: 'Costs are rising' }], ['8', { level: null, message: null }]]);
+    const issues = fatigueIssues([entity({}), entity({ id: '8', effective: 'PAUSED' }), entity({ id: '7' })], notices);
+    expect(issues.map(i => i.key)).toEqual(['fatigue:9']);
+    expect(issues[0].explanation).toContain('creative fatigue (high)');
+    expect(issueLevel(issues[0])).toBe('notice');
+    expect(issueLevel({ code: 'DISAPPROVED' })).toBe('urgent');
+    expect(urgentIssues([...issues, { code: 'WITH_ISSUES' }])).toEqual([{ code: 'WITH_ISSUES' }]);
+  });
 });

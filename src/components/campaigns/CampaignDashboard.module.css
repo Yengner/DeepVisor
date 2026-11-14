@@ -65,29 +65,51 @@
   text-transform: capitalize;
 }
 
-/* Compact account summary, matching Overview's KPI hierarchy without displacing the table. */
+/* Compact account summary, matching Overview's KPI hierarchy without displacing the table.
+   Always account-wide lifetime totals, captioned so they are not read as the drilled-in entity. */
+.summaryBlock { margin: 16px 0 0; }
+.summaryCaption {
+  margin: 0 0 6px;
+  color: var(--dv-text-muted);
+  font-size: var(--dv-text-2xs, 11px);
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
 .summary {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin: 16px 0 0;
 }
 
-.summary > div {
+.summaryTile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   min-width: 128px;
   padding: 10px 14px;
   border: 1px solid var(--dv-card-border);
   border-radius: var(--dv-radius-md);
   background: var(--dv-surface);
+  font: inherit;
+  text-align: left;
+  color: inherit;
 }
 
-.summary dt {
+/* Delivery tiles double as filters. */
+.summaryTile[data-filter] { cursor: pointer; transition: border-color 120ms ease, background-color 120ms ease; }
+.summaryTile[data-filter]:hover:not(:disabled) { border-color: var(--dv-primary); }
+.summaryTile[data-filter]:focus-visible { outline: 2px solid var(--dv-primary); outline-offset: 2px; }
+.summaryTile[data-filter][aria-pressed='true'] { border-color: var(--dv-primary); background: var(--dv-primary-soft); box-shadow: inset 0 0 0 1px var(--dv-primary); }
+.summaryTile[data-filter]:disabled { cursor: default; }
+
+.tileLabel {
   color: var(--dv-text-muted);
   font-size: var(--dv-text-xs);
   font-weight: 500;
 }
 
-.summary dd {
+.tileValue {
   margin: 2px 0 0;
   color: var(--dv-text);
   font-size: var(--dv-text-lg);
@@ -97,8 +119,12 @@
 }
 
 @media (max-width: 760px) {
-  .summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .summary > div { min-width: 0; }
+  .titleBlock { width: 100%; }
+  /* One swipeable row so the cards start above the fold. */
+  .summary { flex-wrap: nowrap; overflow-x: auto; gap: 8px; margin-inline: -4px; padding: 0 4px 4px; scroll-snap-type: x proximity; scrollbar-width: none; }
+  .summary::-webkit-scrollbar { display: none; }
+  .summaryTile { flex: 0 0 auto; min-width: 104px; padding: 8px 12px; scroll-snap-align: start; }
+  .tileValue { font-size: 16px; }
 }
 
 .actionGroup {
@@ -107,14 +133,25 @@
 
 .layerSummary {
   min-width: 0;
-  justify-content: flex-end;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
 }
+.layerSummary strong { color: var(--dv-text); font-weight: 700; }
+
+/* Drill-down path: where you are, and one click back up. */
+.breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 12px; font-size: var(--dv-text-sm); min-width: 0; }
+.breadcrumb button, .breadcrumb span[aria-current] { display: inline-flex; align-items: center; gap: 4px; max-width: 320px; min-height: 32px; padding: 4px 8px; border: 0; border-radius: var(--dv-radius-sm, 6px); background: transparent; font: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.breadcrumb button { color: var(--dv-primary-strong, var(--dv-primary)); cursor: pointer; font-weight: 600; }
+.breadcrumb button:hover { background: var(--dv-primary-soft); }
+.breadcrumb button:focus-visible { outline: 2px solid var(--dv-primary-strong); outline-offset: 1px; }
+.breadcrumb span[aria-current] { display: block; color: var(--dv-text); font-weight: 600; }
+.crumbSep { flex: 0 0 auto; color: var(--dv-text-muted); }
+
+.legend { display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 18px 0; color: var(--dv-text-muted); font-size: 12px; }
+.legendSwatch { width: 3px; height: 14px; flex: 0 0 3px; border-radius: 2px; background: var(--dv-success, #226443); }
 
 .filterBar {
-  padding: 10px;
-  border: 1px solid var(--platform-border);
-  border-radius: var(--dv-radius-md);
-  background: var(--dv-canvas);
+  padding: 0;
 }
 
 .searchInput {
@@ -188,7 +225,7 @@
   min-width: 0;
   flex: 1 1 auto;
 }
-.mobileMetricGrid > div > :global(.mantine-Text-root):first-child { font-size: 12px; font-weight: 500; text-transform: none; }
+.mobileMetricGrid > div > :global(.mantine-Text-root):first-child { font-size: 12px; font-weight: 500; text-transform: none; color: var(--dv-text-muted); }
 .mobileMetricGrid > div > :global(.mantine-Text-root):last-child { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
 .moreMetrics { grid-column: 1 / -1; font-size: 13px; }
 .moreMetrics summary { min-height: 44px; padding: 12px 0; cursor: pointer; color: var(--dv-primary-strong); }
@@ -218,10 +255,14 @@
     background: transparent;
   }
 
-  .actionGroup,
-  .layerSummary {
+  .actionGroup {
     justify-content: flex-start;
   }
+  /* Stack the path on phones so a separator never dangles at a line end. */
+  .breadcrumb { flex-direction: column; align-items: flex-start; gap: 0; }
+  .breadcrumb button, .breadcrumb span[aria-current] { max-width: 100%; padding-inline: 0; }
+  .breadcrumb .crumbSep { display: none; }
+  .legend { padding: 4px 0 0; }
 
   .filterSelect {
     width: 100%;
@@ -266,7 +307,8 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding-bottom: 0;
+    /* Clearance so the floating assistant button never covers the last card's actions. */
+    padding-bottom: 72px;
   }
 
   .mobileRunAgainButton {
@@ -274,47 +316,99 @@
   }
 }
 
-/* Saved active delivery is independent of table selection and historical spend. */
-.desktopDataTable tr[data-delivering] > td {
+/* Delivery (green accent) and selection (blue tint) are distinct states. Delivery reflects the
+   latest saved Meta status, independent of selection and historical spend. */
+.desktopDataTable tr[data-delivering] > td:first-child {
+  box-shadow: inset 3px 0 var(--dv-success, #226443);
+}
+.desktopDataTable tr[data-selected] > td {
   background: var(--dv-primary-soft) !important;
 }
-.desktopDataTable tr[data-delivering]:hover > td {
-  background: var(--dv-primary-soft-hover) !important;
-}
-.desktopDataTable tr[data-delivering] > td:first-child {
+.desktopDataTable tr[data-selected] > td:first-child {
   box-shadow: inset 3px 0 var(--dv-primary);
 }
 .mobileEntityCard[data-delivering] {
-  background: var(--dv-primary-soft);
+  box-shadow: inset 3px 0 var(--dv-success, #226443), var(--platform-card-shadow);
+}
+.mobileEntityCard[data-selected] {
   border-color: var(--dv-primary);
-  box-shadow: inset 3px 0 var(--dv-primary);
+  background: var(--dv-primary-soft);
 }
-.mobileEntityCard[data-delivering][data-selected] {
-  background: var(--dv-primary-soft-hover);
+.mobileEntityCard:focus-visible {
   outline: 2px solid var(--dv-primary-strong);
-  outline-offset: -2px;
-}
-.deliveryIndicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--dv-primary-deep);
-  background: var(--dv-primary-soft-hover);
-  border: 1px solid var(--dv-primary);
-  border-radius: 999px;
-  padding: 3px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.deliveryIndicator::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--dv-primary);
+  outline-offset: 2px;
 }
 
 .nowrap {
   white-space: nowrap;
 }
+
+/* ---- Table polish shared by Campaigns, Ad sets and Ads ---- */
+.desktopDataTable th { color: var(--dv-text-muted); font-size: 12px; font-weight: 600; letter-spacing: .01em; }
+.desktopDataTable td, .desktopDataTable th { font-variant-numeric: tabular-nums; }
+/* Numeric columns align right so values compare down the column. */
+.desktopDataTable th[data-num], .desktopDataTable td[data-num] { text-align: right; }
+.desktopDataTable tbody tr { transition: background-color 120ms ease; }
+
+.selectRadio { cursor: pointer; }
+
+.deliveringChip { display: inline-flex; align-items: center; padding: 3px 9px 3px 8px; border-radius: 999px; background: var(--dv-success-soft, #e8f4ec); white-space: nowrap; }
+.deliveringChip > span { margin-right: 0; }
+
+/* Sticky row actions: a soft fade instead of an opaque block, and a see-through button. */
+.desktopDataTable tbody tr { --row-bg: var(--dv-surface); }
+.desktopDataTable tbody tr:hover { --row-bg: var(--table-hover-color, var(--dv-surface-muted, #f5f7fa)); }
+.desktopDataTable tbody tr[data-selected] { --row-bg: var(--dv-primary-soft); }
+/* Sticky row actions: an opaque cell that always matches its row, with a short fade on its
+   left edge so scrolled columns slide under it instead of showing through. */
+.actionCell { position: sticky; right: 0; z-index: 3; width: 52px; min-width: 52px; padding-inline: 6px !important; background: var(--row-bg, var(--dv-surface)) !important; }
+.actionCell::before { content: ''; position: absolute; top: 0; bottom: 0; left: -20px; width: 20px; pointer-events: none; background: linear-gradient(90deg, transparent, var(--row-bg, var(--dv-surface))); }
+.desktopDataTable thead .actionCell { z-index: 4; --row-bg: var(--dv-surface); }
+.rowActions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.ghostAction { color: var(--dv-text-muted) !important; background: transparent !important; opacity: .55; transition: opacity 120ms ease, background-color 120ms ease; }
+.desktopDataTable tr:hover .ghostAction, .desktopDataTable tr[data-selected] .ghostAction, .ghostAction:focus-visible, .ghostAction[aria-expanded="true"], .mobileEntityCard .ghostAction { opacity: 1; }
+.ghostAction:hover { background: color-mix(in srgb, var(--dv-text) 8%, transparent) !important; color: var(--dv-text) !important; }
+@media (hover: none) { .ghostAction { opacity: 1; } }
+
+.cellName { display: block; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 14px; }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Ad identity: real creative thumbnail beside the name. */
+.adIdentity { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.thumb { width: 48px; height: 48px; flex: 0 0 48px; display: flex; overflow: hidden; border-radius: var(--dv-radius-sm, 6px); border: 1px solid var(--dv-border); background: var(--dv-surface-muted); }
+.thumbLarge { width: 64px; height: 64px; flex-basis: 64px; }
+/* The media overlay label is unreadable at thumbnail size; the format line carries it instead. */
+.thumb > div > span:not([role='img']) { display: none; }
+/* A tile reads better filled than letterboxed; the full creative is one click away. */
+.thumb img { object-fit: cover !important; max-width: none !important; max-height: none !important; }
+.adIdentity .cellName { max-width: 280px; }
+
+/* Loading and empty states sized like the table they replace. */
+.tableSkeleton { display: flex; flex-direction: column; padding: 4px 8px; }
+.skeletonHeader { display: flex; gap: 24px; padding: 14px 8px; border-bottom: 1px solid var(--dv-border); }
+.skeletonRow { display: flex; align-items: center; gap: 20px; padding: 18px 8px; border-bottom: 1px solid var(--dv-border); }
+.emptyRow { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 40px 16px; text-align: center; }
+
+.moreMetricList { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 4px; }
+.moreMetricList dt { color: var(--dv-text-muted); font-size: 12px; }
+.moreMetricList dd { margin: 2px 0 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Sortable headers */
+.sortButton { display: inline-flex; align-items: center; gap: 4px; font: inherit; color: inherit; white-space: nowrap; border-radius: 4px; }
+th[data-num] .sortButton { flex-direction: row-reverse; }
+.sortButton:hover, .sortButton[data-active] { color: var(--dv-text); }
+.sortButton:focus-visible { outline: 2px solid var(--dv-primary); outline-offset: 2px; }
+.sortIcon { opacity: 0; transition: opacity 120ms ease; }
+.sortButton:hover .sortIcon, .sortButton:focus-visible .sortIcon { opacity: .5; }
+.sortButton[data-active] .sortIcon { opacity: 1; color: var(--dv-primary); }
+@media (hover: none) { .sortIcon { opacity: .4; } }
+
+/* Cost per result well above like-for-like peers */
+.costHigh { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; border-radius: 4px; }
+.costHigh:focus-visible { outline: 2px solid var(--dv-primary); outline-offset: 2px; }
+.costHighTag { display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px; border-radius: 999px; font-size: 11px; font-weight: 700; color: var(--dv-gap-text); background: var(--dv-gap-bg); }
+
+/* Mobile drill-down control */
+.openNext { display: inline-flex; align-items: center; gap: 2px; min-height: 40px; padding: 0 10px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--dv-primary-strong, var(--dv-primary)); }
+.openNext:hover { background: var(--dv-primary-soft); }
+.openNext:focus-visible { outline: 2px solid var(--dv-primary); outline-offset: 2px; }

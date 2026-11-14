@@ -1,26 +1,31 @@
 'use client';
 
-import { DeliveryIndicator } from './DeliveryIndicator';
-
 import type { FormattedCampaign } from '@/app/(root)/campaigns/page';
 import {
-  ActionIcon,
   Group,
   Menu,
   ScrollArea,
   Table,
   Text,
-  Tooltip,
 } from '@mantine/core';
+import { IconChartBar, IconStack2 } from '@tabler/icons-react';
 import {
-  IconChartBar,
-  IconCheck,
-  IconCircle,
-  IconDots,
-} from '@tabler/icons-react';
-import StatusBadge from './StatusBadge';
+  EmptyRow,
+  humanizeObjective,
+  lastActivity,
+  METRIC_COLUMN_COUNT,
+  MetricCells,
+  MetricHeaders,
+  MobileMetrics,
+  RowActions, TruncatedName,
+  rowMetrics,
+  OpenNextButton,
+  SelectCell,
+  SortHeader,
+  StatusCell,
+  useTableRows,
+} from './tableKit';
 import { buildEntityReportUrl } from './reportLinks';
-import { formatRecordedCurrency as formatCurrencyAmount } from './metrics';
 import classes from './CampaignDashboard.module.css';
 
 interface CampaignTableProps {
@@ -33,13 +38,8 @@ interface CampaignTableProps {
   currencyCode?: string | null;
   platformColor?: string;
   fillHeight?: boolean;
+  timezone?: string | null;
 }
-
-const BG = 'var(--dv-surface)';
-const BORDER = 'var(--dv-border)';
-const Z_HEADER = 2;
-const Z_STICKY_RIGHT = 4;
-const RIGHT_COL_WIDTH = 24;
 
 export default function CampaignTable({
   campaigns,
@@ -49,25 +49,40 @@ export default function CampaignTable({
   platformIntegrationId,
   adAccountId,
   currencyCode,
-  platformColor = 'dark',
   fillHeight = false,
+  timezone = null,
 }: CampaignTableProps) {
-  const maxRowsBeforeScroll = 12;
-  const headerH = 44;
-  const rowH = 48;
-  const rows = campaigns.length;
-  const tableHeight = Math.min(rows, maxRowsBeforeScroll) * rowH + headerH + 8;
-  const scrollHeight = fillHeight ? '100%' : rows > maxRowsBeforeScroll ? tableHeight : undefined;
+  const scrollHeight = fillHeight ? '100%' : undefined;
+  // Campaigns are compared only with campaigns sharing an objective: a lead and a sale are not the same result.
+  const { sorted, sort, toggle, benchmarkFor } = useTableRows(
+    campaigns,
+    (campaign) => ({ name: campaign.name, metrics: rowMetrics(campaign) }),
+    (campaign) => humanizeObjective(campaign.objective),
+    (objective) => (objective === '—' ? 'campaigns' : `${objective} campaigns`),
+  );
+  const menuItems = (campaign: FormattedCampaign, reportHref: string) => (
+    <>
+      {onOpenCampaign ? (
+        <Menu.Item leftSection={<IconStack2 size={16} />} onClick={() => onOpenCampaign(campaign.id)}>
+          Open ad sets
+        </Menu.Item>
+      ) : null}
+      <Menu.Item leftSection={<IconChartBar size={16} />} component="a" href={reportHref}>
+        View analytics
+      </Menu.Item>
+    </>
+  );
 
   return (
     <>
       <div className={classes.mobileEntityList}>
-        {campaigns.length === 0 ? (
-          <Text ta="center" py="md" c="dimmed">
-            No campaigns found
-          </Text>
+        {sorted.length === 0 ? (
+          <div className={classes.emptyRow}>
+            <Text fw={600} size="sm">No campaigns match these filters</Text>
+            <Text size="sm" c="dimmed">Clear the search or filters to see every campaign.</Text>
+          </div>
         ) : (
-          campaigns.map((campaign) => {
+          sorted.map((campaign) => {
             const selected = selectedCampaignId === campaign.id;
             const reportHref = buildEntityReportUrl({
               scope: 'campaign',
@@ -83,6 +98,7 @@ export default function CampaignTable({
                 key={campaign.id}
                 role="button"
                 tabIndex={0}
+                aria-pressed={selected}
                 className={classes.mobileEntityCard}
                 data-delivering={campaign.delivery || undefined}
                 data-selected={selected || undefined}
@@ -97,75 +113,28 @@ export default function CampaignTable({
               >
                 <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
                   <div className={classes.mobileEntityTitleBlock}>
-                    <Text fw={800} size="sm" lineClamp={2}>
+                    <Text fw={700} size="sm" lineClamp={2}>
                       {campaign.name}
                     </Text>
                     <Group gap={6} mt={6} wrap="wrap">
-                      <StatusBadge status={campaign.status} />
-                      <DeliveryIndicator active={campaign.delivery} />
+                      <StatusCell status={campaign.status} delivering={campaign.delivery} />
                       <Text size="xs" c="dimmed" lineClamp={1}>
-                        {campaign.objective || 'Objective unavailable'}
+                        {humanizeObjective(campaign.objective)}
                       </Text>
                     </Group>
                   </div>
-                  <Menu position="bottom-end" withArrow offset={4}>
-                    <Menu.Target>
-                      <ActionIcon
-                        variant="light"
-                        color={platformColor}
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        <IconDots size={16} />
-                      </ActionIcon>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      <Menu.Item
-                        leftSection={<IconChartBar size={16} />}
-                        component="a"
-                        href={reportHref}
-                      >
-                        View Analytics
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
+                  <RowActions name={campaign.name}>{menuItems(campaign, reportHref)}</RowActions>
                 </Group>
 
-                <div className={classes.mobileMetricGrid}>
-                  <div>
-                    <Text size="var(--dv-text-2xs)" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
-                    <Text fw={800}>{campaign.metricsAvailable === false ? '—' : formatCurrencyAmount(campaign.spend, currencyCode)}</Text>
-                  </div>
-                  <div>
-                    <Text size="var(--dv-text-2xs)" c="dimmed" tt="uppercase" fw={800}>Results</Text>
-                    <Text fw={800}>{campaign.results}</Text>
-                  </div>
-                  <div>
-                    <Text size="var(--dv-text-2xs)" c="dimmed" tt="uppercase" fw={800}>Cost/Result</Text>
-                    <Text fw={800}>
-                      {campaign.costPerResult === null ? '—' : formatCurrencyAmount(campaign.costPerResult, currencyCode)}
-                    </Text>
-                  </div>
-                  <details className={classes.moreMetrics} onClick={event=>event.stopPropagation()} onKeyDown={event=>event.stopPropagation()}>
-                    <summary>More metrics</summary>
-                    <Text size="xs" c="dimmed">Click-through rate</Text>
-                    <Text fw={800}>{campaign.ctr != null ? `${campaign.ctr}%` : '—'}</Text>
-                  </details>
-                </div>
+                <MobileMetrics metrics={rowMetrics(campaign)} currencyCode={currencyCode} benchmark={benchmarkFor(campaign)} />
 
                 <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
                   <Text size="xs" c="dimmed" lineClamp={1}>
-                    Activity: {campaign.startDate || '—'} - {campaign.endDate || '—'}
+                    {campaign.startDate || '—'} – {lastActivity(campaign.endDate, campaign.lastDay, timezone)}
                   </Text>
-                  <Text
-                    component="a"
-                    href={reportHref}
-                    size="xs"
-                    fw={800}
-                    c={platformColor}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    Report
-                  </Text>
+                  {onOpenCampaign ? (
+                    <OpenNextButton label="Ad sets" onOpen={() => onOpenCampaign(campaign.id)} />
+                  ) : null}
                 </Group>
               </div>
             );
@@ -176,9 +145,9 @@ export default function CampaignTable({
     <ScrollArea
       className={classes.desktopDataTable}
       h={scrollHeight}
-      type="always"
+      type="auto"
       style={{ borderRadius: 8, height: fillHeight ? '100%' : undefined }}
-      offsetScrollbars
+      offsetScrollbars="present"
     >
       <Table
         highlightOnHover
@@ -186,59 +155,31 @@ export default function CampaignTable({
         verticalSpacing="sm"
         horizontalSpacing="md"
         withColumnBorders={false}
-        style={{ minWidth: 1200, tableLayout: 'auto', marginBottom: fillHeight ? 18 : undefined }}
+        style={{ minWidth: 1100, tableLayout: 'auto', marginBottom: fillHeight ? 18 : undefined }}
       >
         <Table.Thead>
           <Table.Tr>
-            <Table.Th style={{ width: 64, minWidth: 64, textAlign: 'center' }}>Select</Table.Th>
-            <Table.Th style={{ width: 320, maxWidth: 320 }}>Campaign</Table.Th>
+            <Table.Th style={{ width: 48, minWidth: 48 }}><span className={classes.srOnly}>Select</span></Table.Th>
+            <SortHeader label="Campaign" sortKey="name" sort={sort} onSort={toggle} style={{ width: 320, maxWidth: 320 }} />
             <Table.Th className={classes.nowrap}>Status</Table.Th>
             <Table.Th className={classes.nowrap}>Objective</Table.Th>
+            <MetricHeaders sort={sort} onSort={toggle} />
             <Table.Th className={classes.nowrap}>First activity</Table.Th>
             <Table.Th className={classes.nowrap}>Last activity</Table.Th>
-            <Table.Th className={classes.nowrap}>Spend</Table.Th>
-            <Table.Th className={classes.nowrap}>Results</Table.Th>
-            <Table.Th className={classes.nowrap}>Cost/Result</Table.Th>
-            <Table.Th className={classes.nowrap}>CTR</Table.Th>
-            <Table.Th className={classes.nowrap}>CPC</Table.Th>
-            <Table.Th className={classes.nowrap}>CPM</Table.Th>
-            <Table.Th className={classes.nowrap}>Reach</Table.Th>
-            <Table.Th className={classes.nowrap}>Impressions</Table.Th>
-            <Table.Th className={classes.nowrap}>Clicks</Table.Th>
-            <Table.Th className={classes.nowrap}>Link Clicks</Table.Th>
-            <Table.Th className={classes.nowrap}>Leads</Table.Th>
-            <Table.Th className={classes.nowrap}>Messages</Table.Th>
-            <Table.Th className={classes.nowrap}>Freq</Table.Th>
-            <Table.Th className={classes.nowrap}>CPL</Table.Th>
-            <Table.Th
-              style={{
-                width: RIGHT_COL_WIDTH,
-                minWidth: RIGHT_COL_WIDTH,
-                position: 'sticky',
-                right: 0,
-                top: 0,
-                zIndex: Z_HEADER,
-                background: BG,
-                boxShadow: `inset 1px 0 0 ${BORDER}, inset 0 -1px 0 ${BORDER}`,
-              }}
-            />
+            <Table.Th className={classes.actionCell}><span className={classes.srOnly}>Actions</span></Table.Th>
           </Table.Tr>
         </Table.Thead>
 
         <Table.Tbody>
-          {campaigns.length === 0 ? (
-            <Table.Tr>
-              <Table.Td colSpan={25}>
-                <Text ta="center" py="md" c="dimmed">
-                  No campaigns found
-                </Text>
-              </Table.Td>
-            </Table.Tr>
+          {sorted.length === 0 ? (
+            <EmptyRow
+              colSpan={METRIC_COLUMN_COUNT + 7}
+              title="No campaigns match these filters"
+              hint="Clear the search or filters to see every campaign."
+            />
           ) : (
-            campaigns.map((campaign) => {
+            sorted.map((campaign) => {
               const selected = selectedCampaignId === campaign.id;
-              const rowBg = selected ? 'var(--dv-primary-soft-hover)' : 'transparent';
-              const stickyCellBg = selected ? 'var(--dv-primary-soft-hover)' : BG;
               const reportHref = buildEntityReportUrl({
                 scope: 'campaign',
                 platformIntegrationId,
@@ -251,147 +192,26 @@ export default function CampaignTable({
               return (
                 <Table.Tr
                   data-delivering={campaign.delivery || undefined}
+                  data-selected={selected || undefined}
+                  aria-selected={selected}
                   key={campaign.id}
-                  style={{ background: rowBg, cursor: 'pointer' }}
+                  style={{ cursor: 'pointer' }}
                   onClick={() => onSelectCampaign(campaign.id)}
                   onDoubleClick={() => onOpenCampaign?.(campaign.id)}
                 >
-                  <Table.Td ta="center">
-                    <Tooltip
-                      label={selected ? 'Selected campaign' : 'Select campaign'}
-                      withArrow
-                      withinPortal
-                      openDelay={150}
-                    >
-                      <ActionIcon
-                        aria-label={selected ? 'Selected campaign' : 'Select campaign'}
-                        variant={selected ? 'filled' : 'default'}
-                        color={selected ? platformColor : 'gray'}
-                        radius="xl"
-                        size="sm"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onSelectCampaign(campaign.id);
-                        }}
-                        onDoubleClick={(event) => event.stopPropagation()}
-                      >
-                        {selected ? <IconCheck size={14} /> : <IconCircle size={13} />}
-                      </ActionIcon>
-                    </Tooltip>
+                  <Table.Td>
+                    <SelectCell selected={selected} label={`Select ${campaign.name}`} onSelect={() => onSelectCampaign(campaign.id)} />
                   </Table.Td>
-
                   <Table.Td style={{ width: 320, maxWidth: 320 }}>
-                    <Tooltip
-                      label={campaign.name}
-                      multiline
-                      withArrow
-                      withinPortal
-                      position="top-start"
-                      maw={420}
-                      openDelay={200}
-                    >
-                      <Text
-                        size="sm"
-                        fw={500}
-                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                      >
-                        {campaign.name}
-                      </Text>
-                    </Tooltip>
-
-                    {campaign.accountName && (
-                      <Tooltip
-                        label={campaign.accountName}
-                        multiline
-                        withArrow
-                        withinPortal
-                        position="top-start"
-                        maw={420}
-                        openDelay={200}
-                      >
-                        <Text
-                          size="xs"
-                          c="dimmed"
-                          style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                        >
-                          Account: {campaign.accountName}
-                        </Text>
-                      </Tooltip>
-                    )}
+                    <TruncatedName name={campaign.name} />
                   </Table.Td>
-
-                  <Table.Td>
-                    <Group gap="xs" wrap="nowrap">
-                      <StatusBadge status={campaign.status} />
-                      <DeliveryIndicator active={campaign.delivery} />
-                    </Group>
-                  </Table.Td>
-
-                  <Table.Td><Text size="sm">{campaign.objective}</Text></Table.Td>
+                  <Table.Td><StatusCell status={campaign.status} delivering={campaign.delivery} /></Table.Td>
+                  <Table.Td className={classes.nowrap}><Text size="sm">{humanizeObjective(campaign.objective)}</Text></Table.Td>
+                  <MetricCells metrics={rowMetrics(campaign)} currencyCode={currencyCode} benchmark={benchmarkFor(campaign)} />
                   <Table.Td className={classes.nowrap}><Text size="sm">{campaign.startDate || '—'}</Text></Table.Td>
-                  <Table.Td className={classes.nowrap}>
-                    <Text size="sm">{campaign.endDate || '—'}</Text>
-                  </Table.Td>
-                  <Table.Td><Text fw={500} size="sm">{campaign.metricsAvailable === false ? '—' : formatCurrencyAmount(campaign.spend, currencyCode)}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.results}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.costPerResult === null ? '—' : formatCurrencyAmount(campaign.costPerResult, currencyCode)}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.ctr != null ? `${campaign.ctr}%` : '—'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.cpc != null ? formatCurrencyAmount(campaign.cpc, currencyCode) : '—'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.cpm != null ? formatCurrencyAmount(campaign.cpm, currencyCode) : '—'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.reach ?? '—'}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.metricsAvailable === false ? '—' : campaign.impressions ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.metricsAvailable === false ? '—' : campaign.clicks ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.metricsAvailable === false ? '—' : campaign.link_clicks ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.metricsAvailable === false ? '—' : campaign.leads ?? 0}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{campaign.metricsAvailable === false ? '—' : campaign.messages ?? 0}</Text></Table.Td>
-                  <Table.Td>
-                    <Text size="sm">
-                      {campaign.reach && campaign.impressions
-                        ? (Number(campaign.impressions) / Number(campaign.reach)).toFixed(2)
-                        : '—'}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm">
-                      {formatCurrencyAmount(
-                        Number(campaign.leads) > 0
-                          ? Number(campaign.spend || 0) / Number(campaign.leads)
-                          : null,
-                        currencyCode
-                      )}
-                    </Text>
-                  </Table.Td>
-
-                  <Table.Td
-                    style={{
-                      width: RIGHT_COL_WIDTH,
-                      minWidth: RIGHT_COL_WIDTH,
-                      position: 'sticky',
-                      right: 0,
-                      zIndex: Z_STICKY_RIGHT,
-                      background: stickyCellBg,
-                      boxShadow: `inset 1px 0 0 ${BORDER}`,
-                    }}
-                    onClick={(event) => event.stopPropagation()}
-                    onDoubleClick={(event) => event.stopPropagation()}
-                  >
-                    <Menu position="bottom-end" withArrow offset={4}>
-                      <Menu.Target>
-                        <ActionIcon variant="filled" color={platformColor}>
-                          <IconDots size={16} />
-                        </ActionIcon>
-                      </Menu.Target>
-                      <Menu.Dropdown>
-                        <Menu.Item
-                          leftSection={<IconChartBar size={16} />}
-                          component="a"
-                          href={reportHref}
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          View Analytics
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
+                  <Table.Td className={classes.nowrap}><Text size="sm">{lastActivity(campaign.endDate, campaign.lastDay, timezone)}</Text></Table.Td>
+                  <Table.Td className={classes.actionCell}>
+                    <RowActions name={campaign.name}>{menuItems(campaign, reportHref)}</RowActions>
                   </Table.Td>
                 </Table.Tr>
               );

@@ -1,24 +1,28 @@
+import { IconInfoCircle } from '@tabler/icons-react';
 import type { ReportPayload } from '@/lib/server/reports/types';
+import { coverageSentence, formatReportRange } from '@/lib/shared/reports/labels';
 import classes from './Workspace.module.css';
-import { coverageLabel } from '@/lib/shared/reports/coverage';
 
-export function ReportDataStatus({ payload, snapshots = false }: { payload: ReportPayload; snapshots?: boolean }) {
-  if (snapshots) return <div role="note">
-    <p>Audience and delivery snapshots have their own measurement windows, independent of the selected report dates.</p>
-    <dl>{Object.entries(payload.surface.coverage ?? {}).map(([dimension, coverage]) => <div key={dimension}>
-      <dt>{dimension.replaceAll('_', ' ')}</dt><dd>{coverageLabel(coverage)}
-        {coverage.state === 'mixed' && <span>: {coverage.windows?.map(w => `${w.dateFrom}–${w.dateTo}`).join('; ')}</span>}
-      {Object.keys(payload.surface.unavailableMetrics?.[dimension] ?? {}).filter(key => !['reach', 'frequency'].includes(key)).length > 0 &&
-        <span> · Unavailable metrics: {Object.keys(payload.surface.unavailableMetrics?.[dimension] ?? {}).filter(key => !['reach', 'frequency'].includes(key)).join(', ')}</span>}
-      </dd>
-    </div>)}</dl>
-    <p>Placement and device results and cost per result are unavailable from the current delivery-only source.</p>
-  </div>;
-  const messages = [...(payload.meta.warnings ?? [])];
-  if (payload.meta.coverage && payload.meta.coverage.state !== 'available') {
-    messages.push(`Performance: ${coverageLabel(payload.meta.coverage)}. Missing records are not zero.`);
-  }
-  if (payload.comparison.disabledReason) messages.push(payload.comparison.disabledReason);
+/**
+ * Data-quality banner for the report period: coverage in plain words, source warnings and why a
+ * requested comparison is unavailable. Missing records are described as gaps, never zero.
+ */
+export function ReportDataStatus({ payload }: { payload: ReportPayload }) {
+  const coverage = coverageSentence(payload.meta.coverage);
+  const messages = [...new Set([
+    ...(coverage ? [coverage] : []),
+    ...(payload.meta.warnings ?? []),
+    ...(payload.comparison.disabledReason ? [payload.comparison.disabledReason] : []),
+    ...(payload.comparison.basis === 'matched_days' && payload.comparison.matchedDays
+      ? [`Changes compare only the ${payload.comparison.matchedDays} days with records in both periods (${formatReportRange(payload.comparison.previousDateFrom, payload.comparison.previousDateTo)} is the previous period).`]
+      : []),
+  ])];
   if (!messages.length) return null;
-  return <div role="status" className={classes.notice}>{[...new Set(messages)].join(' ')}</div>;
+  const attention = payload.meta.coverage?.state === 'error' || payload.meta.coverage?.state === 'empty';
+  return (
+    <div role="status" className={classes.banner} data-tone={attention ? 'attention' : undefined}>
+      <IconInfoCircle size={16} aria-hidden="true" />
+      <div>{messages.map(message => <p key={message}>{message}</p>)}</div>
+    </div>
+  );
 }
