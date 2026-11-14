@@ -883,6 +883,8 @@ export default function MetaIntegrationFlow({
         opened={syncingOpened}
         title={syncingTitle}
         description={syncingDescription}
+        // Connecting is setup work; every later phase reads Meta account data.
+        mascotState={syncingTitle === 'Connecting Meta' ? 'working' : 'scanning'}
       />
     </>
   );

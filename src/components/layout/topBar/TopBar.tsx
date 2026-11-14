@@ -8,15 +8,18 @@ import {
   getUnreadUserNotificationIds,
   getUserNotifications,
 } from '@/lib/server/actions/user/settings';
+import { isPlaceholderBusinessName } from '@/lib/shared/onboarding/requirements';
 
 type UserRow = Database['public']['Tables']['users']['Row'];
 
 interface TopbarProps {
   user: UserRow;
   businessId: string;
+  /** Business/workspace name shown under the account name; placeholders are hidden. */
+  workspaceName?: string | null;
 }
 
-export default async function Topbar({ user, businessId }: TopbarProps) {
+export default async function Topbar({ user, businessId, workspaceName = null }: TopbarProps) {
   const supabase = await createServerClient();
   const [notifications, unreadNotificationIds] = await Promise.all([
     getUserNotifications(user.id, 5),
@@ -95,6 +98,7 @@ export default async function Topbar({ user, businessId }: TopbarProps) {
       <div className="hidden h-full md:block">
         <TopBarClient
           userInfo={user}
+          workspaceName={workspaceName && !isPlaceholderBusinessName(workspaceName) ? workspaceName : null}
           platforms={platforms}
           adAccounts={adAccounts}
           notifications={notifications}

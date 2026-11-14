@@ -5,6 +5,12 @@ export interface UserData {
   website: string;
   bookingLink: string;
   businessLocation: string;
+  locationMode: string;
+  locationStreet: string;
+  locationCity: string;
+  locationRegion: string;
+  locationPostalCode: string;
+  locationCountry: string;
   customerRadius: string;
   description: string;
   promotedServices: string[];

@@ -8,7 +8,10 @@ application-shell automatic synchronization behavior is unchanged.
 
 `loadBusinessObjectives` reads only the authenticated/job business profile.
 `businessObjectives` v1 maps known onboarding choices; unknown legacy strings stay
-unavailable. Budget/target ranges are not exact amounts and have no explicit stored
+unavailable. `industry` is matched against `BUSINESS_CATEGORY_OPTIONS` (all local
+business categories, a superset of the original salon values). Onboarding no longer
+writes default goals, signals, safety or recommendation style, so those fields are
+`null` ("Not specified") until the owner sets them. Budget/target ranges are not exact amounts and have no explicit stored
 currency. Goals are intent; Meta leads/messages/calls are not verified appointments.
 Descriptive safety preferences never modify autonomy policies.
 

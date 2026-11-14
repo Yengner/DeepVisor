@@ -2,6 +2,7 @@
 
 import { BrandLockup, BrandMark } from '@/components/brand/Brand';
 import PixelCompanion from '@/components/brand/PixelCompanion';
+import SpiderMascot from '@/components/brand/SpiderMascot';
 import { type FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -18,6 +19,8 @@ import {
 import {
   IconBrandGoogle,
   IconChartDots,
+  IconCheck,
+  IconCircle,
   IconShieldCheck,
 } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
@@ -28,6 +31,7 @@ import {
 } from '@/lib/server/actions/user/auth';
 import { createClient } from '@/lib/client/supabase/browser';
 import { ErrorCode } from '@/lib/shared/types/api';
+import { passwordChecks, passwordMeetsPolicy } from '@/lib/shared/auth/passwordPolicy';
 import classes from './AuthForm.module.css';
 import { buildOAuthCallbackUrl } from './oauthCallback';
 
@@ -61,28 +65,27 @@ function IntelligencePanel({ type }: AuthFormProps) {
 
       <div className={classes.signalPreview} aria-label="DeepVisor intelligence preview">
         <div className={classes.signalPreviewHeader}>
-          <span>INTELLIGENCE PREVIEW</span>
-          <span className={classes.signalStatus}>EXAMPLE</span>
+          <span>WHAT YOU WILL SEE</span>
         </div>
         <div className={classes.signalScoreRow}>
-          <strong>82</strong>
+          <SpiderMascot state="scanning" size={64} tone="dark" />
           <div>
-            <span>Healthy momentum</span>
-            <small>Signal quality is improving</small>
+            <span>Your ads, read from your own account</span>
+            <small>Spend, results, and what deserves your attention.</small>
           </div>
         </div>
         <div className={classes.signalRows}>
           <div>
-            <span>Lead efficiency</span>
-            <strong className={classes.positiveSignal}>+12.4%</strong>
+            <span>Performance</span>
+            <strong>From live Meta data</strong>
           </div>
           <div>
-            <span>Spend pacing</span>
-            <strong>On target</strong>
+            <span>Decisions</span>
+            <strong>You approve every change</strong>
           </div>
           <div>
-            <span>Action queue</span>
-            <strong>3 ready</strong>
+            <span>Thin data</span>
+            <strong>We say so plainly</strong>
           </div>
         </div>
       </div>
@@ -104,6 +107,10 @@ export default function AuthForm({ type }: AuthFormProps) {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showVerifyEmailButton, setShowVerifyEmailButton] = useState(false);
+  /** Address a verification email was just sent to; kept in memory only (never URL or storage). */
+  const [sentToEmail, setSentToEmail] = useState<string | null>(null);
+  const passwordRules = passwordChecks(password);
+  const passwordReady = passwordMeetsPolicy(password);
 
   useEffect(() => {
     const authError = new URLSearchParams(window.location.search).get('error');
@@ -186,8 +193,8 @@ export default function AuthForm({ type }: AuthFormProps) {
         return;
       }
 
-      if (password.length < 6) {
-        toast.error('Password must be at least 6 characters.');
+      if (!passwordReady) {
+        toast.error('Your password needs every item in the checklist.');
         return;
       }
 
@@ -198,8 +205,8 @@ export default function AuthForm({ type }: AuthFormProps) {
         return;
       }
 
-      toast.success('Check your email to verify your account!');
-      router.push('/login');
+      setPassword('');
+      setSentToEmail(email.trim());
     } catch (err) {
       console.error('Error during submission:', err);
       toast.error('An unexpected error occurred. Please try again.');
@@ -211,7 +218,7 @@ export default function AuthForm({ type }: AuthFormProps) {
   async function handleResendVerification() {
     setLoading(true);
     try {
-      const res = await handleResendVerificationEmail(email);
+      const res = await handleResendVerificationEmail(sentToEmail ?? email);
 
       if (!res.success) {
         if (res.error.code === ErrorCode.RATE_LIMITED) {
@@ -323,6 +330,57 @@ export default function AuthForm({ type }: AuthFormProps) {
     );
   }
 
+  if (sentToEmail) {
+    return (
+      <div className={classes.signupShell}>
+        <IntelligencePanel type="signup" />
+
+        <Paper radius="sm" p="xl" withBorder className={classes.flowCard}>
+          <Stack gap="lg" className={classes.inboxView} aria-live="polite">
+            <SpiderMascot state="wave" size={64} />
+            <div className={classes.authHeading}>
+              <Title order={2}>Check your inbox</Title>
+              <Text c="dimmed" mt={6}>
+                We sent a verification link to <strong className={classes.inboxEmail}>{sentToEmail}</strong>.
+                Open it to finish creating your account.
+              </Text>
+            </div>
+            <Text size="sm" c="dimmed">
+              It can take a minute. Check spam or promotions if you do not see it.
+            </Text>
+            <Button
+              fullWidth
+              radius="sm"
+              size="md"
+              variant="outline"
+              loading={loading}
+              onClick={handleResendVerification}
+              className={classes.secondaryButton}
+            >
+              Resend email
+            </Button>
+            <Button
+              fullWidth
+              radius="sm"
+              size="md"
+              variant="subtle"
+              disabled={loading}
+              onClick={() => setSentToEmail(null)}
+            >
+              Use a different email
+            </Button>
+            <Text size="sm" className={classes.switchAuth}>
+              Already verified?{' '}
+              <Anchor href="/login" fz="md" fw={500}>
+                Log in
+              </Anchor>
+            </Text>
+          </Stack>
+        </Paper>
+      </div>
+    );
+  }
+
   return (
     <div className={classes.signupShell}>
       <IntelligencePanel type="signup" />
@@ -370,18 +428,30 @@ export default function AuthForm({ type }: AuthFormProps) {
                 autoComplete="email"
                 required
               />
-              <PasswordInput
-                label="Password"
-                placeholder="At least 6 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-                required
-                minLength={6}
-              />
+              <div>
+                <PasswordInput
+                  label="Password"
+                  placeholder="Create a password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                  aria-describedby="password-rules"
+                />
+                <ul id="password-rules" className={classes.passwordRules} aria-label="Password requirements">
+                  {passwordRules.map((rule) => (
+                    <li key={rule.key} data-passed={rule.passed || undefined}>
+                      {rule.passed ? <IconCheck size={13} aria-hidden /> : <IconCircle size={11} aria-hidden />}
+                      <span>{rule.label}</span>
+                      <span className={classes.visuallyHidden}>{rule.passed ? ' (done)' : ' (needed)'}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
               <Button
                 type="submit"
                 fullWidth
+                disabled={!passwordReady}
                 loading={loading}
                 radius="sm"
                 size="md"

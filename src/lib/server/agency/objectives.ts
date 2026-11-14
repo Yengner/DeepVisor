@@ -1,7 +1,7 @@
 import type { Database } from '@/lib/shared/types/supabase';
 import {
   INTELLIGENCE_GOAL_OPTIONS, MONTHLY_AD_BUDGET_OPTIONS, TARGET_COST_PER_LEAD_OPTIONS,
-  LEAD_TYPE_OPTIONS, SALON_INDUSTRY_OPTIONS, SAFETY_PREFERENCE_OPTIONS, RECOMMENDATION_STYLE_OPTIONS,
+  LEAD_TYPE_OPTIONS, BUSINESS_CATEGORY_OPTIONS, SAFETY_PREFERENCE_OPTIONS, RECOMMENDATION_STYLE_OPTIONS,
   type OnboardingOption,
 } from '@/lib/shared/onboarding/businessProfileOptions';
 
@@ -20,7 +20,7 @@ export function businessObjectives(profile: ObjectiveProfile) {
     monthlyBudget: choice(MONTHLY_AD_BUDGET_OPTIONS, profile.monthly_budget),
     targetCost: choice(TARGET_COST_PER_LEAD_OPTIONS, profile.target_cost_per_lead),
     leadType: choice(LEAD_TYPE_OPTIONS, profile.lead_type),
-    industry: choice(SALON_INDUSTRY_OPTIONS, profile.industry),
+    industry: choice(BUSINESS_CATEGORY_OPTIONS, profile.industry),
     safety: choice(SAFETY_PREFERENCE_OPTIONS, profile.safety_preference),
     recommendationStyle: choice(RECOMMENDATION_STYLE_OPTIONS, profile.recommendation_style),
   };

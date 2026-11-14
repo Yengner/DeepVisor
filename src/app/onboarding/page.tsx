@@ -1,6 +1,7 @@
 import OnboardingProvider from './components/OnboardingProvider';
 import { getLoggedInUserOrRedirect } from '@/lib/server/actions/user/account';
 import { getOnboardingInitial } from '@/lib/server/actions/business/onboarding';
+import { countryOptions } from '@/lib/shared/onboarding/countries';
 import { Button, Stack, Text, Title } from '@mantine/core';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -32,5 +33,6 @@ export default async function OnboardingPage() {
   const init = res.data;
   if (init.completed) redirect('/dashboard');
 
-  return <OnboardingProvider initial={init} />;
+  // Labels are built once here so server and browser render identical text (Intl data differs).
+  return <OnboardingProvider initial={init} countries={countryOptions()} />;
 }

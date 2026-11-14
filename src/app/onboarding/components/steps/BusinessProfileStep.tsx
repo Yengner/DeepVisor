@@ -1,56 +1,59 @@
 'use client';
 
-import {
-  type ChangeEventHandler,
-  type FocusEventHandler,
-  type ReactNode,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
-import {
-  Autocomplete as GooglePlacesAutocomplete,
-  useJsApiLoader,
-} from '@react-google-maps/api';
+import { useEffect, useRef, useState } from 'react';
 import {
   Button,
+  Collapse,
   Group,
+  Radio,
   Select,
   SimpleGrid,
   Stack,
   Text,
+  Textarea,
   TextInput,
   Title,
+  UnstyledButton,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import {
-  IconArrowRight,
   IconAlertCircle,
+  IconArrowRight,
   IconBuilding,
+  IconBuildingStore,
+  IconCar,
+  IconCategory,
   IconCheck,
+  IconChevronDown,
   IconChevronLeft,
   IconCloudUpload,
   IconMapPin,
   IconMessageCircle,
-  IconScissors,
   IconWallet,
+  IconWorld,
 } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 import { updateBusinessProfileData } from '@/lib/server/actions/business/onboarding';
 import {
+  BUSINESS_CATEGORY_GROUPS,
+  BUSINESS_CATEGORY_OPTIONS,
   CONTACT_METHOD_OPTIONS,
   CUSTOMER_RADIUS_OPTIONS,
-  DEFAULT_INTELLIGENCE_GOALS,
-  DEFAULT_WATCH_SIGNALS,
   MONTHLY_AD_BUDGET_OPTIONS,
-  SALON_PROFESSION_OPTIONS,
   isAllowedOption,
-  labelForOption,
 } from '@/lib/shared/onboarding/businessProfileOptions';
+import { DEFAULT_COUNTRY_CODE, isCountryCode, type CountryOption } from '@/lib/shared/onboarding/countries';
+import {
+  isLocationMode,
+  isPlaceholderBusinessName,
+  normalizeBusinessName,
+} from '@/lib/shared/onboarding/requirements';
 import type { UserData } from '../types';
 import styles from './OnboardingSteps.module.css';
 
 type BusinessProfileStepProps = {
+  /** Country options built on the server (see countries.ts). */
+  countries: CountryOption[];
   onNext: () => void | Promise<void>;
   onPrev: () => void | Promise<void>;
   userData: UserData;
@@ -58,195 +61,175 @@ type BusinessProfileStepProps = {
   showBack?: boolean;
 };
 
-type EssentialsFormValues = {
+type FormValues = {
   businessName: string;
-  profession: string;
-  businessLocation: string;
+  industry: string;
+  locationMode: string;
+  locationStreet: string;
+  locationCity: string;
+  locationRegion: string;
+  locationPostalCode: string;
+  locationCountry: string;
   customerRadius: string;
   preferredContactMethod: string;
+  website: string;
   monthlyBudget: string;
+  description: string;
 };
 
-type EssentialsField = keyof EssentialsFormValues;
-type DraftSaveState = 'saving' | 'saved' | 'error';
-type BusinessProfileDraft = Parameters<typeof updateBusinessProfileData>[0];
-type QueuedDraft = {
-  payload: BusinessProfileDraft;
-  revision: number;
-  savedFields: EssentialsField[];
+type SaveState = 'idle' | 'saving' | 'saved' | 'pending' | 'error';
+type ProfilePayload = Parameters<typeof updateBusinessProfileData>[0];
+
+const LOCATION_KEYS = [
+  'locationMode', 'locationStreet', 'locationCity', 'locationRegion', 'locationPostalCode', 'locationCountry',
+] as const;
+const AUTOSAVE_DELAY_MS = 800;
+
+const comboboxProps = {
+  withinPortal: false,
+  position: 'bottom-start' as const,
+  middlewares: { flip: true, shift: true },
 };
-
-const BUSINESS_NAME_PLACEHOLDERS = new Set([
-  'my business',
-  'business setup',
-  'new business',
-  'untitled business',
-]);
-
-const dropdownProps = {
-  comboboxProps: {
-    withinPortal: false,
-    position: 'bottom-start' as const,
-    middlewares: {
-      flip: false,
-      shift: true,
-    },
-  },
-  maxDropdownHeight: 280,
-};
-
-const GOOGLE_PLACES_LIBRARIES: ('places')[] = ['places'];
-
-function normalizeBusinessName(value: string): string {
-  return value.trim();
-}
 
 function validateBusinessName(value: string): string | null {
   const normalized = normalizeBusinessName(value);
-
-  if (!normalized) return 'Business name is required';
-
-  if (BUSINESS_NAME_PLACEHOLDERS.has(normalized.toLowerCase())) {
-    return 'Replace the default name with your real business name';
-  }
-
+  if (!normalized) return 'Enter your business name';
+  if (isPlaceholderBusinessName(normalized)) return 'Use your real business name';
+  if (normalized.length > 200) return 'Keep the name under 200 characters';
   return null;
 }
 
-function requiredString(message: string) {
+/** Accepts "bayside.com" and stores "https://bayside.com"; returns null when not a usable URL. */
+function normalizeWebsite(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const candidate = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(candidate);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null;
+    if (!url.hostname.includes('.')) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function required(message: string) {
   return (value: string) => (value.trim() ? null : message);
 }
 
-function leadTypeForContact(contactMethod: string): string {
-  switch (contactMethod) {
-    case 'whatsapp_messages':
-      return 'whatsapp_messages';
-    case 'instagram_dms':
-    case 'facebook_messenger':
-      return 'messages';
-    case 'phone_calls':
-      return 'phone_calls';
-    case 'lead_form':
-      return 'instant_forms';
-    case 'website_booking_link':
-      return 'booking_link_clicks';
-    default:
-      return 'recommend_for_me';
-  }
+function locationComplete(values: FormValues): boolean {
+  return (
+    isLocationMode(values.locationMode) &&
+    Boolean(values.locationCity.trim() && values.locationRegion.trim()) &&
+    isCountryCode(values.locationCountry)
+  );
 }
 
-function initialProfession(userData: UserData): string {
-  return isAllowedOption(userData.industry, SALON_PROFESSION_OPTIONS) ? userData.industry : '';
+function initialValues(userData: UserData): FormValues {
+  const name = normalizeBusinessName(userData.businessName);
+  return {
+    businessName: name && !isPlaceholderBusinessName(name) ? name : '',
+    industry: isAllowedOption(userData.industry, BUSINESS_CATEGORY_OPTIONS) ? userData.industry : '',
+    locationMode: isLocationMode(userData.locationMode) ? userData.locationMode : '',
+    locationStreet: userData.locationStreet,
+    locationCity: userData.locationCity,
+    locationRegion: userData.locationRegion,
+    locationPostalCode: userData.locationPostalCode,
+    locationCountry: isCountryCode(userData.locationCountry) ? userData.locationCountry : DEFAULT_COUNTRY_CODE,
+    customerRadius: isAllowedOption(userData.customerRadius, CUSTOMER_RADIUS_OPTIONS) ? userData.customerRadius : '',
+    preferredContactMethod: isAllowedOption(userData.preferredContactMethod, CONTACT_METHOD_OPTIONS)
+      ? userData.preferredContactMethod
+      : '',
+    website: userData.website,
+    monthlyBudget: isAllowedOption(userData.monthlyBudget, MONTHLY_AD_BUDGET_OPTIONS) ? userData.monthlyBudget : '',
+    description: userData.description,
+  };
 }
 
-function buildDraftPayload(
-  values: EssentialsFormValues,
-  dirtyFields: ReadonlySet<EssentialsField>
-): { payload: BusinessProfileDraft; savedFields: EssentialsField[] } {
-  const payload: BusinessProfileDraft = {};
-  const savedFields: EssentialsField[] = [];
+function optionalString(value: string): string | null {
+  return value.trim() || null;
+}
 
-  if (dirtyFields.has('businessName') && !validateBusinessName(values.businessName)) {
-    payload.businessName = normalizeBusinessName(values.businessName);
-    savedFields.push('businessName');
+/**
+ * Builds the save payload for fields that changed since the last save and are valid.
+ * Only what the owner typed is sent: no defaults, guesses, or generated text.
+ */
+function buildPayload(values: FormValues, saved: FormValues, includeUnchanged = false) {
+  const changed = (key: keyof FormValues) => includeUnchanged || values[key] !== saved[key];
+  const payload: ProfilePayload = {};
+  let pending = false;
+
+  if (changed('businessName')) {
+    if (!validateBusinessName(values.businessName)) payload.businessName = normalizeBusinessName(values.businessName);
+    else pending = true;
   }
-
-  if (dirtyFields.has('profession') && isAllowedOption(values.profession, SALON_PROFESSION_OPTIONS)) {
-    payload.industry = values.profession;
-    savedFields.push('profession');
+  if (changed('industry')) {
+    if (isAllowedOption(values.industry, BUSINESS_CATEGORY_OPTIONS)) payload.industry = values.industry;
+    else pending = true;
   }
-
-  if (dirtyFields.has('businessLocation') && values.businessLocation.trim()) {
-    payload.businessLocation = values.businessLocation.trim();
-    savedFields.push('businessLocation');
-  }
-
-  if (
-    dirtyFields.has('customerRadius') &&
-    isAllowedOption(values.customerRadius, CUSTOMER_RADIUS_OPTIONS)
-  ) {
-    payload.customerRadius = values.customerRadius;
-    savedFields.push('customerRadius');
-  }
-
-  if (
-    dirtyFields.has('preferredContactMethod') &&
-    isAllowedOption(values.preferredContactMethod, CONTACT_METHOD_OPTIONS)
-  ) {
-    payload.preferredContactMethod = values.preferredContactMethod;
-    savedFields.push('preferredContactMethod');
-  }
-
-  if (dirtyFields.has('monthlyBudget')) {
-    if (!values.monthlyBudget) {
-      payload.monthlyBudget = null;
-      savedFields.push('monthlyBudget');
-    } else if (isAllowedOption(values.monthlyBudget, MONTHLY_AD_BUDGET_OPTIONS)) {
-      payload.monthlyBudget = values.monthlyBudget;
-      savedFields.push('monthlyBudget');
+  if (LOCATION_KEYS.some(changed)) {
+    if (locationComplete(values)) {
+      payload.locationMode = values.locationMode;
+      payload.locationStreet = optionalString(values.locationStreet);
+      payload.locationCity = values.locationCity.trim();
+      payload.locationRegion = values.locationRegion.trim();
+      payload.locationPostalCode = optionalString(values.locationPostalCode);
+      payload.locationCountry = values.locationCountry;
+    } else {
+      pending = true;
     }
   }
+  if (changed('preferredContactMethod')) {
+    if (isAllowedOption(values.preferredContactMethod, CONTACT_METHOD_OPTIONS)) {
+      payload.preferredContactMethod = values.preferredContactMethod;
+    } else {
+      pending = true;
+    }
+  }
+  // Optional fields: send a value when entered, null only when an earlier value was cleared.
+  const optional = (key: 'customerRadius' | 'monthlyBudget' | 'description', target: keyof ProfilePayload) => {
+    if (!changed(key)) return;
+    const value = optionalString(values[key]);
+    if (value) (payload as Record<string, unknown>)[target] = value;
+    else if (saved[key].trim()) (payload as Record<string, unknown>)[target] = null;
+  };
+  optional('customerRadius', 'customerRadius');
+  optional('monthlyBudget', 'monthlyBudget');
+  optional('description', 'description');
+  if (changed('website')) {
+    const website = normalizeWebsite(values.website);
+    if (website) payload.website = website;
+    else if (!values.website.trim()) {
+      if (saved.website.trim()) payload.website = null;
+    } else pending = true;
+  }
 
-  return { payload, savedFields };
+  return { payload, pending };
 }
 
-function BusinessAddressInput({
-  value,
-  error,
-  onChange,
-  onBlur,
-  onSelectAddress,
-}: {
-  value: string;
-  error?: ReactNode;
-  onChange: ChangeEventHandler<HTMLInputElement>;
-  onBlur?: FocusEventHandler<HTMLInputElement>;
-  onSelectAddress: (address: string) => void;
-}) {
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
-  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'deepvisor-onboarding-google-places',
-    googleMapsApiKey,
-    libraries: GOOGLE_PLACES_LIBRARIES,
-  });
-
-  const input = (
-    <TextInput
-      label="Service address"
-      placeholder="123 Main St, Tampa, FL"
-      description="Used for local reporting and targeting context."
-      required
-      leftSection={<IconMapPin size={16} />}
-      value={value}
-      error={error}
-      onChange={onChange}
-      onBlur={onBlur}
-      autoComplete="street-address"
-    />
-  );
-
-  if (!googleMapsApiKey || loadError || !isLoaded) return input;
+function SaveIndicator({ state }: { state: SaveState }) {
+  if (state === 'idle') return null;
+  const content = {
+    saving: { icon: <IconCloudUpload size={14} />, text: 'Saving…' },
+    saved: { icon: <IconCheck size={14} />, text: 'Saved' },
+    pending: { icon: null, text: 'Finish the highlighted fields to save' },
+    error: { icon: <IconAlertCircle size={14} />, text: 'Couldn’t save — we’ll retry when you continue' },
+  }[state];
 
   return (
-    <GooglePlacesAutocomplete
-      onLoad={setAutocomplete}
-      onPlaceChanged={() => {
-        const place = autocomplete?.getPlace();
-        const address = place?.formatted_address || place?.name || '';
-        if (address) onSelectAddress(address);
-      }}
-      options={{
-        fields: ['formatted_address', 'name', 'geometry'],
-        types: ['establishment', 'geocode'],
-      }}
+    <span
+      className={[styles.draftState, state === 'error' ? styles.draftStateError : ''].filter(Boolean).join(' ')}
+      aria-live="polite"
     >
-      {input}
-    </GooglePlacesAutocomplete>
+      {content.icon}
+      {content.text}
+    </span>
   );
 }
 
 export default function BusinessProfileStep({
+  countries,
   onNext,
   onPrev,
   userData,
@@ -254,281 +237,319 @@ export default function BusinessProfileStep({
   showBack = true,
 }: BusinessProfileStepProps) {
   const [submitting, setSubmitting] = useState(false);
-  const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>('saved');
-  const dirtyDraftFields = useRef<Set<EssentialsField>>(new Set());
-  const draftRevision = useRef(0);
-  const draftTimer = useRef<number | null>(null);
-  const draftQueue = useRef<Promise<void>>(Promise.resolve());
-  const pendingDraft = useRef<QueuedDraft | null>(null);
-  const draftWorkerRunning = useRef(false);
-  const submittingRef = useRef(false);
-  const [draftChangeCount, setDraftChangeCount] = useState(0);
-  const initialValues = useRef<EssentialsFormValues>({
-    businessName: validateBusinessName(userData.businessName || '')
-      ? ''
-      : normalizeBusinessName(userData.businessName),
-    profession: initialProfession(userData),
-    businessLocation: userData.businessLocation || '',
-    customerRadius: userData.customerRadius || '',
-    preferredContactMethod: userData.preferredContactMethod || '',
-    monthlyBudget: userData.monthlyBudget || '',
-  });
-  const latestDraftValues = useRef<EssentialsFormValues>(initialValues.current);
-  const form = useForm<EssentialsFormValues>({
-    initialValues: initialValues.current,
+  const [saveState, setSaveState] = useState<SaveState>('idle');
+  const [optionalOpen, setOptionalOpen] = useState(
+    () => Boolean(userData.website || userData.monthlyBudget || userData.description)
+  );
+  const [editCount, setEditCount] = useState(0);
+  const savedValues = useRef<FormValues>(initialValues(userData));
+  const saveChain = useRef<Promise<unknown>>(Promise.resolve());
+  const saveSequence = useRef(0);
+
+  const form = useForm<FormValues>({
+    initialValues: savedValues.current,
     validate: {
       businessName: validateBusinessName,
-      profession: requiredString('Choose your profession'),
-      businessLocation: requiredString('Service address is required'),
-      customerRadius: requiredString('Choose a customer radius'),
-      preferredContactMethod: requiredString('Choose a preferred contact path'),
+      industry: required('Choose the closest category, or Other'),
+      locationMode: required('Choose how you serve customers'),
+      locationCity: required('Enter your city'),
+      locationRegion: required('Enter your state or region'),
+      locationCountry: (value) => (isCountryCode(value) ? null : 'Choose your country'),
+      preferredContactMethod: required('Choose how customers usually reach you'),
+      website: (value) => (!value.trim() || normalizeWebsite(value) ? null : 'Enter a website like yourbusiness.com'),
     },
-    onValuesChange: (values, previous) => {
-      if (submittingRef.current) return;
-
-      (Object.keys(values) as EssentialsField[]).forEach((field) => {
-        if (values[field] !== previous[field]) dirtyDraftFields.current.add(field);
-      });
-      latestDraftValues.current = values;
-      draftRevision.current += 1;
-      setDraftSaveState('saving');
-      setDraftChangeCount((count) => count + 1);
-    },
+    onValuesChange: () => setEditCount((count) => count + 1),
   });
 
-  const enqueueDraft = (draft: QueuedDraft) => {
-    // Keep only the newest not-yet-started snapshot while the active write finishes.
-    pendingDraft.current = draft;
-    if (draftWorkerRunning.current) return;
-
-    draftWorkerRunning.current = true;
-    draftQueue.current = (async () => {
-      try {
-        while (pendingDraft.current) {
-          const nextDraft = pendingDraft.current;
-          pendingDraft.current = null;
-
-          try {
-            const result = await updateBusinessProfileData(nextDraft.payload);
-            if (nextDraft.revision !== draftRevision.current) continue;
-
-            if (!result.success) {
-              setDraftSaveState('error');
-              continue;
-            }
-
-            nextDraft.savedFields.forEach((field) => dirtyDraftFields.current.delete(field));
-            setDraftSaveState(dirtyDraftFields.current.size === 0 ? 'saved' : 'error');
-          } catch (error) {
-            console.error('Error saving onboarding draft:', error);
-            if (nextDraft.revision === draftRevision.current) {
-              setDraftSaveState('error');
-            }
-          }
+  const persist = (payload: ProfilePayload, pending: boolean) => {
+    const sequence = ++saveSequence.current;
+    const snapshot = { ...form.getValues() };
+    setSaveState('saving');
+    const run = saveChain.current.then(async () => {
+      const result = await updateBusinessProfileData(payload);
+      if (result.success) {
+        // Mark only the sent fields as saved so later edits still count as changes.
+        const next = { ...savedValues.current };
+        for (const key of Object.keys(snapshot) as (keyof FormValues)[]) {
+          const isLocation = (LOCATION_KEYS as readonly string[]).includes(key);
+          const sent = isLocation ? 'locationMode' in payload : key in payload;
+          if (sent) next[key] = snapshot[key];
         }
-      } finally {
-        draftWorkerRunning.current = false;
+        savedValues.current = next;
       }
-    })();
+      if (sequence === saveSequence.current) {
+        setSaveState(result.success ? (pending ? 'pending' : 'saved') : 'error');
+      }
+      return result;
+    }).catch((error: unknown) => {
+      console.error('Error saving onboarding draft:', error);
+      if (sequence === saveSequence.current) setSaveState('error');
+      return null;
+    });
+    saveChain.current = run;
+    return run;
   };
 
   useEffect(() => {
-    if (draftChangeCount === 0) return;
-
-    if (draftTimer.current) window.clearTimeout(draftTimer.current);
-    const requestRevision = draftRevision.current;
-
-    draftTimer.current = window.setTimeout(() => {
-      const dirtyFields = new Set(dirtyDraftFields.current);
-      const { payload, savedFields } = buildDraftPayload(
-        latestDraftValues.current,
-        dirtyFields
-      );
-
+    if (editCount === 0 || submitting) return;
+    const timer = window.setTimeout(() => {
+      const { payload, pending } = buildPayload(form.getValues(), savedValues.current);
       if (Object.keys(payload).length === 0) {
-        if (requestRevision === draftRevision.current) setDraftSaveState('error');
+        setSaveState(pending ? 'pending' : 'saved');
         return;
       }
+      void persist(payload, pending);
+    }, AUTOSAVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+    // persist/form are stable for this component's lifetime; editCount drives autosave.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editCount]);
 
-      enqueueDraft({
-        payload,
-        revision: requestRevision,
-        savedFields,
-      });
-    }, 900);
-
-    return () => {
-      if (draftTimer.current) {
-        window.clearTimeout(draftTimer.current);
-        draftTimer.current = null;
-      }
-    };
-  }, [draftChangeCount]);
-
-  const handleSubmit = async (values: typeof form.values) => {
-    submittingRef.current = true;
+  const handleSubmit = async (values: FormValues) => {
     setSubmitting(true);
-
     try {
-      if (draftTimer.current) {
-        window.clearTimeout(draftTimer.current);
-        draftTimer.current = null;
-      }
-      draftRevision.current += 1;
-      await draftQueue.current;
-
-      const businessName = normalizeBusinessName(values.businessName);
-      const professionLabel = labelForOption(values.profession, SALON_PROFESSION_OPTIONS, 'beauty professional');
-      const primaryGoal = userData.primaryGoal || DEFAULT_INTELLIGENCE_GOALS.primaryGoal;
-      const cleanValues: Partial<UserData> = {
-        businessName,
-        businessLocation: values.businessLocation.trim(),
-        customerRadius: values.customerRadius,
-        monthlyBudget: values.monthlyBudget || 'not_sure',
-        preferredContactMethod: values.preferredContactMethod,
-        industry: values.profession,
-        description:
-          userData.description ||
-          `${businessName} provides ${professionLabel.toLowerCase()} services in ${values.businessLocation.trim()}.`,
-        metaAdsStatus: userData.metaAdsStatus || 'not_sure',
-        primaryGoal,
-        leadType: userData.leadType || leadTypeForContact(values.preferredContactMethod),
-        leadQualitySignal:
-          userData.leadQualitySignal || DEFAULT_INTELLIGENCE_GOALS.leadQualitySignal,
-        watchSignals:
-          userData.watchSignals.length > 0 ? userData.watchSignals : [...DEFAULT_WATCH_SIGNALS],
-        recommendationStyle:
-          userData.recommendationStyle || DEFAULT_INTELLIGENCE_GOALS.recommendationStyle,
-        safetyPreference:
-          userData.safetyPreference || DEFAULT_INTELLIGENCE_GOALS.safetyPreference,
-        adGoals: userData.adGoals.length > 0 ? userData.adGoals : [primaryGoal],
-        preferredPlatforms:
-          userData.preferredPlatforms.length > 0 ? userData.preferredPlatforms : ['meta'],
-      };
-
-      const saveRes = await updateBusinessProfileData(cleanValues);
-      if (!saveRes.success) {
-        setDraftSaveState('error');
-        toast.error(saveRes.error.userMessage);
+      await saveChain.current;
+      const { payload } = buildPayload(values, savedValues.current, true);
+      const result = await persist(payload, false);
+      if (!result || !result.success) {
+        toast.error(result && !result.success ? result.error.userMessage : 'Your business details could not be saved.');
         return;
       }
-
-      dirtyDraftFields.current.clear();
-      setDraftSaveState('saved');
-      updateUserData(cleanValues);
+      updateUserData({
+        businessName: normalizeBusinessName(values.businessName),
+        industry: values.industry,
+        locationMode: values.locationMode,
+        locationStreet: values.locationStreet.trim(),
+        locationCity: values.locationCity.trim(),
+        locationRegion: values.locationRegion.trim(),
+        locationPostalCode: values.locationPostalCode.trim(),
+        locationCountry: values.locationCountry,
+        customerRadius: values.customerRadius,
+        preferredContactMethod: values.preferredContactMethod,
+        website: normalizeWebsite(values.website) ?? '',
+        monthlyBudget: values.monthlyBudget,
+        description: values.description.trim(),
+      });
       await onNext();
-    } catch (error) {
-      console.error('Error saving business profile:', error);
-      setDraftSaveState('error');
-      toast.error('Failed to save your business profile');
     } finally {
-      submittingRef.current = false;
       setSubmitting(false);
     }
   };
+
+  const serviceArea = form.values.locationMode === 'service_area';
 
   return (
     <Stack gap="lg" className={styles.stepRoot}>
       <div className={styles.stepIntro}>
         <div className={styles.stepMetaRow}>
-          <span className={styles.stepKicker}>01 / Business essentials</span>
-          <span
-            className={[
-              styles.draftState,
-              draftSaveState === 'error' ? styles.draftStateError : '',
-            ].filter(Boolean).join(' ')}
-            aria-live="polite"
-          >
-            {draftSaveState === 'saving' ? <IconCloudUpload size={14} /> : null}
-            {draftSaveState === 'saved' ? <IconCheck size={14} /> : null}
-            {draftSaveState === 'error' ? <IconAlertCircle size={14} /> : null}
-            {draftSaveState === 'saving' ? 'Saving...' : null}
-            {draftSaveState === 'saved' ? 'Saved' : null}
-            {draftSaveState === 'error' ? 'Not saved' : null}
-          </span>
+          <span className={styles.stepKicker}>Step 1 · Your business</span>
+          <SaveIndicator state={saveState} />
         </div>
         <Title order={2} className={styles.stepTitle}>
-          Tell us enough to make the dashboard useful.
+          Tell us about your business.
         </Title>
         <Text className={styles.stepCopy}>
-          This is the only business form required before your workspace opens.
+          Four quick answers. You can change any of them later in Settings.
         </Text>
       </div>
 
-      <form onSubmit={form.onSubmit(handleSubmit)}>
+      <form
+        noValidate
+        onSubmit={form.onSubmit(handleSubmit, () => {
+          toast.error('A few details are still needed.');
+        })}
+      >
         <Stack gap="lg">
-          <fieldset
-            className={styles.essentialsSection}
-            aria-labelledby="business-essentials-heading"
-            disabled={submitting}
-          >
-            <Group mb="md" className={styles.sectionHeader}>
-              <span className={styles.sectionIcon}><IconBuilding size={17} /></span>
-              <Title id="business-essentials-heading" order={3} className={styles.sectionTitle}>
-                Business essentials
-              </Title>
-            </Group>
+          <fieldset className={styles.essentialsSection} disabled={submitting}>
+            <Stack gap="md">
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                <TextInput
+                  label="Business name"
+                  placeholder="e.g. Bayside Plumbing"
+                  withAsterisk
+                  leftSection={<IconBuilding size={16} />}
+                  autoComplete="organization"
+                  maxLength={200}
+                  key={form.key('businessName')}
+                  {...form.getInputProps('businessName')}
+                />
+                <Select
+                  label="What kind of business?"
+                  placeholder="Search categories"
+                  withAsterisk
+                  searchable
+                  nothingFoundMessage="No match — choose Other at the bottom"
+                  leftSection={<IconCategory size={16} />}
+                  data={BUSINESS_CATEGORY_GROUPS}
+                  comboboxProps={comboboxProps}
+                  maxDropdownHeight={300}
+                  key={form.key('industry')}
+                  {...form.getInputProps('industry')}
+                />
+              </SimpleGrid>
 
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-              <TextInput
-                label="Business name"
-                placeholder="Your business name"
-                description="This names your DeepVisor workspace."
-                required
-                leftSection={<IconBuilding size={16} />}
-                autoComplete="organization"
-                {...form.getInputProps('businessName')}
-              />
+              <Radio.Group
+                label="How do you serve customers?"
+                withAsterisk
+                key={form.key('locationMode')}
+                {...form.getInputProps('locationMode')}
+              >
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm" mt={8}>
+                  <Radio.Card value="storefront" className={styles.choiceCard} radius="sm">
+                    <Group wrap="nowrap" align="flex-start" gap="sm">
+                      <Radio.Indicator />
+                      <div>
+                        <Text fw={700} size="sm"><IconBuildingStore size={15} className={styles.choiceIcon} />Customers come to me</Text>
+                        <Text size="xs" c="dimmed">A shop, office, studio, or restaurant.</Text>
+                      </div>
+                    </Group>
+                  </Radio.Card>
+                  <Radio.Card value="service_area" className={styles.choiceCard} radius="sm">
+                    <Group wrap="nowrap" align="flex-start" gap="sm">
+                      <Radio.Indicator />
+                      <div>
+                        <Text fw={700} size="sm"><IconCar size={15} className={styles.choiceIcon} />I travel to customers</Text>
+                        <Text size="xs" c="dimmed">Home services, mobile, or on-site work.</Text>
+                      </div>
+                    </Group>
+                  </Radio.Card>
+                </SimpleGrid>
+              </Radio.Group>
+
+              <Collapse in={Boolean(form.values.locationMode)}>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                  {!serviceArea ? (
+                    <TextInput
+                      label="Street address"
+                      description="Optional"
+                      placeholder="e.g. 123 Main St"
+                      leftSection={<IconMapPin size={16} />}
+                      autoComplete="street-address"
+                      maxLength={200}
+                      className={styles.fullRow}
+                      key={form.key('locationStreet')}
+                      {...form.getInputProps('locationStreet')}
+                    />
+                  ) : null}
+                  <TextInput
+                    label={serviceArea ? 'City you work from' : 'City'}
+                    placeholder="e.g. Tampa"
+                    withAsterisk
+                    autoComplete="address-level2"
+                    maxLength={120}
+                    key={form.key('locationCity')}
+                    {...form.getInputProps('locationCity')}
+                  />
+                  <TextInput
+                    label="State / region"
+                    placeholder="e.g. FL"
+                    withAsterisk
+                    autoComplete="address-level1"
+                    maxLength={120}
+                    key={form.key('locationRegion')}
+                    {...form.getInputProps('locationRegion')}
+                  />
+                  {!serviceArea ? (
+                    <TextInput
+                      label="ZIP / postal code"
+                      description="Optional"
+                      placeholder="e.g. 33602"
+                      autoComplete="postal-code"
+                      maxLength={20}
+                      key={form.key('locationPostalCode')}
+                      {...form.getInputProps('locationPostalCode')}
+                    />
+                  ) : null}
+                  <Select
+                    label="Country"
+                    withAsterisk
+                    searchable
+                    data={countries}
+                    comboboxProps={comboboxProps}
+                    allowDeselect={false}
+                    key={form.key('locationCountry')}
+                    {...form.getInputProps('locationCountry')}
+                  />
+                  <Select
+                    label={serviceArea ? 'How far do you travel?' : 'How far do customers come from?'}
+                    description="Optional"
+                    placeholder="Choose a distance"
+                    clearable
+                    data={CUSTOMER_RADIUS_OPTIONS}
+                    comboboxProps={comboboxProps}
+                    key={form.key('customerRadius')}
+                    {...form.getInputProps('customerRadius')}
+                  />
+                </SimpleGrid>
+              </Collapse>
+
               <Select
-                label="Profession"
-                placeholder="Choose your profession"
-                description="Choose the type of beauty professional you are."
-                required
-                searchable
-                leftSection={<IconScissors size={16} />}
-                data={SALON_PROFESSION_OPTIONS}
-                {...dropdownProps}
-                {...form.getInputProps('profession')}
-              />
-              <BusinessAddressInput
-                value={form.values.businessLocation}
-                error={form.errors.businessLocation}
-                onChange={(event) => form.setFieldValue('businessLocation', event.currentTarget.value)}
-                onBlur={() => form.validateField('businessLocation')}
-                onSelectAddress={(address) => form.setFieldValue('businessLocation', address)}
-              />
-              <Select
-                label="Customer radius"
-                placeholder="Choose a radius"
-                description="Choose Not sure if you want to decide later."
-                required
-                leftSection={<IconMapPin size={16} />}
-                data={CUSTOMER_RADIUS_OPTIONS}
-                {...dropdownProps}
-                {...form.getInputProps('customerRadius')}
-              />
-              <Select
-                label="Preferred contact path"
-                placeholder="How should leads reach you?"
-                description="Used to focus lead and conversion reporting."
-                required
+                label="How do customers usually reach you?"
+                description="Helps DeepVisor focus on the results that matter to you."
+                placeholder="Choose one"
+                withAsterisk
                 leftSection={<IconMessageCircle size={16} />}
                 data={CONTACT_METHOD_OPTIONS}
-                {...dropdownProps}
+                comboboxProps={comboboxProps}
+                key={form.key('preferredContactMethod')}
                 {...form.getInputProps('preferredContactMethod')}
               />
-              <Select
-                label="Monthly ad budget"
-                placeholder="Optional"
-                description="You can add or change this later."
-                clearable
-                leftSection={<IconWallet size={16} />}
-                data={MONTHLY_AD_BUDGET_OPTIONS}
-                {...dropdownProps}
-                {...form.getInputProps('monthlyBudget')}
-              />
-            </SimpleGrid>
+            </Stack>
           </fieldset>
+
+          <section className={styles.optionalSection}>
+            <UnstyledButton
+              type="button"
+              className={styles.optionalToggle}
+              onClick={() => setOptionalOpen((open) => !open)}
+              aria-expanded={optionalOpen}
+              aria-controls="onboarding-optional-details"
+            >
+              <span>
+                <strong>Helpful, not required</strong>
+                <span>Website, ad budget, and a short description</span>
+              </span>
+              <IconChevronDown size={18} className={optionalOpen ? styles.chevronOpen : undefined} />
+            </UnstyledButton>
+            <Collapse in={optionalOpen} id="onboarding-optional-details">
+              <fieldset className={styles.optionalFields} disabled={submitting}>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                  <TextInput
+                    label="Website"
+                    placeholder="yourbusiness.com"
+                    leftSection={<IconWorld size={16} />}
+                    autoComplete="url"
+                    inputMode="url"
+                    maxLength={2048}
+                    key={form.key('website')}
+                    {...form.getInputProps('website')}
+                  />
+                  <Select
+                    label="Monthly ad budget"
+                    placeholder="Choose a range"
+                    description="A planning range; this never changes Meta budgets."
+                    clearable
+                    leftSection={<IconWallet size={16} />}
+                    data={MONTHLY_AD_BUDGET_OPTIONS}
+                    comboboxProps={comboboxProps}
+                    key={form.key('monthlyBudget')}
+                    {...form.getInputProps('monthlyBudget')}
+                  />
+                  <Textarea
+                    label="What do you offer?"
+                    placeholder="e.g. Emergency plumbing, water heaters, and drain cleaning across Tampa Bay."
+                    autosize
+                    minRows={2}
+                    maxRows={5}
+                    maxLength={4000}
+                    className={styles.fullRow}
+                    key={form.key('description')}
+                    {...form.getInputProps('description')}
+                  />
+                </SimpleGrid>
+              </fieldset>
+            </Collapse>
+          </section>
 
           <Group justify="space-between" className={styles.actionBar} wrap="nowrap">
             {showBack ? (
@@ -548,7 +569,7 @@ export default function BusinessProfileStep({
               rightSection={<IconArrowRight size={16} />}
               className={styles.primaryButton}
             >
-              Save and continue
+              Continue
             </Button>
           </Group>
         </Stack>

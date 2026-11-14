@@ -28,22 +28,13 @@ import {
   runBusinessAssessment,
   runMetaAdAccountAssessment,
 } from './assessments/service';
+import { isPlaceholderBusinessName } from '@/lib/shared/onboarding/requirements';
 
 type AppSupabaseClient = Awaited<ReturnType<typeof createServerClient>>;
 
 type BusinessProfileRow = {
   business_name: string | null;
 };
-
-function isPlaceholderBusinessName(value: string | null | undefined): boolean {
-  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return (
-    normalized === 'my business' ||
-    normalized === 'business setup' ||
-    normalized === 'new business' ||
-    normalized === 'untitled business'
-  );
-}
 
 type PlatformIntegrationRow = {
   id: string;

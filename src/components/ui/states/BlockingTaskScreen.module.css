@@ -22,39 +22,6 @@
   background: var(--dv-canvas);
 }
 
-.signalStage {
-  display: grid;
-  grid-template-columns: repeat(4, 28px);
-  align-items: end;
-  gap: 6px;
-  height: 56px;
-  padding: 8px;
-  border: 1px solid var(--chrome-border);
-  border-radius: var(--dv-radius-sm);
-  background: var(--chrome-panel);
-}
-
-.signalStage span {
-  display: block;
-  height: 18%;
-  border-radius: 3px 3px 1px 1px;
-  background: var(--dv-highlight);
-  transform-origin: bottom;
-  animation: signal 1.2s ease-in-out infinite;
-}
-
-.signalStage span:nth-child(2) {
-  animation-delay: 100ms;
-}
-
-.signalStage span:nth-child(3) {
-  animation-delay: 200ms;
-}
-
-.signalStage span:nth-child(4) {
-  animation-delay: 300ms;
-}
-
 .overlayCard :global(.mantine-Title-root) {
   color: var(--chrome-text);
 }
@@ -63,15 +30,3 @@
   color: #b0b7c1 !important;
 }
 
-@keyframes signal {
-  0%,
-  100% {
-    height: 18%;
-    opacity: 0.5;
-  }
-
-  50% {
-    height: 100%;
-    opacity: 1;
-  }
-}

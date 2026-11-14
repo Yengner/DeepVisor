@@ -34,6 +34,7 @@ import { buildDecisionPreview, isDecisionPreview } from '@/lib/server/decisions/
 import DecisionPreviewBanner from '@/components/product/DecisionPreviewBanner';
 import DesignSurface from '@/components/design/DesignSurface';
 import PixelCompanion from '@/components/brand/PixelCompanion';
+import SetupChecklist from './components/SetupChecklist';
 import { resourceRefreshEnabled } from '@/lib/server/sync/resources/coordinator';
 import { loadInsights } from '@/lib/server/dashboard/insights/load';
 import { selectRows, publisher, advertisingMetrics, livePerformance, deliveredToday, type Publisher, type Insight } from '@/lib/server/dashboard/insights/model';
@@ -261,19 +262,7 @@ async function Content({ requestedPeriod, preview, platform }: { requestedPeriod
   const savedMetaAccount = context.platform?.vendor === "meta" &&
     ["connected", "error", "needs_reauth"].includes(context.platform.status);
   if (!savedMetaAccount || !context.account)
-    return (
-      <section className={classes.emptyState}>
-        <PixelCompanion size={64} />
-        <h1>Connect your advertising</h1>
-        <p>
-          Connect Meta and choose an account to see your advertising and
-          decisions here.
-        </p>
-        <Link href="/integration">
-          Open Connections <IconArrowRight size={16} />
-        </Link>
-      </section>
-    );
+    return <SetupChecklist metaConnectedWithoutAccount={savedMetaAccount && !context.account} />;
   const sync = await loadOverviewSync(context.businessId, context.account.id);
   if (
     !sync.failed &&

@@ -3,18 +3,115 @@ export type OnboardingOption = {
   label: string;
 };
 
-export const SALON_INDUSTRY_OPTIONS: OnboardingOption[] = [
-  { value: 'hair_salon', label: 'Hair Salon' },
-  { value: 'nail_salon', label: 'Nail Salon' },
-  { value: 'beauty_salon', label: 'Beauty Salon' },
-  { value: 'barbershop', label: 'Barbershop' },
-  { value: 'lash_brow_studio', label: 'Lash / Brow Studio' },
-  { value: 'med_spa', label: 'Med Spa' },
-  { value: 'spa_skincare', label: 'Spa / Skincare' },
-  { value: 'other', label: 'Other' },
+export type BusinessCategoryGroup = {
+  group: string;
+  items: OnboardingOption[];
+};
+
+/**
+ * Local-business categories stored in `business_profiles.industry`.
+ * Superset of the original salon values: never remove or rename a value, because
+ * stored rows and decision questions reference them.
+ */
+export const BUSINESS_CATEGORY_GROUPS: BusinessCategoryGroup[] = [
+  {
+    group: 'Home services',
+    items: [
+      { value: 'plumbing', label: 'Plumbing' },
+      { value: 'hvac', label: 'Heating & air conditioning' },
+      { value: 'electrical', label: 'Electrical' },
+      { value: 'cleaning', label: 'Cleaning' },
+      { value: 'landscaping', label: 'Landscaping & lawn care' },
+      { value: 'roofing', label: 'Roofing' },
+      { value: 'pest_control', label: 'Pest control' },
+      { value: 'handyman', label: 'Handyman & repairs' },
+      { value: 'home_remodeling', label: 'Remodeling & construction' },
+      { value: 'moving', label: 'Moving & storage' },
+    ],
+  },
+  {
+    group: 'Beauty & wellness',
+    items: [
+      { value: 'hair_salon', label: 'Hair salon' },
+      { value: 'barbershop', label: 'Barbershop' },
+      { value: 'nail_salon', label: 'Nail salon' },
+      { value: 'beauty_salon', label: 'Beauty salon' },
+      { value: 'lash_brow_studio', label: 'Lash / brow studio' },
+      { value: 'spa_skincare', label: 'Spa / skincare' },
+      { value: 'med_spa', label: 'Med spa' },
+      { value: 'massage', label: 'Massage' },
+      { value: 'tattoo_piercing', label: 'Tattoo & piercing' },
+    ],
+  },
+  {
+    group: 'Health',
+    items: [
+      { value: 'dental', label: 'Dental' },
+      { value: 'chiropractic', label: 'Chiropractic' },
+      { value: 'physical_therapy', label: 'Physical therapy' },
+      { value: 'medical_clinic', label: 'Medical clinic' },
+      { value: 'mental_health', label: 'Counseling & mental health' },
+      { value: 'veterinary', label: 'Veterinary' },
+    ],
+  },
+  {
+    group: 'Fitness',
+    items: [
+      { value: 'gym', label: 'Gym' },
+      { value: 'fitness_studio', label: 'Fitness studio (yoga, pilates, etc.)' },
+      { value: 'personal_training', label: 'Personal training' },
+    ],
+  },
+  {
+    group: 'Food & drink',
+    items: [
+      { value: 'restaurant', label: 'Restaurant' },
+      { value: 'cafe', label: 'Cafe' },
+      { value: 'bakery', label: 'Bakery' },
+      { value: 'catering', label: 'Catering' },
+      { value: 'food_truck', label: 'Food truck' },
+    ],
+  },
+  {
+    group: 'Auto',
+    items: [
+      { value: 'auto_repair', label: 'Auto repair' },
+      { value: 'auto_detailing', label: 'Auto detailing' },
+      { value: 'auto_sales', label: 'Auto sales' },
+    ],
+  },
+  {
+    group: 'Professional services',
+    items: [
+      { value: 'legal', label: 'Legal' },
+      { value: 'accounting', label: 'Accounting & tax' },
+      { value: 'real_estate', label: 'Real estate' },
+      { value: 'insurance', label: 'Insurance' },
+      { value: 'marketing_agency', label: 'Marketing & design' },
+    ],
+  },
+  {
+    group: 'More local businesses',
+    items: [
+      { value: 'events_photography', label: 'Events & photography' },
+      { value: 'education_tutoring', label: 'Education & tutoring' },
+      { value: 'childcare', label: 'Childcare' },
+      { value: 'pet_services', label: 'Pet grooming & care' },
+      { value: 'retail', label: 'Retail store' },
+      { value: 'other', label: 'Other' },
+    ],
+  },
 ];
 
-/** Profession wording for onboarding; values reuse the persisted business industry categories. */
+/** Flat list of every allowed business category. */
+export const BUSINESS_CATEGORY_OPTIONS: OnboardingOption[] = BUSINESS_CATEGORY_GROUPS.flatMap(
+  (group) => group.items
+);
+
+/** @deprecated Use BUSINESS_CATEGORY_OPTIONS. Kept so older imports keep validating stored values. */
+export const SALON_INDUSTRY_OPTIONS: OnboardingOption[] = BUSINESS_CATEGORY_OPTIONS;
+
+/** @deprecated Salon-only wording from the first onboarding; use BUSINESS_CATEGORY_GROUPS. */
 export const SALON_PROFESSION_OPTIONS: OnboardingOption[] = [
   { value: 'hair_salon', label: 'Hair stylist' },
   { value: 'beauty_salon', label: 'Cosmetologist' },
@@ -85,7 +182,7 @@ export const META_ADS_STATUS_OPTIONS: OnboardingOption[] = [
 
 export const INTELLIGENCE_GOAL_OPTIONS: OnboardingOption[] = [
   { value: 'more_leads', label: 'Get more leads' },
-  { value: 'more_booked_appointments', label: 'Get more booked appointments' },
+  { value: 'more_booked_appointments', label: 'Get more booked appointments or jobs' },
   { value: 'lower_cost_per_lead', label: 'Lower my cost per lead' },
   { value: 'reduce_wasted_spend', label: 'Reduce wasted ad spend' },
   { value: 'understand_working_ads', label: 'Understand which ads are working' },
@@ -110,13 +207,13 @@ export const CONTACT_METHOD_OPTIONS: OnboardingOption[] = [
   { value: 'instagram_dms', label: 'Instagram DMs' },
   { value: 'facebook_messenger', label: 'Facebook Messenger' },
   { value: 'phone_calls', label: 'Phone calls' },
-  { value: 'lead_form', label: 'Lead form' },
-  { value: 'website_booking_link', label: 'Website booking link' },
+  { value: 'lead_form', label: 'Lead form (Meta instant form)' },
+  { value: 'website_booking_link', label: 'Website or online booking' },
   { value: 'not_sure', label: 'Not sure' },
 ];
 
 export const LEAD_QUALITY_SIGNAL_OPTIONS: OnboardingOption[] = [
-  { value: 'booked_appointment', label: 'They booked an appointment' },
+  { value: 'booked_appointment', label: 'They booked an appointment or job' },
   { value: 'requested_consultation', label: 'They requested a consultation' },
   { value: 'called_business', label: 'They called the business' },
   { value: 'replied_to_message', label: 'They replied to our message' },

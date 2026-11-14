@@ -55,7 +55,7 @@ export default function ConnectAccountsStep({
       {({ connectMeta, connecting }) => (
         <Stack gap="lg" className={styles.stepRoot}>
           <div className={styles.stepIntro}>
-            <span className={styles.stepKicker}>02 / Live data</span>
+            <span className={styles.stepKicker}>Step 2 · Live data</span>
             <Title order={2} className={styles.stepTitle}>
               Connect Meta, or start without it.
             </Title>

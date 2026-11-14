@@ -34,6 +34,13 @@ describe('Auth actions and callbacks', () => {
     mocks.redirect.mockResolvedValue('/onboarding');
     expect((await verification(new Request('http://localhost/api/auth/verification?token_hash=valid'))).headers.get('location')).toBe('http://localhost/onboarding');
   });
+  it('falls back to onboarding when the post-verification redirect lookup fails', async () => {
+    mocks.client.auth.verifyOtp.mockResolvedValueOnce({ data:{user:{id:'new'}},error:null });
+    mocks.redirect.mockRejectedValueOnce(new Error('context unavailable'));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect((await verification(new Request('http://localhost/api/auth/verification?token_hash=valid'))).headers.get('location')).toBe('http://localhost/onboarding');
+    error.mockRestore();
+  });
   it('handles Google provider rejection, missing code, and code exchange failure', async () => {
     for (const query of ['error=access_denied','','code=bad']) {
       mocks.client.auth.exchangeCodeForSession.mockResolvedValue({error:{message:'bad'}});

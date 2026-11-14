@@ -85,6 +85,92 @@
   color: var(--dv-primary-strong);
 }
 
+.fullRow {
+  grid-column: 1 / -1;
+}
+
+.choiceCard {
+  padding: 12px 14px;
+  border: 1px solid #bac1c9;
+  background: #ffffff;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.choiceCard[data-checked] {
+  border-color: var(--dv-primary-strong);
+  background: var(--dv-primary-soft);
+}
+
+.choiceCard:focus-visible {
+  outline: 2px solid var(--dv-primary-strong);
+  outline-offset: 2px;
+}
+
+.choiceIcon {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: -2px;
+  color: var(--dv-primary-strong);
+}
+
+.optionalSection {
+  border-bottom: 1px solid #c6ccd3;
+}
+
+.optionalToggle {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  color: var(--dv-ink);
+}
+
+.optionalToggle > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.optionalToggle strong {
+  font-size: 0.92rem;
+}
+
+.optionalToggle > span > span {
+  color: #4c5561;
+  font-size: 0.8rem;
+}
+
+.optionalToggle svg {
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+
+.optionalToggle:focus-visible {
+  outline: 2px solid var(--dv-primary-strong);
+  outline-offset: 2px;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.optionalFields {
+  min-width: 0;
+  margin: 0;
+  padding: 4px 0 20px;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .choiceCard,
+  .optionalToggle svg {
+    transition: none;
+  }
+}
+
 .sectionTitle {
   font-size: 0.96rem;
   line-height: 1.3;

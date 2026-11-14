@@ -38,6 +38,7 @@ import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface TopBarClientProps {
   userInfo: any;
+  workspaceName?: string | null;
   platforms?: any[];
   adAccounts?: any[];
   notifications?: NotificationFeedItem[];
@@ -49,6 +50,7 @@ interface TopBarClientProps {
 
 export default function TopBarClient({
   userInfo,
+  workspaceName = null,
   platforms = [],
   adAccounts = [],
   notifications = [],
@@ -250,7 +252,7 @@ export default function TopBarClient({
                     {fullName || 'Account'}
                   </Text>
                   <Text size="10px" c="#b0c4da" lineClamp={1}>
-                    {userInfo?.business_name || 'Workspace'}
+                    {workspaceName || 'Workspace'}
                   </Text>
                 </div>
                 <IconChevronDown size={15} color="#b0c4da" className="hidden lg:block" />

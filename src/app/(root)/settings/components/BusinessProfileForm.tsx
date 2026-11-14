@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Button, Select, SimpleGrid, Stack, Textarea, TextInput } from '@mantine/core';
 import { updateBusinessProfileData } from '@/lib/server/actions/business/onboarding';
-import { MONTHLY_AD_BUDGET_OPTIONS, SALON_INDUSTRY_OPTIONS } from '@/lib/shared/onboarding/businessProfileOptions';
+import { BUSINESS_CATEGORY_GROUPS, BUSINESS_CATEGORY_OPTIONS, MONTHLY_AD_BUDGET_OPTIONS } from '@/lib/shared/onboarding/businessProfileOptions';
 import classes from './ProfileForm.module.css';
 
 type Values = { businessName: string; industry: string; website: string; monthlyBudget: string; description: string };
@@ -18,8 +18,9 @@ export default function BusinessProfileForm({ initial, canEdit }: Props) {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
   const changed = keys.filter(key => values[key].trim() !== savedValues[key].trim());
-  const industryOptions = SALON_INDUSTRY_OPTIONS.some(option => option.value === initial.industry) || !initial.industry
-    ? SALON_INDUSTRY_OPTIONS : [...SALON_INDUSTRY_OPTIONS, { value: initial.industry, label: initial.industry.replaceAll('_', ' ') }];
+  const industryOptions = BUSINESS_CATEGORY_OPTIONS.some(option => option.value === initial.industry) || !initial.industry
+    ? BUSINESS_CATEGORY_GROUPS
+    : [...BUSINESS_CATEGORY_GROUPS, { group: 'Current value', items: [{ value: initial.industry, label: initial.industry.replaceAll('_', ' ') }] }];
   const budgetOptions = MONTHLY_AD_BUDGET_OPTIONS.some(option => option.value === initial.monthlyBudget) || !initial.monthlyBudget
     ? MONTHLY_AD_BUDGET_OPTIONS : [...MONTHLY_AD_BUDGET_OPTIONS, { value: initial.monthlyBudget, label: `Current value: ${initial.monthlyBudget}` }];
   const setField = (key: keyof Values, value: string) => { setValues(current => ({ ...current, [key]: value })); setFeedback(null); };
@@ -55,7 +56,7 @@ export default function BusinessProfileForm({ initial, canEdit }: Props) {
         <Stack gap="md">
           <TextInput label="Business name" required maxLength={200} autoComplete="organization" value={values.businessName} onChange={event => setField('businessName', event.currentTarget.value)} />
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <Select label="Industry" placeholder="Choose your industry" disabled={!canEdit || saving} data={industryOptions} value={values.industry || null} onChange={value => setField('industry', value ?? '')} />
+            <Select label="Business category" placeholder="Choose a category" searchable nothingFoundMessage="No match — choose Other" disabled={!canEdit || saving} data={industryOptions} value={values.industry || null} onChange={value => setField('industry', value ?? '')} />
             <Select label="Monthly advertising budget" placeholder="Not set" disabled={!canEdit || saving} clearable data={budgetOptions} value={values.monthlyBudget || null} onChange={value => setField('monthlyBudget', value ?? '')} inputWrapperOrder={['label', 'input', 'description', 'error']} description="Your planning range in DeepVisor; this does not change Meta budgets." />
           </SimpleGrid>
           <TextInput label="Business website" placeholder="https://your-business.com" type="url" autoComplete="url" maxLength={2048} value={values.website} onChange={event => setField('website', event.currentTarget.value)} />

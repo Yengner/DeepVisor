@@ -3849,10 +3849,17 @@ export type Database = {
           created_at: string
           customer_radius: string | null
           description: string | null
+          field_sources: Json
           id: string
           industry: string | null
           lead_quality_signal: string | null
           lead_type: string | null
+          location_city: string | null
+          location_country: string | null
+          location_mode: string | null
+          location_postal_code: string | null
+          location_region: string | null
+          location_street: string | null
           meta_ads_status: string | null
           meta_page_id: string | null
           meta_page_instagram_account_id: string | null
@@ -3864,6 +3871,7 @@ export type Database = {
           monthly_budget: string | null
           most_valuable_service: string | null
           onboarding_completed: boolean
+          onboarding_completed_at: string | null
           onboarding_step: number
           organization_id: string | null
           page_phone: string | null
@@ -3890,10 +3898,17 @@ export type Database = {
           created_at?: string
           customer_radius?: string | null
           description?: string | null
+          field_sources?: Json
           id?: string
           industry?: string | null
           lead_quality_signal?: string | null
           lead_type?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_mode?: string | null
+          location_postal_code?: string | null
+          location_region?: string | null
+          location_street?: string | null
           meta_ads_status?: string | null
           meta_page_id?: string | null
           meta_page_instagram_account_id?: string | null
@@ -3905,6 +3920,7 @@ export type Database = {
           monthly_budget?: string | null
           most_valuable_service?: string | null
           onboarding_completed?: boolean
+          onboarding_completed_at?: string | null
           onboarding_step?: number
           organization_id?: string | null
           page_phone?: string | null
@@ -3931,10 +3947,17 @@ export type Database = {
           created_at?: string
           customer_radius?: string | null
           description?: string | null
+          field_sources?: Json
           id?: string
           industry?: string | null
           lead_quality_signal?: string | null
           lead_type?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_mode?: string | null
+          location_postal_code?: string | null
+          location_region?: string | null
+          location_street?: string | null
           meta_ads_status?: string | null
           meta_page_id?: string | null
           meta_page_instagram_account_id?: string | null
@@ -3946,6 +3969,7 @@ export type Database = {
           monthly_budget?: string | null
           most_valuable_service?: string | null
           onboarding_completed?: boolean
+          onboarding_completed_at?: string | null
           onboarding_step?: number
           organization_id?: string | null
           page_phone?: string | null

@@ -58,6 +58,7 @@ import Disclosure from '@/components/product/Disclosure';
 import product from '@/components/product/Product.module.css';
 import { ownerMessages } from '@/components/product/presentation';
 import StatusBadge from '@/components/product/StatusBadge';
+import { BUSINESS_CATEGORY_OPTIONS, labelForOption } from '@/lib/shared/onboarding/businessProfileOptions';
 
 type BusinessProfileSettings = {
   business_name: string;
@@ -626,7 +627,7 @@ export default async function SettingsPage() {
             color="signal"
             label="Workspace"
             title={businessProfile.business_name}
-            detail={`${profileSetupCount}/6 profile inputs filled${businessProfile.industry ? ` · ${businessProfile.industry}` : ''}`}
+            detail={`${profileSetupCount}/6 profile inputs filled${businessProfile.industry ? ` · ${labelForOption(businessProfile.industry, BUSINESS_CATEGORY_OPTIONS, businessProfile.industry.replaceAll('_', ' '))}` : ''}`}
           />
           <SummaryCard
             icon={<IconLock size={18} />}

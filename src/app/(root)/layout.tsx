@@ -31,7 +31,7 @@ function resolvePlatformTheme(value: string | null | undefined): 'default' | 'me
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { user, businessId } = await getRequiredAppContext();
+  const { user, businessId, organizationName } = await getRequiredAppContext();
   const selection = await resolveCurrentSelection(businessId);
   const selectedPlatform = selection.selectedPlatformId
     ? await getPlatformDetails(selection.selectedPlatformId, businessId)
@@ -45,7 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <div className="app-platform-shell h-dvh flex flex-col" data-platform-theme={platformTheme}>
       <header className="app-platform-header w-full z-50 flex-shrink-0">
-        <Topbar user={user} businessId={businessId} />
+        <Topbar user={user} businessId={businessId} workspaceName={organizationName} />
       </header>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
