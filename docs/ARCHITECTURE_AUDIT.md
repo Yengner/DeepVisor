@@ -139,10 +139,31 @@ storage. They are not evidence of duplicated physical metric state. Saved featur
 snapshots, assessment digests and presentation payloads are intentional derived
 copies with different revision/immutability contracts.
 
-**Not implemented / not verified:** no Meta webhook path found in source; external
-subscription settings remain unverified. Resource refresh, Insights, Shadow/Review
+**Historical absence finding, superseded below:** no Meta webhook path was present
+at the Phase 2 baseline. External subscription settings were unverified. Resource refresh, Insights, Shadow/Review
 and execution gates have implementation/schema evidence, not hosted enablement
 proof. No live provider calls, advertising writes or UI behavior tests were run.
 
 Phase 2 verification results are recorded in [System diagram](SYSTEM_DIAGRAM.md).
 No application test/typecheck/build claim is made for this documentation-only review.
+
+
+## Webhook follow-up — source `e9bf2cd`
+
+The earlier no-webhook finding is superseded: a gated receiver, delivery deduplication,
+events resource, subscription lifecycle and private Realtime hints are implemented.
+Read-only development metadata confirms the migration/tables and restrictive account
+signal policy. [Flow](FLOWS.md#webhook-triggered-status-reads-and-refresh) and
+[verification addendum](SYSTEM_DIAGRAM.md#webhook-verification-addendum) record scope.
+
+| Remaining risk | Evidence / limitation |
+| --- | --- |
+| Status and metrics can diverge in freshness | Events jobs capture lifecycle/issues but do not refresh performance or `ad_entities.status`; Campaigns may lag until maintenance. |
+| Incomplete notification coverage | Parsed refresh fields exceed the dashboard subscription list. Ordinary pauses, budgets, names and targeting have no guaranteed immediate webhook path. |
+| Recovery remains dependent on existing work | Busy accounts retain follow-up demand and the worker remains fallback; failure-backoff demand may be skipped. Deduplication and a 200 acknowledgement do not certify a completed read. |
+| Live integration unverified | Focused mocked/PGlite tests passed (30); no real Meta delivery, hosted callback/subscription verification or authenticated browser Realtime test was performed. |
+
+No new defect issue or duplicate feature backlog was created. Existing documentation
+work KAN-5 and environment-inventory work KAN-4 receive evidence updates; neither is
+certified Done by this bounded documentation follow-up. No application, database,
+schedule, deployment or advertising changes were made.

@@ -95,8 +95,11 @@ basis. Outcomes are observations, not proven causal impact.
 ## Systems and external services
 
 - **Meta ingestion:** OAuth/account discovery in `integrations`; queue orchestration
-  and reads in `sync`; persistence in repositories. Read/sync work never authorizes
-  an advertising write. Edge functions forward authenticated requests to the app.
+  and reads in `sync`; persistence in repositories. The gated signed webhook receiver
+  adds `events:v2` status-read demand to the same queue; it does not supply metrics
+  or authorize advertising writes. Private Realtime hints trigger authorized saved-data
+  reads. See [webhook flow](FLOWS.md#webhook-triggered-status-reads-and-refresh) and
+  the [webhook contract](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/lib/server/webhooks/README.md). Edge functions forward authenticated cron requests to the app.
 - **Account intelligence:** `intelligence` builds assessments, trends, signals,
   calendar work and report context. Some assessment paths use the separate OpenAI
   structured adapter; this is not the Jev DecisionProvider.

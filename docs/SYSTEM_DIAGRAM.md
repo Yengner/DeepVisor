@@ -8,6 +8,10 @@ context page is a curated native-shape overview. Edit those sources together.
 [Flows](FLOWS.md) traces synchronization and intelligence.
 
 ```mermaid
+---
+config:
+  layout: elk
+---
 flowchart TB
   User[Owner or organization member] --> Browser[React browser UI]
   Browser -->|session cookies| App[Next.js Server Components, routes and actions]
@@ -20,6 +24,8 @@ flowchart TB
   Services -->|reads and separately gated writes| Meta[Meta Graph API and Insights]
   Services -->|inference| Models[Jev and OpenAI]
   Services --> Storage[Supabase Storage: report artifacts]
+  Meta -.->|signed status triggers| App
+  DB -.->|private Realtime hint| Browser
   classDef app fill:#eef4ff,stroke:#9db8f2,color:#1b1f24
   classDef data fill:#f3eeff,stroke:#b9a6f0,color:#1b1f24
   class App,Browser,Services app
@@ -64,8 +70,9 @@ provider credentials, resource/Insights feature flags and live execution gates r
 **unverified**. Local resource and Insights implementations are gated; schema existence
 is not enablement. CI checks/builds the app in [ci.yml](../.github/workflows/ci.yml);
 that workflow does not deploy it. Stripe and other installed libraries do not establish
-an enabled integration. No webhook receiver/subscription was found in `src` or
-`supabase`; see the explicit absence boundary in [Flows](FLOWS.md).
+an enabled integration. The earlier webhook absence finding is superseded by the
+committed implementation described in [Flows](FLOWS.md#webhook-triggered-status-reads-and-refresh)
+and the addendum below.
 
 Architecture risks are recorded separately in the [audit](ARCHITECTURE_AUDIT.md#phase-2-relationship-review--2026-11-13).
 
@@ -82,3 +89,30 @@ Architecture risks are recorded separately in the [audit](ARCHITECTURE_AUDIT.md#
 - Application tests, typecheck, lint and build were not run: no application, schema,
   dependency or runtime configuration changed. No application UI screenshots or live
   integration tests were performed. No deployment or migration is required.
+
+
+## Webhook verification addendum
+
+Source revision: `e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02`, read-only inspection of
+Claude's committed branch, with focused tests in an isolated `/tmp` snapshot. No
+uncommitted application changes were included. Source links for this addition are
+commit-pinned because its application files are newer than this docs worktree.
+
+| Evidence | Result / limit |
+| --- | --- |
+| Development migration `20261114002047_meta_webhook_events` | Present in remote migration history; both webhook tables exist with RLS enabled. No migrations applied by this review. |
+| Subscription FKs | Account PK/FK and separate business FK confirmed; delivery account/object IDs remain logical external references. |
+| Realtime policy `account_signal_members` | Restrictive SELECT predicate checks `can_access_ad_account` for private account topics; browser delivery was not tested. |
+| Cron metadata recheck | Worker 66 still active every ten minutes; enqueue 13 still inactive/hourly. No schedule changes. |
+| Focused Node 24 tests at source revision | 5 files / 30 tests passed: parser, signature/ingestion, route, PGlite queue/persistence and targeted lifecycle merge. Mocked/local only. |
+| Hosted state | App deployment, webhook flag, callback registration, subscribed fields/account, real delivery and browser Realtime remain unverified. Source contract says not deployed/registered/subscribed at its verification point. |
+
+The endpoint creates status-read demand; `events:v2` completion never establishes
+fresh performance metrics or a completed decision evaluation. The module contract
+owns activation steps. This update does not activate anything. Full application
+checks/build and UI screenshots were not run for this documentation update.
+
+Webhook documentation checks: all 15 current Mermaid blocks have matching rendered
+previews; the changed sequence, webhook ERD, container view and native context page
+were visually inspected. All 235 local file/heading links across the seven affected
+handbook pages resolve; native XML references and `git diff --check` pass.

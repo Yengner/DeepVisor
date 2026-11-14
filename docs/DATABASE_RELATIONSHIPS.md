@@ -224,3 +224,42 @@ Organizer is a separate immutable lineage: account → baseline (unique business
 scope FKs protect previews/versions and audit links; restore links point back to runs.
 It shares execution exclusion with review, not decision-provider authority.
 [Organizer contract](../src/lib/server/organizer/PHASE2.md) owns the full safety model.
+
+
+## Webhook routing and resource demand
+
+Purpose: keep external delivery identity separate from business-owned account identity.
+Development catalog verification confirms migration `20261114002047` and these two FKs;
+implementation source is `e9bf2cd`, newer than this worktree's application baseline.
+
+```mermaid
+erDiagram
+  ad_accounts ||--o| meta_webhook_subscriptions : "ad_account_id PK"
+  business_profiles ||--o{ meta_webhook_subscriptions : "business_id"
+  meta_webhook_subscriptions {
+    uuid ad_account_id PK,FK
+    uuid business_id FK
+    string status
+    timestamp checked_at
+  }
+  meta_webhook_events {
+    uuid id PK
+    string dedupe_key UK
+    string external_account_id
+    string field
+    string object_id
+    string object_level
+  }
+```
+
+`meta_webhook_events` intentionally has no account/entity FK: a signed provider delivery
+can name an unknown account or match multiple business-owned selections. Ingestion
+resolves the external ID into each eligible selected account, then requests existing
+`account_sync_resources` / `account_sync_jobs` work. This is a logical routing relation,
+not one delivery → one business ownership. Subscription business/account FKs are
+separate; trusted service scope checks must keep them consistent. Both webhook tables
+are service-only with RLS and no browser policy in the migration. The signal row is
+not a snapshot, and `matched_accounts` is not proof that a read completed.
+
+See [webhook flow and pinned source](FLOWS.md#webhook-triggered-status-reads-and-refresh)
+for queued versus running coalescing, retry and consistency limits.
