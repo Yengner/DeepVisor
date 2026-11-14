@@ -1,5 +1,6 @@
 import { formatDisplayDate } from '@/lib/shared';
 import { getCampaignSummaries } from './getCampaignSummaries';
+import type { TableRange } from '@/lib/shared/performance/periodTotals';
 
 export type CampaignLifetimeRow = {
   id: string;
@@ -30,7 +31,8 @@ export type CampaignLifetimeRow = {
 export async function getCampaignLifetimeIncludingZeros(
   adAccountUuid: string,
   campaignExternalId?: string,
-  vendor: 'meta' | 'google' | 'tiktok' = 'meta'
+  vendor: 'meta' | 'google' | 'tiktok' = 'meta',
+  range?: { range: TableRange; today: string; timezone: string | null }
 ): Promise<CampaignLifetimeRow[]> {
   const campaigns = await getCampaignSummaries({
     adAccountIds: [adAccountUuid],
@@ -38,6 +40,7 @@ export async function getCampaignLifetimeIncludingZeros(
     windowDays: null,
     includeEmpty: true,
     sort: 'spend',
+    range,
   });
 
   return campaigns.map((campaign) => ({
@@ -60,7 +63,7 @@ export async function getCampaignLifetimeIncludingZeros(
     cpl: campaign.leads > 0 ? (campaign.spend / campaign.leads).toFixed(2) : null,
     frequency: null,
     start_date: formatDisplayDate(campaign.startDay),
-    end_date: formatDisplayDate(campaign.endDay),
+    end_date: campaign.endDay || !campaign.scheduleEnded ? formatDisplayDate(campaign.endDay) : `Schedule ended ${formatDisplayDate(campaign.scheduleEnded)}`,
     last_day: campaign.endDay ?? null,
     platform_name: vendor,
   }));

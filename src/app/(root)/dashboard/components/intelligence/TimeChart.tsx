@@ -62,6 +62,6 @@ export default function TimeChart({ rows, currency, today }: { rows: HourlyObser
       </div>}
     </div>
     <div className={styles.scale}><span><i className={styles.missingSwatch} />Missing</span><span><i className={styles.zeroSwatch} />Zero</span>{!today && <span className={styles.gradientLegend}>Low <i /> High</span>}</div>
-    <div className={styles.inspector} aria-live="polite" aria-atomic="true"><div><strong>{current ? `${today ? 'Today' : WEEKDAYS[current.day]} · ${formatHourLongLabel(current.hour)}` : 'No observations'}</strong><span>{current ? `${current.observations} observed date${current.observations === 1 ? '' : 's'}` : ''}</span></div><div><b>{format(current?.value ?? null)}</b><span>{label}{cells[0].isRatio ? ' · aggregate ratio' : mode === 'average' && !today ? ' · daily average' : ' · total'}</span></div></div>
+    <div className={styles.summaryBar} aria-live="polite" aria-atomic="true"><div><span>Selected time</span><strong>{current ? `${today ? 'Today' : WEEKDAYS[current.day]} · ${formatHourLongLabel(current.hour)}` : 'No observations'}</strong></div><div><b>{format(current?.value ?? null)}</b><small>{label}{cells[0].isRatio ? ' · aggregate ratio' : mode === 'average' && !today ? ' · daily average' : ' · total'}{current ? ` · ${current.observations} observed date${current.observations === 1 ? '' : 's'}` : ''}</small></div></div>
   </>;
 }

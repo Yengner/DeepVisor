@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bucketHour, hourInZone, hourlyToday, periodContext, previousPeriod } from './compare';
+import { bucketHour, hourInZone, hourlyToday, periodContext, previousPeriod, sameHourComparison } from './compare';
 import type { Insight } from './model';
 
 const row = (day: string, spend: number, results: number | null, publisher = 'facebook', label = ''): Insight => ({
@@ -31,7 +31,13 @@ describe('previousPeriod', () => {
   it('scopes to the selected platform and is unavailable without data', () => {
     const daily = [row('2026-11-01', 20, 2, 'instagram')];
     expect(previousPeriod(daily, 'facebook', '7d', '2026-11-12', 'USD').reference).toBeNull();
-    expect(previousPeriod(null, 'combined', '7d', '2026-11-12', 'USD')).toEqual({ previousPoints: null, reference: null });
+    expect(previousPeriod(null, 'combined', '7d', '2026-11-12', 'USD')).toMatchObject({ previousPoints: null, reference: null });
+  });
+  it('says how much of the previous window has data instead of presenting a partial total as complete', () => {
+    const daily = [row('2026-10-31', 11.19, 1), row('2026-11-06', 32.42, 2)];
+    const ctx = periodContext({ daily, hourly: null, platform: 'combined', period: '7d', today: '2026-11-13', now: '2026-11-13T12:00:00Z', zone: 'UTC', currency: 'USD' });
+    expect(ctx.reference?.spend).toBeCloseTo(43.61, 2);
+    expect(ctx.referenceNote).toBe('2 of 7 days with data');
   });
 });
 
@@ -59,5 +65,31 @@ describe('periodContext', () => {
     expect(periodContext({ ...base, period: '7d' }).referenceLabel).toBe('Previous 7 days');
     expect(periodContext({ ...base, period: '30d' }).previousPoints).toHaveLength(30);
     expect(periodContext({ ...base, period: 'today' }).referenceLabel).toBe('Yesterday by now');
+  });
+});
+
+describe('sameHourComparison', () => {
+  type V = { spend: number | null; results: number | null; costPerResult: number | null; ctr: number | null };
+  const none: V = { spend: null, results: null, costPerResult: null, ctr: null };
+  const ctx = (reference: V | null) => ({ previousPoints: null, hourly: reference ? [] : null, reference, referenceLabel: reference ? 'Yesterday by now' : null });
+  const fallback = { deltas: { results: { value: -6.7, unit: '%' as const, tone: 'negative' as const } }, comparison: 'Live today vs daily average' };
+  it('measures the badge against the printed yesterday-by-now figure', () => {
+    const out = sameHourComparison('today', { spend: 19.53, results: 2, costPerResult: 9.77, ctr: 3.84 }, ctx({ spend: 17.34, results: 0, costPerResult: null, ctr: 3.9 }), fallback);
+    expect(out.deltas.spend?.value).toBeCloseTo(12.63, 1);
+    expect(out.deltas.spend?.tone).toBe('neutral');
+    expect(out.deltas.results).toBeUndefined(); // zero base: no invented percentage
+    expect(out.deltas.costPerResult).toBeUndefined();
+    expect(out.deltas.ctr?.value).toBeCloseTo(-0.06, 2);
+    expect(out.comparison).toContain('same hour');
+  });
+  it('colours by direction against yesterday', () => {
+    const out = sameHourComparison('today', { spend: 10, results: 4, costPerResult: 2.5, ctr: 2 }, ctx({ spend: 10, results: 2, costPerResult: 5, ctr: 2 }), fallback);
+    expect(out.deltas.results).toMatchObject({ tone: 'positive' });
+    expect(out.deltas.costPerResult).toMatchObject({ tone: 'positive' });
+    expect(out.deltas.results!.value).toBeGreaterThan(0);
+  });
+  it('keeps the existing comparison without an hourly reference or outside Today', () => {
+    expect(sameHourComparison('today', none, ctx(null), fallback)).toBe(fallback);
+    expect(sameHourComparison('7d', none, ctx({ ...none, spend: 1 }), fallback)).toBe(fallback);
   });
 });

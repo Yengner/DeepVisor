@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { readAllPages } from '@/lib/server/repositories/pagination';
 import { accountToday, previousReportRange } from '@/lib/shared/reports/dates';
-import {recapRevision} from '@/lib/shared/insights/revision';
+import {recapChange, recapRevision, revisable} from '@/lib/shared/insights/revision';
 import {urgentIssues, recapWindow, summarize, completeComparable } from '@/lib/shared/insights/model';
 import type { Issue, IssueEvidence, Presentation, SavedPresentation, PerformanceRow } from '@/lib/shared/insights/model';
 import type { Database, Json } from '@/lib/shared/types/supabase';
@@ -14,17 +14,35 @@ import {loadHourlyRecap} from './hourly';
 import { dailyNotification, presentationDay, type DailyBundle } from '@/lib/shared/insights/notification';
 export type Scope={business:string;account:string;user:string;integration:string|null};
 const db=()=>createAdminClient();
-export async function savedPresentation(scope:Scope,id:string):Promise<SavedPresentation|null>{
+/**
+ * A saved update keeps what was shown, but an issue it named may have been resolved since. Mark
+ * those with their current `resolvedAt`, so a re-shown update never demands action on something
+ * Meta no longer reports. The saved evidence text itself is left untouched.
+ */
+async function withCurrentStatus<T extends SavedPresentation>(scope:Scope,saved:T[]):Promise<T[]>{
+ const ids=[...new Set(saved.flatMap(p=>p.payload.issues.filter(i=>!i.resolvedAt&&i.id).map(i=>i.id)))];
+ if(!ids.length)return saved;
+ const r=await db().from('insight_issues').select('id,resolved_at').eq('business_id',scope.business).eq('ad_account_id',scope.account).in('id',ids).not('resolved_at','is',null);
+ if(r.error)throw r.error;
+ const resolved=new Map(r.data.map(i=>[i.id,i.resolved_at as string]));
+ if(!resolved.size)return saved;
+ return saved.map(p=>({...p,payload:{...p.payload,issues:p.payload.issues.map(i=>resolved.has(i.id)?{...i,resolvedAt:resolved.get(i.id)!}:i)}}));
+}
+async function storedPresentation(scope:Scope,id:string):Promise<SavedPresentation|null>{
  const r=await db().from('insight_presentations').select('id,created_at,payload').eq('business_id',scope.business).eq('ad_account_id',scope.account).eq('user_id',scope.user).eq('id',id).maybeSingle();
  if(r.error)throw r.error;return r.data as unknown as SavedPresentation|null;
 }
+export async function savedPresentation(scope:Scope,id:string):Promise<SavedPresentation|null>{
+ const saved=await storedPresentation(scope,id);
+ return saved?(await withCurrentStatus(scope,[saved]))[0]:null;
+}
 export async function history(scope:Scope,before:string|null){
  let q=db().from('insight_presentations').select('id,created_at,payload').eq('business_id',scope.business).eq('ad_account_id',scope.account).eq('user_id',scope.user).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(21);
- if(before){const cursor=await savedPresentation(scope,before);if(!cursor)throw new Error('Invalid history cursor');q=q.or(`created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`);}
+ if(before){const cursor=await storedPresentation(scope,before);if(!cursor)throw new Error('Invalid history cursor');q=q.or(`created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`);}
  const r=await q;if(r.error)throw r.error;
  const issues=await db().from('insight_issues').select('id,evidence,observed_at,resolved_at,revision',{count:'exact'}).eq('business_id',scope.business).eq('ad_account_id',scope.account).is('resolved_at',null).order('opened_at',{ascending:false}).limit(50);
  if(issues.error)throw issues.error;
- const page=r.data.slice(0,20) as unknown as SavedPresentation[];
+ const page=await withCurrentStatus(scope,r.data.slice(0,20) as unknown as SavedPresentation[]);
  const reads=await readTimes(scope,page.map(p=>p.id));
  return {items:page.map(p=>({...p,readAt:reads.get(p.id)??null})),next:r.data.length>20?r.data[19].id:null,issues:issues.data.map(issue),issueCount:issues.count??issues.data.length};
 }
@@ -54,7 +72,8 @@ export async function markViewed(scope:Scope,ids:string[]):Promise<number>{
 export async function unreadSummary(scope:Scope){
  const r=await db().from('insight_presentations').select('id,created_at,payload').eq('business_id',scope.business).eq('ad_account_id',scope.account).eq('user_id',scope.user).order('created_at',{ascending:false}).limit(20);
  if(r.error)throw r.error;
- const items=r.data as unknown as SavedPresentation[];
+ // Only the newest is shown (its headline), so only it needs the current issue status.
+ const all=r.data as unknown as SavedPresentation[],items=all.length?[...await withCurrentStatus(scope,all.slice(0,1)),...all.slice(1)]:all;
  const reads=await readTimes(scope,items.map(i=>i.id));
  const unread=items.filter(i=>!reads.has(i.id));
  const open=await db().from('insight_issues').select('evidence').eq('business_id',scope.business).eq('ad_account_id',scope.account).is('resolved_at',null).order('opened_at',{ascending:false}).limit(100);
@@ -101,17 +120,38 @@ async function loadRecap(s:Scope,window:NonNullable<ReturnType<typeof recapWindo
   }
  return result.observedDays?result:null;
 }
+/**
+ * Re-check the newest saved recap after a sync. A correction is saved only when it is material
+ * (results changed, or spend moved by at least 5% and $1), at most once per original report: a
+ * later correction updates that one revision. A spend-only correction is saved already read, so
+ * it stays in history without competing for attention; a results change is shown as unread.
+ * Recaps older than REVISION_WINDOW_DAYS are settled and no longer re-checked.
+ */
 async function reviseSavedRecap(s:Scope,pub:Awaited<ReturnType<typeof publication>>,checked:string|null|undefined){
  if(pub.running||checked===pub.signature)return;
  const c=db(),last=await c.from('insight_presentations').select('id,created_at,payload,source_keys,recap_until').eq('business_id',s.business).eq('ad_account_id',s.account).eq('user_id',s.user).not('recap_until','is',null).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(1).maybeSingle();
  if(last.error)throw last.error;
- if(last.data&&pub.syncedAt&&Date.parse(pub.syncedAt)>Date.parse(last.data.created_at)){
-  const old=last.data as unknown as SavedPresentation,window=old.payload.recap;
-  if(window){
-   const recap=await loadRecap(s,{since:window.since,until:window.until,capped:window.capped},old.payload.currency,pub.syncedAt);
-   const after=await publication(s);if(after.signature!==pub.signature||after.running)return;
-   const payload=recap?recapRevision(old,recap,pub.syncedAt,new Date().toISOString()):null;
-   if(payload){const inserted=await c.from('insight_presentations').insert({business_id:s.business,ad_account_id:s.account,user_id:s.user,fingerprint:createHash('sha256').update(`revision:${old.id}:${pub.signature}`).digest('hex'),payload:payload as unknown as Json,source_keys:last.data.source_keys,recap_until:last.data.recap_until});if(inserted.error&&inserted.error.code!=='23505')throw inserted.error;}
+ const shown=last.data as unknown as (SavedPresentation|null),window=shown?.payload.recap;
+ if(shown&&window&&pub.syncedAt&&Date.parse(pub.syncedAt)>Date.parse(shown.created_at)&&revisable(window,accountToday(pub.account.timezone))){
+  const rootId=shown.payload.revisionOf??shown.id;
+  const original=rootId===shown.id?shown:await storedPresentation(s,rootId);
+  const recap=original?await loadRecap(s,{since:window.since,until:window.until,capped:window.capped},shown.payload.currency,pub.syncedAt):null;
+  const after=await publication(s);if(after.signature!==pub.signature||after.running)return;
+  const payload=original&&recap?recapRevision(original,shown,recap,pub.syncedAt,new Date().toISOString()):null;
+  if(payload){
+   const resultsChanged=recapChange(shown.payload.recap!,recap!).results;
+   let revisionId:string|null=null;
+   if(shown.payload.revisionOf){
+    const updated=await c.from('insight_presentations').update({payload:payload as unknown as Json}).eq('id',shown.id).eq('user_id',s.user);if(updated.error)throw updated.error;
+    revisionId=shown.id;
+    // A new results change makes the revision worth reading again.
+    if(resultsChanged){for(const table of ['insight_history_views','insight_receipts'] as const){const r=await c.from(table).delete().eq('presentation_id',shown.id);if(r.error)throw r.error;}}
+   }else{
+    const inserted=await c.from('insight_presentations').insert({business_id:s.business,ad_account_id:s.account,user_id:s.user,fingerprint:createHash('sha256').update(`revision:${original!.id}`).digest('hex'),payload:payload as unknown as Json,source_keys:last.data!.source_keys,recap_until:last.data!.recap_until}).select('id').maybeSingle();
+    if(inserted.error&&inserted.error.code!=='23505')throw inserted.error;
+    revisionId=inserted.data?.id??null;
+   }
+   if(revisionId&&!resultsChanged){const r=await c.from('insight_history_views').upsert({presentation_id:revisionId,user_id:s.user},{onConflict:'presentation_id',ignoreDuplicates:true});if(r.error)throw r.error;}
   }
  }
  const checkedResult=await c.from('insight_reviews').update({checked_revision:pub.signature}).eq('user_id',s.user).eq('ad_account_id',s.account);if(checkedResult.error)throw checkedResult.error;

@@ -30,12 +30,37 @@ it('does not attach an old activation to a new rejection just because IDs match'
  expect(relatedLifecycle(issue,{...card,brief:{...card.brief,observedAt:issue.observedAt,affected:[{effective:'DISAPPROVED'} as Observation]}})).toBe(true);
 });
 
-import {recapRevision} from './revision';
+import {recapChange,recapRevision,revisable} from './revision';
 it('preserves original recap and produces a distinct saved correction only when values change',()=>{
  const recap=summarize([row('2026-11-08')],{since:'2026-11-08',until:'2026-11-08',capped:false},'USD');
  const saved={id:'original',created_at:'2026-11-09',payload:{version:1,account:'Salon',timezone:'America/New_York',currency:'USD',preparedAt:'2026-11-09',syncedAt:null,recap,issues:[],lifecycle:[],limitations:[]} as Presentation};
- expect(recapRevision(saved,recap,null,'2026-11-10')).toBeNull();
- const revision=recapRevision(saved,{...recap,spend:20},null,'2026-11-10');expect(revision?.revisionOf).toBe('original');expect(saved.payload.recap?.spend).toBe(10);
+ expect(recapRevision(saved,saved,recap,null,'2026-11-10')).toBeNull();
+ const revision=recapRevision(saved,saved,{...recap,spend:20},null,'2026-11-10');expect(revision?.revisionOf).toBe('original');expect(saved.payload.recap?.spend).toBe(10);
+});
+describe('recap corrections', () => {
+ const base={since:'2026-11-12',until:'2026-11-12',spend:17.43,results:0} as Recap;
+ it('ignores cent-level drift and identical numbers', () => {
+  expect(recapChange(base,{...base,spend:17.68}).material).toBe(false); // +$0.25
+  expect(recapChange(base,{...base}).material).toBe(false);
+  expect(recapChange({...base,spend:19.83,results:2},{...base,spend:19.88,results:2}).material).toBe(false);
+ });
+ it('counts any results change, and spend moving by both 5% and $1', () => {
+  expect(recapChange(base,{...base,results:1})).toEqual({material:true,results:true});
+  expect(recapChange({...base,spend:16.3},{...base,spend:17.43})).toEqual({material:true,results:false}); // +$1.13, +6.9%
+  expect(recapChange({...base,spend:172.4},{...base,spend:174}).material).toBe(false); // +$1.60 but under 5%
+  expect(recapChange({...base,spend:null},{...base,spend:5}).material).toBe(true);
+ });
+ it('revises against what the owner last saw but always points at the original', () => {
+  const original={id:'orig',created_at:'2026-11-13',payload:{version:1,account:'Salon',timezone:null,currency:'USD',preparedAt:'',syncedAt:null,recap:{...base,spend:16.3},issues:[],lifecycle:[],limitations:[]} as Presentation};
+  const shown={...original,id:'rev',payload:{...original.payload,revisionOf:'orig',recap:base}};
+  expect(recapRevision(original,shown,{...base,spend:17.68},null,'now')).toBeNull();
+  expect(recapRevision(original,shown,{...base,results:1},null,'now')?.revisionOf).toBe('orig');
+ });
+ it('stops re-checking a recap a week after its last day', () => {
+  expect(revisable(base,'2026-11-19')).toBe(true);
+  expect(revisable(base,'2026-11-20')).toBe(false);
+  expect(revisable(base,null)).toBe(false);
+ });
 });
 
 import {unresolvedEvidence} from './model';
@@ -101,5 +126,35 @@ describe('Meta notices', () => {
     expect(issueLevel(issues[0])).toBe('notice');
     expect(issueLevel({ code: 'DISAPPROVED' })).toBe('urgent');
     expect(urgentIssues([...issues, { code: 'WITH_ISSUES' }])).toEqual([{ code: 'WITH_ISSUES' }]);
+  });
+});
+
+describe('issues on switched-off advertising', () => {
+  const chain = (ad: string, adset: string, campaign: string): Observation[] => [
+    { id: 'c', level: 'campaign', parent: null, campaign: null, name: 'C', configured: campaign, effective: campaign } as Observation,
+    { id: 's', level: 'adset', parent: 'c', campaign: 'c', name: 'S', configured: adset, effective: adset } as Observation,
+    { id: 'ad', level: 'ad', parent: 's', campaign: 'c', name: 'Ad', configured: ad, effective: 'WITH_ISSUES' } as Observation,
+  ];
+  it('ignores WITH_ISSUES when the ad, ad set or campaign is switched off', () => {
+    expect(hierarchyIssues(chain('PAUSED', 'PAUSED', 'PAUSED'))).toEqual([]);
+    expect(hierarchyIssues(chain('ACTIVE', 'PAUSED', 'ACTIVE'))).toEqual([]);
+    expect(hierarchyIssues(chain('ACTIVE', 'ACTIVE', 'PAUSED'))).toEqual([]);
+  });
+  it('resolves an earlier issue once the chain is observed switched off', () => {
+    const before = hierarchyIssues(chain('ACTIVE', 'ACTIVE', 'ACTIVE'));
+    expect(unresolvedEvidence(before, chain('PAUSED', 'PAUSED', 'PAUSED'), [])).toEqual([]);
+    expect(unresolvedEvidence(before, [], [])).toHaveLength(1);
+  });
+  it('keeps the issue when the whole chain is switched on', () => {
+    expect(hierarchyIssues(chain('ACTIVE', 'ACTIVE', 'ACTIVE')).map(i => i.key)).toEqual(['delivery:ad']);
+  });
+});
+
+describe('resolved issues in a re-shown update', () => {
+  it('are never urgent and do not drive the headline', () => {
+    const resolved = { key: 'delivery:ad', code: 'WITH_ISSUES', title: 'Meta reports a delivery issue', resolvedAt: '2026-11-14T03:34:26Z' };
+    expect(urgentIssues([resolved])).toEqual([]);
+    expect(urgentIssues([{ ...resolved, resolvedAt: null }])).toHaveLength(1);
+    expect(headline({ issues: [resolved], recap: null, lifecycle: [] } as never)).toBe('An earlier issue has cleared');
   });
 });

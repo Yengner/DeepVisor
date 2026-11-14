@@ -45,9 +45,20 @@ export function completeComparable(rows: PerformanceRow[], since: string, until:
 export type MetaNotice = { code: string | null; summary: string | null };
 export type FatigueNotice = { level: string | null; message: string | null };
 const quoted=(text:string)=>`Meta’s notice: “${text}”`;
+/**
+ * Meta keeps WITH_ISSUES/DISAPPROVED on objects the advertiser has switched off. Nothing is
+ * blocked when the object, its ad set or its campaign is off, so only switched-on chains count.
+ * A parent missing from the observation, or an unknown configured status, is not assumed off.
+ */
+function switchedOnIn(entities: Observation[]): (e: Observation) => boolean {
+ const byId=new Map(entities.map(e=>[e.id,e]));
+ const off=(e?:Observation)=>Boolean(e?.configured)&&e!.configured.toUpperCase()!=='ACTIVE';
+ return e=>!off(e)&&!off(e.parent?byId.get(e.parent):undefined)&&!off(e.campaign?byId.get(e.campaign):undefined);
+}
 export function hierarchyIssues(entities: Observation[], notices: ReadonlyMap<string, MetaNotice> = new Map()): IssueEvidence[] {
- const rejected=entities.filter(e=>e.effective==='DISAPPROVED');
- const limited=entities.filter(e=>e.effective==='WITH_ISSUES');
+ const switchedOn=switchedOnIn(entities);
+ const rejected=entities.filter(e=>e.effective==='DISAPPROVED'&&switchedOn(e));
+ const limited=entities.filter(e=>e.effective==='WITH_ISSUES'&&switchedOn(e));
  const said=(id:string)=>notices.get(id)?.summary??null;
  return [
   ...rejected.map(e=>({key:`rejected:${e.id}`,title:'Meta rejected this advertisement',explanation:said(e.id)?`${e.name} is reported as disapproved. ${quoted(said(e.id)!)}`:`${e.name} is reported as disapproved. Review Meta’s explanation before making changes.`,action:'Review in Campaigns',href:'/campaigns',entities:[e.id],code:'DISAPPROVED'})),
@@ -66,7 +77,8 @@ export function fatigueIssues(entities: Observation[], notices: ReadonlyMap<stri
 }
 /** Urgent issues block or threaten delivery. Notices are worth a look but nothing is stopped. */
 export function issueLevel(issue: Pick<IssueEvidence,'code'>): 'urgent' | 'notice' { return issue.code==='CREATIVE_FATIGUE'?'notice':'urgent'; }
-export const urgentIssues = <T extends Pick<IssueEvidence,'code'>>(issues: T[]): T[] => issues.filter(i=>issueLevel(i)==='urgent');
+/** Resolved issues (a re-shown saved update can carry them) are never urgent. */
+export const urgentIssues = <T extends Pick<IssueEvidence,'code'> & { resolvedAt?: string | null }>(issues: T[]): T[] => issues.filter(i=>issueLevel(i)==='urgent'&&!i.resolvedAt);
 export function relatedLifecycle(issue: Issue, card: LifecycleCard) {
  const sameObservation=Math.abs(Date.parse(issue.observedAt)-Date.parse(card.brief.observedAt))<=15*60000;
  const consistentStatus=card.brief.affected.some(e=>e.effective===issue.code);
@@ -74,7 +86,9 @@ export function relatedLifecycle(issue: Issue, card: LifecycleCard) {
 }
 export function headline(p: Presentation): string {
  if(urgentIssues(p.issues).length)return p.recap?'Your results, and something to check':'Your advertising needs attention';
- if(p.issues.length&&!p.recap&&!p.lifecycle.length)return p.issues.length===1?p.issues[0].title:`${p.issues.length} notices from Meta`;
+ const active=p.issues.filter(i=>!i.resolvedAt);
+ if(active.length&&!p.recap&&!p.lifecycle.length)return active.length===1?active[0].title:`${active.length} notices from Meta`;
+ if(p.issues.length&&!active.length&&!p.recap&&!p.lifecycle.length)return p.issues.length===1?'An earlier issue has cleared':'Earlier issues have cleared';
  if(p.recap)return p.lifecycle.length?'Your results and recent changes':recapHeadline(p.recap);
  if(p.lifecycle.length===1)return changeHeadline(p.lifecycle[0]);
  return p.lifecycle.length?`${p.lifecycle.length} changes to your advertising`:'No new observations yet';
@@ -113,8 +127,10 @@ export function lifecycleStatus(card: LifecycleCard): 'ended' | 'update' {
 
 /** Absence, UNKNOWN, or a pause is not proof that an earlier rejection was cleared. */
 export function unresolvedEvidence(previous:IssueEvidence[],entities:Observation[],current:IssueEvidence[]):Array<IssueEvidence&{_unobserved:true}>{
- const states=new Map(entities.map(e=>[e.id,e.effective])),keys=new Set(current.map(i=>i.key));
- return previous.filter(i=>!keys.has(i.key)&&i.entities.some(id=>!['ACTIVE','ARCHIVED','DELETED'].includes(states.get(id)??'UNKNOWN'))).map(i=>({...i,_unobserved:true}));
+ const byId=new Map(entities.map(e=>[e.id,e])),keys=new Set(current.map(i=>i.key)),switchedOn=switchedOnIn(entities);
+ // Still unresolved: an entity that wasn't observed, or one still in a problem state while switched on.
+ const open=(id:string)=>{const e=byId.get(id);return !e||(!['ACTIVE','ARCHIVED','DELETED'].includes(e.effective)&&switchedOn(e));};
+ return previous.filter(i=>!keys.has(i.key)&&i.entities.some(open)).map(i=>({...i,_unobserved:true}));
 }
 
 export type LifecycleKind = 'ended' | 'active' | 'resumed' | 'paused' | 'interrupted' | 'archived' | 'rejected' | 'update';

@@ -22,6 +22,7 @@ import {
   controlPerformance,
   recentChanges,
 } from "@/lib/server/dashboard/overview/controlModel";
+import type { ControlPerformance } from "@/lib/server/dashboard/overview/controlModel";
 import type { Period } from "@/lib/server/dashboard/overview/types";
 import { loadExploration } from "@/lib/server/campaigns/exploration/load";
 import { PeriodControl, RefreshOverview } from "./components/OverviewControls";
@@ -38,7 +39,7 @@ import { loadInsights } from '@/lib/server/dashboard/insights/load';
 import { selectRows, publisher, advertisingMetrics, livePerformance, deliveredToday, type Publisher, type Insight } from '@/lib/server/dashboard/insights/model';
 import { LiveIndicator } from '@/components/design/LiveIndicator';
 import { adSetSignals } from '@/lib/server/dashboard/insights/signals';
-import { periodContext } from '@/lib/server/dashboard/insights/compare';
+import { periodContext, sameHourComparison } from '@/lib/server/dashboard/insights/compare';
 import { chartMarkers } from '@/lib/server/dashboard/overview/markers';
 import AudienceIntelligence from './components/AudienceIntelligence';
 import { audienceObservations, hourlyObservations } from '@/lib/server/dashboard/insights/charts';
@@ -67,10 +68,11 @@ const decisions = cache(async (context: OverviewContext) => {
 });
 const performance = cache(async (context: OverviewContext, period: Period) => {
   const live = await loadInsights(context);
-  const withContext = <T extends object>(view: T, daily: Insight[] | null) => ({
-    ...view,
-    context: periodContext({ daily, hourly: live.hourly, platform: context.publisher, period, today: context.today, now: context.now, zone: context.zone, currency: context.account!.currency_code }),
-  });
+  const withContext = <T extends Pick<ControlPerformance, 'metrics' | 'deltas' | 'comparison'>>(view: T, daily: Insight[] | null) => {
+    const ctx = periodContext({ daily, hourly: live.hourly, platform: context.publisher, period, today: context.today, now: context.now, zone: context.zone, currency: context.account!.currency_code });
+    // Today's badges compare against the "Yesterday by now" figure the card prints beside them.
+    return { ...view, ...sameHourComparison(period, view.metrics, ctx, { deltas: view.deltas, comparison: view.comparison }), context: ctx };
+  };
   if (live.daily !== null && !(resourceRefreshEnabled() && context.publisher === 'combined')) return withContext({ ...livePerformance(live.daily, context.publisher, period, context.today, context.account!.currency_code), ...comparisons(live.daily, context.publisher, period, context.today, context.account!.currency_code, live.fetchedAt, context.now, { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) }, live.daily);
   if (context.publisher !== 'combined') return withContext(livePerformance([], context.publisher, period, context.today, context.account!.currency_code), null);
   const [rows, entities] = await Promise.all([
@@ -178,6 +180,15 @@ async function Trend({
     <ErrorMessage>Daily trend unavailable.</ErrorMessage>
   );
 }
+/** Saved ad-set daily rows keyed by Meta ad-set id, in the shape the signal model reads. */
+async function storedInsights(context: OverviewContext): Promise<Insight[]> {
+  const [rows, entities] = await Promise.all([
+    loadOverviewHistory(context.businessId, context.account!.id, context.today),
+    loadOverviewEntities(context.businessId, context.account!.id),
+  ]);
+  const external = new Map(entities.map(e => [e.id, e.external_id]));
+  return rows.flatMap(row => { const id = external.get(row.entity_id); return id ? [{ ...row, externalId: id, publisher: 'combined', label: '' } as Insight] : []; });
+}
 async function Board({ period, context }: { period: Period; context: OverviewContext }) {
   const view = await loadExploration(period, "adset", null, true).catch(
     (error) => {
@@ -187,7 +198,11 @@ async function Board({ period, context }: { period: Period; context: OverviewCon
   );
   if (view) {
     const live = await loadInsights(context);
-    const signals = adSetSignals(live.daily, view.items.map(i => i.id), live.learningDetail ?? {}, context.today, context.now, context.target);
+    // Health must use the same saved rows as the card's metrics and the KPI row when those are
+    // the source; the live cache is only used when the board itself reads live rows.
+    const stored = resourceRefreshEnabled() && context.publisher === 'combined';
+    const healthRows = stored ? await storedInsights(context).catch(() => live.daily) : live.daily;
+    const signals = adSetSignals(healthRows, view.items.map(i => i.id), live.learningDetail ?? {}, context.today, context.now, context.target);
     return <AdvertisingBoard view={{ ...view, items: advertisingMetrics(view.items, resourceRefreshEnabled() && context.publisher === 'combined' ? null : live.daily, context.publisher, period, context.today, view.currency) }} learning={live.learning} signals={signals} filtered={context.publisher !== 'combined'} />;
   }
   return view ? (

@@ -8,18 +8,20 @@ import { IconChartBar, IconCopyPlus, IconExternalLink } from '@tabler/icons-reac
 import {
   EmptyRow,
   lastActivity,
-  METRIC_COLUMN_COUNT,
   MetricCells,
+  StatusHeader,
+  rowKeys,
+  useMetricColumnCount,
   MetricHeaders,
   MobileMetrics,
   RowActions, TruncatedName,
   rowMetrics,
-  SelectCell,
   SortHeader,
   StatusCell,
   TableSkeleton,
   useTableRows,
 } from './tableKit';
+import type { TableRange } from '@/lib/shared/performance/periodTotals';
 import { buildEntityReportUrl } from './reportLinks';
 import classes from './CampaignDashboard.module.css';
 
@@ -34,6 +36,7 @@ interface AdsTableProps {
   adAccountId?: string | null;
   currencyCode?: string | null;
   platformColor?: string;
+  range?: TableRange;
   fillHeight?: boolean;
   timezone?: string | null;
 }
@@ -65,7 +68,10 @@ export default function AdsTable({
   platformColor = 'dark',
   fillHeight = false,
   timezone = null,
+  range = 'lifetime',
 }: AdsTableProps) {
+  const metricCount = useMetricColumnCount();
+  const noDelivery = range === 'lifetime' ? null : 'No delivery in this period';
   const { sorted, sort, toggle, benchmarkFor } = useTableRows(
     ads,
     (ad) => ({ name: ad.name || 'Unnamed ad', metrics: rowMetrics(ad) }),
@@ -210,9 +216,8 @@ export default function AdsTable({
         >
           <Table.Thead>
             <Table.Tr>
-              <Table.Th style={{ width: 48, minWidth: 48 }}><span className={classes.srOnly}>Select</span></Table.Th>
-              <SortHeader label="Ad" sortKey="name" sort={sort} onSort={toggle} style={{ width: 360, maxWidth: 360 }} />
-              <Table.Th className={classes.nowrap}>Status</Table.Th>
+              <SortHeader label="Ad" sortKey="name" sort={sort} onSort={toggle} style={{ width: 360, minWidth: 280, maxWidth: 360 }} />
+              <StatusHeader />
               <MetricHeaders sort={sort} onSort={toggle} />
               <Table.Th className={classes.nowrap}>First activity</Table.Th>
               <Table.Th className={classes.nowrap}>Last activity</Table.Th>
@@ -222,7 +227,7 @@ export default function AdsTable({
 
           <Table.Tbody>
             {rows.length === 0 ? (
-              <EmptyRow colSpan={METRIC_COLUMN_COUNT + 6} title={EMPTY_TITLE} hint={EMPTY_HINT} />
+              <EmptyRow colSpan={metricCount + 5} title={EMPTY_TITLE} hint={EMPTY_HINT} />
             ) : (
               rows.map(({ ad, id, name, metrics, benchmark, selected, format, last, previewImage, reportHref }) => (
                 <Table.Tr
@@ -233,16 +238,9 @@ export default function AdsTable({
                   style={{ cursor: onSelectAd ? 'pointer' : 'default' }}
                   onClick={() => onSelectAd?.(id)}
                   onDoubleClick={() => onOpenAd?.(id)}
+                  {...(onSelectAd ? rowKeys(() => onSelectAd(id)) : {})}
                 >
-                  <Table.Td>
-                    <SelectCell
-                      selected={selected}
-                      disabled={!onSelectAd}
-                      label={`Select ${name}`}
-                      onSelect={() => onSelectAd?.(id)}
-                    />
-                  </Table.Td>
-                  <Table.Td style={{ width: 360, maxWidth: 360 }}>
+                  <Table.Td style={{ width: 360, minWidth: 280, maxWidth: 360 }}>
                     <div className={classes.adIdentity}>
                       <div className={classes.thumb}>
                         <MediaImage media={ad.creativePreview} name={name} />
@@ -250,11 +248,14 @@ export default function AdsTable({
                       <div style={{ minWidth: 0 }}>
                         <TruncatedName name={name} />
                         {format ? <Text size="xs" c="dimmed">{format}</Text> : null}
+                        {range === 'lifetime' && !ad.delivery && metrics.available ? (
+                          <Text size="xs" c="dimmed" className={classes.rowContext}>Not delivering now · lifetime history</Text>
+                        ) : null}
                       </div>
                     </div>
                   </Table.Td>
                   <Table.Td><StatusCell status={ad.status} delivering={ad.delivery} /></Table.Td>
-                  <MetricCells metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} />
+                  <MetricCells metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} noDeliveryNote={noDelivery} />
                   <Table.Td className={classes.nowrap}><Text size="sm">{ad.start_date || '—'}</Text></Table.Td>
                   <Table.Td className={classes.nowrap}><Text size="sm">{last}</Text></Table.Td>
                   <Table.Td className={classes.actionCell}>

@@ -222,8 +222,8 @@ cutoff remains eligible when fresh and complete; partial today alone is not a
 reason to reject it. Before cutoff, baseline values remain descriptive context.
 
 Responses aim for 2–4 natural sentences, with longer explanations on request.
-Critical limitations remain in the summary; routine technical details live in one
-collapsed **Data details** disclosure. Neutral limitation observations are not
+Critical limitations remain in the summary; routine technical details (provenance,
+scope notes) are not shown to users. Neutral limitation observations are not
 repeated as separate insight bullets. The model may select one or two useful KPI
 tiles, a baseline comparison, a compact Mantine daily-spend chart, a ranking or
 account-resolved creative previews. Source dates/currency/platform remain with the
@@ -249,7 +249,7 @@ types receive specific labels; mixed results remain reported results.
 spend uses a compact zero-based column chart, with Results selectable only when
 real daily observations exist. Currency-aware tooltips and an accessible daily
 values table use the same validated payload. Missing results remain null. Source
-limitations remain visible once; provenance stays in Data details. The Latest
+limitations remain visible once; provenance is not shown in the UI. The Latest
 control occupies a separate layout row instead of covering conversation content.
 
 This layer changes presentation only; calculation, provider and synchronization

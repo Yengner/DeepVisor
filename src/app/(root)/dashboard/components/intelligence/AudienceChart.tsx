@@ -43,7 +43,7 @@ export default function AudienceChart({ rows, currency }: { rows: AudienceObserv
         {model.series.map(key => <Bar key={key} dataKey={key} stackId={model.stacked ? 'audience' : undefined} fill={COLORS[key]} radius={3} isAnimationActive={false} />)}
       </BarChart></ResponsiveContainer>
     </div>
-    {top && <div className={styles.topSegment}>
+    {top && <div className={styles.summaryBar}>
       <div><span>{efficient ? 'Best cost per result' : 'Top spending segment'}</span><strong>{top[0]}</strong></div>
       <div>{efficient ? <><b>{money(top[1].spend / top[1].results!)}</b><small>{top[1].results} results · {money(top[1].spend)} spend</small></> : <><b>{money(top[1].spend)}</b><small>spend{top[1].results !== null ? ` · ${top[1].results} results` : ''}</small></>}</div>
     </div>}

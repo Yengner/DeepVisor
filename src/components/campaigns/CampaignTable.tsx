@@ -13,19 +13,22 @@ import {
   EmptyRow,
   humanizeObjective,
   lastActivity,
-  METRIC_COLUMN_COUNT,
   MetricCells,
+  OpenRowCell,
+  StatusHeader,
+  rowKeys,
+  useMetricColumnCount,
   MetricHeaders,
   MobileMetrics,
   RowActions, TruncatedName,
   rowMetrics,
   OpenNextButton,
-  SelectCell,
   SortHeader,
   StatusCell,
   useTableRows,
 } from './tableKit';
 import { buildEntityReportUrl } from './reportLinks';
+import type { TableRange } from '@/lib/shared/performance/periodTotals';
 import classes from './CampaignDashboard.module.css';
 
 interface CampaignTableProps {
@@ -39,6 +42,8 @@ interface CampaignTableProps {
   platformColor?: string;
   fillHeight?: boolean;
   timezone?: string | null;
+  /** Selected period; outside lifetime, rows without delivery say so instead of showing dashes. */
+  range?: TableRange;
 }
 
 export default function CampaignTable({
@@ -51,7 +56,12 @@ export default function CampaignTable({
   currencyCode,
   fillHeight = false,
   timezone = null,
+  range = 'lifetime',
 }: CampaignTableProps) {
+  const metricCount = useMetricColumnCount();
+  const noDelivery = range === 'lifetime' ? null : 'No delivery in this period';
+  // One click opens the campaign's ad sets; the row stays highlighted when you come back.
+  const open = (id: string) => { onSelectCampaign(id); onOpenCampaign?.(id); };
   const scrollHeight = fillHeight ? '100%' : undefined;
   // Campaigns are compared only with campaigns sharing an objective: a lead and a sale are not the same result.
   const { sorted, sort, toggle, benchmarkFor } = useTableRows(
@@ -102,12 +112,11 @@ export default function CampaignTable({
                 className={classes.mobileEntityCard}
                 data-delivering={campaign.delivery || undefined}
                 data-selected={selected || undefined}
-                onClick={() => onSelectCampaign(campaign.id)}
-                onDoubleClick={() => onOpenCampaign?.(campaign.id)}
+                onClick={() => open(campaign.id)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
-                    onSelectCampaign(campaign.id);
+                    open(campaign.id);
                   }
                 }}
               >
@@ -159,21 +168,21 @@ export default function CampaignTable({
       >
         <Table.Thead>
           <Table.Tr>
-            <Table.Th style={{ width: 48, minWidth: 48 }}><span className={classes.srOnly}>Select</span></Table.Th>
-            <SortHeader label="Campaign" sortKey="name" sort={sort} onSort={toggle} style={{ width: 320, maxWidth: 320 }} />
-            <Table.Th className={classes.nowrap}>Status</Table.Th>
+            <SortHeader label="Campaign" sortKey="name" sort={sort} onSort={toggle} style={{ width: 320, minWidth: 240, maxWidth: 320 }} />
+            <StatusHeader />
             <Table.Th className={classes.nowrap}>Objective</Table.Th>
             <MetricHeaders sort={sort} onSort={toggle} />
             <Table.Th className={classes.nowrap}>First activity</Table.Th>
             <Table.Th className={classes.nowrap}>Last activity</Table.Th>
             <Table.Th className={classes.actionCell}><span className={classes.srOnly}>Actions</span></Table.Th>
+            {onOpenCampaign ? <Table.Th className={classes.openCell}><span className={classes.srOnly}>Open</span></Table.Th> : null}
           </Table.Tr>
         </Table.Thead>
 
         <Table.Tbody>
           {sorted.length === 0 ? (
             <EmptyRow
-              colSpan={METRIC_COLUMN_COUNT + 7}
+              colSpan={metricCount + (onOpenCampaign ? 7 : 6)}
               title="No campaigns match these filters"
               hint="Clear the search or filters to see every campaign."
             />
@@ -196,23 +205,25 @@ export default function CampaignTable({
                   aria-selected={selected}
                   key={campaign.id}
                   style={{ cursor: 'pointer' }}
-                  onClick={() => onSelectCampaign(campaign.id)}
-                  onDoubleClick={() => onOpenCampaign?.(campaign.id)}
+                  onClick={() => open(campaign.id)}
+                  {...rowKeys(() => open(campaign.id))}
+                  aria-label={onOpenCampaign ? `${campaign.name}: open ad sets` : campaign.name}
                 >
-                  <Table.Td>
-                    <SelectCell selected={selected} label={`Select ${campaign.name}`} onSelect={() => onSelectCampaign(campaign.id)} />
-                  </Table.Td>
-                  <Table.Td style={{ width: 320, maxWidth: 320 }}>
+                  <Table.Td style={{ width: 320, minWidth: 240, maxWidth: 320 }}>
                     <TruncatedName name={campaign.name} />
+                    {range === 'lifetime' && !campaign.delivery && campaign.metricsAvailable !== false ? (
+                      <Text size="xs" c="dimmed" className={classes.rowContext}>Not delivering now · lifetime history</Text>
+                    ) : null}
                   </Table.Td>
                   <Table.Td><StatusCell status={campaign.status} delivering={campaign.delivery} /></Table.Td>
                   <Table.Td className={classes.nowrap}><Text size="sm">{humanizeObjective(campaign.objective)}</Text></Table.Td>
-                  <MetricCells metrics={rowMetrics(campaign)} currencyCode={currencyCode} benchmark={benchmarkFor(campaign)} />
+                  <MetricCells metrics={rowMetrics(campaign)} currencyCode={currencyCode} benchmark={benchmarkFor(campaign)} noDeliveryNote={noDelivery} />
                   <Table.Td className={classes.nowrap}><Text size="sm">{campaign.startDate || '—'}</Text></Table.Td>
                   <Table.Td className={classes.nowrap}><Text size="sm">{lastActivity(campaign.endDate, campaign.lastDay, timezone)}</Text></Table.Td>
                   <Table.Td className={classes.actionCell}>
                     <RowActions name={campaign.name}>{menuItems(campaign, reportHref)}</RowActions>
                   </Table.Td>
+                  {onOpenCampaign ? <OpenRowCell label={`Open ad sets for ${campaign.name}`} onOpen={() => open(campaign.id)} /> : null}
                 </Table.Tr>
               );
             })

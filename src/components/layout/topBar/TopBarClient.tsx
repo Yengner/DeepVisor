@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   ActionIcon,
   Avatar,
@@ -57,6 +57,7 @@ export default function TopBarClient({
   initialAccountId,
 }: TopBarClientProps) {
   const router = useRouter();
+  const onCampaigns = (usePathname() ?? "").startsWith("/campaigns");
   const [userNotifications, setUserNotifications] =
     useState<NotificationFeedItem[]>(notifications);
   const [unreadIds, setUnreadIds] = useState<string[]>(unreadNotificationIds);
@@ -125,14 +126,15 @@ export default function TopBarClient({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <Button
+        {/* Campaigns has its own context-aware create action (campaign, ad set or ad). */}
+        {!onCampaigns && <Button
           leftSection={<IconPlus size={17} stroke={2.2} />}
           size="sm"
           onClick={() => router.push('/campaigns/create')}
           className="hidden sm:flex app-platform-page-action-primary"
         >
           New campaign
-        </Button>
+        </Button>}
 
         <Menu shadow="md" width={380} position="bottom-end">
           <Menu.Target>

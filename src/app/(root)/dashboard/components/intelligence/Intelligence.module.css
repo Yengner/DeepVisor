@@ -1,5 +1,5 @@
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 22px; margin: 32px 0; container-type: inline-size; }
-.panel { min-width: 0; padding: 24px; border: 1px solid var(--ui-line); border-radius: var(--dv-radius-lg); background: var(--ui-panel); box-shadow: 0 3px 16px rgb(17 37 70 / 3%); }
+.panel { display: flex; flex-direction: column; min-width: 0; padding: 24px; border: 1px solid var(--ui-line); border-radius: var(--dv-radius-lg); background: var(--ui-panel); box-shadow: 0 3px 16px rgb(17 37 70 / 3%); }
 .header { margin-bottom: 22px; }
 .eyebrow { display: block; color: var(--ui-muted); font-size: var(--dv-text-2xs); font-weight: 700; letter-spacing: .09em; text-transform: uppercase; margin-bottom: 8px; }
 .header h2 { font-size: 20px; line-height: 1.25; letter-spacing: -.025em; margin: 0 0 7px; color: var(--ui-text); font-weight: 700; }
@@ -41,12 +41,6 @@
 .scale i { display: inline-block; width: 9px; height: 9px; border-radius: var(--dv-radius-sm); }
 .gradientLegend { margin-left: auto; }
 .gradientLegend i { width: 62px; height: 7px; background: linear-gradient(90deg, color-mix(in srgb,var(--chart-line) 12%,var(--ui-panel)),var(--chart-line)); }
-.inspector { display: flex; justify-content: space-between; gap: 12px; padding: 13px 14px; border-radius: var(--dv-radius-md); background: var(--ui-subtle); min-height: 65px; }
-.inspector div { display: flex; flex-direction: column; gap: 5px; }
-.inspector div:last-child { text-align: right; }
-.inspector strong { font-size: 11px; font-weight: 700; }
-.inspector b { font-size: 16px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
-.inspector span { font-size: var(--dv-text-xs); color: var(--ui-muted); }
 .todayChart { display: flex; gap: 8px; height: 220px; min-width: 440px; padding-top: 8px; padding-bottom: 25px; }
 .barAxis { display: flex; flex-direction: column; justify-content: space-between; font-size: var(--dv-text-2xs); color: var(--ui-muted); min-width: 40px; }
 .hourBars { flex: 1; display: grid; grid-template-columns: repeat(24, minmax(10px, 1fr)); gap: 4px; border-bottom: 1px solid var(--ui-line); background: repeating-linear-gradient(to top, transparent, transparent calc(50% - 1px), var(--ui-line) calc(50% - 1px),var(--ui-line) 50%); }
@@ -65,9 +59,13 @@
 
 .hourBar[data-zero='true'] > span { background: var(--ui-panel); border: 1px solid var(--ui-line); }
 
-.topSegment { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; padding: 13px 14px; border-radius: var(--dv-radius-md); background: var(--ui-subtle); min-height: 65px; }
-.topSegment span { display: block; color: var(--ui-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-.topSegment strong { display: block; margin-top: 4px; font-size: 15px; }
-.topSegment div:last-child { text-align: right; }
-.topSegment b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
-.topSegment small { color: var(--ui-muted); font-size: 12px; }
+
+/* One summary bar for both panels: same size, same type, always on the panel's bottom edge. */
+.summaryBar { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: auto; padding: 0 16px; height: 72px; border-radius: var(--dv-radius-md); background: var(--ui-subtle); }
+.summaryBar > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.summaryBar > div:last-child { align-items: flex-end; text-align: right; }
+.summaryBar span { color: var(--ui-muted); font-size: var(--dv-text-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.summaryBar strong { font-size: 15px; font-weight: 700; color: var(--ui-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.summaryBar b { font-size: 18px; line-height: 1.1; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ui-text); }
+.summaryBar small { color: var(--ui-muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.panel > :has(+ .summaryBar) { margin-bottom: 14px; }

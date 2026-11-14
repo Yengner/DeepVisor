@@ -1332,3 +1332,12 @@ article.adCard { position: relative; cursor: default; }
 .kpis > div { container-type: inline-size; }
 @container kpis (max-width: 921px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @container kpis (max-width: 380px) { .kpis { grid-template-columns: minmax(0, 1fr); } }
+
+/* One coverage note for the whole KPI row instead of repeating it on every card. */
+.kpiCoverage { margin: 0 0 10px; font-size: 12px; line-height: 1.5; color: var(--ui-muted, #5d6877); }
+.legendMuted { color: var(--ui-muted, #5d6877); font-style: italic; }
+.chartLegend .legendLive { display: inline-block; width: 6px; height: 6px; border: 2px solid var(--chart-line); border-radius: 50%; background: var(--ui-panel, #fff); box-sizing: content-box; }
+
+/* Featured ad set that carries all spend: say so instead of repeating the KPI row. */
+.soleSpender { margin: 10px 0 14px; padding: 12px 14px; border-radius: var(--dv-radius-md, 10px); background: var(--ui-subtle, #f2f6fb); color: var(--ui-text); font-size: 13px; line-height: 1.55; }
+.soleSpender strong { font-weight: 700; }

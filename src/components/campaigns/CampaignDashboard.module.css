@@ -350,7 +350,6 @@
 .desktopDataTable th[data-num], .desktopDataTable td[data-num] { text-align: right; }
 .desktopDataTable tbody tr { transition: background-color 120ms ease; }
 
-.selectRadio { cursor: pointer; }
 
 .deliveringChip { display: inline-flex; align-items: center; padding: 3px 9px 3px 8px; border-radius: 999px; background: var(--dv-success-soft, #e8f4ec); white-space: nowrap; }
 .deliveringChip > span { margin-right: 0; }
@@ -412,3 +411,34 @@ th[data-num] .sortButton { flex-direction: row-reverse; }
 .openNext { display: inline-flex; align-items: center; gap: 2px; min-height: 40px; padding: 0 10px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--dv-primary-strong, var(--dv-primary)); }
 .openNext:hover { background: var(--dv-primary-soft); }
 .openNext:focus-visible { outline: 2px solid var(--dv-primary); outline-offset: 2px; }
+
+/* Period switch beside the summary caption: one period for every number on the page. */
+.summaryHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.summaryHead .summaryCaption { margin: 0; }
+.rangeSwitch { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--dv-card-border, #d9e3ef); border-radius: var(--dv-radius-md, 10px); background: var(--dv-card-panel, #f4f7fb); }
+.rangeSwitch button { border: 0; background: transparent; padding: 5px 10px; border-radius: var(--dv-radius-sm, 6px); font-size: 12px; font-weight: 600; color: var(--dv-text-muted); cursor: pointer; }
+.rangeSwitch button[aria-pressed='true'] { background: var(--dv-card-bg, #fff); color: var(--dv-primary, #2f63e6); box-shadow: 0 1px 4px rgb(12 32 62 / 10%); }
+.rangeSwitch button:focus-visible { outline: 2px solid var(--dv-primary, #2f63e6); outline-offset: 2px; }
+.tileNote { margin-top: 2px; font-size: 11px; color: var(--dv-text-muted); white-space: nowrap; }
+.tileObjectives { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; font-size: 12px; color: var(--dv-text-muted); white-space: nowrap; }
+.tileObjectives b { font-size: 15px; color: var(--dv-text, inherit); margin-right: 4px; }
+
+/* The card ends at its content: short tables no longer leave an empty panel below them.
+   Long tables still scroll inside the card, which never exceeds the viewport. */
+.pageShell { align-items: flex-start; }
+.tableSurface { height: auto; max-height: 100%; }
+.tabs { height: auto; max-height: 100%; }
+.tableBody { flex: 0 1 auto; overflow: auto; }
+.tablePanel, .tablePanelInner { height: auto; }
+.tablePanelInner { padding-bottom: 4px; }
+.tableFooter { margin: 0; padding: 10px 18px 14px; border-top: 1px solid var(--platform-border); font-size: 12px; color: var(--dv-text-muted); }
+
+/* Names wrap to two lines before truncating; the tooltip still shows the full name. */
+.cellName { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.35; overflow-wrap: anywhere; }
+
+.rowContext { display: block; margin-top: 2px; font-size: 11px; }
+.noDeliveryCell { font-style: italic; }
+.headerWithInfo { display: inline-flex; align-items: center; gap: 4px; }
+.headerInfo { display: inline-flex; color: var(--dv-text-muted); cursor: help; border-radius: 50%; }
+.headerInfo:focus-visible { outline: 2px solid var(--dv-primary, #2f63e6); outline-offset: 2px; }
+.openCell { width: 44px; min-width: 44px; padding-left: 0 !important; text-align: right; }

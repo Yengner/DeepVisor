@@ -27,6 +27,9 @@ export default function AdvertisingBoard({ view, learning = {}, signals = {}, fi
   ).flatMap((id) => view.items.find((i) => i.id === id) ?? []);
   const featured =
     active.find((i) => i.id === view.board?.activeFeaturedId) ?? active[0];
+  // When one ad set carries all of the period's spend, its numbers equal the KPI row above.
+  const spending = view.items.filter((i) => (i.metrics.spend ?? 0) > 0);
+  const soleSpender = !filtered && spending.length === 1 ? spending[0].id : null;
   const periodLabel =
     view.period === "today"
       ? "Today"
@@ -39,8 +42,10 @@ export default function AdvertisingBoard({ view, learning = {}, signals = {}, fi
     setSelected(id);
   }
   function card(item: Summary, prominent = false, activeArea = false) {
+    // The section heading already says "Active now"; only a different emphasis earns a badge.
+    const featuredLabel = view.board?.activeFeaturedLabel;
     const label = prominent
-      ? (view.board?.activeFeaturedLabel ?? "Active now")
+      ? (featuredLabel && featuredLabel !== "Active now" ? featuredLabel : null)
       : !activeArea && false
         ? "Needs attention"
         : !activeArea && item.leader
@@ -82,7 +87,17 @@ export default function AdvertisingBoard({ view, learning = {}, signals = {}, fi
               {item.name}
             </button>
           </h3>
-          {prominent && hasData ? (
+          {prominent && hasData && item.id === soleSpender ? (
+            <p className={classes.soleSpender}>
+              <strong>All of this period’s advertising.</strong>{" "}
+              Its {metricValue("results", item.metrics.results, view.currency, true)} results and{" "}
+              {metricValue("spend", item.metrics.spend, view.currency, true)} spend are the totals shown above.
+              {[
+                item.metrics.clicks !== null ? ` ${new Intl.NumberFormat("en").format(item.metrics.clicks)} clicks` : null,
+                item.metrics.impressions !== null ? `${new Intl.NumberFormat("en").format(item.metrics.impressions)} impressions` : null,
+              ].filter(Boolean).join(" · ")}
+            </p>
+          ) : prominent && hasData ? (
             <>
               <dl className={classes.statGrid}>
                 {(["results", "costPerResult", "spend", "ctr"] as const).map((key) => (

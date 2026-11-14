@@ -52,7 +52,9 @@ export default function ControlTrend({
     }));
   }, [hourly, view.points, view.context?.previousPoints, metric]);
 
-  const hasPrevious = rows.some((r) => r.previous !== null);
+  // A previous period with most days missing would draw a misleading fragment: name it instead.
+  const partialPrevious = !hourly && Boolean(view.context?.referenceNote);
+  const hasPrevious = !partialPrevious && rows.some((r) => r.previous !== null);
   const ceiling = chartCeiling(Math.max(0, ...rows.flatMap((r) => [r.current ?? 0, r.previous ?? 0])));
   // Cost per result is cumulative (running) on both the daily and hourly charts.
   const label = metric === "costPerResult" ? `${metricLabels.costPerResult} (running)` : metricLabels[metric];
@@ -73,6 +75,8 @@ export default function ControlTrend({
         <div className={classes.chartLegend} aria-hidden="true">
           <span><i className={classes.legendCurrent} />{currentName}</span>
           {hasPrevious && previousName && <span><i className={classes.legendPrevious} />{previousName}</span>}
+          {!hourly && rows.some((r) => r.live && r.current !== null) && <span><i className={classes.legendLive} />Today so far</span>}
+          {partialPrevious && previousName && <span className={classes.legendMuted}>{previousName}: not enough data to compare</span>}
           {shownMarkers.length > 0 && <span><i className={classes.legendMarker} />Changes</span>}
         </div>
       </div>
@@ -137,7 +141,7 @@ export default function ControlTrend({
                 labelFormatter={(x) => {
                   const row = rows.find((r) => r.x === x);
                   const changes = shownMarkers.filter((m) => m.day === x).map((m) => m.label);
-                  return `${xLabel(String(x))}${row?.live ? " · Live" : ""}${changes.length ? ` · ${changes.join(", ")}` : ""}`;
+                  return `${xLabel(String(x))}${row?.live ? (hourly ? " · Live" : " · today so far") : ""}${changes.length ? ` · ${changes.join(", ")}` : ""}`;
                 }}
               />
               {hasPrevious && (
@@ -159,7 +163,13 @@ export default function ControlTrend({
                 type="linear"
                 stroke="var(--chart-line)"
                 strokeWidth={3}
-                dot={hourly ? false : { r: 4, fill: "var(--chart-line)", stroke: "var(--ui-panel, #fff)", strokeWidth: 2 }}
+                // Today is still in progress: a hollow point so the last day doesn't read as a final drop.
+                dot={hourly ? false : (props: { cx?: number | null; cy?: number | null; index?: number; value?: number | null }) => {
+                  const live = rows[props.index ?? -1]?.live;
+                  // Missing days stay gaps: no dot at all (Recharts passes null coordinates for them).
+                  if (props.cx == null || props.cy == null || props.value == null || !Number.isFinite(props.cy)) return <g key={`dot-${props.index}`} />;
+                  return <circle key={`dot-${props.index}`} cx={props.cx} cy={props.cy} r={4} fill={live ? "var(--ui-panel, #fff)" : "var(--chart-line)"} stroke={live ? "var(--chart-line)" : "var(--ui-panel, #fff)"} strokeWidth={2} />;
+                }}
                 activeDot={{ r: 6, fill: "var(--chart-line)", stroke: "var(--ui-panel, #fff)", strokeWidth: 2 }}
                 connectNulls={false}
                 isAnimationActive={false}

@@ -238,6 +238,10 @@
 .urgentCard[data-level=notice] .urgentNotice { background:color-mix(in srgb, var(--dv-status-navy) 10%, var(--dv-card-panel)); color:light-dark(var(--dv-status-navy),#c9d6f0); }
 .urgentCard[data-level=notice] .urgentPrimary { background:var(--dv-status-navy); color:var(--dv-status-navy-text); }
 .urgentCard[data-level=notice] .urgentPrimary:hover { background:color-mix(in srgb, var(--dv-status-navy) 88%, #000); }
+.urgentCard[data-level=resolved] { border-color:var(--dv-card-border); box-shadow:none; }
+.urgentCard[data-level=resolved] .urgentHeader { background:var(--dv-card-inset); color:light-dark(#3f4a57,#c3cad3); }
+.urgentCard[data-level=resolved] .urgentNotice { background:var(--dv-card-inset); color:light-dark(#3f4a57,#c3cad3); }
+.urgentCard[data-level=resolved] h3 { color:light-dark(#3f4a57,#d5dbe2); }
 .attention[data-level=notice] { border-color:color-mix(in srgb, var(--dv-status-navy) 30%, var(--dv-card-border)); background:color-mix(in srgb, var(--dv-status-navy) 6%, var(--dv-card-panel)); }
 .attention[data-level=notice] h2, .attention[data-level=notice] li a { color:light-dark(var(--dv-status-navy),#c9d6f0); }
 .attention[data-level=notice] > p { color:light-dark(#536b86,#a9b9ce); }

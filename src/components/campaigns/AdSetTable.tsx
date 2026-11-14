@@ -7,19 +7,22 @@ import {
   EmptyRow,
   humanizeObjective,
   lastActivity,
-  METRIC_COLUMN_COUNT,
   MetricCells,
+  OpenRowCell,
+  StatusHeader,
+  rowKeys,
+  useMetricColumnCount,
   MetricHeaders,
   MobileMetrics,
   RowActions, TruncatedName,
   rowMetrics,
   OpenNextButton,
-  SelectCell,
   SortHeader,
   StatusCell,
   TableSkeleton,
   useTableRows,
 } from './tableKit';
+import type { TableRange } from '@/lib/shared/performance/periodTotals';
 import { buildEntityReportUrl } from './reportLinks';
 import classes from './CampaignDashboard.module.css';
 
@@ -36,6 +39,7 @@ interface AdSetTableProps {
   platformColor?: string;
   fillHeight?: boolean;
   timezone?: string | null;
+  range?: TableRange;
 }
 
 const EMPTY_TITLE = 'No ad sets in this campaign';
@@ -54,7 +58,12 @@ export default function AdSetTable({
   platformColor = 'dark',
   fillHeight = false,
   timezone = null,
+  range = 'lifetime',
 }: AdSetTableProps) {
+  const metricCount = useMetricColumnCount();
+  const noDelivery = range === 'lifetime' ? null : 'No delivery in this period';
+  // One click opens the ad set's ads; the row stays highlighted when you come back.
+  const open = (id: string) => { onSelectAdSet?.(id); onOpenAdSet?.(id); };
   // Ad sets inside one campaign share its objective, so they form a single comparison group.
   const { sorted, sort, toggle, benchmarkFor } = useTableRows(
     adSets,
@@ -118,12 +127,11 @@ export default function AdSetTable({
               className={classes.mobileEntityCard}
               data-delivering={adSet.delivery || undefined}
               data-selected={selected || undefined}
-              onClick={() => onSelectAdSet?.(adSet.id)}
-              onDoubleClick={() => onOpenAdSet?.(adSet.id)}
+              onClick={() => open(adSet.id)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
-                  onSelectAdSet?.(adSet.id);
+                  open(adSet.id);
                 }
               }}
             >
@@ -185,20 +193,20 @@ export default function AdSetTable({
         >
           <Table.Thead>
             <Table.Tr>
-              <Table.Th style={{ width: 48, minWidth: 48 }}><span className={classes.srOnly}>Select</span></Table.Th>
-              <SortHeader label="Ad set" sortKey="name" sort={sort} onSort={toggle} style={{ width: 320, maxWidth: 320 }} />
-              <Table.Th className={classes.nowrap}>Status</Table.Th>
+              <SortHeader label="Ad set" sortKey="name" sort={sort} onSort={toggle} style={{ width: 320, minWidth: 240, maxWidth: 320 }} />
+              <StatusHeader />
               <Table.Th className={classes.nowrap}>Optimization</Table.Th>
               <MetricHeaders sort={sort} onSort={toggle} />
               <Table.Th className={classes.nowrap}>First activity</Table.Th>
               <Table.Th className={classes.nowrap}>Last activity</Table.Th>
               <Table.Th className={classes.actionCell}><span className={classes.srOnly}>Actions</span></Table.Th>
+              {onOpenAdSet ? <Table.Th className={classes.openCell}><span className={classes.srOnly}>Open</span></Table.Th> : null}
             </Table.Tr>
           </Table.Thead>
 
           <Table.Tbody>
             {rows.length === 0 ? (
-              <EmptyRow colSpan={METRIC_COLUMN_COUNT + 7} title={EMPTY_TITLE} hint={EMPTY_HINT} />
+              <EmptyRow colSpan={metricCount + (onOpenAdSet ? 7 : 6)} title={EMPTY_TITLE} hint={EMPTY_HINT} />
             ) : (
               rows.map(({ adSet, metrics, benchmark, selected, goal, last, reportHref }) => (
                 <Table.Tr
@@ -206,29 +214,26 @@ export default function AdSetTable({
                   data-delivering={adSet.delivery || undefined}
                   data-selected={selected || undefined}
                   aria-selected={selected}
-                  style={{ cursor: onSelectAdSet ? 'pointer' : 'default' }}
-                  onClick={() => onSelectAdSet?.(adSet.id)}
-                  onDoubleClick={() => onOpenAdSet?.(adSet.id)}
+                  style={{ cursor: onSelectAdSet || onOpenAdSet ? 'pointer' : 'default' }}
+                  onClick={() => open(adSet.id)}
+                  {...rowKeys(() => open(adSet.id))}
+                  aria-label={onOpenAdSet ? `${adSet.name}: open ads` : adSet.name}
                 >
-                  <Table.Td>
-                    <SelectCell
-                      selected={selected}
-                      disabled={!onSelectAdSet}
-                      label={`Select ${adSet.name}`}
-                      onSelect={() => onSelectAdSet?.(adSet.id)}
-                    />
-                  </Table.Td>
-                  <Table.Td style={{ width: 320, maxWidth: 320 }}>
+                  <Table.Td style={{ width: 320, minWidth: 240, maxWidth: 320 }}>
                     <TruncatedName name={adSet.name} />
+                    {range === 'lifetime' && !adSet.delivery && metrics.available ? (
+                      <Text size="xs" c="dimmed" className={classes.rowContext}>Not delivering now · lifetime history</Text>
+                    ) : null}
                   </Table.Td>
                   <Table.Td><StatusCell status={adSet.status} delivering={adSet.delivery} /></Table.Td>
                   <Table.Td className={classes.nowrap}><Text size="sm">{goal}</Text></Table.Td>
-                  <MetricCells metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} />
+                  <MetricCells metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} noDeliveryNote={noDelivery} />
                   <Table.Td className={classes.nowrap}><Text size="sm">{adSet.start_date || '—'}</Text></Table.Td>
                   <Table.Td className={classes.nowrap}><Text size="sm">{last}</Text></Table.Td>
                   <Table.Td className={classes.actionCell}>
                     <RowActions name={adSet.name}>{menuItems(adSet, reportHref)}</RowActions>
                   </Table.Td>
+                  {onOpenAdSet ? <OpenRowCell label={`Open ads for ${adSet.name}`} onOpen={() => open(adSet.id)} /> : null}
                 </Table.Tr>
               ))
             )}

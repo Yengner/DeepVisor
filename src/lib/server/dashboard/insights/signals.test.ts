@@ -63,6 +63,20 @@ describe('adHealth', () => {
     expect(adHealth([row('a', today, 15, 0)], account, today, null)).toMatchObject({ label: 'Not enough data', percent: null });
     expect(adHealth([row('a', today, 25, 0)], account, today, null)).toMatchObject({ label: 'Needs attention', percent: 0 });
   });
+  it('benchmarks against the 30 days before the week being judged, never overlapping it', () => {
+    // The judged week is expensive ($20/result); earlier days are cheap ($5/result).
+    const week = days(7).map(d => row('a', d, 20, 1));
+    const earlier = days(37).slice(7).map(d => row('a', d, 5, 1));
+    const health = adHealth(week, [...week, ...earlier], today, null);
+    expect(health.benchmark).toBe(5); // an overlapping 30-day window would have blended in the week itself
+    expect(health.label).toBe('Needs attention');
+    expect(health.benchmarkWindow).toEqual({ since: '2026-10-07', until: '2026-11-05', days: 30, observedDays: 30 });
+  });
+  it('reports how much of the baseline window has data', () => {
+    const sparse = ['2026-10-28', '2026-10-29', '2026-10-30', '2026-11-03', '2026-11-05'].map(d => row('a', d, 10, 1));
+    expect(adHealth(days(7).map(d => row('a', d, 10, 1)), sparse, today, null).benchmarkWindow?.observedDays).toBe(5);
+    expect(adHealth(days(7).map(d => row('a', d, 10, 1)), sparse, today, '20').benchmarkWindow).toBeNull();
+  });
   it('refuses to grade without a benchmark or complete data', () => {
     expect(adHealth(days(7).map(d => row('a', d, 10, 2)), [], today, null)).toMatchObject({ label: 'Not enough data', benchmarkSource: null });
     expect(adHealth([row('a', today, 10, null)], account, today, null)).toMatchObject({ label: 'Not enough data' });

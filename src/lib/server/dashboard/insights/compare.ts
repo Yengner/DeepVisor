@@ -3,6 +3,8 @@ import type { Period } from '../overview/types';
 import type { Metrics } from '../../campaigns/exploration/types';
 import { aggregate, type Insight, type Publisher } from './model';
 import { runningCostPerResult } from '../overview/controlModel';
+import { delta } from '../../campaigns/exploration/model';
+import type { Delta } from '../../campaigns/exploration/types';
 
 /**
  * Previous-period context for the Overview KPIs and chart. Pure: no I/O.
@@ -22,6 +24,8 @@ export type PeriodContext = {
   /** Totals of the comparison window: previous period, or yesterday through the current hour. */
   reference: Values | null;
   referenceLabel: string | null;
+  /** Shown after the reference when it covers only part of the window (missing days are not zero). */
+  referenceNote?: string | null;
   /** Hourly cumulative series for the Today chart. */
   hourly: HourPoint[] | null;
 };
@@ -45,7 +49,7 @@ export function hourInZone(now: string, zone: string): number | null {
 }
 
 export function previousPeriod(daily: Insight[] | null, platform: Publisher, period: Exclude<Period, 'today'>, today: string, currency: string | null) {
-  if (!daily) return { previousPoints: null, reference: null };
+  if (!daily) return { previousPoints: null, reference: null, observedDays: 0, days: period === '30d' ? 30 : 7 };
   const days = period === '30d' ? 30 : 7;
   const since = periodRange(period, today).since;
   const scoped = daily.filter(r => platform === 'combined' || r.publisher === platform);
@@ -56,7 +60,8 @@ export function previousPeriod(daily: Insight[] | null, platform: Publisher, per
   });
   const window = scoped.filter(r => r.day >= shiftDay(since, -days) && r.day <= shiftDay(since, -1));
   // Match the chart: cost per result is a running ratio across the window.
-  return { previousPoints: runningCostPerResult(previousPoints), reference: window.length ? pick(aggregate(window, currency)) : null };
+  const observedDays = new Set(window.map(r => r.day)).size;
+  return { previousPoints: runningCostPerResult(previousPoints), reference: window.length ? pick(aggregate(window, currency)) : null, observedDays, days };
 }
 
 export function hourlyToday(hourly: Insight[] | null, platform: Publisher, today: string, currentHour: number | null, currency: string | null) {
@@ -88,6 +93,29 @@ export function periodContext(input: {
     const { hourly, reference } = hourlyToday(input.hourly, input.platform, input.today, hourInZone(input.now, input.zone), input.currency);
     return { previousPoints: null, hourly, reference, referenceLabel: reference ? 'Yesterday by now' : null };
   }
-  const { previousPoints, reference } = previousPeriod(input.daily, input.platform, input.period, input.today, input.currency);
-  return { previousPoints, hourly: null, reference, referenceLabel: reference ? `Previous ${input.period === '30d' ? 30 : 7} days` : null };
+  const { previousPoints, reference, observedDays, days } = previousPeriod(input.daily, input.platform, input.period, input.today, input.currency);
+  return { previousPoints, hourly: null, reference, referenceLabel: reference ? `Previous ${days} days` : null,
+    referenceNote: reference && observedDays < days ? `${observedDays} of ${days} days with data` : null };
+}
+
+/**
+ * Today's KPI badges, measured against the same figure the card prints beside them ("Yesterday
+ * by now"), so the arrow, colour and number can never disagree with the visible reference.
+ * Without that hourly reference the existing daily-average comparison is kept unchanged.
+ * A zero or missing base yields no badge (no invented percentage), only the printed reference.
+ */
+export function sameHourComparison(
+  period: Period,
+  metrics: Values,
+  context: PeriodContext,
+  fallback: { deltas: Partial<Record<ChartMetric, Delta>>; comparison: string | null },
+): { deltas: Partial<Record<ChartMetric, Delta>>; comparison: string | null } {
+  const reference = context.reference;
+  if (period !== 'today' || !reference || !context.hourly) return fallback;
+  const deltas: Partial<Record<ChartMetric, Delta>> = {};
+  for (const key of ['spend', 'results', 'costPerResult', 'ctr'] as const) {
+    const change = delta(key, metrics[key], reference[key]);
+    if (change) deltas[key] = change;
+  }
+  return { deltas, comparison: 'Today so far vs yesterday through the same hour. CTR change in percentage points.' };
 }

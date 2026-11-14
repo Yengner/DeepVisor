@@ -53,8 +53,16 @@ recaps retain seven daily bars. Missing hourly data is unavailable, never inferr
 from daily totals. Old saved reports remain immutable. Hourly observations are
 saved alongside daily KPIs and included in exports; they may not reconcile due
 to different source coverage. No new Meta requests or schema changes are required.
-Later publication corrections create another saved recap revision without a popup;
-the original remains available. CSV/PDF export the chosen immutable presentation.
+Later publication corrections create a saved recap revision without a popup; the
+original remains available. Rules (`shared/insights/revision.ts`):
+- Only material corrections count: any change in reported results, or spend moving by
+  at least 5% **and** $1 against what the owner last saw. Cent-level drift is ignored.
+- At most one revision per original (fingerprint `revision:<original id>`); a later
+  correction updates it in place and `revisionOf` always names the original.
+- A spend-only correction is saved already read (history view row), so it stays in
+  history without an unread dot; a results change is unread. Revisions never notify.
+- Recaps whose last day is more than 7 days old are settled and no longer re-checked.
+CSV/PDF export the chosen presentation.
 
 Lifecycle captures reuse existing sync work and preserve reconstructed provenance.
 The November 8 AlexaStyles interruption remains explicitly reconstructed; its exact
@@ -103,6 +111,10 @@ brief is never rewritten.
 
 - Explicit DISAPPROVED/WITH_ISSUES, expired authorization, and known disabled-account
   status codes are supported. Unknown status/permission failures do not prove health.
+- DISAPPROVED/WITH_ISSUES count only while the ad (or ad set), its ad set and its campaign are
+  all switched on (`configured` ACTIVE). Meta keeps those statuses on switched-off objects; an
+  open issue resolves once a read observes the chain switched off. An unobserved parent is not
+  assumed off.
 - Billing/restriction causes come only from Meta's explicit `account_status`/`disable_reason`
   codes (see Account causes). Nothing is described as a failed payment.
 - Billing and Account Quality links add `asset_id=<ad account number>` (`metaAccountLink()`).

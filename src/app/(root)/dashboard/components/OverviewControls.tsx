@@ -2,7 +2,7 @@
 import type React from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ActionIcon, Alert, SegmentedControl, Tooltip } from "@mantine/core";
+import { ActionIcon, Alert, Button, SegmentedControl, Tooltip } from "@mantine/core";
 import { IconRefresh, IconBrandFacebook, IconBrandInstagram, IconBrandMeta } from "@tabler/icons-react";
 import type { Period } from "@/lib/server/dashboard/overview/types";
 
@@ -31,7 +31,11 @@ export function PeriodControl({ period }: { period: Period }) {
     />
   );
 }
-export function RefreshOverview({ disabled = false, onCompleted, label = 'Refresh Meta data' }: { disabled?: boolean; onCompleted?: () => void; label?: string }) {
+/**
+ * `updatedAt` turns the icon into a labeled control ("Refresh · Updated 1:34 PM") so the page says
+ * which data it refreshes and how current it is.
+ */
+export function RefreshOverview({ disabled = false, onCompleted, label = 'Refresh Meta data', updatedAt }: { disabled?: boolean; onCompleted?: () => void; label?: string; updatedAt?: string | null }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -89,7 +93,20 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
   };
   return (
     <div>
-      <Tooltip label={loading ? "Refreshing Meta data…" : label}>
+      {updatedAt !== undefined ? (
+        <Button
+          variant="default"
+          size="sm"
+          radius="xl"
+          leftSection={<IconRefresh size={15} />}
+          loading={loading}
+          disabled={disabled}
+          onClick={refresh}
+          aria-label={`${label}. ${updatedLabel(updatedAt)}`}
+        >
+          Refresh<span style={{ fontWeight: 500, opacity: .7, marginLeft: 6 }}>· {updatedLabel(updatedAt)}</span>
+        </Button>
+      ) : <Tooltip label={loading ? "Refreshing Meta data…" : label}>
         <ActionIcon
           aria-label={loading ? "Refreshing Meta data…" : label}
           variant="default"
@@ -101,7 +118,7 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
         >
           <IconRefresh size={18} />
         </ActionIcon>
-      </Tooltip>
+      </Tooltip>}
       {message && (
         <Alert mt="xs" color={failed ? "red" : "blue"} role="status">
           {message}
@@ -109,6 +126,13 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
       )}
     </div>
   );
+}
+
+function updatedLabel(at: string | null): string {
+  if (!at || !Number.isFinite(Date.parse(at))) return 'Not synced yet';
+  const date = new Date(at), today = new Date();
+  const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return date.toDateString() === today.toDateString() ? `Updated ${time}` : `Updated ${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${time}`;
 }
 
 export function PlatformControl({ platform }: { platform: 'combined' | 'facebook' | 'instagram' }) {

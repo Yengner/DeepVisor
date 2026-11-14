@@ -72,8 +72,14 @@ function Sparkline({ values, label }: { values: Array<number | null>; label: str
 export default function ControlMetrics({ view }: { view: ControlPerformance & { context?: PeriodContext } }) {
   const reference = view.context?.reference ?? null;
   const referenceLabel = view.context?.referenceLabel ?? null;
+  const referenceNote = view.context?.referenceNote ?? null;
   return (
     <>
+      {referenceNote && referenceLabel && (
+        <p className={classes.kpiCoverage}>
+          {referenceLabel} has data for only {referenceNote.replace(/ with data$/, "")}, so comparisons are limited. Missing days are not counted as zero.
+        </p>
+      )}
       <dl className={classes.kpis}>
         {(Object.keys(metricLabels) as ControlMetric[]).map((key) => (
           <div key={key}>

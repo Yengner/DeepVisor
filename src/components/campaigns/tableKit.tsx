@@ -1,7 +1,8 @@
 'use client';
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { ActionIcon, Menu, Radio, Skeleton, Table, Text, Tooltip, UnstyledButton } from '@mantine/core';
-import { IconArrowDown, IconArrowUp, IconArrowsSort, IconChevronRight, IconDots, IconTrendingUp } from '@tabler/icons-react';
+import type React from 'react';
+import { createContext, useContext, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { ActionIcon, Menu, Skeleton, Table, Text, Tooltip, UnstyledButton } from '@mantine/core';
+import { IconArrowDown, IconArrowUp, IconArrowsSort, IconChevronRight, IconDots, IconInfoCircle, IconTrendingUp } from '@tabler/icons-react';
 import { LiveIndicator } from '@/components/design/LiveIndicator';
 import { accountToday } from '@/lib/shared/reports/dates';
 import StatusBadge from './StatusBadge';
@@ -35,21 +36,6 @@ export function StatusCell({ status, delivering }: { status?: string | null; del
     </span>
   ) : (
     <StatusBadge status={status} />
-  );
-}
-
-export function SelectCell({ selected, label, onSelect, disabled }: { selected: boolean; label: string; onSelect: () => void; disabled?: boolean }) {
-  return (
-    <Radio
-      size="xs"
-      checked={selected}
-      disabled={disabled}
-      aria-label={label}
-      onChange={onSelect}
-      onClick={(event) => event.stopPropagation()}
-      onDoubleClick={(event) => event.stopPropagation()}
-      classNames={{ radio: classes.selectRadio }}
-    />
   );
 }
 
@@ -95,8 +81,8 @@ export function TruncatedName({ name }: { name: string }) {
       <span
         ref={ref}
         className={classes.cellName}
-        onMouseEnter={() => { const el = ref.current; if (el) setTruncated(el.scrollWidth > el.clientWidth + 1); }}
-        onFocus={() => { const el = ref.current; if (el) setTruncated(el.scrollWidth > el.clientWidth + 1); }}
+        onMouseEnter={() => { const el = ref.current; if (el) setTruncated(el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1); }}
+        onFocus={() => { const el = ref.current; if (el) setTruncated(el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1); }}
       >
         {name}
       </span>
@@ -302,20 +288,65 @@ const METRIC_COLUMNS: MetricColumn[] = [
   { key: 'messages', label: 'Messages', render: (m) => formatCount(m.messages) },
 ];
 export const METRIC_COLUMN_COUNT = METRIC_COLUMNS.length;
+/** The four numbers owners decide with; the rest appear behind "More metrics". */
+const CORE_METRICS = new Set<SortKey>(['spend', 'results', 'costPerResult', 'ctr']);
+export const MetricColumnsContext = createContext(false);
+const useColumns = () => { const expanded = useContext(MetricColumnsContext); return METRIC_COLUMNS.filter((column) => expanded || CORE_METRICS.has(column.key)); };
+/** Visible metric column count, for empty/notice rows that span the metrics. */
+export function useMetricColumnCount() { return useColumns().length; }
 
 export function MetricHeaders({ sort, onSort }: { sort: SortState; onSort: (key: SortKey) => void }) {
-  return METRIC_COLUMNS.map((column) => (
+  return useColumns().map((column) => (
     <SortHeader key={column.key} label={column.label} sortKey={column.key} sort={sort} onSort={onSort} numeric />
   ));
 }
 
-export function MetricCells({ metrics, currencyCode, benchmark }: { metrics: RowMetrics; currencyCode?: string | null; benchmark?: CostBenchmark | null }) {
-  return METRIC_COLUMNS.map((column) => (
+export function MetricCells({ metrics, currencyCode, benchmark, noDeliveryNote }: { metrics: RowMetrics; currencyCode?: string | null; benchmark?: CostBenchmark | null; noDeliveryNote?: string | null }) {
+  const columns = useColumns();
+  // A row with no rows in the selected period: one plain note instead of a line of dashes.
+  if (noDeliveryNote && !metrics.available) return (
+    <Table.Td colSpan={columns.length} className={classes.noDeliveryCell}><Text size="sm" c="dimmed">{noDeliveryNote}</Text></Table.Td>
+  );
+  return columns.map((column) => (
     <Table.Td key={column.key} data-num className={classes.nowrap}>
       <Text size="sm" fw={column.strong ? 600 : undefined} component="div">{column.render(metrics, currencyCode, benchmark)}</Text>
     </Table.Td>
   ));
 }
+
+/** Status column header; the delivering rule lives in its tooltip instead of a line above the table. */
+export function StatusHeader() {
+  return (
+    <Table.Th className={classes.nowrap}>
+      <span className={classes.headerWithInfo}>
+        Status
+        <Tooltip label="Delivering: the campaign, ad set and at least one ad are active in the latest saved Meta status. Delivering rows are listed first." multiline maw={280} withArrow withinPortal>
+          <span tabIndex={0} aria-label="About status" className={classes.headerInfo}><IconInfoCircle size={13} aria-hidden="true" /></span>
+        </Tooltip>
+      </span>
+    </Table.Th>
+  );
+}
+
+/** Trailing chevron for rows that open the next level (the whole row is also clickable). */
+export function OpenRowCell({ label, onOpen }: { label: string; onOpen: () => void }) {
+  return (
+    <Table.Td className={classes.openCell}>
+      <ActionIcon variant="subtle" color="gray" radius="xl" aria-label={label} onClick={(event) => { event.stopPropagation(); onOpen(); }} className={classes.ghostAction}>
+        <IconChevronRight size={16} />
+      </ActionIcon>
+    </Table.Td>
+  );
+}
+
+/** Keyboard access for clickable rows (Enter/Space activate the row). */
+export const rowKeys = (activate: () => void) => ({
+  tabIndex: 0,
+  onKeyDown: (event: React.KeyboardEvent) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); activate(); }
+  },
+});
 
 /** View rows for a table: sorted by the header state, with per-group cost benchmarks. */
 export function useTableRows<T>(rows: T[], pick: (row: T) => { name: string; metrics: RowMetrics }, groupOf: (row: T) => string, labelOf: (group: string) => string) {

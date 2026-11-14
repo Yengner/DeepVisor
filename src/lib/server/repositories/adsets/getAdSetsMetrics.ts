@@ -4,6 +4,7 @@ import { formatDisplayDate } from '@/lib/shared';
 import type { Database } from '@/lib/shared/types/supabase';
 import { derivePerformanceMetrics } from '../campaigns/normalizers';
 import { chunkArray, readAllPages } from '../utils';
+import { periodTotals, rangeWindow, type DailyTotals, type TableRange } from '@/lib/shared/performance/periodTotals';
 
 type QuerySupabaseClient = SupabaseClient<Database>;
 
@@ -29,7 +30,22 @@ type AdsetPerformanceRow = {
   calls: number;
   first_day: string | null;
   last_day: string | null;
+  synced_at?: string | null;
 };
+
+type DailyRow = { adset_id: string; day: string; spend: number | null; reach: number | null; impressions: number | null; clicks: number | null; inline_link_clicks: number | null; leads: number | null; messages: number | null; calls: number | null };
+
+async function listAdsetDailyRows(input: { supabase: QuerySupabaseClient; adsetIds: string[]; sinceDay?: string }): Promise<DailyRow[]> {
+  const rows: DailyRow[] = [];
+  for (const chunk of chunkArray(input.adsetIds, 200)) {
+    let query = input.supabase.from('adsets_performance_daily')
+      .select('adset_id, day, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls').in('adset_id', chunk);
+    if (input.sinceDay) query = query.gte('day', input.sinceDay);
+    const data = await readAllPages((from, to) => query.order('adset_id').order('day').range(from, to));
+    rows.push(...((data ?? []) as DailyRow[]));
+  }
+  return rows;
+}
 
 type CampaignLookupRow = {
   external_id: string;
@@ -99,7 +115,7 @@ async function listAdsetPerformanceRows(input: {
     const { data, error } = await input.supabase
       .from('adset_performance_summary')
       .select(
-        'adset_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls, first_day, last_day'
+        'adset_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls, first_day, last_day, synced_at'
       )
       .in('adset_id', adsetIdsChunk);
 
@@ -146,6 +162,8 @@ export async function getAdSetsLifetimeIncludingZeros(
     adsetExternalId?: string;
     vendor?: 'meta' | 'google' | 'tiktok';
     supabase?: QuerySupabaseClient;
+    /** Table period (Campaigns page); without it, the stored lifetime summary is used as before. */
+    range?: { range: TableRange; today: string; timezone: string | null };
   }
 ): Promise<AdSetLifetimeRow[]> {
   const supabase = opts?.supabase ?? (await createSupabaseClient());
@@ -161,10 +179,13 @@ export async function getAdSetsLifetimeIncludingZeros(
     return [];
   }
 
-  const performanceRows = await listAdsetPerformanceRows({
-    supabase,
-    adsetIds: adsets.map((adset) => adset.id),
-  });
+  const range = opts?.range;
+  const window = range ? rangeWindow(range.range, range.today) : null;
+  const [summaryRows, dailyRows] = await Promise.all([
+    !range || range.range === 'lifetime' ? listAdsetPerformanceRows({ supabase, adsetIds: adsets.map((adset) => adset.id) }) : Promise.resolve([] as AdsetPerformanceRow[]),
+    range ? listAdsetDailyRows({ supabase, adsetIds: adsets.map((adset) => adset.id), sinceDay: window?.since }) : Promise.resolve([] as DailyRow[]),
+  ]);
+  const performanceRows = range ? [] : summaryRows;
   const totalsByAdsetId = new Map(
     adsets.map((adset) => [
       adset.id,
@@ -180,6 +201,7 @@ export async function getAdSetsLifetimeIncludingZeros(
         observations: 0,
         firstDay: null as string | null,
         lastDay: null as string | null,
+        scheduleEnded: null as string | null,
       },
     ])
   );
@@ -206,6 +228,23 @@ export async function getAdSetsLifetimeIncludingZeros(
 
     if (row.last_day && (!totals.lastDay || row.last_day > totals.lastDay)) {
       totals.lastDay = row.last_day;
+    }
+  }
+
+  if (range) {
+    const summaryById = new Map(summaryRows.map((row) => [row.adset_id, row]));
+    const dailyById = new Map<string, DailyTotals[]>();
+    for (const row of dailyRows) {
+      if (window && row.day > window.until) continue;
+      const list = dailyById.get(row.adset_id) ?? [];
+      list.push({ day: row.day, spend: row.spend ?? 0, reach: row.reach ?? 0, impressions: row.impressions ?? 0, clicks: row.clicks ?? 0, linkClicks: row.inline_link_clicks ?? 0, leads: row.leads ?? 0, messages: row.messages ?? 0, calls: row.calls ?? 0 });
+      dailyById.set(row.adset_id, list);
+    }
+    for (const [id, totals] of totalsByAdsetId) {
+      const s = summaryById.get(id);
+      const result = periodTotals({ ...range, daily: dailyById.get(id) ?? [], summary: s ? { spend: s.spend ?? 0, reach: s.reach ?? 0, impressions: s.impressions ?? 0, clicks: s.clicks ?? 0, linkClicks: s.inline_link_clicks ?? 0, leads: s.leads ?? 0, messages: s.messages ?? 0, calls: s.calls ?? 0, firstDay: s.first_day, syncedAt: s.synced_at ?? null, lastDay: s.last_day } : null });
+      if (!result.available) continue;
+      Object.assign(totals, result.totals, { observations: 1, firstDay: result.firstDay, lastDay: result.lastDay, scheduleEnded: result.scheduleEnded ?? null });
     }
   }
 
@@ -252,7 +291,7 @@ export async function getAdSetsLifetimeIncludingZeros(
         cpl: totals.leads > 0 ? (spend / totals.leads).toFixed(2) : null,
         frequency: null,
         start_date: formatDisplayDate(totals.firstDay),
-        end_date: formatDisplayDate(totals.lastDay),
+        end_date: totals.lastDay || !totals.scheduleEnded ? formatDisplayDate(totals.lastDay) : `Schedule ended ${formatDisplayDate(totals.scheduleEnded)}`,
         last_day: totals.lastDay ?? null,
         platform_name: vendor,
       } satisfies AdSetLifetimeRow;

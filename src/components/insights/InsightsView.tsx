@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Modal } from '@mantine/core';
-import { AlertTriangle, Archive, ArrowLeft, ChevronRight, CircleAlert, CirclePause, CirclePlay, Flag, History, Info, LineChart, PlugZap, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Archive, ArrowLeft, ChevronRight, CircleAlert, CircleCheck, CirclePause, CirclePlay, Flag, History, Info, LineChart, PlugZap, RotateCcw } from 'lucide-react';
 import { useMediaQuery } from '@mantine/hooks';
 import SpiderMascot from '@/components/brand/SpiderMascot';
 import StatusBanner from '@/components/ui/states/StatusBanner';
@@ -136,6 +136,13 @@ function AttentionCard({ issue: i, related, currency, timezone, preview = false 
   const status = i.stale ? 'Status needs confirmation' : kind.status;
   const Icon = i.code === 'REAUTH_REQUIRED' ? PlugZap : i.code === 'CREATIVE_FATIGUE' ? CircleAlert : AlertTriangle;
   const notice = issueLevel(i) === 'notice';
+  if (i.resolvedAt) return <section className={styles.urgentCard} data-level="resolved" aria-label={`Resolved: ${i.title}`}>
+    <div className={styles.urgentHeader}><span><CircleCheck size={16} aria-hidden="true" />Resolved · {kind.tag}</span><span>No longer reported</span></div>
+    <div className={styles.urgentBody}><div className={styles.urgentDetail}>
+      <h3>{i.title}</h3><p>{i.explanation}</p>
+      <div className={styles.urgentNotice}><CircleCheck size={15} aria-hidden="true" /><span>A later read on {formatReportDay(i.resolvedAt.slice(0, 10))} no longer shows this as a problem, or the advertising involved is switched off. Nothing needs doing.</span></div>
+    </div></div>
+  </section>;
   return <section className={styles.urgentCard} data-level={notice ? 'notice' : undefined} aria-label={`${notice ? 'Notice' : 'Needs attention'}: ${i.title}`}>
     <div className={styles.urgentHeader}><span><Icon size={16} aria-hidden="true" />{notice ? 'Worth a look' : 'Action required'} · {kind.tag}</span><span>{status}</span></div>
     <div className={styles.urgentBody}>
@@ -185,9 +192,11 @@ function RecapChart({ recap, currency, timezone }: { recap: Recap; currency: str
 
 /** A one-line index of what this update contains, so owners know what to scroll for. */
 function Contents({ p }: { p: Presentation }) {
-  const open = urgentIssues(p.issues).length, notices = p.issues.length - open, changes = p.lifecycle.length;
+  const resolved = p.issues.filter(i => i.resolvedAt).length;
+  const open = urgentIssues(p.issues).length, notices = p.issues.length - open - resolved, changes = p.lifecycle.length;
   const items: Array<{ key: string; tone: string; text: string }> = [];
   if (open) items.push({ key: 'issues', tone: 'urgent', text: `${open} to check` });
+  if (resolved) items.push({ key: 'resolved', tone: 'neutral', text: `${resolved} resolved since` });
   if (notices) items.push({ key: 'notices', tone: 'navy', text: `${notices} ${notices === 1 ? 'notice' : 'notices'} from Meta` });
   if (p.recap) items.push({ key: 'recap', tone: 'info', text: p.recap.since === p.recap.until ? '1-day results' : `${p.recap.expectedDays}-day results` });
   if (changes) items.push({ key: 'changes', tone: 'navy', text: `${changes} ${changes === 1 ? 'change' : 'changes'}` });
@@ -242,11 +251,6 @@ export function InsightContent({ saved, preview = false }: { saved: SavedPresent
     </section>}
     {visibleRest.map(c => <div key={c.key}>{c.node}</div>)}
     {hiddenRest.length > 0 && <details className={styles.more}><summary>{hiddenRest.length} more {hiddenRest.length === 1 ? 'update' : 'updates'} in this review</summary>{hiddenRest.map(c => <div key={c.key}>{c.node}</div>)}</details>}
-    <details className={styles.details}><summary>Data &amp; coverage</summary>
-      <p>Timezone: {p.timezone ? `${formatTimezone(p.timezone)} (${p.timezone})` : 'Unavailable'} · Last successful sync: {p.syncedAt ? new Date(p.syncedAt).toLocaleString() : 'Unavailable'}</p>
-      <p>Saved {new Date(saved.created_at).toLocaleString()}. This report preserves the values shown at that time. Later attribution corrections can change current reports.</p>
-      {p.limitations.map(t => <p key={t}>{t}</p>)}
-    </details>
     {!preview && <div className={styles.actions}><a href={`/api/insights/export?id=${saved.id}&format=pdf`}>Download PDF</a><a href={`/api/insights/export?id=${saved.id}&format=csv`}>Download CSV</a><Link href="/insights">All updates</Link></div>}
   </div>;
 }
@@ -309,7 +313,7 @@ const FILTERS: Array<{ id: HistoryFilter; label: string }> = [
   { id: 'all', label: 'All' }, { id: 'attention', label: 'Needs attention' }, { id: 'performance', label: 'Performance' }, { id: 'lifecycle', label: 'Ad changes' },
 ];
 const matches = (item: SavedPresentation, filter: HistoryFilter) => filter === 'all' ? true
-  : filter === 'performance' ? Boolean(item.payload.recap) : filter === 'attention' ? item.payload.issues.length > 0 : item.payload.lifecycle.length > 0;
+  : filter === 'performance' ? Boolean(item.payload.recap) : filter === 'attention' ? item.payload.issues.some(i => !i.resolvedAt) : item.payload.lifecycle.length > 0;
 /** Day labels use the account's calendar, matching the daily notification bundle. */
 function dayHeading(day: string, timezone: string | null) {
   const today = presentationDay(new Date().toISOString(), timezone);
