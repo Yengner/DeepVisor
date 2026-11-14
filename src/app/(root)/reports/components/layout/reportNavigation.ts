@@ -39,14 +39,14 @@ export function resolveScope(params: URLSearchParams) {
   return 'business';
 }
 
+/**
+ * Filters the person added. The platform and a single ad account are the report's default scope
+ * (shown in the subtitle), so they never count; several accounts at once do.
+ */
 export function getActiveFilterCount(payload: ReportPayload) {
   let count = 0;
 
-  if (payload.query.platformIntegrationId) {
-    count += 1;
-  }
-
-  if (payload.query.adAccountIds.length > 0) {
+  if (payload.query.adAccountIds.length > 1) {
     count += 1;
   }
 

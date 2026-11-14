@@ -11,20 +11,23 @@ export const metricLabels = {
   ctr: "CTR",
 };
 export type ControlMetric = keyof typeof metricLabels;
+/** Extra chartable metrics, offered behind the chart's "More" menu (not KPI cards). */
+export type ExtraMetric = "impressions" | "clicks" | "cpm";
+const MONEY_KEYS = ["spend", "costPerResult", "cpm"];
 export function metricValue(
-  key: ControlMetric,
+  key: ControlMetric | ExtraMetric,
   value: number | null,
   currency: string | null,
   compact = false,
 ) {
   if (value === null || !Number.isFinite(value)) return "—";
-  if (["spend", "costPerResult"].includes(key) && !currency) return "—";
+  if (MONEY_KEYS.includes(key) && !currency) return "—";
   return (
     new Intl.NumberFormat("en", {
-      ...(["spend", "costPerResult"].includes(key)
+      ...(MONEY_KEYS.includes(key)
         ? { style: "currency", currency: currency! }
         : {}),
-      maximumFractionDigits: key === "results" ? 0 : 2,
+      maximumFractionDigits: key === "results" || key === "impressions" || key === "clicks" ? 0 : 2,
       ...(compact && value >= 10000 ? { notation: "compact" } : {}),
     }).format(value) + (key === "ctr" ? "%" : "")
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ActionIcon, Button, Drawer, Menu, Select, Switch, Tooltip } from '@mantine/core';
+import { Button, Drawer, Menu, Switch, Tooltip } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { DatePickerInput } from '@mantine/dates';
 import {
@@ -12,12 +12,9 @@ import {
   IconFileSpreadsheet,
   IconFileTypePdf,
   IconRefresh,
-  IconSparkles,
 } from '@tabler/icons-react';
-import { askDeepVisor } from '@/lib/shared/assistant/askEvent';
-import { reportQuestions } from '@/lib/shared/reports/ask';
 import { SavedViewsMenu } from './SavedViewsMenu';
-import { completedReportRange } from '@/lib/shared/reports/dates';
+import { completedReportRange, shiftReportDay } from '@/lib/shared/reports/dates';
 import { formatReportRange, formatTimezone } from '@/lib/shared/reports/labels';
 import type { ReportFilterOptions, ReportPayload } from '@/lib/server/reports/types';
 import classes from '../Workspace.module.css';
@@ -37,12 +34,19 @@ interface ReportsHeaderProps {
 
 type Preset = '7d' | '30d' | '90d' | 'max';
 const PRESETS: Array<{ value: Preset; label: string; title: string }> = [
-  { value: '7d', label: '7D', title: 'Last 7 completed days' },
-  { value: '30d', label: '30D', title: 'Last 30 completed days' },
-  { value: '90d', label: '90D', title: 'Last 90 completed days' },
+  // Reports use completed days (through yesterday); Overview and Campaigns windows include today so far.
+  { value: '7d', label: '7D', title: 'Last 7 completed days, through yesterday (Overview and Campaigns include today)' },
+  { value: '30d', label: '30D', title: 'Last 30 completed days, through yesterday (Overview and Campaigns include today)' },
+  { value: '90d', label: '90D', title: 'Last 90 completed days, through yesterday' },
   { value: 'max', label: 'All', title: 'All saved history' },
 ];
-const GROUPS = [{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }] as const;
+
+/** "Synced 1:38 PM" today, otherwise with the date; honest when no sync is recorded. */
+function syncedLabel(at: string | null | undefined): string {
+  if (!at || !Number.isFinite(Date.parse(at))) return 'Not synced yet';
+  const date = new Date(at), time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return date.toDateString() === new Date().toDateString() ? `Synced ${time}` : `Synced ${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${time}`;
+}
 
 function toIsoDate(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -61,7 +65,7 @@ function presetRange(preset: Preset, today: string | null | undefined) {
 }
 
 export default function ReportsHeader({
-  payload, filterOptions, exportLinks, onUpdate, onRefresh, onOpenFilters,
+  payload, exportLinks, onUpdate, onRefresh, onOpenFilters,
   activeFilterCount, scopeName, isDemo = false, isPending = false,
 }: ReportsHeaderProps) {
   const { query, meta } = payload;
@@ -87,11 +91,9 @@ export default function ReportsHeader({
     return range?.dateFrom === query.dateFrom && range?.dateTo === query.dateTo;
   });
   const compareDisabledReason = isMax ? 'Comparison is unavailable for all saved history.' : meta.comparisonDisabledReason ?? null;
-  const showAccountSelect = filterOptions.adAccounts.length > 1;
   // Phones get one summary button that opens the period controls in a sheet.
   const mobile = useMediaQuery('(max-width: 760px)');
   const [sheetOpen, setSheetOpen] = useState(false);
-  const questions = useMemo(() => (isDemo ? [] : reportQuestions(payload, scopeName)), [isDemo, payload, scopeName]);
   const rollingPreset = activePreset && activePreset !== 'max' ? (Number(activePreset.replace('d', '')) as 7 | 30 | 90) : null;
   const periodSummary = `${isMax ? 'All saved history' : formatReportRange(query.dateFrom, query.dateTo)}${activePreset && activePreset !== 'max' ? ` · ${activePreset.toUpperCase()}` : ''} · ${query.groupBy === 'day' ? 'Daily' : query.groupBy === 'week' ? 'Weekly' : 'Monthly'}${query.compareMode === 'previous_period' ? ' · Compared' : ''}`;
 
@@ -175,21 +177,6 @@ export default function ReportsHeader({
         <span className={classes.toolbarDivider} aria-hidden="true" />
 
         <div className={classes.toolbarGroup}>
-          {!isMax ? (
-            <div className={classes.segmented} role="group" aria-label="Group chart by">
-              {GROUPS.map(group => (
-                <button
-                  key={group.value}
-                  type="button"
-                  aria-pressed={query.groupBy === group.value}
-                  disabled={isPending}
-                  onClick={() => onUpdate(params => params.set('group_by', group.value))}
-                >
-                  {group.label}
-                </button>
-              ))}
-            </div>
-          ) : null}
           <Tooltip label={compareDisabledReason} disabled={!compareDisabledReason} multiline maw={280} withinPortal>
             <span>
               <Switch
@@ -207,30 +194,6 @@ export default function ReportsHeader({
           </Tooltip>
         </div>
 
-        {showAccountSelect ? (
-          <Select
-            aria-label="Ad account"
-            searchable
-            size="sm"
-            radius="xl"
-            className={classes.accountSelect}
-            value={query.adAccountIds.length === 1 ? query.adAccountIds[0] : null}
-            placeholder={query.adAccountIds.length > 1 ? 'Multiple accounts' : 'All accounts'}
-            data={filterOptions.adAccounts.map(account => ({ value: account.id, label: account.label }))}
-            onChange={value => {
-              if (!value) return;
-              onUpdate(params => {
-                params.set('ad_account_id', value);
-                ['campaign_id', 'adset_id', 'ad_id', 'platform_integration_id'].forEach(key => params.delete(key));
-                if (activePreset && activePreset !== 'max') {
-                  params.set('preset', activePreset.replace('d', ''));
-                  params.delete('date_from');
-                  params.delete('date_to');
-                }
-              });
-            }}
-          />
-        ) : null}
       </div>
   );
 
@@ -244,7 +207,8 @@ export default function ReportsHeader({
           </div>
           <p className={classes.subtitle}>
             <strong>{scopeName}</strong> · {formatReportRange(query.dateFrom, query.dateTo)} · {formatTimezone(meta.timezone)}
-            {meta.partialDay ? ' · Includes today (partial day)' : ''}
+            {' · '}{meta.partialDay ? 'Includes today (partial day)'
+              : meta.today && query.dateTo === shiftReportDay(meta.today, -1) ? 'Completed days, through yesterday' : 'Completed days'}
           </p>
         </div>
 
@@ -257,23 +221,6 @@ export default function ReportsHeader({
           >
             Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
           </Button>
-          {questions.length ? (
-            <Menu position="bottom-end" shadow="md" width={320}>
-              <Menu.Target>
-                <Button leftSection={<IconSparkles size={16} />} rightSection={<IconChevronDown size={14} />} radius="xl" variant="light">
-                  Ask
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Label>Ask DeepVisor about this report</Menu.Label>
-                {questions.map(item => (
-                  <Menu.Item key={item.id} onClick={() => askDeepVisor(item.question)}>{item.label}</Menu.Item>
-                ))}
-                <Menu.Divider />
-                <Menu.Label>Opens a draft you can edit before sending</Menu.Label>
-              </Menu.Dropdown>
-            </Menu>
-          ) : null}
           <SavedViewsMenu rollingPreset={rollingPreset} isDemo={isDemo} />
           <Menu position="bottom-end" shadow="md" width={260}>
             <Menu.Target>
@@ -287,10 +234,11 @@ export default function ReportsHeader({
               <Menu.Item component="a" href={exportLinks.csv} leftSection={<IconFileSpreadsheet size={16} />}>CSV data</Menu.Item>
             </Menu.Dropdown>
           </Menu>
-          <Tooltip label={isPending ? 'Reloading…' : 'Reload saved data (does not sync Meta)'}>
-            <ActionIcon aria-label="Reload saved report data" size={36} radius="xl" variant="default" onClick={onRefresh} disabled={isPending}>
-              <IconRefresh size={18} />
-            </ActionIcon>
+          <Tooltip label="Reloads the data DeepVisor has saved. It does not fetch new data from Meta." multiline maw={260} withinPortal>
+            <Button variant="default" radius="xl" leftSection={<IconRefresh size={15} />} onClick={onRefresh} loading={isPending}
+              aria-label={`Reload saved report data. ${syncedLabel(meta.lastSyncedAt)}`}>
+              Reload<span className={classes.reloadNote}>· {syncedLabel(meta.lastSyncedAt)}</span>
+            </Button>
           </Tooltip>
         </div>
       </div>

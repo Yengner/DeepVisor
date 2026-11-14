@@ -24,7 +24,8 @@ export function useReportSection() {
   };
   return { section, select };
 }
-export function ReportSections({ section, onSelect }: { section: ReportSection; onSelect: (section: ReportSection) => void }) {
+/** `hidden` sections have nothing to show for this report (e.g. no saved findings) and get no tab. */
+export function ReportSections({ section, onSelect, hidden = [] }: { section: ReportSection; onSelect: (section: ReportSection) => void; hidden?: ReportSection[] }) {
   const navigation = useRef<HTMLElement>(null);
   useEffect(() => {
     const container = navigation.current;
@@ -36,7 +37,7 @@ export function ReportSections({ section, onSelect }: { section: ReportSection; 
     else if (selected.right > bounds.right) container.scrollLeft += selected.right - bounds.right;
   }, [section]);
   return <nav ref={navigation} aria-label="Report sections" className={classes.navigation}>
-    {REPORT_SECTIONS.map(([key, label]) => <button key={key} type="button"
+    {REPORT_SECTIONS.filter(([key]) => !hidden.includes(key)).map(([key, label]) => <button key={key} type="button"
       aria-current={section === key ? 'page' : undefined} onClick={() => onSelect(key)}>{label}</button>)}
   </nav>;
 }

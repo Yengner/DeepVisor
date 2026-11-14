@@ -6,8 +6,9 @@ import { PERFORMANCE_METRICS, type PerformanceMetric } from '@/lib/shared/report
 import { comparisonBaseTotals, comparisonLabel } from '@/lib/shared/reports/comparison';
 import classes from './Workspace.module.css';
 
-const primary = [['spend', 'Spend'], ['conversion', 'Results'], ['costPerResult', 'Cost per result'], ['impressions', 'Impressions']] as const;
-const secondary = [['clicks', 'Clicks'], ['linkClicks', 'Link clicks'], ['ctr', 'CTR'], ['cpc', 'CPC'], ['cpm', 'CPM'], ['reach', 'Reach'], ['frequency', 'Frequency']] as const;
+/** Same four decision numbers as Overview and Campaigns; delivery volume lives under "More metrics". */
+const primary = [['spend', 'Spend'], ['conversion', 'Results'], ['costPerResult', 'Cost per result'], ['ctr', 'CTR']] as const;
+const secondary = [['impressions', 'Impressions'], ['clicks', 'Clicks'], ['linkClicks', 'Link clicks'], ['cpc', 'CPC'], ['cpm', 'CPM'], ['reach', 'Reach'], ['frequency', 'Frequency']] as const;
 const chartable = new Set<string>(PERFORMANCE_METRICS.map(([key]) => key));
 
 /**

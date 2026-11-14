@@ -1341,3 +1341,7 @@ article.adCard { position: relative; cursor: default; }
 /* Featured ad set that carries all spend: say so instead of repeating the KPI row. */
 .soleSpender { margin: 10px 0 14px; padding: 12px 14px; border-radius: var(--dv-radius-md, 10px); background: var(--ui-subtle, #f2f6fb); color: var(--ui-text); font-size: 13px; line-height: 1.55; }
 .soleSpender strong { font-weight: 700; }
+
+/* "More" sits with the chart tabs and inherits their look; it names the metric once one is chosen. */
+.metricTabs .moreMetric { display: inline-flex; align-items: center; gap: 4px; }
+.menuHint { color: var(--ui-muted, #5d6877); font-size: 12px; }

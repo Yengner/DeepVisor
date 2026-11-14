@@ -68,12 +68,13 @@ describe('overview highlights', () => {
     const payload = buildReportFixture();
     const obs = (dayKey: string, hourOfDay: number, clicks: number) =>
       ({ dayKey, hourOfDay, clicks, spend: 1, impressions: 100, results: 0, inlineLinkClicks: 0 });
-    // 2026-10-02 and 2026-10-09 are Fridays (day index 4).
+    // 2026-10-02/09/16/23 are Fridays (day index 4).
     payload.surface.hourlyTrendExpanded = [
-      obs('2026-10-02', 15, 10), obs('2026-10-09', 15, 14),
+      obs('2026-10-02', 15, 10), obs('2026-10-09', 15, 14), obs('2026-10-16', 15, 12), obs('2026-10-23', 15, 12),
       obs('2026-10-02', 9, 30), // higher, but only one observed date
-      obs('2026-10-05', 9, 4), obs('2026-10-12', 9, 6),
+      obs('2026-10-05', 9, 40), obs('2026-10-12', 9, 60), // much higher, but two Mondays are not a pattern
     ] as typeof payload.surface.hourlyTrendExpanded;
-    expect(busiestHour(payload)).toEqual({ day: 4, hour: 15, value: 12, observations: MIN_HOUR_OBSERVATIONS });
+    expect(MIN_HOUR_OBSERVATIONS).toBe(4);
+    expect(busiestHour(payload)).toEqual({ day: 4, hour: 15, value: 12, observations: 4 });
   });
 });

@@ -138,6 +138,7 @@ export interface ReportPayload {
     timezone?: string | null;
     today?: string | null;
     partialDay?: boolean;
+    lastSyncedAt?: string | null;
     warnings?: string[];
     coverage?: ReportCoverage;
     comparisonDisabledReason?: string | null;

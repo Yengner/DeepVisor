@@ -3,7 +3,7 @@ import { IconChevronRight, IconPhoto, IconSpeakerphone, IconStack2 } from '@tabl
 import type { ReportPayload } from '@/lib/server/reports/types';
 import { formatReportMetric } from '@/lib/shared/reports/metrics';
 import { WEEKDAYS } from '@/lib/shared/reports/timeAnalysis';
-import { busiestHour, snapshotShares, topAdvertising, type SnapshotHighlight } from '@/lib/shared/reports/highlights';
+import { busiestHour, MIN_HOUR_OBSERVATIONS, snapshotShares, topAdvertising, type SnapshotHighlight } from '@/lib/shared/reports/highlights';
 import { formatHour, formatSnapshotWindow, humanizeContext } from '@/lib/shared/reports/labels';
 import { previewSources } from '@/lib/shared/media/preview';
 import type { ReportSection } from '../layout/ReportSections';
@@ -33,7 +33,9 @@ function Card({ title, target, onOpen, wide, children }: {
 function Shares({ data, emptyText }: { data: SnapshotHighlight | null; emptyText: string }) {
   if (!data) return <p className={classes.highlightEmpty}>{emptyText}</p>;
   return <>
-    <p className={classes.highlightMeta}>Share of spend · snapshot {formatSnapshotWindow(data.window)}</p>
+    <p className={classes.highlightMeta}>{data.periodBased
+      ? `Share of spend · ${formatSnapshotWindow(data.window)}`
+      : `Share of spend · all-time snapshot, not the selected dates`}</p>
     <ul className={classes.shares}>
       {data.segments.map(segment => (
         <li key={segment.label} className={classes.share}>
@@ -61,7 +63,14 @@ export function OverviewHighlights({ payload, onOpen }: { payload: ReportPayload
   return (
     <section className={classes.highlights} aria-label="Report highlights">
       <Card title="Top advertising" target="advertising" onOpen={onOpen} wide>
-        {top.rows.length ? <>
+        {top.rows.length === 1 ? <>
+          {/* One entity is not a ranking: say what it is. */}
+          <p className={classes.highlightMeta}>Selected dates</p>
+          <p className={classes.soleSource}>
+            <span className={classes.soleLead}>All {metricLabel} came from <strong>{top.rows[0].name}</strong></span>
+            <span className={classes.soleValue}>{formatReportMetric(top.rows[0], top.metric, currency)} {top.metric === 'conversion' ? `results · ${formatReportMetric(top.rows[0], 'costPerResult', currency)} each` : 'spend'}</span>
+          </p>
+        </> : top.rows.length ? <>
           <p className={classes.highlightMeta}>Ranked by {metricLabel} for the selected dates</p>
           <ol className={classes.rankList}>
             {top.rows.map(row => {
@@ -97,25 +106,26 @@ export function OverviewHighlights({ payload, onOpen }: { payload: ReportPayload
       </Card>
 
       <Card title="Busiest hours" target="time" onOpen={onOpen}>
+        <p className={classes.highlightMeta}>Most clicks on average · account time</p>
         {peak ? (
           <p className={classes.statement}>
             {WEEKDAYS[peak.day]}s, {formatHour(peak.hour)}–{formatHour(peak.hour + 1)}
-            <small>Most clicks on average ({peak.value.toLocaleString('en-US', { maximumFractionDigits: 1 })} per {WEEKDAYS[peak.day]}) across {peak.observations} observed days, account time</small>
+            <small>{peak.value.toLocaleString('en-US', { maximumFractionDigits: 1 })} clicks per {WEEKDAYS[peak.day]} across {peak.observations} observed days</small>
           </p>
         ) : (
           <p className={classes.highlightEmpty}>
-            {payload.meta.timezone ? 'Not enough hourly history yet — each hour needs at least two observed days.' : 'Needs a verified account timezone.'}
+            {payload.meta.timezone ? `Not enough days yet to name a busiest hour — each hour needs at least ${MIN_HOUR_OBSERVATIONS} observed days.` : 'Needs a verified account timezone.'}
           </p>
         )}
       </Card>
 
       <Card title="Geography" target="geography" onOpen={onOpen}>
-        {countries ? (
+        {countries ? <>
+          <p className={classes.highlightMeta}>Share of spend · {countries.periodBased ? formatSnapshotWindow(countries.window) : 'all-time snapshot, not the selected dates'}</p>
           <p className={classes.statement}>
             {countries.segments[0].share >= 0.995 ? `All spend in ${countries.segments[0].label}` : `${pct(countries.segments[0].share)} of spend in ${countries.segments[0].label}`}
-            <small>Snapshot {formatSnapshotWindow(countries.window)}</small>
           </p>
-        ) : <p className={classes.highlightEmpty}>No country breakdown is available for this selection.</p>}
+        </> : <p className={classes.highlightEmpty}>No country breakdown is available for this selection.</p>}
       </Card>
     </section>
   );

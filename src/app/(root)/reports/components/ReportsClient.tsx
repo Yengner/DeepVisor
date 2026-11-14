@@ -35,7 +35,10 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: {
   const [filtersOpened, setFiltersOpened] = useState(false);
   // Shared by the KPI cards and the trend chart so either can choose what is charted.
   const [chartMetric, setChartMetric] = useState<PerformanceMetric>('spend');
-  const { section, select } = useReportSection();
+  const { section: requested, select } = useReportSection();
+  // Findings gets a tab only when something was flagged; an old #findings link falls back to Overview.
+  const hiddenSections = payload.findings.length ? [] : (['findings'] as const);
+  const section = (hiddenSections as readonly string[]).includes(requested) ? 'performance' : requested;
   const currentSearchString = searchParams?.toString() ?? '';
   const updateSearch = (mutate: (params: URLSearchParams) => void) => {
     const params = updateReportParams(currentSearchString, payload.query, mutate);
@@ -70,10 +73,10 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: {
     {isPending && <div className={classes.pending} role="status"><Loader size="xs" /> Updating report…</div>}
     <ReportDataStatus payload={payload} />
     <ReportMetrics payload={payload} chartMetric={chartMetric} onChartMetric={showChart} />
-    <ReportSections section={section} onSelect={select} />
+    <ReportSections section={section} onSelect={select} hidden={[...hiddenSections]} />
     <div aria-busy={isPending} style={{ display: 'grid', gap: 16, opacity: isPending ? 0.6 : 1, transition: 'opacity 150ms ease' }}>
       <div hidden={section !== 'performance'} style={{ display: section === 'performance' ? 'grid' : undefined, gap: 16 }}>
-        <PerformanceSection payload={payload} metric={chartMetric} onMetric={setChartMetric} />
+        <PerformanceSection payload={payload} metric={chartMetric} pending={isPending} onGroupBy={group => updateSearch(params => params.set('group_by', group))} />
         <OverviewHighlights payload={payload} onOpen={select} />
       </div>
       {(['audience', 'geography', 'delivery'] as const).map(name => <ReportSectionPanel key={name} active={section === name}><BreakdownSection payload={payload} section={name} /></ReportSectionPanel>)}

@@ -30,6 +30,8 @@ export function BreakdownSection({ payload, section }: { payload: ReportPayload;
   const metricLabel = BREAKDOWN_METRICS.find(([key]) => key === metric)![1];
   const format = (value: number | null) => metric === 'reach' ? value == null ? 'Unavailable' : value.toLocaleString('en-US') : performanceValueLabel(value, metric, model.currency);
   const coverage = payload.surface.coverage?.[dimension];
+  // Age × gender and Facebook/Instagram follow the report dates when saved daily data covers them.
+  const periodBased = coverage?.basis === 'period';
   const items = model.items.map(item => ({ ...item, label: segmentLabel(dimension, item.label) }));
   const total = ADDITIVE.has(metric) ? items.reduce((sum, item) => sum + (item.value ?? 0), 0) : 0;
   const share = (value: number | null) => total > 0 && value != null ? (value > 0 && value / total < 0.005 ? '<1%' : `${Math.round(value / total * 100)}%`) : '';
@@ -65,8 +67,13 @@ export function BreakdownSection({ payload, section }: { payload: ReportPayload;
     </div>
     <p className={styles.windowBadge}>
       <IconCalendarStats size={14} aria-hidden="true" />
-      <span>Snapshot <strong>{windowText}</strong></span>
-      {window !== 'Coverage unknown' && windowText !== reportDates ? <span>· not the report dates ({reportDates})</span> : null}
+      {periodBased ? <>
+        <span>Selected dates <strong>{windowText}</strong></span>
+        {coverage?.state === 'partial' ? <span>· {coverage.observedDays} of {coverage.expectedDays} days have this breakdown ({reportDates} selected)</span> : null}
+      </> : <>
+        <span>All-time snapshot <strong>{windowText}</strong></span>
+        {window !== 'Coverage unknown' && windowText !== reportDates ? <span>· not the selected dates ({reportDates}); this breakdown isn’t saved by day</span> : null}
+      </>}
     </p>
     {window === 'Coverage unknown' && <p className={classes.notice} style={{ marginTop: 12 }}>Source dates are unknown. Measurements remain separate; totals across sources are not inferred.</p>}
     {model.reason && <p className={classes.notice} style={{ marginTop: 12 }}>{model.reason}</p>}
@@ -98,9 +105,9 @@ export function BreakdownSection({ payload, section }: { payload: ReportPayload;
         {selectedItem && <aside className={styles.inspector} aria-live="polite"><div><strong>{selectedItem.label}</strong><p>{metricLabel}: {format(selectedItem.value)}{share(selectedItem.value) ? ` (${share(selectedItem.value)} of total)` : ''} · {selectedItem.measurements} source measurement{selectedItem.measurements === 1 ? '' : 's'}</p></div><button type="button" onClick={() => setSelected(null)}>Clear selection</button></aside>}
       </>}
 
-    {items.length > 0 && <details className={classes.dataDetails}><summary>Inspect breakdown data</summary><div className={classes.tableScroll} role="region" tabIndex={0} aria-label="Breakdown data"><table><caption>{metricLabel} · snapshot {windowText}</caption><thead><tr><th scope="col">Segment</th><th scope="col">{metricLabel}</th>{total > 0 && <th scope="col">Share</th>}<th scope="col">Measurements</th></tr></thead><tbody>{items.map(item => <tr key={item.key}><th scope="row">{item.label}</th><td>{format(item.value)}</td>{total > 0 && <td>{share(item.value)}</td>}<td>{item.measurements}</td></tr>)}</tbody></table></div></details>}
+    {items.length > 0 && <details className={classes.dataDetails}><summary>Inspect breakdown data</summary><div className={classes.tableScroll} role="region" tabIndex={0} aria-label="Breakdown data"><table><caption>{metricLabel} · {periodBased ? 'selected dates' : 'all-time snapshot'} {windowText}</caption><thead><tr><th scope="col">Segment</th><th scope="col">{metricLabel}</th>{total > 0 && <th scope="col">Share</th>}<th scope="col">Measurements</th></tr></thead><tbody>{items.map(item => <tr key={item.key}><th scope="row">{item.label}</th><td>{format(item.value)}</td>{total > 0 && <td>{share(item.value)}</td>}<td>{item.measurements}</td></tr>)}</tbody></table></div></details>}
     <details className={classes.about}><summary><IconInfoCircle size={14} aria-hidden="true" />About this data</summary><ul>
-      <li>Breakdowns are Meta snapshots with their own measurement window, independent of the report dates above.</li>
+      <li>{periodBased ? 'This breakdown covers the selected dates, using the days Meta data was saved for. Days without saved data are left out, not counted as zero.' : 'This breakdown is an all-time Meta snapshot with its own measurement window; it is not saved by day, so it cannot follow the report dates.'}</li>
       {section === 'audience' ? <li>This is who received your ads and any attributed outcomes — not verified customer demographics.</li> : <li>Compare one dimension at a time. Delivery does not establish causal impact.</li>}
       {section === 'delivery' && <li>Placement and device sources include delivery only; results and cost per result are unavailable here.</li>}
       <li>Ratios (CTR, CPC, CPM, cost per result) are recomputed from totals, never averaged.</li>

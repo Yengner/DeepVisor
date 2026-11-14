@@ -13,15 +13,23 @@ import {
 import type { ControlPerformance } from "@/lib/server/dashboard/overview/controlModel";
 import type { PeriodContext } from "@/lib/server/dashboard/insights/compare";
 import type { ChartMarker } from "@/lib/server/dashboard/overview/markers";
-import {
-  metricLabels,
-  metricValue,
-  type ControlMetric,
-} from "./ControlMetrics";
+import Link from "next/link";
+import { Menu, UnstyledButton } from "@mantine/core";
+import { IconChevronDown } from "@tabler/icons-react";
+import { metricValue } from "./ControlMetrics";
 import classes from "./ControlCenter.module.css";
 import { chartCeiling, chartTicks } from "./chartScale";
 
 type Row = { x: string; current: number | null; previous: number | null; live: boolean };
+/**
+ * Results, Spend and CTR are the tabs. Cost per result is not charted: with a few results a day it
+ * is undefined or swings wildly, and the KPI card already shows it. "More" offers only metrics that
+ * chart cleanly and exist in saved data (no reach or link clicks, which are not saved by day).
+ */
+type ChartKey = "results" | "spend" | "ctr" | "impressions" | "clicks" | "cpm";
+const TABS: ChartKey[] = ["results", "spend", "ctr"];
+const MORE: ChartKey[] = ["impressions", "clicks", "cpm"];
+const LABELS: Record<ChartKey, string> = { results: "Results", spend: "Spend", ctr: "CTR", impressions: "Impressions", clicks: "Clicks", cpm: "CPM" };
 const dayLabel = (d: string) =>
   new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
 const hourLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? "AM" : "PM"}`;
@@ -33,7 +41,7 @@ export default function ControlTrend({
   view: ControlPerformance & { context?: PeriodContext };
   markers?: ChartMarker[];
 }) {
-  const [metric, setMetric] = useState<ControlMetric>("results");
+  const [metric, setMetric] = useState<ChartKey>("results");
   const [selected, setSelected] = useState("");
   const hourly = view.context?.hourly ?? null;
   const previousName = hourly ? "Yesterday" : view.context?.referenceLabel ?? null;
@@ -56,8 +64,7 @@ export default function ControlTrend({
   const partialPrevious = !hourly && Boolean(view.context?.referenceNote);
   const hasPrevious = !partialPrevious && rows.some((r) => r.previous !== null);
   const ceiling = chartCeiling(Math.max(0, ...rows.flatMap((r) => [r.current ?? 0, r.previous ?? 0])));
-  // Cost per result is cumulative (running) on both the daily and hourly charts.
-  const label = metric === "costPerResult" ? `${metricLabels.costPerResult} (running)` : metricLabels[metric];
+  const label = LABELS[metric];
   const shownMarkers = hourly ? [] : markers.filter((m) => rows.some((r) => r.x === m.day));
   const format = (v: number) => metricValue(metric, v, view.currency);
   const xLabel = (x: string) => (hourly ? x : dayLabel(x));
@@ -66,11 +73,28 @@ export default function ControlTrend({
     <>
       <div className={classes.chartToolbar}>
         <div className={classes.metricTabs} role="group" aria-label="Chart metric">
-          {(["results", "spend", "costPerResult", "ctr"] as const).map((key) => (
+          {TABS.map((key) => (
             <button key={key} type="button" aria-pressed={metric === key} onClick={() => setMetric(key)}>
-              {metricLabels[key]}
+              {LABELS[key]}
             </button>
           ))}
+          <Menu position="bottom-start" shadow="md" width={220} withinPortal>
+            <Menu.Target>
+              <UnstyledButton className={classes.moreMetric} aria-pressed={MORE.includes(metric)}>
+                {MORE.includes(metric) ? `More: ${LABELS[metric]}` : "More"}
+                <IconChevronDown size={13} aria-hidden="true" />
+              </UnstyledButton>
+            </Menu.Target>
+            <Menu.Dropdown>
+              {MORE.map((key) => (
+                <Menu.Item key={key} onClick={() => setMetric(key)} aria-current={metric === key || undefined} fw={metric === key ? 700 : undefined}>
+                  {LABELS[key]}{key === "cpm" ? <span className={classes.menuHint}> · cost per 1,000 impressions</span> : null}
+                </Menu.Item>
+              ))}
+              <Menu.Divider />
+              <Menu.Item component={Link} href="/reports">See all metrics in Reports →</Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </div>
         <div className={classes.chartLegend} aria-hidden="true">
           <span><i className={classes.legendCurrent} />{currentName}</span>
@@ -177,7 +201,7 @@ export default function ControlTrend({
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <div className={classes.chartEmpty}>No recorded {metricLabels[metric].toLowerCase()} for this period</div>
+          <div className={classes.chartEmpty}>No recorded {metric === "ctr" || metric === "cpm" ? LABELS[metric] : LABELS[metric].toLowerCase()} for this period</div>
         )}
       </div>
     </>

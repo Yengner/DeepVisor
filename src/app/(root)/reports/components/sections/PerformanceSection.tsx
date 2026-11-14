@@ -12,9 +12,14 @@ const ADDITIVE = new Set<PerformanceMetric>(['spend', 'conversion', 'impressions
 const shortDate = (date: string) => formatReportDay(date, false);
 const windowLabel = (date: string, end: string) => date === end ? formatReportDay(date) : formatReportRange(date, end);
 
-/** Trend for one metric. The metric is owned by the parent so the KPI cards can drive it. */
-export function PerformanceSection({ payload, metric, onMetric }: {
-  payload: ReportPayload; metric: PerformanceMetric; onMetric: (metric: PerformanceMetric) => void;
+const GROUPS = [['day', 'Day'], ['week', 'Week'], ['month', 'Month']] as const;
+
+/**
+ * Trend for one metric. The KPI cards (and "More metrics") choose what is charted; this panel owns
+ * only how the trend is grouped, so each control sits next to what it changes.
+ */
+export function PerformanceSection({ payload, metric, onGroupBy, pending = false }: {
+  payload: ReportPayload; metric: PerformanceMetric; onGroupBy: (group: 'day' | 'week' | 'month') => void; pending?: boolean;
 }) {
   const gradientId = useId().replace(/:/g, '');
   const chart = useMemo(() => buildPerformanceChart(payload, metric), [payload, metric]);
@@ -34,12 +39,14 @@ export function PerformanceSection({ payload, metric, onMetric }: {
 
   return <section className={classes.panel} aria-labelledby="performance-title">
     <div className={classes.panelHeader}>
-      <div><p className={classes.eyebrow}>Performance over time</p><h2 id="performance-title">{groupLabel} {label.toLowerCase()}</h2></div>
-      <label className={classes.metricSelect}>Metric
-        <select aria-label="Chart metric" value={metric} onChange={e => onMetric(e.target.value as PerformanceMetric)}>
-          {PERFORMANCE_METRICS.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
-        </select>
-      </label>
+      <div><p className={classes.eyebrow}>Performance over time</p><h2 id="performance-title">{groupLabel} {/^[A-Z]{3}$/.test(label) ? label : label.toLowerCase()}</h2></div>
+      {payload.query.rangeMode !== 'max' ? (
+        <div className={classes.segmented} role="group" aria-label="Group chart by">
+          {GROUPS.map(([value, name]) => (
+            <button key={value} type="button" aria-pressed={payload.query.groupBy === value} disabled={pending} onClick={() => onGroupBy(value)}>{name}</button>
+          ))}
+        </div>
+      ) : null}
     </div>
     <div className={classes.chartMeta}>
       <span className={classes.currentKey}>Selected period</span>

@@ -1,6 +1,6 @@
-import { expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { buildReportFixture } from '@/lib/shared/reports/fixtures';
-import { updateReportParams } from './reportNavigation';
+import { getActiveFilterCount, updateReportParams } from './reportNavigation';
 
 it('retains the server-resolved account when a range changes from the default URL', () => {
   const query = { ...buildReportFixture().query, adAccountIds: ['selected-account'], campaignIds: [], adsetIds: [], adIds: [] };
@@ -22,4 +22,16 @@ it('allows explicit filter clearing and account switching after resolving the ol
     ['platform_integration_id', 'ad_account_id', 'campaign_id', 'adset_id', 'ad_id'].forEach(key => p.delete(key));
   });
   expect(cleared.get('scope')).toBe('business');
+});
+
+describe('getActiveFilterCount', () => {
+  const payload = (q: Partial<{ platformIntegrationId: string; adAccountIds: string[]; campaignIds: string[]; adsetIds: string[]; adIds: string[] }>) =>
+    ({ query: { platformIntegrationId: 'p', adAccountIds: ['a'], campaignIds: [], adsetIds: [], adIds: [], ...q } }) as unknown as Parameters<typeof getActiveFilterCount>[0];
+  it('does not count the default platform and single account scope', () => {
+    expect(getActiveFilterCount(payload({}))).toBe(0);
+  });
+  it('counts filters the person added', () => {
+    expect(getActiveFilterCount(payload({ campaignIds: ['c'] }))).toBe(1);
+    expect(getActiveFilterCount(payload({ adAccountIds: ['a', 'b'], adIds: ['x'] }))).toBe(2);
+  });
 });

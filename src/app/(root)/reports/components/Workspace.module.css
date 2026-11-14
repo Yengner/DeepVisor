@@ -137,7 +137,7 @@
 .highlightLink:hover { text-decoration: underline; }
 .highlightMeta { margin: -8px 0 0; font-size: 12px; color: var(--dv-text-muted); }
 .highlightEmpty { margin: 0; font-size: 13px; color: var(--dv-text-muted); }
-.statement { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; line-height: 1.25; }
+.statement { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; }
 .statement small { display: block; margin-top: 4px; font-size: 13px; font-weight: 500; color: var(--dv-text-muted); letter-spacing: 0; }
 
 .rankList { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; counter-reset: rank; }
@@ -183,3 +183,11 @@
   .highlights { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .workspace * { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+
+/* Overview cards share one rhythm: title, grey context line, then the content. */
+.highlight > .highlightEmpty { margin-top: -4px; }
+.soleSource { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; margin: 0; font-size: 15px; }
+.soleSource strong { font-weight: 700; }
+.soleLead { min-width: 0; }
+.soleValue { font-size: 13px; color: var(--dv-text-muted); font-variant-numeric: tabular-nums; }
+.reloadNote { margin-left: 6px; font-weight: 500; opacity: .7; }

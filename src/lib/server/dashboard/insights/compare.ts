@@ -15,7 +15,8 @@ import type { Delta } from '../../campaigns/exploration/types';
  *   breakdown, plus "yesterday by this hour" for like-for-like KPI context.
  * Missing data stays null; it is never treated as zero.
  */
-export type ChartMetric = 'spend' | 'results' | 'costPerResult' | 'ctr';
+/** KPI numbers plus the extra chartable volume/cost metrics behind the chart's "More" menu. */
+export type ChartMetric = 'spend' | 'results' | 'costPerResult' | 'ctr' | 'impressions' | 'clicks' | 'cpm';
 type Values = Record<ChartMetric, number | null>;
 export type HourPoint = { hour: number; today: Values; yesterday: Values };
 export type PeriodContext = {
@@ -30,8 +31,8 @@ export type PeriodContext = {
   hourly: HourPoint[] | null;
 };
 
-const pick = (m: Metrics): Values => ({ spend: m.spend, results: m.results, costPerResult: m.costPerResult, ctr: m.ctr });
-const empty: Values = { spend: null, results: null, costPerResult: null, ctr: null };
+const pick = (m: Metrics): Values => ({ spend: m.spend, results: m.results, costPerResult: m.costPerResult, ctr: m.ctr, impressions: m.impressions, clicks: m.clicks, cpm: m.cpm });
+const empty: Values = { spend: null, results: null, costPerResult: null, ctr: null, impressions: null, clicks: null, cpm: null };
 
 /** Parse Meta's "HH:00:00 - HH:59:59" hourly bucket label. */
 export function bucketHour(label: string): number | null {
@@ -75,7 +76,7 @@ export function hourlyToday(hourly: Insight[] | null, platform: Publisher, today
   // Cumulative totals; ratios are recomputed from the cumulative aggregates.
   const cumulative = (rows: Insight[], hour: number): Values => {
     const subset = through(rows, hour);
-    return subset.length ? pick(aggregate(subset, currency)) : { ...empty, spend: 0, results: rows.length && rows.every(r => r.leads !== null) ? 0 : null };
+    return subset.length ? pick(aggregate(subset, currency)) : { ...empty, spend: 0, impressions: 0, clicks: 0, results: rows.length && rows.every(r => r.leads !== null) ? 0 : null };
   };
   const points: HourPoint[] = Array.from({ length: 24 }, (_, hour) => ({
     hour,
@@ -106,7 +107,7 @@ export function periodContext(input: {
  */
 export function sameHourComparison(
   period: Period,
-  metrics: Values,
+  metrics: Pick<Values, 'spend' | 'results' | 'costPerResult' | 'ctr'>,
   context: PeriodContext,
   fallback: { deltas: Partial<Record<ChartMetric, Delta>>; comparison: string | null },
 ): { deltas: Partial<Record<ChartMetric, Delta>>; comparison: string | null } {

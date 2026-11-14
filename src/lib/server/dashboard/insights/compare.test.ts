@@ -71,7 +71,7 @@ describe('periodContext', () => {
 describe('sameHourComparison', () => {
   type V = { spend: number | null; results: number | null; costPerResult: number | null; ctr: number | null };
   const none: V = { spend: null, results: null, costPerResult: null, ctr: null };
-  const ctx = (reference: V | null) => ({ previousPoints: null, hourly: reference ? [] : null, reference, referenceLabel: reference ? 'Yesterday by now' : null });
+  const ctx = (reference: V | null) => ({ previousPoints: null, hourly: reference ? [] : null, reference: reference ? { impressions: null, clicks: null, cpm: null, ...reference } : null, referenceLabel: reference ? 'Yesterday by now' : null });
   const fallback = { deltas: { results: { value: -6.7, unit: '%' as const, tone: 'negative' as const } }, comparison: 'Live today vs daily average' };
   it('measures the badge against the printed yesterday-by-now figure', () => {
     const out = sameHourComparison('today', { spend: 19.53, results: 2, costPerResult: 9.77, ctr: 3.84 }, ctx({ spend: 17.34, results: 0, costPerResult: null, ctr: 3.9 }), fallback);

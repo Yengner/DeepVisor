@@ -11,10 +11,14 @@ import { segmentLabel } from './labels';
  */
 
 export interface SegmentShare { label: string; value: number; share: number }
-export interface SnapshotHighlight { dimension: string; window: string; total: number; segments: SegmentShare[] }
+/** `periodBased`: measured over the selected dates (saved daily data); otherwise an all-time snapshot. */
+export interface SnapshotHighlight { dimension: string; window: string; periodBased: boolean; total: number; segments: SegmentShare[] }
 
-/** Minimum observed dates in a slot before it can be called the busiest hour. */
-export const MIN_HOUR_OBSERVATIONS = 2;
+/**
+ * Minimum observed dates in a slot before it can be called the busiest (or cheapest) hour.
+ * Two Fridays are an anecdote, not a pattern; four is the smallest sample worth naming.
+ */
+export const MIN_HOUR_OBSERVATIONS = 4;
 
 /** Spend shares within one snapshot dimension and measurement window (the first, as the section defaults). */
 export function snapshotShares(payload: ReportPayload, dimension: string, limit = 3): SnapshotHighlight | null {
@@ -28,6 +32,7 @@ export function snapshotShares(payload: ReportPayload, dimension: string, limit 
   return {
     dimension,
     window,
+    periodBased: payload.surface.coverage?.[dimension]?.basis === 'period',
     total,
     segments: measured.slice(0, limit).map(item => ({ label: segmentLabel(dimension, item.label), value: item.value, share: item.value / total })),
   };

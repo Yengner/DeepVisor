@@ -133,6 +133,7 @@ type AdAccountRow = Pick<
   Database['public']['Tables']['ad_accounts']['Row'],
   'id' | 'business_id' | 'platform_id' | 'external_account_id' | 'name' | 'status' | 'currency_code' | 'timezone'
 > & {
+  last_synced?: string | null;
   platform_integration_id?: string;
   platform_label?: string;
 };
@@ -581,7 +582,7 @@ async function getAdAccounts(
 
   let query = supabase
     .from('ad_accounts')
-    .select('id, business_id, platform_id, external_account_id, name, status, currency_code, timezone')
+    .select('id, business_id, platform_id, external_account_id, name, status, currency_code, timezone, last_synced')
     .eq('business_id', input.businessId)
     .order('name', { ascending: true });
 
@@ -2669,6 +2670,8 @@ async function buildSurfaceContext(
   return loadReportSurfaces(supabase, {
     ...resolveSurfaceEntityIds({ query: input.query, context: input.context, adAccountIds }),
     isMeta: adAccountIds.length > 0,
+    // Saved daily breakdowns are account-wide, so they only apply to an unfiltered single account.
+    periodAccountId: adAccountIds.length === 1 && !input.query.campaignIds.length && !input.query.adsetIds.length && !input.query.adIds.length ? adAccountIds[0] : null,
     dateFrom: input.query.dateFrom,
     dateTo: input.query.dateTo,
     timezone: resolveReportDates(input.query, input.adAccounts.map(row => row.timezone)).timezone,
@@ -2852,6 +2855,8 @@ export async function buildReportPayload(
       timezone: dateContext.timezone,
       today: dateContext.today,
       partialDay: dateContext.partialDay,
+      // Most recent successful Meta sync across the reported accounts (shown on the reload control).
+      lastSyncedAt: adAccounts.map(row => row.last_synced).filter((at): at is string => Boolean(at)).sort().at(-1) ?? null,
       comparisonDisabledReason,
       warnings,
       coverage: useSummaryMode ? { state: 'unknown', basis: 'period', dateFrom: null, dateTo: null } : coverage,
