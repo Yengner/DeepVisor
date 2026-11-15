@@ -1,0 +1,130 @@
+.checklist {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 72px;
+  color: var(--ui-text, var(--dv-ink));
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.header p {
+  margin: 4px 0 0;
+  color: var(--ui-muted, #5e6977);
+}
+
+.items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--ui-line, #c6ccd3);
+  border-radius: var(--ui-radius, 8px);
+  background: var(--ui-panel, #ffffff);
+  box-shadow: var(--ui-shadow, none);
+}
+
+.item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-top: 1px solid var(--ui-line, #c6ccd3);
+}
+
+.item:first-child {
+  border-top: 0;
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--ui-muted, #5e6977);
+}
+
+.item[data-state='done'] .icon {
+  color: var(--ui-accent, var(--dv-primary-strong));
+}
+
+.text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.text strong {
+  font-size: 15px;
+}
+
+.text span {
+  color: var(--ui-muted, #5e6977);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.item[data-state='later'] .text strong {
+  color: var(--ui-muted, #5e6977);
+}
+
+.action {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  color: var(--ui-accent, var(--dv-primary-strong));
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.action:focus-visible {
+  outline: 3px solid var(--ui-focus, #638ed1);
+  outline-offset: 3px;
+}
+
+.status {
+  color: var(--ui-muted, #5e6977);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .checklist {
+    padding: 24px 16px 48px;
+  }
+
+  .header h1 {
+    font-size: 22px;
+  }
+
+  .item {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 14px;
+  }
+
+  .action,
+  .status {
+    grid-column: 2;
+    min-height: 36px;
+  }
+}

@@ -18,7 +18,7 @@ import {
   MONTHLY_AD_BUDGET_OPTIONS,
   RECOMMENDATION_STYLE_OPTIONS,
   SAFETY_PREFERENCE_OPTIONS,
-  SALON_INDUSTRY_OPTIONS,
+  BUSINESS_CATEGORY_OPTIONS,
   SALON_MOST_VALUABLE_SERVICE_OPTIONS,
   SALON_SERVICE_OPTIONS,
   TARGET_COST_PER_LEAD_OPTIONS,
@@ -27,6 +27,15 @@ import {
   optionValues,
   type OnboardingOption,
 } from '@/lib/shared/onboarding/businessProfileOptions';
+import {
+  formatBusinessLocation,
+  isLocationMode,
+  isPlaceholderBusinessName,
+  missingOnboardingEssentials,
+  normalizeBusinessName,
+  type LocationMode,
+} from '@/lib/shared/onboarding/requirements';
+import { recordFieldSources } from '@/lib/shared/onboarding/fieldSources';
 
 type OrganizationType = Database['public']['Enums']['organization_type'];
 
@@ -74,21 +83,6 @@ function cleanUndefined<T extends Record<string, unknown>>(obj: T): Partial<T> {
     if (v !== undefined) (out as Record<string, unknown>)[k] = v;
   }
   return out;
-}
-
-const BUSINESS_NAME_PLACEHOLDERS = new Set([
-  'my business',
-  'business setup',
-  'new business',
-  'untitled business',
-]);
-
-function normalizeBusinessName(value: string | null | undefined): string {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function isPlaceholderBusinessName(value: string | null | undefined): boolean {
-  return BUSINESS_NAME_PLACEHOLDERS.has(normalizeBusinessName(value).toLowerCase());
 }
 
 function businessNameForOnboardingInput(value: string | null | undefined): string {
@@ -154,6 +148,98 @@ function validateAllowedArray(
   return normalized.every((item) => allowed.has(item)) ? null : `${fieldLabel} includes an invalid option`;
 }
 
+const LOCATION_PART_LIMITS = {
+  street: 200,
+  city: 120,
+  region: 120,
+  postalCode: 20,
+} as const;
+
+type StructuredLocation = {
+  mode: LocationMode;
+  street: string | null;
+  city: string;
+  region: string;
+  postalCode: string | null;
+  country: string;
+};
+
+type StructuredLocationInput = {
+  locationMode?: string | null;
+  locationStreet?: string | null;
+  locationCity?: string | null;
+  locationRegion?: string | null;
+  locationPostalCode?: string | null;
+  locationCountry?: string | null;
+};
+
+/** Returns null when no structured location was sent, or the validated parts, or an error. */
+function parseStructuredLocation(
+  input: StructuredLocationInput
+): StructuredLocation | { error: string } | null {
+  const sent = [
+    input.locationMode, input.locationStreet, input.locationCity,
+    input.locationRegion, input.locationPostalCode, input.locationCountry,
+  ].some((value) => value !== undefined);
+  if (!sent) return null;
+
+  if (!isLocationMode(input.locationMode)) {
+    return { error: 'Choose whether customers come to you or you travel to them.' };
+  }
+  const street = cleanString(input.locationStreet);
+  const city = cleanString(input.locationCity);
+  const region = cleanString(input.locationRegion);
+  const postalCode = cleanString(input.locationPostalCode);
+  const country = cleanString(input.locationCountry)?.toUpperCase() ?? null;
+
+  if (!city) return { error: 'Please enter your city.' };
+  if (!region) return { error: 'Please enter your state or region.' };
+  if (!country || !/^[A-Z]{2}$/.test(country)) return { error: 'Please choose your country.' };
+  if (
+    (street?.length ?? 0) > LOCATION_PART_LIMITS.street ||
+    city.length > LOCATION_PART_LIMITS.city ||
+    region.length > LOCATION_PART_LIMITS.region ||
+    (postalCode?.length ?? 0) > LOCATION_PART_LIMITS.postalCode
+  ) {
+    return { error: 'One of the location fields is too long.' };
+  }
+
+  return { mode: input.locationMode, street, city, region, postalCode, country };
+}
+
+/**
+ * Structured parts also rewrite `business_location`, which existing readers use.
+ * A free-text location alone (e.g. from Settings) clears the structured parts so
+ * the two never disagree.
+ */
+function locationUpdate(
+  businessLocation: string | null | undefined,
+  structured: StructuredLocation | { error: string } | null
+) {
+  if (structured && !('error' in structured)) {
+    return {
+      location_mode: structured.mode,
+      location_street: structured.street,
+      location_city: structured.city,
+      location_region: structured.region,
+      location_postal_code: structured.postalCode,
+      location_country: structured.country,
+      business_location: formatBusinessLocation(structured),
+    };
+  }
+  if (businessLocation !== undefined) {
+    return {
+      location_mode: null,
+      location_street: null,
+      location_city: null,
+      location_region: null,
+      location_postal_code: null,
+      location_country: null,
+    };
+  }
+  return {};
+}
+
 export type OnboardingInitial = {
   step: number;
   completed: boolean;
@@ -169,6 +255,12 @@ export type OnboardingInitial = {
     website: string | null;
     bookingLink: string | null;
     businessLocation: string | null;
+    locationMode: LocationMode | null;
+    locationStreet: string | null;
+    locationCity: string | null;
+    locationRegion: string | null;
+    locationPostalCode: string | null;
+    locationCountry: string | null;
     customerRadius: string | null;
     description: string | null;
     promotedServices: string[];
@@ -208,6 +300,12 @@ export async function getOnboardingInitial(): Promise<ApiResponse<OnboardingInit
           website,
           booking_link,
           business_location,
+          location_mode,
+          location_street,
+          location_city,
+          location_region,
+          location_postal_code,
+          location_country,
           customer_radius,
           description,
           promoted_services,
@@ -262,11 +360,17 @@ export async function getOnboardingInitial(): Promise<ApiResponse<OnboardingInit
     connectedPlatformKeys,
     businessData: {
       businessName: businessNameForOnboardingInput(bp.business_name),
-      industry: allowedOrNull(bp.industry, SALON_INDUSTRY_OPTIONS),
+      industry: allowedOrNull(bp.industry, BUSINESS_CATEGORY_OPTIONS),
       monthlyBudget: allowedOrNull(bp.monthly_budget, MONTHLY_AD_BUDGET_OPTIONS),
       website: cleanString(bp.website),
       bookingLink: cleanString(bp.booking_link),
       businessLocation: cleanString(bp.business_location),
+      locationMode: isLocationMode(bp.location_mode) ? bp.location_mode : null,
+      locationStreet: cleanString(bp.location_street),
+      locationCity: cleanString(bp.location_city),
+      locationRegion: cleanString(bp.location_region),
+      locationPostalCode: cleanString(bp.location_postal_code),
+      locationCountry: cleanString(bp.location_country),
       customerRadius: allowedOrNull(bp.customer_radius, CUSTOMER_RADIUS_OPTIONS),
       description: bp.description ?? null,
       promotedServices: allowedArrayOrEmpty(bp.promoted_services, SALON_SERVICE_OPTIONS),
@@ -297,6 +401,13 @@ export async function updateBusinessProfileData(input: {
   website?: string | null;
   bookingLink?: string | null;
   businessLocation?: string | null;
+  /** Structured location; when any part is sent, mode, city, region and country are required. */
+  locationMode?: string | null;
+  locationStreet?: string | null;
+  locationCity?: string | null;
+  locationRegion?: string | null;
+  locationPostalCode?: string | null;
+  locationCountry?: string | null;
   customerRadius?: string | null;
   description?: string | null;
   promotedServices?: string[] | string;
@@ -367,7 +478,7 @@ export async function updateBusinessProfileData(input: {
     }
 
     const validationError =
-      validateAllowedString('Industry', input.industry, SALON_INDUSTRY_OPTIONS, input.industry !== undefined) ??
+      validateAllowedString('Business category', input.industry, BUSINESS_CATEGORY_OPTIONS, input.industry !== undefined) ??
       validateAllowedString('Monthly ad budget', input.monthlyBudget, MONTHLY_AD_BUDGET_OPTIONS) ??
       validateAllowedString('Customer radius', input.customerRadius, CUSTOMER_RADIUS_OPTIONS) ??
       validateAllowedArray('Main services', input.promotedServices, SALON_SERVICE_OPTIONS, input.promotedServices !== undefined) ??
@@ -398,6 +509,13 @@ export async function updateBusinessProfileData(input: {
       });
     }
 
+    const structuredLocation = parseStructuredLocation(input);
+    if (structuredLocation && 'error' in structuredLocation) {
+      return fail(structuredLocation.error, ErrorCode.VALIDATION_ERROR, {
+        userMessage: structuredLocation.error,
+      });
+    }
+
     if (input.description !== undefined && input.description !== null && !cleanString(input.description)) {
       return fail('Business description is required', ErrorCode.VALIDATION_ERROR, {
         userMessage: 'Please describe what you sell and who you are trying to reach.',
@@ -412,6 +530,7 @@ export async function updateBusinessProfileData(input: {
       website: cleanStringForUpdate(input.website),
       booking_link: cleanStringForUpdate(input.bookingLink),
       business_location: cleanStringForUpdate(input.businessLocation),
+      ...locationUpdate(input.businessLocation, structuredLocation),
       customer_radius:
         input.customerRadius === undefined ? undefined : cleanString(input.customerRadius),
       description: cleanStringForUpdate(input.description),
@@ -429,12 +548,26 @@ export async function updateBusinessProfileData(input: {
       safety_preference: cleanStringForUpdate(input.safetyPreference),
       ad_goals: coerceStringArray(input.adGoals),
       preferred_platforms: coerceStringArray(input.preferredPlatforms),
-      updated_at: new Date().toISOString(),
     });
 
+    const { data: currentSources, error: sourcesError } = await supabase
+      .from('business_profiles')
+      .select('field_sources')
+      .eq('id', businessId)
+      .single();
+    if (sourcesError) {
+      return fail(getErrorMessage(sourcesError), ErrorCode.DATABASE_ERROR);
+    }
+
+    const now = new Date();
+    const writtenColumns = Object.keys(updateData);
     const { data: savedBusiness, error } = await supabase
       .from('business_profiles')
-      .update(updateData)
+      .update({
+        ...updateData,
+        field_sources: recordFieldSources(currentSources?.field_sources, writtenColumns, 'user', now),
+        updated_at: now.toISOString(),
+      })
       .eq('id', businessId)
       .select('id')
       .maybeSingle();
@@ -492,23 +625,24 @@ export async function updateOnboardingProgress(input: {
       return fail('Invalid onboarding progress', ErrorCode.VALIDATION_ERROR);
     }
     const { businessId } = contextRes.data;
+    let firstCompletion = false;
     if (input.step > 0) {
       const { data: profile, error: profileError } = await supabase.from('business_profiles')
-        .select('business_name,industry,business_location,customer_radius,preferred_contact_method')
+        .select('business_name,industry,business_location,location_city,location_region,location_country,preferred_contact_method,onboarding_completed_at')
         .eq('id', businessId).single();
       if (profileError) return fail(getErrorMessage(profileError), ErrorCode.DATABASE_ERROR);
-      if (!profile || !normalizeBusinessName(profile.business_name) || isPlaceholderBusinessName(profile.business_name) ||
-          !isAllowedOption(profile.industry ?? '', SALON_INDUSTRY_OPTIONS) ||
-          !cleanString(profile.business_location) || !isAllowedOption(profile.customer_radius ?? '', CUSTOMER_RADIUS_OPTIONS) ||
-          !isAllowedOption(profile.preferred_contact_method ?? '', CONTACT_METHOD_OPTIONS)) {
+      if (!profile || missingOnboardingEssentials(profile).length > 0) {
         return fail('Complete the required business essentials before continuing', ErrorCode.VALIDATION_ERROR);
       }
+      firstCompletion = input.completed === true && !profile.onboarding_completed_at;
     }
 
+    const now = new Date().toISOString();
     const updateData = cleanUndefined({
       onboarding_step: input.step,
       onboarding_completed: input.completed,
-      updated_at: new Date().toISOString(),
+      onboarding_completed_at: firstCompletion ? now : undefined,
+      updated_at: now,
     });
 
     const { error } = await supabase

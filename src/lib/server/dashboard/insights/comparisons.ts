@@ -48,6 +48,6 @@ export function comparisons(rows: Insight[], platform: Publisher, period: Period
     const change = delta(key, current[key], previousValue);
     if (change) deltas[key] = change;
   }
-  if (period === 'today') return { deltas, comparison: `Preliminary · Today (${today}) in ${options.timezone} vs the average daily performance of seven completed calendar days, ${previous.since}–${previous.until}, excluding today. Today's reporting is incomplete. Spend and Results use daily averages; cost per result and CTR use baseline aggregate ratios. CTR change is in percentage points.` };
-  return { deltas, comparison: `${range.since}–${today} vs ${previous.since}–${previous.until} (${days} days each). Includes partial today; the previous period contains completed days. CTR change is in percentage points. Unknown metrics and zero percentage baselines are omitted. Spend direction is neutral.` };
+  if (period === 'today') return { deltas, comparison: `Live today vs daily average of ${previous.since}–${previous.until}. CTR change in percentage points.` };
+  return { deltas, comparison: `${range.since}–${today} vs ${previous.since}–${previous.until} (${days} days each, including live today). CTR change in percentage points.` };
 }

@@ -11,5 +11,5 @@ export function ActionLink({ href, children, secondary = false }: { href: string
 }
 /** Callers supply truthful copy/state; this component never simulates agent work. */
 export function AgentMessage({ title, children, state = 'idle' }: { title: string; children: ReactNode; state?: CompanionState }) {
-  return <div className={classes.agent}><PixelCompanion size={40} state={state} /><div><strong>{title}</strong><p>{children}</p></div></div>;
+  return <div className={classes.agent}><PixelCompanion size={32} state={state} /><div><strong>{title}</strong><p>{children}</p></div></div>;
 }

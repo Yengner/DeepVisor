@@ -27,6 +27,37 @@ export type ControlPerformance = {
   partial: boolean;
 };
 
+/**
+ * Chart days without delivery (no rows, or zero spend and zero impressions) are gaps, not
+ * zero-result days. Days with delivery keep their recorded values, including 0 results.
+ */
+export function chartPoint<T extends Metrics>(metrics: T): T {
+  const idle = metrics.spend === 0 && (metrics.impressions ?? 0) === 0;
+  if (!idle) return metrics;
+  const gap = { ...metrics };
+  for (const key of Object.keys(gap) as Array<keyof Metrics>) {
+    if (typeof gap[key] === "number") (gap as Metrics)[key] = null;
+  }
+  return gap;
+}
+
+/**
+ * Cost per result on the chart is a running ratio: spend ÷ results from the window start
+ * through each day, so zero-result days with delivery stay on the line. Days with no
+ * delivery remain gaps, and days with unknown spend or results are left out of the totals.
+ */
+export function runningCostPerResult<T extends Pick<Metrics, "spend" | "results" | "costPerResult">>(points: T[]): T[] {
+  let spend = 0,
+    results = 0;
+  return points.map((point) => {
+    if (point.spend === null || point.results === null)
+      return { ...point, costPerResult: null };
+    spend += point.spend;
+    results += point.results;
+    return { ...point, costPerResult: results > 0 ? spend / results : null };
+  });
+}
+
 export function controlPerformance(
   rows: DailyRow[],
   entities: Entity[],
@@ -60,7 +91,7 @@ export function controlPerformance(
     // Plot recorded totals just like the KPIs; absent entities do not erase valid rows.
     // Complete coverage is still required for comparisons below.
     points.push({
-      ...aggregate(window(day, day), validCurrency),
+      ...chartPoint(aggregate(window(day, day), validCurrency)),
       day,
       current: day === today,
     });
@@ -84,7 +115,7 @@ export function controlPerformance(
   }
   return {
     metrics: aggregate(window(range.since, range.until), validCurrency),
-    points,
+    points: runningCostPerResult(points),
     deltas,
     comparison,
     currency: validCurrency,

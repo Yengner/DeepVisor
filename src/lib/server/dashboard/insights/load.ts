@@ -5,6 +5,7 @@ import { createAdminClient } from '../../supabase/admin';
 import { getBusinessIntegrationById, resolveIntegrationAccessToken } from '../../integrations/service';
 import { fetchMetaCollection } from '../../sync/meta/client';
 import { normalize, learningLabel, type Insight, type MetaRow } from './model';
+import { learningSnapshot, type LearningSnapshot } from './signals';
 import { readInsightActions } from '../../sync/resources/insightModel';
 import { shiftDay } from '../overview/model';
 import type { OverviewContext } from '../overview/load';
@@ -12,7 +13,7 @@ import { resourceRefreshEnabled } from '../../sync/resources/coordinator';
 import { readSavedInsights } from '../../sync/resources/insights';
 
 type Scope = { business: string; account: string; integration: string; external: string; currency: string; zone: string; today: string };
-export type Insights = { daily: Insight[] | null; audience: Insight[] | null; hourly: Insight[] | null; learning: Record<string, string>; fetchedAt: string; canonicalFetchedAt?: string; audienceFetchedAt?: string; hourlyFetchedAt?: string; source: 'api' | 'stored' | 'unavailable' };
+export type Insights = { daily: Insight[] | null; audience: Insight[] | null; hourly: Insight[] | null; learning: Record<string, string>; learningDetail?: Record<string, LearningSnapshot>; fetchedAt: string; canonicalFetchedAt?: string; audienceFetchedAt?: string; hourlyFetchedAt?: string; source: 'api' | 'stored' | 'unavailable' };
 const running = new Map<string, Promise<Insights>>();
 async function fetchInsights(scope: Scope): Promise<Insights> {
   const key = JSON.stringify(scope);
@@ -27,10 +28,10 @@ async function fetchInsights(scope: Scope): Promise<Insights> {
     if (!token) throw new Error('INSIGHTS_UNAVAILABLE');
     const read = async (breakdowns: string, level: string, hourly = false) => {
       try {
-        const rows = await readInsightActions(includeActions => fetchMetaCollection<MetaRow>({ path: `act_${scope.external.replace(/^act_/, '')}/insights`, accessToken: token,
+        const { rows, actionsRequested } = await readInsightActions(includeActions => fetchMetaCollection<MetaRow>({ path: `act_${scope.external.replace(/^act_/, '')}/insights`, accessToken: token,
           params: { fields: `date_start,${level === 'adset' ? 'adset_id,' : ''}spend,impressions,clicks${includeActions ? ',actions' : ''}`, level, time_increment: 1,
             time_range: JSON.stringify({ since: shiftDay(scope.today, breakdowns === 'publisher_platform' && level === 'adset' ? -59 : -29), until: scope.today }), breakdowns, limit: 500 } }), hourly);
-        return normalize(breakdowns.includes('publisher_platform') ? rows : rows.map(r => ({ ...r, publisher_platform: 'combined-only' })), scope.currency, hourly);
+        return normalize(breakdowns.includes('publisher_platform') ? rows : rows.map(r => ({ ...r, publisher_platform: 'combined-only' })), scope.currency, hourly, actionsRequested);
       } catch { return null; }
     };
     // Separate compatible datasets: never add demographic/hourly rows to daily totals.
@@ -39,11 +40,13 @@ async function fetchInsights(scope: Scope): Promise<Insights> {
     const audience = await read('publisher_platform,age,gender', 'account') ?? await read('age,gender', 'account');
     const hourly = await read('publisher_platform,hourly_stats_aggregated_by_advertiser_time_zone', 'account', true) ?? await read('hourly_stats_aggregated_by_advertiser_time_zone', 'account', true);
     let learning: Record<string, string> = {};
+    let learningDetail: Record<string, LearningSnapshot> = {};
     try {
       const rows = await fetchMetaCollection<{ id: string; learning_stage_info?: unknown }>({ path: `act_${scope.external.replace(/^act_/, '')}/adsets`, accessToken: token, params: { fields: 'id,learning_stage_info', limit: 100 } });
       learning = Object.fromEntries(rows.map(r => [r.id, learningLabel(r.learning_stage_info)]));
+      learningDetail = Object.fromEntries(rows.map(r => [r.id, learningSnapshot(r.learning_stage_info)]));
     } catch { /* Native state remains unavailable, never inferred from elapsed time. */ }
-    return { daily, audience, hourly, learning, fetchedAt: daily !== null || audience !== null || hourly !== null ? fetchedAt : '', source: daily === null ? 'unavailable' : 'api' } as Insights;
+    return { daily, audience, hourly, learning, learningDetail, fetchedAt: daily !== null || audience !== null || hourly !== null ? fetchedAt : '', source: daily === null ? 'unavailable' : 'api' } as Insights;
   })();
   running.set(key, work);
   try { return await work; } finally { running.delete(key); }

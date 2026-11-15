@@ -45,7 +45,7 @@ it('uses daily averages for additive metrics and aggregate ratios for efficiency
  expect(result.deltas.results).toMatchObject({value:300,tone:'positive'});
  expect(result.deltas.costPerResult).toMatchObject({value:-50,tone:'positive'});
  expect(result.deltas.ctr).toMatchObject({value:5,unit:'pp'});
- expect(result.comparison).toContain('Preliminary');expect(result.comparison).toContain('2026-10-28–2026-11-03');
+ expect(result.comparison).toContain('Live today');expect(result.comparison).toContain('2026-10-28–2026-11-03');
 });
 it('requires seven baseline dates and current-day observations',()=>{
  expect(evening('2026-11-05T01:00:00Z',rows.filter((_,i)=>i!==3)).deltas).toEqual({});

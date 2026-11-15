@@ -6,6 +6,7 @@ import { advertisingGroups } from './advertising';
 import { buildTimeAnalysis, WEEKDAYS } from './timeAnalysis';
 import { findingEvidence } from './findings';
 import { coverageLabel } from './coverage';
+import { comparisonBaseTotals } from './comparison';
 export const EXPORT_METRICS = [
   ['spend', 'Spend'], ['conversion', 'Results'], ['costPerResult', 'Cost per result'], ['impressions', 'Impressions'],
   ['clicks', 'Clicks'], ['linkClicks', 'Link clicks'], ['ctr', 'CTR'], ['cpc', 'CPC'], ['cpm', 'CPM'],
@@ -48,8 +49,8 @@ export function buildReportExportRecords(payload: ReportPayload): ReportExportRe
         from, to, values: totalsValues(point, currency) });
     }
     records.push({ ...base, kind: 'change', context: 'Previous-period comparison', label: 'Change from previous period', currency: null,
-      note: 'CTR and result rate changes are percentage points (pp); other changes are percent (%). Zero-baseline changes are unavailable.',
-      values: Object.fromEntries(EXPORT_METRICS.map(([key]) => [key, moneyMetrics.has(key) && (!currency || currency === 'MIXED') ? null : reportMetricDelta(payload.summary, payload.comparison.previousTotals, key)])) });
+      note: (payload.comparison.basis === 'matched_days' ? `Measured on the ${payload.comparison.matchedDays} days with records in both periods. ` : '') + 'CTR and result rate changes are percentage points (pp); other changes are percent (%). Zero-baseline changes are unavailable.',
+      values: Object.fromEntries(EXPORT_METRICS.map(([key]) => [key, moneyMetrics.has(key) && (!currency || currency === 'MIXED') ? null : reportMetricDelta(comparisonBaseTotals(payload), payload.comparison.previousTotals, key)])) });
   }
   for (const group of advertisingGroups(payload)) for (const row of group.rows) records.push({ ...base, kind: 'advertising', context: `${group.context}: ${group.label}`,
     id: row.id, label: row.name, level: row.level, status: row.status ?? 'Unknown', from: row.startDate, to: row.endDate,

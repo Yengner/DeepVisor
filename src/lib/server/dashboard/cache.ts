@@ -14,6 +14,7 @@ import { toSupportedVendor } from '@/lib/server/repositories/platforms/normalize
 import type { AdAccountData, PlatformDetails } from '@/lib/server/data/types';
 import type { Database } from '@/lib/shared/types/supabase';
 import type { SyncCoverage } from '@/lib/shared/types/integrations';
+import { isPlaceholderBusinessName } from '@/lib/shared/onboarding/requirements';
 
 type PlatformJoin = {
   id: string;
@@ -114,16 +115,6 @@ function toDashboardAdAccountShell(input: {
 
 function firstPlatform(value: PlatformJoin | PlatformJoin[]): PlatformJoin {
   return Array.isArray(value) ? value[0] ?? null : value;
-}
-
-function isPlaceholderBusinessName(value: string | null | undefined): boolean {
-  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return (
-    normalized === 'my business' ||
-    normalized === 'business setup' ||
-    normalized === 'new business' ||
-    normalized === 'untitled business'
-  );
 }
 
 export function getCachedBusinessName(

@@ -5,6 +5,6 @@ const states: Record<CompanionState, SpiderMascotState> = {
   idle: 'idle', thinking: 'thinking', analyzing: 'scanning', planning: 'thinking', completed: 'success', attention: 'attention',
 };
 /** Compatibility for existing placements. Use SpiderMascot in new UI. */
-export default function PixelCompanion({ state = 'idle', size = 28, ...props }: Omit<SpiderMascotProps, 'state'> & { state?: CompanionState }) {
+export default function PixelCompanion({ state = 'idle', size = 32, ...props }: Omit<SpiderMascotProps, 'state'> & { state?: CompanionState }) {
   return <SpiderMascot {...props} size={size} state={states[state]} />;
 }

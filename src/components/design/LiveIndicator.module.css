@@ -1,0 +1,43 @@
+.live {
+  margin-right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ui-positive, #1d8a52);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+}
+.dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 999px;
+  /* Explicit token so parent text styles (e.g. muted heading spans) never grey the dot. */
+  background: var(--ui-positive, #1d8a52);
+}
+.dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--ui-positive, #1d8a52);
+  animation: livePulse 2s ease-out infinite;
+}
+@keyframes livePulse {
+  0% { transform: scale(1); opacity: 0.55; }
+  80%, 100% { transform: scale(2.6); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dot::after { animation: none; opacity: 0; }
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -1,4 +1,4 @@
-import {captureMetaLifecycle} from '@/lib/server/lifecycle/service';
+import {captureMetaEvents,captureMetaLifecycle} from '@/lib/server/lifecycle/service';
 import 'server-only';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { getBusinessIntegrationById, resolveIntegrationAccessToken } from '@/lib/server/integrations/service';
@@ -9,6 +9,7 @@ import { asRecord } from '@/lib/shared/utils/format';
 import { fetchMetaCampaignPerformanceSeeds, fetchMetaAdsetPerformanceSeeds, fetchMetaAdPerformanceSeeds, fetchMetaAdsetAudienceBreakdownSeeds } from '../meta/fetch';
 import { parallelTasks } from '../concurrency';
 import { ResourceDeferred, withResourceBudget, resourceSignal } from './budget';
+import { ensureAccountWebhooks } from '@/lib/server/webhooks/subscription';
 
 type Job = Database['public']['Tables']['account_sync_jobs']['Row'];
 type Entity = Pick<Database['public']['Tables']['ad_entities']['Row'], 'id' | 'external_id' | 'entity_level' | 'objective' | 'status' | 'campaign_id' | 'adset_id'>;
@@ -43,6 +44,16 @@ export async function processResourceJob(job: Job) {
       const byId = new Map(entities.map(entity => [`${entity.entity_level}:${entity.external_id}`, entity]));
       const metadata = asRecord(job.metadata), query = asRecord(metadata.query);
       const input = { accessToken, adAccountExternalId: account.external_account_id, dateRange: { since: job.requested_start_date, until: job.requested_end_date } };
+      // At most one check a day per account; a failure only means the account stays on polling.
+      await ensureAccountWebhooks({ businessId: job.business_id, adAccountId: job.ad_account_id, externalAccountId: account.external_account_id, accessToken }).catch(() => console.warn('Meta webhook subscription check unavailable.'));
+      if (metadata.resourceKind === 'events') {
+        // Status and issue re-read only: no performance rows are fetched, staged or replaced.
+        await captureMetaEvents(job, accessToken, account.external_account_id, query.objects);
+        resourceSignal()?.throwIfAborted();
+        const done = await db.rpc('complete_account_events', { p_job: job.id, p_generation: job.lease_generation });
+        if (done.error) throw done.error;
+        return;
+      }
       let rows: Json[];
       if (metadata.resourceKind === 'performance') {
         await captureMetaLifecycle(job,accessToken,account.external_account_id).catch(()=>console.warn('Lifecycle observation unavailable; no transition inferred.'));
@@ -84,7 +95,7 @@ export async function processResourceJob(job: Job) {
       const published = await db.rpc('publish_account_resource', { p_job: job.id, p_generation: job.lease_generation, p_chunks: chunks });
       if (published.error) throw published.error;
     });
-    return { jobId: job.id, adAccountId: job.ad_account_id, status: 'completed' as const, message: 'Requested data refreshed; Meta attribution may still change.' };
+    return { jobId: job.id, adAccountId: job.ad_account_id, status: 'completed' as const, message: asRecord(job.metadata).resourceKind === 'events' ? 'Advertising status re-read from Meta.' : 'Requested data refreshed; Meta attribution may still change.' };
   } catch (error) {
     const { reason, seconds } = failure(error);
     const failed = await db.rpc('fail_account_resource', { p_job: job.id, p_generation: job.lease_generation, p_reason: reason, p_retry_seconds: seconds });

@@ -4,77 +4,73 @@ import { BrandLockup } from '@/components/brand/Brand';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, Progress, Text, Title } from '@mantine/core';
-import { IconCheck, IconCircleCheck, IconLockCheck } from '@tabler/icons-react';
+import { IconCircleCheck, IconLockCheck } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 import BlockingTaskScreen from '@/components/ui/states/BlockingTaskScreen';
 import {
   updateOnboardingProgress,
   type OnboardingInitial,
 } from '@/lib/server/actions/business/onboarding';
-import {
-  DEFAULT_INTELLIGENCE_GOALS,
-  DEFAULT_WATCH_SIGNALS,
-} from '@/lib/shared/onboarding/businessProfileOptions';
 import BusinessProfileStep from './steps/BusinessProfileStep';
 import ConnectAccountsStep from './steps/ConnectAccountsStep';
 import type { UserData } from './types';
+import type { CountryOption } from '@/lib/shared/onboarding/countries';
 import classes from './OnboardingProvider.module.css';
 
 type OnboardingProviderProps = {
   initial: OnboardingInitial;
+  countries: CountryOption[];
 };
 
-const STEP_LABELS = ['Business essentials', 'Connect Meta'];
-const STEP_DESCRIPTIONS = ['Name, service, location, contact', 'Connect live data or skip'];
+const STEP_LABELS = ['Your business', 'Connect Meta'];
+const STEP_DESCRIPTIONS = ['Name, category, location, contact', 'Connect live ad data, or skip'];
 const TOTAL_STEPS = STEP_LABELS.length;
 
 function clampStep(step: number): number {
   return Math.min(Math.max(step, 0), TOTAL_STEPS - 1);
 }
 
-export default function OnboardingProvider({ initial }: OnboardingProviderProps) {
+export default function OnboardingProvider({ initial, countries }: OnboardingProviderProps) {
   const [active, setActive] = useState(() => clampStep(initial.step));
   const [finishing, setFinishing] = useState(false);
-  const [userData, setUserData] = useState<UserData>(() => ({
-    businessName: initial.businessData.businessName ?? '',
-    industry: initial.businessData.industry ?? '',
-    monthlyBudget: initial.businessData.monthlyBudget ?? '',
-    website: initial.businessData.website ?? '',
-    bookingLink: initial.businessData.bookingLink ?? '',
-    businessLocation: initial.businessData.businessLocation ?? '',
-    customerRadius: initial.businessData.customerRadius ?? '',
-    description: initial.businessData.description ?? '',
-    promotedServices: Array.isArray(initial.businessData.promotedServices)
-      ? initial.businessData.promotedServices
-      : [],
-    mostValuableService: initial.businessData.mostValuableService ?? '',
-    metaAdsStatus: initial.businessData.metaAdsStatus ?? '',
-    primaryGoal: initial.businessData.primaryGoal ?? DEFAULT_INTELLIGENCE_GOALS.primaryGoal,
-    leadType: initial.businessData.leadType ?? '',
-    preferredContactMethod: initial.businessData.preferredContactMethod ?? '',
-    leadQualitySignal:
-      initial.businessData.leadQualitySignal ?? DEFAULT_INTELLIGENCE_GOALS.leadQualitySignal,
-    averageCustomerValue: initial.businessData.averageCustomerValue ?? '',
-    targetCostPerLead: initial.businessData.targetCostPerLead ?? '',
-    watchSignals:
-      Array.isArray(initial.businessData.watchSignals) && initial.businessData.watchSignals.length > 0
-        ? initial.businessData.watchSignals
-        : [...DEFAULT_WATCH_SIGNALS],
-    recommendationStyle:
-      initial.businessData.recommendationStyle ?? DEFAULT_INTELLIGENCE_GOALS.recommendationStyle,
-    safetyPreference:
-      initial.businessData.safetyPreference ?? DEFAULT_INTELLIGENCE_GOALS.safetyPreference,
-    adGoals: Array.isArray(initial.businessData.adGoals) ? initial.businessData.adGoals : [],
-    preferredPlatforms: Array.isArray(initial.businessData.preferredPlatforms)
-      ? initial.businessData.preferredPlatforms
-      : [],
-    emailNotifications: true,
-    weeklyReports: true,
-    performanceAlerts: true,
-    connectedPlatforms: Array.isArray(initial.connectedPlatformKeys)
-      ? initial.connectedPlatformKeys
-      : [],
-  }));
+  const [userData, setUserData] = useState<UserData>(() => {
+    const data = initial.businessData;
+    // Only what the owner has saved; no goal or signal defaults are seeded here.
+    return {
+      businessName: data.businessName ?? '',
+      industry: data.industry ?? '',
+      monthlyBudget: data.monthlyBudget ?? '',
+      website: data.website ?? '',
+      bookingLink: data.bookingLink ?? '',
+      businessLocation: data.businessLocation ?? '',
+      locationMode: data.locationMode ?? '',
+      locationStreet: data.locationStreet ?? '',
+      locationCity: data.locationCity ?? '',
+      locationRegion: data.locationRegion ?? '',
+      locationPostalCode: data.locationPostalCode ?? '',
+      locationCountry: data.locationCountry ?? '',
+      customerRadius: data.customerRadius ?? '',
+      description: data.description ?? '',
+      promotedServices: Array.isArray(data.promotedServices) ? data.promotedServices : [],
+      mostValuableService: data.mostValuableService ?? '',
+      metaAdsStatus: data.metaAdsStatus ?? '',
+      primaryGoal: data.primaryGoal ?? '',
+      leadType: data.leadType ?? '',
+      preferredContactMethod: data.preferredContactMethod ?? '',
+      leadQualitySignal: data.leadQualitySignal ?? '',
+      averageCustomerValue: data.averageCustomerValue ?? '',
+      targetCostPerLead: data.targetCostPerLead ?? '',
+      watchSignals: Array.isArray(data.watchSignals) ? data.watchSignals : [],
+      recommendationStyle: data.recommendationStyle ?? '',
+      safetyPreference: data.safetyPreference ?? '',
+      adGoals: Array.isArray(data.adGoals) ? data.adGoals : [],
+      preferredPlatforms: Array.isArray(data.preferredPlatforms) ? data.preferredPlatforms : [],
+      emailNotifications: true,
+      weeklyReports: true,
+      performanceAlerts: true,
+      connectedPlatforms: Array.isArray(initial.connectedPlatformKeys) ? initial.connectedPlatformKeys : [],
+    };
+  });
   const router = useRouter();
 
   const persistProgress = async (step: number, completed: boolean) => {
@@ -117,14 +113,16 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
     if (saved) setActive(0);
   };
 
-  const progressValue = active === 0 ? 50 : 100;
+  // Progress counts finished steps, so nothing reads as done before it is.
+  const progressValue = finishing ? 100 : Math.round((active / TOTAL_STEPS) * 100);
 
   return (
     <div className={classes.page}>
       <BlockingTaskScreen
         opened={finishing}
         title="Opening your workspace"
-        description="We are saving setup and preparing your DeepVisor dashboard."
+        description="Saving your setup and preparing your DeepVisor dashboard."
+        mascotState="working"
       />
 
       <Container size="xl" className={classes.onboardingShell}>
@@ -137,10 +135,9 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
         </header>
 
         <div className={classes.headerStack}>
-          <span className={classes.pageKicker}>TWO-STAGE SETUP</span>
-          <Title order={1} className={classes.pageTitle}>Get to a useful dashboard quickly.</Title>
+          <Title order={1} className={classes.pageTitle}>Let’s set up your workspace.</Title>
           <Text className={classes.pageCopy}>
-            Add the business signals DeepVisor cannot safely infer, then connect Meta or continue without it.
+            A few details about your business, then connect Meta or continue without it.
           </Text>
         </div>
 
@@ -180,7 +177,6 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
                       <strong>{label}</strong>
                       <span>{STEP_DESCRIPTIONS[index]}</span>
                     </div>
-                    {isActive ? <IconCheck size={16} className={classes.activeIcon} /> : null}
                   </div>
                 );
               })}
@@ -203,6 +199,7 @@ export default function OnboardingProvider({ initial }: OnboardingProviderProps)
 
             {active === 0 ? (
               <BusinessProfileStep
+                countries={countries}
                 onNext={nextStep}
                 onPrev={prevStep}
                 userData={userData}

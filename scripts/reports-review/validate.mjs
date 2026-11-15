@@ -36,13 +36,13 @@ try {
   const page = await context.newPage();
   page.on('pageerror', error => errors.push(error.message));
   await page.route('https://fixtures.invalid/**', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#dcecb9"/><text x="40" y="120" font-size="30">Synthetic creative fixture</text></svg>' }));
-  const sections = [['Performance','performance'],['Audience','audience'],['Geography','geography'],['Placements & devices','delivery'],['Time & day','time'],['Advertising','advertising'],['Findings','findings']];
+  const sections = [['Overview','performance'],['Audience','audience'],['Geography','geography'],['Placements & devices','delivery'],['Time & day','time'],['Advertising','advertising'],['Findings','findings']];
   for (const width of [1280,1440,320,390,430]) {
     await page.setViewportSize({width,height:1000});
     await page.goto(`${origin}/?demo=1`);
     for (const [name, key] of sections) {
       await page.getByRole('navigation',{name:'Report sections'}).getByRole('button',{name,exact:true}).click();
-      await page.getByRole('heading',{name:key==='performance'?'Spend':name,exact:true}).waitFor();
+      await page.getByRole('heading',{name:key==='performance'?'Daily spend':name,exact:true}).waitFor();
       if (key==='advertising') await page.getByLabel('Entity scope').selectOption('ads');
       if (key==='findings') await page.getByText('Inspect saved evidence',{exact:true}).click();
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`${key}/${width}: overflow`);
@@ -61,8 +61,8 @@ try {
   await nav.getByRole('button',{name:'Audience',exact:true}).click();
   await page.getByLabel('Audience view').selectOption('gender');
   await page.getByRole('combobox',{name:/^Breakdown metric/}).selectOption('ctr');
-  await page.getByRole('button',{name:/female.*3.00%/}).click();
-  await page.locator('aside').filter({hasText:'female'}).getByText('Clear selection',{exact:true}).waitFor();
+  await page.getByRole('button',{name:/Female.*3.00%/}).click();
+  await page.locator('aside').filter({hasText:'Female'}).getByText('Clear selection',{exact:true}).waitFor();
   await nav.getByRole('button',{name:'Placements & devices',exact:true}).click();
   await page.getByRole('combobox',{name:/^Dimension/}).selectOption('platform_position');
   await page.getByRole('combobox',{name:/^Breakdown metric/}).selectOption('conversion');
@@ -70,16 +70,16 @@ try {
   await nav.getByRole('button',{name:'Time & day',exact:true}).click();
   const slot=page.getByRole('button',{name:'Thursday 9:00, Clicks: 10, 1 observed dates',exact:true});
   await slot.focus(); await page.keyboard.press('Enter');
-  await page.getByText('Thursday · 9:00–9:59',{exact:true}).waitFor();
+  await page.getByText('Thursday · 9 AM–10 AM',{exact:true}).waitFor();
   await page.getByLabel('Hourly metric').selectOption('ctr');
   await page.getByRole('button',{name:'Thursday 9:00, CTR: 2.00%, 1 observed dates',exact:true}).waitFor();
-  await nav.getByRole('button',{name:'Performance',exact:true}).click();
+  await nav.getByRole('button',{name:'Overview',exact:true}).click();
   await page.getByLabel('Chart metric').selectOption('cpc');
   await nav.getByRole('button',{name:'Audience',exact:true}).click();
   await page.goBack();
   assert.equal(await page.getByLabel('Chart metric').inputValue(),'cpc');
   await page.getByRole('button',{name:'Export',exact:true}).click();
-  for(const name of ['Complete report · PDF','All report data · CSV']) {
+  for(const name of ['PDF report','CSV data']) {
     const href=await page.getByRole('menuitem',{name}).getAttribute('href');
     assert.match(href,/date_from=2026-10-08/); assert.match(href,/demo=1/); assert.match(href,/ad_account_id=/);
   }
@@ -88,7 +88,7 @@ try {
   await page.getByRole('button',{name:'30D',exact:true}).click();
   assert.equal(new URL(page.url()).hash,'#geography');
   assert.equal(new URL(page.url()).searchParams.get('date_from'),'2026-09-15');
-  await page.getByText('Compare previous period',{exact:true}).click();
+  await page.getByText('Compare to previous period',{exact:true}).click();
   assert.equal(new URL(page.url()).searchParams.get('compare'),'none');
   await page.getByRole('button',{name:'Reload saved report data'}).click();
   assert.equal(await page.evaluate(()=>document.documentElement.dataset.reportReloads),'1');
@@ -97,7 +97,7 @@ try {
   for(const scenario of ['declining','sparse','mixed','empty','failed','missing-demographics','unknown-timezone']) {
     const section=scenario==='unknown-timezone'?'time':scenario==='missing-demographics'?'audience':'performance';
     await page.goto(`${origin}/?demo=1&scenario=${scenario}#${section}`);
-    await page.getByRole('heading',{name:section==='time'?'Time & day':section==='audience'?'Audience':'Spend',exact:true}).waitFor();
+    await page.getByRole('heading',{name:section==='time'?'Time & day':section==='audience'?'Audience':'Daily spend',exact:true}).waitFor();
     if(scenario==='unknown-timezone') {
       await page.getByText('A verified advertiser timezone is required.').waitFor();
       assert.equal(await page.getByText('Inspect hourly data',{exact:true}).count(),0);

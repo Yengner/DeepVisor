@@ -31,3 +31,29 @@ export function buildAgeGenderAudienceChart(observations: AudienceObservation[],
   });
   return { rows, stacked: view === 'age_gender' && !ratio, series: view === 'age_gender' ? [...GENDERS] : ['total'] };
 }
+
+export interface PyramidCell { key: string; value: number | null }
+export interface PyramidRow { age: string; Female: PyramidCell | null; Male: PyramidCell | null; Unknown: PyramidCell | null }
+/**
+ * Age rows with Female on one side and Male on the other, built from the same age × gender
+ * breakdown items the list shows (so values always match). Cells with no measurement stay null.
+ * Returns null when the items are not plain "age · gender" segments (e.g. unverified windows).
+ */
+export function buildAudiencePyramid(items: Array<{ key: string; value: number | null }>) {
+  const rows = new Map<string, PyramidRow>();
+  for (const item of items) {
+    const parts = item.key.split(' · ');
+    if (parts.length !== 2) return null;
+    const [age, rawGender] = parts;
+    const row = rows.get(age) ?? { age, Female: null, Male: null, Unknown: null };
+    row[normalizeGender(rawGender)] = { key: item.key, value: item.value };
+    rows.set(age, row);
+  }
+  const ordered = [...rows.values()].sort((a, b) => ageBucketSortValue(a.age) - ageBucketSortValue(b.age));
+  const values = ordered.flatMap(row => [row.Female?.value, row.Male?.value]).filter((v): v is number => v != null);
+  return {
+    rows: ordered,
+    max: Math.max(0, ...values),
+    hasUnknown: ordered.some(row => row.Unknown?.value != null),
+  };
+}

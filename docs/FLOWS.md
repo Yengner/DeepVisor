@@ -237,16 +237,21 @@ write on page load. Its review controls call the existing Decisions action.
 `agencyQuestions` add known profile preferences to Review/Shadow questions; goals
 are intent, not policy authorization or verified bookings.
 
-The global [`AiAssistantDrawer`](../src/components/layout/AiAssistantDrawer.tsx)
-posts to [`/api/intelligence/assistant`](../src/app/api/intelligence/assistant/route.ts).
-That route resolves business/selection, builds decision-support context and calls
-[`answerAssistantQuestion`](../src/lib/server/intelligence/assistant/service.ts).
-It classifies keywords into best creative, best months, best times, risks, recent
-changes or current priorities, then reads saved data. It is not a general tool-using
-agent and does not call Jev or the advertising executor. Its older metric/currency
-limitations are recorded in the [audit](ARCHITECTURE_AUDIT.md).
+The existing [`AiAssistantDrawer`](../src/components/layout/AiAssistantDrawer.tsx)
+has its launcher removed in this checkout. Its backend
+[`/api/intelligence/assistant`](../src/app/api/intelligence/assistant/route.ts)
+uses authorized, quota-reserved conversation turns and the OpenAI Responses loop
+in [`openai/conversation.ts`](../src/lib/server/openai/conversation.ts).
+Typed tools read selected-account saved data; evidence references are validated
+before rendering. Explicit save requests create review-required paused drafts
+through the existing draft repository. Tools do not publish or execute Meta writes.
+Eligible analytics requests can request a gated background refresh through
+[`assistant/freshness.ts`](../src/lib/server/intelligence/assistant/freshness.ts);
+the current answer still uses saved evidence dates, not promised fresh measurements.
+The older keyword-based `service.ts` is compatibility code, not this route's handler.
+See the [assistant contract](../src/lib/server/intelligence/assistant/README.md).
 
-No autonomous campaign creation, arbitrary conversational account edits or generic
-agent tool registry is implied by either surface. Add future capabilities through
+No autonomous live campaign creation or arbitrary conversational account edits
+are implied by either surface. Add future capabilities through
 existing authorization/domain/adapter boundaries described in the
 [development guide](DEVELOPMENT_GUIDE.md).

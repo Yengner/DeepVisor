@@ -99,7 +99,7 @@ available in each card's Source & coverage disclosure.
 KPI comparisons use `comparisons.ts` and the existing `delta()` rules. The daily
 window covers both selected and previous non-overlapping 7/30-day periods; optional
 audience/hourly queries remain 30 days. Cache scope version v3 isolates the expanded
-window. Current periods include partial today, explicitly disclosed in tooltips.
+window. Current periods include today's in-progress (live) data, disclosed in tooltips.
 Today comparisons become eligible at `DEEPVISOR_KPI_TODAY_CUTOFF` (server-only
 `HH:mm`, default `20:00`) in the verified selected account timezone. Invalid cutoff
 or timezone settings fail closed. Before cutoff and after account-local midnight,

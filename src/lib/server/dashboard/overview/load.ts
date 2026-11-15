@@ -69,6 +69,18 @@ export const loadOverviewContext = cache(async () => {
 });
 export type OverviewContext = Awaited<ReturnType<typeof loadOverviewContext>>;
 
+/** Recorded evidence for chart change markers (launch times and lifecycle events). */
+export const loadChartMarkerSources = cache(async (businessId: string, accountId: string, since: string) => {
+  const client = createAdminClient();
+  const [entities, events] = await Promise.all([
+    allPages((from, to) =>
+      client.from("ad_entities").select("entity_level,name,raw").eq("business_id", businessId).eq("ad_account_id", accountId).order("id").range(from, to)),
+    allPages((from, to) =>
+      client.from("ad_lifecycle_events").select("kind,created_at").eq("business_id", businessId).eq("ad_account_id", accountId)
+        .gte("created_at", `${shiftDay(since, -1)}T00:00:00Z`).order("created_at").range(from, to)),
+  ]);
+  return { entities, events };
+});
 export const loadOverviewEntities = cache(
   async (businessId: string, accountId: string) =>
     allPages((from, to) =>

@@ -368,6 +368,14 @@
   color: #ffffff;
 }
 
+.authPrimaryButton:disabled,
+.authPrimaryButton[data-disabled] {
+  border-color: #c6ccd3;
+  background: #e3e7ec;
+  color: #5d6773;
+  cursor: not-allowed;
+}
+
 .secondaryButton {
   border-color: var(--signal);
   color: var(--signal);
@@ -501,5 +509,59 @@
   .loginCard,
   .flowCard {
     padding-inline: 15px !important;
+  }
+}
+
+.passwordRules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 12px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.passwordRules li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #5d6773;
+  font-size: 0.75rem;
+}
+
+.passwordRules li[data-passed] {
+  color: var(--dv-primary-strong);
+  font-weight: 700;
+}
+
+.passwordRules svg {
+  flex: 0 0 auto;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.inboxView {
+  align-items: stretch;
+}
+
+.inboxView > [data-spider-mascot] {
+  align-self: flex-start;
+}
+
+.inboxEmail {
+  overflow-wrap: anywhere;
+  color: var(--dv-ink);
+}
+
+@media (max-width: 420px) {
+  .passwordRules {
+    grid-template-columns: 1fr;
   }
 }

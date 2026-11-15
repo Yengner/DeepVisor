@@ -2,7 +2,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
-vi.mock('./TopBarClient', () => ({ default: () => null }));
+const desktop = vi.hoisted(() => vi.fn(() => null));
+vi.mock('./TopBarClient', () => ({ default: desktop }));
 const capture = vi.hoisted(() => vi.fn(() => null));
 vi.mock('../MobileAppChromeClient', () => ({ default: capture }));
 vi.mock('@/lib/server/actions/user/settings', () => ({
@@ -33,4 +34,12 @@ it('uses the same authorized primary-account scope as the page when cookies are 
     initialPlatformId: 'integration', initialAccountId: 'second',
     adAccounts: [expect.objectContaining({ id: 'second' })],
   }), undefined);
+});
+
+it('shows the business name in the header and hides the setup placeholder', async () => {
+  const user = { id: 'user' } as Parameters<typeof TopBar>[0]['user'];
+  renderToStaticMarkup(await TopBar({ businessId: 'business', user, workspaceName: 'Bayside Plumbing Co' }));
+  expect(desktop).toHaveBeenLastCalledWith(expect.objectContaining({ workspaceName: 'Bayside Plumbing Co' }), undefined);
+  renderToStaticMarkup(await TopBar({ businessId: 'business', user, workspaceName: 'Business setup' }));
+  expect(desktop).toHaveBeenLastCalledWith(expect.objectContaining({ workspaceName: null }), undefined);
 });

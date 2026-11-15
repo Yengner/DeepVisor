@@ -1,6 +1,7 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { chunkArray, readAllPages } from '../utils';
 import { derivePerformanceMetrics } from './normalizers';
+import { periodTotals, rangeWindow, type DailyTotals, type SummaryTotals, type TableRange } from '@/lib/shared/performance/periodTotals';
 
 type SupabaseClient = Awaited<ReturnType<typeof createSupabaseClient>>;
 
@@ -39,6 +40,7 @@ type CampaignPerformanceSummaryRow = {
   calls: number | null;
   first_day: string | null;
   last_day: string | null;
+  synced_at?: string | null;
 };
 
 export interface CampaignSummary {
@@ -66,6 +68,8 @@ export interface CampaignSummary {
   frequency: number;
   startDay: string | null;
   endDay: string | null;
+  /** Past schedule stop, shown only when no daily rows say when delivery ended. */
+  scheduleEnded: string | null;
 }
 
 export type CampaignSummarySort = 'performance' | 'spend' | 'name';
@@ -150,7 +154,7 @@ async function listCampaignPerformanceSummaries(input: {
     const { data, error } = await input.supabase
       .from('campaign_performance_summary')
       .select(
-        'campaign_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls, first_day, last_day'
+        'campaign_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls, first_day, last_day, synced_at'
       )
       .in('campaign_id', campaignIdsChunk);
 
@@ -172,6 +176,8 @@ export async function getCampaignSummaries(input: {
   limit?: number;
   sort?: CampaignSummarySort;
   supabase?: SupabaseClient;
+  /** Table period (Campaigns page). Takes precedence over windowDays; see periodTotals. */
+  range?: { range: TableRange; today: string; timezone: string | null };
 }): Promise<CampaignSummary[]> {
   const adAccountIds = Array.from(new Set(input.adAccountIds.filter(Boolean)));
   if (adAccountIds.length === 0) {
@@ -210,7 +216,31 @@ export async function getCampaignSummaries(input: {
     ])
   );
 
-  if (input.windowDays === null) {
+  const scheduleEndedById = new Map<string, string | null>();
+  if (input.range) {
+    const ids = campaignDims.map((campaign) => campaign.id);
+    const window = rangeWindow(input.range.range, input.range.today);
+    const [summaryRows, dailyRows] = await Promise.all([
+      input.range.range === 'lifetime' ? listCampaignPerformanceSummaries({ supabase, campaignIds: ids }) : Promise.resolve([]),
+      listCampaignPerformanceRows({ supabase, campaignIds: ids, sinceDay: window?.since }),
+    ]);
+    const summaryById = new Map(summaryRows.map((row) => [row.campaign_id, row]));
+    const dailyById = new Map<string, DailyTotals[]>();
+    for (const row of dailyRows) {
+      if (window && row.day > window.until) continue;
+      const list = dailyById.get(row.campaign_id) ?? [];
+      list.push({ day: row.day, spend: row.spend ?? 0, reach: row.reach ?? 0, impressions: row.impressions ?? 0, clicks: row.clicks ?? 0, linkClicks: row.inline_link_clicks ?? 0, leads: row.leads ?? 0, messages: row.messages ?? 0, calls: row.calls ?? 0 });
+      dailyById.set(row.campaign_id, list);
+    }
+    for (const [id, totals] of totalsByCampaignId) {
+      const s = summaryById.get(id);
+      const summary: SummaryTotals | null = s ? { spend: s.spend ?? 0, reach: s.reach ?? 0, impressions: s.impressions ?? 0, clicks: s.clicks ?? 0, linkClicks: s.inline_link_clicks ?? 0, leads: s.leads ?? 0, messages: s.messages ?? 0, calls: s.calls ?? 0, firstDay: s.first_day, syncedAt: s.synced_at ?? null, lastDay: s.last_day } : null;
+      const result = periodTotals({ ...input.range, summary, daily: dailyById.get(id) ?? [] });
+      if (!result.available) continue;
+      Object.assign(totals, result.totals, { firstDay: result.firstDay, lastDay: result.lastDay, rowCount: 1 });
+      scheduleEndedById.set(id, result.scheduleEnded ?? null);
+    }
+  } else if (input.windowDays === null) {
     const summaryRows = await listCampaignPerformanceSummaries({
       supabase,
       campaignIds: campaignDims.map((campaign) => campaign.id),
@@ -318,6 +348,7 @@ export async function getCampaignSummaries(input: {
         frequency: metrics.frequency,
         startDay: totals.firstDay,
         endDay: totals.lastDay,
+        scheduleEnded: scheduleEndedById.get(campaignInternalId) ?? null,
       } satisfies CampaignSummary;
     })
     .filter((summary): summary is CampaignSummary => Boolean(summary))

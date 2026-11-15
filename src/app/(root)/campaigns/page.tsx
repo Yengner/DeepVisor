@@ -14,6 +14,8 @@ import {
   getPlatformDetails,
 } from '@/lib/server/data';
 import type { AdLifetimeRow, AdSetLifetimeRow, CampaignLifetimeRow } from '@/lib/server/data';
+import { parseTableRange } from '@/lib/shared/performance/periodTotals';
+import { accountToday } from '@/lib/shared/reports/dates';
 
 interface AggregatedMetrics {
   spend: number; impressions: number; clicks: number; link_clicks: number; reach: number;
@@ -29,6 +31,8 @@ export interface FormattedCampaign {
   objective: string;
   startDate: string;
   endDate: string;
+  /** Raw last reported day (YYYY-MM-DD) for "Today" handling. */
+  lastDay?: string | null;
   attribution: string;
   spend: number;
   results: string;
@@ -91,10 +95,15 @@ export default async function CampaignPage({
     cpm: adAccountDetails.aggregated_metrics?.cpm || 0,
   };
 
+  const params = await searchParams;
+  // One period for the whole page: header totals, campaigns, ad sets and ads (account-local days).
+  const timezone = adAccountDetails.timezone ?? null;
+  const tableRange = { range: parseTableRange(params.range?.toString()), today: accountToday(timezone) ?? new Date().toISOString().slice(0, 10), timezone };
   const campaignsData = await getCampaignLifetimeIncludingZeros(
     selectedAdAccountId,
     undefined,
-    platformDetails.vendor
+    platformDetails.vendor,
+    tableRange
   );
 
   const deliveryState = await loadTableDelivery(businessId, selectedAdAccountId, selectedPlatformId);
@@ -113,9 +122,10 @@ export default async function CampaignPage({
       objective: c.objective,
       startDate: c.start_date,
       endDate: c.end_date || "",
+      lastDay: c.last_day ?? null,
       attribution: "Unavailable",
       spend: spendNum,
-      results: c.metricsAvailable ? `${totalResults} Results` : "Unavailable",
+      results: c.metricsAvailable ? totalResults.toLocaleString('en-US') : "—",
       metricsAvailable: c.metricsAvailable,
       calls: c.calls,
       reach: c.reach,
@@ -135,7 +145,6 @@ export default async function CampaignPage({
     };
   });
 
-  const params = await searchParams;
   const campaignIds = params.campaign_id?.toString().split(',').filter(Boolean) ?? [];
   const adsetIds = params.adset_id?.toString().split(',').filter(Boolean) ?? [];
   const tabParam = (params.tab?.toString() || '').toLowerCase();
@@ -157,14 +166,14 @@ export default async function CampaignPage({
   if (initialSelection.tab !== 'campaigns' && initialSelection.campaignId) {
     initialAdSets = await getAdSetsLifetimeIncludingZeros(
       selectedAdAccountId,
-      { campaignExternalId: initialSelection.campaignId }
+      { campaignExternalId: initialSelection.campaignId, range: tableRange }
     );
   }
 
   if (initialSelection.tab === 'ads' && initialSelection.adsetId) {
     initialAds = await getAdsLifetimeIncludingZeros(
       selectedAdAccountId,
-      { adsetExternalId: initialSelection.adsetId }
+      { adsetExternalId: initialSelection.adsetId, range: tableRange }
     );
   }
 
@@ -172,6 +181,9 @@ export default async function CampaignPage({
     <>
       <Suspense fallback={<CampaignClientFallback />}>
         <CampaignDashboard
+          key={tableRange.range}
+          range={tableRange.range}
+          syncedAt={adAccountDetails.last_synced ?? null}
           campaigns={allCampaigns}
           deliveryState={deliveryState}
           platform={{ id: platformDetails.id, name: platformDetails.vendor }}

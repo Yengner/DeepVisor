@@ -4,6 +4,7 @@ import type { Json } from '@/lib/shared/types/supabase';
 import { asRecord, asString } from '@/lib/shared/utils/format';
 import { derivePerformanceMetrics } from '../campaigns/normalizers';
 import { chunkArray, readAllPages } from '../utils';
+import { periodTotals, rangeWindow, type DailyTotals, type TableRange } from '@/lib/shared/performance/periodTotals';
 import { mediaFor } from '@/lib/server/campaigns/exploration/model';
 import type { Media } from '@/lib/server/campaigns/exploration/types';
 
@@ -32,7 +33,22 @@ type AdPerformanceRow = {
   calls: number | null;
   first_day: string | null;
   last_day: string | null;
+  synced_at?: string | null;
 };
+
+type AdDailyRow = { ad_id: string; day: string; spend: number | null; reach: number | null; impressions: number | null; clicks: number | null; inline_link_clicks: number | null; leads: number | null; messages: number | null; calls: number | null };
+
+async function listAdDailyRows(input: { supabase: SupabaseClient; adIds: string[]; sinceDay?: string }): Promise<AdDailyRow[]> {
+  const rows: AdDailyRow[] = [];
+  for (const chunk of chunkArray(input.adIds, 200)) {
+    let query = input.supabase.from('ads_performance_daily')
+      .select('ad_id, day, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls').in('ad_id', chunk);
+    if (input.sinceDay) query = query.gte('day', input.sinceDay);
+    const data = await readAllPages((from, to) => query.order('ad_id').order('day').range(from, to));
+    rows.push(...((data ?? []) as AdDailyRow[]));
+  }
+  return rows;
+}
 
 type AdsetLookupRow = {
   external_id: string;
@@ -79,6 +95,8 @@ export interface AdLifetimeRow {
   frequency: string | null;
   start_date: string;
   end_date: string;
+  /** Raw last reported day (YYYY-MM-DD); may exceed today for lifetime summaries. */
+  last_day?: string | null;
   platform_name: 'meta' | 'google' | 'tiktok';
   raw_data: Json | null;
   ad_format: string | null;
@@ -118,7 +136,7 @@ async function listAdPerformanceRows(input: {
     const { data, error } = await input.supabase
       .from('ad_performance_summary')
       .select(
-        'ad_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls, first_day, last_day'
+        'ad_id, spend, reach, impressions, clicks, inline_link_clicks, leads, messages, calls, first_day, last_day, synced_at'
       )
       .in('ad_id', adIdsChunk);
 
@@ -223,7 +241,7 @@ async function lookupAdsetForDebug(input: {
 
 export async function getAdsLifetimeIncludingZeros(
   adAccountUuid: string,
-  opts?: { adsetExternalId?: string; adExternalId?: string; vendor?: 'meta' | 'google' | 'tiktok' }
+  opts?: { adsetExternalId?: string; adExternalId?: string; vendor?: 'meta' | 'google' | 'tiktok'; range?: { range: TableRange; today: string; timezone: string | null } }
 ): Promise<AdLifetimeRow[]> {
   const supabase = await createSupabaseClient();
   const vendor = opts?.vendor ?? 'meta';
@@ -277,10 +295,13 @@ export async function getAdsLifetimeIncludingZeros(
       return [];
     }
 
-    const performanceRows = await listAdPerformanceRows({
-      supabase,
-      adIds: ads.map((ad) => ad.id),
-    });
+    const range = opts?.range;
+    const window = range ? rangeWindow(range.range, range.today) : null;
+    const [summaryRows, dailyRows] = await Promise.all([
+      !range || range.range === 'lifetime' ? listAdPerformanceRows({ supabase, adIds: ads.map((ad) => ad.id) }) : Promise.resolve([] as AdPerformanceRow[]),
+      range ? listAdDailyRows({ supabase, adIds: ads.map((ad) => ad.id), sinceDay: window?.since }) : Promise.resolve([] as AdDailyRow[]),
+    ]);
+    const performanceRows = range ? [] : summaryRows;
     const previews = new Map<string, Media>();
     for (const ids of chunkArray([...new Set(ads.flatMap(ad => ad.creative_id ? [ad.creative_id] : []))], 200)) {
       const { data, error } = await supabase.from('ad_creatives').select('*')
@@ -311,6 +332,7 @@ export async function getAdsLifetimeIncludingZeros(
           observations: 0,
           firstDay: null as string | null,
           lastDay: null as string | null,
+          scheduleEnded: null as string | null,
         },
       ])
     );
@@ -337,6 +359,23 @@ export async function getAdsLifetimeIncludingZeros(
 
       if (row.last_day && (!totals.lastDay || row.last_day > totals.lastDay)) {
         totals.lastDay = row.last_day;
+      }
+    }
+
+    if (range) {
+      const summaryById = new Map(summaryRows.map((row) => [row.ad_id, row]));
+      const dailyById = new Map<string, DailyTotals[]>();
+      for (const row of dailyRows) {
+        if (window && row.day > window.until) continue;
+        const list = dailyById.get(row.ad_id) ?? [];
+        list.push({ day: row.day, spend: row.spend ?? 0, reach: row.reach ?? 0, impressions: row.impressions ?? 0, clicks: row.clicks ?? 0, linkClicks: row.inline_link_clicks ?? 0, leads: row.leads ?? 0, messages: row.messages ?? 0, calls: row.calls ?? 0 });
+        dailyById.set(row.ad_id, list);
+      }
+      for (const [id, totals] of totalsByAdId) {
+        const s = summaryById.get(id);
+        const result = periodTotals({ ...range, daily: dailyById.get(id) ?? [], summary: s ? { spend: s.spend ?? 0, reach: s.reach ?? 0, impressions: s.impressions ?? 0, clicks: s.clicks ?? 0, linkClicks: s.inline_link_clicks ?? 0, leads: s.leads ?? 0, messages: s.messages ?? 0, calls: s.calls ?? 0, firstDay: s.first_day, syncedAt: s.synced_at ?? null, lastDay: s.last_day } : null });
+        if (!result.available) continue;
+        Object.assign(totals, result.totals, { observations: 1, firstDay: result.firstDay, lastDay: result.lastDay, scheduleEnded: result.scheduleEnded ?? null });
       }
     }
 
@@ -426,7 +465,8 @@ export async function getAdsLifetimeIncludingZeros(
           cpl: totals.leads > 0 ? (spend / totals.leads).toFixed(2) : null,
           frequency: null,
           start_date: formatDisplayDate(totals.firstDay),
-          end_date: formatDisplayDate(totals.lastDay),
+          end_date: totals.lastDay || !totals.scheduleEnded ? formatDisplayDate(totals.lastDay) : `Schedule ended ${formatDisplayDate(totals.scheduleEnded)}`,
+          last_day: totals.lastDay ?? null,
           platform_name: vendor,
           raw_data: ad.raw,
           ad_format: deriveAdFormat(ad.raw),

@@ -42,7 +42,7 @@ export default async function DecisionsPage({ searchParams }: { searchParams: Pr
   const page = Number.isSafeInteger(parsed) && parsed >= 0 && parsed <= 10000 ? parsed : 0;
   const preview = isDecisionPreview(params.preview);
   return <div className={`${classes.page} ${product.page}`}>
-    <header className={classes.header}><Group gap="md" wrap="nowrap"><PixelCompanion size={44} framed /><div><ProductLinkButton href="/agency">← Agency Control</ProductLinkButton><h1>Decision reviews</h1><Text size="sm" c="dimmed">Reviews and next steps across your business accounts.</Text></div></Group></header>
+    <header className={classes.header}><Group gap="md" wrap="nowrap"><PixelCompanion size={48} framed /><div><ProductLinkButton href="/agency">← Agency Control</ProductLinkButton><h1>Decision reviews</h1><Text size="sm" c="dimmed">Reviews and next steps across your business accounts.</Text></div></Group></header>
     {preview && <DecisionPreviewBanner page="decisions" />}
     <Suspense key={`${page}:${preview}`} fallback={<LoadingFeed />}><DecisionContent page={page} preview={preview} /></Suspense>
   </div>;

@@ -13,6 +13,8 @@ type AudienceRow = Database['public']['Views']['meta_audience_breakdowns_daily']
 type SurfaceInput = {
   adsetInternalIds: string[]; adInternalIds: string[]; adScopeOnly: boolean;
   isMeta: boolean; dateFrom: string; dateTo: string; timezone: string | null;
+  /** Set only when the report covers one whole ad account (no campaign/ad set/ad filters). */
+  periodAccountId?: string | null;
 };
 const dimensions = ['publisher_platform', 'platform_position', 'impression_device', 'age_gender', 'country', 'region', 'dma'];
 const deliveryOnly = ['publisher_platform', 'platform_position', 'impression_device'];
@@ -52,6 +54,53 @@ function normalizeAudience(row: AudienceRow): DashboardAudienceMetricRow {
     calls: deliveryOnly.includes(row.breakdown_type ?? '') ? 0 : row.calls ?? 0,
   };
 }
+type SavedRow = { day: string; label: string; publisher: string; currency_code: string | null; spend: number | null; impressions: number | null; clicks: number | null; inline_link_clicks: number | null; leads: number | null; messages: number | null; calls: number | null };
+
+/**
+ * Age × gender and Facebook/Instagram split for the report's own dates, built from the saved
+ * account-level daily insights (the same data the Overview dashboard uses). Only days inside the
+ * report range count; the measurement window is the observed span, so partial coverage is visible.
+ * Other dimensions (geography, positions, devices) have no daily data and stay all-time snapshots.
+ */
+export type PeriodBreakdowns = { rows: AudienceRow[]; days: Record<string, string[]> };
+export async function periodBreakdownRows(client: Client, accountId: string, from: string, to: string): Promise<PeriodBreakdowns> {
+  const { data, error } = await client.from('account_insight_snapshots').select('dataset,payload').eq('ad_account_id', accountId).in('dataset', ['audience', 'daily']);
+  if (error || !data) return { rows: [], days: {} };
+  const rows = (name: string) => {
+    const payload = data.find(r => r.dataset === name)?.payload;
+    return (Array.isArray(payload) ? payload as SavedRow[] : []).filter(r => typeof r.day === 'string' && r.day >= from && r.day <= to);
+  };
+  return periodAggregate(rows('audience'), rows('daily'), accountId);
+}
+export function periodAggregate(audience: SavedRow[], daily: SavedRow[], accountId: string): PeriodBreakdowns {
+  const out: AudienceRow[] = [];
+  const observed: Record<string, string[]> = {};
+  const group = (type: string, source: SavedRow[], dims: (r: SavedRow) => [string, string, string, string] | null) => {
+    const groups = new Map<string, { dims: [string, string, string, string]; rows: SavedRow[] }>();
+    for (const r of source) {
+      const d = dims(r); if (!d) continue;
+      const key = d.join('|'); const g = groups.get(key) ?? { dims: d, rows: [] }; g.rows.push(r); groups.set(key, g);
+    }
+    const days = [...new Set(source.filter(r => dims(r)).map(r => r.day))].sort();
+    if (groups.size) observed[type] = days;
+    for (const { dims: [k1, v1, k2, v2], rows } of groups.values()) {
+      const sum = (f: keyof SavedRow) => rows.some(r => r[f] == null) ? null : rows.reduce((t, r) => t + Number(r[f]), 0);
+      const currencies = new Set(rows.map(r => r.currency_code));
+      out.push({ ad_account_id: accountId, entity_level: 'adset', entity_id: 'account', campaign_id: null, adset_id: null, ad_id: null,
+        day: days.at(-1) ?? null, first_day: days[0] ?? null, last_day: days.at(-1) ?? null, breakdown_type: type,
+        dimension_1_key: k1, dimension_1_value: v1, dimension_2_key: k2, dimension_2_value: v2,
+        publisher_platform: type === 'publisher_platform' ? v1 : null, platform_position: null, impression_device: null,
+        currency_code: currencies.size === 1 ? [...currencies][0] : 'MIXED', objective: null, source: 'period',
+        spend: sum('spend'), reach: null, impressions: sum('impressions'), clicks: sum('clicks'), inline_link_clicks: sum('inline_link_clicks'),
+        leads: sum('leads'), messages: sum('messages'), calls: sum('calls'),
+        actions_json: [], cost_per_action_type_json: [], raw: null, created_at: null, updated_at: null } as unknown as AudienceRow);
+    }
+  };
+  group('age_gender', audience, r => { const [age, gender] = (r.label ?? '').split(' · '); return age && gender ? ['age', age, 'gender', gender] : null; });
+  group('publisher_platform', daily, r => r.publisher === 'facebook' || r.publisher === 'instagram' ? ['publisher_platform', r.publisher, '', ''] : null);
+  return { rows: out, days: observed };
+}
+
 export async function loadReportSurfaces(client: Client, input: SurfaceInput): Promise<ReportSurfaceContext> {
   const emptyInput = { isMeta: input.isMeta, hasLiveDelivery: false, audienceRows: [] };
   const result: ReportSurfaceContext = {
@@ -64,7 +113,11 @@ export async function loadReportSurfaces(client: Client, input: SurfaceInput): P
     audienceRows(client, input),
     input.timezone ? listReportHourlyTrendRows(client, input) : Promise.resolve({ points: [], incomplete: false, mixedCurrency: false }),
   ]);
-  const sourceRows = audience.status === 'fulfilled' ? audience.value : [];
+  const snapshotRows = audience.status === 'fulfilled' ? audience.value : [];
+  // Replace a snapshot dimension with the selected dates only when daily data covers some of them.
+  const period: PeriodBreakdowns = input.periodAccountId ? await periodBreakdownRows(client, input.periodAccountId, input.dateFrom, input.dateTo).catch(() => ({ rows: [], days: {} })) : { rows: [], days: {} };
+  const periodTypes = new Set(period.rows.map(r => r.breakdown_type));
+  const sourceRows = [...snapshotRows.filter(r => !periodTypes.has(r.breakdown_type)), ...period.rows];
   result.measurements = sourceRows.map(row => {
     const metrics = aggregateReportMetrics([row]);
     const unsupported = deliveryOnly.includes(row.breakdown_type ?? '');
@@ -86,9 +139,11 @@ export async function loadReportSurfaces(client: Client, input: SurfaceInput): P
   });
   for (const dimension of dimensions) {
     const selected = sourceRows.filter(r => r.breakdown_type === dimension);
-    result.coverage![dimension] = audience.status === 'rejected'
-      ? { state: 'error', basis: 'snapshot', dateFrom: null, dateTo: null }
-      : snapshotCoverage(selected);
+    result.coverage![dimension] = periodTypes.has(dimension)
+      ? dailyCoverage(period.days[dimension] ?? [], input.dateFrom, input.dateTo)
+      : audience.status === 'rejected'
+        ? { state: 'error', basis: 'snapshot', dateFrom: null, dateTo: null }
+        : snapshotCoverage(selected);
     result.unavailableMetrics![dimension] = {
       ...aggregateReportMetrics(selected).unavailable,
       reach: 'Unique reach cannot be summed across entities.', frequency: 'Verified unique reach is unavailable.',

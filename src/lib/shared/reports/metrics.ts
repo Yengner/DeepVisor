@@ -74,13 +74,15 @@ export function sourceUnavailable(row: Record<string, unknown>): ReportMetricAva
 
 export function buildReportKpis(input: {
   totals: ReportMetricTotals; previousTotals: ReportMetricTotals | null; currencyCode: string | null;
+  /** Totals the change is measured from when only matched days are compared; defaults to `totals`. */
+  comparisonTotals?: ReportMetricTotals | null;
 }): import('@/lib/shared/reports/types').ReportKpi[] {
   const definitions = [
     ['spend', 'Spend'], ['conversion', 'Results'], ['impressions', 'Impressions'], ['clicks', 'Clicks'],
     ['ctr', 'CTR'], ['cpc', 'CPC'], ['cpm', 'CPM'], ['costPerResult', 'Cost / Result'],
   ] as const;
   return definitions.map(([key, label]) => {
-    const delta = reportMetricDelta(input.totals, input.previousTotals, key);
+    const delta = reportMetricDelta(input.comparisonTotals ?? input.totals, input.previousTotals, key);
     return {
       key, label, value: input.totals[key],
       formattedValue: formatReportMetric(input.totals, key, input.currencyCode),

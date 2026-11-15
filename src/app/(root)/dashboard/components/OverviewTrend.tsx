@@ -101,7 +101,7 @@ export default function OverviewTrend({
                   labels[metric],
                 ]}
                 labelFormatter={(day) =>
-                  `${day}${String(day) === points.at(-1)?.day ? " (today, partial)" : ""}`
+                  `${day}${String(day) === points.at(-1)?.day ? " · Live" : ""}`
                 }
                 contentStyle={{ fontSize: 12, borderRadius: 6 }}
               />
@@ -126,7 +126,7 @@ export default function OverviewTrend({
       {last && (
         <p className={classes.chartSummary}>
           {last.day}
-          {last.current ? " · Today, partial" : ""} · {labels[metric]}:{" "}
+          {last.current ? " · Live" : ""} · {labels[metric]}:{" "}
           {format(last[metric]!)}
         </p>
       )}

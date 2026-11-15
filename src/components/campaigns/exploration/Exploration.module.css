@@ -76,7 +76,23 @@
   height: 100%;
   object-fit: contain;
 }
+.media img:not(.mediaBackdrop) {
+  position: relative;
+  z-index: 1;
+}
+.media .mediaBackdrop {
+  position: absolute;
+  inset: -24px;
+  width: calc(100% + 48px);
+  height: calc(100% + 48px);
+  object-fit: cover;
+  filter: blur(22px) saturate(1.15) brightness(0.92);
+  transform: scale(1.05);
+  opacity: 0.85;
+  pointer-events: none;
+}
 .mediaLabel {
+  z-index: 2;
   position: absolute;
   bottom: 5px;
   left: 5px;

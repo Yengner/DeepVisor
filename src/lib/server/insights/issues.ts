@@ -1,7 +1,8 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import {readAllPages} from '@/lib/server/repositories/pagination';
-import { hierarchyIssues, unresolvedEvidence } from '@/lib/shared/insights/model';
+import { fatigueIssues, hierarchyIssues, unresolvedEvidence } from '@/lib/shared/insights/model';
+import { readAccountNotices } from '@/lib/server/webhooks/notices';
 import type { Observation } from '@/lib/shared/lifecycle/model';
 import type { IssueEvidence } from '@/lib/shared/insights/model';
 import type { Json } from '@/lib/shared/types/supabase';
@@ -14,8 +15,12 @@ export async function observeIssues(business:string,account:string,source:string
 export async function observeHierarchyIssues(business:string,account:string,at:string,entities:Observation[]){
  if(!insightsEnabled())return;
  const previous=await readAllPages((from,to)=>createAdminClient().from('insight_issues').select('evidence').eq('business_id',business).eq('ad_account_id',account).eq('source','hierarchy').is('resolved_at',null).order('id').range(from,to),{nullDataError:'Issue evidence unavailable'});
- const current=hierarchyIssues(entities);
+ // Webhook notices only add Meta's wording to states this read observed; they never create a state.
+ const notices=await readAccountNotices(business,account).catch(()=>{console.warn('Meta notices unavailable; issues are shown without Meta’s wording.');return null;});
+ const current=hierarchyIssues(entities,notices?.issues);
  await observeIssues(business,account,'hierarchy',at,[...current,...unresolvedEvidence(previous.map(r=>r.evidence as unknown as IssueEvidence),entities,current)]);
+ // A fatigue flag stays while the ad is active and the flag is recent; a failed notice read changes nothing.
+ if(notices)await observeIssues(business,account,'fatigue',at,fatigueIssues(entities,notices.fatigue));
 }
 
 /** One read inside the existing sync worker/request budget. Unknown codes never become billing claims. */
@@ -25,6 +30,6 @@ export async function captureAccountHealth(business:string,account:string,extern
  const {accountHealthIssues}=await import('@/lib/shared/insights/health');
  const at=new Date().toISOString();
  const response=await fetchMetaObject<{account_status?:number;disable_reason?:number}>({path:external.startsWith('act_')?external:`act_${external}`,accessToken,params:{fields:'account_status,disable_reason'}});
- const evidence=accountHealthIssues(response);
+ const evidence=accountHealthIssues(response,external);
  if(evidence!==null)await observeIssues(business,account,'account',at,evidence);
 }

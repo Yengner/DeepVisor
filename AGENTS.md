@@ -1,6 +1,15 @@
-# DeepVisor — Codex repository instructions
+# DeepVisor — shared agent instructions
 
-These instructions apply to the repository. Keep task-specific requirements in the user's prompt or an approved plan; do not turn this file into a feature backlog.
+These instructions apply to the repository and to every coding agent working in it. Keep task-specific requirements in the user's prompt or an approved plan; do not turn this file into a feature backlog.
+
+## Roles
+
+| Agent | Owns | Instructions |
+| --- | --- | --- |
+| **Claude Code — lead engineer** | Architecture and implementation decisions, complex features, UI/UX, Supabase schema/migrations, Meta and AI integrations, tests for its changes, module contract docs it changes, focused commits/PRs, implementation handoff. | `CLAUDE.md` |
+| **Codex — reviewer, documentor, assistant** | Independent QA and regression checks, architecture/README/handbook and diagram maintenance, routine Jira updates, evidence-backed release handoffs. Reports defects to Claude instead of changing application logic. | `.agents/skills/deepvisor-release-review/SKILL.md` |
+
+Shared knowledge lives in this file and `docs/`. When the roles conflict on an implementation or architecture choice, Claude's decision stands and Codex records the disagreement as a review finding. Neither agent edits, stashes, resets, or commits the other's uncommitted work.
 
 ## Product and boundaries
 

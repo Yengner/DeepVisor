@@ -29,6 +29,11 @@ export async function GET(request: Request) {
         return NextResponse.redirect(new URL('/login?error=verification_failed', request.url));
     }
 
-    const redirectPath = await resolvePostAuthRedirectPath(userId);
-    return NextResponse.redirect(new URL(redirectPath, request.url));
+    try {
+        const redirectPath = await resolvePostAuthRedirectPath(userId);
+        return NextResponse.redirect(new URL(redirectPath, request.url));
+    } catch (redirectError) {
+        console.error('Failed to resolve post-verification redirect:', redirectError);
+        return NextResponse.redirect(new URL('/onboarding', request.url));
+    }
 }

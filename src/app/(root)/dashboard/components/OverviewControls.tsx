@@ -1,8 +1,9 @@
 "use client";
+import type React from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ActionIcon, Alert, SegmentedControl, Tooltip } from "@mantine/core";
-import { IconRefresh, IconBrandFacebook, IconBrandInstagram } from "@tabler/icons-react";
+import { ActionIcon, Alert, Button, SegmentedControl, Tooltip } from "@mantine/core";
+import { IconRefresh, IconBrandFacebook, IconBrandInstagram, IconBrandMeta } from "@tabler/icons-react";
 import type { Period } from "@/lib/server/dashboard/overview/types";
 
 export function PeriodControl({ period }: { period: Period }) {
@@ -30,7 +31,11 @@ export function PeriodControl({ period }: { period: Period }) {
     />
   );
 }
-export function RefreshOverview({ disabled = false, onCompleted, label = 'Refresh Meta data' }: { disabled?: boolean; onCompleted?: () => void; label?: string }) {
+/**
+ * `updatedAt` turns the icon into a labeled control ("Refresh · Updated 1:34 PM") so the page says
+ * which data it refreshes and how current it is.
+ */
+export function RefreshOverview({ disabled = false, onCompleted, label = 'Refresh Meta data', updatedAt }: { disabled?: boolean; onCompleted?: () => void; label?: string; updatedAt?: string | null }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -88,7 +93,20 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
   };
   return (
     <div>
-      <Tooltip label={loading ? "Refreshing Meta data…" : label}>
+      {updatedAt !== undefined ? (
+        <Button
+          variant="default"
+          size="sm"
+          radius="xl"
+          leftSection={<IconRefresh size={15} />}
+          loading={loading}
+          disabled={disabled}
+          onClick={refresh}
+          aria-label={`${label}. ${updatedLabel(updatedAt)}`}
+        >
+          Refresh<span style={{ fontWeight: 500, opacity: .7, marginLeft: 6 }}>· {updatedLabel(updatedAt)}</span>
+        </Button>
+      ) : <Tooltip label={loading ? "Refreshing Meta data…" : label}>
         <ActionIcon
           aria-label={loading ? "Refreshing Meta data…" : label}
           variant="default"
@@ -100,7 +118,7 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
         >
           <IconRefresh size={18} />
         </ActionIcon>
-      </Tooltip>
+      </Tooltip>}
       {message && (
         <Alert mt="xs" color={failed ? "red" : "blue"} role="status">
           {message}
@@ -110,16 +128,39 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
   );
 }
 
+function updatedLabel(at: string | null): string {
+  if (!at || !Number.isFinite(Date.parse(at))) return 'Not synced yet';
+  const date = new Date(at), today = new Date();
+  const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return date.toDateString() === today.toDateString() ? `Updated ${time}` : `Updated ${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${time}`;
+}
+
 export function PlatformControl({ platform }: { platform: 'combined' | 'facebook' | 'instagram' }) {
   const router = useRouter();
   const params = useSearchParams();
   const [pending, start] = useTransition();
-  return <div role="group" aria-label="Advertising delivery platform" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-    {(['facebook', 'instagram'] as const).map(value => <button key={value} type="button" disabled={pending} aria-pressed={platform === value}
-      title={`Select ${value}; select again for combined Meta data`} onClick={() => { const next = new URLSearchParams(params); if (platform === value) next.delete('publisher'); else next.set('publisher', value); start(() => router.replace(`/dashboard?${next}`, { scroll: false })); }}
-      style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 12, padding: '9px 14px', border: platform === value ? '2px solid currentColor' : '1px solid #aebdce', background: platform === value ? value === 'facebook' ? '#e7f0ff' : '#f9e9fa' : 'transparent', color: value === 'facebook' ? '#1264cc' : '#963fa4' }}>
-      {value === 'facebook' ? <IconBrandFacebook size={23} /> : <IconBrandInstagram size={23} />}<span>{value === 'facebook' ? 'Facebook' : 'Instagram'}{platform === value ? ' ✓' : ''}</span>
-    </button>)}
-    <span style={{ alignSelf: 'center', fontSize: 12 }}>{platform === 'combined' ? 'Combined Meta' : ''}</span>
-  </div>;
+  const option = (icon: React.ReactNode, text: string) => (
+    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>{icon}{text}</span>
+  );
+  return (
+    <SegmentedControl
+      aria-label="Advertising delivery platform"
+      size="sm"
+      radius="sm"
+      styles={{ label: { minHeight: 40, display: "flex", alignItems: "center", justifyContent: "center", paddingInline: 12 } }}
+      value={platform}
+      disabled={pending}
+      data={[
+        { value: "combined", label: option(<IconBrandMeta size={16} />, "All Meta") },
+        { value: "facebook", label: option(<IconBrandFacebook size={16} color="#1264cc" />, "Facebook") },
+        { value: "instagram", label: option(<IconBrandInstagram size={16} color="#c13584" />, "Instagram") },
+      ]}
+      onChange={(value) => {
+        const next = new URLSearchParams(params);
+        if (value === "combined") next.delete("publisher");
+        else next.set("publisher", value);
+        start(() => router.replace(`/dashboard?${next}`, { scroll: false }));
+      }}
+    />
+  );
 }

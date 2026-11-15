@@ -22,7 +22,7 @@ export default function RenamePanel({accountId,versionId,onRestoration}:{account
    if(['execute','reconcile','approve'].includes(op)){const h=await renameAction(accountId,'history');if(h.error)throw new Error(h.error);setHistory(h.data as History);}
   }catch(e){setError(e instanceof Error?e.message:'Operation failed');}finally{setBusy(false);}
  }
- return <section className={s.panel} aria-label="Approved naming changes"><div className={s.header}><SpiderMascot state={busy?'working':error?'attention':'idle'} size={48}/><h2>Approve & verify names</h2></div>
+ return <section className={s.panel} aria-label="Approved naming changes"><div className={s.header}><SpiderMascot state={busy?'working':error?'attention':'idle'} size={32}/><h2>Approve & verify names</h2></div>
  <p>Only saved, selected name changes are eligible, up to five per approval. Families stay in DeepVisor. Live writes require separate server authorization and are disabled by default.</p>
  <p>Preview reads current provider state. Approval and execution are separate steps. An external edit creates a conflict; it is never silently overwritten.</p>
  {error&&<p role="alert">{error}</p>}<p role="status">{busy?'Processing your request…':status}</p>
