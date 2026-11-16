@@ -1,3 +1,4 @@
+import type { AdSchedule } from "@/lib/shared/performance/schedule";
 import type {
   DailyRow,
   Period,
@@ -53,6 +54,8 @@ export type Summary = {
   leader: boolean;
   tied: boolean;
   strongest?: string;
+  /** Ad sets only: the run window from Meta's saved start/end times. */
+  schedule?: AdSchedule;
 };
 export type ExplorationView = {
   accountId: string;

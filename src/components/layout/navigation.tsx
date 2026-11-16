@@ -31,7 +31,14 @@ export const secondaryNavItems: AppNavItem[] = [
   { name: 'Settings', shortName: 'Settings', icon: IconSettings, route: '/settings' },
 ];
 
-export const mobileBottomNavItems: AppNavItem[] = primaryNavItems.filter(item => item.route !== '/reports');
+/** Five equal tabs on phones. Connections, Profile and Settings stay in the menu drawer. */
+export const mobileBottomNavItems: AppNavItem[] = [
+  { name: 'Overview', shortName: 'Overview', icon: IconHome2, route: '/dashboard' },
+  { name: 'Agency Control', shortName: 'Agency', icon: IconSparkles, route: '/agency' },
+  { name: 'Campaigns', shortName: 'Campaigns', icon: IconPresentation, route: '/campaigns' },
+  { name: 'Reports', shortName: 'Reports', icon: IconChartBar, route: '/reports' },
+  { name: 'Notifications', shortName: 'Alerts', icon: IconBell, route: '/notifications' },
+];
 
 export function isAppNavItemActive(pathname: string | null, route: string): boolean {
   if (!pathname) {

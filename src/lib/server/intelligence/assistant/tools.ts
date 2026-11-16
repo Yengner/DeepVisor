@@ -51,7 +51,7 @@ export async function readAssistantTool(name: string, args: unknown, expected: P
     if (name === 'getAccountCapabilities')
         return { accountName: account.name, currency: account.currency_code, timezone: account.timezone, readSavedHistory: true, saveReviewDraft: true, supportedDraftObjectives: ['OUTCOME_LEADS'], metaWrites: false, uploads: true, uploadLimitation: 'Private draft attachments up to 4 MB. No Meta upload or model media analysis.', integrationStatus: scope.integration.status };
     if (['getBusinessProfile', 'getAdvertisingGoals', 'getAdvertisingDefaults'].includes(name)) {
-        const { data: profile, error } = await db.from('business_profiles').select('business_name,industry,promoted_services,primary_goal,ad_goals,lead_type,monthly_budget,business_location,customer_radius,target_cost_per_lead,preferred_contact_method').eq('id', businessId).maybeSingle();
+        const { data: profile, error } = await db.from('business_profiles').select('business_name,industry,promoted_services,primary_goal,ad_goals,lead_type,monthly_budget,business_location,customer_radius,target_cost_per_lead,preferred_contact_method,contact_methods').eq('id', businessId).maybeSingle();
         if (error)
             throw new AssistantError('Business preferences are unavailable.', 503);
         if (name === 'getBusinessProfile')

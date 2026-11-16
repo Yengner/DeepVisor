@@ -1,8 +1,8 @@
 "use client";
-import type React from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ActionIcon, Alert, Button, SegmentedControl, Tooltip } from "@mantine/core";
+import { ActionIcon, Alert, Button, Tooltip } from "@mantine/core";
+import RangeSwitch, { RANGE_LABELS } from "@/components/design/RangeSwitch";
 import { IconRefresh, IconBrandFacebook, IconBrandInstagram, IconBrandMeta } from "@tabler/icons-react";
 import type { Period } from "@/lib/server/dashboard/overview/types";
 
@@ -11,17 +11,14 @@ export function PeriodControl({ period }: { period: Period }) {
   const params = useSearchParams();
   const [pending, start] = useTransition();
   return (
-    <SegmentedControl
-      aria-label="Performance period"
-      size="sm"
-      radius="sm"
-      styles={{ label: { minHeight: 40, display: "flex", alignItems: "center", justifyContent: "center" } }}
+    <RangeSwitch
+      label="Performance period"
       value={period}
-      disabled={pending}
-      data={[
-        { value: "today", label: "Today" },
-        { value: "7d", label: "7D" },
-        { value: "30d", label: "30D" },
+      pending={pending}
+      options={[
+        { value: "today", label: RANGE_LABELS.today },
+        { value: "7d", label: RANGE_LABELS["7d"] },
+        { value: "30d", label: RANGE_LABELS["30d"] },
       ]}
       onChange={(value) => {
         const next = new URLSearchParams(params);
@@ -139,21 +136,15 @@ export function PlatformControl({ platform }: { platform: 'combined' | 'facebook
   const router = useRouter();
   const params = useSearchParams();
   const [pending, start] = useTransition();
-  const option = (icon: React.ReactNode, text: string) => (
-    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>{icon}{text}</span>
-  );
   return (
-    <SegmentedControl
-      aria-label="Advertising delivery platform"
-      size="sm"
-      radius="sm"
-      styles={{ label: { minHeight: 40, display: "flex", alignItems: "center", justifyContent: "center", paddingInline: 12 } }}
+    <RangeSwitch
+      label="Advertising delivery platform"
       value={platform}
-      disabled={pending}
-      data={[
-        { value: "combined", label: option(<IconBrandMeta size={16} />, "All Meta") },
-        { value: "facebook", label: option(<IconBrandFacebook size={16} color="#1264cc" />, "Facebook") },
-        { value: "instagram", label: option(<IconBrandInstagram size={16} color="#c13584" />, "Instagram") },
+      pending={pending}
+      options={[
+        { value: "combined", label: "All Meta", icon: <IconBrandMeta size={16} aria-hidden /> },
+        { value: "facebook", label: "Facebook", icon: <IconBrandFacebook size={16} color="#1264cc" aria-hidden />, iconOnlyOnPhone: true },
+        { value: "instagram", label: "Instagram", icon: <IconBrandInstagram size={16} color="#c13584" aria-hidden />, iconOnlyOnPhone: true },
       ]}
       onChange={(value) => {
         const next = new URLSearchParams(params);

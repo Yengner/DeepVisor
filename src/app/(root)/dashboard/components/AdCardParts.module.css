@@ -1,0 +1,126 @@
+/* Active ad-set card internals: countdown first, learning second, quick numbers third. */
+
+.run {
+  --tone: var(--ui-accent, #0056db);
+  margin: 0 0 16px;
+}
+.run[data-tone="soon"] { --tone: #c26a00; }
+.run[data-tone="urgent"] { --tone: var(--ui-negative, #ad343f); }
+.run[data-tone="open"] { --tone: var(--ui-text, #102c46); }
+
+.count {
+  margin: 0;
+  color: var(--ui-muted, #53677d);
+  font-size: 16px;
+  font-weight: 600;
+}
+.count strong {
+  margin-right: 2px;
+  color: var(--tone);
+  font: 700 34px/1 var(--font-display, inherit), sans-serif;
+  letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.track {
+  position: relative;
+  height: 10px;
+  margin: 12px 0 8px;
+  border-radius: 999px;
+  background: var(--ui-subtle, #edf3fb);
+  overflow: hidden;
+}
+/* The fill warms along its length, so a nearly-finished run reads red at its leading edge. */
+.track span {
+  display: block;
+  width: var(--fill);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--ui-accent, #0056db), var(--tone));
+}
+.run[data-tone="calm"] .track span { background: var(--ui-accent, #0056db); }
+
+.dates {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  color: var(--ui-text, #102c46);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.run[data-tone="open"] .dates { margin-top: 6px; }
+.run[data-tone="open"] .dates span { color: var(--ui-muted, #53677d); font-weight: 500; }
+
+.learning {
+  --tone: var(--ui-accent, #0056db);
+  margin: 0 0 16px;
+}
+.learning[data-tone="complete"] { --tone: var(--ui-positive, #226443); }
+.learning[data-tone="limited"] { --tone: var(--ui-warning, #855a13); }
+.learning[data-tone="unknown"] { --tone: var(--ui-muted, #53677d); }
+.learning p {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+.learning p span { color: var(--ui-muted, #53677d); font-weight: 600; }
+.learning p strong { color: var(--tone); font-weight: 700; }
+.thin {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tone) 14%, var(--ui-panel, #fff));
+  overflow: hidden;
+}
+.thin[data-empty="true"] {
+  background: repeating-linear-gradient(-45deg, var(--ui-line, #d9e3ef) 0 4px, transparent 4px 8px);
+}
+.thin span { display: block; height: 100%; border-radius: inherit; background: var(--tone); }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid var(--ui-line, #d9e3ef);
+}
+.stats > div { min-width: 0; padding: 14px 10px 0 0; }
+.stats dt { color: var(--ui-muted, #53677d); font-size: 13px; font-weight: 600; }
+.stats dd {
+  margin: 4px 0 2px;
+  color: var(--ui-text, #102c46);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Narrow cards (supporting column, phones): two by two, still large. */
+@container adcard (max-width: 420px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 4px; }
+}
+@media (max-width: 520px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 4px; }
+  .count strong { font-size: 32px; }
+}
+.body { container: adcard / inline-size; }
+
+/* Beside the "Active now" heading when a delivering ad set is within two days of its end. */
+.endingTag {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--ui-warning-soft, #fff3d9);
+  color: var(--ui-warning, #855a13);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  vertical-align: 3px;
+}

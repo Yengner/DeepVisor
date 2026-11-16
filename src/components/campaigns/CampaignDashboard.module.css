@@ -442,3 +442,11 @@ th[data-num] .sortButton { flex-direction: row-reverse; }
 .headerInfo { display: inline-flex; color: var(--dv-text-muted); cursor: help; border-radius: 50%; }
 .headerInfo:focus-visible { outline: 2px solid var(--dv-primary, #2f63e6); outline-offset: 2px; }
 .openCell { width: 44px; min-width: 44px; padding-left: 0 !important; text-align: right; }
+
+/* Phones: one page scroll. The desktop rules above cap the card at the viewport and scroll the
+   list inside it; on a phone that left a short inner scroller above an empty band. */
+@media (max-width: 760px) {
+  .pageShell, .tableSurface { min-height: 0; max-height: none; }
+  .tabs { max-height: none; }
+  .tableBody { flex: none; overflow: visible; }
+}

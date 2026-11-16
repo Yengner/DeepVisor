@@ -42,11 +42,13 @@ import { LiveIndicator } from '@/components/design/LiveIndicator';
 import { adSetSignals } from '@/lib/server/dashboard/insights/signals';
 import { periodContext, sameHourComparison } from '@/lib/server/dashboard/insights/compare';
 import { chartMarkers } from '@/lib/server/dashboard/overview/markers';
-import AudienceIntelligence from './components/AudienceIntelligence';
+import OverviewTakeaways from './components/OverviewTakeaways';
+import AttentionList from '@/components/product/AttentionList';
+import { attentionItems } from '@/lib/shared/insights/attention';
+import { insightsEnabled, openUrgentIssues } from '@/lib/server/insights/issues';
 import { audienceObservations, hourlyObservations } from '@/lib/server/dashboard/insights/charts';
 import { PlatformControl } from './components/OverviewControls';
 import InsightsEntry from '@/components/insights/InsightsEntry';
-import { insightsEnabled } from '@/lib/server/insights/issues';
 type OverviewContext = LiveOverviewContext & { decisionPreview?: boolean; publisher: Publisher };
 
 const decisions = cache(async (context: OverviewContext) => {
@@ -254,6 +256,19 @@ async function Activity({ context }: { context: OverviewContext }) {
     </section>
   );
 }
+/** Meta issues that stop delivery and ad sets about to end, above everything else. */
+async function Attention({ context, period }: { context: OverviewContext; period: Period }) {
+  const [issues, view] = await Promise.all([
+    openUrgentIssues(context.businessId, context.account!.id).catch((error) => {
+      console.error("Overview issues unavailable", error);
+      return [];
+    }),
+    // Same cached call the advertising board makes, so this adds no extra read.
+    loadExploration(period, "adset", null, true).catch(() => null),
+  ]);
+  const items = attentionItems(issues, view?.items ?? [], { now: context.now, zone: context.zone });
+  return <AttentionList items={items} />;
+}
 async function Content({ requestedPeriod, preview, platform }: { requestedPeriod: Period | null; preview: boolean; platform: Publisher }) {
   const context: OverviewContext = { ...await loadOverviewContext(), decisionPreview: preview, publisher: platform };
   const connected =
@@ -293,17 +308,18 @@ async function Content({ requestedPeriod, preview, platform }: { requestedPeriod
   const age = retrievedAt ? Date.parse(context.now) - Date.parse(retrievedAt) : Infinity;
   return <div className={classes.page} data-publisher={platform}>
     {preview && <DecisionPreviewBanner page="dashboard" />}
-    <header className={classes.workspaceHeader}><div><h1>{context.businessName}</h1><p>{context.account.name}</p>{insightsEnabled() && <InsightsEntry />}</div><div className={classes.headerControls}><PlatformControl platform={platform} /><PeriodControl period={period} /></div></header>
+    <header className={classes.workspaceHeader}><div><h1>{context.businessName}</h1><p>{context.account.name}</p>{insightsEnabled() && <InsightsEntry countIssues={false} />}</div><div className={classes.headerControls}><PlatformControl platform={platform} /><PeriodControl period={period} /></div></header>
     <details className={classes.freshness}><summary>{delivering && <LiveIndicator />}<span>{live.source === 'api' || live.source === 'stored' ? `${age > 600000 ? 'Last updated' : 'Updated'} ${retrievedAt ? timestamp(retrievedAt, context.zone) : 'recently'}` : platform === 'combined' ? 'Stored data · live retrieval unavailable' : 'Platform data unavailable'}</span></summary>
       <p>Meta attribution may change after reporting. {retrievedAt ? `Retrieved ${timestamp(retrievedAt, context.zone)}.` : `Stored sync ${timestamp(context.account.last_synced, context.zone)}.`} Account timezone: {context.zone}.</p>
       <p>Today is live and updates as Meta reports delivery.</p>
       <RefreshOverview disabled={preview} label="Recover stored Meta data" /><Link href="/integration">Connection settings</Link>
     </details>
     {!connected && <ErrorMessage>Meta connection needs attention. Saved data remains available; reconnect in Connections.</ErrorMessage>}
+    <Suspense key={`attention:${period}`} fallback={null}><Attention context={context} period={period} /></Suspense>
     <section aria-label="Account performance" className={classes.kpiSection}><Suspense key={`${period}:${platform}`} fallback={<Loading kind="metrics" />}><Metrics context={context} period={period} /></Suspense></section>
     <section className={classes.workspaceChart} aria-label="Performance chart"><Suspense key={`${period}:${platform}`} fallback={<Loading kind="chart" />}><Trend context={context} period={period} /></Suspense></section>
     <section className={classes.board}><Suspense key={`${period}:${platform}`} fallback={<Loading kind="board" />}><Board period={period} context={context} /></Suspense></section>
-    <AudienceIntelligence key={`${period}:${platform}`} audience={audience} hourly={hourly} currency={context.account.currency_code} zone={context.zone} period={period} platform={platform} since={periodRange(period, context.today).since} until={context.today} audienceCombinedOnly={live.audience?.some(r => r.publisher === 'combined-only') ?? false} hourlyCombinedOnly={live.hourly?.some(r => r.publisher === 'combined-only') ?? false} />
+    <OverviewTakeaways audience={audience} hourly={hourly} currency={context.account.currency_code} platform={platform} audienceCombinedOnly={live.audience?.some(r => r.publisher === 'combined-only') ?? false} hourlyCombinedOnly={live.hourly?.some(r => r.publisher === 'combined-only') ?? false} />
     <Suspense fallback={null}><Activity context={context} /></Suspense>
   </div>;
 }

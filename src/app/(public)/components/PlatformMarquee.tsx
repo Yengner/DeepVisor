@@ -24,11 +24,12 @@ function Logos({ hidden }: { hidden?: boolean }) {
   </ul>;
 }
 
+/** Slow, linear, and it stops under the pointer; reduced motion gets a still list. */
 export default function PlatformMarquee() {
   return <section className={classes.platforms} aria-labelledby="platforms-heading">
     <div className={classes.platformsLabel}>
       <span className={classes.liveChip}><SiMeta aria-hidden /> Meta <em>Connected today</em></span>
-      <span id="platforms-heading">Where we’re headed next</span>
+      <h2 id="platforms-heading">Where we’re headed next</h2>
     </div>
     <div className={classes.marquee}>
       <div className={classes.marqueeTrack}><Logos /><Logos hidden /></div>

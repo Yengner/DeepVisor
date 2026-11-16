@@ -1,0 +1,65 @@
+/* Reads DesignSurface tokens on Overview, app tokens elsewhere. */
+.list {
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  margin: 0 0 20px;
+}
+.list ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+
+.item {
+  --tone: var(--ui-negative, #ad343f);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
+  border-radius: var(--dv-radius-md, 12px);
+  background: color-mix(in srgb, var(--tone) 8%, var(--ui-panel, var(--dv-card-bg, #fff)));
+  color: var(--ui-text, var(--dv-text, #102c46));
+}
+.item[data-tone='soon'] { --tone: var(--ui-warning, #855a13); }
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  color: var(--tone);
+}
+.copy { min-width: 0; }
+.title { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.detail { margin: 2px 0 0; color: var(--ui-muted, var(--dv-text-muted, #53677d)); font-size: 14px; line-height: 1.5; }
+.note { font-style: italic; }
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
+  border-radius: 999px;
+  background: var(--ui-panel, var(--dv-card-bg, #fff));
+  color: var(--tone);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 120ms var(--ease-out), background-color 160ms var(--ease-out);
+}
+.action:active { transform: scale(.97); }
+.action:focus-visible { outline: 3px solid var(--ui-focus, var(--dv-primary, #2f63e6)); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  .action:hover { background: color-mix(in srgb, var(--tone) 10%, var(--ui-panel, var(--dv-card-bg, #fff))); }
+}
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 600px) {
+  .item { grid-template-columns: auto minmax(0, 1fr); align-items: start; padding: 14px; gap: 12px; }
+  .action { grid-column: 2; justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .action { transition: none; }
+}

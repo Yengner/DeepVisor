@@ -57,6 +57,7 @@ export default function OnboardingProvider({ initial, countries }: OnboardingPro
       primaryGoal: data.primaryGoal ?? '',
       leadType: data.leadType ?? '',
       preferredContactMethod: data.preferredContactMethod ?? '',
+      contactMethods: Array.isArray(data.contactMethods) ? data.contactMethods : [],
       leadQualitySignal: data.leadQualitySignal ?? '',
       averageCustomerValue: data.averageCustomerValue ?? '',
       targetCostPerLead: data.targetCostPerLead ?? '',

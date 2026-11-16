@@ -32,6 +32,7 @@ import type { OverviewContext } from "../../dashboard/overview/load";
 import type { UnitState } from "../../dashboard/overview/types";
 import { selectBoardAdvertising } from "../../dashboard/overview/controlModel";
 import { deliveryStatuses } from "./delivery";
+import { adSchedule } from "@/lib/shared/performance/schedule";
 
 export class ExplorationNotFound extends Error {}
 type Client = ReturnType<typeof createAdminClient>;
@@ -257,6 +258,16 @@ export const loadExploration = cache(
         media: [],
         leader: false,
         tied: false,
+        ...(entity.entity_level === "adset"
+          ? {
+              schedule: adSchedule(
+                entity.raw,
+                hierarchy.find((c) => c.entity_level === "campaign" && c.external_id === entity.parent_external_id)?.raw,
+                context.now,
+                context.zone,
+              ),
+            }
+          : {}),
       };
     }
     let items = rank(

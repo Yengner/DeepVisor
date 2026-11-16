@@ -71,7 +71,7 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: {
     </nav>}
     {payload.meta.syncCoverage?.historicalAnalysisPending && <div className={classes.banner}><p>Historical sync is still adding older data. Reloading the report reads what has been saved so far.</p></div>}
     {isPending && <div className={classes.pending} role="status"><Loader size="xs" /> Updating report…</div>}
-    <ReportDataStatus payload={payload} />
+    <ReportDataStatus payload={payload} onUpdate={updateSearch} />
     <ReportMetrics payload={payload} chartMetric={chartMetric} onChartMetric={showChart} />
     <ReportSections section={section} onSelect={select} hidden={[...hiddenSections]} />
     <div aria-busy={isPending} style={{ display: 'grid', gap: 16, opacity: isPending ? 0.6 : 1, transition: 'opacity 150ms ease' }}>

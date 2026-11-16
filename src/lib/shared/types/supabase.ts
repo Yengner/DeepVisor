@@ -3846,6 +3846,7 @@ export type Database = {
           booking_link: string | null
           business_location: string | null
           business_name: string
+          contact_methods: string[]
           created_at: string
           customer_radius: string | null
           description: string | null
@@ -3895,6 +3896,7 @@ export type Database = {
           booking_link?: string | null
           business_location?: string | null
           business_name: string
+          contact_methods?: string[]
           created_at?: string
           customer_radius?: string | null
           description?: string | null
@@ -3944,6 +3946,7 @@ export type Database = {
           booking_link?: string | null
           business_location?: string | null
           business_name?: string
+          contact_methods?: string[]
           created_at?: string
           customer_radius?: string | null
           description?: string | null

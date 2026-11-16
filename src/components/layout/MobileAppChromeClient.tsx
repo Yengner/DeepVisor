@@ -1,41 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   ActionIcon,
   Avatar,
-  Box,
   Burger,
   Button,
   Divider,
   Drawer,
-  Group,
-  Indicator,
   Menu,
   NavLink,
   Portal,
   Stack,
-  Text,
   ThemeIcon,
 } from '@mantine/core';
 import {
-  IconBell,
   IconLogout,
   IconPlus,
   IconSettings,
+  IconSparkles,
 } from '@tabler/icons-react';
+import { openDeepVisor } from '@/lib/shared/assistant/askEvent';
 import { BrandLockup, BrandMark } from '@/components/brand/Brand';
-import {
-  clientHandleSignOut,
-  markAllNotificationsAsReadClient,
-  markNotificationReadClient,
-} from '@/lib/client';
-import {
-  formatNotificationPreviewMessage,
-  formatRelativeTime,
-  type NotificationFeedItem,
-} from '@/lib/shared';
+import { clientHandleSignOut } from '@/lib/client';
+import type { NotificationFeedItem } from '@/lib/shared';
 import {
   isAppNavItemActive,
   mobileBottomNavItems,
@@ -43,6 +33,7 @@ import {
   secondaryNavItems,
 } from './navigation';
 import PlatformAdAccountDropdownClient from './topBar/PlatformAdAccountDropdownClient';
+import bottomNav from './MobileBottomNav.module.css';
 
 type MobileAppChromeClientProps = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,19 +51,10 @@ type MobileAppChromeClientProps = {
   initialAccountId?: string | null;
 };
 
-function formatNotificationTime(value: string) {
-  return formatRelativeTime(value, {
-    emptyLabel: 'Recently',
-    futureLabel: 'Just now',
-    includeSeconds: true,
-  });
-}
-
 export default function MobileAppChromeClient({
   userInfo,
   platforms = [],
   adAccounts = [],
-  notifications = [],
   unreadNotificationIds = [],
   initialPlatformId,
   initialAccountId,
@@ -80,10 +62,7 @@ export default function MobileAppChromeClient({
   const router = useRouter();
   const pathname = usePathname();
   const [drawerOpened, setDrawerOpened] = useState(false);
-  const [userNotifications, setUserNotifications] =
-    useState<NotificationFeedItem[]>(notifications);
-  const [unreadIds, setUnreadIds] = useState<string[]>(unreadNotificationIds);
-  const notificationCount = unreadIds.length;
+  const notificationCount = unreadNotificationIds.length;
   const accentColor = 'var(--platform-accent)';
   const accentStrong = 'var(--platform-accent-strong)';
   const accentSoft = 'var(--platform-accent-soft)';
@@ -96,11 +75,6 @@ export default function MobileAppChromeClient({
       .map((name: string) => name[0])
       .join('')
       .toUpperCase() || 'DV';
-
-  useEffect(() => {
-    setUserNotifications(notifications);
-    setUnreadIds(unreadNotificationIds);
-  }, [notifications, unreadNotificationIds]);
 
   const navigate = (route: string) => {
     setDrawerOpened(false);
@@ -117,30 +91,6 @@ export default function MobileAppChromeClient({
   const activeDrawerRoute = drawerNavItems
     .filter((item) => isAppNavItemActive(pathname, item.route))
     .sort((left, right) => right.route.length - left.route.length)[0]?.route;
-
-  const markAllRead = () => {
-    setUserNotifications((current) =>
-      current.map((notification) => ({ ...notification, read: true }))
-    );
-    setUnreadIds([]);
-    void markAllNotificationsAsReadClient(unreadIds);
-  };
-
-  const handleNotificationClick = (notification: NotificationFeedItem) => {
-    if (!notification.read) {
-      setUserNotifications((current) =>
-        current.map((item) =>
-          item.id === notification.id ? { ...item, read: true } : item
-        )
-      );
-      setUnreadIds((current) => current.filter((id) => id !== notification.id));
-      void markNotificationReadClient(notification.id);
-    }
-
-    if (notification.link) {
-      router.push(notification.link);
-    }
-  };
 
   return (
     <>
@@ -173,69 +123,9 @@ export default function MobileAppChromeClient({
           />
         </div>
 
-        <Menu shadow="md" width="min(calc(100vw - 24px), 380px)" position="bottom-end">
-          <Menu.Target>
-            <Indicator disabled={notificationCount === 0} label={notificationCount} size={16}>
-              <ActionIcon
-                size="lg"
-                variant="subtle"
-                aria-label="Open notifications"
-                style={{ color: '#d4d8dd', backgroundColor: '#102f50', border: '1px solid #284665' }}
-              >
-                <IconBell size={20} />
-              </ActionIcon>
-            </Indicator>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Group justify="space-between" px="sm" py={8}>
-              <Text fw={700} size="sm">Notifications</Text>
-              {notificationCount > 0 ? (
-                <Button variant="subtle" size="compact-xs" onClick={markAllRead}>
-                  Mark read
-                </Button>
-              ) : null}
-            </Group>
-            <Divider />
-            {userNotifications.length > 0 ? (
-              <Box mah="54vh" style={{ overflowY: 'auto' }} p={6}>
-                {userNotifications.map((notification) => (
-                  <Menu.Item
-                    key={notification.id}
-                    onClick={() => handleNotificationClick(notification)}
-                    className={notification.read ? 'opacity-70' : ''}
-                  >
-                    <Stack gap={2}>
-                      <Group justify="space-between" gap="sm" wrap="nowrap">
-                        <Text size="sm" fw={700} lineClamp={1} style={{ minWidth: 0 }}>
-                          {notification.title}
-                        </Text>
-                        <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>
-                          {formatNotificationTime(notification.created_at)}
-                        </Text>
-                      </Group>
-                      <Text
-                        size="xs"
-                        c="dimmed"
-                        lineClamp={2}
-                        title={notification.message}
-                      >
-                        {formatNotificationPreviewMessage(notification.message)}
-                      </Text>
-                    </Stack>
-                  </Menu.Item>
-                ))}
-              </Box>
-            ) : (
-              <Box p="md" ta="center">
-                <Text size="sm" c="dimmed">No new notifications</Text>
-              </Box>
-            )}
-            <Divider />
-            <Menu.Item onClick={() => navigate('/notifications')}>
-              View all notifications
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
+        <ActionIcon size={44} variant="subtle" color="gray" aria-label="Ask DeepVisor" onClick={openDeepVisor} style={{ color: '#f5f9ff' }}>
+          <IconSparkles size={21} aria-hidden />
+        </ActionIcon>
 
         <Menu shadow="md" width={220} position="bottom-end">
           <Menu.Target>
@@ -347,32 +237,30 @@ export default function MobileAppChromeClient({
       </Drawer>
 
       <Portal>
-        <nav
-          className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t bg-[var(--dv-surface)] px-1 pb-[calc(0.45rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-4px_16px_rgba(21,23,20,0.08)] md:hidden"
-          style={{ borderColor: 'var(--dv-border)' }}
-          aria-label="Primary mobile navigation"
-        >
-          {mobileBottomNavItems.map((item) => {
-            const active = isMobileBottomItemActive(item.route);
+        <nav className={`${bottomNav.bar} md:hidden`} aria-label="Primary mobile navigation">
+          <ul className={bottomNav.list}>
+            {mobileBottomNavItems.map((item) => {
+              const active = isMobileBottomItemActive(item.route);
+              const unread = item.route === '/notifications' ? notificationCount : 0;
 
-            return (
-              <button
-                key={item.route}
-                type="button"
-                onClick={() => navigate(item.route)}
-                aria-label={item.name}
-                aria-current={active ? 'page' : undefined}
-                className="flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-0.5 py-1.5 text-[10px] font-semibold"
-                style={{
-                  color: active ? 'var(--dv-primary-strong)' : 'var(--dv-text-muted)',
-                  backgroundColor: active ? 'var(--dv-primary-soft)' : 'transparent',
-                }}
-              >
-                <item.icon size={20} stroke={active ? 2.2 : 1.8} />
-                <span className="w-full break-words text-center leading-tight">{item.shortName}</span>
-              </button>
-            );
-          })}
+              return (
+                <li key={item.route}>
+                  <Link
+                    href={item.route}
+                    className={bottomNav.tab}
+                    aria-current={active ? 'page' : undefined}
+                    aria-label={unread > 0 ? `${item.name}, ${unread} unread` : item.name}
+                  >
+                    <span className={bottomNav.icon}>
+                      <item.icon size={22} stroke={active ? 2.1 : 1.7} aria-hidden />
+                      {unread > 0 ? <span className={bottomNav.badge} aria-hidden>{unread > 9 ? '9+' : unread}</span> : null}
+                    </span>
+                    <span className={bottomNav.label}>{item.shortName}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </nav>
       </Portal>
     </>

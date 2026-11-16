@@ -85,6 +85,18 @@
   color: var(--dv-primary-strong);
 }
 
+.optionalTag {
+  margin-left: 4px;
+  color: #6b7480;
+  font-size: 0.75em;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.chipRow :global(.mantine-Chip-label) {
+  min-height: 36px;
+}
+
 .fullRow {
   grid-column: 1 / -1;
 }

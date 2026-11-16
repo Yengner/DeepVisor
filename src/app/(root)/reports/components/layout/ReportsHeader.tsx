@@ -1,19 +1,20 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Button, Drawer, Menu, Switch, Tooltip } from '@mantine/core';
+import { ActionIcon, Button, Drawer, Menu, Popover, Switch, Tooltip } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { DatePickerInput } from '@mantine/dates';
+import { DatePicker } from '@mantine/dates';
 import {
   IconAdjustmentsHorizontal,
   IconCalendar,
   IconChevronDown,
-  IconDownload,
+  IconDots,
   IconFileSpreadsheet,
   IconFileTypePdf,
   IconRefresh,
 } from '@tabler/icons-react';
 import { SavedViewsMenu } from './SavedViewsMenu';
+import RangeSwitch, { RANGE_LABELS } from '@/components/design/RangeSwitch';
 import { completedReportRange, shiftReportDay } from '@/lib/shared/reports/dates';
 import { formatReportRange, formatTimezone } from '@/lib/shared/reports/labels';
 import type { ReportFilterOptions, ReportPayload } from '@/lib/server/reports/types';
@@ -35,10 +36,10 @@ interface ReportsHeaderProps {
 type Preset = '7d' | '30d' | '90d' | 'max';
 const PRESETS: Array<{ value: Preset; label: string; title: string }> = [
   // Reports use completed days (through yesterday); Overview and Campaigns windows include today so far.
-  { value: '7d', label: '7D', title: 'Last 7 completed days, through yesterday (Overview and Campaigns include today)' },
-  { value: '30d', label: '30D', title: 'Last 30 completed days, through yesterday (Overview and Campaigns include today)' },
-  { value: '90d', label: '90D', title: 'Last 90 completed days, through yesterday' },
-  { value: 'max', label: 'All', title: 'All saved history' },
+  { value: '7d', label: RANGE_LABELS['7d'], title: 'Last 7 completed days, through yesterday (Overview and Campaigns include today)' },
+  { value: '30d', label: RANGE_LABELS['30d'], title: 'Last 30 completed days, through yesterday (Overview and Campaigns include today)' },
+  { value: '90d', label: RANGE_LABELS['90d'], title: 'Last 90 completed days, through yesterday' },
+  { value: 'max', label: RANGE_LABELS.all, title: 'All saved history' },
 ];
 
 /** "Synced 1:38 PM" today, otherwise with the date; honest when no sync is recorded. */
@@ -91,9 +92,12 @@ export default function ReportsHeader({
     return range?.dateFrom === query.dateFrom && range?.dateTo === query.dateTo;
   });
   const compareDisabledReason = isMax ? 'Comparison is unavailable for all saved history.' : meta.comparisonDisabledReason ?? null;
-  // Phones get one summary button that opens the period controls in a sheet.
+  // One period button: a popover on desktop, a bottom sheet on phones.
   const mobile = useMediaQuery('(max-width: 760px)');
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [periodOpen, setPeriodOpen] = useState(false);
+  // Two months on desktop end on the selected end date's month, so no empty future month shows.
+  const anchor = draftRange[1] ?? draftRange[0];
+  const calendarStart = anchor ? (mobile ? anchor : new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1)) : undefined;
   const rollingPreset = activePreset && activePreset !== 'max' ? (Number(activePreset.replace('d', '')) as 7 | 30 | 90) : null;
   const periodSummary = `${isMax ? 'All saved history' : formatReportRange(query.dateFrom, query.dateTo)}${activePreset && activePreset !== 'max' ? ` · ${activePreset.toUpperCase()}` : ''} · ${query.groupBy === 'day' ? 'Daily' : query.groupBy === 'week' ? 'Weekly' : 'Monthly'}${query.compareMode === 'previous_period' ? ' · Compared' : ''}`;
 
@@ -117,25 +121,23 @@ export default function ReportsHeader({
   };
 
   const controls = (
-      <div className={classes.toolbar} role="group" aria-label="Report period">
-        <div className={classes.toolbarGroup}>
-          <div className={classes.segmented} role="group" aria-label="Quick range">
-            {PRESETS.map(preset => (
-              <button
-                key={preset.value}
-                type="button"
-                title={preset.title}
-                aria-pressed={activePreset === preset.value}
-                disabled={isPending || (preset.value !== 'max' && !presetRange(preset.value, meta.today))}
-                onClick={() => applyPreset(preset.value)}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
+      <div className={classes.periodPanel} role="group" aria-label="Report period">
+        <div className={classes.periodGroup}>
+          <RangeSwitch
+            label="Quick range"
+            className={classes.quickRange}
+            value={activePreset}
+            pending={isPending}
+            options={PRESETS.map(preset => ({ ...preset, disabled: preset.value !== 'max' && !presetRange(preset.value, meta.today) }))}
+            onChange={applyPreset}
+          />
           {!isMax ? (
-            <DatePickerInput
+            <DatePicker
               type="range"
+              allowSingleDateInRange
+              numberOfColumns={mobile ? 1 : 2}
+              defaultDate={calendarStart}
+              ariaLabels={{ previousMonth: 'Previous month', nextMonth: 'Next month' }}
               value={draftRange}
               onChange={value => {
                 const start = normalizePickerDate(value[0]);
@@ -149,12 +151,6 @@ export default function ReportsHeader({
                   params.set('date_to', toIsoDate(end));
                 });
               }}
-              aria-label="Date range"
-              valueFormat="MMM D, YYYY"
-              leftSection={<IconCalendar size={16} />}
-              radius="xl"
-              size="sm"
-              className={classes.rangeInput}
               maxDate={meta.today ? parseLocalDate(meta.today) : undefined}
               getDayProps={date => {
                 const count = activeDateCount.get(toIsoDate(normalizePickerDate(date)!)) ?? 0;
@@ -174,9 +170,7 @@ export default function ReportsHeader({
           ) : null}
         </div>
 
-        <span className={classes.toolbarDivider} aria-hidden="true" />
-
-        <div className={classes.toolbarGroup}>
+        <div className={classes.periodGroup}>
           <Tooltip label={compareDisabledReason} disabled={!compareDisabledReason} multiline maw={280} withinPortal>
             <span>
               <Switch
@@ -206,7 +200,7 @@ export default function ReportsHeader({
             {isDemo ? <span className={classes.demoBadge}>Demo data</span> : null}
           </div>
           <p className={classes.subtitle}>
-            <strong>{scopeName}</strong> · {formatReportRange(query.dateFrom, query.dateTo)} · {formatTimezone(meta.timezone)}
+            <strong>{scopeName}</strong> · {formatTimezone(meta.timezone)}
             {' · '}{meta.partialDay ? 'Includes today (partial day)'
               : meta.today && query.dateTo === shiftReportDay(meta.today, -1) ? 'Completed days, through yesterday' : 'Completed days'}
           </p>
@@ -222,36 +216,39 @@ export default function ReportsHeader({
             Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
           </Button>
           <SavedViewsMenu rollingPreset={rollingPreset} isDemo={isDemo} />
+          <Popover opened={periodOpen && !mobile} onChange={setPeriodOpen} position="bottom-end" shadow="md" radius="lg" trapFocus returnFocus withinPortal>
+            <Popover.Target>
+              <button type="button" className={classes.periodButton} onClick={() => setPeriodOpen(open => !open)} aria-haspopup="dialog" aria-expanded={periodOpen}>
+                <IconCalendar size={16} aria-hidden="true" />
+                <span>{periodSummary}</span>
+                <IconChevronDown size={14} aria-hidden="true" />
+              </button>
+            </Popover.Target>
+            <Popover.Dropdown aria-label="Report period">{!mobile && periodOpen ? controls : null}</Popover.Dropdown>
+          </Popover>
           <Menu position="bottom-end" shadow="md" width={260}>
             <Menu.Target>
-              <Button leftSection={<IconDownload size={16} />} rightSection={<IconChevronDown size={14} />} radius="xl" className="app-platform-page-action-primary">
-                Export
-              </Button>
+              <ActionIcon variant="default" radius="xl" size={36} aria-label="Export and reload" loading={isPending} className={classes.moreActions}>
+                <IconDots size={18} />
+              </ActionIcon>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Label>Every section · current filters</Menu.Label>
+              <Menu.Label>Export every section, current filters</Menu.Label>
               <Menu.Item component="a" href={exportLinks.pdf} leftSection={<IconFileTypePdf size={16} />}>PDF report</Menu.Item>
               <Menu.Item component="a" href={exportLinks.csv} leftSection={<IconFileSpreadsheet size={16} />}>CSV data</Menu.Item>
+              <Menu.Divider />
+              <Menu.Item leftSection={<IconRefresh size={16} />} onClick={onRefresh}>
+                Reload saved data
+                <span className={classes.menuHint}>{syncedLabel(meta.lastSyncedAt)}. Doesn’t fetch new data from Meta.</span>
+              </Menu.Item>
             </Menu.Dropdown>
           </Menu>
-          <Tooltip label="Reloads the data DeepVisor has saved. It does not fetch new data from Meta." multiline maw={260} withinPortal>
-            <Button variant="default" radius="xl" leftSection={<IconRefresh size={15} />} onClick={onRefresh} loading={isPending}
-              aria-label={`Reload saved report data. ${syncedLabel(meta.lastSyncedAt)}`}>
-              Reload<span className={classes.reloadNote}>· {syncedLabel(meta.lastSyncedAt)}</span>
-            </Button>
-          </Tooltip>
         </div>
       </div>
 
-      <button type="button" className={classes.mobilePeriod} onClick={() => setSheetOpen(true)} aria-haspopup="dialog">
-        <IconCalendar size={16} aria-hidden="true" />
-        <span>{periodSummary}</span>
-        <IconChevronDown size={14} aria-hidden="true" />
-      </button>
-      {!mobile ? controls : null}
-      <Drawer opened={Boolean(mobile) && sheetOpen} onClose={() => setSheetOpen(false)} position="bottom" radius="lg" title="Report period" classNames={{ body: classes.periodSheet }} styles={{ content: { height: "auto", maxHeight: "90dvh", flex: "0 0 auto" } }}>
-        {mobile ? controls : null}
-        <Button fullWidth radius="xl" mt="md" onClick={() => setSheetOpen(false)}>Done</Button>
+      <Drawer opened={Boolean(mobile) && periodOpen} onClose={() => setPeriodOpen(false)} position="bottom" radius="lg" title="Report period" classNames={{ body: classes.periodSheet }} styles={{ content: { height: "auto", maxHeight: "90dvh", flex: "0 0 auto" } }}>
+        {mobile && periodOpen ? controls : null}
+        <Button fullWidth radius="xl" mt="md" onClick={() => setPeriodOpen(false)}>Done</Button>
       </Drawer>
     </header>
   );

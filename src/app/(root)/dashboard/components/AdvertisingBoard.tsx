@@ -13,12 +13,13 @@ import {
 } from "@/components/campaigns/exploration/AdvertisingExplorer";
 import StatusBadge from "@/components/product/StatusBadge";
 import { LiveIndicator } from "@/components/design/LiveIndicator";
-import AdSignals from "./AdSignals";
 import type { AdSignals as AdSignalsData } from "@/lib/server/dashboard/insights/signals";
-import { metricValue, MetricDelta } from "./ControlMetrics";
+import { LearningBar, QuickStats, RunWindow } from "./AdCardParts";
+import { endingSoon } from "@/lib/shared/performance/schedule";
+import parts from "./AdCardParts.module.css";
 import classes from "./ControlCenter.module.css";
 
-export default function AdvertisingBoard({ view, learning = {}, signals = {}, filtered = false }: { view: ExplorationView; learning?: Record<string, string>; signals?: Record<string, AdSignalsData>; filtered?: boolean }) {
+export default function AdvertisingBoard({ view, signals = {}, filtered = false }: { view: ExplorationView; learning?: Record<string, string>; signals?: Record<string, AdSignalsData>; filtered?: boolean }) {
   const [selected, setSelected] = useState<string | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const active = (
@@ -27,9 +28,7 @@ export default function AdvertisingBoard({ view, learning = {}, signals = {}, fi
   ).flatMap((id) => view.items.find((i) => i.id === id) ?? []);
   const featured =
     active.find((i) => i.id === view.board?.activeFeaturedId) ?? active[0];
-  // When one ad set carries all of the period's spend, its numbers equal the KPI row above.
-  const spending = view.items.filter((i) => (i.metrics.spend ?? 0) > 0);
-  const soleSpender = !filtered && spending.length === 1 ? spending[0].id : null;
+  const ending = active.filter((i) => endingSoon(i.schedule)).length;
   const periodLabel =
     view.period === "today"
       ? "Today"
@@ -53,8 +52,9 @@ export default function AdvertisingBoard({ view, learning = {}, signals = {}, fi
             ? "Most results · tied"
             : "Most results"
           : null;
-    const hasData =
-      item.metrics.results !== null && item.metrics.spend !== null;
+    const hasData = item.metrics.spend !== null;
+    const inactive = item.delivery !== "ACTIVE";
+    const badge = item.state && item.state !== "Insufficient data" && item.state !== "Paused";
     return (
       <article
         key={item.id}
@@ -73,7 +73,7 @@ export default function AdvertisingBoard({ view, learning = {}, signals = {}, fi
             <IconArrowUpRight size={18} />
           </span>
         </div>
-        <div className={classes.adBody}>
+        <div className={`${classes.adBody} ${parts.body}`}>
           <h3>
             {/* Stretched control: the whole card opens details, but only the name is announced. */}
             <button
@@ -87,152 +87,23 @@ export default function AdvertisingBoard({ view, learning = {}, signals = {}, fi
               {item.name}
             </button>
           </h3>
-          {prominent && hasData && item.id === soleSpender ? (
-            <p className={classes.soleSpender}>
-              <strong>All of this period’s advertising.</strong>{" "}
-              Its {metricValue("results", item.metrics.results, view.currency, true)} results and{" "}
-              {metricValue("spend", item.metrics.spend, view.currency, true)} spend are the totals shown above.
-              {[
-                item.metrics.clicks !== null ? ` ${new Intl.NumberFormat("en").format(item.metrics.clicks)} clicks` : null,
-                item.metrics.impressions !== null ? `${new Intl.NumberFormat("en").format(item.metrics.impressions)} impressions` : null,
-              ].filter(Boolean).join(" · ")}
-            </p>
-          ) : prominent && hasData ? (
-            <>
-              <dl className={classes.statGrid}>
-                {(["results", "costPerResult", "spend", "ctr"] as const).map((key) => (
-                  <div key={key}>
-                    <dt>{key === "results" ? "Results" : key === "costPerResult" ? "Cost / result" : key === "spend" ? "Spend" : "CTR"}</dt>
-                    <dd>{metricValue(key, item.metrics[key], view.currency, true)}</dd>
-                    {(key === "results" || key === "costPerResult") && (
-                      <MetricDelta change={item.deltas[key]} description={view.comparison} />
-                    )}
-                  </div>
-                ))}
-              </dl>
-              <p className={classes.supportMetrics}>
-                {[
-                  item.metrics.clicks !== null ? `${new Intl.NumberFormat("en").format(item.metrics.clicks)} clicks` : null,
-                  item.metrics.impressions !== null ? `${new Intl.NumberFormat("en").format(item.metrics.impressions)} impressions` : null,
-                ].filter(Boolean).join(" · ")}
-              </p>
-            </>
-          ) : hasData ? (
-            <dl className={classes.adMetrics}>
-              <div>
-                <dd>
-                  {metricValue(
-                    "results",
-                    item.metrics.results,
-                    view.currency,
-                    true,
-                  )}
-                </dd>
-                <dt>Results</dt>
-                <MetricDelta
-                  change={item.deltas.results}
-                  description={view.comparison}
-                />
-              </div>
-              {item.metrics.costPerResult !== null && (
-                <div>
-                  <dd>
-                    {metricValue(
-                      "costPerResult",
-                      item.metrics.costPerResult,
-                      view.currency,
-                      true,
-                    )}
-                  </dd>
-                  <dt>Cost / result</dt>
-                  <MetricDelta
-                    change={item.deltas.costPerResult}
-                    description={view.comparison}
-                  />
-                </div>
+          {(badge || inactive) && (
+            <div className={classes.adState}>
+              {badge && <StatusBadge status={item.state!} />}
+              {inactive && (
+                <span className={classes.delivery} data-delivery={item.delivery}>
+                  {item.delivery === "PAUSED" ? "Paused" : item.delivery === "Unknown" ? "Status unavailable" : "Inactive"}
+                </span>
               )}
-            </dl>
+            </div>
+          )}
+          <RunWindow schedule={item.schedule} />
+          <LearningBar learning={signals[item.id]?.learning} />
+          {hasData ? (
+            <QuickStats metrics={item.metrics} deltas={item.deltas} currency={view.currency} comparison={view.comparison} />
           ) : (
-            <p className={classes.insufficient}>
-              Not enough data in this period
-            </p>
+            <p className={classes.insufficient}>No data for {periodLabel === "Today" ? "today" : `the last ${periodLabel}`} yet</p>
           )}
-          {hasData && !prominent && (
-            <>
-              <dl className={classes.secondaryMetrics}>
-                <div>
-                  <dt>Spend</dt>
-                  <dd>
-                    {metricValue(
-                      "spend",
-                      item.metrics.spend,
-                      view.currency,
-                      true,
-                    )}
-                  </dd>
-                </div>
-                {item.metrics.ctr !== null && (
-                  <div>
-                    <dt>CTR</dt>
-                    <dd>
-                      {metricValue("ctr", item.metrics.ctr, view.currency)}
-                    </dd>
-                  </div>
-                )}
-                {prominent && item.metrics.clicks !== null && (
-                  <div>
-                    <dt>Clicks</dt>
-                    <dd>
-                      {new Intl.NumberFormat("en", {
-                        notation: "compact",
-                      }).format(item.metrics.clicks)}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-              <p className={classes.supportMetrics}>
-                {[
-                  item.metrics.impressions !== null
-                    ? `${new Intl.NumberFormat("en", { notation: "compact" }).format(item.metrics.impressions)} impressions`
-                    : null,
-                  prominent &&
-                  view.period === "today" &&
-                  item.metrics.reach !== null
-                    ? `${new Intl.NumberFormat("en", { notation: "compact" }).format(item.metrics.reach)} reach`
-                    : null,
-                  !prominent && item.metrics.clicks !== null
-                    ? `${new Intl.NumberFormat("en", { notation: "compact" }).format(item.metrics.clicks)} clicks`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            </>
-          )}
-          {signals[item.id] ? (
-            <AdSignals signals={signals[item.id]} currency={view.currency} />
-          ) : null}
-          {(() => {
-            const badge = item.state && item.state !== "Insufficient data" && item.state !== "Paused";
-            // "Active" is implied by the Active now section; only non-active delivery is labeled.
-            const inactive = item.delivery !== "ACTIVE";
-            if (signals[item.id] && !badge && !inactive) return null;
-            return (
-              <div className={classes.adState}>
-                {!signals[item.id] && <span>Meta learning: {learning[item.id] ?? 'Unavailable'}</span>}
-                {badge && <StatusBadge status={item.state!} />}
-                {inactive && (
-                  <span className={classes.delivery} data-delivery={item.delivery}>
-                    {item.delivery === "PAUSED"
-                      ? "Paused"
-                      : item.delivery === "Unknown"
-                        ? "Status unavailable"
-                        : "Inactive"}
-                  </span>
-                )}
-              </div>
-            );
-          })()}
           <div className={classes.cardActions}>
             {!filtered && (
               <button type="button" onClick={(event) => open(item.id, event.currentTarget)}>
@@ -263,7 +134,9 @@ export default function AdvertisingBoard({ view, learning = {}, signals = {}, fi
         </Link>
       </div>
       <h3 className={classes.boardSubheading}>
-        {featured && <LiveIndicator label={null} title="Ad sets delivering now" />} Active now <span>{periodLabel} performance</span>
+        {featured && <LiveIndicator label={null} title="Ad sets delivering now" />} Active now
+        {ending > 0 && <em className={parts.endingTag}>{ending === 1 ? "Ending soon" : `${ending} ending soon`}</em>}
+        <span>{periodLabel} performance</span>
       </h3>
       {filtered && <p>Performance is filtered by delivery platform. Current status and health describe the whole Meta ad set.</p>}
       {featured ? (

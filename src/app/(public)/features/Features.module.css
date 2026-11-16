@@ -1,0 +1,39 @@
+.page { max-width: 1208px; margin: 0 auto; padding: 0 28px; }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, .6fr); gap: 64px; align-items: center; padding: 72px 0 64px; border-bottom: 1px solid var(--ui-line); }
+.hero h1 { font: 600 clamp(40px, 4.4vw, 62px)/1.06 var(--font-display), sans-serif; letter-spacing: -.04em; margin: 0; text-wrap: balance; }
+.lede { margin: 24px 0 0; max-width: 54ch; color: var(--ui-muted); font-size: 18px; line-height: 1.7; }
+.actions { margin-top: 32px; }
+
+.heroSpider { justify-self: center; }
+
+.feature { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 64px; padding: 80px 0; border-bottom: 1px solid var(--ui-line); scroll-margin-top: 80px; }
+.featureHead h2 { font: 600 clamp(28px, 3vw, 38px)/1.15 var(--font-display), sans-serif; letter-spacing: -.035em; margin: 16px 0 0; }
+.featureHead > p:last-child { margin: 8px 0 0; max-width: 46ch; color: var(--ui-muted); font-size: 19px; line-height: 1.5; }
+.points { list-style: none; margin: 0; padding: 0; align-self: center; border-top: 1px solid var(--ui-line); }
+.points li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; padding: 18px 0; border-bottom: 1px solid var(--ui-line); font-size: 18px; line-height: 1.5; }
+.points svg { margin-top: 3px; color: var(--ui-positive); }
+
+
+.coming { margin: 0; padding: 40px 0 0; color: var(--ui-muted); font-size: 17px; font-weight: 600; }
+.coming a { color: var(--ui-accent); text-underline-offset: 4px; }
+.finalCta { margin-top: 112px; background: linear-gradient(140deg, #082d56, #0a3c78); color: #fff; }
+.finalInner { max-width: 1208px; margin: 0 auto; padding: 64px 28px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 32px; align-items: center; }
+.finalCta h2 { font: 600 clamp(28px, 3vw, 38px)/1.15 var(--font-display), sans-serif; letter-spacing: -.035em; margin: 0; }
+.finalCta :focus-visible { outline: 3px solid #bdceff; outline-offset: 4px; }
+
+@media (max-width: 1000px) {
+  .hero, .feature { grid-template-columns: 1fr; gap: 40px; }
+}
+@media (max-width: 767px) {
+  .page { padding: 0 16px; }
+  .hero { padding: 36px 0 48px; gap: 32px; }
+  .heroSpider { display: none; }
+  .hero h1 { font-size: 38px; }
+  .lede { font-size: 16px; }
+  .actions > a { width: 100%; }
+  .feature { padding: 56px 0; gap: 28px; }
+  .finalCta { margin-top: 80px; }
+  .finalInner { grid-template-columns: 1fr; padding: 48px 16px; gap: 20px; }
+  .finalInner > a { width: 100%; }
+}

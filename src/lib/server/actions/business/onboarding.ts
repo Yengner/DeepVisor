@@ -36,6 +36,12 @@ import {
   type LocationMode,
 } from '@/lib/shared/onboarding/requirements';
 import { recordFieldSources } from '@/lib/shared/onboarding/fieldSources';
+import {
+  contactMethodsForDisplay,
+  resolveContactSelection,
+  withPreferredContactMethod,
+  type ContactSelection,
+} from '@/lib/shared/onboarding/contactMethods';
 
 type OrganizationType = Database['public']['Enums']['organization_type'];
 
@@ -269,6 +275,7 @@ export type OnboardingInitial = {
     primaryGoal: string | null;
     leadType: string | null;
     preferredContactMethod: string | null;
+    contactMethods: string[];
     leadQualitySignal: string | null;
     averageCustomerValue: string | null;
     targetCostPerLead: string | null;
@@ -314,6 +321,7 @@ export async function getOnboardingInitial(): Promise<ApiResponse<OnboardingInit
           primary_goal,
           lead_type,
           preferred_contact_method,
+          contact_methods,
           lead_quality_signal,
           average_customer_value,
           target_cost_per_lead,
@@ -382,6 +390,7 @@ export async function getOnboardingInitial(): Promise<ApiResponse<OnboardingInit
       primaryGoal: allowedOrNull(bp.primary_goal, INTELLIGENCE_GOAL_OPTIONS),
       leadType: allowedOrNull(bp.lead_type, LEAD_TYPE_OPTIONS),
       preferredContactMethod: allowedOrNull(bp.preferred_contact_method, CONTACT_METHOD_OPTIONS),
+      contactMethods: contactMethodsForDisplay(bp.contact_methods, bp.preferred_contact_method),
       leadQualitySignal: allowedOrNull(bp.lead_quality_signal, LEAD_QUALITY_SIGNAL_OPTIONS),
       averageCustomerValue: allowedOrNull(bp.average_customer_value, AVERAGE_CUSTOMER_VALUE_OPTIONS),
       targetCostPerLead: allowedOrNull(bp.target_cost_per_lead, TARGET_COST_PER_LEAD_OPTIONS),
@@ -416,6 +425,8 @@ export async function updateBusinessProfileData(input: {
   primaryGoal?: string | null;
   leadType?: string | null;
   preferredContactMethod?: string | null;
+  /** Every way customers reach the business; with 2+, preferredContactMethod names the main one. */
+  contactMethods?: string[] | null;
   leadQualitySignal?: string | null;
   averageCustomerValue?: string | null;
   targetCostPerLead?: string | null;
@@ -516,13 +527,22 @@ export async function updateBusinessProfileData(input: {
       });
     }
 
+    let contactSelection: ContactSelection | null = null;
+    if (input.contactMethods !== undefined) {
+      const resolved = resolveContactSelection(input.contactMethods, input.preferredContactMethod);
+      if ('error' in resolved) {
+        return fail(resolved.error, ErrorCode.VALIDATION_ERROR, { userMessage: resolved.error });
+      }
+      contactSelection = resolved;
+    }
+
     if (input.description !== undefined && input.description !== null && !cleanString(input.description)) {
       return fail('Business description is required', ErrorCode.VALIDATION_ERROR, {
         userMessage: 'Please describe what you sell and who you are trying to reach.',
       });
     }
 
-    const updateData = cleanUndefined({
+    const baseUpdate = cleanUndefined({
       business_name: businessName,
       industry: input.industry ?? undefined,
       monthly_budget:
@@ -539,7 +559,10 @@ export async function updateBusinessProfileData(input: {
       meta_ads_status: cleanStringForUpdate(input.metaAdsStatus),
       primary_goal: cleanStringForUpdate(input.primaryGoal),
       lead_type: cleanStringForUpdate(input.leadType),
-      preferred_contact_method: cleanStringForUpdate(input.preferredContactMethod),
+      preferred_contact_method: contactSelection
+        ? contactSelection.preferredContactMethod
+        : cleanStringForUpdate(input.preferredContactMethod),
+      contact_methods: contactSelection?.contactMethods,
       lead_quality_signal: cleanStringForUpdate(input.leadQualitySignal),
       average_customer_value: cleanStringForUpdate(input.averageCustomerValue),
       target_cost_per_lead: cleanStringForUpdate(input.targetCostPerLead),
@@ -552,12 +575,23 @@ export async function updateBusinessProfileData(input: {
 
     const { data: currentSources, error: sourcesError } = await supabase
       .from('business_profiles')
-      .select('field_sources')
+      .select('field_sources,contact_methods')
       .eq('id', businessId)
       .single();
     if (sourcesError) {
       return fail(getErrorMessage(sourcesError), ErrorCode.DATABASE_ERROR);
     }
+
+    // A main method changed on its own (e.g. Settings) is kept in the full list too.
+    const updateData = !contactSelection && typeof baseUpdate.preferred_contact_method === 'string'
+      ? {
+          ...baseUpdate,
+          contact_methods: withPreferredContactMethod(
+            currentSources?.contact_methods,
+            baseUpdate.preferred_contact_method
+          ),
+        }
+      : baseUpdate;
 
     const now = new Date();
     const writtenColumns = Object.keys(updateData);

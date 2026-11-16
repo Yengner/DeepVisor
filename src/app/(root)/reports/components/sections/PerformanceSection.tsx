@@ -39,7 +39,7 @@ export function PerformanceSection({ payload, metric, onGroupBy, pending = false
 
   return <section className={classes.panel} aria-labelledby="performance-title">
     <div className={classes.panelHeader}>
-      <div><p className={classes.eyebrow}>Performance over time</p><h2 id="performance-title">{groupLabel} {/^[A-Z]{3}$/.test(label) ? label : label.toLowerCase()}</h2></div>
+      <div><h2 id="performance-title">{groupLabel} {/^[A-Z]{3}$/.test(label) ? label : label.toLowerCase()}</h2></div>
       {payload.query.rangeMode !== 'max' ? (
         <div className={classes.segmented} role="group" aria-label="Group chart by">
           {GROUPS.map(([value, name]) => (
