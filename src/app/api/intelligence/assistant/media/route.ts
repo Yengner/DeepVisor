@@ -71,11 +71,12 @@ export async function GET(request: NextRequest) {
         const prefix = `${scope.businessId}/${scope.account.id}/${scope.userId}/`;
         if (!media || !media.path.startsWith(prefix) || media.path.includes('..'))
             throw new AssistantError('Draft media not found.', 404);
-        const { data, error } = await scope.db.storage.from(MEDIA_BUCKET).download(media.path);
+        // Files were verified when uploaded (bucket allows only image/video types). A short-lived
+        // private link lets large videos stream and seek without passing through this function.
+        const { data, error } = await scope.db.storage.from(MEDIA_BUCKET).createSignedUrl(media.path, 60);
         if (error || !data)
             throw new AssistantError('Draft media is unavailable.', 404);
-        const mime = validateMedia(new Uint8Array(await data.arrayBuffer()), data.type);
-        return new NextResponse(data, { headers: { 'Content-Type': mime, 'Content-Disposition': `inline; filename="draft-${id}"`, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, no-store', 'Content-Security-Policy': "default-src 'none'; sandbox" } });
+        return NextResponse.redirect(data.signedUrl, { status: 302, headers: { 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'no-referrer' } });
     }
     catch (error) {
         return failed(error);

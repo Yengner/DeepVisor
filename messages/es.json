@@ -216,7 +216,7 @@
     "savedGreeting": "Tu saludo guardado",
     "overLimit": "Este plan supera tu límite mensual. Puedes bajar el presupuesto abajo.",
     "file": "Foto o video",
-    "fileHelp": "JPEG, PNG, WebP, MP4 o WebM, hasta 4 MB",
+    "fileHelp": "JPEG, PNG, WebP, MP4 o WebM. Fotos de hasta {image} MB y videos de hasta {video} MB.",
     "note": "¿Algo que mencionar? (opcional)",
     "notePlaceholder": "p. ej. Promoción de color de otoño, citas los sábados",
     "dailyBudget": "Presupuesto diario de este anuncio (opcional)",
@@ -226,13 +226,18 @@
     "limitReached": "Llegaste al límite diario. Inténtalo de nuevo mañana.",
     "error": {
       "chooseFile": "Primero elige una foto o un video.",
-      "tooLarge": "Elige un archivo de hasta 4 MB.",
+      "tooLarge": "Las fotos pueden pesar hasta {image} MB y los videos hasta {video} MB.",
       "NO_SOURCE": "Todavía no hay un conjunto de anuncios de mensajes para empezar. Crea tu primer anuncio en Campañas.",
       "MISSING_FACTS": "Primero necesitamos unas respuestas.",
       "DAILY_LIMIT": "Puedes crear hasta 10 anuncios rápidos al día. Inténtalo de nuevo mañana.",
       "INVALID_INPUT": "Revisa el formulario e inténtalo de nuevo.",
-      "UNAVAILABLE": "Anuncio rápido no está disponible en este momento."
-    }
+      "UNAVAILABLE": "Anuncio rápido no está disponible en este momento.",
+      "wrongType": "Elige un archivo JPEG, PNG, WebP, MP4 o WebM.",
+      "uploadFailed": "La subida no terminó. Revisa tu conexión e inténtalo de nuevo.",
+      "UPLOAD_MISSING": "La subida no terminó. Elige el archivo de nuevo."
+    },
+    "uploading": "Subiendo tu archivo…",
+    "creating": "Preparando tu borrador…"
   },
   "campaigns": {
     "quickAd": "Anuncio rápido"

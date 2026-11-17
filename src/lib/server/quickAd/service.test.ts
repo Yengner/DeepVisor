@@ -15,9 +15,14 @@ vi.mock('@/lib/server/campaigns/reuse', () => ({
 }));
 vi.mock('@/lib/server/intelligence/assistant/media', () => ({
   MEDIA_BUCKET: 'assistant-draft-media',
-  validateMedia: (bytes: Uint8Array, type: string) => { if (type !== 'image/png') throw new Error('Choose a valid file.'); return type; },
+  // The fake "file" says what it really is in its first byte: 1 = PNG, 2 = MP4.
+  verifiedMediaType: (bytes: Uint8Array) => (bytes[0] === 1 ? 'image/png' : bytes[0] === 2 ? 'video/mp4' : null),
 }));
-import { createQuickAd, QUICK_AD_DAILY_LIMIT, QuickAdError } from './service';
+import { createQuickAd, prepareQuickAdUpload, QUICK_AD_DAILY_LIMIT } from './service';
+
+const MB = 1024 * 1024;
+const MEDIA_ID = '00000000-0000-4000-8000-0000000000aa';
+const PNG = { kind: 1, size: 2 * MB };
 
 const NOW = new Date().toISOString();
 const WELCOME = JSON.stringify({ text_format: { customer_action_type: 'ice_breakers', message: { ice_breakers: [{ title: 'Quiero una cita', response: 'Gracias' }] } } });
@@ -27,8 +32,9 @@ function knownFacts(stored: StoredFact[]) {
 }
 
 /** Fake Supabase: canned rows per table, records storage calls. */
-function fakeScope(opts: { used?: number } = {}) {
-  const storage = { uploads: [] as string[], removed: [] as string[] };
+function fakeScope(opts: { used?: number; stored?: { kind: number; size: number } | null } = {}) {
+  const storage = { links: [] as string[], downloads: [] as string[], removed: [] as string[] };
+  const stored = opts.stored === undefined ? PNG : opts.stored;
   const rows: Record<string, unknown> = {
     adset_dims: [
       { id: '1', external_id: 'wa-set', campaign_external_id: 'camp', name: 'WhatsApp set', status: 'paused', created_time: '2026-10-28T00:00:00Z', raw: { destination_type: 'WHATSAPP' } },
@@ -51,13 +57,20 @@ function fakeScope(opts: { used?: number } = {}) {
     from: query,
     schema: () => ({ from: query }),
     storage: { from: () => ({
-      upload: async (path: string) => { storage.uploads.push(path); return { error: null }; },
+      createSignedUploadUrl: async (path: string) => { storage.links.push(path); return { data: { path, token: 'tok' }, error: null }; },
+      download: async (path: string) => {
+        storage.downloads.push(path);
+        if (!stored) return { data: null, error: { message: 'Object not found' } };
+        const blob = { size: stored.size, slice: () => ({ arrayBuffer: async () => Uint8Array.from([stored.kind]).buffer }) };
+        return { data: blob, error: null };
+      },
       remove: async (paths: string[]) => { storage.removed.push(...paths); return { error: null }; },
     }) },
   };
   return { storage, scope: { db, businessId: 'biz', userId: 'user', account: { id: 'acct', timezone: 'America/New_York', currency_code: 'USD' }, integration: { id: 'int' } } as never };
 }
-const input = (over = {}) => ({ file: { bytes: new Uint8Array(20), type: 'image/png', name: 'fall.png' }, note: 'Fall color', request: {}, idempotencyKey: '00000000-0000-4000-8000-000000000001', ...over });
+const input = (over = {}) => ({ media: { id: MEDIA_ID, type: 'image/png', name: 'fall.png' }, note: 'Fall color', request: {}, idempotencyKey: '00000000-0000-4000-8000-000000000001', ...over });
+const PATH = `biz/acct/user/quick/${MEDIA_ID}`;
 
 beforeEach(() => {
   m.facts = knownFacts([{ key: 'client_languages', value: { languages: ['es', 'en'] }, confirmedAt: NOW }]);
@@ -66,27 +79,79 @@ beforeEach(() => {
   m.createDraft.mockResolvedValue({ draftId: 'd1', href: '/campaigns/create?draft=d1', replayed: false });
 });
 
+describe('prepareQuickAdUpload', () => {
+  it('gives a one-time upload link inside the signed-in scope for photos up to 30 MB and videos up to 50 MB', async () => {
+    const { scope, storage } = fakeScope();
+    const photo = await prepareQuickAdUpload(scope, { type: 'image/jpeg', size: 30 * MB, request: {} });
+    expect(photo).toMatchObject({ bucket: 'assistant-draft-media', token: 'tok' });
+    expect(photo.path).toBe(`biz/acct/user/quick/${photo.mediaId}`);
+    await prepareQuickAdUpload(scope, { type: 'video/mp4', size: 50 * MB, request: {} });
+    expect(storage.links).toHaveLength(2);
+  });
+
+  it('refuses files over the limit or of other types before making a link', async () => {
+    const { scope, storage } = fakeScope();
+    await expect(prepareQuickAdUpload(scope, { type: 'image/png', size: 30 * MB + 1, request: {} })).rejects.toMatchObject({ code: 'TOO_LARGE', status: 413 });
+    await expect(prepareQuickAdUpload(scope, { type: 'video/mp4', size: 50 * MB + 1, request: {} })).rejects.toMatchObject({ code: 'TOO_LARGE' });
+    await expect(prepareQuickAdUpload(scope, { type: 'text/html', size: 10, request: {} })).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+    expect(storage.links).toEqual([]);
+  });
+
+  it('asks for missing answers or stops at the daily limit before any upload', async () => {
+    m.facts = knownFacts([]);
+    const missing = fakeScope();
+    await expect(prepareQuickAdUpload(missing.scope, { type: 'image/png', size: MB, request: {} })).rejects.toMatchObject({ code: 'MISSING_FACTS', missing: ['client_languages'] });
+    expect(missing.storage.links).toEqual([]);
+    m.facts = knownFacts([{ key: 'client_languages', value: { languages: ['es', 'en'] }, confirmedAt: NOW }]);
+    const limited = fakeScope({ used: QUICK_AD_DAILY_LIMIT });
+    await expect(prepareQuickAdUpload(limited.scope, { type: 'image/png', size: MB, request: {} })).rejects.toMatchObject({ code: 'DAILY_LIMIT', status: 429 });
+    expect(limited.storage.links).toEqual([]);
+  });
+});
+
 describe('createQuickAd', () => {
-  it('asks for missing answers before uploading or calling the model', async () => {
+  it('asks for missing answers and removes the upload without calling the model', async () => {
     m.facts = knownFacts([]);
     const { scope, storage } = fakeScope();
     await expect(createQuickAd(scope, input())).rejects.toMatchObject({ code: 'MISSING_FACTS', missing: ['client_languages'] });
-    expect(storage.uploads).toEqual([]);
+    expect(storage.removed).toEqual([PATH]);
     expect(m.runAi).not.toHaveBeenCalled();
   });
 
-  it('stops at the daily limit before uploading or calling the model', async () => {
+  it('stops at the daily limit and removes the upload without calling the model', async () => {
     const { scope, storage } = fakeScope({ used: QUICK_AD_DAILY_LIMIT });
     await expect(createQuickAd(scope, input())).rejects.toMatchObject({ code: 'DAILY_LIMIT', status: 429 });
-    expect(storage.uploads).toEqual([]);
+    expect(storage.removed).toEqual([PATH]);
     expect(m.runAi).not.toHaveBeenCalled();
   });
 
-  it('rejects invalid files and long notes without side effects', async () => {
+  it('checks the stored file itself: real type, size for its type, and that it exists', async () => {
+    const disguised = fakeScope({ stored: { kind: 2, size: MB } }); // an MP4 sent as image/png
+    await expect(createQuickAd(disguised.scope, input())).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+    expect(disguised.storage.removed).toEqual([PATH]);
+
+    const bigPhoto = fakeScope({ stored: { kind: 1, size: 30 * MB + 1 } });
+    await expect(createQuickAd(bigPhoto.scope, input())).rejects.toMatchObject({ code: 'TOO_LARGE' });
+    expect(bigPhoto.storage.removed).toEqual([PATH]);
+
+    const missingFile = fakeScope({ stored: null });
+    await expect(createQuickAd(missingFile.scope, input())).rejects.toMatchObject({ code: 'UPLOAD_MISSING' });
+    expect(m.runAi).not.toHaveBeenCalled();
+    expect(m.createDraft).not.toHaveBeenCalled();
+  });
+
+  it('accepts a 45 MB video', async () => {
+    m.runAi.mockImplementation(async (args: { fallback: unknown }) => ({ output: args.fallback }));
+    const { scope, storage } = fakeScope({ stored: { kind: 2, size: 45 * MB } });
+    await createQuickAd(scope, input({ media: { id: MEDIA_ID, type: 'video/mp4', name: 'promo.mp4' } }));
+    expect(m.createDraft.mock.calls[0][1].content.media).toEqual([{ id: MEDIA_ID, name: 'promo.mp4', mime: 'video/mp4', path: PATH }]);
+    expect(storage.removed).toEqual([]);
+  });
+
+  it('rejects long notes and removes the upload', async () => {
     const { scope, storage } = fakeScope();
-    await expect(createQuickAd(scope, input({ file: { bytes: new Uint8Array(20), type: 'text/html', name: 'x' } }))).rejects.toBeInstanceOf(QuickAdError);
     await expect(createQuickAd(scope, input({ note: 'x'.repeat(301) }))).rejects.toMatchObject({ code: 'INVALID_INPUT' });
-    expect(storage.uploads).toEqual([]);
+    expect(storage.removed).toEqual([PATH]);
   });
 
   it('drafts from the WhatsApp ad set with model text and the source welcome setup', async () => {
@@ -99,7 +164,7 @@ describe('createQuickAd', () => {
     const { scope, storage } = fakeScope();
     const result = await createQuickAd(scope, input());
     expect(result).toMatchObject({ draftId: 'd1', copySource: 'model' });
-    expect(storage.uploads).toEqual([expect.stringMatching(/^biz\/acct\/user\/quick\//)]);
+    expect(storage.downloads).toEqual([PATH]);
     expect(storage.removed).toEqual([]);
     expect(m.runAi).toHaveBeenCalledTimes(1);
     expect(m.runAi.mock.calls[0][0]).toMatchObject({ businessId: 'biz', sourceType: 'quick_ad_copy', input: { ownerNote: 'Fall color' } });
@@ -125,7 +190,6 @@ describe('createQuickAd', () => {
     m.createDraft.mockRejectedValue(new Error('db down'));
     const { scope, storage } = fakeScope();
     await expect(createQuickAd(scope, input())).rejects.toThrow('db down');
-    expect(storage.removed).toEqual(storage.uploads);
-    expect(storage.removed).toHaveLength(1);
+    expect(storage.removed).toEqual([PATH]);
   });
 });
