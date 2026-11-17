@@ -33,6 +33,18 @@
 }
 .navLink[aria-current="page"] { color: #fff; }
 .actions { display: flex; align-items: center; gap: 8px; }
+/* EN | ES */
+.lang { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid #ffffff2e; border-radius: 999px; }
+.lang button { min-width: 36px; min-height: 32px; padding: 0 8px; border: 0; border-radius: 999px; background: transparent; color: #c6d7ee;
+  font: inherit; font-size: 12px; font-weight: 750; letter-spacing: .04em; cursor: pointer; transition: background-color 150ms ease, color 150ms ease; }
+.lang button[aria-pressed="true"] { background: #ffffff; color: #082d56; }
+.lang button:disabled { cursor: progress; }
+.lang button:focus-visible { outline: 2px solid #bdceff; outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .lang button:not([aria-pressed="true"]):hover { color: #fff; } }
+/* Vision stands out in the navigation: it is where DeepVisor is going. */
+.navLink[data-highlight] { color: #fff; }
+.navLink[data-highlight]::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%;
+  background: #4ade80; box-shadow: 0 0 0 3px #4ade8033; vertical-align: 2px; }
 .login {
   display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px;
   color: #c9d8ec; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px;
@@ -96,6 +108,12 @@
 @media (max-width: 860px) {
   .nav, .login { display: none; }
   .menuButton { display: inline-flex; }
+}
+/* The bar keeps logo, call to action and menu on phones; the language switch moves into the menu. */
+.menuLang { display: none; padding: 8px 12px 4px; }
+@media (max-width: 560px) {
+  .actions > .lang { display: none; }
+  .menuLang { display: block; }
 }
 @media (max-width: 767px) {
   .bar { padding: 0 16px; gap: 12px; }

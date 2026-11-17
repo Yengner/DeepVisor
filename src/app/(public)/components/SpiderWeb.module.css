@@ -1,0 +1,82 @@
+/*
+ * The web. Entrance plays once when it scrolls in (data-seen); loops run only while it is on
+ * screen (data-playing). transform/opacity for everything that moves; the one-time thread draw
+ * uses stroke-dashoffset on short lines.
+ */
+.web {
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --thread: #ffffff40; --thread-live: #9cc4ff; --ring: #ffffff1f; --pulse: #cfe2ff;
+  --chip-bg: #0d2e58; --chip-line: #ffffff33; --chip-text: #e3eefc;
+  position: relative; margin: 0; width: 100%; max-width: 560px; aspect-ratio: 1; justify-self: center;
+}
+.web[data-tone="light"] {
+  --thread: #0a3c7833; --thread-live: #0065fc; --ring: #0a3c781a; --pulse: #0065fc;
+  --chip-bg: var(--ui-panel, #fff); --chip-line: var(--ui-line, #d8e0ec); --chip-text: var(--ui-text, #0f1f33);
+}
+.web > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+.ring { fill: none; stroke: var(--ring); stroke-width: .3; opacity: 0; transition: opacity 600ms ease; transition-delay: calc(500ms + var(--i) * 120ms); }
+.thread, .threadLive { fill: none; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1;
+  transition: stroke-dashoffset 700ms var(--ease-out), stroke 200ms ease, stroke-width 200ms ease; transition-delay: calc(var(--i) * 70ms), 0s, 0s; }
+.thread { stroke: var(--thread); stroke-width: .35; }
+.threadLive { stroke: var(--thread-live); stroke-width: .8; }
+.thread[data-active] { stroke: var(--thread-live); stroke-width: .6; }
+.web[data-seen] .ring { opacity: 1; }
+.web[data-seen] :is(.thread, .threadLive) { stroke-dashoffset: 0; }
+
+/* Pulses: travel along straight threads with transform only. */
+.pulseIn, .pulseOut { fill: var(--pulse); opacity: 0; }
+.web[data-seen] .pulseIn { animation: flowIn 2.4s linear infinite; animation-delay: calc(900ms + var(--k) * 800ms); }
+.web[data-seen] .pulseOut { animation: reachOut 6s var(--ease-out) infinite; animation-delay: calc(1400ms + var(--i) * 650ms); }
+.web:not([data-playing]) :is(.pulseIn, .pulseOut) { animation-play-state: paused; }
+@keyframes flowIn {
+  from { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+  15% { opacity: 1; } 85% { opacity: 1; }
+  to { transform: translate(0, 0); opacity: 0; }
+}
+@keyframes reachOut {
+  from { transform: translate(0, 0); opacity: 0; }
+  10% { opacity: .55; } 45% { opacity: .55; }
+  55%, to { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+}
+
+.center { position: absolute; left: 50%; top: 50%; translate: -50% -50%; padding: 12px; border-radius: 26px;
+  background: #0d2e58; border: 1px solid #ffffff2e; box-shadow: 0 16px 40px #00000040, 0 0 0 10px #0065fc14;
+  opacity: 0; scale: .96; transition: opacity 400ms var(--ease-out), scale 400ms var(--ease-out); }
+.web[data-seen] .center { opacity: 1; scale: 1; }
+
+.nodes { list-style: none; margin: 0; padding: 0; }
+.nodes li {
+  position: absolute; left: var(--x); top: var(--y); translate: -50% -50%;
+  display: flex; align-items: center; gap: 7px; padding: 7px 11px; border-radius: 999px;
+  background: var(--chip-bg); border: 1px solid var(--chip-line); color: var(--chip-text);
+  font-size: 13px; font-weight: 650; white-space: nowrap;
+  opacity: 0; scale: .92;
+  transition: opacity 360ms var(--ease-out), scale 360ms var(--ease-out), border-color 200ms ease;
+  transition-delay: calc(350ms + var(--i) * 70ms), calc(350ms + var(--i) * 70ms), 0s;
+}
+.nodes li svg { font-size: 15px; flex: none; }
+.status { font-size: 11px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; opacity: .7; }
+.nodes li[data-live] { background: #fff; border-color: #fff; color: #082d56; box-shadow: 0 8px 24px #0065fc40; }
+.nodes li[data-live] svg { color: #0866ff; }
+.nodes li[data-live] .status { color: #137a3f; opacity: 1; }
+.web[data-seen] .nodes li { opacity: 1; scale: 1; }
+@media (hover: hover) and (pointer: fine) { .nodes li:not([data-live]):hover { border-color: var(--thread-live); } }
+
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 600px) {
+  .nodes li { padding: 6px 8px; gap: 5px; font-size: 12px; }
+  .nodes li:not([data-live]) .name, .nodes li:not([data-live]) .status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .nodes li svg { font-size: 16px; }
+  /* Meta sits on the left edge: anchor its icon on the point so the label runs inward, not off-screen. */
+  .nodes li[data-live] { translate: -18px -50%; }
+}
+
+/* Reduced motion: the finished web, gently faded in; nothing travels. */
+@media (prefers-reduced-motion: reduce) {
+  .thread, .threadLive { stroke-dashoffset: 0; transition: stroke 200ms ease; }
+  .center, .nodes li { scale: 1; transition: opacity 300ms ease; transition-delay: 0s; }
+  .ring { transition-delay: 0s; }
+  .pulseIn, .pulseOut, .web[data-seen] .pulseIn, .web[data-seen] .pulseOut { animation: none; opacity: 0; }
+}

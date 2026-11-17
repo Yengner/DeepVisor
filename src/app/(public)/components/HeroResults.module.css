@@ -1,0 +1,50 @@
+/* Hero card: a single staged entrance on load (rare, explanatory), then still. */
+.card {
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  margin: 0; position: relative; display: grid; gap: 16px; padding: 22px;
+  color: #edf4ff; background: linear-gradient(140deg, #082d56, #0a3c78);
+  border: 1px solid #2c5585; border-radius: var(--ui-radius-lg, 16px);
+  box-shadow: 0 24px 64px #082d5626, 0 2px 6px #082d5614;
+  animation: cardIn 700ms var(--ease-out) 120ms both;
+}
+.head { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 650; color: #b9cdea; }
+.week { padding: 4px 10px; border-radius: 999px; background: #ffffff14; color: #e3eefc; }
+.sources { display: inline-flex; align-items: center; gap: 6px; }
+.sources svg { font-size: 14px; }
+
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.metric { padding: 14px; border-radius: 12px; background: #ffffff0f; border: 1px solid #ffffff1f; }
+.metric span { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #b9cdea; font-weight: 600; }
+.metric strong { display: block; margin-top: 6px; font: 650 30px/1 var(--font-display), sans-serif; letter-spacing: -.03em; color: #fff; }
+.wa { color: #4ade80; font-size: 14px; }
+
+.chart { display: flex; align-items: flex-end; gap: 8px; height: 64px; padding: 0 2px; }
+.chart span { flex: 1; height: calc(var(--h) * 100%); border-radius: 6px 6px 3px 3px; background: linear-gradient(#9cc4ff, #5d95ec);
+  transform-origin: bottom; animation: grow 600ms var(--ease-out) both; animation-delay: calc(500ms + var(--b) * 60ms); }
+
+.checkin { display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: start; padding: 14px; border-radius: 12px; background: #eef4fd; color: #0f2a4d; }
+.checkin p { margin: 0 0 8px; font-size: 14px; font-weight: 650; line-height: 1.4; }
+.answer { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 650; color: #137a3f; }
+.answer span { display: inline-grid; place-items: center; min-width: 32px; height: 28px; padding: 0 8px; border-radius: 8px; background: #fff; border: 1px solid #c3cbd9; color: #0f2a4d; font-weight: 750; }
+
+.draft { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: #ffffff; color: #0f2a4d; font-size: 14px; box-shadow: 0 10px 28px #001b4955; }
+.draft svg { color: #0065fc; flex: none; }
+.draft strong { font-weight: 750; }
+
+/* Staged entrance: metrics, then the week, then the check-in, then the draft. */
+.metric, .checkin, .draft { animation: rise 500ms var(--ease-out) both; animation-delay: calc(250ms + var(--d) * 110ms); }
+.draft { animation-name: slideIn; }
+@keyframes cardIn { from { opacity: 0; transform: translateY(16px) scale(.98); } }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+@keyframes slideIn { from { opacity: 0; transform: translateY(12px) scale(.97); } }
+@keyframes grow { from { transform: scaleY(.08); opacity: .4; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .metric, .checkin, .draft, .chart span { animation: fade 240ms ease both; animation-delay: 0s; }
+}
+@keyframes fade { from { opacity: 0; } }
+
+@media (max-width: 767px) {
+  .card { padding: 16px; gap: 12px; }
+  .metric strong { font-size: 26px; }
+}
