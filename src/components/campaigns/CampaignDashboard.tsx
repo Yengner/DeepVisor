@@ -599,14 +599,19 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
 
               <Group gap="sm" wrap="wrap" className={classes.actionGroup}>
                 {activeTab === 'campaigns' ? (
-                  <Button
-                    leftSection={<IconPlus size={16} />}
-                    radius="xl"
-                    className="app-platform-page-action-primary"
-                    onClick={() => router.push(`/campaigns/create?platform=${platform.id}`)}
-                  >
-                    Create campaign
-                  </Button>
+                  <>
+                    <Button radius="xl" variant="default" onClick={() => router.push('/campaigns/quick')}>
+                      Quick ad
+                    </Button>
+                    <Button
+                      leftSection={<IconPlus size={16} />}
+                      radius="xl"
+                      className="app-platform-page-action-primary"
+                      onClick={() => router.push(`/campaigns/create?platform=${platform.id}`)}
+                    >
+                      Create campaign
+                    </Button>
+                  </>
                 ) : (
                   <Button
                     leftSection={<IconPlus size={16} />}

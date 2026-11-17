@@ -7,13 +7,13 @@ import { amountToMinor, minorToAmount, CLIENT_LANGUAGES, FACT_KEYS, WEEKDAYS, ty
 import { DAY_LABELS, FACT_COPY, LANGUAGE_LABELS, factSource, formatFactValue } from '@/lib/shared/agent/factCopy';
 import { clearAdFactAction, saveAdFactAction } from '../adFactsActions';
 
-type Props = { facts: ResolvedFacts; accountCurrency: string | null; canEdit: boolean };
+type Props = { facts: ResolvedFacts; accountCurrency: string | null; canEdit: boolean; keys?: readonly FactKey[] };
 
 /** What DeepVisor knows about how this business advertises, and where each answer came from. */
-export default function AdFactsCard({ facts, accountCurrency, canEdit }: Props) {
+export default function AdFactsCard({ facts, accountCurrency, canEdit, keys = FACT_KEYS }: Props) {
   return (
     <Stack gap="xs">
-      {FACT_KEYS.map(key => <FactRow key={key} factKey={key} facts={facts} accountCurrency={accountCurrency} canEdit={canEdit} />)}
+      {keys.map(key => <FactRow key={key} factKey={key} facts={facts} accountCurrency={accountCurrency} canEdit={canEdit} />)}
     </Stack>
   );
 }
