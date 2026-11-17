@@ -32,7 +32,8 @@ function render(tab:'adsets'|'ads', pausedParent=false) {
     initialAdSets:[{id:'empty-set',status:'ACTIVE',name:'No active ads'},{id:'live-set',status:'ACTIVE',name:'Active child'}] as Props['initialAdSets'],
     initialAds:[{id:'paused-ad',ad_id:'paused-ad',status:'PAUSED'},{id:'live-ad',ad_id:'live-ad',status:'ACTIVE'}] as Props['initialAds'],
   };
-  renderToStaticMarkup(createElement(NextIntlClientProvider,{locale:'en',messages},createElement(MantineProvider,null,createElement(CampaignDashboard,props))));
+  const intl = { locale: 'en', messages } as ComponentProps<typeof NextIntlClientProvider>;
+  renderToStaticMarkup(createElement(NextIntlClientProvider,intl,createElement(MantineProvider,null,createElement(CampaignDashboard,props))));
 }
 describe('nested campaign tab delivery wiring',()=>{
   beforeEach(()=>{captured.adsets=[];captured.ads=[];});
