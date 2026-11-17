@@ -257,3 +257,24 @@ describe("truthful secondary presentation", () => {
     ]);
   });
 });
+
+describe("control-center result naming", () => {
+  const whatsapp = (id: string) => ({ ...entityFixture("adset", id), destination_type: "WHATSAPP" });
+  const messagesOnly = (id: string) => dailyFixture(id, 0);
+  it("names WhatsApp conversations when every active ad set opens WhatsApp", () => {
+    const view = controlPerformance(messagesOnly("set-1"), [whatsapp("set-1")], "7d", fixtureToday, "USD");
+    expect(view.result).toEqual({ kind: "whatsapp_conversations", apps: ["whatsapp"] });
+  });
+  it("keeps Results when another ad set's spend is in the same totals", () => {
+    const view = controlPerformance(
+      [...messagesOnly("set-1"), ...messagesOnly("set-2")],
+      [whatsapp("set-1"), { ...entityFixture("adset", "set-2"), destination_type: "WEBSITE" }],
+      "7d", fixtureToday, "USD",
+    );
+    expect(view.result?.kind).toBe("results");
+  });
+  it("keeps Results when the destination is unknown or leads are mixed in", () => {
+    expect(controlPerformance(messagesOnly("set-1"), [entityFixture("adset", "set-1")], "7d", fixtureToday, "USD").result?.kind).toBe("results");
+    expect(controlPerformance(rows, [{ ...entity, destination_type: "WHATSAPP" }], "7d", fixtureToday, "USD").result?.kind).toBe("results");
+  });
+});

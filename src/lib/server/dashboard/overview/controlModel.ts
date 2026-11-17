@@ -10,6 +10,7 @@ import type {
   Summary,
 } from "../../campaigns/exploration/types";
 import { periodRange, shiftDay } from "./model";
+import { resultDefinitionFor, type ResultDefinition } from "@/lib/shared/performance/resultChannel";
 import type {
   DailyRow,
   Entity,
@@ -25,6 +26,8 @@ export type ControlPerformance = {
   comparison: string | null;
   currency: string | null;
   partial: boolean;
+  /** What the period's results are (e.g. WhatsApp conversations). Absent means "Results". */
+  result?: ResultDefinition;
 };
 
 /**
@@ -113,13 +116,16 @@ export function controlPerformance(
       comparison = `${recent} to ${end} vs previous ${days} completed days`;
     }
   }
+  const destinations = new Map(entities.map((e) => [e.id, e.destination_type]));
+  const selected = window(range.since, range.until);
   return {
-    metrics: aggregate(window(range.since, range.until), validCurrency),
+    metrics: aggregate(selected, validCurrency),
     points: runningCostPerResult(points),
     deltas,
     comparison,
     currency: validCurrency,
     partial: !covered(range.since, range.until),
+    result: resultDefinitionFor(selected, (r) => destinations.get(r.entity_id)),
   };
 }
 

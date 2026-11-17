@@ -3,6 +3,7 @@ import type { Delta, Metrics } from "@/lib/server/campaigns/exploration/types";
 import type { AdSchedule } from "@/lib/shared/performance/schedule";
 import type { LearningProgress } from "@/lib/server/dashboard/insights/signals";
 import { metricValue, MetricDelta } from "./ControlMetrics";
+import { RESULT_LABELS, type ResultDefinition } from "@/lib/shared/performance/resultChannel";
 import classes from "./AdCardParts.module.css";
 
 /** Days arrive as account-local YYYY-MM-DD, so format them at noon UTC to avoid shifting. */
@@ -91,14 +92,17 @@ const kpis = [
 ] as const;
 
 /** Four quick numbers. Missing values show as a dash, never zero. */
-export function QuickStats({ metrics, deltas, currency, comparison }: {
+export function QuickStats({ metrics, deltas, currency, comparison, result }: {
   metrics: Metrics; deltas: Partial<Record<keyof Metrics, Delta>>; currency: string | null; comparison: string | null;
+  /** Names the results (e.g. WhatsApp conversations); absent means "Results". */
+  result?: ResultDefinition;
 }) {
+  const words = RESULT_LABELS[result?.kind ?? "results"];
   return (
     <dl className={classes.stats}>
       {kpis.map(({ key, label }) => (
         <div key={key}>
-          <dt>{label}</dt>
+          <dt title={key === "results" ? words.help : undefined}>{key === "results" ? words.short : key === "costPerResult" ? words.cost : label}</dt>
           <dd>{metrics[key] === null ? "—" : metricValue(key, metrics[key], currency, key !== "ctr")}</dd>
           {(key === "results" || key === "costPerResult") && <MetricDelta change={deltas[key]} description={comparison} />}
         </div>

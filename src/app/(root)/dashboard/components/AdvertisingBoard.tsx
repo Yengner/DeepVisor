@@ -100,7 +100,7 @@ export default function AdvertisingBoard({ view, signals = {}, filtered = false 
           <RunWindow schedule={item.schedule} />
           <LearningBar learning={signals[item.id]?.learning} />
           {hasData ? (
-            <QuickStats metrics={item.metrics} deltas={item.deltas} currency={view.currency} comparison={view.comparison} />
+            <QuickStats metrics={item.metrics} deltas={item.deltas} currency={view.currency} comparison={view.comparison} result={item.result} />
           ) : (
             <p className={classes.insufficient}>No data for {periodLabel === "Today" ? "today" : `the last ${periodLabel}`} yet</p>
           )}

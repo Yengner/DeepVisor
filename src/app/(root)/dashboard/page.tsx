@@ -49,6 +49,7 @@ import { insightsEnabled, openUrgentIssues } from '@/lib/server/insights/issues'
 import { audienceObservations, hourlyObservations } from '@/lib/server/dashboard/insights/charts';
 import { PlatformControl } from './components/OverviewControls';
 import InsightsEntry from '@/components/insights/InsightsEntry';
+import { resultDefinitionFor, type ResultDefinition } from '@/lib/shared/performance/resultChannel';
 type OverviewContext = LiveOverviewContext & { decisionPreview?: boolean; publisher: Publisher };
 
 const decisions = cache(async (context: OverviewContext) => {
@@ -70,25 +71,32 @@ const decisions = cache(async (context: OverviewContext) => {
   };
 });
 const performance = cache(async (context: OverviewContext, period: Period) => {
-  const live = await loadInsights(context);
-  const withContext = <T extends Pick<ControlPerformance, 'metrics' | 'deltas' | 'comparison'>>(view: T, daily: Insight[] | null) => {
-    const ctx = periodContext({ daily, hourly: live.hourly, platform: context.publisher, period, today: context.today, now: context.now, zone: context.zone, currency: context.account!.currency_code });
-    // Today's badges compare against the "Yesterday by now" figure the card prints beside them.
-    return { ...view, ...sameHourComparison(period, view.metrics, ctx, { deltas: view.deltas, comparison: view.comparison }), context: ctx };
-  };
-  if (live.daily !== null && !(resourceRefreshEnabled() && context.publisher === 'combined')) return withContext({ ...livePerformance(live.daily, context.publisher, period, context.today, context.account!.currency_code), ...comparisons(live.daily, context.publisher, period, context.today, context.account!.currency_code, live.fetchedAt, context.now, { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) }, live.daily);
-  if (context.publisher !== 'combined') return withContext(livePerformance([], context.publisher, period, context.today, context.account!.currency_code), null);
-  const [rows, entities] = await Promise.all([
-    loadOverviewHistory(context.businessId, context.account!.id, context.today),
+  const [live, entities] = await Promise.all([
+    loadInsights(context),
     loadOverviewEntities(context.businessId, context.account!.id),
   ]);
+  // Names the KPI "results" from the same rows that produce them. Live rows carry Meta ad-set ids;
+  // saved rows are named inside controlPerformance. Anything unprovable stays "Results".
+  const destinationByExternal = new Map(entities.map(e => [e.external_id, e.destination_type]));
+  const withContext = <T extends Pick<ControlPerformance, 'metrics' | 'deltas' | 'comparison'>>(view: T, daily: Insight[] | null, result: ResultDefinition | undefined) => {
+    const ctx = periodContext({ daily, hourly: live.hourly, platform: context.publisher, period, today: context.today, now: context.now, zone: context.zone, currency: context.account!.currency_code });
+    // Today's badges compare against the "Yesterday by now" figure the card prints beside them.
+    return { ...view, ...sameHourComparison(period, view.metrics, ctx, { deltas: view.deltas, comparison: view.comparison }), context: ctx, result };
+  };
+  if (live.daily !== null && !(resourceRefreshEnabled() && context.publisher === 'combined')) {
+    const result = resultDefinitionFor(selectRows(live.daily, context.publisher, period, context.today), r => destinationByExternal.get(r.externalId));
+    return withContext({ ...livePerformance(live.daily, context.publisher, period, context.today, context.account!.currency_code), ...comparisons(live.daily, context.publisher, period, context.today, context.account!.currency_code, live.fetchedAt, context.now, { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) }, live.daily, result);
+  }
+  if (context.publisher !== 'combined') return withContext(livePerformance([], context.publisher, period, context.today, context.account!.currency_code), null, undefined);
+  const rows = await loadOverviewHistory(context.businessId, context.account!.id, context.today);
+  const stored = controlPerformance(rows, entities, period, context.today, context.account!.currency_code);
   const dated: Insight[] = rows.map(row => ({ ...row, externalId: row.entity_id, publisher: 'combined', label: '' }));
   if (resourceRefreshEnabled()) {
-    return withContext({ ...controlPerformance(rows, entities, period, context.today, context.account!.currency_code),
+    return withContext({ ...stored,
       ...comparisons(dated, 'combined', period, context.today, context.account!.currency_code, live.canonicalFetchedAt ?? '', context.now,
-        { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) }, dated);
+        { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) }, dated, stored.result);
   }
-  return withContext({ ...controlPerformance(rows, entities, period, context.today, context.account!.currency_code), deltas: {}, comparison: 'Comparison unavailable while using stored fallback data.' }, dated);
+  return withContext({ ...stored, deltas: {}, comparison: 'Comparison unavailable while using stored fallback data.' }, dated, stored.result);
 });
 function timestamp(at: string | null | undefined, zone: string) {
   return at && Number.isFinite(Date.parse(at))

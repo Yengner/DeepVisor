@@ -8,6 +8,7 @@ export const publisher = (value?: string): Publisher => value === 'facebook' || 
 export { normalize, learningLabel } from '../../sync/resources/insightModel';
 export type { Insight, MetaRow } from '../../sync/resources/insightModel';
 import type { Insight } from '../../sync/resources/insightModel';
+import { resultDefinitionFor } from '@/lib/shared/performance/resultChannel';
 export function selectRows(rows: Insight[], platform: Publisher, period: Period, today: string) {
   const range = periodRange(period, today);
   return rows.filter(r => (platform === 'combined' || r.publisher === platform) && r.day >= range.since && r.day <= range.until);
@@ -46,5 +47,10 @@ export function advertisingMetrics(items: Summary[], daily: Insight[] | null, pl
   const rows = selectRows(daily ?? [], platform, period, today);
   const observed = new Set(rows.map(r => r.externalId));
   return items.filter(item => platform === 'combined' || daily === null || observed.has(item.id))
-    .map(item => ({ ...item, metrics: aggregate(rows.filter(r => r.externalId === item.id), currency), deltas: {} }));
+    .map(item => {
+      const own = rows.filter(r => r.externalId === item.id);
+      // The card's name for results must describe these live rows, not the saved ones it replaced.
+      const result = item.level === 'adset' ? { result: resultDefinitionFor(own, () => item.destinationType) } : {};
+      return { ...item, metrics: aggregate(own, currency), deltas: {}, ...result };
+    });
 }
