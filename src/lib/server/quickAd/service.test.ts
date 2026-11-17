@@ -23,7 +23,7 @@ const NOW = new Date().toISOString();
 const WELCOME = JSON.stringify({ text_format: { customer_action_type: 'ice_breakers', message: { ice_breakers: [{ title: 'Quiero una cita', response: 'Gracias' }] } } });
 
 function knownFacts(stored: StoredFact[]) {
-  return { accountCurrency: 'USD', facts: resolveFacts({ stored, history: { daily_budget: { value: { amountMinor: 2000, currency: 'USD' }, basis: 'x' }, run_days: { value: { days: 7 }, basis: 'x' } }, accountCurrency: 'USD', now: NOW }), toAsk: [] };
+  return { accountCurrency: 'USD', facts: resolveFacts({ stored, history: { daily_budget: { value: { amountMinor: 2000, currency: 'USD' }, basis: { code: 'latest_ad_set' } }, run_days: { value: { days: 7 }, basis: { code: 'one_scheduled' } } }, accountCurrency: 'USD', now: NOW }), toAsk: [] };
 }
 
 /** Fake Supabase: canned rows per table, records storage calls. */

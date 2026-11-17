@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
+vi.mock('next-intl/server', () => ({ getTranslations: async () => (key: string) => key }));
 const ctx = vi.hoisted(() => ({ role: 'owner' as string, upserts: [] as unknown[], selected: 'acct' as string | null }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@/lib/server/actions/user/session', () => ({ requireUserId: vi.fn(async () => 'user-1') }));

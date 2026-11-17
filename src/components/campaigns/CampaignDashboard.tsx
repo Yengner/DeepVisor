@@ -2,6 +2,7 @@
 import product from '@/components/product/Product.module.css';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   ActionIcon,
   Alert,
@@ -138,6 +139,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   });
 
   const router = useRouter();
+  const tCampaigns = useTranslations('campaigns');
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const platformColor = getPlatformColor(platform.name);
@@ -601,7 +603,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                 {activeTab === 'campaigns' ? (
                   <>
                     <Button radius="xl" variant="default" onClick={() => router.push('/campaigns/quick')}>
-                      Quick ad
+                      {tCampaigns('quickAd')}
                     </Button>
                     <Button
                       leftSection={<IconPlus size={16} />}

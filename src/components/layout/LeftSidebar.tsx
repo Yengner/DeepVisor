@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { BrandLockup } from '@/components/brand/Brand';
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Tooltip } from '@mantine/core';
 import { IconFlask, IconLogout } from '@tabler/icons-react';
 import { clientHandleSignOut } from '@/lib/client';
@@ -28,7 +29,8 @@ function RailItem({
   onClick,
   tone = 'default',
 }: RailItemProps) {
-  const accessibleLabel = badge ? `${label} · ${badge} to check` : label;
+  const t = useTranslations('nav');
+  const accessibleLabel = badge ? t('toCheck', { label, count: badge }) : label;
   const control = (
     <button
       type="button"
@@ -87,6 +89,7 @@ function DevInsightsNavigation({ expanded }: { expanded: boolean }) {
 
 export default function Sidebar({ showInsightsPreview }: { showInsightsPreview: boolean }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const t = useTranslations('nav');
   const router = useRouter();
   const pathname = usePathname();
 
@@ -99,11 +102,11 @@ export default function Sidebar({ showInsightsPreview }: { showInsightsPreview: 
       className={`fixed bottom-0 left-0 top-16 z-40 hidden overflow-hidden border-r border-[#284665] bg-[#07182d] transition-[width] duration-200 md:block ${
         isExpanded ? 'w-[13.5rem]' : 'w-[3.75rem]'
       }`}
-      aria-label="Workspace navigation"
+      aria-label={t('workspaceNavigation')}
     >
       <div className="flex h-full flex-col justify-between px-2 py-4">
         <div className="min-h-0 overflow-y-auto">
-        <Link href="/dashboard" aria-label="DeepVisor Overview" className="mb-4 flex h-8 items-center overflow-hidden px-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+        <Link href="/dashboard" aria-label={t('overviewHome')} className="mb-4 flex h-8 items-center overflow-hidden px-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
           <BrandLockup inverse compact={!isExpanded} />
         </Link>
         <nav className="space-y-1.5">
@@ -115,17 +118,17 @@ export default function Sidebar({ showInsightsPreview }: { showInsightsPreview: 
                 active={active}
                 expanded={isExpanded}
                 icon={<item.icon size={19} stroke={active ? 2.25 : 1.8} />}
-                label={item.name}
+                label={t(item.nameKey)}
                 onClick={() => router.push(item.route)}
               />
             );
           })}
         </nav>
-        <nav aria-label="Secondary workspace navigation" className="mt-5 space-y-1.5 border-t border-[#284665] pt-3">
+        <nav aria-label={t('secondaryNavigation')} className="mt-5 space-y-1.5 border-t border-[#284665] pt-3">
           {secondaryNavItems.map(item => {
             const active = isAppNavItemActive(pathname, item.route);
             return <RailItem key={item.route} active={active} expanded={isExpanded}
-              icon={<item.icon size={19} stroke={active ? 2.25 : 1.8} />} label={item.name}
+              icon={<item.icon size={19} stroke={active ? 2.25 : 1.8} />} label={t(item.nameKey)}
               onClick={() => router.push(item.route)} />;
           })}
           {showInsightsPreview && (
@@ -139,7 +142,7 @@ export default function Sidebar({ showInsightsPreview }: { showInsightsPreview: 
             active={false}
             expanded={isExpanded}
             icon={<IconLogout size={19} stroke={1.8} />}
-            label="Log out"
+            label={t('logOut')}
             tone="danger"
             onClick={() => void clientHandleSignOut()}
           />

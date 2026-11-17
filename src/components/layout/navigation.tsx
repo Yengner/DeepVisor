@@ -10,34 +10,36 @@ import {
   IconUser,
 } from '@tabler/icons-react';
 
+/** Message keys under `nav` in messages/*.json. */
+export type NavKey = 'overview' | 'agency' | 'agencyShort' | 'campaigns' | 'reports' | 'connections' | 'notifications' | 'notificationsShort' | 'profile' | 'settings';
 export type AppNavItem = {
-  name: string;
-  shortName: string;
+  nameKey: NavKey;
+  shortKey: NavKey;
   icon: Icon;
   route: string;
 };
 
 export const primaryNavItems: AppNavItem[] = [
-  { name: 'Overview', shortName: 'Overview', icon: IconHome2, route: '/dashboard' },
-  { name: 'Agency Control', shortName: 'Agency Control', icon: IconSparkles, route: '/agency' },
-  { name: 'Campaigns', shortName: 'Campaigns', icon: IconPresentation, route: '/campaigns' },
-  { name: 'Reports', shortName: 'Reports', icon: IconChartBar, route: '/reports' },
-  { name: 'Connections', shortName: 'Connections', icon: IconPuzzle, route: '/integration' },
+  { nameKey: 'overview', shortKey: 'overview', icon: IconHome2, route: '/dashboard' },
+  { nameKey: 'agency', shortKey: 'agency', icon: IconSparkles, route: '/agency' },
+  { nameKey: 'campaigns', shortKey: 'campaigns', icon: IconPresentation, route: '/campaigns' },
+  { nameKey: 'reports', shortKey: 'reports', icon: IconChartBar, route: '/reports' },
+  { nameKey: 'connections', shortKey: 'connections', icon: IconPuzzle, route: '/integration' },
 ];
 
 export const secondaryNavItems: AppNavItem[] = [
-  { name: 'Notifications', shortName: 'Alerts', icon: IconBell, route: '/notifications' },
-  { name: 'Profile', shortName: 'Profile', icon: IconUser, route: '/settings/profile' },
-  { name: 'Settings', shortName: 'Settings', icon: IconSettings, route: '/settings' },
+  { nameKey: 'notifications', shortKey: 'notificationsShort', icon: IconBell, route: '/notifications' },
+  { nameKey: 'profile', shortKey: 'profile', icon: IconUser, route: '/settings/profile' },
+  { nameKey: 'settings', shortKey: 'settings', icon: IconSettings, route: '/settings' },
 ];
 
 /** Five equal tabs on phones. Connections, Profile and Settings stay in the menu drawer. */
 export const mobileBottomNavItems: AppNavItem[] = [
-  { name: 'Overview', shortName: 'Overview', icon: IconHome2, route: '/dashboard' },
-  { name: 'Agency Control', shortName: 'Agency', icon: IconSparkles, route: '/agency' },
-  { name: 'Campaigns', shortName: 'Campaigns', icon: IconPresentation, route: '/campaigns' },
-  { name: 'Reports', shortName: 'Reports', icon: IconChartBar, route: '/reports' },
-  { name: 'Notifications', shortName: 'Alerts', icon: IconBell, route: '/notifications' },
+  { nameKey: 'overview', shortKey: 'overview', icon: IconHome2, route: '/dashboard' },
+  { nameKey: 'agency', shortKey: 'agencyShort', icon: IconSparkles, route: '/agency' },
+  { nameKey: 'campaigns', shortKey: 'campaigns', icon: IconPresentation, route: '/campaigns' },
+  { nameKey: 'reports', shortKey: 'reports', icon: IconChartBar, route: '/reports' },
+  { nameKey: 'notifications', shortKey: 'notificationsShort', icon: IconBell, route: '/notifications' },
 ];
 
 export function isAppNavItemActive(pathname: string | null, route: string): boolean {

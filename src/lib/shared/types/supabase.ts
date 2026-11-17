@@ -5384,6 +5384,7 @@ export type Database = {
           id: string
           last_name: string
           phone_number: string | null
+          preferred_locale: string | null
           status: string | null
           updated_at: string | null
         }
@@ -5394,6 +5395,7 @@ export type Database = {
           id: string
           last_name: string
           phone_number?: string | null
+          preferred_locale?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -5404,6 +5406,7 @@ export type Database = {
           id?: string
           last_name?: string
           phone_number?: string | null
+          preferred_locale?: string | null
           status?: string | null
           updated_at?: string | null
         }

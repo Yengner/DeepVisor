@@ -3,25 +3,31 @@ import type { PeriodContext } from "@/lib/server/dashboard/insights/compare";
 import type { ControlPerformance } from "@/lib/server/dashboard/overview/controlModel";
 import type { Delta } from "@/lib/server/campaigns/exploration/types";
 import classes from "./ControlCenter.module.css";
-import { RESULT_LABELS, resultAppsNote, type ResultDefinition } from "@/lib/shared/performance/resultChannel";
+import { useTranslations } from "next-intl";
+import type { ResultDefinition } from "@/lib/shared/performance/resultChannel";
 
-export const metricLabels = {
-  spend: "Spend",
-  results: "Results",
-  costPerResult: "Cost / result",
-  ctr: "CTR",
-};
-export type ControlMetric = keyof typeof metricLabels;
-/** KPI labels with "results" named for what they are (WhatsApp conversations, leads, …). */
-export function metricLabelsFor(result?: ResultDefinition): Record<ControlMetric, string> {
-  const words = RESULT_LABELS[result?.kind ?? "results"];
-  return { ...metricLabels, results: words.metric, costPerResult: words.cost };
+export const CONTROL_METRICS = ["spend", "results", "costPerResult", "ctr"] as const;
+export type ControlMetric = (typeof CONTROL_METRICS)[number];
+
+/** KPI labels and help in the viewer's language, with "results" named for what they are. */
+export function useMetricLabels(result?: ResultDefinition) {
+  const t = useTranslations();
+  const kind = result?.kind ?? "results";
+  const labels: Record<ControlMetric, string> = {
+    spend: t("metrics.spend"),
+    results: t(`results.${kind}.metric`),
+    costPerResult: t(`results.${kind}.cost`),
+    ctr: t("metrics.ctr"),
+  };
+  const help: Record<ControlMetric, string> = {
+    spend: t("metrics.help.spend"),
+    results: t(`results.${kind}.help`),
+    costPerResult: t("metrics.help.costPerResult"),
+    ctr: t("metrics.help.ctr"),
+  };
+  const apps = result?.kind === "conversations" && result.apps.length ? result.apps.map((a) => t(`apps.${a}`)).join(" · ") : null;
+  return { labels, help, short: t(`results.${kind}.short`), appsNote: apps ? t("metrics.fromApps", { apps }) : null, t };
 }
-const METRIC_HELP: Record<Exclude<ControlMetric, "results">, string> = {
-  spend: "Reported advertising spend in account currency.",
-  ctr: "Clicks divided by impressions, multiplied by 100.",
-  costPerResult: "Spend divided by the count to the left. Unavailable when that count is zero or unknown.",
-};
 /** Extra chartable metrics, offered behind the chart's "More" menu (not KPI cards). */
 export type ExtraMetric = "impressions" | "clicks" | "cpm";
 const MONEY_KEYS = ["spend", "costPerResult", "cpm"];
@@ -87,9 +93,7 @@ export default function ControlMetrics({ view }: { view: ControlPerformance & { 
   const reference = view.context?.reference ?? null;
   const referenceLabel = view.context?.referenceLabel ?? null;
   const referenceNote = view.context?.referenceNote ?? null;
-  const labels = metricLabelsFor(view.result);
-  const help = (key: ControlMetric) => key === "results" ? RESULT_LABELS[view.result?.kind ?? "results"].help : METRIC_HELP[key];
-  const appsNote = view.result ? resultAppsNote(view.result) : null;
+  const { labels, help, appsNote, t } = useMetricLabels(view.result);
   return (
     <>
       {referenceNote && referenceLabel && (
@@ -98,14 +102,14 @@ export default function ControlMetrics({ view }: { view: ControlPerformance & { 
         </p>
       )}
       <dl className={classes.kpis}>
-        {(Object.keys(labels) as ControlMetric[]).map((key) => (
+        {CONTROL_METRICS.map((key) => (
           <div key={key}>
-            <dt>{labels[key]} <Tooltip events={{ hover: true, focus: true, touch: true }} multiline w={260} label={key === "results" && appsNote ? `${help(key)} From ${appsNote}.` : help(key)}><button type="button" aria-label={`About ${labels[key]}`}>ⓘ</button></Tooltip></dt>
+            <dt>{labels[key]} <Tooltip events={{ hover: true, focus: true, touch: true }} multiline w={260} label={key === "results" && appsNote ? `${help[key]} ${appsNote}` : help[key]}><button type="button" aria-label={t("metrics.about", { label: labels[key] })}>ⓘ</button></Tooltip></dt>
             <div className={classes.kpiValueRow}>
               <dd title={metricValue(key, view.metrics[key], view.currency)}>
                 {metricValue(key, view.metrics[key], view.currency, true)}
               </dd>
-              <Sparkline values={view.points.map((p) => p[key])} label={`${labels[key]} over the last ${view.points.length} days`} />
+              <Sparkline values={view.points.map((p) => p[key])} label={t("metrics.overDays", { label: labels[key], days: view.points.length })} />
             </div>
             <div className={classes.kpiFoot}>
               <MetricDelta

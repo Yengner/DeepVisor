@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   ActionIcon,
   Avatar,
@@ -59,6 +60,7 @@ export default function MobileAppChromeClient({
   initialPlatformId,
   initialAccountId,
 }: MobileAppChromeClientProps) {
+  const t = useTranslations('nav');
   const router = useRouter();
   const pathname = usePathname();
   const [drawerOpened, setDrawerOpened] = useState(false);
@@ -104,7 +106,7 @@ export default function MobileAppChromeClient({
         <Burger
           opened={drawerOpened}
           onClick={() => setDrawerOpened((opened) => !opened)}
-          aria-label="Open navigation"
+          aria-label={t('openNavigation')}
           size="sm"
           w={44}
           h={44}
@@ -123,13 +125,13 @@ export default function MobileAppChromeClient({
           />
         </div>
 
-        <ActionIcon size={44} variant="subtle" color="gray" aria-label="Ask DeepVisor" onClick={openDeepVisor} style={{ color: '#f5f9ff' }}>
+        <ActionIcon size={44} variant="subtle" color="gray" aria-label={t('askDeepVisor')} onClick={openDeepVisor} style={{ color: '#f5f9ff' }}>
           <IconSparkles size={21} aria-hidden />
         </ActionIcon>
 
         <Menu shadow="md" width={220} position="bottom-end">
           <Menu.Target>
-            <ActionIcon size="lg" variant="subtle" aria-label="Open account menu">
+            <ActionIcon size="lg" variant="subtle" aria-label={t('openAccountMenu')}>
               <Avatar
                 radius="sm"
                 size={34}
@@ -144,12 +146,12 @@ export default function MobileAppChromeClient({
             </ActionIcon>
           </Menu.Target>
           <Menu.Dropdown>
-            <Menu.Label>{fullName || 'Account'}</Menu.Label>
+            <Menu.Label>{fullName || t('account')}</Menu.Label>
             <Menu.Item leftSection={<IconSettings size={16} />} onClick={() => navigate('/settings')}>
-              Settings
+              {t('settings')}
             </Menu.Item>
             <Menu.Item color="red" leftSection={<IconLogout size={16} />} onClick={clientHandleSignOut}>
-              Logout
+              {t('logOut')}
             </Menu.Item>
           </Menu.Dropdown>
         </Menu>
@@ -180,7 +182,7 @@ export default function MobileAppChromeClient({
             justify="flex-start"
             onClick={() => navigate('/campaigns/create')}
           >
-            New campaign
+            {t('newCampaign')}
           </Button>
 
           <Divider />
@@ -192,7 +194,7 @@ export default function MobileAppChromeClient({
               return (
               <NavLink
                 key={item.route}
-                label={item.name}
+                label={t(item.nameKey)}
                 leftSection={
                   <ThemeIcon
                     variant={active ? 'filled' : 'light'}
@@ -237,7 +239,7 @@ export default function MobileAppChromeClient({
       </Drawer>
 
       <Portal>
-        <nav className={`${bottomNav.bar} md:hidden`} aria-label="Primary mobile navigation">
+        <nav className={`${bottomNav.bar} md:hidden`} aria-label={t('primaryMobileNavigation')}>
           <ul className={bottomNav.list}>
             {mobileBottomNavItems.map((item) => {
               const active = isMobileBottomItemActive(item.route);
@@ -249,13 +251,13 @@ export default function MobileAppChromeClient({
                     href={item.route}
                     className={bottomNav.tab}
                     aria-current={active ? 'page' : undefined}
-                    aria-label={unread > 0 ? `${item.name}, ${unread} unread` : item.name}
+                    aria-label={unread > 0 ? t('unread', { name: t(item.nameKey), count: unread }) : t(item.nameKey)}
                   >
                     <span className={bottomNav.icon}>
                       <item.icon size={22} stroke={active ? 2.1 : 1.7} aria-hidden />
                       {unread > 0 ? <span className={bottomNav.badge} aria-hidden>{unread > 9 ? '9+' : unread}</span> : null}
                     </span>
-                    <span className={bottomNav.label}>{item.shortName}</span>
+                    <span className={bottomNav.label}>{t(item.shortKey)}</span>
                   </Link>
                 </li>
               );

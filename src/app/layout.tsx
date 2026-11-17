@@ -7,6 +7,8 @@ import PendingAuthToast from "@/components/ui/toasts/PendingAuthToast";
 import FirstSyncTracker from "@/components/integrations/FirstSyncTracker";
 import AppMantineProvider from "@/components/providers/AppMantineProvider";
 import "../globals.css";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 
 const bodyFont = Manrope({
   subsets: ["latin"],
@@ -33,23 +35,26 @@ export const metadata: Metadata = {
   description: "Helping businesses grow with advanced ad tools and insights.",
 };
 
-export default function MainLayout({
+export default async function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
   return (
-    <html lang="en" {...mantineHtmlProps}>
+    <html lang={locale} {...mantineHtmlProps}>
       <head>
         <ColorSchemeScript />
       </head>
       <body className={`${bodyFont.variable} ${displayFont.variable}`}>
-        <AppMantineProvider>
-          <Toaster />
-          <PendingAuthToast />
-          <FirstSyncTracker />
-          {children}
-        </AppMantineProvider>
+        <NextIntlClientProvider>
+          <AppMantineProvider>
+            <Toaster />
+            <PendingAuthToast />
+            <FirstSyncTracker />
+            {children}
+          </AppMantineProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -1,6 +1,8 @@
 import { createElement, type ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MantineProvider } from '@mantine/core';
+import { NextIntlClientProvider } from 'next-intl';
+import messages from '../../../messages/en.json';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const captured = vi.hoisted(() => ({ adsets: [] as Array<{id:string;delivery?:boolean}>, ads: [] as Array<{id:string;delivery?:boolean}> }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace:vi.fn() }), usePathname:()=>'/campaigns', useSearchParams:()=>new URLSearchParams() }));
@@ -30,7 +32,8 @@ function render(tab:'adsets'|'ads', pausedParent=false) {
     initialAdSets:[{id:'empty-set',status:'ACTIVE',name:'No active ads'},{id:'live-set',status:'ACTIVE',name:'Active child'}] as Props['initialAdSets'],
     initialAds:[{id:'paused-ad',ad_id:'paused-ad',status:'PAUSED'},{id:'live-ad',ad_id:'live-ad',status:'ACTIVE'}] as Props['initialAds'],
   };
-  renderToStaticMarkup(createElement(MantineProvider,null,createElement(CampaignDashboard,props)));
+  const intl = { locale: 'en', messages } as ComponentProps<typeof NextIntlClientProvider>;
+  renderToStaticMarkup(createElement(NextIntlClientProvider,intl,createElement(MantineProvider,null,createElement(CampaignDashboard,props))));
 }
 describe('nested campaign tab delivery wiring',()=>{
   beforeEach(()=>{captured.adsets=[];captured.ads=[];});

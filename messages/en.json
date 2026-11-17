@@ -1,0 +1,284 @@
+{
+  "nav": {
+    "overview": "Overview",
+    "agency": "Agency Control",
+    "agencyShort": "Agency",
+    "campaigns": "Campaigns",
+    "reports": "Reports",
+    "connections": "Connections",
+    "notifications": "Notifications",
+    "notificationsShort": "Alerts",
+    "profile": "Profile",
+    "settings": "Settings",
+    "newCampaign": "New campaign",
+    "askDeepVisor": "Ask DeepVisor",
+    "unread": "{name}, {count} unread",
+    "logOut": "Log out",
+    "account": "Account",
+    "openNavigation": "Open navigation",
+    "openAccountMenu": "Open account menu",
+    "workspaceNavigation": "Workspace navigation",
+    "secondaryNavigation": "Secondary workspace navigation",
+    "primaryMobileNavigation": "Primary mobile navigation",
+    "toCheck": "{label} · {count} to check",
+    "overviewHome": "DeepVisor Overview"
+  },
+  "metrics": {
+    "spend": "Spend",
+    "ctr": "CTR",
+    "impressions": "Impressions",
+    "clicks": "Clicks",
+    "cpm": "CPM",
+    "cpmHint": "cost per 1,000 impressions",
+    "help": {
+      "spend": "Reported advertising spend in account currency.",
+      "ctr": "Clicks divided by impressions, multiplied by 100.",
+      "costPerResult": "Spend divided by the count to the left. Unavailable when that count is zero or unknown."
+    },
+    "about": "About {label}",
+    "overDays": "{label} over the last {days} days",
+    "fromApps": "From {apps}.",
+    "more": "More",
+    "moreSelected": "More: {label}",
+    "empty": {
+      "spend": "No recorded spend for this period",
+      "ctr": "No recorded CTR for this period",
+      "impressions": "No recorded impressions for this period",
+      "clicks": "No recorded clicks for this period",
+      "cpm": "No recorded CPM for this period"
+    }
+  },
+  "results": {
+    "whatsapp_conversations": {
+      "metric": "WhatsApp conversations",
+      "short": "Conversations",
+      "cost": "Cost / conversation",
+      "help": "WhatsApp conversations Meta reports as started from your ads. They are not bookings or unique customers.",
+      "count": "{count, plural, one {# WhatsApp conversation} other {# WhatsApp conversations}}",
+      "empty": "No WhatsApp conversations recorded for this period"
+    },
+    "conversations": {
+      "metric": "Conversations",
+      "short": "Conversations",
+      "cost": "Cost / conversation",
+      "help": "Messaging conversations Meta reports as started from your ads. They are not bookings or unique customers.",
+      "count": "{count, plural, one {# conversation} other {# conversations}}",
+      "empty": "No conversations recorded for this period"
+    },
+    "leads": {
+      "metric": "Leads",
+      "short": "Leads",
+      "cost": "Cost / lead",
+      "help": "Instant-form leads Meta reports from your ads. They are not bookings or unique customers.",
+      "count": "{count, plural, one {# lead} other {# leads}}",
+      "empty": "No leads recorded for this period"
+    },
+    "calls": {
+      "metric": "Calls",
+      "short": "Calls",
+      "cost": "Cost / call",
+      "help": "Call actions Meta reports from your ads. They are not completed calls or bookings.",
+      "count": "{count, plural, one {# call} other {# calls}}",
+      "empty": "No calls recorded for this period"
+    },
+    "results": {
+      "metric": "Results",
+      "short": "Results",
+      "cost": "Cost / result",
+      "help": "Reported leads + messaging conversations + call actions. These are not verified bookings or unique customers.",
+      "count": "{count, plural, one {# result} other {# results}}",
+      "empty": "No recorded results for this period"
+    }
+  },
+  "apps": {
+    "whatsapp": "WhatsApp",
+    "instagram": "Instagram",
+    "messenger": "Messenger"
+  },
+  "facts": {
+    "eyebrow": "Your advertising",
+    "title": "What DeepVisor knows about your ads",
+    "intro": "Drafts start from these answers. Answers from your ads update on their own; yours stay until you change them.",
+    "unavailable": "These answers are unavailable right now. Please try again shortly.",
+    "keys": {
+      "daily_budget": {
+        "label": "Usual daily budget",
+        "question": "How much do you usually spend per day on an ad?",
+        "help": "Used as the starting budget for new drafts. You can change it on each draft."
+      },
+      "run_days": {
+        "label": "Usual run length",
+        "question": "How many days do your ads usually run?",
+        "help": "Used to set the end date on new drafts."
+      },
+      "monthly_ceiling": {
+        "label": "Monthly limit",
+        "question": "What is the most you want to spend on ads in a month?",
+        "help": "Drafts that would go over this are flagged before you publish."
+      },
+      "whatsapp_greeting": {
+        "label": "WhatsApp greeting",
+        "question": "What message should clients send you when they tap your ad?",
+        "help": "Pre-filled in WhatsApp so clients do not have to type the first message."
+      },
+      "client_languages": {
+        "label": "Client languages",
+        "question": "Which languages do your clients speak?",
+        "help": "Drafts include ad text in each language."
+      },
+      "slow_days": {
+        "label": "Slow days",
+        "question": "Which days do you most want to fill?",
+        "help": "Drafts can focus on these days."
+      }
+    },
+    "value": {
+      "perDay": "{amount} a day",
+      "perMonth": "{amount} a month",
+      "days": "{days, plural, one {# day} other {# days}}",
+      "quoted": "“{text}”",
+      "noSlowDays": "No slow days"
+    },
+    "source": {
+      "owner": "You told us · {date}",
+      "ownerStale": "You told us · {date} · may be out of date",
+      "history": "From your ads · {basis}"
+    },
+    "basis": {
+      "latest_ad_set": "Your most recent ad set",
+      "one_scheduled": "Your one scheduled ad set",
+      "typical": "Typical of {count} scheduled ad sets"
+    },
+    "badge": {
+      "notAnswered": "Not answered",
+      "checkThis": "Check this"
+    },
+    "action": {
+      "keep": "Keep this",
+      "change": "Change",
+      "answer": "Answer",
+      "save": "Save",
+      "cancel": "Cancel",
+      "forget": "Forget my answer"
+    },
+    "noCurrency": "Connect an ad account with a known currency to set this.",
+    "invalidAmount": "Enter an amount like 20 or 20.50.",
+    "slowDaysHint": "Leave all unselected if no day is slower than the others.",
+    "greetingPlaceholder": "Hi, I'd like to book an appointment",
+    "daysSuffix": " days",
+    "error": {
+      "invalid": "Check the answer and try again.",
+      "forbidden": "Only workspace owners and admins can change these answers.",
+      "failed": "The answer could not be saved. Please try again.",
+      "removeFailed": "The answer could not be removed. Please try again.",
+      "retry": "Please try again.",
+      "removeInvalid": "That answer could not be removed."
+    }
+  },
+  "days": {
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat",
+    "sun": "Sun"
+  },
+  "languages": {
+    "en": "English",
+    "es": "Spanish",
+    "list": "{first} and {second}"
+  },
+  "quickAd": {
+    "metaTitle": "Quick ad | DeepVisor",
+    "title": "Quick ad",
+    "intro": "Add your photo or video. DeepVisor prepares a paused draft for you to review. Nothing is published.",
+    "selectAccount": "Select a Meta account in <link>Connections</link> first.",
+    "noSourceTitle": "No messaging ad to start from yet",
+    "noSourceBody": "Quick ad copies the settings of an ad that sends people to WhatsApp or Messenger. Create one in <link>Campaigns</link> first.",
+    "questionsTitle": "A few answers first",
+    "questionsIntro": "You only answer these once. Change them anytime in Settings.",
+    "askAdmin": "Ask a workspace owner or admin to answer these in Settings.",
+    "formTitle": "Your ad",
+    "startsFrom": "Starts from",
+    "reason": {
+      "cheapest": "Lowest cost per conversation in the last 90 days",
+      "recent": "Your most recent messaging ad set"
+    },
+    "budget": "Budget",
+    "perDay": "{amount} a day",
+    "runs": "Runs",
+    "runsValue": "{days, plural, one {# day} other {# days}}, starting tomorrow",
+    "adText": "Ad text",
+    "clientsTap": "Clients tap",
+    "clientsSend": "Clients send",
+    "sameWelcome": "Same WhatsApp welcome as your current ad",
+    "savedGreeting": "Your saved greeting",
+    "overLimit": "This plan is above your monthly limit. You can lower the budget below.",
+    "file": "Photo or video",
+    "fileHelp": "JPEG, PNG, WebP, MP4 or WebM, up to 4 MB",
+    "note": "Anything to mention? (optional)",
+    "notePlaceholder": "e.g. Fall color special, Saturday openings",
+    "dailyBudget": "Daily budget for this ad (optional)",
+    "days": "Days (optional)",
+    "create": "Create draft",
+    "remaining": "{remaining} of {limit} quick ads left today",
+    "limitReached": "Daily limit reached. Try again tomorrow.",
+    "error": {
+      "chooseFile": "Choose a photo or video first.",
+      "tooLarge": "Choose a file up to 4 MB.",
+      "NO_SOURCE": "No messaging ad set to start from yet. Create your first ad in Campaigns.",
+      "MISSING_FACTS": "A few answers are needed first.",
+      "DAILY_LIMIT": "You can make up to 10 quick ads a day. Try again tomorrow.",
+      "INVALID_INPUT": "Check the form and try again.",
+      "UNAVAILABLE": "Quick ad is unavailable right now."
+    }
+  },
+  "campaigns": {
+    "quickAd": "Quick ad"
+  },
+  "checkin": {
+    "lastWeek": "Last week ({range})",
+    "started": "Your ads started {count}.",
+    "ran": "Your ads ran.",
+    "question": "About how many became appointments?",
+    "inputLabel": "Appointments from last week's ads",
+    "placeholder": "e.g. 5",
+    "save": "Save",
+    "notSure": "Not sure",
+    "title": "Appointments from ads",
+    "summary": "You reported <b>{bookings}</b> {bookings, plural, one {appointment} other {appointments}} in {answered} of the last {weeks} weeks with ads",
+    "cost": " · about <b>{cost}</b> per appointment",
+    "error": {
+      "wholeNumber": "Enter a whole number, like 0 or 5.",
+      "invalid": "Check the number and try again.",
+      "forbidden": "Only workspace owners and admins can answer this.",
+      "noAccount": "Select an ad account first.",
+      "accountUnavailable": "This ad account is unavailable.",
+      "oldWeek": "That week can no longer be answered.",
+      "count": "Enter a whole number from 0 to 10,000.",
+      "failed": "Your answer could not be saved. Please try again.",
+      "retry": "Please try again."
+    }
+  },
+  "language": {
+    "title": "Language",
+    "description": "Choose the language DeepVisor uses for you. Other people in your workspace keep their own choice.",
+    "label": "Language",
+    "auto": "Same as my browser",
+    "saved": "Language saved.",
+    "error": "Your language could not be saved. Please try again.",
+    "unsupported": "Choose English or Spanish.",
+    "noProfile": "Your profile could not be found."
+  },
+  "chart": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisPeriod": "This period",
+    "metricGroup": "Chart metric",
+    "seeAll": "See all metrics in Reports →"
+  },
+  "auth": {
+    "signInAgain": "Please sign in again."
+  }
+}

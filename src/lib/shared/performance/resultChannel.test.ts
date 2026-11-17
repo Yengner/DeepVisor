@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { messagingApps, resultAppsNote, resultChannel, resultDefinition, type ResultRow } from './resultChannel';
+import { messagingApps, resultChannel, resultDefinition, type ResultRow } from './resultChannel';
 
 const row = (destinationType: string | null, counts: Partial<Omit<ResultRow, 'destinationType'>> = {}): ResultRow => ({
   destinationType, spend: 10, leads: 0, messages: 3, calls: 0, ...counts,
@@ -34,7 +34,6 @@ describe('resultDefinition', () => {
   it('names mixed messaging as conversations and lists the apps', () => {
     const definition = resultDefinition([row('WHATSAPP'), row('MESSAGING_INSTAGRAM_DIRECT_MESSENGER_WHATSAPP')]);
     expect(definition).toEqual({ kind: 'conversations', apps: ['whatsapp', 'instagram', 'messenger'] });
-    expect(resultAppsNote(definition)).toBe('WhatsApp · Instagram · Messenger');
   });
 
   it('keeps Results when another channel spent money, even with zero results', () => {
@@ -65,6 +64,5 @@ describe('resultDefinition', () => {
 
   it('falls back to Results with no rows', () => {
     expect(resultDefinition([])).toEqual({ kind: 'results', apps: [] });
-    expect(resultAppsNote({ kind: 'whatsapp_conversations', apps: ['whatsapp'] })).toBeNull();
   });
 });

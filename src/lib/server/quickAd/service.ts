@@ -21,6 +21,11 @@ export const QUICK_AD_DAILY_LIMIT = 10;
 export const QUICK_AD_SOURCE_TYPE = 'quick_ad_copy';
 const PROMPT_VERSION = 'quick-ad-copy-v1';
 const MAX_NOTE = 300;
+/** Review notes are stored in the draft for the draft builder, which is English for now. */
+const REASON_NOTE: Record<SourceChoice['reason'], string> = {
+  cheapest: 'lowest cost per conversation in the last 90 days',
+  recent: 'your most recent messaging ad set',
+};
 
 export class QuickAdError extends Error {
   constructor(message: string, readonly status: number, readonly code: 'NO_SOURCE' | 'MISSING_FACTS' | 'DAILY_LIMIT' | 'INVALID_INPUT' | 'UNAVAILABLE', readonly missing: FactKey[] = []) {
@@ -221,7 +226,7 @@ export async function createQuickAd(scope: Scope, input: QuickAdInput) {
         copies: copy.output.variants,
         media: [{ id: mediaId, name: input.file.name.replace(/[\x00-\x1f\x7f/\\]/g, '').slice(0, 120) || 'Quick ad media', mime, path }],
         welcome,
-        reviewNote: `Quick ad from "${source.name}" (${source.reason.toLowerCase()}). ${textNote}${plan.overMonthlyLimit ? ' Planned spend is above your monthly limit.' : ''}`,
+        reviewNote: `Quick ad from "${source.name}" (${REASON_NOTE[source.reason]}). ${textNote}${plan.overMonthlyLimit ? ' Planned spend is above your monthly limit.' : ''}`,
       },
     });
     if (result.replayed) await scope.db.storage.from(MEDIA_BUCKET).remove([path]);
