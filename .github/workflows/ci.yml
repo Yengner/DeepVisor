@@ -1,37 +1,147 @@
 name: CI
 
+# Pull requests run once (not twice for push + pull_request). main runs on every push.
+# "Run workflow" in the Actions tab runs it on any branch.
 on:
-  push:
   pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+# A newer push to the same pull request cancels the older run; main always finishes.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  NEXT_TELEMETRY_DISABLED: '1'
+
+# Actions are pinned to full commit SHAs (tag in the comment) so a moved tag cannot change CI.
 jobs:
-  check:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: ESLint (existing-debt baseline applied)
+        run: |
+          set -o pipefail
+          if ! npm run lint 2>&1 | tee lint.log; then
+            if grep -q "suppressions left that do not occur anymore" lint.log; then
+              echo "::error title=Stale lint suppressions::eslint-suppressions.json lists problems that no longer exist (good news: something was fixed). Run 'npx eslint src --prune-suppressions' and commit eslint-suppressions.json."
+            fi
+            exit 1
+          fi
+
+  types:
+    name: Types & architecture
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Architecture rules
+        run: npm run check:architecture
+      - name: Architecture and CI script tests
+        run: npm run test:architecture && node --test "scripts/ci/*.test.mjs"
+      - name: Migration names
+        run: node scripts/ci/check-migrations.mjs
+
+  test:
+    name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      NEXT_TELEMETRY_DISABLED: '1'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: '24'
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run test:architecture
-      - run: npm run check:architecture
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
+      - run: npm ci --no-audit --no-fund
+      # Same suite as `npm test`, plus inline annotations on failing tests in the pull request.
+      - name: Vitest
+        run: npx vitest run --reporter=default --reporter=github-actions
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Restore Next.js build cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**', 'messages/**', 'public/**', 'next.config.mjs') }}
+          restore-keys: |
+            next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+      - name: Next.js build
+        run: npm run build
         env:
-          # Build-only placeholders; CI never receives production credentials.
+          # Build-only placeholders; CI never receives real credentials.
           NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
           STRIPE_SECRET_KEY: sk_test_ci_placeholder
+
+  dependencies:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Fails when a pull request adds a dependency with a known high or critical vulnerability.
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+
+  # The one check to require in branch protection: passes only if every job above passed
+  # (dependency review counts as passed when it does not run, e.g. on main).
+  ci-passed:
+    name: CI passed
+    if: always()
+    needs: [lint, types, test, build, dependencies]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Summarize
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "### CI results" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Job | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
+          echo "$RESULTS" | jq -r 'to_entries[] | "| \(.key) | \(.value.result) |"' >> "$GITHUB_STEP_SUMMARY"
+          failed=$(echo "$RESULTS" | jq -r '[to_entries[] | select(.value.result != "success" and .value.result != "skipped") | .key] | join(", ")')
+          if [ -n "$failed" ]; then
+            echo "::error title=CI failed::Failed or cancelled: $failed. Open the failed job above for details."
+            exit 1
+          fi
+          echo "All checks passed."
