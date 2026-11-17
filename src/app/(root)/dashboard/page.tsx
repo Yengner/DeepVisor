@@ -75,13 +75,17 @@ const decisions = cache(async (context: OverviewContext) => {
   };
 });
 const performance = cache(async (context: OverviewContext, period: Period) => {
+  // Entities only name the live KPIs; their failure must not hide live performance.
   const [live, entities] = await Promise.all([
     loadInsights(context),
-    loadOverviewEntities(context.businessId, context.account!.id),
+    loadOverviewEntities(context.businessId, context.account!.id).catch((error) => {
+      console.error("Overview ad-set names unavailable", { code: (error as { code?: string })?.code });
+      return null;
+    }),
   ]);
   // Names the KPI "results" from the same rows that produce them. Live rows carry Meta ad-set ids;
   // saved rows are named inside controlPerformance. Anything unprovable stays "Results".
-  const destinationByExternal = new Map(entities.map(e => [e.external_id, e.destination_type]));
+  const destinationByExternal = new Map((entities ?? []).map(e => [e.external_id, e.destination_type]));
   const withContext = <T extends Pick<ControlPerformance, 'metrics' | 'deltas' | 'comparison'>>(view: T, daily: Insight[] | null, result: ResultDefinition | undefined) => {
     const ctx = periodContext({ daily, hourly: live.hourly, platform: context.publisher, period, today: context.today, now: context.now, zone: context.zone, currency: context.account!.currency_code });
     // Today's badges compare against the "Yesterday by now" figure the card prints beside them.
@@ -92,6 +96,8 @@ const performance = cache(async (context: OverviewContext, period: Period) => {
     return withContext({ ...livePerformance(live.daily, context.publisher, period, context.today, context.account!.currency_code), ...comparisons(live.daily, context.publisher, period, context.today, context.account!.currency_code, live.fetchedAt, context.now, { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) }, live.daily, result);
   }
   if (context.publisher !== 'combined') return withContext(livePerformance([], context.publisher, period, context.today, context.account!.currency_code), null, undefined);
+  // Saved rows are scoped through the entity list, so the stored path still requires it.
+  if (!entities) throw new Error("Overview entities unavailable");
   const rows = await loadOverviewHistory(context.businessId, context.account!.id, context.today);
   const stored = controlPerformance(rows, entities, period, context.today, context.account!.currency_code);
   const dated: Insight[] = rows.map(row => ({ ...row, externalId: row.entity_id, publisher: 'combined', label: '' }));
