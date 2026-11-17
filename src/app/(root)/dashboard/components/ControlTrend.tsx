@@ -19,6 +19,7 @@ import { IconChevronDown } from "@tabler/icons-react";
 import { metricValue } from "./ControlMetrics";
 import classes from "./ControlCenter.module.css";
 import { chartCeiling, chartTicks } from "./chartScale";
+import { RESULT_LABELS } from "@/lib/shared/performance/resultChannel";
 
 type Row = { x: string; current: number | null; previous: number | null; live: boolean };
 /**
@@ -42,6 +43,7 @@ export default function ControlTrend({
   markers?: ChartMarker[];
 }) {
   const [metric, setMetric] = useState<ChartKey>("results");
+  const labels = { ...LABELS, results: RESULT_LABELS[view.result?.kind ?? "results"].metric };
   const [selected, setSelected] = useState("");
   const hourly = view.context?.hourly ?? null;
   const previousName = hourly ? "Yesterday" : view.context?.referenceLabel ?? null;
@@ -64,7 +66,7 @@ export default function ControlTrend({
   const partialPrevious = !hourly && Boolean(view.context?.referenceNote);
   const hasPrevious = !partialPrevious && rows.some((r) => r.previous !== null);
   const ceiling = chartCeiling(Math.max(0, ...rows.flatMap((r) => [r.current ?? 0, r.previous ?? 0])));
-  const label = LABELS[metric];
+  const label = labels[metric];
   const shownMarkers = hourly ? [] : markers.filter((m) => rows.some((r) => r.x === m.day));
   const format = (v: number) => metricValue(metric, v, view.currency);
   const xLabel = (x: string) => (hourly ? x : dayLabel(x));
@@ -75,20 +77,20 @@ export default function ControlTrend({
         <div className={classes.metricTabs} role="group" aria-label="Chart metric">
           {TABS.map((key) => (
             <button key={key} type="button" aria-pressed={metric === key} onClick={() => setMetric(key)}>
-              {LABELS[key]}
+              {labels[key]}
             </button>
           ))}
           <Menu position="bottom-start" shadow="md" width={220} withinPortal>
             <Menu.Target>
               <UnstyledButton className={classes.moreMetric} aria-pressed={MORE.includes(metric)}>
-                {MORE.includes(metric) ? `More: ${LABELS[metric]}` : "More"}
+                {MORE.includes(metric) ? `More: ${labels[metric]}` : "More"}
                 <IconChevronDown size={13} aria-hidden="true" />
               </UnstyledButton>
             </Menu.Target>
             <Menu.Dropdown>
               {MORE.map((key) => (
                 <Menu.Item key={key} onClick={() => setMetric(key)} aria-current={metric === key || undefined} fw={metric === key ? 700 : undefined}>
-                  {LABELS[key]}{key === "cpm" ? <span className={classes.menuHint}> · cost per 1,000 impressions</span> : null}
+                  {labels[key]}{key === "cpm" ? <span className={classes.menuHint}> · cost per 1,000 impressions</span> : null}
                 </Menu.Item>
               ))}
               <Menu.Divider />
@@ -201,7 +203,7 @@ export default function ControlTrend({
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <div className={classes.chartEmpty}>No recorded {metric === "ctr" || metric === "cpm" ? LABELS[metric] : LABELS[metric].toLowerCase()} for this period</div>
+          <div className={classes.chartEmpty}>No recorded {metric === "ctr" || metric === "cpm" || (metric === "results" && view.result?.kind === "whatsapp_conversations") ? labels[metric] : labels[metric].toLowerCase()} for this period</div>
         )}
       </div>
     </>

@@ -28,7 +28,7 @@ export function AdvertisingSection({ payload, isDemo }: { payload: ReportPayload
 
   return <section className={classes.panel} aria-labelledby="advertising-title">
     <div className={classes.panelHeader}>
-      <div><p className={classes.eyebrow}>Campaign → Ad set → Ad</p><h2 id="advertising-title">Advertising</h2></div>
+      <div><h2 id="advertising-title">Advertising</h2></div>
       <label className={classes.metricSelect}>Rank by<select aria-label="Ranking metric" value={metric} onChange={e => setMetric(e.target.value as PerformanceMetric)}>{PERFORMANCE_METRICS.map(([key, name]) => <option value={key} key={key}>{name}</option>)}</select></label>
     </div>
     <div className={styles.controls}>

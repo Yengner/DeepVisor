@@ -22,7 +22,10 @@ export type DailyRow = Pick<
 export type Entity = Pick<
   Public["ad_entities"]["Row"],
   "id" | "external_id" | "name" | "status"
->;
+> & {
+  /** Meta ad-set `destination_type` from the saved raw dimension; names what results are. */
+  destination_type?: string | null;
+};
 export type Metrics = {
   spend: number | null;
   results: number | null;

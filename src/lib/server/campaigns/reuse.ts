@@ -18,6 +18,7 @@ import type {
   ManualCampaignDraftForm,
 } from '@/lib/shared/types/campaignDrafts';
 import type { Database, Json } from '@/lib/shared/types/supabase';
+import type { AssistantMedia } from '@/lib/shared/assistant/contracts';
 import {
   CampaignReuseSourceLookupError,
   getCampaignReuseSource,
@@ -832,6 +833,7 @@ function buildDraftPayload(input: {
   currencyCode: string | null;
   timezone: string | null;
   schedule: ParsedSchedule;
+  content?: ReuseDraftContent;
 }): CampaignDraftPayload {
   const campaignRaw = asRecord(input.source.campaign.raw);
   const adSetRaw = asRecord(input.source.adSet?.raw);
@@ -843,11 +845,10 @@ function buildDraftPayload(input: {
     safeHttpUrl(input.source.creative?.link_url) ||
     safeHttpUrl(input.profile?.booking_link) ||
     safeHttpUrl(input.profile?.website);
-  const creative = creativeDraft(
-    input.request.creativeMode,
-    input.source.creative,
-    linkUrl
-  );
+  const creatives = input.content
+    ? contentCreatives(input.content, linkUrl)
+    : [creativeDraft(input.request.creativeMode, input.source.creative, linkUrl)];
+  const creative = creatives[0];
   const sourcePageId = exactSourcePageId(input.source, promotedObject);
   const pageId = sourcePageId || input.profile?.meta_page_id || '';
   const sourceInstagramAccountId = nonEmptyString(
@@ -882,12 +883,25 @@ function buildDraftPayload(input: {
     (mainService
       ? `${mainService.label} - new ad set`
       : `${input.source.campaign.name || 'Campaign'} - new ad set`);
-  const campaignName = `${input.source.campaign.name || 'Campaign'} - Run again`;
-  const methodSettings = defaultMethodSettings({
+  const campaignName = input.content
+    ? `${input.source.campaign.name || 'Campaign'} - ${input.content.title}`
+    : `${input.source.campaign.name || 'Campaign'} - Run again`;
+  const defaults = defaultMethodSettings({
     destination,
     profile: input.profile,
     creative: input.source.creative,
   });
+  const welcome = input.content?.welcome;
+  const methodSettings = welcome
+    ? {
+        ...defaults,
+        messages: {
+          ...defaults.messages,
+          greetingText: welcome.summary,
+          ...(welcome.spec ? { welcomeMessageSpec: welcome.spec } : {}),
+        },
+      }
+    : defaults;
   const primaryAdSet = {
     id: 'primary',
     role: 'primary' as const,
@@ -921,7 +935,7 @@ function buildDraftPayload(input: {
         : jsonObjectOrNull(adSetRaw.attribution_spec),
     },
     targeting,
-    creatives: [creative],
+    creatives,
   };
   const leadMethodFields = destination.leadMethod
     ? {
@@ -940,6 +954,7 @@ function buildDraftPayload(input: {
     form: {
       initialStatus: 'PAUSED',
       reviewRequired: true,
+      ...(input.content ? { assistantMedia: input.content.media } : {}),
       reuseSource: {
         sourceType: input.request.sourceType,
         creativeMode: input.request.creativeMode,
@@ -1006,6 +1021,39 @@ function buildDraftPayload(input: {
       },
     },
   };
+}
+
+/**
+ * Optional new content for a reuse draft (Quick ad): one creative per language with new text,
+ * uploaded media and the WhatsApp greeting. Absent means the original reuse behavior.
+ */
+export type ReuseDraftContent = {
+  title: string;
+  copies: Array<{ language: 'en' | 'es'; primaryText: string; headline: string }>;
+  media: AssistantMedia[];
+  /**
+   * WhatsApp welcome: the source ad's exact Meta setup (`spec`) when it had one, else the
+   * owner's greeting as a pre-filled message. `summary` is what the client sends or taps first.
+   */
+  welcome: { spec: string | null; summary: string } | null;
+  reviewNote: string;
+};
+
+function contentCreatives(content: ReuseDraftContent, linkUrl: string): LeadCampaignCreativeDraft[] {
+  const fileNames = content.media.map(m => m.name);
+  const base = (index: number): LeadCampaignCreativeDraft => ({
+    ...freshCreative(linkUrl),
+    id: index === 0 ? 'primary' : `challenger-${index}`,
+    role: index === 0 ? 'primary' : 'challenger',
+    uploadedFileNames: fileNames,
+  });
+  if (!content.copies.length) return [base(0)];
+  return content.copies.map((copy, index) => ({
+    ...base(index),
+    language: copy.language,
+    adHeadline: copy.headline,
+    adPrimaryText: copy.primaryText,
+  }));
 }
 
 function sha256(value: string): string {
@@ -1115,6 +1163,7 @@ export async function createCampaignReuseDraft(
     currencyCode: string | null;
     timezone: string | null;
     request: CreateCampaignReuseDraftRequest;
+    content?: ReuseDraftContent;
   }
 ): Promise<CreateCampaignReuseDraftResult> {
   validateSourceRequest(input.request);
@@ -1183,6 +1232,7 @@ export async function createCampaignReuseDraft(
     currencyCode: input.currencyCode,
     timezone: input.timezone,
     schedule,
+    content: input.content,
   });
   const sourceLabel =
     input.request.sourceType === 'ad'
@@ -1198,10 +1248,11 @@ export async function createCampaignReuseDraft(
       platformIntegrationId: input.platformIntegrationId,
       adAccountId: input.adAccountId,
       userId: input.userId,
-      title: `Run again: ${sourceLabel}`,
+      title: input.content ? `${input.content.title}: ${sourceLabel}` : `Run again: ${sourceLabel}`,
       payloadJson,
-      reviewNotes:
-        'Created from an exact account-scoped source. Initial Meta status must remain PAUSED until final review.',
+      reviewNotes: input.content
+        ? `${input.content.reviewNote} Initial Meta status must remain PAUSED until final review.`
+        : 'Created from an exact account-scoped source. Initial Meta status must remain PAUSED until final review.',
       sourceActionId,
     });
 

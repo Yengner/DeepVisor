@@ -19,8 +19,8 @@ export default function AiAssistantDrawer({ payload, children }: { payload: Glob
   useEffect(() => {
     const onAsk = (event: Event) => {
       const question = (event as CustomEvent<AskDetail>).detail?.question;
-      if (typeof question !== 'string' || !question.trim()) return;
-      setDraft(question.slice(0, 2000));
+      if (typeof question !== 'string') return;
+      if (question.trim()) setDraft(question.slice(0, 2000));
       setOpened(true);
     };
     window.addEventListener(ASK_EVENT, onAsk);

@@ -100,3 +100,13 @@ it('joins creative cards by native Meta ID and preserves evidence health without
  expect(advertisingMetrics([item], null, 'facebook', 'today', '2026-11-01', 'USD')[0].metrics.spend).toBeNull();
  expect(advertisingMetrics([item], null, 'combined', 'today', '2026-11-01', 'USD')[0]).toBe(item);
 });
+
+it('renames a card from the live rows that replaced its saved metrics', () => {
+  const live = normalize([{ adset_id: 'wa', date_start: '2026-11-01', publisher_platform: 'facebook', spend: '12', impressions: '300', clicks: '9', actions: [{ action_type: 'onsite_conversion.messaging_conversation_started_7d', value: '4' }] }], 'USD');
+  const card = { id: 'wa', name: 'WhatsApp set', level: 'adset' as const, delivery: 'ACTIVE', state: null, metrics: aggregate([], 'USD'), media: [], complete: false, deltas: {}, leader: false, tied: false, destinationType: 'WHATSAPP', result: { kind: 'results' as const, apps: [] } };
+  const [updated] = advertisingMetrics([card], live, 'combined', 'today', '2026-11-01', 'USD');
+  expect(updated.metrics.results).toBe(4);
+  expect(updated.result).toEqual({ kind: 'whatsapp_conversations', apps: ['whatsapp'] });
+  // Lead rows from the earlier fixture make the same card unprovable.
+  expect(advertisingMetrics([{ ...card, id: 'one' }], rows, 'combined', 'today', '2026-11-01', 'USD')[0].result?.kind).toBe('results');
+});

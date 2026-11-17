@@ -1,40 +1,134 @@
-import { ArrowRight, ArrowUpRight, Layers3, LayoutDashboard, LockKeyhole, ScanLine, Table2 } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import DesignSurface from '@/components/design/DesignSurface';
-import { ActionLink, AgentMessage, Panel } from '@/components/design/Primitives';
-import SpiderMascot from '@/components/brand/SpiderMascot';
+import { ActionLink } from '@/components/design/Primitives';
+import SpiderMascot, { type SpiderMascotState } from '@/components/brand/SpiderMascot';
 import AgencyPreview from './components/AgencyPreview';
 import PlatformMarquee from './components/PlatformMarquee';
 import classes from './Landing.module.css';
 
-const pillars = [
-  { icon: LayoutDashboard, number: 'Overview', title: 'What’s running, and how it’s doing.', copy: 'Spend, results, and the ads actually delivering right now, shown with their real creative next to how the last 7 or 30 days went.', detail: 'Active now vs. the period you pick' },
-  { icon: ScanLine, number: 'Decisions', title: 'What changed, and whether to act.', copy: 'DeepVisor writes down what it noticed and the numbers behind it. “Hold” and “not enough data yet” are honest answers, not failures.', detail: 'Evidence attached to every call' },
-  { icon: Table2, number: 'Campaigns', title: 'Every campaign, ad set, and ad.', copy: 'One table you can drill through, from the whole account down to a single ad, without losing track of where you are.', detail: 'Account → campaign → ad set → ad' },
+const readings: { state: SpiderMascotState; tone: 'attention' | 'hold' | 'waiting'; label: string; name: string; note: string }[] = [
+  { state: 'attention', tone: 'attention', label: 'Worth a look', name: 'Weekend walk-ins', note: 'Cost per result up from $18 to $27 this week.' },
+  { state: 'idle', tone: 'hold', label: 'Hold', name: 'New client offer', note: 'Steady and on target. Leave it running.' },
+  { state: 'thinking', tone: 'waiting', label: 'Too early', name: 'Spring video', note: 'Two days old. Not enough data to judge yet.' },
+];
+
+const steps = [
+  { title: 'Connect Meta', copy: 'Pick the ad account to watch.' },
+  { title: 'DeepVisor reads', copy: 'Every campaign, ad set, and ad.' },
+  { title: 'You decide', copy: 'See what deserves a look, and act on your terms.' },
+];
+
+const places = [
+  { name: 'Overview', question: 'What’s running, and how is it doing?' },
+  { name: 'Decisions', question: 'What changed, and should I act?' },
+  { name: 'Campaigns', question: 'Where exactly is the money going?' },
+];
+
+const faqs = [
+  { q: 'Is DeepVisor free?', a: 'Yes, while it’s in beta.' },
+  { q: 'Can DeepVisor change my ads?', a: 'No. It only reads your account. Changes are always yours to make.' },
+  { q: 'Who is it for?', a: 'Any business running ads, no marketing background needed. We’re starting with local businesses on Facebook and Instagram.' },
+  { q: 'Which platforms does it support?', a: 'Meta today. Google Ads, TikTok, LinkedIn, and more are on the way.' },
+  { q: 'What do you do with my data?', a: 'Use it to run DeepVisor for you. We never sell it, and you can delete it any time.' },
 ];
 
 export default function HomePage() {
-  return <DesignSurface label="DeepVisor / Advertising intelligence">
+  return <DesignSurface label="DeepVisor">
     <div className={classes.landing}>
-      <section className={classes.hero} id="top" aria-labelledby="hero-heading">
+      <section className={classes.hero} aria-labelledby="hero-heading">
         <div className={classes.heroCopy}>
-          <span className={classes.eyebrow}><span className={classes.pixelDot} /> A CLEARER MIND FOR YOUR META ADS</span>
           <h1 id="hero-heading">Less noise.<br />More <span>perspective.</span></h1>
-          <p className={classes.lede}>DeepVisor reads your Meta ad account, shows what’s running and how it’s performing, and points out what deserves a look, with the evidence attached. You decide what changes.</p>
-          <div className={classes.actions}><ActionLink href="/sign-up">Start with DeepVisor <ArrowRight size={17} aria-hidden /></ActionLink><ActionLink href="#how-it-works" secondary>Explore the workflow</ActionLink></div>
-          <p className={classes.heroNote}><LockKeyhole size={14} aria-hidden /> Nothing changes in your ad account without your approval.</p>
+          <p className={classes.lede}>Advertising, made simpler for every business. DeepVisor reads your Meta ads, shows what’s working, and tells you what deserves a look. You stay in control.</p>
+          <div className={classes.actions}>
+            <ActionLink href="/sign-up">Start free beta <ArrowRight size={17} aria-hidden /></ActionLink>
+            <ActionLink href="#how-it-works" secondary>How it works</ActionLink>
+          </div>
         </div>
         <AgencyPreview />
       </section>
+
       <PlatformMarquee />
-      <section className={classes.section} id="how-it-works" aria-labelledby="workflow-heading">
-        <div className={`${classes.sectionHeading} ${classes.reveal}`}><div><span className={classes.eyebrow}>HOW IT’S ORGANIZED</span><h2 id="workflow-heading">Three places.<br />One clear picture.</h2></div><p>Built around the questions owners actually ask: what’s running, what changed, and where should I look?</p></div>
-        <div className={classes.pillars}>{pillars.map(({ icon: Icon, ...item }) => <Panel key={item.number} className={`${classes.pillar} ${classes.reveal}`}><div className={classes.pillarTop}><Icon size={22} strokeWidth={1.5} aria-hidden /><span>{item.number}</span></div><h3>{item.title}</h3><p>{item.copy}</p><div className={classes.pillarDetail}>{item.detail}</div></Panel>)}</div>
+
+      <section className={classes.section} aria-labelledby="readings-heading">
+        <div className={classes.split}>
+          <div className={classes.sectionIntro}>
+            <h2 id="readings-heading">Honest answers.</h2>
+            <p>When to look, when to leave a good ad alone, and when it’s too early to tell.</p>
+          </div>
+          <ul className={classes.readout}>
+            {readings.map((item) => (
+              <li key={item.name} className={classes.reading} data-tone={item.tone}>
+                <SpiderMascot state={item.state} size={32} className={classes.readingSpider} />
+                <div className={classes.readingBody}>
+                  <div className={classes.readingTop}>
+                    <strong className={classes.stateChip}>{item.label}</strong>
+                    <span>{item.name}</span>
+                  </div>
+                  <p>{item.note}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
-      <section className={classes.agencySection} aria-labelledby="agency-heading">
-        <div className={classes.reveal}><span className={classes.eyebrow}>SMALL COMPANION. CONNECTED PERSPECTIVE.</span><h2 id="agency-heading">A little character.<br />A lot of clarity.</h2><p>Why a spider? Good ad decisions are a web: creative, delivery, budget, and results all pull on each other. Ours sits in the middle and keeps an eye on every thread.</p><a href="/features" className={classes.textLink}>Explore DeepVisor <ArrowUpRight size={17} aria-hidden /></a></div>
-        <Panel className={`${classes.companionNote} ${classes.reveal}`}><SpiderMascot state="dangle" size={64} className={classes.noteSpider} /><div className={classes.noteLabel}><Layers3 size={16} aria-hidden /> THE DEEPVISOR APPROACH</div><AgentMessage title="Look closely. Think clearly.">When there isn’t enough evidence, the right answer can be to wait. Understanding comes before action.</AgentMessage><div className={classes.noteFooter}>Sometimes the best recommendation is to leave a good ad alone.</div></Panel>
+
+      <section className={classes.section} id="how-it-works" aria-labelledby="how-heading">
+        <h2 id="how-heading" className={classes.sectionTitle}>Three steps. You stay in charge.</h2>
+        <ol className={classes.steps}>
+          {steps.map((step, index) => (
+            <li key={step.title}>
+              <span className={classes.stepKnot} aria-hidden>{index + 1}</span>
+              <h3>{step.title}</h3>
+              <p>{step.copy}</p>
+            </li>
+          ))}
+        </ol>
       </section>
-      <section className={`${classes.finalCta} ${classes.reveal}`} aria-labelledby="start-heading"><div><span className={classes.eyebrow}>YOUR NEXT CHAPTER</span><h2 id="start-heading">Give your ads a clearer direction.</h2><p>Connect your Meta account and start with what the data actually says.</p></div><div className={classes.ctaAction}><SpiderMascot state="wave" size={64} /><ActionLink href="/sign-up">Get started <ArrowRight size={17} aria-hidden /></ActionLink></div></section>
+
+      <section className={classes.section} aria-labelledby="places-heading">
+        <h2 id="places-heading" className={classes.sectionTitle}>One clear picture.</h2>
+        <dl className={classes.places}>
+          {places.map((place) => (
+            <div key={place.name} className={classes.place}>
+              <dt>{place.name}</dt>
+              <dd>{place.question}</dd>
+            </div>
+          ))}
+        </dl>
+        <Link href="/features" className={classes.textLink}>See every feature <ArrowUpRight size={17} aria-hidden /></Link>
+      </section>
+
+      <section className={classes.spiderSection} aria-labelledby="spider-heading">
+        <SpiderMascot state="dangle" size={128} className={classes.bigSpider} />
+        <div>
+          <h2 id="spider-heading">One center. A thread to every platform.</h2>
+          <p>That’s why DeepVisor is a spider. It sits in the middle of your advertising with a thread to each place you run ads, so it all runs from one place. Meta today, more on the way.</p>
+          <Link href="/vision" className={classes.textLink}>Where DeepVisor is going <ArrowUpRight size={17} aria-hidden /></Link>
+        </div>
+      </section>
+
+      <section className={classes.section} id="faq" aria-labelledby="faq-heading">
+        <div className={classes.split}>
+          <h2 id="faq-heading" className={classes.sectionTitle}>Questions.</h2>
+          <div className={classes.faq}>
+            {faqs.map((item) => (
+              <details key={item.q}>
+                <summary>{item.q}</summary>
+                <p>{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
+
+    <section className={classes.finalCta} aria-labelledby="start-heading">
+      <div className={classes.finalInner}>
+        <SpiderMascot state="wave" size={96} tone="dark" />
+        <h2 id="start-heading">Give your ads a clearer direction.</h2>
+        <ActionLink href="/sign-up">Start free beta <ArrowRight size={17} aria-hidden /></ActionLink>
+      </div>
+    </section>
   </DesignSurface>;
 }

@@ -19,6 +19,7 @@ export interface UserData {
   primaryGoal: string;
   leadType: string;
   preferredContactMethod: string;
+  contactMethods: string[];
   leadQualitySignal: string;
   averageCustomerValue: string;
   targetCostPerLead: string;

@@ -1,7 +1,7 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import {readAllPages} from '@/lib/server/repositories/pagination';
-import { fatigueIssues, hierarchyIssues, unresolvedEvidence } from '@/lib/shared/insights/model';
+import { fatigueIssues, hierarchyIssues, unresolvedEvidence, urgentIssues } from '@/lib/shared/insights/model';
 import { readAccountNotices } from '@/lib/server/webhooks/notices';
 import type { Observation } from '@/lib/shared/lifecycle/model';
 import type { IssueEvidence } from '@/lib/shared/insights/model';
@@ -32,4 +32,14 @@ export async function captureAccountHealth(business:string,account:string,extern
  const response=await fetchMetaObject<{account_status?:number;disable_reason?:number}>({path:external.startsWith('act_')?external:`act_${external}`,accessToken,params:{fields:'account_status,disable_reason'}});
  const evidence=accountHealthIssues(response,external);
  if(evidence!==null)await observeIssues(business,account,'account',at,evidence);
+}
+/**
+ * Open issues that block or threaten delivery for one ad account, newest first. Read-only; empty
+ * when Insights is off. The caller passes the authenticated business and its selected account.
+ */
+export async function openUrgentIssues(business:string,account:string):Promise<Array<IssueEvidence&{observedAt:string}>>{
+ if(!insightsEnabled())return [];
+ const {data,error}=await createAdminClient().from('insight_issues').select('evidence,observed_at').eq('business_id',business).eq('ad_account_id',account).is('resolved_at',null).order('opened_at',{ascending:false}).limit(20);
+ if(error)throw error;
+ return urgentIssues(data.map(row=>({...(row.evidence as unknown as IssueEvidence),observedAt:row.observed_at as string})));
 }

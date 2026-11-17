@@ -57,7 +57,7 @@ export function BreakdownSection({ payload, section }: { payload: ReportPayload;
 
   return <section className={classes.panel} aria-labelledby={`${section}-title`}>
     <div className={classes.panelHeader}>
-      <div><p className={classes.eyebrow}>{section === 'audience' ? 'Who saw your ads' : section === 'geography' ? 'Where your ads ran' : 'Where and on what'}</p><h2 id={`${section}-title`}>{TITLES[section]}</h2></div>
+      <div><h2 id={`${section}-title`}>{TITLES[section]}</h2></div>
       <label className={classes.metricSelect}>Metric<select aria-label="Breakdown metric" value={metric} onChange={e => { setMetric(e.target.value as BreakdownMetric); setSelected(null); }}>{BREAKDOWN_METRICS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
     </div>
     <div className={styles.controls}>

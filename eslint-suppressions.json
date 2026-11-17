@@ -69,11 +69,6 @@
       "count": 1
     }
   },
-  "src/components/layout/MobileAppChromeClient.tsx": {
-    "react-hooks/set-state-in-effect": {
-      "count": 1
-    }
-  },
   "src/components/layout/topBar/TopBarClient.tsx": {
     "react-hooks/set-state-in-effect": {
       "count": 1

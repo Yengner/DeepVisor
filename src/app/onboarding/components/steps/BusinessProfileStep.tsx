@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Button,
+  Chip,
   Collapse,
+  Input,
   Group,
   Radio,
   Select,
@@ -28,7 +30,6 @@ import {
   IconChevronLeft,
   IconCloudUpload,
   IconMapPin,
-  IconMessageCircle,
   IconWallet,
   IconWorld,
 } from '@tabler/icons-react';
@@ -43,6 +44,11 @@ import {
   isAllowedOption,
 } from '@/lib/shared/onboarding/businessProfileOptions';
 import { DEFAULT_COUNTRY_CODE, isCountryCode, type CountryOption } from '@/lib/shared/onboarding/countries';
+import {
+  NOT_SURE_CONTACT_METHOD,
+  normalizeContactMethods,
+  resolveContactSelection,
+} from '@/lib/shared/onboarding/contactMethods';
 import {
   isLocationMode,
   isPlaceholderBusinessName,
@@ -71,6 +77,7 @@ type FormValues = {
   locationPostalCode: string;
   locationCountry: string;
   customerRadius: string;
+  contactMethods: string[];
   preferredContactMethod: string;
   website: string;
   monthlyBudget: string;
@@ -138,6 +145,7 @@ function initialValues(userData: UserData): FormValues {
     locationPostalCode: userData.locationPostalCode,
     locationCountry: isCountryCode(userData.locationCountry) ? userData.locationCountry : DEFAULT_COUNTRY_CODE,
     customerRadius: isAllowedOption(userData.customerRadius, CUSTOMER_RADIUS_OPTIONS) ? userData.customerRadius : '',
+    contactMethods: normalizeContactMethods(userData.contactMethods),
     preferredContactMethod: isAllowedOption(userData.preferredContactMethod, CONTACT_METHOD_OPTIONS)
       ? userData.preferredContactMethod
       : '',
@@ -180,11 +188,13 @@ function buildPayload(values: FormValues, saved: FormValues, includeUnchanged = 
       pending = true;
     }
   }
-  if (changed('preferredContactMethod')) {
-    if (isAllowedOption(values.preferredContactMethod, CONTACT_METHOD_OPTIONS)) {
-      payload.preferredContactMethod = values.preferredContactMethod;
-    } else {
+  if (changed('contactMethods') || changed('preferredContactMethod')) {
+    const selection = resolveContactSelection(values.contactMethods, values.preferredContactMethod);
+    if ('error' in selection) {
       pending = true;
+    } else {
+      payload.contactMethods = selection.contactMethods;
+      payload.preferredContactMethod = selection.preferredContactMethod;
     }
   }
   // Optional fields: send a value when entered, null only when an earlier value was cleared.
@@ -206,6 +216,15 @@ function buildPayload(values: FormValues, saved: FormValues, includeUnchanged = 
   }
 
   return { payload, pending };
+}
+
+/** Marks optional fields in the label so every input in a row starts at the same height. */
+function OptionalLabel({ children }: { children: string }) {
+  return (
+    <>
+      {children} <span className={styles.optionalTag}>optional</span>
+    </>
+  );
 }
 
 function SaveIndicator({ state }: { state: SaveState }) {
@@ -255,7 +274,11 @@ export default function BusinessProfileStep({
       locationCity: required('Enter your city'),
       locationRegion: required('Enter your state or region'),
       locationCountry: (value) => (isCountryCode(value) ? null : 'Choose your country'),
-      preferredContactMethod: required('Choose how customers usually reach you'),
+      contactMethods: (value) => (value.length > 0 ? null : 'Choose at least one way customers reach you'),
+      preferredContactMethod: (value, values) =>
+        values.contactMethods.length > 1 && !values.contactMethods.includes(value)
+          ? 'Choose which one brings the most customers'
+          : null,
       website: (value) => (!value.trim() || normalizeWebsite(value) ? null : 'Enter a website like yourbusiness.com'),
     },
     onValuesChange: () => setEditCount((count) => count + 1),
@@ -273,7 +296,7 @@ export default function BusinessProfileStep({
         for (const key of Object.keys(snapshot) as (keyof FormValues)[]) {
           const isLocation = (LOCATION_KEYS as readonly string[]).includes(key);
           const sent = isLocation ? 'locationMode' in payload : key in payload;
-          if (sent) next[key] = snapshot[key];
+          if (sent) (next as Record<keyof FormValues, unknown>)[key] = snapshot[key];
         }
         savedValues.current = next;
       }
@@ -325,7 +348,9 @@ export default function BusinessProfileStep({
         locationPostalCode: values.locationPostalCode.trim(),
         locationCountry: values.locationCountry,
         customerRadius: values.customerRadius,
-        preferredContactMethod: values.preferredContactMethod,
+        contactMethods: values.contactMethods,
+        preferredContactMethod:
+          values.contactMethods.length === 1 ? values.contactMethods[0] : values.preferredContactMethod,
         website: normalizeWebsite(values.website) ?? '',
         monthlyBudget: values.monthlyBudget,
         description: values.description.trim(),
@@ -337,6 +362,30 @@ export default function BusinessProfileStep({
   };
 
   const serviceArea = form.values.locationMode === 'service_area';
+  const contactMethods = form.values.contactMethods;
+  const contactLabel = (value: string) =>
+    value === NOT_SURE_CONTACT_METHOD
+      ? 'Not sure yet'
+      : CONTACT_METHOD_OPTIONS.find((option) => option.value === value)?.label ?? value;
+
+  const setContactMethods = (next: string[]) => {
+    const previous = form.values.contactMethods;
+    const added = next.find((value) => !previous.includes(value));
+    // "Not sure yet" and real methods are mutually exclusive.
+    const list = normalizeContactMethods(
+      added === NOT_SURE_CONTACT_METHOD
+        ? [NOT_SURE_CONTACT_METHOD]
+        : added
+          ? next.filter((value) => value !== NOT_SURE_CONTACT_METHOD)
+          : next
+    );
+    form.setFieldValue('contactMethods', list);
+    const main = form.values.preferredContactMethod;
+    // One method is its own main method. Going from one to several asks the owner to pick,
+    // so the first-clicked chip is never silently saved as the main one.
+    if (list.length <= 1) form.setFieldValue('preferredContactMethod', list[0] ?? '');
+    else if (previous.length <= 1 || !list.includes(main)) form.setFieldValue('preferredContactMethod', '');
+  };
 
   return (
     <Stack gap="lg" className={styles.stepRoot}>
@@ -383,6 +432,10 @@ export default function BusinessProfileStep({
                   data={BUSINESS_CATEGORY_GROUPS}
                   comboboxProps={comboboxProps}
                   maxDropdownHeight={300}
+                  // Chrome ignores "off" here and suggests saved company/website values;
+                  // an unrecognised token plus a specific name stops its type guessing.
+                  name="dv-business-category"
+                  autoComplete="dv-business-category"
                   key={form.key('industry')}
                   {...form.getInputProps('industry')}
                 />
@@ -420,8 +473,7 @@ export default function BusinessProfileStep({
                 <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                   {!serviceArea ? (
                     <TextInput
-                      label="Street address"
-                      description="Optional"
+                      label={<OptionalLabel>Street address</OptionalLabel>}
                       placeholder="e.g. 123 Main St"
                       leftSection={<IconMapPin size={16} />}
                       autoComplete="street-address"
@@ -451,8 +503,7 @@ export default function BusinessProfileStep({
                   />
                   {!serviceArea ? (
                     <TextInput
-                      label="ZIP / postal code"
-                      description="Optional"
+                      label={<OptionalLabel>ZIP / postal code</OptionalLabel>}
                       placeholder="e.g. 33602"
                       autoComplete="postal-code"
                       maxLength={20}
@@ -464,6 +515,8 @@ export default function BusinessProfileStep({
                     label="Country"
                     withAsterisk
                     searchable
+                    name="dv-business-country"
+                    autoComplete="dv-business-country"
                     data={countries}
                     comboboxProps={comboboxProps}
                     allowDeselect={false}
@@ -471,8 +524,7 @@ export default function BusinessProfileStep({
                     {...form.getInputProps('locationCountry')}
                   />
                   <Select
-                    label={serviceArea ? 'How far do you travel?' : 'How far do customers come from?'}
-                    description="Optional"
+                    label={<OptionalLabel>{serviceArea ? 'How far do you travel?' : 'How far do customers come from?'}</OptionalLabel>}
                     placeholder="Choose a distance"
                     clearable
                     data={CUSTOMER_RADIUS_OPTIONS}
@@ -483,17 +535,39 @@ export default function BusinessProfileStep({
                 </SimpleGrid>
               </Collapse>
 
-              <Select
-                label="How do customers usually reach you?"
-                description="Helps DeepVisor focus on the results that matter to you."
-                placeholder="Choose one"
+              <Input.Wrapper
+                label="How do customers reach you?"
+                description="Pick all that apply."
                 withAsterisk
-                leftSection={<IconMessageCircle size={16} />}
-                data={CONTACT_METHOD_OPTIONS}
-                comboboxProps={comboboxProps}
-                key={form.key('preferredContactMethod')}
-                {...form.getInputProps('preferredContactMethod')}
-              />
+                labelElement="div"
+                error={form.errors.contactMethods}
+              >
+                <Chip.Group multiple value={contactMethods} onChange={setContactMethods}>
+                  <Group gap={8} mt={8} className={styles.chipRow} role="group" aria-label="How do customers reach you?">
+                    {CONTACT_METHOD_OPTIONS.map((option) => (
+                      <Chip key={option.value} value={option.value} radius="sm" variant="outline">
+                        {contactLabel(option.value)}
+                      </Chip>
+                    ))}
+                  </Group>
+                </Chip.Group>
+              </Input.Wrapper>
+
+              <Collapse in={contactMethods.length > 1}>
+                <Radio.Group
+                  label="Which one brings the most customers?"
+                  description="DeepVisor uses it as the default when you run lead campaigns."
+                  withAsterisk
+                  key={form.key('preferredContactMethod')}
+                  {...form.getInputProps('preferredContactMethod')}
+                >
+                  <Group gap="md" mt={8}>
+                    {contactMethods.map((value) => (
+                      <Radio key={value} value={value} label={contactLabel(value)} />
+                    ))}
+                  </Group>
+                </Radio.Group>
+              </Collapse>
             </Stack>
           </fieldset>
 
@@ -528,6 +602,7 @@ export default function BusinessProfileStep({
                     label="Monthly ad budget"
                     placeholder="Choose a range"
                     description="A planning range; this never changes Meta budgets."
+                    inputWrapperOrder={['label', 'input', 'description', 'error']}
                     clearable
                     leftSection={<IconWallet size={16} />}
                     data={MONTHLY_AD_BUDGET_OPTIONS}

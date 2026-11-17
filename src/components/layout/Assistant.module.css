@@ -7,7 +7,8 @@
 .content button { border:1px solid var(--mantine-color-default-border); border-radius: var(--dv-radius-md); padding:8px 12px; background:var(--mantine-color-default); color:inherit; }
 .thread { flex:1; min-height:0; overflow:auto; }
 .thread article { border-radius: var(--dv-radius-md); padding:12px; margin:10px 0; background:var(--mantine-color-default); }
-.thread article[data-role="user"] { border-left:3px solid #387af0; }
+/* Your messages sit right and tinted; DeepVisor's replies stay neutral and full width. */
+.thread article[data-role="user"] { margin-left:auto; max-width:85%; background:color-mix(in srgb, #387af0 12%, var(--mantine-color-default)); }
 .thread p { white-space:pre-wrap; font-size:14px; }
 .prompts { display:flex; flex-wrap:wrap; gap:6px; font-size:12px; }
 .content form { display:grid; gap:8px; }
@@ -15,7 +16,9 @@
 .launcher { position:fixed; bottom:24px; right:24px; display:flex; align-items:center; gap:8px; background:#082d56; color:white; padding:12px 18px; border-radius:25px; box-shadow:0 6px 24px #082d5633; z-index:75; }
 .resize { position:absolute; top:0; bottom:0; left:-4px; width:8px; cursor:col-resize; touch-action:none; }
 .resize:focus-visible { outline:2px solid #387af0; }
-@media(max-width:900px) { .launcher { bottom:90px; right:16px; } .content { height:calc(100dvh - 90px); padding:12px; } }
+@media(max-width:900px) { .launcher { bottom:24px; right:16px; } .content { height:calc(100dvh - 90px); padding:12px; } }
+/* Phones open the assistant from the top bar, so nothing floats over cards or the tab bar. */
+@media(max-width:767px) { .launcher { display:none; } }
 .workspace { min-width: 0; }
 
 .content { width:100%; min-width:0; box-sizing:border-box; overflow:hidden; }
@@ -26,7 +29,7 @@
 .draftCard { border:1px solid var(--mantine-color-default-border); border-radius: var(--dv-radius-lg); padding:14px; display:grid; gap:12px; font-size:13px; }
 .cardHeading { display:grid; gap:4px; }
 .cardHeading > span { font-size:11px; color:var(--mantine-color-dimmed); }
-.preview { margin:0; padding:0 0 0 14px; list-style:none; border-left:2px solid #387af040; display:grid; gap:14px; }
+.preview { margin:0; padding:0; list-style:none; display:grid; gap:14px; }
 .preview li { display:grid; gap:3px; overflow-wrap:anywhere; }
 .preview small { color:var(--mantine-color-dimmed); text-transform:uppercase; font-size: var(--dv-text-2xs); letter-spacing:.08em; }
 .preview span { font-size:12px; }

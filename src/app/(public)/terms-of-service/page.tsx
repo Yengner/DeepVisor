@@ -1,112 +1,152 @@
-const lastUpdated = 'May 20, 2026';
+import type { Metadata } from 'next';
+import LegalDocument, { type LegalSection } from '../components/LegalDocument';
 
-const sections = [
+export const metadata: Metadata = {
+  title: 'Terms of Service | DeepVisor',
+  description: 'The terms that apply when you use DeepVisor, including the free beta, read-only Meta access, and your responsibilities.',
+  alternates: { canonical: '/terms-of-service' },
+};
+
+const sections: LegalSection[] = [
   {
-    title: '1. Agreement To These Terms',
+    id: 'agreement',
+    title: 'Agreement to these terms',
     body: [
-      'These Terms of Service govern your access to and use of DeepVisor websites, dashboards, reports, integrations, notifications, queue workflows, and related services. By creating an account or using DeepVisor, you agree to these Terms.',
-      'If you use DeepVisor on behalf of a business or organization, you represent that you have authority to bind that business or organization to these Terms.',
+      'These Terms of Service (“Terms”) are an agreement between you and DeepVisor LLC (“DeepVisor”, “we”, “us”) and apply to the DeepVisor website and app (the “Service”). By creating an account or using the Service, you agree to these Terms and acknowledge our Privacy Policy.',
+      'If you use DeepVisor for a business, you confirm that you are authorized to accept these Terms for that business, and “you” includes the business. You must be at least 18 years old to use DeepVisor.',
     ],
   },
   {
-    title: '2. What DeepVisor Does',
+    id: 'service',
+    title: 'What DeepVisor does',
     body: [
-      'DeepVisor provides advertising account intelligence, reporting, campaign review workflows, scheduled reviews, notifications, and decision-support summaries for connected ad accounts.',
-      'DeepVisor is a decision-support product. Deterministic metrics decide what happened. AI may help explain why it matters, prioritize what to review, and draft safe next steps.',
+      'DeepVisor connects to Meta advertising accounts you authorize, syncs their data, and shows what is running, how it is performing, and what may deserve attention. It provides observations and decision-support information, including outcomes such as “Hold” or “not enough data yet”.',
+      'DeepVisor currently uses read-only Meta permissions. It does not create, edit, pause, publish, or change budgets for your ads. Any change to your advertising is made by you, in Meta or elsewhere. If we ever offer features that act on your advertising, they will be optional, off by default, and governed by additional terms you accept before using them.',
     ],
   },
   {
-    title: '3. User Control And Approval',
+    id: 'beta',
+    title: 'Free beta',
     body: [
-      'DeepVisor does not directly publish, pause, extend, change budgets, or otherwise execute platform-level campaign changes without explicit user approval.',
-      'You are responsible for reviewing any recommendation, draft, report, or queue result before taking action in an advertising platform or approving any future automation feature.',
+      'DeepVisor is currently offered free of charge as a beta. Beta features may change, be limited, or be removed, and may contain errors. We may limit or end beta access at any time.',
+      'If we introduce paid plans, we will tell you in advance. You will not be charged unless you choose a paid plan and agree to its price and terms.',
     ],
   },
   {
-    title: '4. Accounts And Security',
+    id: 'accounts',
+    title: 'Your account',
     body: [
-      'You must provide accurate account information and keep your login credentials secure. You are responsible for activity under your account and workspace.',
-      'You must promptly notify us if you believe your account, organization, or connected platform integration has been compromised.',
+      'Provide accurate information, keep your login credentials secure, and do not share your account. You are responsible for activity under your account. Tell us promptly at info@deepvisor.com if you believe your account or a connected Meta account has been compromised.',
     ],
   },
   {
-    title: '5. Platform Integrations',
+    id: 'meta',
+    title: 'Connecting Meta',
     body: [
-      'You may connect DeepVisor to third-party platforms such as Meta. You authorize DeepVisor to access, sync, process, store, and display information available through the permissions you grant.',
-      'Third-party platforms are governed by their own terms and policies. DeepVisor is not responsible for third-party outages, API limits, rejected ads, attribution changes, policy decisions, or platform data inaccuracies.',
+      'When you connect Meta, you authorize DeepVisor to access, sync, store, and display the information available under the permissions you grant, as described in our Privacy Policy. You may revoke this access at any time in DeepVisor or in your Facebook settings.',
+      'You confirm that you are allowed to access the ad accounts, Pages, and Instagram accounts you connect, and that your use of DeepVisor with them complies with Meta’s terms and policies. Meta is a separate company: DeepVisor is not affiliated with or endorsed by Meta Platforms, Inc., and we are not responsible for Meta’s services, outages, data accuracy, attribution, ad review, or policy decisions.',
     ],
   },
   {
-    title: '6. AI And Reports',
+    id: 'information',
+    title: 'Information, not professional advice',
     body: [
-      'AI-generated summaries and recommendations may be incomplete, incorrect, or based on limited data. DeepVisor attempts to ground AI outputs in stored metrics and deterministic findings, but you should independently review decisions before acting.',
-      'Reports, findings, and recommendations are not legal, financial, accounting, tax, or professional marketing advice. They are informational decision-support outputs.',
+      'DeepVisor’s observations, summaries, and other outputs are based on the data available, which may be delayed, incomplete, or revised by Meta. Some outputs are generated by AI and can be wrong. DeepVisor tries to say when evidence is insufficient, but you should review information yourself before acting on it.',
+      'Outputs are informational. They are not legal, financial, tax, accounting, or professional marketing advice, and we do not guarantee any advertising result, such as leads, bookings, sales, revenue, return on ad spend, or cost savings.',
     ],
   },
   {
-    title: '7. Acceptable Use',
+    id: 'acceptable-use',
+    title: 'Acceptable use',
     body: [
-      'You may not use DeepVisor to violate law, infringe rights, bypass platform policies, send spam, upload malicious code, attempt unauthorized access, reverse engineer protected parts of the service, or interfere with service operation.',
-      'You may not use DeepVisor to manage ad accounts unless you have the right to access and process those accounts and related data.',
+      'You agree not to:',
+      { list: [
+        'Use DeepVisor in violation of any law or of Meta’s terms and policies.',
+        'Connect or analyze accounts or data you are not authorized to access.',
+        'Access or attempt to access another customer’s data, or probe, scan, or test the Service’s security without our written permission.',
+        'Interfere with the Service, upload malicious code, or use automated means to scrape or overload it.',
+        'Copy, resell, or reverse engineer the Service, except where the law allows this despite this restriction.',
+      ] },
     ],
   },
   {
-    title: '8. Fees, Trials, And Plans',
+    id: 'your-data',
+    title: 'Your data',
     body: [
-      'DeepVisor may offer free trials, paid plans, usage limits, or plan-based data retention rules. Plan details, if any, are shown in the product or order flow.',
-      'We may change pricing, features, or limits with reasonable notice where required. If paid subscriptions are enabled, payment processing may be handled by a third-party payment processor.',
+      'You keep ownership of your business information and your advertising data. You grant DeepVisor a limited permission to host, process, analyze, and display that data, and to create outputs from it, only to provide, secure, and improve the Service and as described in the Privacy Policy.',
+      'We may use de-identified and aggregated information that does not identify you or your business to operate and improve DeepVisor.',
     ],
   },
   {
-    title: '9. Your Data And Content',
+    id: 'our-property',
+    title: 'DeepVisor’s property',
     body: [
-      'You retain ownership of your business information and connected account data. You grant DeepVisor the rights needed to host, process, analyze, display, and generate outputs from that data to provide the service.',
-      'You are responsible for ensuring that your use of DeepVisor and any data you connect or upload complies with applicable laws, contracts, and platform policies.',
+      'The Service, including its software, design, spider mascot, name, and logos, belongs to DeepVisor or its licensors. These Terms give you a limited, non-exclusive, non-transferable right to use the Service for your business while you comply with them. If you send us feedback, we may use it without obligation to you.',
     ],
   },
   {
-    title: '10. DeepVisor Intellectual Property',
+    id: 'availability',
+    title: 'Changes and availability',
     body: [
-      'DeepVisor, including its software, interface, workflows, models, designs, reports, and documentation, is owned by DeepVisor or its licensors and is protected by intellectual property laws.',
-      'You may not copy, resell, sublicense, or exploit DeepVisor except as allowed by these Terms or written permission from us.',
+      'We may change, add, or remove features, and we may suspend the Service for maintenance or security. We aim for DeepVisor to be reliable but do not promise it will be uninterrupted or error-free, or that it will keep working with every change Meta makes.',
     ],
   },
   {
-    title: '11. Service Changes And Availability',
+    id: 'ending',
+    title: 'Ending your use',
     body: [
-      'We may modify, suspend, or discontinue parts of the service. We aim to keep DeepVisor reliable, but we do not guarantee uninterrupted availability, error-free operation, or compatibility with every third-party platform change.',
+      'You can stop using DeepVisor at any time, disconnect Meta, and ask us to delete your account by emailing info@deepvisor.com.',
+      'We may suspend or end your access if you break these Terms, if your use creates risk or legal exposure for DeepVisor or others, or if we discontinue the Service. Where reasonable, we will give notice first. Sections that by their nature should continue (including your data, disclaimers, limitation of liability, and indemnity) survive after your access ends.',
     ],
   },
   {
-    title: '12. Termination',
+    id: 'disclaimers',
+    title: 'Disclaimers',
     body: [
-      'You may stop using DeepVisor at any time. We may suspend or terminate access if you violate these Terms, create risk, fail to pay applicable fees, or use the service in a way that could harm users, platforms, or DeepVisor.',
+      'To the fullest extent permitted by law, the Service is provided “as is” and “as available”, without warranties of any kind, express or implied, including warranties of merchantability, fitness for a particular purpose, accuracy, and non-infringement. Some jurisdictions do not allow certain disclaimers, so some of these may not apply to you.',
     ],
   },
   {
-    title: '13. Disclaimers',
+    id: 'liability',
+    title: 'Limitation of liability',
     body: [
-      'DeepVisor is provided “as is” and “as available” to the fullest extent permitted by law. We disclaim warranties of merchantability, fitness for a particular purpose, non-infringement, and any warranties arising from course of dealing or usage of trade.',
-      'We do not guarantee advertising results, lead volume, revenue, return on ad spend, campaign approval, platform delivery, or business outcomes.',
+      'To the fullest extent permitted by law, DeepVisor will not be liable for indirect, incidental, special, consequential, or punitive damages, or for lost profits, revenue, data, or business opportunities, or for advertising spend or results, arising from or related to the Service.',
+      'To the fullest extent permitted by law, DeepVisor’s total liability for all claims related to the Service is limited to the greater of the amount you paid DeepVisor in the 12 months before the claim arose or US $100. Nothing in these Terms limits liability that cannot be limited by law.',
     ],
   },
   {
-    title: '14. Limitation Of Liability',
+    id: 'indemnity',
+    title: 'Indemnity',
     body: [
-      'To the fullest extent permitted by law, DeepVisor will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages, or for lost profits, lost revenue, lost data, business interruption, or advertising platform decisions.',
-      'To the fullest extent permitted by law, our total liability for claims relating to the service will not exceed the amount you paid to DeepVisor for the service in the three months before the event giving rise to the claim, or $100 if you have not paid us.',
+      'If you use DeepVisor for a business, you agree to defend and indemnify DeepVisor against third-party claims arising from your violation of these Terms or of law, or from data or accounts you connect without authorization, to the extent permitted by law.',
     ],
   },
   {
-    title: '15. Changes To These Terms',
+    id: 'law',
+    title: 'Governing law and disputes',
     body: [
-      'We may update these Terms from time to time. If changes are material, we will provide notice through the site, dashboard, email, or another reasonable method. Continued use after changes means you accept the updated Terms.',
+      'These Terms are governed by the laws of the United States and of the state in which DeepVisor LLC is organized, without regard to conflict-of-law rules. Before filing a claim, please contact us at info@deepvisor.com so we can try to resolve the issue informally. If that does not work within 30 days, either party may bring the dispute in the state or federal courts located in that state, unless the law where you live gives you the right to bring it elsewhere.',
     ],
   },
   {
-    title: '16. Contact',
+    id: 'changes',
+    title: 'Changes to these terms',
     body: [
-      'Questions about these Terms can be sent to info@deepvisor.com.',
+      'We may update these Terms. If a change is significant, we will tell you by email or in the app before it takes effect. If you keep using DeepVisor after the change takes effect, the updated Terms apply; if you do not agree, stop using the Service.',
+    ],
+  },
+  {
+    id: 'general',
+    title: 'General',
+    body: [
+      'These Terms and the Privacy Policy are the entire agreement between you and DeepVisor about the Service. If any part is found unenforceable, the rest remains in effect. Our failure to enforce a provision is not a waiver. You may not transfer these Terms without our consent; we may transfer them as part of a merger, acquisition, or sale of assets.',
+    ],
+  },
+  {
+    id: 'contact',
+    title: 'Contact us',
+    body: [
+      'DeepVisor LLC. Email: info@deepvisor.com.',
     ],
   },
 ];
@@ -115,10 +155,16 @@ export default function TermsOfServicePage() {
   return (
     <LegalDocument
       title="Terms of Service"
-      lastUpdated={lastUpdated}
-      intro="These Terms are a practical product-facing draft and are not a substitute for legal advice. Have counsel review them before relying on them for production customers."
+      lastUpdated="November 15, 2026"
+      lastUpdatedISO="2026-11-15"
+      summary={[
+        'Free during beta. No charges without your agreement.',
+        'DeepVisor reads your Meta ads. It never changes them.',
+        'Observations are information, not guarantees.',
+        'Only connect accounts you’re allowed to access.',
+        'Stop any time and ask us to delete your data.',
+      ]}
       sections={sections}
     />
   );
 }
-import LegalDocument from '../components/LegalDocument';

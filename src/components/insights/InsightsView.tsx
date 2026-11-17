@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Modal } from '@mantine/core';
-import { AlertTriangle, Archive, ArrowLeft, ChevronRight, CircleAlert, CircleCheck, CirclePause, CirclePlay, Flag, History, Info, LineChart, PlugZap, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Archive, ArrowDown, ArrowLeft, ArrowUp, ChevronRight, CircleAlert, CircleCheck, CirclePause, CirclePlay, Download, Flag, History, Info, LineChart, PlugZap, RotateCcw } from 'lucide-react';
 import { useMediaQuery } from '@mantine/hooks';
 import SpiderMascot from '@/components/brand/SpiderMascot';
 import StatusBanner from '@/components/ui/states/StatusBanner';
@@ -14,8 +14,9 @@ import { issueLevel, urgentIssues, headline, LIFECYCLE_LABEL, lifecycleKind, rel
 import type { Issue, LifecycleCard, LifecycleKind, Presentation, Recap, SavedPresentation } from '@/lib/shared/insights/model';
 import { formatHour, formatHourShort, formatReportDay, formatReportRange, formatTimezone } from '@/lib/shared/reports/labels';
 import { causeFromCode } from '@/lib/shared/insights/health';
-import { leadUp } from '@/lib/shared/insights/leadUp';
+import { leadUp, leadUpTrend } from '@/lib/shared/insights/leadUp';
 import { presentationDay } from '@/lib/shared/insights/notification';
+import RangeSwitch from '@/components/design/RangeSwitch';
 import styles from './InsightsView.module.css';
 import { InsightDataNotice, MissingObservationTrack } from './InsightDataState';
 
@@ -25,6 +26,8 @@ function money(v: number | null, currency: string | null) {
   return currency ? new Intl.NumberFormat('en', { style: 'currency', currency, maximumFractionDigits: 2 }).format(v) : `${v.toFixed(2)} (currency unknown)`;
 }
 const dayRange = (since: string, until: string) => since === until ? formatReportDay(since) : formatReportRange(since, until);
+/** "Oct 31 – Nov 6": the year is already in the card's own date range. */
+const shortRange = (since: string, until: string) => since === until ? formatReportDay(since, false) : `${formatReportDay(since, false)} – ${formatReportDay(until, false)}`;
 /** Entity schedule timestamps are stored with offsets; show them as a date in the account's timezone. */
 function scheduleDate(value: string | null, timezone: string | null) {
   if (!value) return null;
@@ -34,9 +37,23 @@ function scheduleDate(value: string | null, timezone: string | null) {
   catch { return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
 }
 
-function Delta({ value, favorable, label }: { value: number; favorable: boolean | null; label: string }) {
-  const tone = favorable === null || value === 0 ? 'neutral' : (value > 0) === favorable ? 'up' : 'down';
-  return <span className={styles.delta} data-tone={tone}>{value > 0 ? '▲' : value < 0 ? '▼' : ''} {Math.abs(value).toFixed(1)}% <span>{label}</span></span>;
+const percent = (value: number) => `${Math.abs(value) >= 10 ? Math.round(Math.abs(value)) : Math.abs(value).toFixed(1)}%`;
+
+/**
+ * "Up 21%" / "Down 50%" in words, coloured by whether the move is good for the business:
+ * more results is good, a higher cost per result is bad, spend on its own is neither.
+ */
+function Change({ value, goodWhenUp, label }: { value: number; goodWhenUp: boolean | null; label?: string }) {
+  const flat = Math.abs(value) < 0.5;
+  const tone = flat || goodWhenUp === null ? 'neutral' : (value > 0) === goodWhenUp ? 'good' : 'bad';
+  const Arrow = value > 0 ? ArrowUp : ArrowDown;
+  return <span className={styles.change}>
+    <span className={styles.changePill} data-tone={tone}>
+      {flat ? 'No change' : <><Arrow size={13} strokeWidth={2.5} aria-hidden="true" />{value > 0 ? 'Up' : 'Down'} {percent(value)}</>}
+      {tone !== 'neutral' && <span className={styles.srOnly}>{tone === 'good' ? ' (better)' : ' (worse)'}</span>}
+    </span>
+    {label ? <span className={styles.changeLabel}>{label}</span> : null}
+  </span>;
 }
 
 function Metrics({ spend, results, cpr, currency, comparison, comparisonLabel }: {
@@ -44,8 +61,8 @@ function Metrics({ spend, results, cpr, currency, comparison, comparisonLabel }:
   comparison?: Recap['comparison']; comparisonLabel?: string;
 }) {
   return <dl className={styles.metrics}>
-    <div><dt>Reported results</dt><dd>{number(results)}</dd>{comparison ? <Delta value={comparison.results} favorable label={comparisonLabel ?? ''} /> : null}</div>
-    <div><dt>Spend</dt><dd>{money(spend, currency)}</dd>{comparison ? <Delta value={comparison.spend} favorable={null} label={comparisonLabel ?? ''} /> : null}</div>
+    <div><dt>Results</dt><dd>{number(results)}</dd>{comparison ? <Change value={comparison.results} goodWhenUp label={comparisonLabel} /> : null}</div>
+    <div><dt>Spend</dt><dd>{money(spend, currency)}</dd>{comparison ? <Change value={comparison.spend} goodWhenUp={null} label={comparisonLabel} /> : null}</div>
     <div><dt>Cost / result</dt><dd>{money(cpr, currency)}</dd></div>
   </dl>;
 }
@@ -64,7 +81,7 @@ function Creative({ card, currency, timezone, preview = false }: { card: Lifecyc
   const count = ads ? `${ads} ${ads === 1 ? 'ad' : 'ads'} affected` : b.affected.length ? `${b.affected.length} affected` : null;
   // Budget owner: the ad set when it holds the budget, otherwise the campaign. Shown by name only.
   const group = config && config.owner !== 'Budget owner unavailable' ? config.owner : null;
-  const label = ended ? `${adLevel ? 'Ad' : 'Delivery'} ended · Scheduled end reached` : LIFECYCLE_LABEL[kind];
+  const label = ended ? `${adLevel ? 'Ad' : 'Delivery'} ended` : LIFECYCLE_LABEL[kind];
   const noMetrics = b.spend === null && b.results === null && b.cpr === null;
   // A scheduled end is expected; the timeline already states that missing dates are not zero.
   const missing = !ended && (!creative || !currency || b.spend === null || b.results === null);
@@ -73,21 +90,16 @@ function Creative({ card, currency, timezone, preview = false }: { card: Lifecyc
     <div className={styles.lifecycleBody}>
       <div className={styles.creativeHeading}>
         {creative?.image && <div className={styles.lifecycleCreative}><Image src={creative.image} alt={creative.name} width={72} height={92} unoptimized onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }} />{ended && <span>Ended</span>}</div>}
-        <div><h3>{b.title}</h3><p>{b.explanation}</p></div>
+        <div><h3>{b.title}</h3><p>{ended ? 'It reached the end date set in Meta. Meta doesn’t report the exact time it stopped.' : b.explanation}</p></div>
       </div>
       {b.provenance === 'reconstructed' && <p className={styles.notice}>Reconstructed from saved state and your confirmation. Exact interruption time is unverified.</p>}
-      {ended && <div className={styles.timeline}>
-        <div className={styles.timelineLabels}><span>Reporting window starts · {formatReportDay(b.since, false)}</span><strong>Scheduled end reached</strong></div>
-        <div className={styles.timelineTrack} aria-hidden="true"><span /><span /></div>
-        <p>Observations through {formatReportDay(b.until)} · missing dates are not zero</p>
-      </div>}
+      {!(ended && noMetrics) && <p className={styles.metricsRange}>Totals, {dayRange(b.since, b.until)}</p>}
       {!(ended && noMetrics) && <Metrics spend={b.spend} results={b.results} cpr={b.cpr} currency={currency} />}
       {missing && <div className={styles.dataInset}>
         <InsightDataNotice title="Some advertising details aren’t available">{!creative ? 'No creative preview is saved. ' : ''}{!currency ? 'The account currency is unknown. ' : ''}{b.spend === null || b.results === null ? 'Unavailable metrics are shown as dashes; they do not mean zero.' : 'Available metrics are shown above.'}</InsightDataNotice>
         {!creative && <div className={styles.missingMedia}>Creative preview unavailable</div>}
       </div>}
-      <LeadUpSummary card={card} currency={currency} />
-      {!ended && <p className={styles.caption}>Affected-ad observations · {dayRange(b.since, b.until)}. Missing dates are not zero.</p>}
+      <LeadUpSummary card={card} kind={kind} currency={currency} />
       {config && <details className={styles.configDetails}><summary>Schedule, audience &amp; budget</summary>
         <dl>
           <div><dt>Budget</dt><dd>{config.owner} · {config.dailyBudget !== null ? `${money(config.dailyBudget, currency)} daily` : config.lifetimeBudget !== null ? `${money(config.lifetimeBudget, currency)} lifetime` : 'Budget unavailable'}</dd></div>
@@ -96,24 +108,52 @@ function Creative({ card, currency, timezone, preview = false }: { card: Lifecyc
           {b.affected.slice(0, 5).map(e => <div key={e.id}><dt>Schedule</dt><dd>{e.name}: {scheduleDate(e.start, timezone) ?? 'Start not recorded'} → {scheduleDate(e.end, timezone) ?? 'No end date'}</dd></div>)}
         </dl>
       </details>}
-      {preview ? <span className={styles.caption}>Report link disabled in preview</span> : <Link className={styles.link} href={`/lifecycle/${b.id}`}>Explore advertising report →</Link>}
+      {preview ? <span className={styles.caption}>Report link disabled in preview</span> : <Link className={styles.link} href={`/lifecycle/${b.id}`}>Open the full report</Link>}
     </div>
   </section>;
 }
 
-/** How the affected advertising was doing in the week before the change, against the week before that. */
-function LeadUpSummary({ card, currency }: { card: LifecycleCard; currency: string | null }) {
+const BEFORE: Record<LifecycleKind, string> = {
+  ended: 'it ended', paused: 'it was paused', interrupted: 'it stopped', archived: 'it was archived',
+  rejected: 'it was rejected', active: 'it started', resumed: 'it started again', update: 'this change',
+};
+
+/** One sentence an owner can read without the table: did it get more results, and at what cost. */
+function trendSentence(trend: ReturnType<typeof leadUpTrend>) {
+  const results = trend.results === 'more' ? 'it brought in more results' : trend.results === 'fewer' ? 'it brought in fewer results' : 'results held steady';
+  const cost = trend.cost === 'higher' ? 'each one cost more' : trend.cost === 'lower' ? 'each one cost less' : null;
+  if (!cost) return `${results}.`;
+  const joiner = (trend.results === 'more' && trend.cost === 'lower') || (trend.results === 'fewer' && trend.cost === 'higher') ? ', and' : ', but';
+  return `${results}${joiner} ${cost}.`;
+}
+
+/** How the affected advertising was doing in the days before the change, against the days before that. */
+function LeadUpSummary({ card, kind, currency }: { card: LifecycleCard; kind: LifecycleKind; currency: string | null }) {
   const lead = leadUp(card.brief.days ?? [], card.brief.until);
   if (!lead) return null;
-  const change = (value: number | null, favorable: boolean | null) => value === null ? null : <Delta value={value} favorable={favorable} label="" />;
-  return <div className={styles.leadUp} aria-label="Before this change">
-    <p className={styles.leadUpTitle}>Before this change <span>{dayRange(lead.recentFrom, lead.recentTo)} vs {dayRange(lead.priorFrom, lead.priorTo)} · {lead.matchedDays} matched days</span></p>
-    <dl>
-      <div><dt>Results</dt><dd>{number(lead.prior.results)} → <strong>{number(lead.recent.results)}</strong></dd>{change(lead.resultsChange, true)}</div>
-      <div><dt>Spend</dt><dd>{money(lead.prior.spend, currency)} → <strong>{money(lead.recent.spend, currency)}</strong></dd>{change(lead.spendChange, null)}</div>
-      <div><dt>Cost / result</dt><dd>{money(lead.prior.cpr, currency)} → <strong>{money(lead.recent.cpr, currency)}</strong></dd></div>
-    </dl>
-  </div>;
+  const trend = leadUpTrend(lead);
+  const tone = trend.results === 'fewer' || trend.cost === 'higher' ? (trend.results === 'more' || trend.cost === 'lower' ? 'mixed' : 'bad')
+    : trend.results === 'more' || trend.cost === 'lower' ? 'good' : 'neutral';
+  const earlier = shortRange(lead.priorFrom, lead.priorTo), later = shortRange(lead.recentFrom, lead.recentTo);
+  const rows = [
+    { key: 'results', label: 'Results', before: number(lead.prior.results), after: number(lead.recent.results), change: lead.resultsChange, goodWhenUp: true as boolean | null },
+    { key: 'spend', label: 'Spend', before: money(lead.prior.spend, currency), after: money(lead.recent.spend, currency), change: lead.spendChange, goodWhenUp: null },
+    { key: 'cpr', label: 'Cost per result', before: money(lead.prior.cpr, currency), after: money(lead.recent.cpr, currency), change: trend.costChange, goodWhenUp: false },
+  ];
+  return <section className={styles.leadUp} aria-labelledby={`lead-${card.eventId}`}>
+    <h4 id={`lead-${card.eventId}`} className={styles.leadUpTitle}>The {lead.windowDays} days before {BEFORE[kind]}</h4>
+    <p className={styles.leadUpTakeaway} data-tone={tone}>Compared with the {lead.windowDays} days before that, {trendSentence(trend)}</p>
+    <table className={styles.leadUpTable}>
+      <thead><tr><th scope="col"><span className={styles.srOnly}>Measure</span></th><th scope="col">{earlier}</th><th scope="col">{later}</th><th scope="col">Change</th></tr></thead>
+      <tbody>{rows.map(row => <tr key={row.key}>
+        <th scope="row">{row.label}</th>
+        <td data-head={earlier}>{row.before}</td>
+        <td data-head={later}><strong>{row.after}</strong></td>
+        <td>{row.change === null ? <span className={styles.changeNone}>Not comparable</span> : <Change value={row.change} goodWhenUp={row.goodWhenUp} />}</td>
+      </tr>)}</tbody>
+    </table>
+    {lead.matchedDays < lead.windowDays && <p className={styles.leadUpNote}>Only {lead.matchedDays} of {lead.windowDays} days had data on both sides, so just those days are compared.</p>}
+  </section>;
 }
 
 function issueKind(issue: Issue) {
@@ -152,8 +192,7 @@ function AttentionCard({ issue: i, related, currency, timezone, preview = false 
         <div className={styles.urgentNotice}><CircleAlert size={15} aria-hidden="true" /><span>{i.stale ? `Last confirmed ${formatReportDay(i.observedAt.slice(0, 10))}. Refresh observations to confirm current status.` : notice ? 'This ad is still delivering. Meta’s flag is a suggestion, not a block.' : rejected ? 'This ad cannot deliver while Meta reports it as rejected.' : i.code === 'REAUTH_REQUIRED' ? 'Saved reports stay available; new data stops until you reconnect.' : causeFromCode(i.code) ? 'Meta’s notice for this account has the details and next steps.' : 'Review the reported issue before making changes to your advertising.'}</span></div>
         <div className={styles.urgentActions}>{preview ? <button type="button" className={styles.urgentPrimary} disabled>{i.action}</button> : (/^https?:/.test(i.href) ? <a className={styles.urgentPrimary} href={i.href} target="_blank" rel="noopener noreferrer">{i.action}<span className={styles.srOnly}> (opens Meta in a new tab)</span></a> : <Link className={styles.urgentPrimary} href={i.href}>{i.action}</Link>)}</div>
         {related.length > 0 && <details className={styles.urgentRelated}><summary>View performance</summary>{related.map(c => <Creative key={c.eventId} card={c} currency={currency} timezone={timezone} preview={preview} />)}</details>}
-        {related.length > 0 && <p className={styles.caption}>{related.length} related advertising {related.length === 1 ? 'change' : 'changes'}{preview ? ' · preview only' : ''}</p>}
-        {preview && !related.length && <p className={styles.caption}>Preview only · No real advertising activity</p>}
+        {preview && <p className={styles.caption}>Preview only · No real advertising activity</p>}
       </div>
     </div>
   </section>;
@@ -174,7 +213,7 @@ function RecapChart({ recap, currency, timezone }: { recap: Recap; currency: str
   return <>
     <div className={styles.chartHeading}>
       <h3>{chart.hourly ? 'Hourly' : 'Daily'} {metric}</h3>
-      <div className={styles.segment} aria-label="Chart metric">{(['spend', 'results'] as const).map(m => <button key={m} type="button" aria-pressed={metric === m} onClick={() => setMetric(m)}>{m === 'spend' ? 'Spend' : 'Results'}</button>)}</div>
+      <RangeSwitch label="Chart metric" value={metric} onChange={setMetric} options={[{ value: 'spend', label: 'Spend' }, { value: 'results', label: 'Results' }]} />
     </div>
     {peak ? <p className={styles.peak}>Highest {chart.hourly ? 'hour' : 'day'}: <strong>{format(peak[metric])}</strong> · {label(peakIndex)}</p> : null}
     <div className={styles.chart} data-granularity={chart.hourly ? 'hour' : 'day'} role="img" aria-label={`${chart.hourly ? 'Hourly' : 'Daily'} ${metric}, zero baseline. ${chart.observed} of ${chart.expected} ${chart.hourly ? 'hour slots' : 'days'} observed. Values in the accessible data table below.`}>
@@ -185,8 +224,17 @@ function RecapChart({ recap, currency, timezone }: { recap: Recap; currency: str
         <span className={styles.date}>{showTick(index) ? chart.hourly ? formatHourShort(index) : label(index) : ''}</span>
       </div>)}
     </div>
-    {chart.hourly && <p className={styles.caption}>{chart.observed} of 24 hours observed · {formatTimezone(timezone)}. Missing hours are not zero; hourly observations may not match daily totals.</p>}
-    <details><summary>View {chart.hourly ? 'hourly' : 'daily'} values</summary><table><thead><tr><th>{chart.hourly ? 'Hour' : 'Date'}</th><th>Spend</th><th>Results</th></tr></thead><tbody>{chart.points.map((d, index) => <tr key={d.label}><td>{label(index)}</td><td>{money(d.spend, currency)}</td><td>{number(d.results)}</td></tr>)}</tbody></table></details>
+    {chart.hourly && chart.observed > 0 && chart.observed < chart.expected && <p className={styles.gapLegend}><span aria-hidden="true" />{chart.observed} of {chart.expected} {chart.hourly ? 'hours' : 'days'} have data. Striped ones are missing, not zero.</p>}
+    {/* Every caveat lives here once, instead of a sentence under each chart. */}
+    <details className={styles.valuesNotes}>
+      <summary><ChevronRight size={15} aria-hidden="true" />{chart.hourly ? 'Hourly' : 'Daily'} values and notes</summary>
+      <table><thead><tr><th>{chart.hourly ? 'Hour' : 'Date'}</th><th>Spend</th><th>Results</th></tr></thead><tbody>{chart.points.map((d, index) => <tr key={d.label}><td>{label(index)}</td><td>{money(d.spend, currency)}</td><td>{d.results === null && d.spend === null ? <span className={styles.noData}>No data</span> : number(d.results)}</td></tr>)}</tbody></table>
+      <ul className={styles.notes}>
+        {chart.hourly && <li>Hours are {formatTimezone(timezone)}. Hourly numbers can differ slightly from the day’s total.</li>}
+        {recap.capped && <li>Catch-ups cover the latest 30 completed days.</li>}
+        <li>Results are the leads, conversations and calls Meta reports. They aren’t confirmed bookings.</li>
+      </ul>
+    </details>
   </>;
 }
 
@@ -201,15 +249,17 @@ function Contents({ p }: { p: Presentation }) {
   if (p.recap) items.push({ key: 'recap', tone: 'info', text: p.recap.since === p.recap.until ? '1-day results' : `${p.recap.expectedDays}-day results` });
   if (changes) items.push({ key: 'changes', tone: 'navy', text: `${changes} ${changes === 1 ? 'change' : 'changes'}` });
   if (p.revisionOf) items.push({ key: 'revised', tone: 'neutral', text: 'Revised' });
+  // One chip only repeats the headline; the index earns its place when an update mixes kinds.
+  if (items.length < 2) return null;
   return items.length ? <ul className={styles.contents} aria-label="In this update">{items.map(item => <li key={item.key} data-tone={item.tone}>{item.text}</li>)}</ul> : null;
 }
 
 export function InsightContent({ saved, preview = false }: { saved: SavedPresentation; preview?: boolean }) {
   const p = saved.payload, r = p.recap;
+  const onHistory = usePathname().startsWith('/insights');
   const chart = r ? recapChart(r) : null;
   const unavailableHours = Boolean(chart?.hourly && chart.observed === 0);
   const partial = Boolean(r && (r.observedDays < r.expectedDays || r.spend === null || r.results === null));
-  const partialHours = Boolean(chart?.hourly && chart.observed > 0 && chart.observed < 24);
   const zeroResults = r?.results === 0;
   // Amber is reserved for real gaps. An observed zero is a fact, shown with a neutral note.
   const gapState = unavailableHours || partial;
@@ -227,9 +277,8 @@ export function InsightContent({ saved, preview = false }: { saved: SavedPresent
     <header className={styles.heading}>
       <SpiderMascot state={urgentIssues(p.issues).length ? 'attention' : 'idle'} size={64} paused />
       <div>
-        <span className={styles.eyebrow}>{p.account}{p.revisionOf ? ' · Revised report' : ''}</span>
         <h2>{headline(p)}</h2>
-        <p>{r ? `${dayRange(r.since, r.until)} · completed ${r.expectedDays === 1 ? 'day' : 'days'} · ${formatTimezone(p.timezone)}` : 'Saved changes from your advertising account'}</p>
+        <p>{[p.account, p.revisionOf ? 'Revised' : null, r ? dayRange(r.since, r.until) : null, r ? formatTimezone(p.timezone) : null].filter(Boolean).join(' · ')}</p>
         <Contents p={p} />
       </div>
     </header>
@@ -242,16 +291,18 @@ export function InsightContent({ saved, preview = false }: { saved: SavedPresent
       <Metrics spend={r.spend} results={r.results} cpr={r.cpr} currency={p.currency} comparison={r.comparison} comparisonLabel={comparisonLabel} />
       <div className={gapState ? styles.dataInset : undefined}>
         {dataTitle && <InsightDataNotice title={dataTitle} hourly={unavailableHours}>{unavailableHours ? `${r.spend !== null && r.results !== null ? 'Your daily totals are available above.' : 'Available daily totals are shown above.'} Hours with no data are not zero spend.` : `${r.observedDays} of ${r.expectedDays} days have observations. Gaps and unavailable metrics are not zero.`}</InsightDataNotice>}
-        {!dataTitle && partialHours && <InsightDataNotice title="Some hours have no observations" hourly tone="neutral">{chart.observed} of 24 hours were observed. Blank hours are missing, not zero.</InsightDataNotice>}
         {!dataTitle && zeroResults && <InsightDataNotice title="No results were reported for this period" tone="neutral">Zero is an observed result count. Cost per result is unavailable when there are no results.</InsightDataNotice>}
         {unavailableHours ? <MissingObservationTrack hourly /> : <RecapChart recap={r} currency={p.currency} timezone={p.timezone} />}
-        {r.comparison && <p className={styles.observation}>Reported results {r.comparison.results >= 0 ? 'increased' : 'decreased'} {Math.abs(r.comparison.results).toFixed(1)}% against the previous {r.expectedDays} completed days. Spend {r.comparison.spend >= 0 ? 'increased' : 'decreased'} {Math.abs(r.comparison.spend).toFixed(1)}%.</p>}
-        <p className={styles.caption}>{r.observedDays} of {r.expectedDays} {r.expectedDays === 1 ? 'day has' : 'days have'} observations. {r.capped ? 'Your catch-up is limited to the latest 30 completed days. ' : ''}Results combine leads, conversations and calls; they are not verified bookings.</p>
       </div>
     </section>}
     {visibleRest.map(c => <div key={c.key}>{c.node}</div>)}
     {hiddenRest.length > 0 && <details className={styles.more}><summary>{hiddenRest.length} more {hiddenRest.length === 1 ? 'update' : 'updates'} in this review</summary>{hiddenRest.map(c => <div key={c.key}>{c.node}</div>)}</details>}
-    {!preview && <div className={styles.actions}><a href={`/api/insights/export?id=${saved.id}&format=pdf`}>Download PDF</a><a href={`/api/insights/export?id=${saved.id}&format=csv`}>Download CSV</a><Link href="/insights">All updates</Link></div>}
+    {!preview && <div className={styles.actions}>
+      <a href={`/api/insights/export?id=${saved.id}&format=pdf`} aria-label="Download PDF"><Download size={15} aria-hidden="true" />PDF</a>
+      <a href={`/api/insights/export?id=${saved.id}&format=csv`} aria-label="Download CSV"><Download size={15} aria-hidden="true" />CSV</a>
+      {/* Already on the history page, this link would only close the dialog. */}
+      {!onHistory && <Link className={styles.allUpdates} href="/insights">All updates<ChevronRight size={15} aria-hidden="true" /></Link>}
+    </div>}
   </div>;
 }
 
@@ -329,9 +380,10 @@ function HistoryRow({ item, onOpen }: { item: SavedPresentation; onOpen: () => v
   const Icon = urgent ? AlertTriangle : (p.lifecycle.length || p.issues.length) && !r ? History : p.revisionOf ? RotateCcw : LineChart;
   const tone = urgent ? 'urgent' : (p.lifecycle.length || p.issues.length) && !r ? 'navy' : 'info';
   const summary = [
-    r ? dayRange(r.since, r.until) : null,
+    // A one-day headline already names the day.
+    r && r.since !== r.until ? dayRange(r.since, r.until) : null,
     r && r.spend !== null ? `${money(r.spend, p.currency)} spent` : null,
-    r && r.results !== null ? `${number(r.results)} results` : null,
+    r && r.results !== null ? `${number(r.results)} ${r.results === 1 ? 'result' : 'results'}` : null,
   ].filter(Boolean).join(' · ');
   const unread = !item.readAt;
   return <button type="button" className={styles.historyCard} data-unread={unread || undefined} onClick={onOpen}>
@@ -418,7 +470,7 @@ export function InsightsHistory() {
     <button type="button" className={styles.backLink} onClick={back}><ArrowLeft size={16} aria-hidden="true" />Back</button>
     <header className={styles.heading}>
       <SpiderMascot size={56} paused state={open.length ? 'attention' : 'idle'} />
-      <div><span className={styles.eyebrow}>Your advertising, in context</span><h1>Insights &amp; Events</h1><p>Every catch-up, ad change and issue DeepVisor has shown you, saved as it was at the time.</p></div>
+      <div><h1>Insights &amp; Events</h1><p>Every catch-up, ad change and issue, saved as it was shown to you.</p></div>
     </header>
     {open.length > 0 && <section className={styles.attention} aria-labelledby="still-open">
       <h2 id="still-open"><AlertTriangle size={16} aria-hidden="true" />{open.length === 1 ? '1 issue still needs attention' : `${open.length} issues still need attention`}</h2>

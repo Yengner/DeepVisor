@@ -1,0 +1,80 @@
+.page {
+  display: grid;
+  gap: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.page header h1 {
+  margin: 0;
+  font-size: var(--dv-text-xl);
+  font-weight: 800;
+}
+
+.page header p {
+  margin: 4px 0 0;
+  color: var(--mantine-color-dimmed);
+  font-size: var(--dv-text-sm);
+}
+
+.card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--dv-card-border);
+  border-radius: var(--dv-card-radius);
+  background: var(--dv-card-panel);
+}
+
+.card h2 {
+  margin: 0;
+  font-size: var(--dv-text-md);
+  font-weight: 800;
+}
+
+.card > p {
+  margin: 0;
+  font-size: var(--dv-text-sm);
+}
+
+.plan {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.plan dt {
+  font-size: var(--dv-text-xs);
+  font-weight: 700;
+  color: var(--mantine-color-dimmed);
+}
+
+.plan dd {
+  margin: 2px 0 0;
+  font-size: var(--dv-text-sm);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.plan dd span {
+  display: block;
+  font-size: var(--dv-text-xs);
+  color: var(--mantine-color-dimmed);
+}
+
+.overrides {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--dv-text-xs);
+  color: var(--mantine-color-dimmed);
+}

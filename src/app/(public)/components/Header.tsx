@@ -1,78 +1,84 @@
 "use client";
 
-import { BrandLockup } from '@/components/brand/Brand';
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 import { usePathname } from "next/navigation";
-import type { FC } from "react";
-import { Container } from "@/components/marketing";
+import { useEffect, useRef, useState, type FC } from "react";
+import { ArrowRight, Menu, X } from "lucide-react";
+import { BrandLockup } from "@/components/brand/Brand";
+import classes from "./Chrome.module.css";
 
 const navItems = [
-    { label: "Overview", href: "/#top", match: "/" },
-    { label: "Workflow", href: "/#how-it-works", match: "/#how-it-works" },
-    { label: "Features", href: "/features", match: "/features" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "Features", href: "/features" },
+  { label: "Vision", href: "/vision" },
+  { label: "FAQ", href: "/#faq" },
 ];
 
 const Header: FC = () => {
-    const pathname = usePathname();
+  const pathname = usePathname();
+  // The menu belongs to the page it was opened on, so navigating closes it.
+  const [openOn, setOpenOn] = useState<string | null>(null);
+  const open = openOn === pathname;
+  const setOpen = (next: boolean | ((value: boolean) => boolean)) =>
+    setOpenOn((typeof next === 'function' ? next(open) : next) ? pathname : null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
-    return (
-        <header className="dv-public-header sticky top-0 z-40 border-b border-white/15 bg-[#07182d] text-white">
-            <Container className="flex h-14 items-center justify-between gap-4">
-                <Link href="/" className="group flex shrink-0 items-center gap-2.5" aria-label="DeepVisor home">
-                    <BrandLockup inverse />
-                </Link>
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpenOn(null);
+        toggleRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
 
-                <nav className="hidden h-full items-center text-xs font-medium text-white/65 md:flex" aria-label="Primary">
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.label}
-                            href={item.href}
-                            aria-current={pathname === item.match ? "page" : undefined}
-                            className="dv-public-nav-link relative flex h-full items-center px-3 transition-colors hover:text-white aria-[current=page]:text-[#bdceff]"
-                        >
-                            {item.label}
-                        </Link>
-                    ))}
-                </nav>
+  return (
+    <header className={classes.header}>
+      <div className={classes.bar}>
+        <Link href="/" className={classes.brand} aria-label="DeepVisor home">
+          <BrandLockup inverse />
+        </Link>
 
-                <div className="flex items-center gap-2">
-                    <Link
-                        href="/login"
-                        className="hidden px-3 py-2 text-xs font-medium text-white/70 transition-colors hover:text-white sm:inline-flex"
-                    >
-                        Log in
-                    </Link>
-                    <Link
-                        href="/sign-up"
-                        className="dv-public-header-cta inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-3.5 text-xs font-semibold text-white transition-colors hover:bg-[#004fc7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#bdceff] focus-visible:ring-offset-2 focus-visible:ring-offset-[#07182d]"
-                        aria-label="Start free"
-                    >
-                        <span className="dv-public-header-cta-label">Start free</span>
-                        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-                    </Link>
-                </div>
-            </Container>
+        <nav className={classes.nav} aria-label="Primary">
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href} className={classes.navLink}
+              aria-current={pathname === item.href ? "page" : undefined}>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
-            <nav className="dv-public-mobile-nav border-t border-white/10 md:hidden" aria-label="Mobile primary">
-                <Container className="flex h-10 items-center gap-1 overflow-x-auto">
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.label}
-                            href={item.href}
-                            aria-current={pathname === item.match ? "page" : undefined}
-                            className="shrink-0 rounded-sm px-3 py-1.5 text-[11px] font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white aria-[current=page]:bg-white/10 aria-[current=page]:text-[#bdceff]"
-                        >
-                            {item.label}
-                        </Link>
-                    ))}
-                    <Link href="/login" className="ml-auto shrink-0 rounded-sm px-3 py-1.5 text-[11px] font-medium text-white/60 hover:bg-white/10 hover:text-white sm:hidden">
-                        Log in
-                    </Link>
-                </Container>
-            </nav>
-        </header>
-    );
+        <div className={classes.actions}>
+          <Link href="/login" className={classes.login}>Log in</Link>
+          <Link href="/sign-up" className={classes.cta}>
+            Start free beta <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+          <button ref={toggleRef} type="button" className={classes.menuButton}
+            aria-expanded={open} aria-controls="public-mobile-menu" onClick={() => setOpen((value) => !value)}>
+            {open ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
+            <span className={classes.srOnly}>{open ? "Close menu" : "Open menu"}</span>
+          </button>
+        </div>
+      </div>
+
+      <nav id="public-mobile-menu" className={classes.mobileMenu} aria-label="Mobile primary" hidden={!open}>
+        <ul>
+          {navItems.map((item) => (
+            <li key={item.href}>
+              <Link href={item.href} onClick={() => setOpen(false)}
+                aria-current={pathname === item.href ? "page" : undefined}>
+                {item.label}
+              </Link>
+            </li>
+          ))}
+          <li><Link href="/login" onClick={() => setOpen(false)}>Log in</Link></li>
+        </ul>
+      </nav>
+    </header>
+  );
 };
 
 export default Header;

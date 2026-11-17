@@ -94,6 +94,8 @@ export interface LeadCampaignCreativeDraft {
   adPrimaryText: string;
   adDescription: string;
   adCallToAction: string;
+  /** Language of this ad's text when a draft carries one ad per client language. */
+  language?: 'en' | 'es';
 }
 
 export interface LeadCampaignAdSetDraft {
@@ -132,6 +134,10 @@ export interface LeadCampaignMethodSettings {
     whatsappBusinessAccountId?: string;
     whatsappBusinessAccountName?: string;
     whatsappBusinessReady?: boolean;
+    /** Message pre-filled in WhatsApp when a client taps the ad (owner-confirmed). */
+    greetingText?: string;
+    /** The source ad's exact Meta `page_welcome_message` setup, carried over unchanged. */
+    welcomeMessageSpec?: string;
     responseReady: boolean;
   };
   calls: {

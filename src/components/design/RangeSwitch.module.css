@@ -1,0 +1,57 @@
+/* Shared pill switch. Reads DesignSurface tokens when inside one, app tokens otherwise. */
+.switch {
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  max-width: 100%;
+  padding: 3px;
+  border: 1px solid var(--ui-line, var(--dv-card-border, #d9e3ef));
+  border-radius: 10px;
+  background: var(--ui-subtle, var(--dv-card-panel, #f4f7fb));
+}
+.switch button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 40px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ui-muted, var(--dv-text-muted, #53677d));
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out), transform 120ms var(--ease-out);
+}
+.switch button[aria-pressed='true'] {
+  background: var(--ui-panel, var(--dv-card-bg, #fff));
+  color: var(--ui-accent, var(--dv-primary-strong, #0b4fc4));
+  box-shadow: 0 1px 3px rgb(12 32 62 / 14%);
+}
+.switch button:active:not(:disabled) { transform: scale(.97); }
+.switch button:focus-visible { outline: 2px solid var(--ui-focus, var(--dv-primary, #2f63e6)); outline-offset: 2px; }
+.switch button:disabled { opacity: .45; cursor: default; }
+.switch[aria-busy='true'] button { cursor: progress; }
+@media (hover: hover) and (pointer: fine) {
+  .switch button:not([aria-pressed='true']):not(:disabled):hover { color: var(--ui-text, var(--dv-text, #102c46)); }
+}
+@media (max-width: 600px) {
+  .switch button { padding: 0 10px; }
+  .switch button[data-compact] .text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .switch button { transition: none; }
+}

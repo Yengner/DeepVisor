@@ -28,6 +28,29 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { getUserNotifications } from '@/lib/server/actions/user/settings';
 import classes from './NotificationsPage.module.css';
 import NotificationAction from './NotificationAction';
+import { Suspense } from 'react';
+import AttentionList from '@/components/product/AttentionList';
+import { attentionItems } from '@/lib/shared/insights/attention';
+import { openUrgentIssues } from '@/lib/server/insights/issues';
+import { loadOverviewContext } from '@/lib/server/dashboard/overview/load';
+import { loadExploration } from '@/lib/server/campaigns/exploration/load';
+
+/**
+ * Live account state pinned above the feed: Meta issues that stop delivery and active ad sets
+ * ending within two days. Read on each visit, so it disappears once Meta stops reporting it.
+ */
+async function PinnedAttention() {
+  const context = await loadOverviewContext().catch(() => null);
+  if (!context?.account) return null;
+  const [issues, view] = await Promise.all([
+    openUrgentIssues(context.businessId, context.account.id).catch(() => []),
+    context.platform?.vendor === 'meta' ? loadExploration('7d', 'adset', null, true).catch(() => null) : null,
+  ]);
+  const items = attentionItems(issues, view?.items ?? [], {
+    now: context.now, zone: context.zone, endingAction: { label: 'Open Overview', href: '/dashboard' },
+  });
+  return <AttentionList items={items} label="Needs attention now" />;
+}
 
 function formatDateTime(value: string | null): string {
   if (!value) {
@@ -221,6 +244,8 @@ export default async function NotificationsPage() {
             </Button>
           </Group>
         </Group>
+
+        <Suspense fallback={null}><PinnedAttention /></Suspense>
 
         <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }} spacing="md">
           <SummaryCard

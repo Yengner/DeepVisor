@@ -16,7 +16,7 @@ vi.mock('@/lib/server/supabase/server', () => ({ createServerClient: async () =>
       eq: (field: string, value: string) => { m.scope(table, field, value); return q; },
       select: (selected = '') => { columns = selected; return q; },
       maybeSingle: () => table === 'business_profiles' ? m.businessResult() : m.orgResult(),
-      single: () => columns === 'field_sources' ? m.sourcesResult() : m.businessResult(),
+      single: () => columns.startsWith('field_sources') ? m.sourcesResult() : m.businessResult(),
       then: (resolve: (value: { error: null }) => unknown) => Promise.resolve({ error: null }).then(resolve),
     };
     return q;
@@ -160,4 +160,32 @@ it('stamps the first completion time only once', async () => {
   m.businessResult.mockResolvedValueOnce({ data: { ...completeEssentials, onboarding_completed_at: '2026-11-01T00:00:00.000Z' }, error: null });
   expect((await updateOnboardingProgress({ step: 2, completed: true })).success).toBe(true);
   expect(m.update.mock.lastCall?.[1]).not.toHaveProperty('onboarding_completed_at');
+});
+
+it('saves several contact methods with an explicit main one', async () => {
+  expect((await updateBusinessProfileData({ contactMethods: ['phone_calls', 'instagram_dms'], preferredContactMethod: 'instagram_dms' })).success).toBe(true);
+  expect(m.update).toHaveBeenCalledWith('business_profiles', expect.objectContaining({
+    contact_methods: ['instagram_dms', 'phone_calls'], preferred_contact_method: 'instagram_dms',
+    field_sources: expect.objectContaining({ contact_methods: userSource, preferred_contact_method: userSource }),
+  }));
+});
+it('uses a single contact method as the main one', async () => {
+  expect((await updateBusinessProfileData({ contactMethods: ['lead_form'] })).success).toBe(true);
+  expect(m.update).toHaveBeenCalledWith('business_profiles', expect.objectContaining({ contact_methods: ['lead_form'], preferred_contact_method: 'lead_form' }));
+});
+it.each([
+  { contactMethods: ['phone_calls', 'instagram_dms'] },
+  { contactMethods: ['phone_calls', 'instagram_dms'], preferredContactMethod: 'lead_form' },
+  { contactMethods: ['not_sure', 'phone_calls'], preferredContactMethod: 'phone_calls' },
+  { contactMethods: [] },
+  { contactMethods: ['carrier_pigeon'] },
+])('rejects invalid contact selections: %o', async input => {
+  expect((await updateBusinessProfileData(input)).success).toBe(false); expect(m.update).not.toHaveBeenCalled();
+});
+it('keeps the full list consistent when only the main method changes', async () => {
+  m.sourcesResult.mockResolvedValueOnce({ data: { field_sources: {}, contact_methods: ['instagram_dms'] }, error: null });
+  expect((await updateBusinessProfileData({ preferredContactMethod: 'phone_calls' })).success).toBe(true);
+  expect(m.update).toHaveBeenCalledWith('business_profiles', expect.objectContaining({
+    preferred_contact_method: 'phone_calls', contact_methods: ['instagram_dms', 'phone_calls'],
+  }));
 });

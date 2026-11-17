@@ -1095,6 +1095,76 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_checkins: {
+        Row: {
+          ad_account_id: string
+          answered_at: string
+          answered_by: string | null
+          bookings: number | null
+          business_id: string
+          skipped: boolean
+          week_start: string
+        }
+        Insert: {
+          ad_account_id: string
+          answered_at?: string
+          answered_by?: string | null
+          bookings?: number | null
+          business_id: string
+          skipped?: boolean
+          week_start: string
+        }
+        Update: {
+          ad_account_id?: string
+          answered_at?: string
+          answered_by?: string | null
+          bookings?: number | null
+          business_id?: string
+          skipped?: boolean
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_checkins_business_id_ad_account_id_fkey"
+            columns: ["business_id", "ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["business_id", "id"]
+          },
+        ]
+      }
+      business_ad_facts: {
+        Row: {
+          business_id: string
+          confirmed_at: string
+          confirmed_by: string | null
+          fact_key: string
+          value: Json
+        }
+        Insert: {
+          business_id: string
+          confirmed_at?: string
+          confirmed_by?: string | null
+          fact_key: string
+          value: Json
+        }
+        Update: {
+          business_id?: string
+          confirmed_at?: string
+          confirmed_by?: string | null
+          fact_key?: string
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_ad_facts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insight_seen_sources: {
         Row: {
           ad_account_id: string
@@ -3846,6 +3916,7 @@ export type Database = {
           booking_link: string | null
           business_location: string | null
           business_name: string
+          contact_methods: string[]
           created_at: string
           customer_radius: string | null
           description: string | null
@@ -3895,6 +3966,7 @@ export type Database = {
           booking_link?: string | null
           business_location?: string | null
           business_name: string
+          contact_methods?: string[]
           created_at?: string
           customer_radius?: string | null
           description?: string | null
@@ -3944,6 +4016,7 @@ export type Database = {
           booking_link?: string | null
           business_location?: string | null
           business_name?: string
+          contact_methods?: string[]
           created_at?: string
           customer_radius?: string | null
           description?: string | null

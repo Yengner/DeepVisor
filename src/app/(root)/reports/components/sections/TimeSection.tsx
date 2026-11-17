@@ -6,7 +6,7 @@ import { buildTimeAnalysis, WEEKDAYS } from '@/lib/shared/reports/timeAnalysis';
 import { PERFORMANCE_METRICS, performanceValueLabel, type PerformanceMetric } from '@/lib/shared/reports/performance';
 import { coverageLabel } from '@/lib/shared/reports/coverage';
 import { MIN_HOUR_OBSERVATIONS } from '@/lib/shared/reports/highlights';
-import { formatHour, formatHourShort, formatTimezone } from '@/lib/shared/reports/labels';
+import { formatHour, formatHourShort } from '@/lib/shared/reports/labels';
 import classes from '../Workspace.module.css';
 import styles from './Sections.module.css';
 
@@ -34,7 +34,7 @@ export function TimeSection({ payload }: { payload: ReportPayload }) {
 
   return <section className={classes.panel} aria-labelledby="time-title">
     <div className={classes.panelHeader}>
-      <div><p className={classes.eyebrow}>When your ads perform · {formatTimezone(payload.meta.timezone)}</p><h2 id="time-title">Time & day</h2></div>
+      <div><h2 id="time-title">Time & day</h2></div>
       <label className={classes.metricSelect}>Metric<select aria-label="Hourly metric" value={metric} onChange={e => setMetric(e.target.value as PerformanceMetric)}>{PERFORMANCE_METRICS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
     </div>
     <div className={styles.controls}>

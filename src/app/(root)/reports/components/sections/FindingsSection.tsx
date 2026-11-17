@@ -11,7 +11,7 @@ import styles from './Sections.module.css';
 export function FindingsSection({ payload, isDemo }: { payload: ReportPayload; isDemo: boolean }) {
   const [severity, setSeverity] = useState('all'), [status, setStatus] = useState('all');
   const findings = filterFindings(payload.findings, severity, status);
-  return <section className={classes.panel} aria-labelledby="findings-title"><p className={classes.eyebrow}>What DeepVisor noticed</p><h2 id="findings-title">Findings</h2>
+  return <section className={classes.panel} aria-labelledby="findings-title"><h2 id="findings-title">Findings</h2>
     {payload.findings.length > 0 && <div className={styles.controls}><label>Severity<select aria-label="Severity" value={severity} onChange={e => setSeverity(e.target.value)}><option value="all">All severities</option>{[...new Set(payload.findings.map(f => f.severity))].map(v => <option key={v}>{v}</option>)}</select></label><label>Finding status<select value={status} onChange={e => setStatus(e.target.value)}><option value="all">All statuses</option>{[...new Set(payload.findings.map(f => f.status))].map(v => <option key={v}>{v}</option>)}</select></label></div>}
     {!findings.length ? <div className={classes.empty}><h3>{payload.findings.length ? 'No findings match these filters' : 'No saved findings for this scope'}</h3><p>No findings doesn&apos;t mean performance is healthy — it means nothing was flagged.</p></div> : findings.map(finding => {
       const evidence = findingEvidence(finding), href = reportDrilldownHref(finding.reportHref ?? finding.actionHref, isDemo);

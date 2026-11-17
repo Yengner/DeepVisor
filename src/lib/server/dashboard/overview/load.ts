@@ -86,7 +86,7 @@ export const loadOverviewEntities = cache(
     allPages((from, to) =>
       createAdminClient()
         .from("ad_entities")
-        .select("id,external_id,name,status")
+        .select("id,external_id,name,status,destination_type:raw->>destination_type")
         .eq("business_id", businessId)
         .eq("ad_account_id", accountId)
         .eq("entity_level", "adset")

@@ -1331,7 +1331,12 @@ article.adCard { position: relative; cursor: default; }
 .kpis .kpiValueRow dd { font-size: clamp(24px, calc((100cqi - 64px) / 4.95), 36px); overflow-wrap: normal; }
 .kpis > div { container-type: inline-size; }
 @container kpis (max-width: 921px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@container kpis (max-width: 380px) { .kpis { grid-template-columns: minmax(0, 1fr); } }
+/* Phones keep two columns so all four numbers fit on one screen; the sparkline hides below 177px. */
+@container kpis (max-width: 420px) {
+  .kpis { gap: 10px; }
+  .kpis > div { padding: 14px 12px; }
+  .kpis .kpiValueRow dd { font-size: clamp(20px, calc((100cqi - 24px) / 4.95), 26px); }
+}
 
 /* One coverage note for the whole KPI row instead of repeating it on every card. */
 .kpiCoverage { margin: 0 0 10px; font-size: 12px; line-height: 1.5; color: var(--ui-muted, #5d6877); }
@@ -1345,3 +1350,8 @@ article.adCard { position: relative; cursor: default; }
 /* "More" sits with the chart tabs and inherits their look; it names the metric once one is chosen. */
 .metricTabs .moreMetric { display: inline-flex; align-items: center; gap: 4px; }
 .menuHint { color: var(--ui-muted, #5d6877); font-size: 12px; }
+
+/* Phones: platform and period switches share one row under the title. */
+@media (max-width: 600px) {
+  .headerControls { width: 100%; flex-wrap: nowrap; justify-content: space-between; gap: 8px; }
+}

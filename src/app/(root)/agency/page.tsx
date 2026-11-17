@@ -12,7 +12,7 @@ import { modeLabel, shiftDay } from '@/lib/server/dashboard/overview/model';
 import { loadDecisionSurface } from '@/lib/server/decisions/loadSurface';
 import { buildDecisionPreview, isDecisionPreview } from '@/lib/server/decisions/preview';
 import DecisionsFeed from '../decisions/DecisionsFeed';
-import { metricLabels, metricValue, type ControlMetric } from '../dashboard/components/ControlMetrics';
+import { metricLabelsFor, metricValue, type ControlMetric } from '../dashboard/components/ControlMetrics';
 import classes from './Agency.module.css';
 
 export const metadata: Metadata = { title: 'Agency Control | DeepVisor' };
@@ -55,7 +55,7 @@ async function AgencyContent({ page, preview }: { page: number; preview: boolean
         <p className={classes.meta}>Last successful data sync: {account?.last_synced && Number.isFinite(Date.parse(account.last_synced)) ? new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short', timeZone: context.zone }).format(new Date(account.last_synced)) : 'Not recorded'} · {context.zone}{context.timezoneUnavailable ? ' (timezone unavailable; UTC fallback)' : ''}</p>
         {stale && account && <p className={classes.warning}>Fresh data is needed. Saved decisions retain their original observation dates.</p>}
         {sync?.failed ? <p role="alert">Sync status is unavailable.</p> : sync?.data?.activeJobStatus && <p>Latest sync job: {sync.data.activeJobStatus}. Queuing work does not mean data has been updated.</p>}
-        {performance ? <><p className={classes.meta}>Recorded ad-set totals · {shiftDay(context.today, -6)} – {context.today}</p><dl className={classes.metrics}>{(Object.keys(metricLabels) as ControlMetric[]).map(key => <div key={key}><dt>{metricLabels[key]}</dt><dd>{metricValue(key, performance.metrics[key], performance.currency)}</dd></div>)}</dl><p className={classes.meta}>Includes today, partial{performance.partial ? " · Incomplete period data" : ""}</p><p className={classes.meta}>Results are Meta-reported leads, messages and calls, not verified bookings or customers.</p></> : <p>{account ? 'Performance is unavailable. Missing observations are not zero.' : 'Performance will appear after a successful sync.'}</p>}
+        {performance ? <><p className={classes.meta}>Recorded ad-set totals · {shiftDay(context.today, -6)} – {context.today}</p><dl className={classes.metrics}>{(Object.keys(metricLabelsFor(performance.result)) as ControlMetric[]).map(key => <div key={key}><dt>{metricLabelsFor(performance.result)[key]}</dt><dd>{metricValue(key, performance.metrics[key], performance.currency)}</dd></div>)}</dl><p className={classes.meta}>Includes today, partial{performance.partial ? " · Incomplete period data" : ""}</p><p className={classes.meta}>Results are Meta-reported leads, messages and calls, not verified bookings or customers.</p></> : <p>{account ? 'Performance is unavailable. Missing observations are not zero.' : 'Performance will appear after a successful sync.'}</p>}
         <Link href={disconnected ? '/integration' : '/dashboard'}>{disconnected ? 'Manage connections' : 'View performance and refresh data'} →</Link>
       </section>
       <section className={classes.panel} aria-labelledby="controls-title"><h2 id="controls-title">Your goals & controls</h2>

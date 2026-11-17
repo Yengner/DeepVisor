@@ -1,3 +1,5 @@
+import type { AdSchedule } from "@/lib/shared/performance/schedule";
+import type { ResultDefinition } from "@/lib/shared/performance/resultChannel";
 import type {
   DailyRow,
   Period,
@@ -53,6 +55,12 @@ export type Summary = {
   leader: boolean;
   tied: boolean;
   strongest?: string;
+  /** Ad sets only: the run window from Meta's saved start/end times. */
+  schedule?: AdSchedule;
+  /** Ad sets only: Meta `destination_type`, used to name what the results are. */
+  destinationType?: string | null;
+  /** Ad sets only: what `metrics.results` counts for the selected rows. Absent means "Results". */
+  result?: ResultDefinition;
 };
 export type ExplorationView = {
   accountId: string;

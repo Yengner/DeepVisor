@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { leadUp, MIN_LEAD_UP_DAYS } from './leadUp';
+import { leadUp, leadUpTrend, MIN_LEAD_UP_DAYS } from './leadUp';
 
 const day = (d: string, spend: number | null, results: number | null) => ({ day: d, spend, results });
 const span = (from: number, to: number, spend: number, results: number) =>
@@ -28,5 +28,20 @@ describe('leadUp', () => {
     expect(result.resultsChange).toBeNull();
     expect(result.spendChange).toBeNull();
     expect(result.prior.cpr).toBeNull();
+  });
+});
+
+describe('leadUpTrend', () => {
+  const base = { matchedDays: 7, windowDays: 7, recentFrom: '2026-10-31', recentTo: '2026-11-06', priorFrom: '2026-10-24', priorTo: '2026-10-30', spendChange: 0 };
+  it('reads fewer results at a higher cost as both getting worse', () => {
+    const t = leadUpTrend({ ...base, prior: { spend: 168, results: 24, cpr: 7 }, recent: { spend: 204, results: 12, cpr: 17 }, resultsChange: -50 });
+    expect(t).toMatchObject({ results: 'fewer', cost: 'higher' });
+    expect(t.costChange).toBeCloseTo(142.86, 1);
+  });
+  it('treats small moves as steady', () => {
+    expect(leadUpTrend({ ...base, prior: { spend: 100, results: 20, cpr: 5 }, recent: { spend: 104, results: 21, cpr: 104 / 21 }, resultsChange: 5 })).toMatchObject({ results: 'steady', cost: 'steady' });
+  });
+  it('has no cost direction when one side had no results', () => {
+    expect(leadUpTrend({ ...base, prior: { spend: 50, results: 0, cpr: null }, recent: { spend: 60, results: 3, cpr: 20 }, resultsChange: null })).toMatchObject({ results: 'more', cost: null, costChange: null });
   });
 });

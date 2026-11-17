@@ -14,6 +14,16 @@ components, notifications, sync and execution services are unchanged.
 - Normalized ad-set daily performance, limited to authorized entity IDs and the
   selected account. Results are leads + messages + calls. CPR uses aggregate
   spend/results; absent facts and zero-result CPR remain unavailable.
+- Result naming (`shared/performance/resultChannel.ts`): the total is unchanged, but
+  KPIs, the trend tab, Agency metrics and ad-set cards rename it ("WhatsApp
+  conversations", "Conversations", "Leads", "Calls") only when every row that spent or
+  reported anything in the selected period comes from ad sets whose Meta
+  `destination_type` produces that result **and** the other counts are known zeros.
+  Otherwise cost per result would mix in spend from other destinations, so it stays
+  "Results". Unknown destinations or counts are never assumed. Live rows are named in
+  `page.tsx`/`advertisingMetrics`, saved rows in `controlPerformance`. "Who and when"
+  takeaways keep "results": they come from account-level breakdowns with their own
+  windows, which this per-row rule cannot prove.
 - V2 snapshots scope decision runs; runs scope proposals; proposals scope
   executions. Completed outcome measurements are linked through executions or
   shadow decision runs. Shadow/automatic evaluation jobs supply historical mode

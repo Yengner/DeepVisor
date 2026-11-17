@@ -37,3 +37,24 @@ export function leadUp(days: Day[], changeDay: string, windowDays = 7): LeadUp |
     spendChange: b.spend > 0 ? (a.spend - b.spend) / b.spend * 100 : null,
   };
 }
+
+/** Below this, a move is described as holding steady rather than up or down. */
+export const STEADY_PERCENT = 10;
+export type LeadUpTrend = { results: 'more' | 'fewer' | 'steady'; cost: 'higher' | 'lower' | 'steady' | null; costChange: number | null };
+
+/**
+ * The direction of results and cost per result across a lead-up, for a one-line takeaway.
+ * Cost is null when either side has no results, so it is never compared against a missing ratio.
+ */
+export function leadUpTrend(lead: LeadUp): LeadUpTrend {
+  const costChange = lead.prior.cpr !== null && lead.recent.cpr !== null && lead.prior.cpr > 0
+    ? (lead.recent.cpr - lead.prior.cpr) / lead.prior.cpr * 100 : null;
+  const move = (value: number | null) => value === null || Math.abs(value) < STEADY_PERCENT ? 0 : Math.sign(value);
+  const r = lead.resultsChange === null ? (lead.recent.results > 0 ? 1 : 0) : move(lead.resultsChange);
+  const c = move(costChange);
+  return {
+    results: r > 0 ? 'more' : r < 0 ? 'fewer' : 'steady',
+    cost: costChange === null ? null : c > 0 ? 'higher' : c < 0 ? 'lower' : 'steady',
+    costChange,
+  };
+}

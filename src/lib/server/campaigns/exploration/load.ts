@@ -32,8 +32,14 @@ import type { OverviewContext } from "../../dashboard/overview/load";
 import type { UnitState } from "../../dashboard/overview/types";
 import { selectBoardAdvertising } from "../../dashboard/overview/controlModel";
 import { deliveryStatuses } from "./delivery";
+import { adSchedule } from "@/lib/shared/performance/schedule";
+import { resultDefinitionFor } from "@/lib/shared/performance/resultChannel";
 
 export class ExplorationNotFound extends Error {}
+function destinationType(raw: unknown): string | null {
+  const value = raw && typeof raw === "object" ? (raw as Record<string, unknown>).destination_type : null;
+  return typeof value === "string" ? value : null;
+}
 type Client = ReturnType<typeof createAdminClient>;
 const entityFields =
   "id,external_id,name,status,entity_level,parent_external_id,creative_external_id,raw,updated_at";
@@ -257,6 +263,18 @@ export const loadExploration = cache(
         media: [],
         leader: false,
         tied: false,
+        ...(entity.entity_level === "adset"
+          ? {
+              destinationType: destinationType(entity.raw),
+              result: resultDefinitionFor(selected, () => destinationType(entity.raw)),
+              schedule: adSchedule(
+                entity.raw,
+                hierarchy.find((c) => c.entity_level === "campaign" && c.external_id === entity.parent_external_id)?.raw,
+                context.now,
+                context.zone,
+              ),
+            }
+          : {}),
       };
     }
     let items = rank(

@@ -4,20 +4,21 @@ import Footer from "./components/Footer";
 import "./public.css";
 
 export const metadata: Metadata = {
-  title: "DeepVisor",
+  title: "DeepVisor: advertising, made simpler",
   description:
-    "DeepVisor makes running salon paid ads easier with Meta ad monitoring, wasted-spend detection, Scheduled Reviews, clear reports, campaign reviews, and simpler next-step approvals.",
+    "DeepVisor makes digital advertising simpler for every business. Start with your Meta ads today, free during beta.",
 };
 
-export default function RootLayout({
+export default function PublicLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
     <div className="dv-public-shell">
+      <a href="#main" className="dv-skip-link">Skip to main content</a>
       <Header />
-      <main className="dv-public-main">{children}</main>
+      <main id="main" tabIndex={-1} className="dv-public-main">{children}</main>
       <Footer />
     </div>
   );

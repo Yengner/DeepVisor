@@ -13,7 +13,8 @@ type Summary = { unread: number; openIssues: number; topIssue?: string | null; l
  * Read-only: it never prepares, claims or acknowledges an update, and hides itself when there is
  * nothing saved or the counts can't be loaded.
  */
-export default function InsightsEntry() {
+/** `countIssues={false}` when the page already lists open issues itself (Overview's attention list). */
+export default function InsightsEntry({ countIssues = true }: { countIssues?: boolean }) {
   const [summary, setSummary] = useState<Summary | null>(null);
   const load = useCallback(async () => {
     try {
@@ -30,7 +31,8 @@ export default function InsightsEntry() {
     return () => { window.removeEventListener('deepvisor:insights-read', refresh); window.removeEventListener('deepvisor:data-updated', refresh); };
   }, [load]);
   if (!summary?.latest) return null;
-  const { openIssues, unread, latest } = summary;
+  const { unread, latest } = summary;
+  const openIssues = countIssues ? summary.openIssues : 0;
   const tone = openIssues ? 'urgent' : unread ? 'new' : 'quiet';
   const label = openIssues ? `${openIssues} ${openIssues === 1 ? 'issue' : 'issues'} to check`
     : unread ? `${unread} new ${unread === 1 ? 'update' : 'updates'}` : 'Latest update';

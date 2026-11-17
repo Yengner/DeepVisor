@@ -3,7 +3,8 @@ import { secondaryNavItems, primaryNavItems, mobileBottomNavItems, isAppNavItemA
 it('places Reports after Campaigns and account links below the divider', () => {
   expect(primaryNavItems.map(item => item.route)).toEqual(['/dashboard', '/agency', '/campaigns', '/reports', '/integration']);
   expect(secondaryNavItems.map(item => item.route)).toEqual(['/notifications', '/settings/profile', '/settings']);
-  expect(mobileBottomNavItems.map(item => item.route)).toEqual(['/dashboard', '/agency', '/campaigns', '/integration']);
+  expect(mobileBottomNavItems.map(item => item.route)).toEqual(['/dashboard', '/agency', '/campaigns', '/reports', '/notifications']);
+  expect(mobileBottomNavItems.map(item => item.shortName)).toEqual(['Overview', 'Agency', 'Campaigns', 'Reports', 'Alerts']);
   expect(isAppNavItemActive('/reports', '/reports')).toBe(true);
   expect(isAppNavItemActive('/reports/archive/example', '/reports')).toBe(true);
   expect(isAppNavItemActive('/campaigns', '/reports')).toBe(false);

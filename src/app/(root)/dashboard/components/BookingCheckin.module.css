@@ -1,0 +1,40 @@
+.card {
+  display: grid;
+  gap: 8px;
+  margin-block: 12px;
+  padding: 16px;
+  border: 1px solid var(--dv-card-border);
+  border-radius: var(--dv-card-radius);
+  background: var(--dv-card-panel);
+}
+
+.card h2 {
+  margin: 0;
+  font-size: var(--dv-text-md);
+  font-weight: 800;
+}
+
+.card p {
+  margin: 0;
+  font-size: var(--dv-text-sm);
+}
+
+.ask {
+  display: grid;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.input {
+  width: 120px;
+}
+
+.summary {
+  color: var(--mantine-color-dimmed);
+}
