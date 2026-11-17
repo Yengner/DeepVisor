@@ -19,7 +19,7 @@ import { IconChevronDown } from "@tabler/icons-react";
 import { metricValue } from "./ControlMetrics";
 import classes from "./ControlCenter.module.css";
 import { chartCeiling, chartTicks } from "./chartScale";
-import { RESULT_LABELS } from "@/lib/shared/performance/resultChannel";
+import { useLocale, useTranslations } from "next-intl";
 
 type Row = { x: string; current: number | null; previous: number | null; live: boolean };
 /**
@@ -30,9 +30,6 @@ type Row = { x: string; current: number | null; previous: number | null; live: b
 type ChartKey = "results" | "spend" | "ctr" | "impressions" | "clicks" | "cpm";
 const TABS: ChartKey[] = ["results", "spend", "ctr"];
 const MORE: ChartKey[] = ["impressions", "clicks", "cpm"];
-const LABELS: Record<ChartKey, string> = { results: "Results", spend: "Spend", ctr: "CTR", impressions: "Impressions", clicks: "Clicks", cpm: "CPM" };
-const dayLabel = (d: string) =>
-  new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
 const hourLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? "AM" : "PM"}`;
 
 export default function ControlTrend({
@@ -43,11 +40,19 @@ export default function ControlTrend({
   markers?: ChartMarker[];
 }) {
   const [metric, setMetric] = useState<ChartKey>("results");
-  const labels = { ...LABELS, results: RESULT_LABELS[view.result?.kind ?? "results"].metric };
+  const t = useTranslations();
+  const locale = useLocale();
+  const kind = view.result?.kind ?? "results";
+  const labels: Record<ChartKey, string> = {
+    results: t(`results.${kind}.metric`), spend: t("metrics.spend"), ctr: t("metrics.ctr"),
+    impressions: t("metrics.impressions"), clicks: t("metrics.clicks"), cpm: t("metrics.cpm"),
+  };
+  const dayLabel = (d: string) =>
+    new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
   const [selected, setSelected] = useState("");
   const hourly = view.context?.hourly ?? null;
-  const previousName = hourly ? "Yesterday" : view.context?.referenceLabel ?? null;
-  const currentName = hourly ? "Today" : "This period";
+  const previousName = hourly ? t("chart.yesterday") : view.context?.referenceLabel ?? null;
+  const currentName = hourly ? t("chart.today") : t("chart.thisPeriod");
 
   const rows: Row[] = useMemo(() => {
     if (hourly) {
@@ -74,7 +79,7 @@ export default function ControlTrend({
   return (
     <>
       <div className={classes.chartToolbar}>
-        <div className={classes.metricTabs} role="group" aria-label="Chart metric">
+        <div className={classes.metricTabs} role="group" aria-label={t("chart.metricGroup")}>
           {TABS.map((key) => (
             <button key={key} type="button" aria-pressed={metric === key} onClick={() => setMetric(key)}>
               {labels[key]}
@@ -83,18 +88,18 @@ export default function ControlTrend({
           <Menu position="bottom-start" shadow="md" width={220} withinPortal>
             <Menu.Target>
               <UnstyledButton className={classes.moreMetric} aria-pressed={MORE.includes(metric)}>
-                {MORE.includes(metric) ? `More: ${labels[metric]}` : "More"}
+                {MORE.includes(metric) ? t("metrics.moreSelected", { label: labels[metric] }) : t("metrics.more")}
                 <IconChevronDown size={13} aria-hidden="true" />
               </UnstyledButton>
             </Menu.Target>
             <Menu.Dropdown>
               {MORE.map((key) => (
                 <Menu.Item key={key} onClick={() => setMetric(key)} aria-current={metric === key || undefined} fw={metric === key ? 700 : undefined}>
-                  {labels[key]}{key === "cpm" ? <span className={classes.menuHint}> · cost per 1,000 impressions</span> : null}
+                  {labels[key]}{key === "cpm" ? <span className={classes.menuHint}> · {t("metrics.cpmHint")}</span> : null}
                 </Menu.Item>
               ))}
               <Menu.Divider />
-              <Menu.Item component={Link} href="/reports">See all metrics in Reports →</Menu.Item>
+              <Menu.Item component={Link} href="/reports">{t("chart.seeAll")}</Menu.Item>
             </Menu.Dropdown>
           </Menu>
         </div>
@@ -203,7 +208,7 @@ export default function ControlTrend({
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <div className={classes.chartEmpty}>No recorded {metric === "ctr" || metric === "cpm" || (metric === "results" && view.result?.kind === "whatsapp_conversations") ? labels[metric] : labels[metric].toLowerCase()} for this period</div>
+          <div className={classes.chartEmpty}>{metric === "results" ? t(`results.${kind}.empty`) : t(`metrics.empty.${metric}`)}</div>
         )}
       </div>
     </>

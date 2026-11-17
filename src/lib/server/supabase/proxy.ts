@@ -2,6 +2,7 @@ import 'server-only'
 
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { AUTO_LOCALE, isLocale, LOCALE_COOKIE, LOCALE_COOKIE_OPTIONS, LOCALE_USER_COOKIE } from '@/i18n/locales'
 
 const PUBLIC_ROUTES = new Set([
     '/',
@@ -69,6 +70,22 @@ export async function updateSession(request: NextRequest) {
     const {
         data: { user },
     } = await supabase.auth.getUser()
+
+    // Mirror the signed-in user's saved language into the cookie each request reads. Runs only
+    // when the cookie is missing or belongs to another user; a failed read leaves it unset.
+    // Language is cosmetic: any failure here must never affect authentication or routing.
+    if (user && request.cookies.get(LOCALE_USER_COOKIE)?.value !== user.id) {
+        try {
+            const { data, error } = await supabase.from('users').select('preferred_locale').eq('id', user.id).maybeSingle()
+            if (!error) {
+                const options = { ...LOCALE_COOKIE_OPTIONS, secure: process.env.NODE_ENV === 'production' }
+                supabaseResponse.cookies.set(LOCALE_COOKIE, isLocale(data?.preferred_locale) ? data.preferred_locale : AUTO_LOCALE, options)
+                supabaseResponse.cookies.set(LOCALE_USER_COOKIE, user.id, options)
+            }
+        } catch {
+            // Leave the cookie unset; the next request retries and the browser language applies meanwhile.
+        }
+    }
 
     const pathname = normalizePathname(request.nextUrl.pathname);
     const isLoginPage = pathname.startsWith('/login');

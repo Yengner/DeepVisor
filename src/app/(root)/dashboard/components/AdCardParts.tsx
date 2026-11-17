@@ -2,8 +2,8 @@ import type { CSSProperties } from "react";
 import type { Delta, Metrics } from "@/lib/server/campaigns/exploration/types";
 import type { AdSchedule } from "@/lib/shared/performance/schedule";
 import type { LearningProgress } from "@/lib/server/dashboard/insights/signals";
-import { metricValue, MetricDelta } from "./ControlMetrics";
-import { RESULT_LABELS, type ResultDefinition } from "@/lib/shared/performance/resultChannel";
+import { metricValue, MetricDelta, useMetricLabels } from "./ControlMetrics";
+import type { ResultDefinition } from "@/lib/shared/performance/resultChannel";
 import classes from "./AdCardParts.module.css";
 
 /** Days arrive as account-local YYYY-MM-DD, so format them at noon UTC to avoid shifting. */
@@ -85,10 +85,10 @@ export function LearningBar({ learning }: { learning?: LearningProgress }) {
 }
 
 const kpis = [
-  { key: "results", label: "Results" },
-  { key: "costPerResult", label: "Cost / result" },
-  { key: "spend", label: "Spend" },
-  { key: "ctr", label: "CTR" },
+  { key: "results" },
+  { key: "costPerResult" },
+  { key: "spend" },
+  { key: "ctr" },
 ] as const;
 
 /** Four quick numbers. Missing values show as a dash, never zero. */
@@ -97,12 +97,12 @@ export function QuickStats({ metrics, deltas, currency, comparison, result }: {
   /** Names the results (e.g. WhatsApp conversations); absent means "Results". */
   result?: ResultDefinition;
 }) {
-  const words = RESULT_LABELS[result?.kind ?? "results"];
+  const { labels, help, short } = useMetricLabels(result);
   return (
     <dl className={classes.stats}>
-      {kpis.map(({ key, label }) => (
+      {kpis.map(({ key }) => (
         <div key={key}>
-          <dt title={key === "results" ? words.help : undefined}>{key === "results" ? words.short : key === "costPerResult" ? words.cost : label}</dt>
+          <dt title={key === "results" ? help.results : undefined}>{key === "results" ? short : labels[key]}</dt>
           <dd>{metrics[key] === null ? "—" : metricValue(key, metrics[key], currency, key !== "ctr")}</dd>
           {(key === "results" || key === "costPerResult") && <MetricDelta change={deltas[key]} description={comparison} />}
         </div>

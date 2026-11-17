@@ -22,7 +22,7 @@ export type SourceAdSet = {
   spend: number | null;
   results: number | null;
 };
-export type SourceChoice = SourceAdSet & { reason: string };
+export type SourceChoice = SourceAdSet & { reason: 'cheapest' | 'recent' };
 
 const UNUSABLE_STATUS = /deleted|archived/i;
 const MIN_RESULTS_FOR_COST = 3;
@@ -39,10 +39,10 @@ export function chooseSourceAdSet(adSets: SourceAdSet[]): SourceChoice | null {
   const proven = pool
     .filter(a => a.spend !== null && a.results !== null && a.results >= MIN_RESULTS_FOR_COST && a.spend > 0)
     .sort((a, b) => a.spend! / a.results! - b.spend! / b.results! || a.adSetId.localeCompare(b.adSetId));
-  if (proven.length) return { ...proven[0], reason: 'Lowest cost per conversation in the last 90 days' };
+  if (proven.length) return { ...proven[0], reason: 'cheapest' };
   const time = (a: SourceAdSet) => (a.createdTime ? Date.parse(a.createdTime) : NaN);
   const recent = [...pool].sort((a, b) => (time(b) || 0) - (time(a) || 0) || a.adSetId.localeCompare(b.adSetId))[0];
-  return { ...recent, reason: 'Your most recent messaging ad set' };
+  return { ...recent, reason: 'recent' };
 }
 
 export type QuickAdRequest = {

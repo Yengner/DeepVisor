@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   ActionIcon,
   Avatar,
@@ -58,6 +59,7 @@ export default function TopBarClient({
   initialPlatformId,
   initialAccountId,
 }: TopBarClientProps) {
+  const t = useTranslations('nav');
   const router = useRouter();
   const onCampaigns = (usePathname() ?? "").startsWith("/campaigns");
   const [userNotifications, setUserNotifications] =
@@ -135,7 +137,7 @@ export default function TopBarClient({
           onClick={() => router.push('/campaigns/create')}
           className="hidden sm:flex app-platform-page-action-primary"
         >
-          New campaign
+          {t('newCampaign')}
         </Button>}
 
         <Menu shadow="md" width={380} position="bottom-end">

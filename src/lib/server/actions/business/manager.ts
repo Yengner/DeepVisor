@@ -1,5 +1,6 @@
 import 'server-only';
 import { unstable_rethrow } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { fail, ok, ErrorCode, type ApiResponse } from '@/lib/shared';
 import { requireUserId } from '@/lib/server/actions/user/session';
 import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
@@ -18,6 +19,6 @@ export async function requireManagerContext(userMessage: string): Promise<ApiRes
     return ok({ userId, businessId: context.businessId });
   } catch (error) {
     unstable_rethrow(error);
-    return fail('Not signed in', ErrorCode.UNAUTHORIZED, { userMessage: 'Please sign in again.' });
+    return fail('Not signed in', ErrorCode.UNAUTHORIZED, { userMessage: (await getTranslations('auth'))('signInAgain') });
   }
 }

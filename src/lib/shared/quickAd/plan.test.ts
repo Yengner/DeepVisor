@@ -15,7 +15,7 @@ describe('chooseSourceAdSet', () => {
       set('c', { spend: 1, results: 1 }), // too few results to compare
       set('d', { destinationType: 'WEBSITE', spend: 10, results: 10 }),
     ]);
-    expect(choice).toMatchObject({ adSetId: 'b', reason: 'Lowest cost per conversation in the last 90 days' });
+    expect(choice).toMatchObject({ adSetId: 'b', reason: 'cheapest' });
   });
 
   it('falls back to the most recent WhatsApp, then other messaging ad sets', () => {
@@ -42,7 +42,7 @@ describe('planQuickAd', () => {
 
   it('uses the request, then answers, then history', () => {
     const known = facts([answer('run_days', { days: 10 }), answer('client_languages', { languages: ['es', 'en'] }), answer('whatsapp_greeting', { text: 'Hola' })],
-      { daily_budget: { value: { amountMinor: 2000, currency: 'USD' }, basis: 'x' } });
+      { daily_budget: { value: { amountMinor: 2000, currency: 'USD' }, basis: { code: 'latest_ad_set' as const } } });
     expect(planQuickAd({ facts: known, request: {}, accountCurrency: 'USD', needsGreeting: true })).toMatchObject({
       dailyBudget: { amountMinor: 2000, source: 'history' }, days: { value: 10, source: 'owner' }, languages: ['es', 'en'], greeting: 'Hola', missing: [],
     });

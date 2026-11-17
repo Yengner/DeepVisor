@@ -1,0 +1,284 @@
+{
+  "nav": {
+    "overview": "Resumen",
+    "agency": "Control de agencia",
+    "agencyShort": "Agencia",
+    "campaigns": "Campañas",
+    "reports": "Informes",
+    "connections": "Conexiones",
+    "notifications": "Notificaciones",
+    "notificationsShort": "Alertas",
+    "profile": "Perfil",
+    "settings": "Configuración",
+    "newCampaign": "Nueva campaña",
+    "askDeepVisor": "Pregúntale a DeepVisor",
+    "unread": "{name}, {count} sin leer",
+    "logOut": "Cerrar sesión",
+    "account": "Cuenta",
+    "openNavigation": "Abrir navegación",
+    "openAccountMenu": "Abrir menú de la cuenta",
+    "workspaceNavigation": "Navegación del espacio de trabajo",
+    "secondaryNavigation": "Navegación secundaria del espacio de trabajo",
+    "primaryMobileNavigation": "Navegación principal móvil",
+    "toCheck": "{label} · {count} por revisar",
+    "overviewHome": "Resumen de DeepVisor"
+  },
+  "metrics": {
+    "spend": "Gasto",
+    "ctr": "CTR",
+    "impressions": "Impresiones",
+    "clicks": "Clics",
+    "cpm": "CPM",
+    "cpmHint": "costo por cada 1,000 impresiones",
+    "help": {
+      "spend": "Gasto publicitario reportado, en la moneda de la cuenta.",
+      "ctr": "Clics divididos entre impresiones, multiplicado por 100.",
+      "costPerResult": "Gasto dividido entre el número de la izquierda. No disponible cuando ese número es cero o desconocido."
+    },
+    "about": "Acerca de {label}",
+    "overDays": "{label} en los últimos {days} días",
+    "fromApps": "De {apps}.",
+    "more": "Más",
+    "moreSelected": "Más: {label}",
+    "empty": {
+      "spend": "No hay gasto registrado en este período",
+      "ctr": "No hay CTR registrado en este período",
+      "impressions": "No hay impresiones registradas en este período",
+      "clicks": "No hay clics registrados en este período",
+      "cpm": "No hay CPM registrado en este período"
+    }
+  },
+  "results": {
+    "whatsapp_conversations": {
+      "metric": "Conversaciones de WhatsApp",
+      "short": "Conversaciones",
+      "cost": "Costo / conversación",
+      "help": "Conversaciones de WhatsApp que Meta reporta como iniciadas desde tus anuncios. No son citas ni clientes únicos.",
+      "count": "{count, plural, one {# conversación de WhatsApp} other {# conversaciones de WhatsApp}}",
+      "empty": "No hay conversaciones de WhatsApp registradas en este período"
+    },
+    "conversations": {
+      "metric": "Conversaciones",
+      "short": "Conversaciones",
+      "cost": "Costo / conversación",
+      "help": "Conversaciones de mensajería que Meta reporta como iniciadas desde tus anuncios. No son citas ni clientes únicos.",
+      "count": "{count, plural, one {# conversación} other {# conversaciones}}",
+      "empty": "No hay conversaciones registradas en este período"
+    },
+    "leads": {
+      "metric": "Clientes potenciales",
+      "short": "Clientes pot.",
+      "cost": "Costo / cliente potencial",
+      "help": "Clientes potenciales de formularios instantáneos que Meta reporta desde tus anuncios. No son citas ni clientes únicos.",
+      "count": "{count, plural, one {# cliente potencial} other {# clientes potenciales}}",
+      "empty": "No hay clientes potenciales registrados en este período"
+    },
+    "calls": {
+      "metric": "Llamadas",
+      "short": "Llamadas",
+      "cost": "Costo / llamada",
+      "help": "Acciones de llamada que Meta reporta desde tus anuncios. No son llamadas completadas ni citas.",
+      "count": "{count, plural, one {# llamada} other {# llamadas}}",
+      "empty": "No hay llamadas registradas en este período"
+    },
+    "results": {
+      "metric": "Resultados",
+      "short": "Resultados",
+      "cost": "Costo / resultado",
+      "help": "Clientes potenciales + conversaciones de mensajería + acciones de llamada reportadas. No son citas verificadas ni clientes únicos.",
+      "count": "{count, plural, one {# resultado} other {# resultados}}",
+      "empty": "No hay resultados registrados en este período"
+    }
+  },
+  "apps": {
+    "whatsapp": "WhatsApp",
+    "instagram": "Instagram",
+    "messenger": "Messenger"
+  },
+  "facts": {
+    "eyebrow": "Tu publicidad",
+    "title": "Lo que DeepVisor sabe de tus anuncios",
+    "intro": "Los borradores empiezan con estas respuestas. Las que vienen de tus anuncios se actualizan solas; las tuyas se quedan hasta que las cambies.",
+    "unavailable": "Estas respuestas no están disponibles en este momento. Inténtalo de nuevo en un rato.",
+    "keys": {
+      "daily_budget": {
+        "label": "Presupuesto diario habitual",
+        "question": "¿Cuánto sueles gastar al día en un anuncio?",
+        "help": "Se usa como presupuesto inicial de los nuevos borradores. Puedes cambiarlo en cada borrador."
+      },
+      "run_days": {
+        "label": "Duración habitual",
+        "question": "¿Cuántos días suelen durar tus anuncios?",
+        "help": "Se usa para fijar la fecha de fin de los nuevos borradores."
+      },
+      "monthly_ceiling": {
+        "label": "Límite mensual",
+        "question": "¿Cuánto es lo máximo que quieres gastar en anuncios al mes?",
+        "help": "Te avisamos antes de publicar si un borrador lo supera."
+      },
+      "whatsapp_greeting": {
+        "label": "Saludo de WhatsApp",
+        "question": "¿Qué mensaje deben enviarte tus clientes al tocar tu anuncio?",
+        "help": "Aparece ya escrito en WhatsApp para que tus clientes no tengan que escribir el primer mensaje."
+      },
+      "client_languages": {
+        "label": "Idiomas de tus clientes",
+        "question": "¿Qué idiomas hablan tus clientes?",
+        "help": "Los borradores incluyen el texto del anuncio en cada idioma."
+      },
+      "slow_days": {
+        "label": "Días flojos",
+        "question": "¿Qué días quieres llenar más?",
+        "help": "Los borradores pueden enfocarse en estos días."
+      }
+    },
+    "value": {
+      "perDay": "{amount} al día",
+      "perMonth": "{amount} al mes",
+      "days": "{days, plural, one {# día} other {# días}}",
+      "quoted": "“{text}”",
+      "noSlowDays": "Ningún día flojo"
+    },
+    "source": {
+      "owner": "Nos lo dijiste · {date}",
+      "ownerStale": "Nos lo dijiste · {date} · puede estar desactualizado",
+      "history": "De tus anuncios · {basis}"
+    },
+    "basis": {
+      "latest_ad_set": "Tu conjunto de anuncios más reciente",
+      "one_scheduled": "Tu único conjunto de anuncios programado",
+      "typical": "Lo habitual en {count} conjuntos de anuncios programados"
+    },
+    "badge": {
+      "notAnswered": "Sin responder",
+      "checkThis": "Revisa esto"
+    },
+    "action": {
+      "keep": "Mantener",
+      "change": "Cambiar",
+      "answer": "Responder",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "forget": "Olvidar mi respuesta"
+    },
+    "noCurrency": "Conecta una cuenta publicitaria con una moneda conocida para configurar esto.",
+    "invalidAmount": "Escribe una cantidad como 20 o 20.50.",
+    "slowDaysHint": "No marques ninguno si ningún día es más flojo que los demás.",
+    "greetingPlaceholder": "Hola, quiero hacer una cita",
+    "daysSuffix": " días",
+    "error": {
+      "invalid": "Revisa la respuesta e inténtalo de nuevo.",
+      "forbidden": "Solo los propietarios y administradores pueden cambiar estas respuestas.",
+      "failed": "No se pudo guardar la respuesta. Inténtalo de nuevo.",
+      "removeFailed": "No se pudo borrar la respuesta. Inténtalo de nuevo.",
+      "retry": "Inténtalo de nuevo.",
+      "removeInvalid": "No se pudo borrar esa respuesta."
+    }
+  },
+  "days": {
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mié",
+    "thu": "Jue",
+    "fri": "Vie",
+    "sat": "Sáb",
+    "sun": "Dom"
+  },
+  "languages": {
+    "en": "Inglés",
+    "es": "Español",
+    "list": "{first} y {second}"
+  },
+  "quickAd": {
+    "metaTitle": "Anuncio rápido | DeepVisor",
+    "title": "Anuncio rápido",
+    "intro": "Agrega tu foto o video. DeepVisor prepara un borrador en pausa para que lo revises. No se publica nada.",
+    "selectAccount": "Primero selecciona una cuenta de Meta en <link>Conexiones</link>.",
+    "noSourceTitle": "Todavía no hay un anuncio de mensajes para empezar",
+    "noSourceBody": "Anuncio rápido copia la configuración de un anuncio que lleva a las personas a WhatsApp o Messenger. Primero crea uno en <link>Campañas</link>.",
+    "questionsTitle": "Primero, unas respuestas",
+    "questionsIntro": "Solo las respondes una vez. Puedes cambiarlas cuando quieras en Configuración.",
+    "askAdmin": "Pídele a un propietario o administrador que las responda en Configuración.",
+    "formTitle": "Tu anuncio",
+    "startsFrom": "Parte de",
+    "reason": {
+      "cheapest": "Menor costo por conversación en los últimos 90 días",
+      "recent": "Tu conjunto de anuncios de mensajes más reciente"
+    },
+    "budget": "Presupuesto",
+    "perDay": "{amount} al día",
+    "runs": "Duración",
+    "runsValue": "{days, plural, one {# día} other {# días}}, desde mañana",
+    "adText": "Texto del anuncio",
+    "clientsTap": "Tus clientes tocan",
+    "clientsSend": "Tus clientes envían",
+    "sameWelcome": "La misma bienvenida de WhatsApp que tu anuncio actual",
+    "savedGreeting": "Tu saludo guardado",
+    "overLimit": "Este plan supera tu límite mensual. Puedes bajar el presupuesto abajo.",
+    "file": "Foto o video",
+    "fileHelp": "JPEG, PNG, WebP, MP4 o WebM, hasta 4 MB",
+    "note": "¿Algo que mencionar? (opcional)",
+    "notePlaceholder": "p. ej. Promoción de color de otoño, citas los sábados",
+    "dailyBudget": "Presupuesto diario de este anuncio (opcional)",
+    "days": "Días (opcional)",
+    "create": "Crear borrador",
+    "remaining": "Te quedan {remaining} de {limit} anuncios rápidos hoy",
+    "limitReached": "Llegaste al límite diario. Inténtalo de nuevo mañana.",
+    "error": {
+      "chooseFile": "Primero elige una foto o un video.",
+      "tooLarge": "Elige un archivo de hasta 4 MB.",
+      "NO_SOURCE": "Todavía no hay un conjunto de anuncios de mensajes para empezar. Crea tu primer anuncio en Campañas.",
+      "MISSING_FACTS": "Primero necesitamos unas respuestas.",
+      "DAILY_LIMIT": "Puedes crear hasta 10 anuncios rápidos al día. Inténtalo de nuevo mañana.",
+      "INVALID_INPUT": "Revisa el formulario e inténtalo de nuevo.",
+      "UNAVAILABLE": "Anuncio rápido no está disponible en este momento."
+    }
+  },
+  "campaigns": {
+    "quickAd": "Anuncio rápido"
+  },
+  "checkin": {
+    "lastWeek": "La semana pasada ({range})",
+    "started": "Tus anuncios iniciaron {count}.",
+    "ran": "Tus anuncios estuvieron activos.",
+    "question": "¿Más o menos cuántas se convirtieron en citas?",
+    "inputLabel": "Citas de los anuncios de la semana pasada",
+    "placeholder": "p. ej. 5",
+    "save": "Guardar",
+    "notSure": "No lo sé",
+    "title": "Citas de tus anuncios",
+    "summary": "Reportaste <b>{bookings}</b> {bookings, plural, one {cita} other {citas}} en {answered} de las últimas {weeks} semanas con anuncios",
+    "cost": " · aproximadamente <b>{cost}</b> por cita",
+    "error": {
+      "wholeNumber": "Escribe un número entero, como 0 o 5.",
+      "invalid": "Revisa el número e inténtalo de nuevo.",
+      "forbidden": "Solo los propietarios y administradores pueden responder esto.",
+      "noAccount": "Primero selecciona una cuenta publicitaria.",
+      "accountUnavailable": "Esta cuenta publicitaria no está disponible.",
+      "oldWeek": "Esa semana ya no se puede responder.",
+      "count": "Escribe un número entero del 0 al 10,000.",
+      "failed": "No se pudo guardar tu respuesta. Inténtalo de nuevo.",
+      "retry": "Inténtalo de nuevo."
+    }
+  },
+  "language": {
+    "title": "Idioma",
+    "description": "Elige el idioma en que DeepVisor te habla. Las demás personas de tu espacio de trabajo conservan su propia elección.",
+    "label": "Idioma",
+    "auto": "El mismo que mi navegador",
+    "saved": "Idioma guardado.",
+    "error": "No se pudo guardar tu idioma. Inténtalo de nuevo.",
+    "unsupported": "Elige inglés o español.",
+    "noProfile": "No encontramos tu perfil."
+  },
+  "chart": {
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "thisPeriod": "Este período",
+    "metricGroup": "Métrica del gráfico",
+    "seeAll": "Ver todas las métricas en Informes →"
+  },
+  "auth": {
+    "signInAgain": "Vuelve a iniciar sesión."
+  }
+}

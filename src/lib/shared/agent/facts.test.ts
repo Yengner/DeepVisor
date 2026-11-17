@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { amountToMinor, budgetMinor, factsToAsk, historyFacts, minorToAmount, parseFact, resolveFacts, type StoredFact } from './facts';
+import { amountToMinor, budgetMinor, factsToAsk, historyFacts, minorToAmount, parseFact, resolveFacts, type HistoryFacts, type StoredFact } from './facts';
 
 const NOW = '2026-11-16T12:00:00Z';
 const daysAgo = (n: number) => new Date(Date.parse(NOW) - n * 86_400_000).toISOString();
@@ -52,9 +52,9 @@ describe('history facts', () => {
 
   it('takes the most recent daily budget and the median run length', () => {
     expect(historyFacts(adSets, 'USD')).toEqual({
-      daily_budget: { value: { amountMinor: 2000, currency: 'USD' }, basis: 'Your most recent ad set' },
+      daily_budget: { value: { amountMinor: 2000, currency: 'USD' }, basis: { code: 'latest_ad_set' } },
       // 9, 14, 14, 19, 20, 21 days → median 16.5 → 17
-      run_days: { value: { days: 17 }, basis: 'Typical of 6 scheduled ad sets' },
+      run_days: { value: { days: 17 }, basis: { code: 'typical', count: 6 } },
     });
   });
 
@@ -66,7 +66,7 @@ describe('history facts', () => {
 });
 
 describe('resolving and asking', () => {
-  const history = { daily_budget: { value: { amountMinor: 2000, currency: 'USD' }, basis: 'Your most recent ad set' } };
+  const history: HistoryFacts = { daily_budget: { value: { amountMinor: 2000, currency: 'USD' }, basis: { code: 'latest_ad_set' } } };
   const stored = (key: StoredFact['key'], value: unknown, age: number): StoredFact => ({ key, value, confirmedAt: daysAgo(age) });
 
   it('prefers a fresh owner answer over history', () => {

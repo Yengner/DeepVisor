@@ -54,6 +54,9 @@ import ProfileForm from './components/ProfileForm';
 import BusinessProfileForm from './components/BusinessProfileForm';
 import DeleteAccount from './components/DeleteAccount';
 import AdFactsCard from './components/AdFactsCard';
+import LanguageSettings from './components/LanguageSettings';
+import { getTranslations } from 'next-intl/server';
+import { isLocale } from '@/i18n/locales';
 import { loadAdFacts } from '@/lib/server/agent/facts';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import classes from './SettingsSurface.module.css';
@@ -446,6 +449,9 @@ export default async function SettingsPage() {
   ]);
 
   const limits = await getTierLimits(subscriptionTier);
+  const t = await getTranslations();
+  const { data: localeRow } = await supabase.from('users').select('preferred_locale').eq('id', user.id).maybeSingle();
+  const savedLocale = localeRow?.preferred_locale ?? null;
   // Owner answers plus what the selected account's ad sets show. Failure is shown, not hidden.
   const adFacts = await loadAdFacts(createAdminClient(), {
     businessId,
@@ -755,14 +761,19 @@ export default async function SettingsPage() {
           />
         </Card>
 
+        <Card withBorder radius="lg" p="xl" id="language">
+          <Title order={3} mb="xs">{t('language.title')}</Title>
+          <LanguageSettings saved={isLocale(savedLocale) ? savedLocale : null} />
+        </Card>
+
         <Card withBorder radius="lg" p="xl" id="ad-facts">
           <div style={{ marginBottom: 12 }}>
             <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-              Your advertising
+              {t('facts.eyebrow')}
             </Text>
-            <Title order={3}>What DeepVisor knows about your ads</Title>
+            <Title order={3}>{t('facts.title')}</Title>
             <Text size="sm" c="dimmed" mt={4}>
-              Drafts start from these answers. Answers from your ads update on their own; yours stay until you change them.
+              {t('facts.intro')}
             </Text>
           </div>
           {adFacts ? (
@@ -772,7 +783,7 @@ export default async function SettingsPage() {
               canEdit={role === 'owner' || role === 'admin'}
             />
           ) : (
-            <Alert color="gray" variant="light">These answers are unavailable right now. Please try again shortly.</Alert>
+            <Alert color="gray" variant="light">{t('facts.unavailable')}</Alert>
           )}
         </Card>
 

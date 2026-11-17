@@ -68,12 +68,14 @@ export function amountToMinor(amount: number, code: string): number | null {
 }
 
 export type StoredFact = { key: FactKey; value: unknown; confirmedAt: string };
-export type HistoryFact<K extends FactKey = FactKey> = { value: FactValue<K>; basis: string };
+/** Why a value came from history; worded by the caller in the owner's language. */
+export type HistoryBasis = { code: 'latest_ad_set' } | { code: 'one_scheduled' } | { code: 'typical'; count: number };
+export type HistoryFact<K extends FactKey = FactKey> = { value: FactValue<K>; basis: HistoryBasis };
 export type HistoryFacts = Partial<{ [K in FactKey]: HistoryFact<K> }>;
 
 export type ResolvedFact<K extends FactKey = FactKey> =
   | { key: K; source: 'owner'; value: FactValue<K>; confirmedAt: string; stale: false }
-  | { key: K; source: 'history'; value: FactValue<K>; basis: string; owner: { value: FactValue<K>; confirmedAt: string } | null }
+  | { key: K; source: 'history'; value: FactValue<K>; basis: HistoryBasis; owner: { value: FactValue<K>; confirmedAt: string } | null }
   | { key: K; source: 'owner'; value: FactValue<K>; confirmedAt: string; stale: true }
   | { key: K; source: null };
 export type ResolvedFacts = { [K in FactKey]: ResolvedFact<K> };
@@ -132,7 +134,7 @@ export function historyFacts(adSets: AdSetHistory[], accountCurrency: string | n
       .filter(a => a.dailyBudgetMinor !== null && Number.isFinite(time(a.createdTime)))
       .sort((a, b) => time(b.createdTime) - time(a.createdTime))[0];
     const value = latest ? parseFact('daily_budget', { amountMinor: latest.dailyBudgetMinor, currency: accountCurrency }) : null;
-    if (value) facts.daily_budget = { value, basis: 'Your most recent ad set' };
+    if (value) facts.daily_budget = { value, basis: { code: 'latest_ad_set' } };
   }
   const lengths = adSets
     .map(a => (time(a.endTime) - time(a.startTime)) / DAY_MS)
@@ -143,7 +145,7 @@ export function historyFacts(adSets: AdSetHistory[], accountCurrency: string | n
     const mid = Math.floor(lengths.length / 2);
     const median = lengths.length % 2 ? lengths[mid] : Math.round((lengths[mid - 1] + lengths[mid]) / 2);
     const value = parseFact('run_days', { days: Math.min(90, median) });
-    if (value) facts.run_days = { value, basis: lengths.length === 1 ? 'Your one scheduled ad set' : `Typical of ${lengths.length} scheduled ad sets` };
+    if (value) facts.run_days = { value, basis: lengths.length === 1 ? { code: 'one_scheduled' } : { code: 'typical', count: lengths.length } };
   }
   return facts;
 }
