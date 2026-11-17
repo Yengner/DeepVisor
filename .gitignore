@@ -53,3 +53,18 @@ next-env.d.ts
 
 public/custom.pass/pass.json
 
+
+# Local AI-agent and design-tool configuration (kept on each machine, not published)
+.agents/
+.claude/
+.codex/
+.codex
+.impeccable/
+.impeccable
+.github/agents/
+.github/hooks/
+.github/skills/
+skills-lock.json
+AGENTS.md
+CLAUDE.md
+PRODUCT.md
