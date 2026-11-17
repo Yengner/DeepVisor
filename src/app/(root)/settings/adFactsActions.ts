@@ -1,9 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { unstable_rethrow } from 'next/navigation';
 import { fail, ok, ErrorCode, type ApiResponse } from '@/lib/shared';
-import { requireUserId } from '@/lib/server/actions/user/session';
-import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
+import { requireManagerContext } from '@/lib/server/actions/business/manager';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { AdFactError, clearFact, saveFact } from '@/lib/server/agent/facts';
 import { isFactKey } from '@/lib/shared/agent/facts';
@@ -12,21 +10,7 @@ import { isFactKey } from '@/lib/shared/agent/facts';
  * Owner/admin-only writes for business advertising facts. The business comes from the signed-in
  * user's membership, never from the browser; values are validated against the shared schema.
  */
-async function managerContext(): Promise<ApiResponse<{ userId: string; businessId: string }>> {
-  try {
-    const userId = await requireUserId();
-    const context = await getOrCreateOrganizationBusinessContext(userId);
-    if (context.role !== 'owner' && context.role !== 'admin') {
-      return fail('Ad facts require an owner or admin', ErrorCode.FORBIDDEN, {
-        userMessage: 'Only workspace owners and admins can change these answers.',
-      });
-    }
-    return ok({ userId, businessId: context.businessId });
-  } catch (error) {
-    unstable_rethrow(error); // a signed-out user is redirected to /login
-    return fail('Not signed in', ErrorCode.UNAUTHORIZED, { userMessage: 'Please sign in again.' });
-  }
-}
+const managerContext = () => requireManagerContext('Only workspace owners and admins can change these answers.');
 
 export async function saveAdFactAction(key: unknown, value: unknown): Promise<ApiResponse<null>> {
   if (!isFactKey(key)) return fail('Unknown fact', ErrorCode.VALIDATION_ERROR, { userMessage: 'That answer could not be saved.' });

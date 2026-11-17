@@ -1095,6 +1095,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_checkins: {
+        Row: {
+          ad_account_id: string
+          answered_at: string
+          answered_by: string | null
+          bookings: number | null
+          business_id: string
+          skipped: boolean
+          week_start: string
+        }
+        Insert: {
+          ad_account_id: string
+          answered_at?: string
+          answered_by?: string | null
+          bookings?: number | null
+          business_id: string
+          skipped?: boolean
+          week_start: string
+        }
+        Update: {
+          ad_account_id?: string
+          answered_at?: string
+          answered_by?: string | null
+          bookings?: number | null
+          business_id?: string
+          skipped?: boolean
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_checkins_business_id_ad_account_id_fkey"
+            columns: ["business_id", "ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["business_id", "id"]
+          },
+        ]
+      }
       business_ad_facts: {
         Row: {
           business_id: string

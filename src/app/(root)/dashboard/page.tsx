@@ -50,6 +50,10 @@ import { audienceObservations, hourlyObservations } from '@/lib/server/dashboard
 import { PlatformControl } from './components/OverviewControls';
 import InsightsEntry from '@/components/insights/InsightsEntry';
 import { resultDefinitionFor, type ResultDefinition } from '@/lib/shared/performance/resultChannel';
+import BookingCheckin from './components/BookingCheckin';
+import { loadCheckins } from '@/lib/server/bookings/checkins';
+import { createAdminClient } from '@/lib/server/supabase/admin';
+import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 type OverviewContext = LiveOverviewContext & { decisionPreview?: boolean; publisher: Publisher };
 
 const decisions = cache(async (context: OverviewContext) => {
@@ -264,6 +268,21 @@ async function Activity({ context }: { context: OverviewContext }) {
     </section>
   );
 }
+/**
+ * Weekly "how many became appointments?" check-in. Optional: a failure or an account without a
+ * timezone (unreliable week boundaries) renders nothing rather than blocking the page.
+ */
+async function Checkin({ context }: { context: OverviewContext }) {
+  if (context.decisionPreview || context.timezoneUnavailable) return null;
+  const [{ role }, view] = await Promise.all([
+    getRequiredAppContext(),
+    loadCheckins(createAdminClient(), { businessId: context.businessId, adAccountId: context.account!.id, today: context.today }).catch((error) => {
+      console.error("Booking check-in unavailable", { code: (error as { code?: string })?.code });
+      return null;
+    }),
+  ]);
+  return view ? <BookingCheckin view={view} currency={context.account!.currency_code} canAnswer={role === 'owner' || role === 'admin'} /> : null;
+}
 /** Meta issues that stop delivery and ad sets about to end, above everything else. */
 async function Attention({ context, period }: { context: OverviewContext; period: Period }) {
   const [issues, view] = await Promise.all([
@@ -325,6 +344,7 @@ async function Content({ requestedPeriod, preview, platform }: { requestedPeriod
     {!connected && <ErrorMessage>Meta connection needs attention. Saved data remains available; reconnect in Connections.</ErrorMessage>}
     <Suspense key={`attention:${period}`} fallback={null}><Attention context={context} period={period} /></Suspense>
     <section aria-label="Account performance" className={classes.kpiSection}><Suspense key={`${period}:${platform}`} fallback={<Loading kind="metrics" />}><Metrics context={context} period={period} /></Suspense></section>
+    <Suspense fallback={null}><Checkin context={context} /></Suspense>
     <section className={classes.workspaceChart} aria-label="Performance chart"><Suspense key={`${period}:${platform}`} fallback={<Loading kind="chart" />}><Trend context={context} period={period} /></Suspense></section>
     <section className={classes.board}><Suspense key={`${period}:${platform}`} fallback={<Loading kind="board" />}><Board period={period} context={context} /></Suspense></section>
     <OverviewTakeaways audience={audience} hourly={hourly} currency={context.account.currency_code} platform={platform} audienceCombinedOnly={live.audience?.some(r => r.publisher === 'combined-only') ?? false} hourlyCombinedOnly={live.hourly?.some(r => r.publisher === 'combined-only') ?? false} />

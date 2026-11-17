@@ -7,6 +7,9 @@
  */
 import { resultChannel } from '@/lib/shared/performance/resultChannel';
 import { amountToMinor, minorToAmount, type FactKey, type ResolvedFacts } from '@/lib/shared/agent/facts';
+import { localMidnightUtc } from '@/lib/shared/time/zone';
+
+export { dayIn, localMidnightUtc } from '@/lib/shared/time/zone';
 
 export type SourceAdSet = {
   adSetId: string;
@@ -86,25 +89,6 @@ export function planQuickAd(input: { facts: ResolvedFacts; request: QuickAdReque
     dailyBudget.amountMinor * Math.min(days.value, 31) > ceiling.amountMinor);
 
   return { dailyBudget, days, languages, greeting, missing, overMonthlyLimit };
-}
-
-/** UTC instant of local midnight on `day` (YYYY-MM-DD) in `zone`, correct across DST changes. */
-export function localMidnightUtc(day: string, zone: string): Date {
-  const [y, m, d] = day.split('-').map(Number);
-  const guess = Date.UTC(y, m - 1, d);
-  const offset = (at: number) => {
-    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: zone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
-      .formatToParts(new Date(at)).map(p => [p.type, p.value]));
-    return Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second) - at;
-  };
-  let at = guess - offset(guess);
-  at = guess - offset(at);
-  return new Date(at);
-}
-
-/** Calendar day (YYYY-MM-DD) of an instant in `zone`. */
-export function dayIn(zone: string, at: Date = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at);
 }
 
 const addDays = (day: string, n: number) => new Date(Date.parse(`${day}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
