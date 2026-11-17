@@ -53,6 +53,9 @@ import CampaignDefaultsForm from './components/CampaignDefaultsForm';
 import ProfileForm from './components/ProfileForm';
 import BusinessProfileForm from './components/BusinessProfileForm';
 import DeleteAccount from './components/DeleteAccount';
+import AdFactsCard from './components/AdFactsCard';
+import { loadAdFacts } from '@/lib/server/agent/facts';
+import { createAdminClient } from '@/lib/server/supabase/admin';
 import classes from './SettingsSurface.module.css';
 import Disclosure from '@/components/product/Disclosure';
 import product from '@/components/product/Product.module.css';
@@ -443,6 +446,14 @@ export default async function SettingsPage() {
   ]);
 
   const limits = await getTierLimits(subscriptionTier);
+  // Owner answers plus what the selected account's ad sets show. Failure is shown, not hidden.
+  const adFacts = await loadAdFacts(createAdminClient(), {
+    businessId,
+    adAccountId: selection.selectedAdAccountId,
+  }).catch((error) => {
+    console.error('Settings ad facts unavailable', { code: (error as { code?: string })?.code ?? (error as Error)?.message });
+    return null;
+  });
 
   const businessProfile = (businessProfileResult.data ?? {
     business_name: organizationName,
@@ -742,6 +753,27 @@ export default async function SettingsPage() {
               bookingLink: businessProfile.booking_link ?? '',
             }}
           />
+        </Card>
+
+        <Card withBorder radius="lg" p="xl" id="ad-facts">
+          <div style={{ marginBottom: 12 }}>
+            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+              Your advertising
+            </Text>
+            <Title order={3}>What DeepVisor knows about your ads</Title>
+            <Text size="sm" c="dimmed" mt={4}>
+              Drafts start from these answers. Answers from your ads update on their own; yours stay until you change them.
+            </Text>
+          </div>
+          {adFacts ? (
+            <AdFactsCard
+              facts={adFacts.facts}
+              accountCurrency={adFacts.accountCurrency}
+              canEdit={role === 'owner' || role === 'admin'}
+            />
+          ) : (
+            <Alert color="gray" variant="light">These answers are unavailable right now. Please try again shortly.</Alert>
+          )}
         </Card>
 
         <Card withBorder radius="lg" p="xl" id="signals">

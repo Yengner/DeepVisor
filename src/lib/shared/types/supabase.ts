@@ -1095,6 +1095,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_ad_facts: {
+        Row: {
+          business_id: string
+          confirmed_at: string
+          confirmed_by: string | null
+          fact_key: string
+          value: Json
+        }
+        Insert: {
+          business_id: string
+          confirmed_at?: string
+          confirmed_by?: string | null
+          fact_key: string
+          value: Json
+        }
+        Update: {
+          business_id?: string
+          confirmed_at?: string
+          confirmed_by?: string | null
+          fact_key?: string
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_ad_facts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insight_seen_sources: {
         Row: {
           ad_account_id: string
