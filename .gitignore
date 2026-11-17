@@ -53,3 +53,6 @@ next-env.d.ts
 
 public/custom.pass/pass.json
 
+
+# Private agent workflow (kept locally, not published)
+.agents/skills/deepvisor-release-review/
