@@ -1,0 +1,67 @@
+/* How it works: three knots on one thread. One entrance when scrolled into view. */
+.steps {
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px;
+  list-style: none; margin: 48px 0 0; padding: 0;
+}
+/* The thread draws left to right. */
+.steps::before {
+  content: ''; position: absolute; top: 22px; left: 22px; right: 22px; border-top: 2px dashed var(--ui-line-strong);
+  transform: scaleX(0); transform-origin: left; transition: transform 900ms var(--ease-out);
+}
+.steps[data-seen]::before { transform: scaleX(1); }
+.steps li { position: relative; opacity: 0; transform: translateY(10px);
+  transition: opacity 500ms var(--ease-out), transform 500ms var(--ease-out); transition-delay: calc(var(--s) * 180ms); }
+.steps[data-seen] li { opacity: 1; transform: none; }
+
+.knot { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%;
+  background: var(--ui-panel); border: 2px solid var(--ui-accent); color: var(--ui-accent); font: 700 17px/1 var(--font-display), sans-serif;
+  box-shadow: 0 0 0 6px var(--ui-bg); }
+.steps h3 { font-size: 20px; font-weight: 650; margin: 16px 0 8px; letter-spacing: -.02em; }
+.steps p { margin: 0; color: var(--ui-muted); font-size: 16px; line-height: 1.65; max-width: 34ch; }
+
+/* Scenes: small, quiet, play once after their step appears. */
+.scene { display: flex; align-items: center; gap: 10px; min-height: 64px; margin-top: 18px; padding: 12px 14px;
+  border: 1px solid var(--ui-line); border-radius: 14px; background: var(--ui-panel); box-shadow: var(--ui-shadow-raised); }
+.scene > *, .rows > span, .chips > span { transition: opacity 400ms var(--ease-out), transform 400ms var(--ease-out); }
+
+.logos { display: inline-flex; gap: 6px; font-size: 22px; color: #0866ff; }
+.logos svg:last-child { color: #d62976; }
+.plug { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--ui-subtle); color: var(--ui-accent);
+  transform: translateX(-10px); opacity: 0; transition-delay: calc(var(--s) * 180ms + 350ms); }
+.connected { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 700;
+  background: var(--ui-positive-soft); color: var(--ui-positive); opacity: 0; transform: scale(.95); transition-delay: calc(var(--s) * 180ms + 650ms); }
+.steps[data-seen] :is(.plug, .connected) { opacity: 1; transform: none; }
+
+.rows { display: grid; gap: 6px; flex: 1; }
+.rows span { display: flex; align-items: center; height: 10px; border-radius: 6px; background: var(--ui-subtle);
+  transform: scaleX(.2); transform-origin: left; opacity: 0; transition-delay: calc(var(--s) * 180ms + 300ms + var(--r) * 120ms); }
+.rows span:first-child { height: 16px; background: #dcfce7; color: #16a34a; padding-left: 4px; font-size: 11px; }
+.rows span:nth-child(2) { width: 80%; } .rows span:nth-child(3) { width: 60%; }
+.steps[data-seen] .rows span { opacity: 1; transform: none; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips > span { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 750;
+  opacity: 0; transform: translateY(6px); }
+.chips > span:nth-child(1) { transition-delay: calc(var(--s) * 180ms + 300ms); }
+.chips > span:nth-child(2) { transition-delay: calc(var(--s) * 180ms + 420ms); }
+.chips > span:nth-child(3) { transition-delay: calc(var(--s) * 180ms + 540ms); }
+.steps[data-seen] .chips > span { opacity: 1; transform: none; }
+.chipHold { background: var(--ui-positive-soft); color: var(--ui-positive); }
+.chipLook { background: var(--ui-warning-soft); color: var(--ui-warning); }
+.chipDraft { background: #e1ecff; color: #0a3c78; }
+
+@media (max-width: 767px) {
+  .steps { grid-template-columns: 1fr; gap: 32px; margin-top: 32px; }
+  .steps::before { top: 22px; bottom: 22px; left: 21px; right: auto; border-top: 0; border-left: 2px dashed var(--ui-line-strong);
+    transform: scaleY(0); transform-origin: top; }
+  .steps[data-seen]::before { transform: scaleY(1); }
+  .steps li { padding-left: 64px; }
+  .knot { position: absolute; left: 0; top: 0; }
+  .scene { margin-top: 0; }
+}
+
+/* Reduced motion: everything visible, a short fade only. */
+@media (prefers-reduced-motion: reduce) {
+  .steps::before, .steps li, .plug, .connected, .rows span, .chips > span { transform: none; transition: opacity 240ms ease; transition-delay: 0s; }
+}

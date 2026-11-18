@@ -1,22 +1,22 @@
-import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import "./public.css";
 
-export const metadata: Metadata = {
-  title: "DeepVisor: advertising, made simpler",
-  description:
-    "DeepVisor makes digital advertising simpler for every business. Start with your Meta ads today, free during beta.",
-};
+export async function generateMetadata() {
+  const t = await getTranslations("public.meta");
+  return { title: t("title"), description: t("description") };
+}
 
-export default function PublicLayout({
+export default async function PublicLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const t = await getTranslations("public.nav");
   return (
     <div className="dv-public-shell">
-      <a href="#main" className="dv-skip-link">Skip to main content</a>
+      <a href="#main" className="dv-skip-link">{t("skip")}</a>
       <Header />
       <main id="main" tabIndex={-1} className="dv-public-main">{children}</main>
       <Footer />

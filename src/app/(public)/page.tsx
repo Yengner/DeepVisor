@@ -1,121 +1,124 @@
 import Link from 'next/link';
-import { ArrowRight, ArrowUpRight } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
+import { ArrowRight, ArrowUpRight, Languages, MessageCircle, Sparkles, UsersRound } from 'lucide-react';
 import DesignSurface from '@/components/design/DesignSurface';
 import { ActionLink } from '@/components/design/Primitives';
 import SpiderMascot, { type SpiderMascotState } from '@/components/brand/SpiderMascot';
-import AgencyPreview from './components/AgencyPreview';
-import PlatformMarquee from './components/PlatformMarquee';
+import HeroResults from './components/HeroResults';
+import HowItWorks from './components/HowItWorks';
+import SpiderWeb from './components/SpiderWeb';
 import classes from './Landing.module.css';
 
-const readings: { state: SpiderMascotState; tone: 'attention' | 'hold' | 'waiting'; label: string; name: string; note: string }[] = [
-  { state: 'attention', tone: 'attention', label: 'Worth a look', name: 'Weekend walk-ins', note: 'Cost per result up from $18 to $27 this week.' },
-  { state: 'idle', tone: 'hold', label: 'Hold', name: 'New client offer', note: 'Steady and on target. Leave it running.' },
-  { state: 'thinking', tone: 'waiting', label: 'Too early', name: 'Spring video', note: 'Two days old. Not enough data to judge yet.' },
-];
+export async function generateMetadata() {
+  const t = await getTranslations('public.meta');
+  return { title: t('title'), description: t('description'), alternates: { canonical: '/' } };
+}
 
-const steps = [
-  { title: 'Connect Meta', copy: 'Pick the ad account to watch.' },
-  { title: 'DeepVisor reads', copy: 'Every campaign, ad set, and ad.' },
-  { title: 'You decide', copy: 'See what deserves a look, and act on your terms.' },
+const readings: { state: SpiderMascotState; tone: 'attention' | 'hold' | 'waiting'; key: 'look' | 'hold' | 'early' }[] = [
+  { state: 'attention', tone: 'attention', key: 'look' },
+  { state: 'idle', tone: 'hold', key: 'hold' },
+  { state: 'thinking', tone: 'waiting', key: 'early' },
 ];
+const todayItems = [
+  { key: 'conversations', icon: MessageCircle },
+  { key: 'customers', icon: UsersRound },
+  { key: 'quickAd', icon: Sparkles },
+  { key: 'language', icon: Languages },
+] as const;
+const faqs = ['free', 'change', 'who', 'spanish', 'website', 'platforms', 'data'] as const;
 
-const places = [
-  { name: 'Overview', question: 'What’s running, and how is it doing?' },
-  { name: 'Decisions', question: 'What changed, and should I act?' },
-  { name: 'Campaigns', question: 'Where exactly is the money going?' },
-];
-
-const faqs = [
-  { q: 'Is DeepVisor free?', a: 'Yes, while it’s in beta.' },
-  { q: 'Can DeepVisor change my ads?', a: 'No. It only reads your account. Changes are always yours to make.' },
-  { q: 'Who is it for?', a: 'Any business running ads, no marketing background needed. We’re starting with local businesses on Facebook and Instagram.' },
-  { q: 'Which platforms does it support?', a: 'Meta today. Google Ads, TikTok, LinkedIn, and more are on the way.' },
-  { q: 'What do you do with my data?', a: 'Use it to run DeepVisor for you. We never sell it, and you can delete it any time.' },
-];
-
-export default function HomePage() {
+export default async function HomePage() {
+  const t = await getTranslations('public');
   return <DesignSurface label="DeepVisor">
     <div className={classes.landing}>
       <section className={classes.hero} aria-labelledby="hero-heading">
         <div className={classes.heroCopy}>
-          <h1 id="hero-heading">Less noise.<br />More <span>perspective.</span></h1>
-          <p className={classes.lede}>Advertising, made simpler for every business. DeepVisor reads your Meta ads, shows what’s working, and tells you what deserves a look. You stay in control.</p>
+          <h1 id="hero-heading">{t.rich('hero.title', { accent: (chunks) => <span>{chunks}</span> })}</h1>
+          <p className={classes.lede}>{t('hero.lede')}</p>
           <div className={classes.actions}>
-            <ActionLink href="/sign-up">Start free beta <ArrowRight size={17} aria-hidden /></ActionLink>
-            <ActionLink href="#how-it-works" secondary>How it works</ActionLink>
+            <ActionLink href="/sign-up">{t('hero.start')} <ArrowRight size={17} aria-hidden /></ActionLink>
+            <ActionLink href="/vision" secondary>{t('hero.vision')}</ActionLink>
           </div>
         </div>
-        <AgencyPreview />
+        <HeroResults />
       </section>
 
-      <PlatformMarquee />
+      <Link href="/vision" className={classes.ribbon}>
+        <span className={classes.ribbonChip}>{t('ribbon.chip')}</span>
+        <span className={classes.ribbonText}>{t('ribbon.text')}</span>
+        <span className={classes.ribbonLink}>{t('ribbon.link')} <ArrowRight size={16} aria-hidden /></span>
+      </Link>
+
+      <section className={classes.section} aria-labelledby="today-heading">
+        <div className={classes.sectionIntro}>
+          <h2 id="today-heading">{t('today.title')}</h2>
+          <p>{t('today.intro')}</p>
+        </div>
+        <ul className={classes.today}>
+          {todayItems.map(({ key, icon: Icon }) => (
+            <li key={key}>
+              <div className={classes.todayTop}><span className={classes.todayIcon}><Icon size={20} aria-hidden /></span><span className={classes.todayChip}>{t('today.chip')}</span></div>
+              <h3>{t(`today.${key}Title`)}</h3>
+              <p>{t(`today.${key}Body`)}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className={classes.section} id="how-it-works" aria-labelledby="how-heading">
+        <h2 id="how-heading" className={classes.sectionTitle}>{t('how.title')}</h2>
+        <HowItWorks />
+      </section>
 
       <section className={classes.section} aria-labelledby="readings-heading">
         <div className={classes.split}>
           <div className={classes.sectionIntro}>
-            <h2 id="readings-heading">Honest answers.</h2>
-            <p>When to look, when to leave a good ad alone, and when it’s too early to tell.</p>
+            <h2 id="readings-heading">{t('honest.title')}</h2>
+            <p>{t('honest.intro')}</p>
           </div>
           <ul className={classes.readout}>
             {readings.map((item) => (
-              <li key={item.name} className={classes.reading} data-tone={item.tone}>
+              <li key={item.key} className={classes.reading} data-tone={item.tone}>
                 <SpiderMascot state={item.state} size={32} className={classes.readingSpider} />
                 <div className={classes.readingBody}>
                   <div className={classes.readingTop}>
-                    <strong className={classes.stateChip}>{item.label}</strong>
-                    <span>{item.name}</span>
+                    <strong className={classes.stateChip}>{t(`honest.${item.key}Label`)}</strong>
+                    <span>{t(`honest.${item.key}Name`)}</span>
                   </div>
-                  <p>{item.note}</p>
+                  <p>{t(`honest.${item.key}Note`)}</p>
                 </div>
               </li>
             ))}
           </ul>
         </div>
       </section>
+    </div>
 
-      <section className={classes.section} id="how-it-works" aria-labelledby="how-heading">
-        <h2 id="how-heading" className={classes.sectionTitle}>Three steps. You stay in charge.</h2>
-        <ol className={classes.steps}>
-          {steps.map((step, index) => (
-            <li key={step.title}>
-              <span className={classes.stepKnot} aria-hidden>{index + 1}</span>
-              <h3>{step.title}</h3>
-              <p>{step.copy}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className={classes.section} aria-labelledby="places-heading">
-        <h2 id="places-heading" className={classes.sectionTitle}>One clear picture.</h2>
-        <dl className={classes.places}>
-          {places.map((place) => (
-            <div key={place.name} className={classes.place}>
-              <dt>{place.name}</dt>
-              <dd>{place.question}</dd>
-            </div>
-          ))}
-        </dl>
-        <Link href="/features" className={classes.textLink}>See every feature <ArrowUpRight size={17} aria-hidden /></Link>
-      </section>
-
-      <section className={classes.spiderSection} aria-labelledby="spider-heading">
-        <SpiderMascot state="dangle" size={128} className={classes.bigSpider} />
-        <div>
-          <h2 id="spider-heading">One center. A thread to every platform.</h2>
-          <p>That’s why DeepVisor is a spider. It sits in the middle of your advertising with a thread to each place you run ads, so it all runs from one place. Meta today, more on the way.</p>
-          <Link href="/vision" className={classes.textLink}>Where DeepVisor is going <ArrowUpRight size={17} aria-hidden /></Link>
+    <section className={classes.webBand} aria-labelledby="web-heading">
+      <div className={classes.webInner}>
+        <div className={classes.webCopy}>
+          <p className={classes.eyebrow}>{t('web.eyebrow')}</p>
+          <h2 id="web-heading">{t('web.title')}</h2>
+          <p>{t('web.body')}</p>
+          <div className={classes.assistant} aria-hidden="true">
+            <p className={classes.you}>{t('web.assistantYou')}</p>
+            <p className={classes.spiderSays}><SpiderMascot state="idea" size={28} tone="dark" /> <span>{t('web.assistantSpider')}</span><em>{t('web.coming')}</em></p>
+          </div>
+          <ActionLink href="/vision">{t('web.cta')} <ArrowUpRight size={17} aria-hidden /></ActionLink>
         </div>
-      </section>
+        <SpiderWeb />
+      </div>
+    </section>
 
+    <div className={classes.landing}>
       <section className={classes.section} id="faq" aria-labelledby="faq-heading">
         <div className={classes.split}>
-          <h2 id="faq-heading" className={classes.sectionTitle}>Questions.</h2>
+          <h2 id="faq-heading" className={classes.sectionTitle}>{t('faq.title')}</h2>
           <div className={classes.faq}>
-            {faqs.map((item) => (
-              <details key={item.q}>
-                <summary>{item.q}</summary>
-                <p>{item.a}</p>
+            {faqs.map((key) => (
+              <details key={key}>
+                <summary>{t(`faq.${key}Q`)}</summary>
+                <p>{t(`faq.${key}A`)}</p>
               </details>
             ))}
           </div>
@@ -126,8 +129,8 @@ export default function HomePage() {
     <section className={classes.finalCta} aria-labelledby="start-heading">
       <div className={classes.finalInner}>
         <SpiderMascot state="wave" size={96} tone="dark" />
-        <h2 id="start-heading">Give your ads a clearer direction.</h2>
-        <ActionLink href="/sign-up">Start free beta <ArrowRight size={17} aria-hidden /></ActionLink>
+        <h2 id="start-heading">{t('final.title')}</h2>
+        <ActionLink href="/sign-up">{t('final.start')} <ArrowRight size={17} aria-hidden /></ActionLink>
       </div>
     </section>
   </DesignSurface>;
