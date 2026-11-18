@@ -216,7 +216,7 @@
     "savedGreeting": "Your saved greeting",
     "overLimit": "This plan is above your monthly limit. You can lower the budget below.",
     "file": "Photo or video",
-    "fileHelp": "JPEG, PNG, WebP, MP4 or WebM, up to 4 MB",
+    "fileHelp": "JPEG, PNG, WebP, MP4 or WebM. Photos up to {image} MB, videos up to {video} MB.",
     "note": "Anything to mention? (optional)",
     "notePlaceholder": "e.g. Fall color special, Saturday openings",
     "dailyBudget": "Daily budget for this ad (optional)",
@@ -226,13 +226,18 @@
     "limitReached": "Daily limit reached. Try again tomorrow.",
     "error": {
       "chooseFile": "Choose a photo or video first.",
-      "tooLarge": "Choose a file up to 4 MB.",
+      "tooLarge": "Photos can be up to {image} MB and videos up to {video} MB.",
       "NO_SOURCE": "No messaging ad set to start from yet. Create your first ad in Campaigns.",
       "MISSING_FACTS": "A few answers are needed first.",
       "DAILY_LIMIT": "You can make up to 10 quick ads a day. Try again tomorrow.",
       "INVALID_INPUT": "Check the form and try again.",
-      "UNAVAILABLE": "Quick ad is unavailable right now."
-    }
+      "UNAVAILABLE": "Quick ad is unavailable right now.",
+      "wrongType": "Choose a JPEG, PNG, WebP, MP4 or WebM file.",
+      "uploadFailed": "The upload didn’t finish. Check your connection and try again.",
+      "UPLOAD_MISSING": "The upload didn’t finish. Choose the file again."
+    },
+    "uploading": "Uploading your file…",
+    "creating": "Preparing your draft…"
   },
   "campaigns": {
     "quickAd": "Quick ad"

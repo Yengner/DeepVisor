@@ -3,12 +3,13 @@ import { randomUUID } from 'node:crypto';
 import { loadAdFacts, type AdFactsView } from '@/lib/server/agent/facts';
 import { createCampaignReuseDraft, CampaignReuseDraftError } from '@/lib/server/campaigns/reuse';
 import type { AssistantAccess } from '@/lib/server/intelligence/assistant/access';
-import { MEDIA_BUCKET, validateMedia } from '@/lib/server/intelligence/assistant/media';
+import { MEDIA_BUCKET, verifiedMediaType } from '@/lib/server/intelligence/assistant/media';
 import { runStructuredAI } from '@/lib/server/openai/structured';
 import { allPages } from '@/lib/server/repositories/pagination';
 import type { FactKey } from '@/lib/shared/agent/facts';
 import { resultChannel } from '@/lib/shared/performance/resultChannel';
 import { COPY_JSON_SCHEMA, COPY_SYSTEM_PROMPT, fallbackCopy, validateCopy, type CopyResult } from '@/lib/shared/quickAd/copy';
+import { quickAdMediaProblem, QUICK_AD_MAX_IMAGE_MB, QUICK_AD_MAX_VIDEO_MB } from '@/lib/shared/quickAd/media';
 import { budgetMajor, chooseSourceAdSet, dayIn, localMidnightUtc, planQuickAd, quickAdSchedule, type QuickAdPlan, type QuickAdRequest, type SourceChoice } from '@/lib/shared/quickAd/plan';
 import { parseWelcomeMessage, welcomeSpecFromStory, type WelcomeMessage } from '@/lib/shared/quickAd/welcome';
 
@@ -27,8 +28,9 @@ const REASON_NOTE: Record<SourceChoice['reason'], string> = {
   recent: 'your most recent messaging ad set',
 };
 
+export type QuickAdErrorCode = 'NO_SOURCE' | 'MISSING_FACTS' | 'DAILY_LIMIT' | 'INVALID_INPUT' | 'TOO_LARGE' | 'UPLOAD_MISSING' | 'UNAVAILABLE';
 export class QuickAdError extends Error {
-  constructor(message: string, readonly status: number, readonly code: 'NO_SOURCE' | 'MISSING_FACTS' | 'DAILY_LIMIT' | 'INVALID_INPUT' | 'UNAVAILABLE', readonly missing: FactKey[] = []) {
+  constructor(message: string, readonly status: number, readonly code: QuickAdErrorCode, readonly missing: FactKey[] = []) {
     super(message);
   }
 }
@@ -146,34 +148,72 @@ export function quickAdSummary(context: QuickAdContext) {
 }
 export type QuickAdSummary = ReturnType<typeof quickAdSummary>;
 
-export type QuickAdInput = {
-  file: { bytes: Uint8Array; type: string; name: string };
-  note: string;
-  request: QuickAdRequest;
-  idempotencyKey: string;
-};
+const TOO_LARGE = `Photos can be up to ${QUICK_AD_MAX_IMAGE_MB} MB and videos up to ${QUICK_AD_MAX_VIDEO_MB} MB.`;
+const WRONG_TYPE = 'Choose a JPEG, PNG, WebP, MP4 or WebM file.';
 
-export async function createQuickAd(scope: Scope, input: QuickAdInput) {
-  const note = input.note.trim();
-  if (note.length > MAX_NOTE) throw new QuickAdError(`Keep the note under ${MAX_NOTE} characters.`, 400, 'INVALID_INPUT');
-  let mime: string;
-  try { mime = validateMedia(input.file.bytes, input.file.type); }
-  catch (error) { throw new QuickAdError((error as Error).message, 400, 'INVALID_INPUT'); }
+/** Private storage path for a quick ad file; always derived from the authorized scope. */
+export function quickAdMediaPath(scope: Pick<Scope, 'businessId' | 'userId' | 'account'>, mediaId: string) {
+  return `${scope.businessId}/${scope.account.id}/${scope.userId}/quick/${mediaId}`;
+}
 
-  const context = await loadQuickAdContext(scope, input.request);
+/** The same checks the form shows: a source ad set, the needed answers, and today's limit. */
+async function readyContext(scope: Scope, request: QuickAdRequest) {
+  const context = await loadQuickAdContext(scope, request);
   const { source, plan } = context;
   if (!source) throw new QuickAdError('No messaging ad set to start from yet. Create your first ad in Campaigns.', 409, 'NO_SOURCE');
   if (plan.missing.length || !plan.dailyBudget || !plan.days || !plan.languages) {
     throw new QuickAdError('A few answers are needed first.', 409, 'MISSING_FACTS', plan.missing);
   }
   if (context.remainingToday <= 0) throw new QuickAdError(`You can make up to ${QUICK_AD_DAILY_LIMIT} quick ads a day. Try again tomorrow.`, 429, 'DAILY_LIMIT');
+  return { ...context, source, plan: { ...plan, dailyBudget: plan.dailyBudget, days: plan.days, languages: plan.languages } };
+}
 
+/**
+ * Step 1: a one-time link for the browser to put the file straight into private storage
+ * (large files never pass through our server). Checks run first so nobody uploads for nothing.
+ */
+export async function prepareQuickAdUpload(scope: Scope, input: { type: string; size: number; request: QuickAdRequest }) {
+  const problem = quickAdMediaProblem(input.type, input.size);
+  if (problem === 'type') throw new QuickAdError(WRONG_TYPE, 400, 'INVALID_INPUT');
+  if (problem === 'size') throw new QuickAdError(TOO_LARGE, 413, 'TOO_LARGE');
+  await readyContext(scope, input.request);
   const mediaId = randomUUID();
-  const path = `${scope.businessId}/${scope.account.id}/${scope.userId}/quick/${mediaId}`;
-  const { error: uploadError } = await scope.db.storage.from(MEDIA_BUCKET).upload(path, input.file.bytes, { contentType: mime, upsert: false });
-  if (uploadError) throw new QuickAdError('Private media storage is unavailable.', 503, 'UNAVAILABLE');
+  const { data, error } = await scope.db.storage.from(MEDIA_BUCKET).createSignedUploadUrl(quickAdMediaPath(scope, mediaId));
+  if (error || !data) throw new QuickAdError('Private media storage is unavailable.', 503, 'UNAVAILABLE');
+  return { bucket: MEDIA_BUCKET, mediaId, path: data.path, token: data.token };
+}
 
+/** The stored file must be there, within the limit for its type, and really be that type. */
+async function verifyStoredMedia(scope: Scope, path: string, claimedType: string) {
+  const { data, error } = await scope.db.storage.from(MEDIA_BUCKET).download(path);
+  if (error || !data) throw new QuickAdError('The upload did not finish. Choose the file again.', 400, 'UPLOAD_MISSING');
+  const problem = quickAdMediaProblem(claimedType, data.size);
+  if (problem === 'size') throw new QuickAdError(TOO_LARGE, 413, 'TOO_LARGE');
+  if (problem || verifiedMediaType(new Uint8Array(await data.slice(0, 4096).arrayBuffer())) !== claimedType) {
+    throw new QuickAdError(WRONG_TYPE, 400, 'INVALID_INPUT');
+  }
+  return claimedType;
+}
+
+export type QuickAdInput = {
+  /** A file uploaded with a link from prepareQuickAdUpload. */
+  media: { id: string; type: string; name: string };
+  note: string;
+  request: QuickAdRequest;
+  idempotencyKey: string;
+};
+
+/** Step 2: verify the uploaded file and create the paused draft. Any failure removes the file. */
+export async function createQuickAd(scope: Scope, input: QuickAdInput) {
+  const path = quickAdMediaPath(scope, input.media.id);
   try {
+    const note = input.note.trim();
+    if (note.length > MAX_NOTE) throw new QuickAdError(`Keep the note under ${MAX_NOTE} characters.`, 400, 'INVALID_INPUT');
+    const context = await readyContext(scope, input.request);
+    const { source, plan } = context;
+    const mime = await verifyStoredMedia(scope, path, input.media.type);
+    const mediaId = input.media.id;
+
     const { data: profile } = await scope.db.from('business_profiles')
       .select('business_name, location_city, promoted_services, most_valuable_service').eq('id', scope.businessId).maybeSingle();
     const languages = plan.languages;
@@ -224,7 +264,7 @@ export async function createQuickAd(scope: Scope, input: QuickAdInput) {
       content: {
         title: 'Quick ad',
         copies: copy.output.variants,
-        media: [{ id: mediaId, name: input.file.name.replace(/[\x00-\x1f\x7f/\\]/g, '').slice(0, 120) || 'Quick ad media', mime, path }],
+        media: [{ id: mediaId, name: input.media.name.replace(/[\x00-\x1f\x7f/\\]/g, '').slice(0, 120) || 'Quick ad media', mime, path }],
         welcome,
         reviewNote: `Quick ad from "${source.name}" (${REASON_NOTE[source.reason]}). ${textNote}${plan.overMonthlyLimit ? ' Planned spend is above your monthly limit.' : ''}`,
       },

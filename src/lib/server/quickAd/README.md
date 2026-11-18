@@ -27,9 +27,20 @@ write is reachable from this flow.
    used only when the source has none. Its text is the fallback ad text.
 5. Daily limit (10 per business, account-local day) counted from `ai.ai_generation_runs`
    (`source_type = quick_ad_copy`), checked **before** upload or model call.
-6. Media validated by magic bytes (JPEG/PNG/WebP/MP4/WebM ≤4 MB) and stored privately in
-   `assistant-draft-media` at `business/account/user/quick/<uuid>`; removed if the draft fails
-   or replays. The existing draft-media GET route serves it to the draft's creator.
+6. Media goes **straight from the browser to private storage**, so it never hits the 4.5 MB
+   serverless body limit. Limits live in `src/lib/shared/quickAd/media.ts`: JPEG/PNG/WebP
+   photos up to 30 MB (Meta's photo limit), MP4/WebM videos up to 50 MB (the project's
+   per-file storage limit, also the bucket's `file_size_limit`).
+   - `POST /api/campaigns/quick-ad/upload` (`prepareQuickAdUpload`) checks type, declared size,
+     source, answers and the daily limit, then returns a one-time signed upload link for
+     `assistant-draft-media` at `business/account/user/quick/<uuid>`. The bucket stays closed
+     to browsers; only the token allows that one path, once.
+   - `POST /api/campaigns/quick-ad` (`createQuickAd`) receives only the media id (the path is
+     rebuilt from the signed-in scope), re-runs the checks, downloads the stored file and
+     verifies its real size and magic-byte type. Any failure, or a replayed draft, removes the
+     file. The form uploads a fresh file on every attempt.
+   - The draft-media GET route redirects the draft's creator to a 60-second signed link, so
+     large videos stream and seek without passing through the server.
 7. One `runStructuredAI` call (`gpt-5.4-nano` default, 8 s cap, recorded run) writes one
    variant per client language. Output must match the schema, every language, length limits,
    and contain no links or phone numbers; the prompt carries Meta's personal-attributes rule
@@ -44,6 +55,9 @@ write is reachable from this flow.
 
 - Small race: two simultaneous requests can exceed the daily limit by one.
 - Draft media retention follows the assistant bucket (Jira KAN-6, not yet defined).
+- A file uploaded with a link but never submitted stays in the bucket until retention exists.
+- Larger videos need a Supabase plan with a higher per-file limit (then raise the bucket limit
+  and `QUICK_AD_MAX_VIDEO_MB`); files over ~6 MB would also benefit from resumable uploads.
 - Publishing (needs `ads_management` and App Review) and translating the page are separate work.
 - The assistant draft path still maps WhatsApp to `LEAD_GENERATION`; Quick ad keeps the
   source ad set's `CONVERSATIONS` goal.
