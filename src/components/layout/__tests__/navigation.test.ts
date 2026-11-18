@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import en from '../../../../messages/en.json';
 import { secondaryNavItems, primaryNavItems, mobileBottomNavItems, isAppNavItemActive } from '../navigation';
 it('places Reports after Campaigns and account links below the divider', () => {
-  expect(primaryNavItems.map(item => item.route)).toEqual(['/dashboard', '/agency', '/campaigns', '/reports', '/integration']);
+  expect(primaryNavItems.map(item => item.route)).toEqual(['/dashboard', '/leads', '/agency', '/campaigns', '/reports', '/integration']);
   expect(secondaryNavItems.map(item => item.route)).toEqual(['/notifications', '/settings/profile', '/settings']);
   expect(mobileBottomNavItems.map(item => item.route)).toEqual(['/dashboard', '/agency', '/campaigns', '/reports', '/notifications']);
   expect(mobileBottomNavItems.map(item => en.nav[item.shortKey])).toEqual(['Overview', 'Agency', 'Campaigns', 'Reports', 'Alerts']);

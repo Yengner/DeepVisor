@@ -21,7 +21,8 @@
     "secondaryNavigation": "Navegación secundaria del espacio de trabajo",
     "primaryMobileNavigation": "Navegación principal móvil",
     "toCheck": "{label} · {count} por revisar",
-    "overviewHome": "Resumen de DeepVisor"
+    "overviewHome": "Resumen de DeepVisor",
+    "leads": "Clientes"
   },
   "metrics": {
     "spend": "Gasto",
@@ -501,6 +502,74 @@
       "roadLater2": "Automatización dentro de tus límites",
       "roadLater3": "Equipos y agencias",
       "finalTitle": "Empieza hoy con tus anuncios de Facebook e Instagram."
+    }
+  },
+  "leads": {
+    "metaTitle": "Clientes potenciales | DeepVisor",
+    "title": "Clientes potenciales",
+    "intro": "Chats reales de clientes que llegaron por tus anuncios, y cuáles se volvieron clientes.",
+    "selectAccount": "Primero selecciona una cuenta de Meta en <link>Conexiones</link>.",
+    "period": "Período",
+    "last7": "Últimos 7 días",
+    "last30": "Últimos 30 días",
+    "notConnectedTitle": "WhatsApp todavía no está conectado",
+    "notConnectedBody": "Cuando tu número de WhatsApp Business esté conectado, cada chat nuevo de tus anuncios aparecerá aquí. Ya puedes registrar llamadas abajo.",
+    "connected": "WhatsApp {phone}",
+    "testNumber": "Número de prueba",
+    "coveredFrom": "Contando desde el {date}, cuando se conectó WhatsApp.",
+    "kpi": {
+      "fromAds": "Clientes potenciales de anuncios",
+      "fromAdsHelp": "{organic, plural, =0 {} one {+ # que no vino de un anuncio} other {+ # que no vinieron de un anuncio}}",
+      "booked": "Reservaron",
+      "bookedHelp": "{fromAds} de anuncios",
+      "costPerBooked": "Costo por cliente que reservó",
+      "costPerBookedEmpty": "Marca quiénes reservaron para ver esto",
+      "costPerBookedHelp": "{spend} gastados en estos anuncios",
+      "unmarked": "Sin marcar",
+      "unmarkedHelp": "No se cuentan como perdidos",
+      "reply": "Primera respuesta típica",
+      "replyEmpty": "Todavía sin respuestas"
+    },
+    "minutes": "{minutes, plural, =0 {menos de un minuto} one {# min} other {# min}}",
+    "hours": "{hours, plural, one {# h} other {# h}}",
+    "metaCheck": "Meta contó {meta, plural, one {# conversación} other {# conversaciones}} de estos anuncios; {received, plural, one {# chat llegó} other {# chats llegaron}} a tu WhatsApp aquí.",
+    "metaCheckNote": "Meta también cuenta chats de Messenger e Instagram, así que los números pueden variar.",
+    "adsTitle": "Por anuncio",
+    "col": {
+      "ad": "Anuncio",
+      "leads": "Clientes potenciales",
+      "booked": "Reservaron",
+      "spend": "Gastado",
+      "costPerBooked": "Por cliente que reservó"
+    },
+    "unnamedAd": "Anuncio {id}",
+    "listTitle": "Clientes potenciales recientes",
+    "empty": "Todavía no hay clientes potenciales en este período.",
+    "customer": "Cliente de WhatsApp",
+    "call": "Llamada",
+    "notFromAd": "No vino de un anuncio",
+    "adUnknown": "Anuncio {id}",
+    "repliedIn": "Respondiste en {time}",
+    "notReplied": "Todavía sin responder",
+    "messages": "{count, plural, one {# mensaje} other {# mensajes}}",
+    "outcome": {
+      "label": "Resultado",
+      "booked": "Reservó",
+      "not_booked": "No reservó",
+      "spam": "Spam"
+    },
+    "callTitle": "Registrar una llamada",
+    "callAd": "¿De qué anuncio? (opcional)",
+    "callAdNone": "No estoy seguro",
+    "addCall": "Agregar llamada",
+    "addBookedCall": "Agregar llamada con reserva",
+    "viewOnly": "Solo los dueños y administradores pueden marcar clientes potenciales.",
+    "error": {
+      "invalid": "Algo en esa solicitud no era válido. Actualiza la página e inténtalo de nuevo.",
+      "forbidden": "Solo los dueños y administradores pueden cambiar clientes potenciales.",
+      "notFound": "Ese cliente potencial ya no existe. Actualiza la página.",
+      "noAccount": "Primero selecciona una cuenta publicitaria.",
+      "failed": "No se pudo guardar. Inténtalo de nuevo."
     }
   }
 }

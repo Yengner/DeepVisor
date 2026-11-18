@@ -29,6 +29,8 @@ Meta POST /api/meta/webhooks → signature check → meta_webhook_events (once p
 - `GET`: handshake. Wrong/missing token → 403.
 - `POST`: body capped at 256 KB; missing, malformed or wrong signature → 401 and nothing stored.
   A signed delivery for another object type is acknowledged (200) so Meta does not retry it.
+  WhatsApp Business deliveries (`object: whatsapp_business_account`) go to the lead log instead
+  (`src/lib/server/leads/README.md`); a recording failure there is also a 503.
   A storage/queue failure → 503 (Meta retries for up to 36 hours); rows whose demand did not reach
   the queue are removed first, so the retry is processed instead of dropped as a duplicate.
 - No Meta request is made in the request. Jobs are started with `after()` through the existing

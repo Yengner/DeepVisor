@@ -5,6 +5,8 @@ import { dispatchAccountSync } from '@/lib/server/sync/dispatch';
 import { processMetaBackfillJobs } from '@/lib/server/sync/meta/processBackfillJobs';
 import { ingestMetaWebhook, MAX_WEBHOOK_BYTES, verifyChallenge, verifySignature, webhooksEnabled } from '@/lib/server/webhooks/meta';
 import { parseMetaWebhook } from '@/lib/shared/webhooks/meta';
+import { parseWhatsAppWebhook } from '@/lib/shared/webhooks/whatsapp';
+import { ingestWhatsAppMessages } from '@/lib/server/leads/ingest';
 import { asRecord } from '@/lib/shared/utils/format';
 
 export const maxDuration = 300;
@@ -52,6 +54,17 @@ export async function POST(request: NextRequest) {
   if (!verifySignature(raw, request.headers.get('x-hub-signature-256'), process.env.META_APP_SECRET)) return new NextResponse('Invalid signature', { status: 401, headers });
   let body: unknown;
   try { body = JSON.parse(raw); } catch { return new NextResponse('Invalid payload', { status: 400, headers }); }
+  // WhatsApp Business deliveries feed the lead log (ids, timing and ad referral only; no text).
+  const whatsapp = parseWhatsAppWebhook(body);
+  if (whatsapp !== null) {
+    try {
+      const result = await ingestWhatsAppMessages(createAdminClient(), whatsapp, process.env.META_APP_SECRET);
+      return NextResponse.json({ received: result.received, recorded: result.recorded, duplicates: result.duplicates }, { headers });
+    } catch {
+      console.error('WhatsApp webhook could not be recorded');
+      return new NextResponse('Temporarily unavailable', { status: 503, headers });
+    }
+  }
   const events = parseMetaWebhook(body);
   // A signed delivery for another object type is acknowledged so Meta does not retry it for 36 hours.
   if (events === null) return NextResponse.json({ received: 0 }, { headers });

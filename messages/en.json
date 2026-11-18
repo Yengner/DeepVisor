@@ -21,7 +21,8 @@
     "secondaryNavigation": "Secondary workspace navigation",
     "primaryMobileNavigation": "Primary mobile navigation",
     "toCheck": "{label} · {count} to check",
-    "overviewHome": "DeepVisor Overview"
+    "overviewHome": "DeepVisor Overview",
+    "leads": "Leads"
   },
   "metrics": {
     "spend": "Spend",
@@ -501,6 +502,74 @@
       "roadLater2": "Automation within your limits",
       "roadLater3": "Teams and agencies",
       "finalTitle": "Start with your Facebook & Instagram ads today."
+    }
+  },
+  "leads": {
+    "metaTitle": "Leads | DeepVisor",
+    "title": "Leads",
+    "intro": "Real customer chats from your ads, and which ones became customers.",
+    "selectAccount": "Select a Meta account in <link>Connections</link> first.",
+    "period": "Period",
+    "last7": "Last 7 days",
+    "last30": "Last 30 days",
+    "notConnectedTitle": "WhatsApp isn't connected yet",
+    "notConnectedBody": "Once your WhatsApp Business number is connected, every new chat from your ads shows up here. You can already log phone calls below.",
+    "connected": "WhatsApp {phone}",
+    "testNumber": "Test number",
+    "coveredFrom": "Counting from {date}, when WhatsApp was connected.",
+    "kpi": {
+      "fromAds": "Leads from ads",
+      "fromAdsHelp": "{organic, plural, =0 {} one {+ # not from an ad} other {+ # not from an ad}}",
+      "booked": "Booked",
+      "bookedHelp": "{fromAds} from ads",
+      "costPerBooked": "Cost per booked customer",
+      "costPerBookedEmpty": "Mark leads as booked to see this",
+      "costPerBookedHelp": "{spend} spent on these ads",
+      "unmarked": "Not marked yet",
+      "unmarkedHelp": "Not counted as lost",
+      "reply": "Typical first reply",
+      "replyEmpty": "No replies yet"
+    },
+    "minutes": "{minutes, plural, =0 {under a minute} one {# min} other {# min}}",
+    "hours": "{hours, plural, one {# hr} other {# hr}}",
+    "metaCheck": "Meta counted {meta, plural, one {# conversation} other {# conversations}} from these ads; {received, plural, one {# chat} other {# chats}} reached your WhatsApp here.",
+    "metaCheckNote": "Meta also counts Messenger and Instagram chats, so the numbers can differ.",
+    "adsTitle": "By ad",
+    "col": {
+      "ad": "Ad",
+      "leads": "Leads",
+      "booked": "Booked",
+      "spend": "Spent",
+      "costPerBooked": "Per booked customer"
+    },
+    "unnamedAd": "Ad {id}",
+    "listTitle": "Recent leads",
+    "empty": "No leads in this period yet.",
+    "customer": "WhatsApp customer",
+    "call": "Phone call",
+    "notFromAd": "Not from an ad",
+    "adUnknown": "Ad {id}",
+    "repliedIn": "Replied in {time}",
+    "notReplied": "Not replied yet",
+    "messages": "{count, plural, one {# message} other {# messages}}",
+    "outcome": {
+      "label": "Outcome",
+      "booked": "Booked",
+      "not_booked": "Didn't book",
+      "spam": "Spam"
+    },
+    "callTitle": "Log a phone call",
+    "callAd": "From which ad? (optional)",
+    "callAdNone": "Not sure",
+    "addCall": "Add call",
+    "addBookedCall": "Add booked call",
+    "viewOnly": "Only owners and admins can mark leads.",
+    "error": {
+      "invalid": "Something in that request wasn't valid. Refresh and try again.",
+      "forbidden": "Only owners and admins can change leads.",
+      "notFound": "That lead no longer exists. Refresh the page.",
+      "noAccount": "Select an ad account first.",
+      "failed": "Couldn't save. Try again."
     }
   }
 }

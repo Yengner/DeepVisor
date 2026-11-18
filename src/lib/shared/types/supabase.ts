@@ -1095,6 +1095,129 @@ export type Database = {
   }
   public: {
     Tables: {
+      leads: {
+        Row: {
+          ad_external_id: string | null
+          business_id: string
+          channel: string
+          connection_id: string | null
+          contact_key: string | null
+          contact_last4: string | null
+          contact_name: string | null
+          created_at: string
+          ctwa_clid: string | null
+          first_message_at: string
+          first_reply_at: string | null
+          id: string
+          last_message_at: string
+          messages_in: number
+          messages_out: number
+          outcome: string | null
+          outcome_at: string | null
+          outcome_by: string | null
+          source: string
+        }
+        Insert: {
+          ad_external_id?: string | null
+          business_id: string
+          channel: string
+          connection_id?: string | null
+          contact_key?: string | null
+          contact_last4?: string | null
+          contact_name?: string | null
+          created_at?: string
+          ctwa_clid?: string | null
+          first_message_at: string
+          first_reply_at?: string | null
+          id?: string
+          last_message_at: string
+          messages_in?: number
+          messages_out?: number
+          outcome?: string | null
+          outcome_at?: string | null
+          outcome_by?: string | null
+          source: string
+        }
+        Update: {
+          ad_external_id?: string | null
+          business_id?: string
+          channel?: string
+          connection_id?: string | null
+          contact_key?: string | null
+          contact_last4?: string | null
+          contact_name?: string | null
+          created_at?: string
+          ctwa_clid?: string | null
+          first_message_at?: string
+          first_reply_at?: string | null
+          id?: string
+          last_message_at?: string
+          messages_in?: number
+          messages_out?: number
+          outcome?: string | null
+          outcome_at?: string | null
+          outcome_by?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
+      whatsapp_connections: {
+        Row: {
+          business_id: string
+          connected_at: string
+          disconnected_at: string | null
+          display_phone: string | null
+          id: string
+          is_test: boolean
+          phone_number_id: string
+          status: string
+          waba_id: string | null
+        }
+        Insert: {
+          business_id: string
+          connected_at?: string
+          disconnected_at?: string | null
+          display_phone?: string | null
+          id?: string
+          is_test?: boolean
+          phone_number_id: string
+          status?: string
+          waba_id?: string | null
+        }
+        Update: {
+          business_id?: string
+          connected_at?: string
+          disconnected_at?: string | null
+          display_phone?: string | null
+          id?: string
+          is_test?: boolean
+          phone_number_id?: string
+          status?: string
+          waba_id?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_message_receipts: {
+        Row: {
+          business_id: string
+          lead_id: string | null
+          message_key: string
+          received_at: string
+        }
+        Insert: {
+          business_id: string
+          lead_id?: string | null
+          message_key: string
+          received_at?: string
+        }
+        Update: {
+          business_id?: string
+          lead_id?: string | null
+          message_key?: string
+          received_at?: string
+        }
+        Relationships: []
+      }
       booking_checkins: {
         Row: {
           ad_account_id: string
@@ -8290,6 +8413,20 @@ export type Database = {
           p_previous: string | null
         }
         Returns: string
+      }
+      record_whatsapp_message: {
+        Args: {
+          p_ad_external_id: string | null
+          p_at: string
+          p_contact_key: string
+          p_contact_last4: string | null
+          p_contact_name: string | null
+          p_ctwa_clid: string | null
+          p_direction: string
+          p_message_key: string
+          p_phone_number_id: string
+        }
+        Returns: Json
       }
       record_meta_webhook_event: {
         Args: {
