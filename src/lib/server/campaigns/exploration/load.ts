@@ -1,4 +1,5 @@
 import "server-only";
+import { agencyEnabled } from '@/lib/server/agency/enabled';
 import { allPages } from '../../repositories/pagination';
 import { cache } from "react";
 import { createAdminClient } from "../../supabase/admin";
@@ -469,7 +470,8 @@ export const loadExploration = cache(
             ),
           }
         : null;
-      const recommendations = entityData
+      // Decision-engine recommendations belong to Agency Control, hidden for the beta.
+      const recommendations = entityData && agencyEnabled()
         ? decisionViews({
             data: entityData,
             entities: [parent],

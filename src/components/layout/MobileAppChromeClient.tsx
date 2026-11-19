@@ -29,8 +29,8 @@ import { clientHandleSignOut } from '@/lib/client';
 import type { NotificationFeedItem } from '@/lib/shared';
 import {
   isAppNavItemActive,
-  mobileBottomNavItems,
-  primaryNavItems,
+  mobileNavFor,
+  primaryNavFor,
   secondaryNavItems,
 } from './navigation';
 import PlatformAdAccountDropdownClient from './topBar/PlatformAdAccountDropdownClient';
@@ -50,6 +50,8 @@ type MobileAppChromeClientProps = {
   unreadNotificationIds?: string[];
   initialPlatformId?: string | null;
   initialAccountId?: string | null;
+  /** Agency Control navigation (server switch DEEPVISOR_AGENCY). */
+  showAgency?: boolean;
 };
 
 export default function MobileAppChromeClient({
@@ -59,6 +61,7 @@ export default function MobileAppChromeClient({
   unreadNotificationIds = [],
   initialPlatformId,
   initialAccountId,
+  showAgency = false,
 }: MobileAppChromeClientProps) {
   const t = useTranslations('nav');
   const router = useRouter();
@@ -89,7 +92,7 @@ export default function MobileAppChromeClient({
       pathname?.startsWith('/settings/')
     ));
 
-  const drawerNavItems = [...primaryNavItems, ...secondaryNavItems];
+  const drawerNavItems = [...primaryNavFor(showAgency), ...secondaryNavItems];
   const activeDrawerRoute = drawerNavItems
     .filter((item) => isAppNavItemActive(pathname, item.route))
     .sort((left, right) => right.route.length - left.route.length)[0]?.route;
@@ -241,7 +244,7 @@ export default function MobileAppChromeClient({
       <Portal>
         <nav className={`${bottomNav.bar} md:hidden`} aria-label={t('primaryMobileNavigation')}>
           <ul className={bottomNav.list}>
-            {mobileBottomNavItems.map((item) => {
+            {mobileNavFor(showAgency).map((item) => {
               const active = isMobileBottomItemActive(item.route);
               const unread = item.route === '/notifications' ? notificationCount : 0;
 

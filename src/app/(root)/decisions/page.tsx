@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+import { agencyEnabled } from '@/lib/server/agency/enabled';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Alert, Group, Stack, Text } from '@mantine/core';
@@ -37,6 +39,8 @@ async function DecisionContent({ page, preview }: { page: number; preview: boole
 }
 
 export default async function DecisionsPage({ searchParams }: { searchParams: Promise<{ page?: string; preview?: string }> }) {
+  // Hidden for the beta (see lib/server/agency/enabled.ts).
+  if (!agencyEnabled()) redirect('/dashboard');
   const params = await searchParams;
   const parsed = Number(params.page ?? 0);
   const page = Number.isSafeInteger(parsed) && parsed >= 0 && parsed <= 10000 ? parsed : 0;
