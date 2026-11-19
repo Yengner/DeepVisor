@@ -106,6 +106,8 @@ export default function AuthForm({ type }: AuthFormProps) {
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  // Google is the way in; email stays available behind a link for existing email accounts.
+  const [showEmail, setShowEmail] = useState(false);
   const [showVerifyEmailButton, setShowVerifyEmailButton] = useState(false);
   /** Address a verification email was just sent to; kept in memory only (never URL or storage). */
   const [sentToEmail, setSentToEmail] = useState<string | null>(null);
@@ -268,10 +270,15 @@ export default function AuthForm({ type }: AuthFormProps) {
               >
                 Continue with Google
               </Button>
-              <Divider label="Or sign in with email" labelPosition="center" />
+              {!showEmail && (
+                <Anchor component="button" type="button" size="sm" c="dimmed" ta="center" onClick={() => setShowEmail(true)}>
+                  Use email instead
+                </Anchor>
+              )}
+              {showEmail && <Divider label="Or sign in with email" labelPosition="center" />}
             </Stack>
 
-            <form onSubmit={handleSubmit}>
+            {showEmail && <form onSubmit={handleSubmit}>
               <Stack>
                 <TextInput
                   label="Email"
@@ -303,7 +310,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                   </Button>
                 ) : null}
               </Stack>
-            </form>
+            </form>}
 
             {showVerifyEmailButton ? (
               <Button
@@ -407,9 +414,14 @@ export default function AuthForm({ type }: AuthFormProps) {
             Continue with Google
           </Button>
 
-          <Divider label="Or sign up with email" labelPosition="center" />
+          {!showEmail && (
+            <Anchor component="button" type="button" size="sm" c="dimmed" ta="center" onClick={() => setShowEmail(true)}>
+              Use email instead
+            </Anchor>
+          )}
+          {showEmail && <Divider label="Or sign up with email" labelPosition="center" />}
 
-          <form onSubmit={handleSubmit}>
+          {showEmail && <form onSubmit={handleSubmit}>
             <Stack>
               <TextInput
                 label="First name"
@@ -460,7 +472,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                 Create account
               </Button>
             </Stack>
-          </form>
+          </form>}
 
           <Text size="xs" c="dimmed">
             By creating an account, you agree to DeepVisor&apos;s{' '}
