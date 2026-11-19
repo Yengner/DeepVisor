@@ -55,13 +55,18 @@ function accountZone(scope: Scope) {
 
 /** Messaging ad sets from the same table the reuse flow reads, with 90-day saved totals. */
 async function sourceCandidates(scope: Scope, today: string) {
+  return messagingSourceCandidates({ db: scope.db, businessId: scope.businessId, accountId: scope.account.id, today });
+}
+/** Exported for the "your ads are off" suggestion, which picks its ad the same way. */
+export async function messagingSourceCandidates(input: { db: Scope['db']; businessId: string; accountId: string; today: string }) {
+  const scope = { db: input.db, businessId: input.businessId, account: { id: input.accountId } };
   const adSets = await allPages((from, to) => scope.db.from('adset_dims')
     .select('id, external_id, campaign_external_id, name, status, created_time, raw')
     .eq('ad_account_id', scope.account.id).order('id').range(from, to));
   const entities = await allPages((from, to) => scope.db.from('ad_entities')
     .select('id, external_id').eq('business_id', scope.businessId).eq('ad_account_id', scope.account.id)
     .eq('entity_level', 'adset').order('id').range(from, to));
-  const since = new Date(Date.parse(`${today}T12:00:00Z`) - 89 * 86_400_000).toISOString().slice(0, 10);
+  const since = new Date(Date.parse(`${input.today}T12:00:00Z`) - 89 * 86_400_000).toISOString().slice(0, 10);
   const rows = await allPages((from, to) => scope.db.from('ad_entity_performance_daily')
     .select('entity_id, spend, leads, messages, calls').eq('ad_account_id', scope.account.id)
     .eq('entity_level', 'adset').gte('day', since).order('entity_id').order('day').range(from, to));

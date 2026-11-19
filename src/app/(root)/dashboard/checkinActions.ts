@@ -5,7 +5,9 @@ import { fail, ok, ErrorCode, type ApiResponse } from '@/lib/shared';
 import { requireManagerContext } from '@/lib/server/actions/business/manager';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { createAdminClient } from '@/lib/server/supabase/admin';
-import { CheckinError, saveCheckin } from '@/lib/server/bookings/checkins';
+import { CheckinError, loadCheckins, saveCheckin } from '@/lib/server/bookings/checkins';
+import type { WeekTotals } from '@/lib/shared/bookings/checkin';
+import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { dayIn } from '@/lib/shared/time/zone';
 
 /**
@@ -43,5 +45,28 @@ export async function saveBookingCheckinAction(weekStart: unknown, bookings: unk
     }
     console.error('Saving booking check-in failed', { code: (error as { code?: string })?.code });
     return fail('Saving check-in failed', ErrorCode.DATABASE_ERROR, { userMessage: t('failed') });
+  }
+}
+
+/**
+ * The week the Insights popup should ask about right now, for owners/admins of the session's
+ * selected account; null when there is nothing to ask (no spend that week, already answered or
+ * skipped) or when it cannot be read. Never throws: the popup must not depend on it.
+ */
+export async function pendingCheckinAction(): Promise<{ ask: WeekTotals; currency: string | null } | null> {
+  try {
+    const { businessId, role } = await getRequiredAppContext();
+    if (role !== 'owner' && role !== 'admin') return null;
+    const selection = await resolveCurrentSelection(businessId);
+    if (!selection.selectedAdAccountId) return null;
+    const db = createAdminClient();
+    const { data: account, error } = await db.from('ad_accounts').select('id, timezone, currency_code')
+      .eq('id', selection.selectedAdAccountId).eq('business_id', businessId).maybeSingle();
+    if (error || !account?.timezone) return null;
+    const view = await loadCheckins(db, { businessId, adAccountId: account.id, today: dayIn(account.timezone) });
+    return view.ask ? { ask: view.ask, currency: account.currency_code } : null;
+  } catch (error) {
+    console.error('Pending check-in unavailable', { code: (error as { code?: string })?.code });
+    return null;
   }
 }

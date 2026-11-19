@@ -2,6 +2,7 @@ import { reportDayCount, shiftReportDay } from '@/lib/shared/reports/dates';
 import { formatReportDay } from '@/lib/shared/reports/labels';
 import type { LifecycleBrief } from '@/lib/shared/lifecycle/types';
 import type { Observation } from '@/lib/shared/lifecycle/model';
+import type { IdleSuggestion } from '@/lib/shared/suggestions/idle';
 
 export type IssueEvidence = { key: string; title: string; explanation: string; action: string; href: string; entities: string[]; code: string };
 export type Issue = IssueEvidence & { id: string; revision: number; observedAt: string; stale: boolean; resolvedAt: string | null };
@@ -10,7 +11,9 @@ export type Hour = { hour: number; spend: number | null; results: number | null 
 export type HourlyRecap = { hours: Hour[]; observedHours: number; status: 'available'|'unavailable'|'error' };
 export type Recap = { since: string; until: string; spend: number | null; results: number | null; cpr: number | null; days: Day[]; hourly?: HourlyRecap; observedDays: number; expectedDays: number; comparison: { results: number; spend: number } | null; capped: boolean };
 export type LifecycleCard = { eventId: string; rootId: string; affectedIds: string[]; brief: LifecycleBrief };
-export type Presentation = { version: 1; revisionOf?: string; account: string; timezone: string | null; currency: string | null; preparedAt: string; syncedAt: string | null; recap: Recap | null; issues: Issue[]; lifecycle: LifecycleCard[]; limitations: string[] };
+export type Presentation = { version: 1; revisionOf?: string; account: string; timezone: string | null; currency: string | null; preparedAt: string; syncedAt: string | null; recap: Recap | null; issues: Issue[]; lifecycle: LifecycleCard[]; limitations: string[];
+  /** "Your ads are off" suggestion, only on popups prepared while nothing ran (see suggestions/idle). */
+  suggestion?: IdleSuggestion };
 /** `readAt`: when this person reviewed it in the popup or opened it from history (history only). */
 export type SavedPresentation = { id: string; created_at: string; payload: Presentation; readAt?: string | null };
 
@@ -91,7 +94,8 @@ export function headline(p: Presentation): string {
  if(p.issues.length&&!active.length&&!p.recap&&!p.lifecycle.length)return p.issues.length===1?'An earlier issue has cleared':'Earlier issues have cleared';
  if(p.recap)return p.lifecycle.length?'Your results and recent changes':recapHeadline(p.recap);
  if(p.lifecycle.length===1)return changeHeadline(p.lifecycle[0]);
- return p.lifecycle.length?`${p.lifecycle.length} changes to your advertising`:'No new observations yet';
+ if(p.lifecycle.length)return `${p.lifecycle.length} changes to your advertising`;
+ return p.suggestion?'Your ads are off':'No new observations yet';
 }
 function recapHeadline(r: Recap): string {
  if(!r.since||!r.until)return 'Here’s your advertising catch-up';

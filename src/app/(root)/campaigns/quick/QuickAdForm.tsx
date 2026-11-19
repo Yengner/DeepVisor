@@ -15,15 +15,16 @@ const SERVER_ERRORS = ['NO_SOURCE', 'MISSING_FACTS', 'DAILY_LIMIT', 'INVALID_INP
 type ServerError = (typeof SERVER_ERRORS)[number];
 const isServerError = (code: unknown): code is ServerError => SERVER_ERRORS.includes(code as ServerError);
 
-export default function QuickAdForm({ accountId, summary }: { accountId: string; summary: QuickAdSummary }) {
+/** `initial`: budget/days prefilled from a link (e.g. the ads-off suggestion); the owner can change them. */
+export default function QuickAdForm({ accountId, summary, initial }: { accountId: string; summary: QuickAdSummary; initial?: { budget: number | null; days: number | null } }) {
   const t = useTranslations('quickAd');
   const tAll = useTranslations();
   const locale = useLocale();
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [note, setNote] = useState('');
-  const [budget, setBudget] = useState<number | string>('');
-  const [days, setDays] = useState<number | string>('');
+  const [budget, setBudget] = useState<number | string>(initial?.budget ?? '');
+  const [days, setDays] = useState<number | string>(initial?.days ?? '');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<false | 'uploading' | 'creating'>(false);
   // One key per form session: a double submit returns the same draft.

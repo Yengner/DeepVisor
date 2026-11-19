@@ -265,7 +265,8 @@
       "count": "Escribe un número entero del 0 al 10,000.",
       "failed": "No se pudo guardar tu respuesta. Inténtalo de nuevo.",
       "retry": "Inténtalo de nuevo."
-    }
+    },
+    "thanks": "Gracias, guardado. Actualiza tu costo por cita."
   },
   "language": {
     "title": "Idioma",
@@ -592,6 +593,30 @@
         "failed": "No se pudo conectar WhatsApp. Inténtalo de nuevo.",
         "https": "Abre DeepVisor con HTTPS para conectar WhatsApp. Meta bloquea este inicio de sesión en páginas http."
       }
+    }
+  },
+  "suggestion": {
+    "offSince": "Tus anuncios están apagados desde el {date}",
+    "restartTitle": "Vuelve a publicar tu mejor anuncio",
+    "bestCost": "trajo conversaciones a {cost} cada una en los últimos 90 días.",
+    "mostRecent": "es tu anuncio de mensajes más reciente.",
+    "plan": "La misma configuración a {budget}/día por {days} días, desde mañana.",
+    "forecast": "Estimado: unas {low}–{high} conversaciones, según tu costo anterior de {costLow}–{costHigh} por conversación.",
+    "forecastNote": "Basado en {weeks} de tus propias semanas; no es una garantía.",
+    "noForecast": "Aún no hay suficientes semanas con resultados para estimar.",
+    "prepare": "Preparar este anuncio otra vez",
+    "newAd": "Probar una foto o video nuevo",
+    "review": "Nada se publica hasta que lo revises y lo publiques.",
+    "accountTitle": "Arregla tu cuenta publicitaria antes de volver a anunciar",
+    "accountBody": "{issue}. Los anuncios nuevos no pueden publicarse hasta que se arregle en el Administrador de anuncios.",
+    "accountBodyGeneric": "Meta reporta un problema con esta cuenta publicitaria. Los anuncios nuevos no pueden publicarse hasta que se arregle en el Administrador de anuncios.",
+    "openAdsManager": "Abrir el Administrador de anuncios",
+    "error": {
+      "forbidden": "Solo los dueños y administradores pueden preparar anuncios.",
+      "failed": "No se pudo preparar el borrador. Inténtalo de nuevo.",
+      "gone": "Ese anuncio ya no está disponible para copiar. Prueba una foto o video nuevo.",
+      "noBudget": "Ese anuncio no tiene presupuesto diario para copiar. Prueba una foto o video nuevo.",
+      "account": "Primero selecciona tu cuenta publicitaria de Meta."
     }
   }
 }

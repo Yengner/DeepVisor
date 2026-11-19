@@ -9,11 +9,16 @@ once a week and turns the answers into an owner-reported cost per appointment.
 | Account-timezone day helpers (pure) | `src/lib/shared/time/zone.ts` |
 | Persistence and loading | `src/lib/server/bookings/checkins.ts` (`server-only`) |
 | Owner/admin write | `src/app/(root)/dashboard/checkinActions.ts` |
-| Overview card | `src/app/(root)/dashboard/components/BookingCheckin.tsx` |
+| Question form (shared) | `src/components/bookings/CheckinAsk.tsx` |
+| Insights popup question | `src/components/bookings/PopupCheckin.tsx` (`pendingCheckinAction`) |
+| Overview card (fallback) | `src/app/(root)/dashboard/components/BookingCheckin.tsx` |
 | Table | `public.booking_checkins`, migration `20261117042757_booking_checkins.sql` |
 
 ## Rules
 
+- **Popup first.** While a week with spend is unanswered, the Insights popup asks it (owners/admins,
+  read live, not saved in popup history). The Overview card stays as the fallback; an answer in
+  either place hides both.
 - Weeks are account-local Monday–Sunday. Only the **last completed week** is asked, only if the
   ads spent money that week, and only until it is answered or skipped ("Not sure").
 - A skipped or unanswered week is unknown. It is left out of **both** spend and bookings;

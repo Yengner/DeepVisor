@@ -13,8 +13,15 @@ export async function generateMetadata() {
   return { title: t('metaTitle') };
 }
 
-export default async function QuickAdPage() {
-  const [{ role }, t] = await Promise.all([getRequiredAppContext(), getTranslations('quickAd')]);
+/** Optional prefill from a link: `?budget=20&days=7`. Invalid values are ignored. */
+function prefill(params: { budget?: string; days?: string }) {
+  const budget = params.budget && /^\d{1,6}(\.\d{1,2})?$/.test(params.budget) && Number(params.budget) > 0 ? Number(params.budget) : null;
+  const days = params.days && /^\d{1,2}$/.test(params.days) && Number(params.days) >= 1 && Number(params.days) <= 90 ? Number(params.days) : null;
+  return { budget, days };
+}
+
+export default async function QuickAdPage({ searchParams }: { searchParams: Promise<{ budget?: string; days?: string }> }) {
+  const [{ role }, t, params] = await Promise.all([getRequiredAppContext(), getTranslations('quickAd'), searchParams]);
   let scope;
   try {
     scope = await authorizeAssistant();
@@ -50,7 +57,7 @@ export default async function QuickAdPage() {
                   : <p>{t('askAdmin')}</p>}
               </section>
             )}
-            <QuickAdForm accountId={scope.account.id} summary={summary} />
+            <QuickAdForm accountId={scope.account.id} summary={summary} initial={prefill(params)} />
           </>
         )}
       </div>

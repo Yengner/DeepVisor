@@ -71,6 +71,17 @@ performance was expected. A period that spent money is still recapped after the 
 unknown delivery or spend is never treated as idle; issues (e.g. unpaid balance) and lifecycle
 changes still present. Rule: `idleRecap` in `shared/insights/model.ts`.
 
+**Ads-off suggestion** (`server/suggestions/idle.ts`, rules in `shared/suggestions/idle.ts`). When
+nothing runs, the last day with spend is 7+ days ago and no suggestion was shown in this idle
+stretch within 14 days, the popup carries `payload.suggestion` (source key `suggestion:<day>`):
+- an open ad account issue (e.g. unpaid balance) → "fix your ad account first", no ad suggested;
+- otherwise the Quick ad source choice (WhatsApp first, lowest cost per result with 3+ results in
+  90 days, else most recent) at its own daily budget (ad set, else campaign) for 7 days, with an
+  estimate from the best and worst weekly cost per result (needs 2 weeks with 3+ results; else
+  no number). "Prepare this ad again" (`prepareRestartDraftAction`) makes a paused,
+  review-required Run again draft copying the latest ad; "Try a new photo or video" opens Quick ad
+  with `?budget=&days=` prefilled. Nothing is published or sent to Meta.
+
 Lifecycle captures reuse existing sync work and preserve reconstructed provenance.
 The November 8 AlexaStyles interruption remains explicitly reconstructed; its exact
 pause time is unverified. A parent pause is not an account-problem alert.
