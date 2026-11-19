@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/server/supabase/server';
 import MobileAppChromeClient from '@/components/layout/MobileAppChromeClient';
+import { agencyEnabled } from '@/lib/server/agency/enabled';
 import TopBarClient from './TopBarClient';
 import type { Database } from '@/lib/shared/types/supabase';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
@@ -115,6 +116,7 @@ export default async function Topbar({ user, businessId, workspaceName = null }:
         unreadNotificationIds={unreadNotificationIds}
         initialPlatformId={selectedPlatformId}
         initialAccountId={selectedAccountId}
+        showAgency={agencyEnabled()}
       />
     </div>
   );

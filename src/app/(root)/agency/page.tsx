@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+import { agencyEnabled } from '@/lib/server/agency/enabled';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -87,6 +89,8 @@ function AgencyKpis({ performance }: { performance: ControlPerformance }) {
 }
 
 export default async function AgencyPage({ searchParams }: { searchParams: Promise<{ page?: string; preview?: string }> }) {
+  // Hidden for the beta (see lib/server/agency/enabled.ts).
+  if (!agencyEnabled()) redirect('/dashboard');
   const params = await searchParams;
   const value = Number(params.page ?? 0);
   const page = Number.isSafeInteger(value) && value >= 0 && value <= 10000 ? value : 0;

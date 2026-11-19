@@ -1,3 +1,4 @@
+import { agencyEnabled } from '@/lib/server/agency/enabled';
 import { comparisons } from '@/lib/server/dashboard/insights/comparisons';
 import { cache, Suspense } from "react";
 import Link from "next/link";
@@ -235,6 +236,7 @@ async function Board({ period, context }: { period: Period; context: OverviewCon
   );
 }
 async function Activity({ context }: { context: OverviewContext }) {
+  if (!agencyEnabled() && !context.decisionPreview) return null;
   const result = await decisions(context).catch(() => null);
   if (!result) return null;
   const items = recentChanges(result.allActivity);
