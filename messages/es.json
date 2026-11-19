@@ -570,6 +570,28 @@
       "notFound": "Ese cliente potencial ya no existe. Actualiza la página.",
       "noAccount": "Primero selecciona una cuenta publicitaria.",
       "failed": "No se pudo guardar. Inténtalo de nuevo."
+    },
+    "connect": {
+      "title": "Conecta tu número de WhatsApp Business",
+      "body": "Conecta el número al que ya te escriben tus clientes. Sigues respondiendo desde la app WhatsApp Business en tu teléfono; DeepVisor solo cuenta los chats que vienen de tus anuncios.",
+      "noteKeepApp": "Mantén abierta la app WhatsApp Business en tu teléfono mientras conectas (toma unos minutos).",
+      "noteQr": "Meta te pedirá escanear un código QR desde la app. Las computadoras vinculadas se desconectan una vez; puedes vincularlas de nuevo.",
+      "notePrivacy": "DeepVisor guarda el nombre de WhatsApp del cliente, los últimos 4 dígitos y la hora. Nunca el texto de los mensajes.",
+      "button": "Conectar WhatsApp",
+      "done": "WhatsApp está conectado. Los chats nuevos aparecerán aquí.",
+      "doneSyncPending": "WhatsApp está conectado, pero Meta no aceptó la sincronización del historial. Desconecta y vuelve a conectar en menos de 24 horas.",
+      "syncFailed": "Falló la sincronización del historial de Meta. Vuelve a conectar en menos de 24 horas o Meta desconectará este número.",
+      "error": {
+        "forbidden": "Solo los dueños y administradores pueden conectar WhatsApp.",
+        "access": "Meta no confirmó el acceso a ese número. Inténtalo de nuevo.",
+        "config": "La conexión de WhatsApp aún no está configurada en este servidor.",
+        "exchange": "El código de inicio de sesión de Meta venció. Inténtalo de nuevo.",
+        "not_app_number": "Ese número no usa la app WhatsApp Business. Conecta el número de tu app WhatsApp Business.",
+        "taken": "Ese número ya está conectado a otro negocio.",
+        "subscribe": "Meta no permitió que DeepVisor reciba los chats de este número. Inténtalo de nuevo.",
+        "failed": "No se pudo conectar WhatsApp. Inténtalo de nuevo.",
+        "https": "Abre DeepVisor con HTTPS para conectar WhatsApp. Meta bloquea este inicio de sesión en páginas http."
+      }
     }
   }
 }

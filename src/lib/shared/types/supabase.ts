@@ -1169,6 +1169,10 @@ export type Database = {
           display_phone: string | null
           id: string
           is_test: boolean
+          onboarded_via: string
+          sync_error: string | null
+          sync_requested_at: string | null
+          token_secret_id: string | null
           phone_number_id: string
           status: string
           waba_id: string | null
@@ -1180,6 +1184,10 @@ export type Database = {
           display_phone?: string | null
           id?: string
           is_test?: boolean
+          onboarded_via?: string
+          sync_error?: string | null
+          sync_requested_at?: string | null
+          token_secret_id?: string | null
           phone_number_id: string
           status?: string
           waba_id?: string | null
@@ -1191,6 +1199,10 @@ export type Database = {
           display_phone?: string | null
           id?: string
           is_test?: boolean
+          onboarded_via?: string
+          sync_error?: string | null
+          sync_requested_at?: string | null
+          token_secret_id?: string | null
           phone_number_id?: string
           status?: string
           waba_id?: string | null

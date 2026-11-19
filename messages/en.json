@@ -570,6 +570,28 @@
       "notFound": "That lead no longer exists. Refresh the page.",
       "noAccount": "Select an ad account first.",
       "failed": "Couldn't save. Try again."
+    },
+    "connect": {
+      "title": "Connect your WhatsApp Business number",
+      "body": "Connect the number your customers already message. You keep answering from the WhatsApp Business app on your phone; DeepVisor only counts chats from your ads.",
+      "noteKeepApp": "Keep the WhatsApp Business app open on your phone while connecting (it takes a few minutes).",
+      "noteQr": "Meta will ask you to scan a QR code from the app. Linked computers are signed out once; you can link them again.",
+      "notePrivacy": "DeepVisor saves the customer's WhatsApp name, the last 4 digits and timing. Never message text.",
+      "button": "Connect WhatsApp",
+      "done": "WhatsApp is connected. New chats will show up here.",
+      "doneSyncPending": "WhatsApp is connected, but Meta didn't accept the history sync. Disconnect and connect again within 24 hours.",
+      "syncFailed": "Meta's history sync failed. Reconnect within 24 hours or Meta disconnects this number.",
+      "error": {
+        "forbidden": "Only owners and admins can connect WhatsApp.",
+        "access": "Meta didn't confirm access to that number. Try again.",
+        "config": "WhatsApp connection isn't set up on this server yet.",
+        "exchange": "Meta's sign-in code expired. Try again.",
+        "not_app_number": "That number isn't using the WhatsApp Business app. Connect the number from your WhatsApp Business app.",
+        "taken": "That number is already connected to another business.",
+        "subscribe": "Meta didn't let DeepVisor receive this number's chats. Try again.",
+        "failed": "Connecting WhatsApp failed. Try again.",
+        "https": "Open DeepVisor over HTTPS to connect WhatsApp. Meta blocks this sign-in on http pages."
+      }
     }
   }
 }

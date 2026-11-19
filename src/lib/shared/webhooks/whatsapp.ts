@@ -89,3 +89,24 @@ export function parseWhatsAppWebhook(body: unknown): WhatsAppMessage[] | null {
   }
   return out;
 }
+
+/**
+ * WhatsApp accounts that stopped sharing with this app: `account_update` with
+ * `event: PARTNER_REMOVED` (the owner tapped Disconnect in the WhatsApp Business app, or Meta
+ * offboarded them). The account id is the entry id. Other account events are ignored.
+ */
+export function parseWhatsAppRemovedAccounts(body: unknown): string[] {
+  const root = record(body);
+  if (root.object !== 'whatsapp_business_account') return [];
+  const ids = new Set<string>();
+  for (const rawEntry of list(root.entry)) {
+    const entry = record(rawEntry);
+    for (const rawChange of list(entry.changes)) {
+      const change = record(rawChange), value = record(change.value);
+      if (change.field !== 'account_update' || value.event !== 'PARTNER_REMOVED') continue;
+      const id = digits(entry.id) ?? digits(record(value.waba_info).waba_id);
+      if (id) ids.add(id);
+    }
+  }
+  return [...ids].slice(0, 50);
+}
