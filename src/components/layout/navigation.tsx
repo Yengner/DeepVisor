@@ -4,6 +4,7 @@ import {
   IconSparkles,
   IconChartBar,
   IconHome2,
+  IconMessageCircle,
   IconPresentation,
   IconPuzzle,
   IconSettings,
@@ -11,7 +12,7 @@ import {
 } from '@tabler/icons-react';
 
 /** Message keys under `nav` in messages/*.json. */
-export type NavKey = 'overview' | 'agency' | 'agencyShort' | 'campaigns' | 'reports' | 'connections' | 'notifications' | 'notificationsShort' | 'profile' | 'settings';
+export type NavKey = 'overview' | 'leads' | 'agency' | 'agencyShort' | 'campaigns' | 'reports' | 'connections' | 'notifications' | 'notificationsShort' | 'profile' | 'settings';
 export type AppNavItem = {
   nameKey: NavKey;
   shortKey: NavKey;
@@ -21,6 +22,7 @@ export type AppNavItem = {
 
 export const primaryNavItems: AppNavItem[] = [
   { nameKey: 'overview', shortKey: 'overview', icon: IconHome2, route: '/dashboard' },
+  { nameKey: 'leads', shortKey: 'leads', icon: IconMessageCircle, route: '/leads' },
   { nameKey: 'agency', shortKey: 'agency', icon: IconSparkles, route: '/agency' },
   { nameKey: 'campaigns', shortKey: 'campaigns', icon: IconPresentation, route: '/campaigns' },
   { nameKey: 'reports', shortKey: 'reports', icon: IconChartBar, route: '/reports' },
