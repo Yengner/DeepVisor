@@ -100,7 +100,10 @@ export function previewPresentation(scenario:PreviewScenario):SavedPresentation{
  switch(scenario){
  case 'empty':p.syncedAt=null;break;
  case 'ads-off':case 'ads-off-no-estimate':p.suggestion={kind:'restart',lastSpendDay:'2026-11-01',adSetId:'990000000000101',adSetName:'[PREVIEW] WhatsApp booking ad set',reason:'cheapest',costPerResult:6.2,dailyBudget:20,days:7,
-  forecast:scenario==='ads-off'?{low:14,high:28,costLow:5,costHigh:10,weeks:3}:null};p.limitations=p.limitations.filter(l=>l.includes('synthetic'));break;
+  forecast:scenario==='ads-off'?{low:14,high:28,costLow:5,costHigh:10,weeks:3}:null,
+  media:{creativeId:'preview-creative',image,fallbackImage:null,kind:'image',headline:'Autumn color appointments',text:null,cta:'WHATSAPP_MESSAGE'},
+  stats:{spend:266.22,results:30,costPerResult:8.87,impressions:9850,clicks:312,ctr:3.17,cpc:0.85,cpm:27.03,reach:null,frequency:null},
+  result:{kind:'whatsapp_conversations',apps:['whatsapp']}};p.limitations=p.limitations.filter(l=>l.includes('synthetic'));break;
  case 'ads-off-account':p.suggestion={kind:'account',lastSpendDay:'2026-11-01',issue:'Meta reports an unpaid balance'};p.limitations=p.limitations.filter(l=>l.includes('synthetic'));break;
  case 'catch-up':p.recap=recap;break;
  case 'daily':case 'daily-missing':{

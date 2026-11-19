@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Alert, Button } from '@mantine/core';
-import type { IdleSuggestion } from '@/lib/shared/suggestions/idle';
+import { STATS_DAYS, type IdleSuggestion } from '@/lib/shared/suggestions/idle';
+import type { Metrics } from '@/lib/server/campaigns/exploration/types';
+import { MediaImage } from '@/components/campaigns/exploration/AdvertisingExplorer';
+import { QuickStats } from '@/app/(root)/dashboard/components/AdCardParts';
 import { prepareRestartDraftAction } from '@/lib/server/actions/suggestions/restart';
 import styles from './IdleSuggestionCard.module.css';
 
@@ -48,15 +51,25 @@ export default function IdleSuggestionCard({ suggestion, currency, interactive =
   const quickHref = `/campaigns/quick?days=${suggestion.days}${suggestion.dailyBudget !== null ? `&budget=${suggestion.dailyBudget}` : ''}`;
   const { forecast } = suggestion;
 
+  const stats = suggestion.stats ? ({ ...suggestion.stats, linkClicks: null } satisfies Metrics) : null;
+
   return (
     <section className={styles.card} aria-labelledby="idle-suggestion">
       <p className={styles.eyebrow}>{t('offSince', { date })}</p>
-      <h3 id="idle-suggestion">{t('restartTitle')}</h3>
-      <p>
-        <strong>{suggestion.adSetName}</strong>{' '}
-        {suggestion.reason === 'cheapest' && suggestion.costPerResult !== null
-          ? t('bestCost', { cost: money(suggestion.costPerResult, true) }) : t('mostRecent')}
-      </p>
+      <h3 id="idle-suggestion" className={styles.title}>{t('restartTitle')}</h3>
+      {/* The ad itself, like the dashboard cards: picture, name, and its own numbers. */}
+      <article className={styles.ad} aria-label={suggestion.adSetName}>
+        <div className={styles.media}>
+          <MediaImage media={suggestion.media ?? undefined} name={suggestion.adSetName} labelPosition="top" dashboard />
+        </div>
+        <div className={styles.adBody}>
+          <p className={styles.adName}>{suggestion.adSetName}</p>
+          <p className={styles.muted}>
+            {suggestion.reason === 'cheapest' ? t('whyCheapest') : t('whyRecent')} · {t('statsPeriod', { days: STATS_DAYS })}
+          </p>
+          {stats && <div className={styles.stats}><QuickStats metrics={stats} deltas={{}} currency={currency} comparison={null} result={suggestion.result ?? undefined} /></div>}
+        </div>
+      </article>
       {suggestion.dailyBudget !== null && <p>{t('plan', { budget: money(suggestion.dailyBudget), days: suggestion.days })}</p>}
       {forecast ? (
         <p className={styles.forecast}>

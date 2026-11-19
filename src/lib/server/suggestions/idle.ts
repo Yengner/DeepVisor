@@ -8,7 +8,9 @@ import { minorToAmount } from '@/lib/shared/agent/facts';
 import { dayIn } from '@/lib/shared/time/zone';
 import { shiftReportDay } from '@/lib/shared/reports/dates';
 import { weekStartOf } from '@/lib/shared/bookings/checkin';
-import { idleSuggestionDue, restartForecast, RESTART_DAYS, type IdleSuggestion, type WeekResult } from '@/lib/shared/suggestions/idle';
+import { idleSuggestionDue, restartForecast, RESTART_DAYS, STATS_DAYS, type IdleSuggestion, type SuggestionMedia, type SuggestionStats, type WeekResult } from '@/lib/shared/suggestions/idle';
+import { aggregate, mediaFor } from '@/lib/server/campaigns/exploration/model';
+import { resultDefinitionFor, type ResultDefinition } from '@/lib/shared/performance/resultChannel';
 
 type Db = SupabaseClient<Database>;
 type Input = { businessId: string; accountId: string; timezone: string; currency: string | null; today: string; activeNow: boolean | null };
@@ -47,14 +49,18 @@ export async function sourceDailyBudget(db: Db, accountId: string, adSetId: stri
   return amount === null ? null : minorToAmount(amount, currency);
 }
 
-/** Weekly spend and results of one ad set over the last 13 weeks, for the estimate. */
-async function weeklyResults(db: Db, input: Input, adSetId: string): Promise<WeekResult[]> {
+/**
+ * The ad set's saved daily rows for the last STATS_DAYS days: weekly totals for the estimate and
+ * the same totals the dashboard cards show (`aggregate`). Empty when the ad set is not saved.
+ */
+async function adSetHistory(db: Db, input: Input, adSetId: string, destinationType: string | null): Promise<{ weeks: WeekResult[]; stats: SuggestionStats | null; result: ResultDefinition | null }> {
   const { data: entity, error } = await db.from('ad_entities').select('id').eq('business_id', input.businessId)
     .eq('ad_account_id', input.accountId).eq('entity_level', 'adset').eq('external_id', adSetId).maybeSingle();
   if (error) throw error;
-  if (!entity) return [];
-  const rows = await readAllPages((from, to) => db.from('ad_entity_performance_daily').select('day, spend, leads, messages, calls')
-    .eq('entity_id', entity.id).gte('day', shiftReportDay(input.today, -91)).order('day').range(from, to), { nullDataError: 'Performance unavailable' });
+  if (!entity) return { weeks: [], stats: null, result: null };
+  const rows = await readAllPages((from, to) => db.from('ad_entity_performance_daily')
+    .select('entity_id, day, currency_code, spend, leads, messages, calls, impressions, clicks, reach, inline_link_clicks')
+    .eq('entity_id', entity.id).gte('day', shiftReportDay(input.today, -(STATS_DAYS - 1))).order('day').range(from, to), { nullDataError: 'Performance unavailable' });
   const weeks = new Map<string, WeekResult>();
   for (const r of rows) {
     const key = weekStartOf(r.day), w = weeks.get(key) ?? { spend: 0, results: 0 };
@@ -64,7 +70,25 @@ async function weeklyResults(db: Db, input: Input, adSetId: string): Promise<Wee
       results: w.results === null || results === null ? null : w.results + results,
     });
   }
-  return [...weeks.values()];
+  const m = rows.length ? aggregate(rows, input.currency) : null;
+  const stats: SuggestionStats | null = m ? {
+    spend: m.spend, results: m.results, costPerResult: m.costPerResult, impressions: m.impressions, clicks: m.clicks,
+    ctr: m.ctr, cpc: m.cpc, cpm: m.cpm, reach: m.reach, frequency: m.frequency,
+  } : null;
+  return { weeks: [...weeks.values()], stats, result: rows.length ? resultDefinitionFor(rows, () => destinationType) : null };
+}
+
+/** Picture of the ad set's latest ad, chosen exactly like the dashboard cards (`mediaFor`). */
+async function adSetMedia(db: Db, input: Input, adSetId: string): Promise<SuggestionMedia | null> {
+  const { data: ads, error } = await db.from('ad_dims').select('creative_id, status').eq('ad_account_id', input.accountId)
+    .eq('adset_external_id', adSetId).not('creative_id', 'is', null).order('created_time', { ascending: false, nullsFirst: false }).limit(5);
+  if (error) throw error;
+  const ad = ads?.find(a => !/deleted|archived/i.test(a.status ?? '')) ?? ads?.[0];
+  if (!ad?.creative_id) return null;
+  const { data: creative, error: creativeError } = await db.from('ad_creatives').select('*').eq('business_id', input.businessId)
+    .eq('ad_account_id', input.accountId).eq('platform_creative_id', ad.creative_id).maybeSingle();
+  if (creativeError) throw creativeError;
+  return creative ? mediaFor(creative) : null;
 }
 
 /**
@@ -87,14 +111,18 @@ export async function loadIdleSuggestion(db: Db, input: Input): Promise<IdleSugg
 
   const source = chooseSourceAdSet(await messagingSourceCandidates({ db, businessId: input.businessId, accountId: input.accountId, today: input.today }));
   if (!source) return null;
-  const [dailyBudget, weeks] = await Promise.all([
+  const [dailyBudget, history, media] = await Promise.all([
     sourceDailyBudget(db, input.accountId, source.adSetId, source.campaignId, input.currency),
-    weeklyResults(db, input, source.adSetId),
+    adSetHistory(db, input, source.adSetId, source.destinationType),
+    // A missing picture never blocks the suggestion; the card shows a placeholder.
+    adSetMedia(db, input, source.adSetId).catch(() => null),
   ]);
+  const weeks = history.weeks;
   return {
     kind: 'restart', lastSpendDay: spendDay!, adSetId: source.adSetId, adSetName: source.name, reason: source.reason,
     costPerResult: source.spend !== null && source.results ? source.spend / source.results : null,
     dailyBudget, days: RESTART_DAYS,
     forecast: dailyBudget === null ? null : restartForecast({ dailyBudget, days: RESTART_DAYS, weeks }),
+    media, stats: history.stats, result: history.result,
   };
 }
