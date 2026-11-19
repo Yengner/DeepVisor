@@ -16,7 +16,12 @@ type LegalDocumentProps = {
   lastUpdatedISO: string;
   summary: string[];
   sections: LegalSection[];
+  /** Translated headings (English by default). */
+  labels?: { updated: string; summary: string; contents: string };
+  /** Shown between the summary and the sections, e.g. a status lookup. */
+  children?: React.ReactNode;
 };
+const ENGLISH = { updated: 'Updated', summary: 'The short version', contents: 'Contents' };
 
 function Contents({ sections }: { sections: LegalSection[] }) {
   return <ol>
@@ -26,28 +31,30 @@ function Contents({ sections }: { sections: LegalSection[] }) {
   </ol>;
 }
 
-export default function LegalDocument({ title, lastUpdated, lastUpdatedISO, summary, sections }: LegalDocumentProps) {
+export default function LegalDocument({ title, lastUpdated, lastUpdatedISO, summary, sections, labels = ENGLISH, children }: LegalDocumentProps) {
   return (
     <DesignSurface label={`DeepVisor / ${title}`}>
       <div className={classes.page}>
         <header className={classes.header}>
           <h1>{title}</h1>
-          <p className={classes.meta}>Updated <time dateTime={lastUpdatedISO}>{lastUpdated}</time></p>
+          <p className={classes.meta}>{labels.updated} <time dateTime={lastUpdatedISO}>{lastUpdated}</time></p>
         </header>
 
         <section className={classes.summary} aria-labelledby="summary-heading">
-          <h2 id="summary-heading">The short version</h2>
+          <h2 id="summary-heading">{labels.summary}</h2>
           <ul>{summary.map((item) => <li key={item}>{item}</li>)}</ul>
         </section>
+
+        {children}
 
         <div className={classes.layout}>
           <nav className={classes.toc} aria-label={`${title} contents`}>
             <details className={classes.tocMobile}>
-              <summary>Contents</summary>
+              <summary>{labels.contents}</summary>
               <Contents sections={sections} />
             </details>
             <div className={classes.tocDesktop}>
-              <h2>Contents</h2>
+              <h2>{labels.contents}</h2>
               <Contents sections={sections} />
             </div>
           </nav>

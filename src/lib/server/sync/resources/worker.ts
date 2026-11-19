@@ -1,7 +1,7 @@
 import {captureMetaEvents,captureMetaLifecycle} from '@/lib/server/lifecycle/service';
 import 'server-only';
 import { createAdminClient } from '@/lib/server/supabase/admin';
-import { getBusinessIntegrationById, resolveIntegrationAccessToken } from '@/lib/server/integrations/service';
+import { getBusinessIntegrationById, rememberMetaUserId, resolveIntegrationAccessToken } from '@/lib/server/integrations/service';
 import { readAllPages } from '@/lib/server/repositories/pagination';
 import { createOrReuseQueuedSyncJob } from '@/lib/server/repositories/ad_accounts/syncState';
 import type { Database, Json } from '@/lib/shared/types/supabase';
@@ -36,6 +36,7 @@ export async function processResourceJob(job: Job) {
       if (!integration || integration.platformKey !== 'meta' || !['connected', 'error'].includes(integration.status)) throw new ResourceDeferred('reauthentication_required');
       const accessToken = await resolveIntegrationAccessToken(db, integration, job.business_id);
       if (!accessToken) throw new ResourceDeferred('reauthentication_required');
+      await rememberMetaUserId(db, { businessId: job.business_id, integration, accessToken });
       const { data: account, error } = await db.from('ad_accounts').select('external_account_id,currency_code').eq('business_id', job.business_id).eq('id', job.ad_account_id).single();
       if (error) throw error;
       if (!job.requested_start_date || !job.requested_end_date) throw new Error('Missing resource dates');

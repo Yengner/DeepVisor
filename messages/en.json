@@ -311,7 +311,8 @@
       "privacy": "Privacy Policy",
       "terms": "Terms of Service",
       "contact": "Contact",
-      "rights": "© {year} DeepVisor LLC. All rights reserved."
+      "rights": "© {year} DeepVisor LLC. All rights reserved.",
+      "dataDeletion": "Data deletion"
     },
     "meta": {
       "title": "DeepVisor: see which ads bring you customers",
@@ -619,5 +620,27 @@
     "whyCheapest": "Your lowest cost per conversation",
     "whyRecent": "Your most recent messaging ad",
     "statsPeriod": "last {days} days"
+  },
+  "metaDeletion": {
+    "menu": "Delete Meta data",
+    "title": "Delete Meta data",
+    "intro": "This permanently deletes what DeepVisor got from Meta for this connection:",
+    "deletes1": "Campaigns, ad sets, ads, creatives and all results and history synced for its ad accounts.",
+    "deletes2": "Insights, decisions, drafts and Organizer history built from that data.",
+    "deletes3": "Your WhatsApp connection and the chats logged from it, and every stored Meta login.",
+    "keeps": "Kept: your DeepVisor account, business profile, weekly appointment answers and phone calls you logged. You can reconnect Meta later to start fresh.",
+    "typeDelete": "Type DELETE to confirm",
+    "confirm": "Delete Meta data",
+    "cancel": "Cancel",
+    "close": "Close",
+    "done": "Your Meta data was deleted and the connection is disconnected.",
+    "codeLabel": "Confirmation code:",
+    "codeHelp": "Keep this code. You can check it any time on the <link>data deletion page</link>.",
+    "error": {
+      "confirm": "Type DELETE to confirm.",
+      "forbidden": "Only owners and admins can delete Meta data.",
+      "notFound": "That Meta connection was not found.",
+      "failed": "The data could not be deleted. Nothing was changed; please try again."
+    }
   }
 }

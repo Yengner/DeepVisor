@@ -1,4 +1,6 @@
 'use client';
+import { useTranslations } from 'next-intl';
+import DeleteMetaDataModal from './DeleteMetaDataModal';
 import Disclosure from '@/components/product/Disclosure';
 import product from '@/components/product/Product.module.css';
 import { ownerMessages } from '@/components/product/presentation';
@@ -187,6 +189,8 @@ function ChannelArtwork({
 export default function IntegrationClient({ platforms }: PlatformListProps) {
   const [disconnectingPlatformId, setDisconnectingPlatformId] = useState<string | null>(null);
   const [disconnectTarget, setDisconnectTarget] = useState<Platform | null>(null);
+  const [deleteDataTarget, setDeleteDataTarget] = useState<string | null>(null);
+  const tDeletion = useTranslations('metaDeletion');
   const [selectedPlatform, setSelectedPlatform] = useState<DisplayPlatform | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [focusedPlatformId, setFocusedPlatformId] = useState<string | null>(null);
@@ -926,6 +930,11 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                 >
                                   {disconnecting ? 'Disconnecting...' : 'Disconnect'}
                                 </Menu.Item>
+                                {platform.platformKey === 'meta' && (
+                                  <Menu.Item color="red" leftSection={<IconTrash size={14} />} onClick={() => setDeleteDataTarget(platform.integrationId)}>
+                                    {tDeletion('menu')}
+                                  </Menu.Item>
+                                )}
                               </Menu.Dropdown>
                             </Menu>
                           ) : null}
@@ -936,6 +945,8 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                 })}
               </SimpleGrid>
             </div>
+
+            <DeleteMetaDataModal integrationId={deleteDataTarget} opened={Boolean(deleteDataTarget)} onClose={() => setDeleteDataTarget(null)} />
 
             <Modal
               opened={Boolean(disconnectTarget)}
@@ -952,8 +963,9 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
             >
               <Stack gap="md">
                 <Text size="sm">
-                  Disconnect {disconnectTarget?.platformName ?? 'this platform'}? New performance
-                  data will stop syncing until it is reconnected.
+                  Disconnect {disconnectTarget?.platformName ?? 'this platform'}? DeepVisor stops all access and
+                  deletes the stored login. Data already synced stays so reports keep working; use
+                  Delete Meta data to remove it.
                 </Text>
                 <Group justify="flex-end">
                   <Button
