@@ -598,8 +598,6 @@
   "suggestion": {
     "offSince": "Tus anuncios están apagados desde el {date}",
     "restartTitle": "Vuelve a publicar tu mejor anuncio",
-    "bestCost": "trajo conversaciones a {cost} cada una en los últimos 90 días.",
-    "mostRecent": "es tu anuncio de mensajes más reciente.",
     "plan": "La misma configuración a {budget}/día por {days} días, desde mañana.",
     "forecast": "Estimado: unas {low}–{high} conversaciones, según tu costo anterior de {costLow}–{costHigh} por conversación.",
     "forecastNote": "Basado en {weeks} de tus propias semanas; no es una garantía.",
@@ -617,6 +615,9 @@
       "gone": "Ese anuncio ya no está disponible para copiar. Prueba una foto o video nuevo.",
       "noBudget": "Ese anuncio no tiene presupuesto diario para copiar. Prueba una foto o video nuevo.",
       "account": "Primero selecciona tu cuenta publicitaria de Meta."
-    }
+    },
+    "whyCheapest": "Tu menor costo por conversación",
+    "whyRecent": "Tu anuncio de mensajes más reciente",
+    "statsPeriod": "últimos {days} días"
   }
 }

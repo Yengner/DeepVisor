@@ -78,7 +78,9 @@ stretch within 14 days, the popup carries `payload.suggestion` (source key `sugg
 - otherwise the Quick ad source choice (WhatsApp first, lowest cost per result with 3+ results in
   90 days, else most recent) at its own daily budget (ad set, else campaign) for 7 days, with an
   estimate from the best and worst weekly cost per result (needs 2 weeks with 3+ results; else
-  no number). "Prepare this ad again" (`prepareRestartDraftAction`) makes a paused,
+  no number). The card shows the ad like Overview does: the latest ad's picture or video poster
+  (`mediaFor`, fallbacks on broken links), the ad set name, and its last-90-day totals
+  (`aggregate`, `QuickStats`). "Prepare this ad again" (`prepareRestartDraftAction`) makes a paused,
   review-required Run again draft copying the latest ad; "Try a new photo or video" opens Quick ad
   with `?budget=&days=` prefilled. Nothing is published or sent to Meta.
 

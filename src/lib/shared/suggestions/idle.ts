@@ -1,4 +1,5 @@
 import { reportDayCount } from '@/lib/shared/reports/dates';
+import type { ResultDefinition } from '@/lib/shared/performance/resultChannel';
 
 /**
  * "Your ads are off" suggestion: when nothing is running, now and then offer to run the owner's
@@ -47,6 +48,15 @@ export function restartForecast(input: { dailyBudget: number; days: number; week
   return { low: Math.floor(total / costHigh), high: Math.floor(total / costLow), costLow, costHigh, weeks: costs.length };
 }
 
+/** The ad's picture, same shape and selection as the dashboard cards (`mediaFor`). */
+export type SuggestionMedia = {
+  creativeId: string; image: string | null; fallbackImage: string | null; fallbackImages?: string[];
+  kind: 'image' | 'video' | 'carousel' | 'dynamic'; headline: string | null; text: string | null; cta: string | null;
+};
+/** The ad set's totals over the last STATS_DAYS days, same calculation as the dashboard (`aggregate`). */
+export type SuggestionStats = Record<'spend' | 'results' | 'costPerResult' | 'impressions' | 'clicks' | 'ctr' | 'cpc' | 'cpm' | 'reach' | 'frequency', number | null>;
+export const STATS_DAYS = 90;
+
 /** Saved in the popup payload. Amounts are in major units of `currency`. */
 export type IdleSuggestion =
   /** Meta reports an ad account problem (e.g. unpaid balance): fix that before any new ad. */
@@ -61,4 +71,8 @@ export type IdleSuggestion =
     dailyBudget: number | null;
     days: number;
     forecast: Forecast | null;
+    /** Optional so popups saved before pictures and stats were added still render. */
+    media?: SuggestionMedia | null;
+    stats?: SuggestionStats | null;
+    result?: ResultDefinition | null;
   };

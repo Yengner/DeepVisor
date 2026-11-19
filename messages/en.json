@@ -598,8 +598,6 @@
   "suggestion": {
     "offSince": "Your ads have been off since {date}",
     "restartTitle": "Run your best ad again",
-    "bestCost": "brought conversations at {cost} each over the last 90 days.",
-    "mostRecent": "is your most recent messaging ad.",
     "plan": "Same setup at {budget}/day for {days} days, starting tomorrow.",
     "forecast": "Estimate: about {low}–{high} conversations, based on your past {costLow}–{costHigh} per conversation.",
     "forecastNote": "From {weeks} of your own weeks; not a guarantee.",
@@ -617,6 +615,9 @@
       "gone": "That ad is no longer available to copy. Try a new photo or video instead.",
       "noBudget": "That ad has no daily budget to copy. Try a new photo or video instead.",
       "account": "Select your Meta ad account first."
-    }
+    },
+    "whyCheapest": "Your lowest cost per conversation",
+    "whyRecent": "Your most recent messaging ad",
+    "statsPeriod": "last {days} days"
   }
 }
