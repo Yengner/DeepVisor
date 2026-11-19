@@ -64,6 +64,13 @@ original remains available. Rules (`shared/insights/revision.ts`):
 - Recaps whose last day is more than 7 days old are settled and no longer re-checked.
 CSV/PDF export the chosen presentation.
 
+**Quiet when idle.** When no ad is on a complete active delivery chain now (saved hierarchy,
+`activeDeliveryKeys`, the same rule as Campaigns) and the recap period spent exactly $0, no recap
+is prepared and the "recap not yet available" / "sync more than a day old" notes are omitted: no
+performance was expected. A period that spent money is still recapped after the ads stop;
+unknown delivery or spend is never treated as idle; issues (e.g. unpaid balance) and lifecycle
+changes still present. Rule: `idleRecap` in `shared/insights/model.ts`.
+
 Lifecycle captures reuse existing sync work and preserve reconstructed provenance.
 The November 8 AlexaStyles interruption remains explicitly reconstructed; its exact
 pause time is unverified. A parent pause is not an account-problem alert.

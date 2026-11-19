@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {accountToday} from '@/lib/shared/reports/dates';
-import {recapWindow,summarize,hierarchyIssues,fatigueIssues,issueLevel,urgentIssues,completeComparable,headline,lifecycleStatus} from './model';
+import {idleRecap,recapWindow,summarize,hierarchyIssues,fatigueIssues,issueLevel,urgentIssues,completeComparable,headline,lifecycleStatus} from './model';
 import {changes} from '@/lib/shared/lifecycle/model';
 import {previewPresentation} from './preview';
 import type {Presentation,PerformanceRow,Recap} from './model';
@@ -156,5 +156,20 @@ describe('resolved issues in a re-shown update', () => {
     expect(urgentIssues([resolved])).toEqual([]);
     expect(urgentIssues([{ ...resolved, resolvedAt: null }])).toHaveLength(1);
     expect(headline({ issues: [resolved], recap: null, lifecycle: [] } as never)).toBe('An earlier issue has cleared');
+  });
+});
+
+describe('idleRecap', () => {
+  it('is quiet when nothing runs now and the period spent nothing (e.g. one late-credited chat)', () => {
+    expect(idleRecap(false, { spend: 0 })).toBe(true);
+  });
+  it('still recaps a period that spent money, even after the ads stopped', () => {
+    expect(idleRecap(false, { spend: 9.09 })).toBe(false);
+  });
+  it('never treats unknown delivery or unknown spend as idle', () => {
+    expect(idleRecap(null, { spend: 0 })).toBe(false);
+    expect(idleRecap(false, { spend: null })).toBe(false);
+    expect(idleRecap(true, { spend: 0 })).toBe(false);
+    expect(idleRecap(false, null)).toBe(false);
   });
 });

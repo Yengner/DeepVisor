@@ -154,3 +154,13 @@ export const LIFECYCLE_LABEL: Record<LifecycleKind, string> = {
  ended:'Scheduled end reached', active:'Now active', resumed:'Active again', paused:'Paused',
  interrupted:'Delivery interrupted', archived:'Archived or deleted', rejected:'Rejected by Meta', update:'Advertising update',
 };
+
+/**
+ * Quiet when idle: no ad is running now (`activeNow === false`, from the saved delivery chain)
+ * and the recap period spent exactly nothing, so no performance was expected and there is
+ * nothing to recap. Unknown delivery (`null`) or unknown spend is never treated as idle, and a
+ * period that spent money is always recapped even after the ads stopped.
+ */
+export function idleRecap(activeNow: boolean | null, recap: Pick<Recap, 'spend'> | null): boolean {
+  return activeNow === false && recap !== null && recap.spend === 0;
+}
