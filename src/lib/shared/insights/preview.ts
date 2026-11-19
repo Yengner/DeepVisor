@@ -22,6 +22,9 @@ export const previewScenarioGroups=[
  {id:'combined',label:'Combined Updates',scenarios:[
   ['rejection','Lifecycle + rejection'],['catch-up-lifecycle','Catch-up + lifecycle'],['connection-recap','Reconnect + catch-up'],['all','All categories'],['many','Many updates · collapsed history'],
  ]},
+ {id:'idle',label:'Ads Off',scenarios:[
+  ['ads-off','Ads off · run best ad again'],['ads-off-no-estimate','Ads off · not enough history'],['ads-off-account','Ads off · account problem first'],
+ ]},
  {id:'coverage',label:'Missing Data & Edge Cases',scenarios:[
   ['daily-missing','Daily catch-up · hourly unavailable'],['hourly-partial','Daily catch-up · some hours missing'],['sparse','Missing dates & unavailable results'],['zero','Observed zero results'],['unknown','Unknown currency & missing creative'],['long-names','Very long names'],['empty','No data available'],
  ]},
@@ -67,6 +70,9 @@ export const previewScenarioNotes:Record<string,string>={
  unknown:'No currency, timezone or creative preview saved.',
  'long-names':'Long account, campaign and ad names to test wrapping.',
  empty:'Nothing synced yet.',
+ 'ads-off':'Nothing running for 7+ days: best ad again with an estimate from past weeks, or a new photo.',
+ 'ads-off-no-estimate':'Same suggestion when fewer than 2 past weeks had 3+ results: no number shown.',
+ 'ads-off-account':'Meta reports an account problem: fix it before any new ad is suggested.',
 };
 export const previewScenarios=previewScenarioGroups.flatMap(group=>group.scenarios.map(scenario=>scenario));
 export type PreviewScenario=typeof previewScenarioGroups[number]['scenarios'][number][0];
@@ -93,6 +99,9 @@ export function previewPresentation(scenario:PreviewScenario):SavedPresentation{
  const card=lifecycle(),issue=attention();
  switch(scenario){
  case 'empty':p.syncedAt=null;break;
+ case 'ads-off':case 'ads-off-no-estimate':p.suggestion={kind:'restart',lastSpendDay:'2026-11-01',adSetId:'990000000000101',adSetName:'[PREVIEW] WhatsApp booking ad set',reason:'cheapest',costPerResult:6.2,dailyBudget:20,days:7,
+  forecast:scenario==='ads-off'?{low:14,high:28,costLow:5,costHigh:10,weeks:3}:null};p.limitations=p.limitations.filter(l=>l.includes('synthetic'));break;
+ case 'ads-off-account':p.suggestion={kind:'account',lastSpendDay:'2026-11-01',issue:'Meta reports an unpaid balance'};p.limitations=p.limitations.filter(l=>l.includes('synthetic'));break;
  case 'catch-up':p.recap=recap;break;
  case 'daily':case 'daily-missing':{
   p.recap=summarize([rows[6]],{since:'2026-11-07',until:'2026-11-07',capped:false},'USD');

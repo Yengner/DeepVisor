@@ -1,0 +1,26 @@
+.ask {
+  display: grid;
+  gap: 8px;
+}
+
+.ask h2 {
+  margin: 0;
+  font-size: var(--dv-text-md);
+  font-weight: 800;
+}
+
+.ask p {
+  margin: 0;
+  font-size: var(--dv-text-sm);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.input {
+  width: 120px;
+}

@@ -18,6 +18,8 @@ import { leadUp, leadUpTrend } from '@/lib/shared/insights/leadUp';
 import { presentationDay } from '@/lib/shared/insights/notification';
 import RangeSwitch from '@/components/design/RangeSwitch';
 import styles from './InsightsView.module.css';
+import PopupCheckin from '@/components/bookings/PopupCheckin';
+import IdleSuggestionCard from './IdleSuggestionCard';
 import { InsightDataNotice, MissingObservationTrack } from './InsightDataState';
 
 const number = (v: number | null) => v === null ? '—' : new Intl.NumberFormat('en', { maximumFractionDigits: 0 }).format(v);
@@ -283,7 +285,7 @@ export function InsightContent({ saved, preview = false }: { saved: SavedPresent
       </div>
     </header>
     {lead.map(c => <div key={c.key}>{c.node}</div>)}
-    {!r && !p.issues.length && !p.lifecycle.length && <section className={`${styles.card} ${styles.dataState}`}>
+    {!r && !p.issues.length && !p.lifecycle.length && !p.suggestion && <section className={`${styles.card} ${styles.dataState}`}>
       <Metrics spend={null} results={null} cpr={null} currency={p.currency} />
       <div className={styles.dataInset}><InsightDataNotice title="No saved observations available">Your catch-up will appear once synchronization provides usable data. Missing information is not zero.</InsightDataNotice><MissingObservationTrack /></div>
     </section>}
@@ -295,6 +297,7 @@ export function InsightContent({ saved, preview = false }: { saved: SavedPresent
         {unavailableHours ? <MissingObservationTrack hourly /> : <RecapChart recap={r} currency={p.currency} timezone={p.timezone} />}
       </div>
     </section>}
+    {p.suggestion && <IdleSuggestionCard suggestion={p.suggestion} currency={p.currency} interactive={!preview} />}
     {visibleRest.map(c => <div key={c.key}>{c.node}</div>)}
     {hiddenRest.length > 0 && <details className={styles.more}><summary>{hiddenRest.length} more {hiddenRest.length === 1 ? 'update' : 'updates'} in this review</summary>{hiddenRest.map(c => <div key={c.key}>{c.node}</div>)}</details>}
     {!preview && <div className={styles.actions}>
@@ -353,6 +356,7 @@ export default function InsightsPopup({ accountId }: { accountId: string | null 
     {!saved && error && <StatusBanner tone="gap">{error}</StatusBanner>}
     <Modal opened={Boolean(saved)} onClose={() => void dismiss()} title="Insights & Events" size={740} fullScreen={mobile} radius="lg" closeOnClickOutside={false} closeOnEscape={!busy} classNames={insightModalClassNames}>
       {saved && <InsightContent saved={saved} />}
+      {saved && <PopupCheckin key={saved.id} />}
       <InsightFooter error={error} note={additional ? 'More updates are waiting. They stay unread until shown.' : 'This update stays in your history.'} action={busy ? 'Saving…' : 'Got it'} onAction={() => void dismiss()} busy={busy} />
     </Modal>
   </>;

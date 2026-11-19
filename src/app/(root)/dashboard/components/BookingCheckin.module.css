@@ -19,22 +19,6 @@
   font-size: var(--dv-text-sm);
 }
 
-.ask {
-  display: grid;
-  gap: 8px;
-}
-
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.input {
-  width: 120px;
-}
-
 .summary {
   color: var(--mantine-color-dimmed);
 }

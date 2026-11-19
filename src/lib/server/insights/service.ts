@@ -5,7 +5,8 @@ import { readAllPages } from '@/lib/server/repositories/pagination';
 import { accountToday, previousReportRange } from '@/lib/shared/reports/dates';
 import {recapChange, recapRevision, revisable} from '@/lib/shared/insights/revision';
 import {urgentIssues, recapWindow, summarize, completeComparable, idleRecap } from '@/lib/shared/insights/model';
-import { activeDeliveryKeys } from '@/lib/server/campaigns/exploration/delivery';
+import { accountActiveNow } from '@/lib/server/campaigns/activity';
+import { loadIdleSuggestion } from '@/lib/server/suggestions/idle';
 import type { Issue, IssueEvidence, Presentation, SavedPresentation, PerformanceRow } from '@/lib/shared/insights/model';
 import type { Database, Json } from '@/lib/shared/types/supabase';
 import type { Observation } from '@/lib/shared/lifecycle/model';
@@ -99,15 +100,6 @@ async function observeSavedSources(s:Scope){
  if(snapshot.error)throw snapshot.error;
  if(snapshot.data)await observeHierarchyIssues(s.business,s.account,snapshot.data.observed_at,snapshot.data.entities as unknown as Observation[]);
 }
-/**
- * Whether any ad is on a complete active delivery chain now, from the saved hierarchy (the same
- * rule as Campaigns: configured ACTIVE past its end date is COMPLETED). Null when unknown.
- */
-async function activeNow(s:Scope):Promise<boolean|null>{
- const rows=await readAllPages((from,to)=>db().from('ad_entities').select('id,external_id,parent_external_id,entity_level,status,raw').eq('business_id',s.business).eq('ad_account_id',s.account).order('id').range(from,to),{nullDataError:'Hierarchy unavailable'}).catch(()=>null);
- if(!rows||!rows.some(r=>r.entity_level==='ad'))return null;
- return activeDeliveryKeys(rows).length>0;
-}
 async function publication(s:Scope){
  const c=db();const [account,state,resources,running]=await Promise.all([
  c.from('ad_accounts').select('name,timezone,currency_code,last_synced').eq('business_id',s.business).eq('id',s.account).single(),
@@ -170,7 +162,7 @@ export async function prepare(s:Scope,token:string):Promise<(SavedPresentation&{
  const c=db();await observeSavedSources(s);
  const [review,pending,pub,running]=await Promise.all([
  c.from('insight_reviews').select('*').eq('user_id',s.user).eq('ad_account_id',s.account).maybeSingle(),
- c.rpc('pending_insight_sources',{p_account:s.account,p_user:s.user}),publication(s),activeNow(s)]);
+ c.rpc('pending_insight_sources',{p_account:s.account,p_user:s.user}),publication(s),accountActiveNow(c,s.business,s.account)]);
  // Nothing running and nothing spent: no recap and no missing-data notes, because no data was expected.
  const idle=running===false;
  if(review.error)throw review.error;if(pending.error)throw pending.error;
@@ -196,9 +188,11 @@ export async function prepare(s:Scope,token:string):Promise<(SavedPresentation&{
  if(!idle&&pub.syncedAt&&Date.now()-Date.parse(pub.syncedAt)>24*3600000)limitations.push('The last successful synchronization is more than a day old. Current delivery may differ.');
  if(recap&&today&&recap.until<new Date(Date.parse(today+'T00:00:00Z')-86400000).toISOString().slice(0,10))limitations.push(`Published coverage currently ends ${recap.until}; more recent days are not included.`);
  if(!recap&&window&&!idle)limitations.push('A completed-day recap is not yet available, or today’s recap was already presented.');
- const payload:Presentation={version:1,account:pub.account.name??'Meta account',timezone:pub.account.timezone,currency:pub.account.currency_code,preparedAt:new Date().toISOString(),syncedAt:pub.syncedAt,recap,issues,lifecycle,limitations};
+ // Ads off for a while: now and then offer to run the best ad again or try a new one (read-only).
+ const suggestion=idle&&today&&pub.account.timezone?await loadIdleSuggestion(c,{businessId:s.business,accountId:s.account,timezone:pub.account.timezone,currency:pub.account.currency_code,today,activeNow:running}).catch(()=>{console.warn('Idle suggestion unavailable');return null;}):null;
+ const payload:Presentation={version:1,account:pub.account.name??'Meta account',timezone:pub.account.timezone,currency:pub.account.currency_code,preparedAt:new Date().toISOString(),syncedAt:pub.syncedAt,recap,issues,lifecycle,limitations,...(suggestion?{suggestion}:{})};
  await reviseSavedRecap(s,pub,review.data?.checked_revision);
- const keys=[...issues.map(i=>`issue:${i.id}:${i.revision}`),...lifecycle.map(e=>`lifecycle:${e.eventId}`)];
+ const keys=[...issues.map(i=>`issue:${i.id}:${i.revision}`),...lifecycle.map(e=>`lifecycle:${e.eventId}`),...(suggestion?[`suggestion:${today}`]:[])];
  const fingerprint=createHash('sha256').update(JSON.stringify([keys,recap,pub.signature])).digest('hex');
  const result=await c.rpc('present_insights',{p_business:s.business,p_account:s.account,p_user:s.user,p_token:token,p_day:today??new Date().toISOString().slice(0,10),p_expected:review.data?.reviewed_through??null,p_payload:payload as unknown as Json,p_keys:keys,p_fingerprint:fingerprint,p_until:recap?.until??null,p_urgent:urgentIssues(issues).length>0});
  if(result.error)throw result.error;if(!result.data)return null;

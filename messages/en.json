@@ -265,7 +265,8 @@
       "count": "Enter a whole number from 0 to 10,000.",
       "failed": "Your answer could not be saved. Please try again.",
       "retry": "Please try again."
-    }
+    },
+    "thanks": "Thanks — saved. It updates your cost per appointment."
   },
   "language": {
     "title": "Language",
@@ -592,6 +593,30 @@
         "failed": "Connecting WhatsApp failed. Try again.",
         "https": "Open DeepVisor over HTTPS to connect WhatsApp. Meta blocks this sign-in on http pages."
       }
+    }
+  },
+  "suggestion": {
+    "offSince": "Your ads have been off since {date}",
+    "restartTitle": "Run your best ad again",
+    "bestCost": "brought conversations at {cost} each over the last 90 days.",
+    "mostRecent": "is your most recent messaging ad.",
+    "plan": "Same setup at {budget}/day for {days} days, starting tomorrow.",
+    "forecast": "Estimate: about {low}–{high} conversations, based on your past {costLow}–{costHigh} per conversation.",
+    "forecastNote": "From {weeks} of your own weeks; not a guarantee.",
+    "noForecast": "Not enough past weeks with results to estimate yet.",
+    "prepare": "Prepare this ad again",
+    "newAd": "Try a new photo or video",
+    "review": "Nothing goes live until you review and publish it.",
+    "accountTitle": "Fix your ad account before running ads again",
+    "accountBody": "{issue}. New ads can't run until it is fixed in Meta Ads Manager.",
+    "accountBodyGeneric": "Meta reports a problem with this ad account. New ads can't run until it is fixed in Meta Ads Manager.",
+    "openAdsManager": "Open Ads Manager",
+    "error": {
+      "forbidden": "Only owners and admins can prepare ads.",
+      "failed": "The draft could not be prepared. Please try again.",
+      "gone": "That ad is no longer available to copy. Try a new photo or video instead.",
+      "noBudget": "That ad has no daily budget to copy. Try a new photo or video instead.",
+      "account": "Select your Meta ad account first."
     }
   }
 }
