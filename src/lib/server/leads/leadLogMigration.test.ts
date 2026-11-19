@@ -21,6 +21,9 @@ beforeAll(async () => {
   const sql = readFileSync(new URL('../../../../supabase/migrations/20261118034046_whatsapp_lead_log.sql', import.meta.url), 'utf8');
   await db.exec(sql);
   await db.exec(sql);
+  const connect = readFileSync(new URL('../../../../supabase/migrations/20261118054831_whatsapp_connect.sql', import.meta.url), 'utf8');
+  await db.exec(connect);
+  await db.exec(connect);
   await db.exec(`insert into public.whatsapp_connections(business_id, phone_number_id) values ('${A}', '${PHONE_A}'), ('${B}', '${PHONE_B}')`);
 }, 20000);
 afterAll(async () => { await db?.close(); });
@@ -103,4 +106,27 @@ it('rejects inconsistent rows', async () => {
   await expect(insert(`'call', 'manual', '${KEY(1)}', null, now(), now(), null, null`)).rejects.toThrow(/check/);
   await expect(insert(`'call', 'manual', null, null, now(), now(), 'booked', null`)).rejects.toThrow(/check/);
   await insert(`'call', 'manual', null, null, now(), now(), 'booked', now()`);
+});
+
+it('keeps one lead when WhatsApp sends a placeholder before the real first message from an ad', async () => {
+  // 131060 "unsupported" placeholder (no referral), then the real message with the ad a few seconds later.
+  expect(await message({ at: '2026-11-10T10:00:00Z' })).toMatchObject({ created: true });
+  expect(await message({ at: '2026-11-10T10:00:04Z', ad: '777', clid: 'click-1' })).toMatchObject({ status: 'recorded', created: false });
+  expect(await leads()).toEqual([expect.objectContaining({ source: 'ad', ad_external_id: '777', ctwa_clid: 'click-1', messages_in: 2, first: '11-10 10:00' })]);
+});
+
+it('still opens a new lead for an ad chat long after an organic one', async () => {
+  await message({ at: '2026-11-10T10:00:00Z' });
+  await message({ at: '2026-11-10T11:00:00Z', ad: '777' });
+  expect((await leads()).map(l => l.source)).toEqual(['organic', 'ad']);
+});
+
+it('never lets members read the token reference or sync errors', async () => {
+  const asMember = async (statement: string) => {
+    await db.exec(`begin; set local role authenticated; set local test.business = '${A}'`);
+    try { return await db.query(statement); } finally { await db.exec('rollback; reset role'); }
+  };
+  expect((await asMember('select display_phone, onboarded_via, sync_requested_at from public.whatsapp_connections')).rows).toHaveLength(1);
+  await expect(asMember('select token_secret_id from public.whatsapp_connections')).rejects.toMatchObject({ code: '42501' });
+  await expect(asMember('select sync_error from public.whatsapp_connections')).rejects.toMatchObject({ code: '42501' });
 });

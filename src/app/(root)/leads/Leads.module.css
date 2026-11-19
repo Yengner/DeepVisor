@@ -272,3 +272,20 @@
     transition: none;
   }
 }
+
+.connectNotes {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 1.2em;
+  list-style: disc;
+  color: var(--mantine-color-dimmed);
+  font-size: var(--dv-text-sm);
+  line-height: 1.5;
+}
+
+.warning {
+  color: var(--mantine-color-red-text);
+  font-size: var(--dv-text-sm);
+  font-weight: 600;
+}

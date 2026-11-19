@@ -5,8 +5,9 @@ import { dispatchAccountSync } from '@/lib/server/sync/dispatch';
 import { processMetaBackfillJobs } from '@/lib/server/sync/meta/processBackfillJobs';
 import { ingestMetaWebhook, MAX_WEBHOOK_BYTES, verifyChallenge, verifySignature, webhooksEnabled } from '@/lib/server/webhooks/meta';
 import { parseMetaWebhook } from '@/lib/shared/webhooks/meta';
-import { parseWhatsAppWebhook } from '@/lib/shared/webhooks/whatsapp';
+import { parseWhatsAppRemovedAccounts, parseWhatsAppWebhook } from '@/lib/shared/webhooks/whatsapp';
 import { ingestWhatsAppMessages } from '@/lib/server/leads/ingest';
+import { disconnectWhatsAppAccounts } from '@/lib/server/leads/connect';
 import { asRecord } from '@/lib/shared/utils/format';
 
 export const maxDuration = 300;
@@ -55,11 +56,15 @@ export async function POST(request: NextRequest) {
   let body: unknown;
   try { body = JSON.parse(raw); } catch { return new NextResponse('Invalid payload', { status: 400, headers }); }
   // WhatsApp Business deliveries feed the lead log (ids, timing and ad referral only; no text).
+  // `history` and `smb_app_state_sync` (coexistence sync) are acknowledged and not stored.
   const whatsapp = parseWhatsAppWebhook(body);
   if (whatsapp !== null) {
     try {
-      const result = await ingestWhatsAppMessages(createAdminClient(), whatsapp, process.env.META_APP_SECRET);
-      return NextResponse.json({ received: result.received, recorded: result.recorded, duplicates: result.duplicates }, { headers });
+      const db = createAdminClient();
+      const result = await ingestWhatsAppMessages(db, whatsapp, process.env.META_APP_SECRET);
+      // The owner disconnected DeepVisor in the WhatsApp Business app: stop counting that number.
+      const disconnected = await disconnectWhatsAppAccounts(db, parseWhatsAppRemovedAccounts(body));
+      return NextResponse.json({ received: result.received, recorded: result.recorded, duplicates: result.duplicates, disconnected }, { headers });
     } catch {
       console.error('WhatsApp webhook could not be recorded');
       return new NextResponse('Temporarily unavailable', { status: 503, headers });

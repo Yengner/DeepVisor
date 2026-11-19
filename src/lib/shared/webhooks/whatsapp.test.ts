@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseWhatsAppWebhook, profileName } from './whatsapp';
+import { parseWhatsAppRemovedAccounts, parseWhatsAppWebhook, profileName } from './whatsapp';
 
 const delivery = (field: string, value: Record<string, unknown>) => ({
   object: 'whatsapp_business_account',
@@ -65,5 +65,25 @@ describe('parseWhatsAppWebhook', () => {
   it('bounds profile names', () => {
     expect(profileName('  ')).toBeNull();
     expect(profileName('x'.repeat(200))).toHaveLength(80);
+  });
+});
+
+describe('parseWhatsAppRemovedAccounts', () => {
+  const update = (event: string, entryId = '102290129340398') => ({
+    object: 'whatsapp_business_account',
+    entry: [{ id: entryId, changes: [{ field: 'account_update', value: { event, disconnection_info: { initiated_by: 'BUSINESS' } } }] }],
+  });
+  it('returns accounts that disconnected this app', () => {
+    expect(parseWhatsAppRemovedAccounts(update('PARTNER_REMOVED'))).toEqual(['102290129340398']);
+  });
+  it('ignores other account events, other objects and bad ids', () => {
+    expect(parseWhatsAppRemovedAccounts(update('PARTNER_ADDED'))).toEqual([]);
+    expect(parseWhatsAppRemovedAccounts(update('PARTNER_REMOVED', 'abc'))).toEqual([]);
+    expect(parseWhatsAppRemovedAccounts({ ...update('PARTNER_REMOVED'), object: 'page' })).toEqual([]);
+  });
+  it('is not mistaken for messages, and history/contact sync deliveries record nothing', () => {
+    expect(parseWhatsAppWebhook(update('PARTNER_REMOVED'))).toEqual([]);
+    expect(parseWhatsAppWebhook(delivery('history', { history: [{ threads: [{ id: '16505551234', messages: [{ id: 'wamid.h', from: '16505551234', timestamp: '1731230000', type: 'text' }] }] }] }))).toEqual([]);
+    expect(parseWhatsAppWebhook(delivery('smb_app_state_sync', { state_sync: [{ type: 'contact', contact: { phone_number: '16505551234', full_name: 'Ana' }, action: 'add' }] }))).toEqual([]);
   });
 });

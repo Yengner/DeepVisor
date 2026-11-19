@@ -23,6 +23,7 @@ const b = businesses[0];
 const PHONE_ID = '990000000000001';
 const AD_ID = '990000000000777';
 const AD_ENTITY = '00000000-0000-4000-8000-0000000c0777';
+const WABA_ID = '990000000000002';
 
 // Never touch anything that is not the marked fixture business.
 const profile = await check(db.from('business_profiles').select('id, description').eq('id', b.id).maybeSingle(), 'fixture business');
@@ -54,7 +55,7 @@ await check(db.from('ad_entity_performance_daily').upsert([0, 1, 2, 3, 4, 5, 6].
   currency_code: 'USD', source: FIXTURE_TAG,
 })), { onConflict: 'entity_id,day' }), 'synthetic ad numbers');
 await check(db.from('whatsapp_connections').upsert({
-  business_id: b.id, phone_number_id: PHONE_ID, display_phone: '+1 555 0100', is_test: true, status: 'active', disconnected_at: null,
+  business_id: b.id, phone_number_id: PHONE_ID, waba_id: WABA_ID, display_phone: '+1 555 0100', is_test: true, status: 'active', disconnected_at: null,
   connected_at: new Date(Date.now() - 2 * 86_400_000).toISOString(),
 }, { onConflict: 'phone_number_id' }), 'test connection');
 
@@ -65,7 +66,7 @@ const ts = (minutesAgo) => String(Math.floor(Date.now() / 1000) - minutesAgo * 6
 const metadata = { display_phone_number: '15550100', phone_number_id: PHONE_ID };
 const inbound = (from, name, id, minutesAgo, referral) => ({
   object: 'whatsapp_business_account',
-  entry: [{ id: '990000000000002', changes: [{ field: 'messages', value: {
+  entry: [{ id: WABA_ID, changes: [{ field: 'messages', value: {
     messaging_product: 'whatsapp', metadata, contacts: [{ profile: { name }, wa_id: from }],
     messages: [{ from, id, timestamp: ts(minutesAgo), type: 'text', text: { body: '[SYNTHETIC] Hi, do you have openings Saturday?' },
       ...(referral ? { referral: { source_type: 'ad', source_id: AD_ID, source_url: 'https://fb.me/synthetic', headline: 'Book now', ctwa_clid: `synthetic-${id}` } } : {}) }],
@@ -73,7 +74,7 @@ const inbound = (from, name, id, minutesAgo, referral) => ({
 });
 const echo = (to, id, minutesAgo) => ({
   object: 'whatsapp_business_account',
-  entry: [{ id: '990000000000002', changes: [{ field: 'smb_message_echoes', value: {
+  entry: [{ id: WABA_ID, changes: [{ field: 'smb_message_echoes', value: {
     messaging_product: 'whatsapp', metadata, message_echoes: [{ from: '15550100', to, id, timestamp: ts(minutesAgo), type: 'text', text: { body: '[SYNTHETIC] Yes! 2pm?' } }],
   } }] }],
 });
@@ -94,7 +95,7 @@ const deliveries = [
 ];
 const responses = [];
 for (const payload of deliveries) responses.push(await send(payload));
-assert.deepEqual(responses.at(-1), { received: 1, recorded: 0, duplicates: 1 }, 'Retried delivery must not count twice');
+assert.deepEqual(responses.at(-1), { received: 1, recorded: 0, duplicates: 1, disconnected: 0 }, 'Retried delivery must not count twice');
 
 const leads = await check(db.from('leads').select('source, ad_external_id, contact_last4, messages_in, first_reply_at').eq('business_id', b.id).order('first_message_at'), 'read leads');
 assert.equal(leads.length, 4);
@@ -102,4 +103,25 @@ assert.deepEqual(leads.map(l => [l.source, l.contact_last4]), [['ad', '1111'], [
 assert(leads[0].first_reply_at, 'First reply time recorded');
 const stored = JSON.stringify(await check(db.from('leads').select('*').eq('business_id', b.id), 'read raw'));
 assert(!stored.includes('15550001111') && !stored.includes('openings'), 'No full numbers or message text stored');
-console.log(JSON.stringify({ business: b.id, leads: leads.length, responses }));
+// Stage 2b cases. WhatsApp sends an "unsupported" placeholder (131060) before the real first message
+// from an ad to a WhatsApp Business app number: still one lead, credited to the ad.
+const placeholder = inbound('15550005555', '[SYNTHETIC] Rosa', 'wamid.synthetic.5', 30, false);
+placeholder.entry[0].changes[0].value.messages[0] = { ...placeholder.entry[0].changes[0].value.messages[0], type: 'unsupported', errors: [{ code: 131060 }] };
+delete placeholder.entry[0].changes[0].value.messages[0].text;
+await send(placeholder);
+await send(inbound('15550005555', '[SYNTHETIC] Rosa', 'wamid.synthetic.6', 29, true));
+const rosa = await check(db.from('leads').select('source, messages_in').eq('business_id', b.id).eq('contact_last4', '5555'), 'placeholder lead');
+assert.deepEqual(rosa, [{ source: 'ad', messages_in: 2 }], 'Placeholder + real message must be one ad lead');
+
+// Coexistence sync deliveries are acknowledged and record nothing (no history text or contacts kept).
+const sync = (field, value) => ({ object: 'whatsapp_business_account', entry: [{ id: WABA_ID, changes: [{ field, value: { messaging_product: 'whatsapp', metadata, ...value } }] }] });
+assert.deepEqual(await send(sync('history', { history: [{ threads: [{ id: '15550006666', messages: [{ id: 'wamid.synthetic.h', from: '15550006666', timestamp: ts(9000), type: 'text', text: { body: '[SYNTHETIC] old chat' } }] }] }] })),
+  { received: 0, recorded: 0, duplicates: 0, disconnected: 0 });
+assert.deepEqual(await send(sync('smb_app_state_sync', { state_sync: [{ type: 'contact', contact: { phone_number: '15550006666', full_name: '[SYNTHETIC] Old' }, action: 'add' }] })),
+  { received: 0, recorded: 0, duplicates: 0, disconnected: 0 });
+
+// The owner disconnects in the WhatsApp Business app: the number stops recording.
+const removed = { object: 'whatsapp_business_account', entry: [{ id: WABA_ID, time: Number(ts(0)), changes: [{ field: 'account_update', value: { event: 'PARTNER_REMOVED' } }] }] };
+assert.deepEqual(await send(removed), { received: 0, recorded: 0, duplicates: 0, disconnected: 1 });
+assert.deepEqual(await send(inbound('15550007777', '[SYNTHETIC] Late', 'wamid.synthetic.7', 1, true)), { received: 1, recorded: 0, duplicates: 0, disconnected: 0 });
+console.log(JSON.stringify({ business: b.id, leads: leads.length + 1, responses, placeholder: 'one ad lead', sync: 'acknowledged, nothing stored', disconnect: 'stopped recording' }));

@@ -28,7 +28,8 @@ export type LeadView = {
   outcome: LeadOutcome | null;
 };
 export type LeadLog = {
-  connection: { displayPhone: string | null; isTest: boolean; connectedAt: string } | null;
+  /** `syncFailed`: Meta's contact/history sync request failed after connecting (Meta offboards after 24 hours). */
+  connection: { displayPhone: string | null; isTest: boolean; connectedAt: string; syncFailed: boolean } | null;
   period: LeadPeriod;
   periodStart: string;
   /** First day (account timezone) the numbers cover: the later of the period start and the connection day. */
@@ -51,7 +52,7 @@ export async function loadLeadLog(client: Client, input: { businessId: string; a
   const since = localMidnightUtc(periodStart, input.timezone).toISOString();
 
   const [connectionRes, leadRows, perf] = await Promise.all([
-    client.from('whatsapp_connections').select('display_phone, is_test, connected_at')
+    client.from('whatsapp_connections').select('display_phone, is_test, connected_at, sync_error')
       .eq('business_id', input.businessId).eq('status', 'active').order('connected_at').limit(1).maybeSingle(),
     allPages((from, to) => client.from('leads')
       .select('id, channel, source, contact_name, contact_last4, ad_external_id, first_message_at, first_reply_at, messages_in, outcome')
@@ -119,7 +120,7 @@ export async function loadLeadLog(client: Client, input: { businessId: string; a
     .sort((a, b) => b[1] - a[1]).slice(0, 50).map(([externalId]) => ({ externalId, name: names.get(externalId) ?? null }));
 
   return {
-    connection: connection ? { displayPhone: connection.display_phone, isTest: connection.is_test, connectedAt: connection.connected_at } : null,
+    connection: connection ? { displayPhone: connection.display_phone, isTest: connection.is_test, connectedAt: connection.connected_at, syncFailed: connection.sync_error !== null } : null,
     period: input.period,
     periodStart,
     coveredFrom,

@@ -23,6 +23,7 @@ Meta POST /api/meta/webhooks → signature check → meta_webhook_events (once p
 | `META_APP_SECRET` | Existing. Signs deliveries (`X-Hub-Signature-256`, HMAC-SHA256 of the raw body). |
 | `META_APP_ID` | Existing. Used for the per-account `subscribed_apps` call. |
 | `META_WEBHOOK_VERIFY_TOKEN` | New, at least 16 characters. Echo check for Meta's subscription handshake. |
+| `META_WHATSAPP_CONFIG_ID` | Optional. Facebook Login for Business configuration (WhatsApp Embedded Signup variation) that turns on "Connect WhatsApp" on `/leads`. Not secret. |
 
 ## Receiver (`src/app/api/meta/webhooks/route.ts`)
 

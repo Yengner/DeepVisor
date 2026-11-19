@@ -6,6 +6,7 @@ import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { isLeadPeriod, loadLeadLog, type LeadPeriod } from '@/lib/server/leads/service';
 import CallLeadForm from './CallLeadForm';
+import ConnectWhatsApp from './ConnectWhatsApp';
 import LeadList from './LeadList';
 import classes from './Leads.module.css';
 
@@ -28,6 +29,9 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const period: LeadPeriod = isLeadPeriod(params.period) ? (Number(params.period) as LeadPeriod) : 7;
   const log = await loadLeadLog(db, { businessId, adAccountId: account.id, timezone: account.timezone, period });
   const canEdit = role === 'owner' || role === 'admin';
+  // Embedded Signup needs the app id and a WhatsApp Embedded Signup configuration (neither is secret).
+  const signup = canEdit && process.env.META_APP_ID && process.env.META_WHATSAPP_CONFIG_ID
+    ? { appId: process.env.META_APP_ID, configId: process.env.META_WHATSAPP_CONFIG_ID } : null;
   const intlLocale = locale === 'es' ? 'es-US' : 'en-US';
   const currency = account.currency_code;
   const money = (v: number | null) => v === null ? null : currency ? new Intl.NumberFormat(intlLocale, { style: 'currency', currency }).format(v) : v.toFixed(2);
@@ -58,7 +62,10 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             {t('connected', { phone: log.connection.displayPhone ?? '' })}
             {log.connection.isTest && <span className={classes.badge}>{t('testNumber')}</span>}
             {coverageNote && <span className={classes.muted}>{t('coveredFrom', { date: day(log.coveredFrom) })}</span>}
+            {log.connection.syncFailed && <span className={classes.warning} role="alert">{t('connect.syncFailed')}</span>}
           </p>
+        ) : signup ? (
+          <ConnectWhatsApp appId={signup.appId} configId={signup.configId} />
         ) : (
           <section className={classes.card} aria-labelledby="leads-connect">
             <h2 id="leads-connect">{t('notConnectedTitle')}</h2>
