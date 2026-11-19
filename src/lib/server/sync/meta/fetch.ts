@@ -1,4 +1,4 @@
-import { actionMetric, optionalMetric, requiredMetric, metricRatio } from './normalization';
+import { actionMetric, deliveryMetrics, optionalMetric, metricRatio } from './normalization';
 import 'server-only';
 
 import { asRecord, asString } from '@/lib/shared';
@@ -404,10 +404,8 @@ function normalizeInsightMetrics(row: MetaInsightRow) {
   return {
     day: asString(row.date_start),
     currencyCode: asString(row.account_currency) || null,
-    spend: requiredMetric(row.spend),
+    ...deliveryMetrics(row),
     reach: optionalMetric(row.reach),
-    impressions: requiredMetric(row.impressions),
-    clicks: requiredMetric(row.clicks),
     inlineLinkClicks:
       directInlineLinkClicks !== null
         ? directInlineLinkClicks
