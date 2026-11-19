@@ -4,7 +4,8 @@ import { createAdminClient } from '@/lib/server/supabase/admin';
 import { readAllPages } from '@/lib/server/repositories/pagination';
 import { accountToday, previousReportRange } from '@/lib/shared/reports/dates';
 import {recapChange, recapRevision, revisable} from '@/lib/shared/insights/revision';
-import {urgentIssues, recapWindow, summarize, completeComparable } from '@/lib/shared/insights/model';
+import {urgentIssues, recapWindow, summarize, completeComparable, idleRecap } from '@/lib/shared/insights/model';
+import { activeDeliveryKeys } from '@/lib/server/campaigns/exploration/delivery';
 import type { Issue, IssueEvidence, Presentation, SavedPresentation, PerformanceRow } from '@/lib/shared/insights/model';
 import type { Database, Json } from '@/lib/shared/types/supabase';
 import type { Observation } from '@/lib/shared/lifecycle/model';
@@ -98,6 +99,15 @@ async function observeSavedSources(s:Scope){
  if(snapshot.error)throw snapshot.error;
  if(snapshot.data)await observeHierarchyIssues(s.business,s.account,snapshot.data.observed_at,snapshot.data.entities as unknown as Observation[]);
 }
+/**
+ * Whether any ad is on a complete active delivery chain now, from the saved hierarchy (the same
+ * rule as Campaigns: configured ACTIVE past its end date is COMPLETED). Null when unknown.
+ */
+async function activeNow(s:Scope):Promise<boolean|null>{
+ const rows=await readAllPages((from,to)=>db().from('ad_entities').select('id,external_id,parent_external_id,entity_level,status,raw').eq('business_id',s.business).eq('ad_account_id',s.account).order('id').range(from,to),{nullDataError:'Hierarchy unavailable'}).catch(()=>null);
+ if(!rows||!rows.some(r=>r.entity_level==='ad'))return null;
+ return activeDeliveryKeys(rows).length>0;
+}
 async function publication(s:Scope){
  const c=db();const [account,state,resources,running]=await Promise.all([
  c.from('ad_accounts').select('name,timezone,currency_code,last_synced').eq('business_id',s.business).eq('id',s.account).single(),
@@ -158,9 +168,11 @@ async function reviseSavedRecap(s:Scope,pub:Awaited<ReturnType<typeof publicatio
 }
 export async function prepare(s:Scope,token:string):Promise<(SavedPresentation&{additionalUpdates?:boolean})|null>{
  const c=db();await observeSavedSources(s);
- const [review,pending,pub]=await Promise.all([
+ const [review,pending,pub,running]=await Promise.all([
  c.from('insight_reviews').select('*').eq('user_id',s.user).eq('ad_account_id',s.account).maybeSingle(),
- c.rpc('pending_insight_sources',{p_account:s.account,p_user:s.user}),publication(s)]);
+ c.rpc('pending_insight_sources',{p_account:s.account,p_user:s.user}),publication(s),activeNow(s)]);
+ // Nothing running and nothing spent: no recap and no missing-data notes, because no data was expected.
+ const idle=running===false;
  if(review.error)throw review.error;if(pending.error)throw pending.error;
  const sources=pending.data as unknown as {issues:Database['public']['Tables']['insight_issues']['Row'][];events:Array<{id:string;root_id:string;affected_ids:string[]}>};
  const issues=sources.issues.map(issue),candidates=sources.events;
@@ -177,13 +189,13 @@ export async function prepare(s:Scope,token:string):Promise<(SavedPresentation&{
  const resourceCovered=window&&pub.resources.some(r=>r.last_success_at&&r.coverage_start&&r.coverage_start<=window.since&&r.coverage_end&&r.coverage_end>=window.until);
  if(window&&review.data?.routine_day!==today&&pub.syncedAt&&!pub.running&&(covered||resourceCovered)){
   const result=await loadRecap(s,window,pub.account.currency_code,pub.syncedAt);
-  if(result){
+  if(result&&!idleRecap(running,result)){
    const after=await publication(s);if(after.signature===pub.signature&&!after.running)recap=result;else limitations.push('Performance changed during preparation. Your recap will be available after publication stabilizes.');
   }
  }
- if(pub.syncedAt&&Date.now()-Date.parse(pub.syncedAt)>24*3600000)limitations.push('The last successful synchronization is more than a day old. Current delivery may differ.');
+ if(!idle&&pub.syncedAt&&Date.now()-Date.parse(pub.syncedAt)>24*3600000)limitations.push('The last successful synchronization is more than a day old. Current delivery may differ.');
  if(recap&&today&&recap.until<new Date(Date.parse(today+'T00:00:00Z')-86400000).toISOString().slice(0,10))limitations.push(`Published coverage currently ends ${recap.until}; more recent days are not included.`);
- if(!recap&&window)limitations.push('A completed-day recap is not yet available, or today’s recap was already presented.');
+ if(!recap&&window&&!idle)limitations.push('A completed-day recap is not yet available, or today’s recap was already presented.');
  const payload:Presentation={version:1,account:pub.account.name??'Meta account',timezone:pub.account.timezone,currency:pub.account.currency_code,preparedAt:new Date().toISOString(),syncedAt:pub.syncedAt,recap,issues,lifecycle,limitations};
  await reviseSavedRecap(s,pub,review.data?.checked_revision);
  const keys=[...issues.map(i=>`issue:${i.id}:${i.revision}`),...lifecycle.map(e=>`lifecycle:${e.eventId}`)];
