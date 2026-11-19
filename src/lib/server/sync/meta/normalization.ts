@@ -11,6 +11,17 @@ export function requiredMetric(value: unknown): number {
   if (metric === null) throw new Error('Required Meta delivery metric unavailable');
   return metric;
 }
+/**
+ * Spend, impressions and clicks for one Meta Insights row. Meta omits zero-valued fields, so a day
+ * with no paid delivery (spend reported as exactly 0: ads off, but conversations from earlier clicks
+ * still attributed to that day) arrives without impressions or clicks. That is zero delivery, not
+ * missing data. A missing spend, or missing impressions/clicks on a day that spent, still fails.
+ */
+export function deliveryMetrics(row: { spend?: unknown; impressions?: unknown; clicks?: unknown }): { spend: number; impressions: number; clicks: number } {
+  const spend = requiredMetric(row.spend);
+  if (spend === 0) return { spend, impressions: optionalMetric(row.impressions) ?? 0, clicks: optionalMetric(row.clicks) ?? 0 };
+  return { spend, impressions: requiredMetric(row.impressions), clicks: requiredMetric(row.clicks) };
+}
 /** Ordered aliases represent the same result family, not additive independent conversions. */
 export function actionMetric(actions: Array<{action_type?: string;value?: string}> | undefined, aliases: string[]): number {
   if (actions === undefined) return 0; // Meta omits action types with no reported actions.
