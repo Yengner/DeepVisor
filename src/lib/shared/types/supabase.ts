@@ -1095,6 +1095,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      meta_data_deletion_requests: {
+        Row: {
+          business_id: string | null
+          completed_at: string | null
+          confirmation_code: string
+          connections: number
+          created_at: string
+          error: string | null
+          id: string
+          meta_user_id: string | null
+          source: string
+          status: string
+        }
+        Insert: {
+          business_id?: string | null
+          completed_at?: string | null
+          confirmation_code: string
+          connections?: number
+          created_at?: string
+          error?: string | null
+          id?: string
+          meta_user_id?: string | null
+          source: string
+          status?: string
+        }
+        Update: {
+          business_id?: string | null
+          completed_at?: string | null
+          confirmation_code?: string
+          connections?: number
+          created_at?: string
+          error?: string | null
+          id?: string
+          meta_user_id?: string | null
+          source?: string
+          status?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           ad_external_id: string | null
@@ -8425,6 +8464,14 @@ export type Database = {
           p_previous: string | null
         }
         Returns: string
+      }
+      delete_integration_secret: {
+        Args: { p_integration: string; p_secret: string }
+        Returns: boolean
+      }
+      delete_meta_connection_data: {
+        Args: { p_business: string; p_integration: string }
+        Returns: Json
       }
       record_whatsapp_message: {
         Args: {

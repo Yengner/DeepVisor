@@ -148,3 +148,12 @@ With `DEEPVISOR_META_WEBHOOKS=true`, the refresh worker connects this app to the
 account's webhooks (`act_<id>/subscribed_apps`) and disconnect releases it when no other business
 uses that account. This changes notification routing only and is not an advertising write. See
 [`src/lib/server/webhooks/README.md`](../webhooks/README.md). Not active on hosted infrastructure.
+
+## Disconnect and data deletion
+
+Disconnect clears the token references **and deletes the tokens from Vault**
+(`delete_integration_secret`); synced data stays. "Delete Meta data" and Meta's data deletion
+callback remove the synced data too; see [`../privacy/README.md`](../privacy/README.md). The Meta
+user id (`integration_details.meta_user_id`) is saved at connect and backfilled on sync so Meta's
+deletion requests can be matched.
+

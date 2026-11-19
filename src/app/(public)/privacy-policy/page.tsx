@@ -26,14 +26,16 @@ const sections: LegalSection[] = [
         'Business profile: details you enter about your business, such as its name, type, location, website, and how customers contact you.',
         'Messages you send us, for example support emails.',
       ] },
-      'Information from Meta, when you connect it: with the permissions you approve (ads_read, business_management, pages_show_list, pages_read_engagement, and instagram_basic), we receive:',
+      'Information from Meta, when you connect it: with the permissions you approve (ads_management, ads_read, business_management, pages_show_list, pages_read_engagement, and instagram_basic), we receive:',
       { list: [
         'Identifiers and names of the ad accounts, Business accounts, Facebook Pages, and Instagram accounts you can access.',
         'Campaign, ad set, and ad names, settings, objectives, budgets, schedules, and delivery status.',
         'Ad creative, including images, videos, thumbnails, and ad text.',
         'Performance metrics such as spend, impressions, reach, clicks, and results, including summarized audience breakdowns (for example by age, gender, or placement). We do not receive the identities of people who saw or clicked your ads.',
         'An access token that lets DeepVisor read this information on your behalf, and notifications Meta sends us about changes to connected accounts.',
+        'Your app-scoped Meta user ID, so a deletion request you send through Facebook reaches the right data.',
       ] },
+      'Information from WhatsApp, if you connect your WhatsApp Business number (permissions whatsapp_business_management and whatsapp_business_messaging): for each customer chat, we keep the customer’s WhatsApp profile name, the last 4 digits of their number, a one-way keyed code of the number (so a returning customer is recognized without storing the number), the ad that started the chat, and the times of the first message and your first reply. We do not store message text, media, or full phone numbers. You can also mark a chat as booked, not booked, or spam, and log phone calls yourself.',
       'Information we create: observations, decision records (for example “Hold” or “not enough data yet”), summaries, sync history, and other outputs DeepVisor generates from the data above.',
       'Information collected automatically: IP address, browser and device type, pages visited within the app, error logs, and security events, which we use to run and protect the service. DeepVisor does not use advertising trackers or third-party analytics on its website.',
     ],
@@ -50,7 +52,7 @@ const sections: LegalSection[] = [
         'To troubleshoot, keep the service reliable, prevent abuse, and improve DeepVisor.',
         'To comply with law and enforce our Terms of Service.',
       ] },
-      'DeepVisor uses read-only Meta permissions. We do not use your information to create, change, pause, or publish ads in your account.',
+      'DeepVisor changes your Meta advertising only when you ask it to in DeepVisor: for example renaming campaigns, ad sets, or ads, or pausing an ad set or changing its budget after you approve it. Ad drafts DeepVisor prepares stay in DeepVisor until you review and publish them. We never change your advertising on our own.',
       'We do not sell your personal information, and we do not use your Meta advertising data to advertise to you or to anyone else.',
     ],
   },
@@ -70,7 +72,7 @@ const sections: LegalSection[] = [
       'We share information only as needed to run DeepVisor:',
       { list: [
         'Service providers that process data on our behalf: Supabase (database, authentication, and file storage), our cloud hosting provider, OpenAI (AI summaries and explanations), and TypeSafe (decision-support model). They may use the data only to provide their services to us.',
-        'Meta, when DeepVisor requests your data through Meta’s APIs under the permissions you granted.',
+        'Meta, when DeepVisor requests your data through Meta’s APIs under the permissions you granted, or applies a change you asked for.',
         'Google, if you choose to sign in with Google.',
         'Authorities or others when required by law, or to protect the rights, safety, and security of our users, the public, or DeepVisor.',
         'A successor organization, if DeepVisor is involved in a merger, acquisition, or sale of assets. We will notify you and this policy will continue to apply to your information.',
@@ -96,7 +98,8 @@ const sections: LegalSection[] = [
     title: 'How long we keep information',
     body: [
       { list: [
-        'Account, business profile, and synced advertising data: while your account is active, or until you disconnect the account or ask us to delete it.',
+        'Account, business profile, and synced advertising data: while your account is active, or until you delete it (see Deleting your data). Disconnecting stops new data and deletes the stored Meta login, but keeps data already synced until you delete it.',
+        'WhatsApp chat records: while your WhatsApp number is connected and your account is active, or until you delete them. Technical message identifiers used to avoid counting a chat twice: about 60 days.',
         'Decision records and generated outputs: while your account is active, so you can review past observations.',
         'Meta change notifications: about 30 days. Routine operational logs: about 7 days.',
         'Backups and records we must keep for legal, security, or dispute reasons: only as long as needed for those purposes.',
@@ -108,12 +111,14 @@ const sections: LegalSection[] = [
     id: 'deletion',
     title: 'Disconnecting Meta and deleting your data',
     body: [
-      'You can stop DeepVisor’s access to Meta at any time:',
+      'Full instructions, and a way to check a deletion request, are on our Data deletion page: https://www.deepvisor.com/data-deletion. In short:',
       { list: [
-        'In DeepVisor, open Connections and disconnect your Meta account; or',
-        'On Facebook, go to Settings & privacy → Settings → Business integrations (or Apps and websites), find DeepVisor, and remove it.',
+        'Disconnect (Connections): stops DeepVisor’s access and deletes the stored Meta login. Data already synced is kept so your reports still work if you reconnect.',
+        'Delete Meta data (Connections, owners and admins): deletes everything DeepVisor received from Meta and WhatsApp for that connection, and everything DeepVisor created from it, right away. You get a confirmation code.',
+        'Delete account (Settings): deletes your account and every workspace where you are the only member, with all of its data.',
+        'Remove DeepVisor in Facebook (Settings & privacy → Settings → Business integrations or Apps and websites): Meta sends us your deletion request, we delete the Meta data from every connection you made automatically, and Meta shows you a confirmation code.',
       ] },
-      'To delete your DeepVisor account and the data associated with it, email info@deepvisor.com from the email address on your account with the subject “Delete my data”. We will confirm the request and complete it within 30 days. Removing DeepVisor in Facebook stops new data from being collected; to remove data already collected, send the deletion request as well.',
+      'Deleting Meta data keeps your DeepVisor account, business profile, and information you entered yourself, such as appointment answers and logged phone calls, until you delete your account. For any other request, email info@deepvisor.com from the address on your account.',
     ],
   },
   {
@@ -165,14 +170,14 @@ export default function PrivacyPolicyPage() {
   return (
     <LegalDocument
       title="Privacy Policy"
-      lastUpdated="November 15, 2026"
-      lastUpdatedISO="2026-11-15"
+      lastUpdated="November 19, 2026"
+      lastUpdatedISO="2026-11-19"
       summary={[
-        'We collect your account details, business profile, and the Meta ad data you allow.',
-        'Our Meta access is read-only.',
+        'We collect your account details, business profile, the Meta ad data you allow, and, if you connect WhatsApp, basic details of chats from your ads (never message text).',
+        'DeepVisor changes your ads only when you ask or approve it; drafts stay in DeepVisor until you publish.',
         'We never sell your data. No ad trackers.',
         'Some features send limited performance data to AI providers.',
-        'Disconnect or delete your data any time.',
+        'Disconnect, delete your Meta data, or delete your account any time; see the Data deletion page.',
       ]}
       sections={sections}
     />

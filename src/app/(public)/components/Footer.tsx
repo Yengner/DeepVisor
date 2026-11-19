@@ -24,6 +24,7 @@ const Footer: FC = () => {
         { label: t("nav.login"), href: "/login" },
         { label: t("footer.privacy"), href: "/privacy-policy" },
         { label: t("footer.terms"), href: "/terms-of-service" },
+        { label: t("footer.dataDeletion"), href: "/data-deletion" },
         { label: t("footer.contact"), href: "mailto:info@deepvisor.com" },
       ],
     },

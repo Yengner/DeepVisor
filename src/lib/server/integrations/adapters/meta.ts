@@ -78,10 +78,10 @@ export async function exchangeMetaCodeForToken(input: MetaExchangeCodeInput): Pr
  * Verifies that a Meta access token can still successfully call the Graph API.
  *
  * @param accessToken - Meta access token returned from the OAuth exchange.
- * @returns A resolved promise when the token is valid.
+ * @returns The app-scoped Meta user id when Meta returns one, otherwise null.
  * @throws When Meta reports that the token is invalid or unusable.
  */
-export async function validateMetaAccessToken(accessToken: string): Promise<void> {
+export async function validateMetaAccessToken(accessToken: string): Promise<string | null> {
   const url = new URL('https://graph.facebook.com/me');
   url.searchParams.set('fields', 'id');
   url.searchParams.set('access_token', accessToken);
@@ -94,6 +94,9 @@ export async function validateMetaAccessToken(accessToken: string): Promise<void
       : 'Meta token validation failed';
     throw new Error(message);
   }
+  // The app-scoped Meta user id: kept so a data deletion request from Meta finds this connection.
+  const body = await response.json().catch(() => ({})) as { id?: unknown };
+  return typeof body.id === 'string' && /^\d{1,30}$/.test(body.id) ? body.id : null;
 }
 
 function normalizeMetaStatus(status: string | number | null | undefined | unknown): string | null {

@@ -311,7 +311,8 @@
       "privacy": "Política de privacidad",
       "terms": "Términos del servicio",
       "contact": "Contacto",
-      "rights": "© {year} DeepVisor LLC. Todos los derechos reservados."
+      "rights": "© {year} DeepVisor LLC. Todos los derechos reservados.",
+      "dataDeletion": "Eliminación de datos"
     },
     "meta": {
       "title": "DeepVisor: descubre qué anuncios te traen clientes",
@@ -619,5 +620,27 @@
     "whyCheapest": "Tu menor costo por conversación",
     "whyRecent": "Tu anuncio de mensajes más reciente",
     "statsPeriod": "últimos {days} días"
+  },
+  "metaDeletion": {
+    "menu": "Eliminar datos de Meta",
+    "title": "Eliminar datos de Meta",
+    "intro": "Esto elimina permanentemente lo que DeepVisor obtuvo de Meta para esta conexión:",
+    "deletes1": "Campañas, conjuntos de anuncios, anuncios, contenido y todos los resultados e historial sincronizados de sus cuentas publicitarias.",
+    "deletes2": "Avisos, decisiones, borradores e historial del Organizador creados con esos datos.",
+    "deletes3": "Tu conexión de WhatsApp y los chats registrados desde ella, y cada acceso de Meta guardado.",
+    "keeps": "Se conserva: tu cuenta de DeepVisor, el perfil del negocio, las respuestas semanales de citas y las llamadas que registraste. Puedes volver a conectar Meta después para empezar de nuevo.",
+    "typeDelete": "Escribe DELETE para confirmar",
+    "confirm": "Eliminar datos de Meta",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "done": "Tus datos de Meta fueron eliminados y la conexión está desconectada.",
+    "codeLabel": "Código de confirmación:",
+    "codeHelp": "Guarda este código. Puedes consultarlo cuando quieras en la <link>página de eliminación de datos</link>.",
+    "error": {
+      "confirm": "Escribe DELETE para confirmar.",
+      "forbidden": "Solo los dueños y administradores pueden eliminar datos de Meta.",
+      "notFound": "No se encontró esa conexión de Meta.",
+      "failed": "No se pudieron eliminar los datos. No se cambió nada; inténtalo de nuevo."
+    }
   }
 }

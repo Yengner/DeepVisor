@@ -2,6 +2,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { fetchMetaObject, META_GRAPH_BASE_URL } from '@/lib/server/sync/meta/client';
 import { asRecord } from '@/lib/shared/utils/format';
+import { getBusinessIntegrationById, getPrimaryAdAccountSelection, resolveIntegrationAccessToken } from '@/lib/server/integrations/service';
 
 /**
  * Connect this app to one ad account's webhooks (`/act_<id>/subscribed_apps`). This changes only
@@ -68,4 +69,18 @@ export async function releaseAccountWebhooks(scope: Scope): Promise<'unsubscribe
   await write('DELETE', path, scope.accessToken, appId);
   await save(scope, 'unsubscribed', null);
   return 'unsubscribed';
+}
+
+/** Best effort, before the credential is removed. Never blocks the disconnect or a data deletion. */
+export async function releaseIntegrationWebhooks(integrationId: string, businessId: string) {
+  if (process.env.DEEPVISOR_META_WEBHOOKS !== 'true') return;
+  const db = createAdminClient();
+  const integration = await getBusinessIntegrationById(db, { businessId, integrationId });
+  if (!integration || integration.platformKey !== 'meta') return;
+  const external = getPrimaryAdAccountSelection(integration.integrationDetails).externalAccountId;
+  if (!external) return;
+  const account = await db.from('ad_accounts').select('id').eq('business_id', businessId).eq('platform_id', integration.platformId).eq('external_account_id', external).maybeSingle();
+  const accessToken = await resolveIntegrationAccessToken(db, integration, businessId);
+  if (!account.data || !accessToken) return;
+  await releaseAccountWebhooks({ businessId, adAccountId: account.data.id, externalAccountId: external, accessToken });
 }

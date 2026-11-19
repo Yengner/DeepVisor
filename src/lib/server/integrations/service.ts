@@ -447,6 +447,13 @@ export async function softDisconnectIntegration(
   if (!integration) throw new Error('Integration not found');
   const integrationRow = integration as unknown as PlatformIntegrationStorageRow;
 
+  // Delete the stored tokens themselves, not only the references to them.
+  for (const secret of [integrationRow.access_token_secret_id, integrationRow.refresh_token_secret_id]) {
+    if (!secret) continue;
+    const { error } = await supabase.rpc('delete_integration_secret', { p_integration: integrationRow.id, p_secret: secret });
+    if (error) throw error;
+  }
+
   const disconnectedDetails = mergeDetails(stripTokens(integrationRow.integration_details), {
     status: 'disconnected',
     disconnected_at: now,
@@ -902,4 +909,26 @@ export async function markIntegrationError(
       last_error: message,
     }
   );
+}
+
+/**
+ * Connections made before the Meta user id was saved get it on their next sync, so a data deletion
+ * request from Meta can find them. One `/me` read, only while it is missing; never throws.
+ */
+export async function rememberMetaUserId(
+  supabase: AppSupabaseClient,
+  input: { businessId: string; integration: BusinessIntegration; accessToken: string }
+): Promise<void> {
+  const details = asRecord(input.integration.integrationDetails);
+  if (typeof details.meta_user_id === 'string' || input.integration.platformKey !== 'meta') return;
+  try {
+    const metaUserId = await validateMetaAccessToken(input.accessToken);
+    if (!metaUserId) return;
+    const { error } = await supabase.from('platform_integrations')
+      .update({ integration_details: mergeDetails(stripTokens(details), { meta_user_id: metaUserId }) as Json })
+      .eq('id', input.integration.id).eq('business_id', input.businessId);
+    if (error) throw error;
+  } catch {
+    console.warn('Meta user id could not be saved for data deletion matching.');
+  }
 }

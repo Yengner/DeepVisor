@@ -9,6 +9,7 @@ const PUBLIC_ROUTES = new Set([
     '/features',
     '/privacy-policy',
     '/terms-of-service',
+    '/data-deletion',
 ]);
 
 function normalizePathname(pathname: string): string {

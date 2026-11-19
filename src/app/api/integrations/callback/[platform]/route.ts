@@ -135,7 +135,7 @@ export async function GET(
       redirectUri: redirectUri.toString(),
     });
     
-    if (!simulation) await validateMetaAccessToken(token.access_token);
+    const metaUserId = simulation ? null : await validateMetaAccessToken(token.access_token);
     integrationId = await upsertPlatformIntegration(supabase, {
       businessId: businessContext.businessId,
       platformId: integrationPlatform.id,
@@ -150,6 +150,7 @@ export async function GET(
         token_type: token.token_type,
         expires_in: token.expires_in,
         issued_at: new Date().toISOString(),
+        ...(metaUserId ? { meta_user_id: metaUserId } : {}),
       },
     });
 
