@@ -16,6 +16,8 @@ type Db = SupabaseClient<Database>;
 type Input = { businessId: string; accountId: string; timezone: string; currency: string | null; today: string; activeNow: boolean | null;
   /** First popup after setup: suggest right away instead of after the 7-day idle wait. */
   welcome?: boolean };
+/** What loading one ad set's budget, history and picture needs. */
+type SourceInput = Pick<Input, 'businessId' | 'accountId' | 'currency' | 'today'>;
 
 /** Latest account-local day with ad-set spend, or null when the account never spent. */
 export async function lastSpendDay(db: Db, accountId: string): Promise<string | null> {
@@ -55,7 +57,7 @@ export async function sourceDailyBudget(db: Db, accountId: string, adSetId: stri
  * The ad set's saved daily rows for the last STATS_DAYS days: weekly totals for the estimate and
  * the same totals the dashboard cards show (`aggregate`). Empty when the ad set is not saved.
  */
-async function adSetHistory(db: Db, input: Input, adSetId: string, destinationType: string | null): Promise<{ weeks: WeekResult[]; stats: SuggestionStats | null; result: ResultDefinition | null }> {
+async function adSetHistory(db: Db, input: SourceInput, adSetId: string, destinationType: string | null): Promise<{ weeks: WeekResult[]; stats: SuggestionStats | null; result: ResultDefinition | null }> {
   const { data: entity, error } = await db.from('ad_entities').select('id').eq('business_id', input.businessId)
     .eq('ad_account_id', input.accountId).eq('entity_level', 'adset').eq('external_id', adSetId).maybeSingle();
   if (error) throw error;
@@ -81,7 +83,7 @@ async function adSetHistory(db: Db, input: Input, adSetId: string, destinationTy
 }
 
 /** Picture of the ad set's latest ad, chosen exactly like the dashboard cards (`mediaFor`). */
-async function adSetMedia(db: Db, input: Input, adSetId: string): Promise<SuggestionMedia | null> {
+async function adSetMedia(db: Db, input: SourceInput, adSetId: string): Promise<SuggestionMedia | null> {
   const { data: ads, error } = await db.from('ad_dims').select('creative_id, status').eq('ad_account_id', input.accountId)
     .eq('adset_external_id', adSetId).not('creative_id', 'is', null).order('created_time', { ascending: false, nullsFirst: false }).limit(5);
   if (error) throw error;
@@ -91,6 +93,20 @@ async function adSetMedia(db: Db, input: Input, adSetId: string): Promise<Sugges
     .eq('ad_account_id', input.accountId).eq('platform_creative_id', ad.creative_id).maybeSingle();
   if (creativeError) throw creativeError;
   return creative ? mediaFor(creative) : null;
+}
+
+/**
+ * One ad set's daily budget, last-90-day history (weekly totals + dashboard totals) and picture.
+ * Shared by the popup suggestion and the "Run this ad again" plan page so both show the same thing.
+ */
+export async function restartSourceDetails(db: Db, input: SourceInput, source: { adSetId: string; campaignId: string; destinationType: string | null }) {
+  const [dailyBudget, history, media] = await Promise.all([
+    sourceDailyBudget(db, input.accountId, source.adSetId, source.campaignId, input.currency),
+    adSetHistory(db, input, source.adSetId, source.destinationType),
+    // A missing picture never blocks the suggestion; the card shows a placeholder.
+    adSetMedia(db, input, source.adSetId).catch(() => null),
+  ]);
+  return { dailyBudget, history, media };
 }
 
 /**
@@ -114,12 +130,7 @@ export async function loadIdleSuggestion(db: Db, input: Input): Promise<IdleSugg
 
   const source = chooseSourceAdSet(await messagingSourceCandidates({ db, businessId: input.businessId, accountId: input.accountId, today: input.today }));
   if (!source) return null;
-  const [dailyBudget, history, media] = await Promise.all([
-    sourceDailyBudget(db, input.accountId, source.adSetId, source.campaignId, input.currency),
-    adSetHistory(db, input, source.adSetId, source.destinationType),
-    // A missing picture never blocks the suggestion; the card shows a placeholder.
-    adSetMedia(db, input, source.adSetId).catch(() => null),
-  ]);
+  const { dailyBudget, history, media } = await restartSourceDetails(db, input, source);
   const weeks = history.weeks;
   return {
     kind: 'restart', lastSpendDay: spendDay!, adSetId: source.adSetId, adSetName: source.name, reason: source.reason,

@@ -853,5 +853,35 @@
       "body": "Dinos qué pasó y qué esperabas. Por favor no incluyas contraseñas.",
       "send": "Enviar comentarios"
     }
+  },
+  "rerun": {
+    "metaTitle": "Repetir este anuncio",
+    "title": "Repetir este anuncio",
+    "lead": "Elige tu presupuesto y cuánto tiempo corre. Revisas el borrador antes de que algo se publique.",
+    "back": "Volver al Resumen",
+    "lastTime": "La última vez: {amount} al día",
+    "planTitle": "Tu plan",
+    "budget": "Presupuesto diario",
+    "less": "Gastar menos al día",
+    "more": "Gastar más al día",
+    "days": "Cuántos días",
+    "other": "Otro",
+    "dayChoice": "{count, plural, one {# día} other {# días}}",
+    "customDays": "Número de días",
+    "runs": "Corre del {start} al {end}",
+    "runsOne": "Corre el {start}",
+    "total": "Unos {total}",
+    "totalDetail": "{budget} al día × {days, plural, one {# día} other {# días}}. Meta puede gastar un poco más o menos algunos días.",
+    "estimateTitle": "Lo que podría traer",
+    "bigJump": "Es mucho más que la última vez. Los resultados no suelen crecer tan rápido como el gasto.",
+    "overLimit": "Este plan suma {total}, más de lo que permite tu presupuesto mensual guardado ({limit}). Baja el presupuesto o los días, o cambia tu presupuesto mensual en Ajustes.",
+    "openSettings": "Abrir Ajustes",
+    "budgetLow": "Escribe al menos {min} al día.",
+    "budgetHigh": "Escribe no más de {max} al día.",
+    "daysInvalid": "Elige entre 1 y 90 días.",
+    "prepare": "Preparar borrador",
+    "readOnly": "Solo dueños(as) y administradores(as) pueden preparar anuncios.",
+    "goneTitle": "Este anuncio no se puede copiar",
+    "noBudgetTitle": "No hay presupuesto para copiar"
   }
 }

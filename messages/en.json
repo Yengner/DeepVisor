@@ -853,5 +853,35 @@
       "body": "Say what happened and what you expected. Please leave out passwords.",
       "send": "Send feedback"
     }
+  },
+  "rerun": {
+    "metaTitle": "Run this ad again",
+    "title": "Run this ad again",
+    "lead": "Choose your budget and how long it runs. You check the draft before anything goes live.",
+    "back": "Back to Overview",
+    "lastTime": "Last time: {amount} a day",
+    "planTitle": "Your plan",
+    "budget": "Daily budget",
+    "less": "Spend less per day",
+    "more": "Spend more per day",
+    "days": "How many days",
+    "other": "Other",
+    "dayChoice": "{count, plural, one {# day} other {# days}}",
+    "customDays": "Number of days",
+    "runs": "Runs {start} – {end}",
+    "runsOne": "Runs {start}",
+    "total": "About {total}",
+    "totalDetail": "{budget} a day × {days, plural, one {# day} other {# days}}. Meta can spend a little more or less on some days.",
+    "estimateTitle": "What it could bring",
+    "bigJump": "That is much more than last time. Results usually don't grow as fast as spend.",
+    "overLimit": "This plan comes to {total}, more than your saved monthly budget allows ({limit}). Lower the budget or the days, or change your monthly budget in Settings.",
+    "openSettings": "Open Settings",
+    "budgetLow": "Enter at least {min} a day.",
+    "budgetHigh": "Enter no more than {max} a day.",
+    "daysInvalid": "Choose between 1 and 90 days.",
+    "prepare": "Prepare draft",
+    "readOnly": "Only owners and admins can prepare ads.",
+    "goneTitle": "This ad can't be copied",
+    "noBudgetTitle": "There is no budget to copy"
   }
 }
