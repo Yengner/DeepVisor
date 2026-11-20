@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import StatusBanner, { type StatusTone } from '@/components/ui/states/StatusBanner';
+import { setSyncActivity } from './syncActivity';
 
 type SyncState = { status: string; lastSuccessfulAt: string | null; revision?: string; resourceRefreshEnabled?: boolean };
 /** A visible account lease requests shared work. Only pending jobs get frequent status polling. */
@@ -51,16 +52,18 @@ export default function AutomaticMetaSync({ accountId }: { accountId: string | n
     window.addEventListener('focus', visible); document.addEventListener('visibilitychange', visible);
     return () => { controller.abort(); clearTimeout(timer); window.removeEventListener('focus', visible); document.removeEventListener('visibilitychange', visible); };
   }, [accountId, router, preview]);
+  // A queued or running refresh is shown on the numbers themselves (the working spider), not as a banner.
+  const fetching = !preview && Boolean(accountId) && ['queued', 'running'].includes(state?.status ?? '');
+  useEffect(() => { setSyncActivity('automatic', fetching); }, [fetching]);
+  useEffect(() => () => setSyncActivity('automatic', false), []);
   if (preview || !accountId || !state || state.status === 'disconnected') return null;
-  const message = state.status === 'queued' ? 'Meta refresh queued' : state.status === 'running' ? 'Refreshing Meta data…' :
-    state.status === 'reauthentication_required' ? 'Reconnect Meta in Connections to resume synchronization.' :
+  const message = state.status === 'reauthentication_required' ? 'Reconnect Meta in Connections to resume synchronization.' :
     state.status === 'retry_limit' ? 'Automatic refresh paused after repeated failures. Check Connections.' :
     state.status === 'failure_backoff' ? 'Automatic refresh is waiting before retrying.' :
     // initial_sync_required: the "Setting up your account" screen (AccountSetupGate) already explains it, with progress.
     state.status === 'timezone_unavailable' ? 'Account timezone unavailable. Check Connections.' :
     ['failed', 'partial'].includes(state.status) ? 'Last refresh did not complete. Check Connections.' :
     state.status === 'unavailable' ? 'Sync status unavailable.' : null;
-  const tone: StatusTone = ['queued', 'running'].includes(state.status) ? 'info' :
-    ['reauthentication_required', 'retry_limit'].includes(state.status) ? 'action' : 'gap';
+  const tone: StatusTone = ['reauthentication_required', 'retry_limit'].includes(state.status) ? 'action' : 'gap';
   return message ? <StatusBanner key={state.status} tone={tone}>{message}</StatusBanner> : null;
 }

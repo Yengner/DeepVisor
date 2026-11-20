@@ -47,7 +47,8 @@
       "impressions": "No recorded impressions for this period",
       "clicks": "No recorded clicks for this period",
       "cpm": "No recorded CPM for this period"
-    }
+    },
+    "syncing": "Getting fresh numbers from Meta…"
   },
   "results": {
     "whatsapp_conversations": {

@@ -5,6 +5,7 @@ import { ActionIcon, Alert, Button, Tooltip } from "@mantine/core";
 import RangeSwitch, { RANGE_LABELS } from "@/components/design/RangeSwitch";
 import { IconRefresh, IconBrandFacebook, IconBrandInstagram, IconBrandMeta } from "@tabler/icons-react";
 import type { Period } from "@/lib/server/dashboard/overview/types";
+import { setSyncActivity } from "@/components/integrations/syncActivity";
 
 export function PeriodControl({ period }: { period: Period }) {
   const router = useRouter();
@@ -39,7 +40,7 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
   const [failed, setFailed] = useState(false);
   const pending = useRef(false);
   const controller = useRef<AbortController | null>(null);
-  useEffect(() => () => controller.current?.abort(), []);
+  useEffect(() => () => { controller.current?.abort(); setSyncActivity("manual", false); }, []);
   const refresh = async () => {
     if (pending.current || disabled) return;
     pending.current = true;
@@ -56,7 +57,8 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
         return;
       }
       if (!response.ok || !body.success || !body.jobId) throw new Error('Refresh request failed');
-      setMessage(body.message || 'Refresh in progress.');
+      // While Meta works, the numbers show the working spider; no "in progress" banner.
+      setSyncActivity("manual", true);
       const deadline = Date.now() + 5 * 60_000;
       for (let attempt = 0; attempt < 100 && Date.now() < deadline; attempt++) {
         if (abort.signal.aborted) return;
@@ -66,9 +68,7 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
         const status = await statusResponse.json();
         if (!statusResponse.ok || !status.success) throw new Error('Refresh status unavailable');
         if (status.status === 'completed' && status.completedAt) {
-          setMessage(status.unchanged === true
-            ? 'Refresh completed. Dashboard statistics are unchanged.'
-            : `Meta data updated · ${new Date(status.completedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+          // New numbers roll into place on the cards; the button already shows "Updated <time>".
           onCompleted?.();
           router.refresh();
           return;
@@ -85,6 +85,7 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
       );
     } finally {
       setLoading(false);
+      setSyncActivity("manual", false);
       pending.current = false;
     }
   };

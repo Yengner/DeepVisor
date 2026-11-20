@@ -1,0 +1,44 @@
+/* Odometer number: each digit is a 0–9 strip inside a one-line window. */
+.ticker {
+  --row: 1.25em;
+  display: inline-flex;
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+  transition: color 1s ease, background-color 1s ease, opacity 0.3s ease;
+}
+.chars { display: inline-flex; align-items: flex-end; }
+.char { display: inline-block; line-height: var(--row); white-space: pre; }
+.column { display: inline-block; height: var(--row); overflow: hidden; }
+.strip {
+  display: flex;
+  flex-direction: column;
+  transform: translateY(calc(var(--digit) * var(--row) * -1));
+}
+.strip > span { display: block; height: var(--row); line-height: var(--row); text-align: center; }
+
+/* Good news green, bad news red, a neutral change (spend) blue; fades back on its own. */
+.ticker[data-flash] { transition: color 0.25s ease, background-color 0.25s ease; }
+.ticker[data-flash='good'] { color: var(--ui-positive, var(--dv-success)); background: color-mix(in srgb, var(--ui-positive, var(--dv-success)) 12%, transparent); }
+.ticker[data-flash='bad'] { color: var(--ui-negative, var(--dv-urgent)); background: color-mix(in srgb, var(--ui-negative, var(--dv-urgent)) 12%, transparent); }
+.ticker[data-flash='neutral'] { color: var(--dv-primary-strong); background: color-mix(in srgb, var(--dv-primary) 10%, transparent); }
+
+/* While Meta is fetching, the old number steps back so the spider reads as "updating". */
+.ticker[data-syncing] { opacity: 0.45; }
+
+.spider { position: absolute; top: 12px; right: 12px; pointer-events: none; }
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Right-most digits move first, like a mechanical counter. */
+  .strip { transition: transform 0.9s cubic-bezier(0.2, 0.9, 0.25, 1) calc((var(--place) - 1) * 50ms); }
+  .ticker[data-syncing] { animation: breathe 1.6s ease-in-out infinite; }
+  @keyframes breathe { 50% { opacity: 0.7; } }
+}

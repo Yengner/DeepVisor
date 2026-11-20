@@ -5,6 +5,15 @@ import type { Delta } from "@/lib/server/campaigns/exploration/types";
 import classes from "./ControlCenter.module.css";
 import { useTranslations } from "next-intl";
 import type { ResultDefinition } from "@/lib/shared/performance/resultChannel";
+import TickerNumber, { SyncSpider, type Polarity } from "./TickerNumber";
+
+/** Which way is good news, for the refresh glow: spend is neither. */
+const POLARITY: Record<"spend" | "results" | "costPerResult" | "ctr", Polarity> = {
+  spend: "neutral",
+  results: "up-good",
+  costPerResult: "up-bad",
+  ctr: "up-good",
+};
 
 export const CONTROL_METRICS = ["spend", "results", "costPerResult", "ctr"] as const;
 export type ControlMetric = (typeof CONTROL_METRICS)[number];
@@ -102,12 +111,13 @@ export default function ControlMetrics({ view }: { view: ControlPerformance & { 
         </p>
       )}
       <dl className={classes.kpis}>
-        {CONTROL_METRICS.map((key) => (
-          <div key={key}>
+        {CONTROL_METRICS.map((key, index) => (
+          <div key={key} className={classes.kpiCard}>
+            <SyncSpider announce={index === 0} />
             <dt>{labels[key]} <Tooltip events={{ hover: true, focus: true, touch: true }} multiline w={260} label={key === "results" && appsNote ? `${help[key]} ${appsNote}` : help[key]}><button type="button" aria-label={t("metrics.about", { label: labels[key] })}>ⓘ</button></Tooltip></dt>
             <div className={classes.kpiValueRow}>
               <dd title={metricValue(key, view.metrics[key], view.currency)}>
-                {metricValue(key, view.metrics[key], view.currency, true)}
+                <TickerNumber text={metricValue(key, view.metrics[key], view.currency, true)} value={view.metrics[key]} polarity={POLARITY[key]} />
               </dd>
               <Sparkline values={view.points.map((p) => p[key])} label={t("metrics.overDays", { label: labels[key], days: view.points.length })} />
             </div>

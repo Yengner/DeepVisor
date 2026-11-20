@@ -84,7 +84,12 @@ Remaining source limitations: no scheduler heartbeat or authoritative eligible-u
 
 The shell's `AutomaticMetaSync` independently checks daily visit freshness and
 observes existing queue jobs; Overview loaders continue to read persisted data.
-Completed synchronization refreshes the visible analytics. Failed/reauthentication
+Completed synchronization refreshes the visible analytics. While a refresh is queued or
+running (automatic or the Refresh button), there is no banner: the KPI cards dim and show
+the working spider (`syncActivity.ts`, `TickerNumber.tsx`). When the refreshed values differ,
+each number rolls to its new value and glows briefly — green for good news, red for bad,
+blue when neither (spend) — by metric polarity (`flashTone`); unchanged values, first loads
+and period switches do not animate. Failed/reauthentication
 connections retain their selected account and saved history, with honest connection
 attention and reconnection guidance. A successful sync is not a decision evaluation
 or authorization to execute advertising actions.
