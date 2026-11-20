@@ -112,3 +112,58 @@ is required to review these local changes.
 
 See [Architecture](ARCHITECTURE.md), [Codebase map](CODEBASE_MAP.md),
 [Flows](FLOWS.md), and [Development guide](DEVELOPMENT_GUIDE.md).
+
+
+## Phase 2 relationship review — 2026-11-13
+
+Documentation-only independent review of committed `ef313aff8f23ebbe20211006969a1ff05ae18f9e`.
+Read-only development catalog/Edge/schedule inspection supplements source evidence;
+[verification scope](SYSTEM_DIAGRAM.md#verification-ledger--2026-11-13) is explicit.
+No application fixes, Jira changes, Supabase writes or deployments were performed.
+The older audit above remains historical; its test counts are not Phase 2 results.
+
+| Finding | Evidence and consequence | Assessment / follow-up for lead engineer |
+| --- | --- | --- |
+| Hierarchy FKs establish existence, not parent scope/level | `ad_entities_parent_id_fkey`, `campaign_id_fkey`, `adset_id_fkey` reference only `id`; catalog and [migration](../supabase/migrations/20260510000100_account_intelligence_schema.sql). Composite fact FKs protect metrics but not hierarchy ancestry. | Confirmed constraint gap; no corrupt row or exploit demonstrated. Validate writer invariants and tenant/level negative cases before considering a separate constraint change. |
+| Job business/account/integration are separately referenced | `account_sync_jobs` has three independent FKs. [Worker](../src/lib/server/sync/meta/processBackfillJobs.ts) resolves integration by business; one account read uses ID only. Existing queue scope and privileged writers therefore matter. | Confirmed structural dependency on trusted enqueue paths, not proof of cross-tenant access. Review all service-role enqueue/RPC boundaries with mismatched scopes. Snapshot scope is stronger: its trigger validates the combined scope. |
+| Creative and decision targets are logical references | `creative_external_id` matches scoped `platform_creative_id`; feature `entity_id` and proposal `target_entity_id` are text. [Explorer](../src/lib/server/campaigns/exploration/load.ts), [V2 schema](../supabase/migrations/20261006000000_add_v2_decision_persistence.sql). | No FK guarantees current media or target existence. Existing resolvers/executor fresh reads are essential; retain missing-media and stale-target behavior. |
+| Multiple freshness/state contracts | Integration status/time, account coverage, jobs, per-resource revision, lifecycle observations and saved presentations are distinct. [Resource contract](../src/lib/server/sync/resources/README.md) limits atomic publication to resource windows; legacy full sync spans stages. | Confirmed consistency boundary. A completed read can coexist with stale optional datasets or failed inference. Do not label every downstream artifact fresh from one timestamp. |
+| Sync and intelligence completion are coupled unevenly | [syncBusinessPlatform](../src/lib/server/sync/syncBusinessPlatform.ts) awaits assessments/trend artifacts before marking integration synced; [evaluation enqueue](../src/lib/server/decisions/shadow/service.ts) catches failures; lifecycle capture logs failures while preserving facts. | Different failure propagation can leave saved facts without matching derived artifacts. Review partial-success observability; no production incident established. |
+| Privileged workflows bypass tenant RLS | [Admin client](../src/lib/server/supabase/admin.ts), worker/Insights mutation RPCs. All inspected base tables enable RLS, and sampled policies restrict business/member reads, but service-role calls bypass those policies. | Residual review risk, not a discovered RLS exploit. Full grants, SECURITY DEFINER bodies, deployed schema exposure and cross-tenant runtime tests were not audited here. |
+| Hosted topology can be misread from names/docs | Catalog: worker job named every-minute actually runs every ten minutes; calendar job named every-five-minutes runs every minute; enqueue inactive. Edge versions differ from older runbook versions. | Confirmed metadata/documentation drift. Names and ACTIVE function status do not establish successful forwarding or source parity. Deployment owner must verify hosted app revision and gates before activation. |
+| Shared queue tick also drains decision/outcome work | [Internal route](../src/app/api/integrations/meta/process-backfill-jobs/route.ts) schedules sync, evaluations and outcomes; [dispatch](../src/lib/server/sync/dispatch.ts) uses response-lifetime work. | Tight operational coupling: slow/failed app hosting affects multiple pipelines. Durable jobs help recovery, but no hosting-duration/load test was performed. |
+
+**Corrected documentation assumption:** legacy dimension/performance names are
+security-invoker views in inspected development, and writers delegate to unified
+storage. They are not evidence of duplicated physical metric state. Saved feature
+snapshots, assessment digests and presentation payloads are intentional derived
+copies with different revision/immutability contracts.
+
+**Historical absence finding, superseded below:** no Meta webhook path was present
+at the Phase 2 baseline. External subscription settings were unverified. Resource refresh, Insights, Shadow/Review
+and execution gates have implementation/schema evidence, not hosted enablement
+proof. No live provider calls, advertising writes or UI behavior tests were run.
+
+Phase 2 verification results are recorded in [System diagram](SYSTEM_DIAGRAM.md).
+No application test/typecheck/build claim is made for this documentation-only review.
+
+
+## Webhook follow-up — source `e9bf2cd`
+
+The earlier no-webhook finding is superseded: a gated receiver, delivery deduplication,
+events resource, subscription lifecycle and private Realtime hints are implemented.
+Read-only development metadata confirms the migration/tables and restrictive account
+signal policy. [Flow](FLOWS.md#webhook-triggered-status-reads-and-refresh) and
+[verification addendum](SYSTEM_DIAGRAM.md#webhook-verification-addendum) record scope.
+
+| Remaining risk | Evidence / limitation |
+| --- | --- |
+| Status and metrics can diverge in freshness | Events jobs capture lifecycle/issues but do not refresh performance or `ad_entities.status`; Campaigns may lag until maintenance. |
+| Incomplete notification coverage | Parsed refresh fields exceed the dashboard subscription list. Ordinary pauses, budgets, names and targeting have no guaranteed immediate webhook path. |
+| Recovery remains dependent on existing work | Busy accounts retain follow-up demand and the worker remains fallback; failure-backoff demand may be skipped. Deduplication and a 200 acknowledgement do not certify a completed read. |
+| Live integration unverified | Focused mocked/PGlite tests passed (30); no real Meta delivery, hosted callback/subscription verification or authenticated browser Realtime test was performed. |
+
+No new defect issue or duplicate feature backlog was created. Existing documentation
+work KAN-5 and environment-inventory work KAN-4 receive evidence updates; neither is
+certified Done by this bounded documentation follow-up. No application, database,
+schedule, deployment or advertising changes were made.

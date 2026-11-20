@@ -62,25 +62,117 @@ forwards to it; `process_meta_backfill_jobs` is a compatibility function name.
 Browser `router.refresh()` only reloads persisted views. Existing cron SQL is an
 operator deployment procedure, not a setup command for this refactor.
 
+### Webhook-triggered status reads and refresh
+
+Purpose: distinguish webhook demand from authoritative Meta observations and performance
+refresh. This addition is source-verified at `e9bf2cd`; the documentation branch's
+application baseline remains older. See the [webhook contract](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/lib/server/webhooks/README.md) at that pinned revision.
+Hosted endpoint activation, Meta dashboard registration and real account subscription
+are unverified; the source contract records local/synthetic verification only.
+
+```mermaid
+sequenceDiagram
+  participant M as Meta
+  participant A as Next.js routes
+  participant D as PostgreSQL
+  participant W as Existing resource worker
+  participant B as Authorized browser
+  M->>A: GET challenge / POST signed changes at /api/meta/webhooks
+  A->>A: Feature gate, raw-body HMAC, size and JSON checks
+  A->>D: Record deduplicated signal; resolve selected account scopes
+  alt Refresh-triggering field and eligible account
+    A->>D: Request events:v2 in existing account queue
+    A-->>M: 200 after recording and queue request
+    Note over A,W: after() dispatch; busy-account follow-up; existing worker fallback
+    W->>D: Claim account job with lease generation
+    W->>M: Re-read affected ads or full hierarchy
+    M-->>W: Current status and issue evidence
+    W->>D: Publish lifecycle / issues; complete event resource
+    D-->>B: Private Realtime change signal
+    B->>A: Re-read saved data through authorized APIs
+  else Other field or ineligible account
+    A-->>M: 200; stored-only or skipped demand
+  end
+  Note over A,D: Invalid signature: 401, no storage. Storage/queue error: 503; retry deduplicated
+  Note over M,W: Event jobs do not fetch or replace performance metrics
+```
+
+| Signal | Implemented effect |
+| --- | --- |
+| `with_issues_ad_objects`, `in_process_ad_objects`, `creative_fatigue` | App-dashboard subscription field list; enqueue status/issue re-read. Fatigue is a notice, not an urgent issue on its own. |
+| `effective_status`, `field_changed` | Parser also treats these as refresh triggers if delivered; this is not proof they are offered/configured as subscriptions. |
+| Other fields | Stored only; no refresh/card from the delivery itself. |
+| Budget, name, targeting and ordinary pause changes | Detected by subsequent observation diffs; no guaranteed immediate webhook coverage. Source contract says effective_status is not offered to this app. |
+
+`DEEPVISOR_META_WEBHOOKS`, resource refresh and Insights gates must be configured
+for the complete path. The endpoint uses the app secret for raw-body HMAC and a
+separate verify token for GET; it does not rely on a browser session. Account matching
+resolves business-owned selected accounts before queue admission. Deliveries contain
+signals/short provider notices, never authoritative metrics.
+
+One queued events job coalesces demand; arrivals during running work remain pending.
+At most 25 known ads can use a targeted merge; unknown objects, parent-dependent
+status, missing baseline or larger/mixed sets require a hierarchy read. Events
+completion is lease-fenced and bypasses performance staging/publication. More than
+20 event reads/account/hour defer further demand five minutes. Failure-backoff demand
+can be skipped; later normal refresh remains necessary for reconciliation.
+
+Manual, app-visit and scheduled performance refresh still use the existing queue
+and their original eligibility/windows. A webhook is an additional **status** trigger,
+not a new cron or a metrics-refresh guarantee. Subscription checks run within the
+worker at most daily; disconnect preserves the subscription while another business
+uses the same account. These routing writes are separate from advertising execution.
+
+Realtime emits a private account-scoped change hint, not advertising facts. Clients
+re-read through normal authorization; polling remains fallback and an open modal is
+not replaced. Browser Realtime delivery and real Meta delivery remain unverified.
+Events reads do not update `ad_entities.status`, so Campaigns can lag saved lifecycle
+information until normal hierarchy maintenance. No inference or advertising executor
+is invoked by the receiver.
+
+Sources: [receiver](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/app/api/meta/webhooks/route.ts),
+[parser and field lists](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/lib/shared/webhooks/meta.ts),
+[ingestion](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/lib/server/webhooks/meta.ts),
+[resource worker](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/lib/server/sync/resources/worker.ts),
+[targeted/full observation logic](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/lib/server/lifecycle/service.ts),
+[subscriptions](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/lib/server/webhooks/subscription.ts),
+[Realtime hook](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/lib/client/hooks/useAccountSignals.ts).
+The [infrastructure ledger](SYSTEM_DIAGRAM.md#webhook-verification-addendum)
+records current development schema/schedule evidence without asserting activation.
+
 ## 2. Ingestion through account intelligence
 
 ```mermaid
-flowchart LR
-  M[Meta reads] --> N[Normalization]
-  N --> F[Entity, creative and performance facts]
-  F --> A[Account assessments]
-  A --> S[Signals and business synthesis]
-  F --> T[Trend findings and queue context]
+flowchart TD
+  M[Meta hierarchy, creative and Insights reads] --> F[(Normalized entities and performance facts)]
+  F --> A[Account assessment and trends]
+  A --> S[(Assessments, signals and findings)]
+  A -.->|optional summary| O[OpenAI structured adapter]
+  S --> Q[Calendar queue, notifications and report context]
   F --> V[Overview, Campaigns and Reports read models]
   S --> V
-  T --> V
+  F --> L[Observed lifecycle and health evidence]
+  L --> I[(Issues, lifecycle events and briefs)]
+  I --> P[Immutable per-user Insights presentations]
+  F --> P
+  F --> J[Eligible sync completion: gated evaluation enqueue]
+  J --> E[(Captured source rows, hash and evaluation job)]
+  E --> B[Pure versioned feature calculation]
+  B --> D[DecisionEngine and validated provider result]
+  D --> JE[Jev DecisionProvider]
+  D --> PO[Deterministic PolicyEngine via orchestration]
+  PO --> R[(Proposal and policy audit)]
+  R --> X[Separate approval and gated executor]
+  X --> U[(Execution audit and observed outcomes)]
+  classDef data fill:#f3eeff,stroke:#b9a6f0,color:#1b1f24
+  class F,S,I,E,R,U data
 ```
 
 [`sync/meta/fetch.ts`](../src/lib/server/sync/meta/fetch.ts) and
 [`normalization.ts`](../src/lib/server/sync/meta/normalization.ts) handle provider
 reads and shapes. `syncMetaCampaigns`, `syncMetaAdsets`, `syncMetaAds`,
-`syncMetaAdCreatives` and `syncMetaPerformance` write legacy and unified records
-through their repositories. Creative media follows Meta response → `ad_creatives`
+`syncMetaAdCreatives` and `syncMetaPerformance` write normalized records; legacy
+repository names/views retain compatibility contracts. Creative media follows Meta response → `ad_creatives`
 → [`exploration/model.ts`](../src/lib/server/campaigns/exploration/model.ts) / shared
 media helpers → presentation. Ad-set card metrics remain ad-set metrics.
 
@@ -99,6 +191,23 @@ Overview reads normalized persisted facts through
 lineage in [`decisionRecords.ts`](../src/lib/server/dashboard/overview/decisionRecords.ts).
 No provider is called by those Overview loaders. Optional missing evidence is
 reported unavailable; a successful sync is not a completed decision evaluation.
+
+The assessment branch and Jev branch have different ownership: assessment/trend
+services own digests and workflow suggestions; versioned features and validated
+runs own decision evidence. OpenAI summary failure can fall back to deterministic
+assessment text; Jev failure produces a failed decision run, never a fallback HOLD.
+[Assessment service](../src/lib/server/intelligence/assessments/service.ts),
+[evaluation orchestration](../src/lib/server/decisions/shadow/service.ts).
+
+Insights & Events is a third, deterministic saved-evidence path: no inference provider
+or advertising executor. [Issue capture](../src/lib/server/insights/issues.ts) and
+[lifecycle capture](../src/lib/server/lifecycle/service.ts) run within existing sync
+work; failures preserve prior evidence instead of asserting resolution. Per-user
+presentation receipts/reviews do not resolve underlying issues. Its
+[contract](../src/lib/server/insights/README.md) owns flags, claims and delivery rules.
+These arrows indicate derivation/calls, not FKs; physical lineage is in the
+[ERDs](DATABASE_RELATIONSHIPS.md). Rates require compatible coverage and currency;
+Feature V1 frequency uses summed daily reach, not unique period reach.
 
 ## 3. Features → decisions → policy
 

@@ -2,7 +2,7 @@
 
 Start with [Architecture](ARCHITECTURE.md) for boundaries, [Flows](FLOWS.md) for
 call chains, and [Development](DEVELOPMENT_GUIDE.md) for safe local verification.
-Source links below are relative to this checkout, not a particular GitHub branch.
+Source links below are relative to this checkout except explicitly commit-pinned additions.
 
 ## Repository ownership
 
@@ -61,6 +61,15 @@ Source links below are relative to this checkout, not a particular GitHub branch
 | Reports/export | [`reports/page.tsx`](../src/app/(root)/reports/page.tsx), [`api/reports`](../src/app/api/reports) → [`buildReportPayload.ts`](../src/lib/server/repositories/reports/buildReportPayload.ts), report renderers |
 | Calendar/review/archive compatibility | [`calendar/page.tsx`](../src/app/(root)/calendar/page.tsx), [`api/calendar`](../src/app/api/calendar) → [`calendarQueueProcessor.ts`](../src/lib/server/intelligence/calendarQueueProcessor.ts), [`campaignReviews/service.ts`](../src/lib/server/intelligence/campaignReviews/service.ts) |
 | Draft creation/reuse | [`campaigns/create`](../src/app/(root)/campaigns/create), [`api/campaign-drafts`](../src/app/api/campaign-drafts/route.ts), [`api/campaigns/reuse-draft`](../src/app/api/campaigns/reuse-draft/route.ts) → [`campaigns/drafts.ts`](../src/lib/server/campaigns/drafts.ts), `reuse.ts`, `revive.ts` |
+
+## Webhook addition (`e9bf2cd`)
+
+[src/app/api/meta/webhooks](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/app/api/meta/webhooks/route.ts) owns gated
+GET verification and signed POST ingestion; [server/webhooks](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/lib/server/webhooks/README.md)
+owns delivery deduplication, notices and account subscriptions. The existing resource
+worker handles `events:v2` status reads. [useAccountSignals](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/lib/client/hooks/useAccountSignals.ts)
+consumes private Realtime hints; normal polling remains fallback. These are implemented
+paths in the pinned revision, not proof of hosted enablement. See [Flows](FLOWS.md#webhook-triggered-status-reads-and-refresh).
 
 ## Active, compatibility and development surfaces
 
