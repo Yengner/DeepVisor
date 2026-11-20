@@ -90,7 +90,12 @@ stretch within 14 days, the popup carries `payload.suggestion` (source key `sugg
 `running` (greeting + the first 7-day recap), `off` (the ads-off suggestion is offered at once,
 skipping the 7-day idle wait; an open account issue still comes first), or `new` (never spent:
 offers a first Quick ad). Unknown delivery after earlier spend gets no greeting. No popup is prepared
-while the account's first full sync (account setup) is incomplete, so partial data never drives it.
+while the account's first full sync (account setup) is incomplete, and a first look also waits
+until the setup job itself has finished (the account is marked set up a few seconds earlier), so the
+welcome always carries the recap. While waiting, `POST /api/insights` answers
+`{ presentation: null, retryInSeconds: 5 }` (`FIRST_LOOK_WAITING` in the service); the popup asks
+again every 5 seconds for up to about three minutes, and the "Setting up your account" screen fires
+`deepvisor:data-updated` the moment setup finishes, so the welcome appears right after it.
 Card: `components/insights/WelcomeCard.tsx` (EN/ES `welcome.*`); preview group **First Look**.
 
 Lifecycle captures reuse existing sync work and preserve reconstructed provenance.

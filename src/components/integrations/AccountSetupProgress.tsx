@@ -41,6 +41,8 @@ export function AccountSetupProgress({ jobId }: { jobId: string }) {
         const next: FirstSyncJobStatus | null = response.ok && body?.success ? body.data.job : null;
         if (next) setJob(next);
         if (next && (next.status === "completed" || next.status === "failed" || next.firstFullSyncCompleted)) {
+          // Lets the first-look popup check right away instead of on its next scheduled try.
+          window.dispatchEvent(new Event("deepvisor:data-updated"));
           router.refresh();
           return;
         }
