@@ -54,8 +54,13 @@ export async function prepareRestartDraftAction(adSetId: unknown, plan?: unknown
     if (error instanceof AssistantError) return fail(error.message, ErrorCode.FORBIDDEN, { userMessage: error.status === 409 || error.status === 403 ? t('account') : t('failed') });
     // Builder refusals (e.g. above the saved monthly budget) are English-only; the plan page shows
     // the limit before this point, so a refusal here gets the general message.
-    if (error instanceof CampaignReuseDraftError) return fail(error.message, ErrorCode.VALIDATION_ERROR, { userMessage: t('failed') });
-    console.error('Restart draft failed', { code: (error as { code?: string })?.code });
+    if (error instanceof CampaignReuseDraftError) {
+      // Logged so a refusal is never invisible (it once hid a database type mismatch).
+      console.warn('Restart draft refused', { message: error.message, fields: error.fieldErrors });
+      return fail(error.message, ErrorCode.VALIDATION_ERROR, { userMessage: t('failed') });
+    }
+    const failure = error as { code?: string; message?: string };
+    console.error('Restart draft failed', { code: failure?.code, message: failure?.message });
     return fail('Restart draft failed', ErrorCode.DATABASE_ERROR, { userMessage: t('failed') });
   }
 }
