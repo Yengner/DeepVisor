@@ -8,7 +8,6 @@ import {
   IconPresentation,
   IconPuzzle,
   IconSettings,
-  IconUser,
 } from '@tabler/icons-react';
 
 /** Message keys under `nav` in messages/*.json. */
@@ -33,7 +32,6 @@ export const primaryNavItems: AppNavItem[] = [
 
 export const secondaryNavItems: AppNavItem[] = [
   { nameKey: 'notifications', shortKey: 'notificationsShort', icon: IconBell, route: '/notifications' },
-  { nameKey: 'profile', shortKey: 'profile', icon: IconUser, route: '/settings/profile' },
   { nameKey: 'settings', shortKey: 'settings', icon: IconSettings, route: '/settings' },
 ];
 

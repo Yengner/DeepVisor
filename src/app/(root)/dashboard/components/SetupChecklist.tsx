@@ -44,7 +44,7 @@ export default function SetupChecklist({ metaConnectedWithoutAccount }: SetupChe
       title: 'Business details',
       detail: 'Saved. You can update them any time.',
       state: 'done',
-      href: '/settings/profile#business-profile',
+      href: '/settings#workspace',
       action: 'Edit details',
     },
     metaConnectedWithoutAccount
@@ -69,7 +69,7 @@ export default function SetupChecklist({ metaConnectedWithoutAccount }: SetupChe
       title: 'Add your website and what you offer',
       detail: 'Optional. Helps DeepVisor describe your business accurately.',
       state: 'todo',
-      href: '/settings/profile#business-profile',
+      href: '/settings#workspace',
       action: 'Add details',
       optional: true,
     },

@@ -264,7 +264,7 @@ export default function TopBarClient({
 
           <Menu.Dropdown>
             <Menu.Label>{fullName || 'Account'}</Menu.Label>
-            <Menu.Item leftSection={<IconUser size={16} />} onClick={() => router.push('/settings/profile')}>
+            <Menu.Item leftSection={<IconUser size={16} />} onClick={() => router.push('/settings#profile')}>
               Profile
             </Menu.Item>
             <Menu.Item leftSection={<IconSettings size={16} />} onClick={() => router.push('/settings')}>

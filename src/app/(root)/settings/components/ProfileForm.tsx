@@ -2,81 +2,81 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Button, Divider, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
+import { useTranslations } from 'next-intl';
+import { Alert, Button, TextInput } from '@mantine/core';
 import { requestOwnEmailChange, updateOwnProfile } from '@/lib/server/actions/user/settingsProfile';
-import classes from './ProfileForm.module.css';
+import classes from '../SettingsSurface.module.css';
 
 type Props = { initial: { first_name: string; last_name: string; phone_number: string | null; email: string } };
 type Feedback = { success: boolean; message: string } | null;
 
+/** Name and phone (one Save), then the sign-in email (its own button: it needs confirmation). */
 export default function ProfileForm({ initial }: Props) {
+  const t = useTranslations('settingsPage');
   const router = useRouter();
-  const [values, setValues] = useState({ first_name: initial.first_name, last_name: initial.last_name, phone_number: initial.phone_number ?? '' });
-  const [email, setEmail] = useState(initial.email);
+  const start = { first_name: initial.first_name, last_name: initial.last_name, phone_number: initial.phone_number ?? '' };
+  const [values, setValues] = useState(start);
+  const [saved, setSaved] = useState(start);
+  const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [emailSaving, setEmailSaving] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [emailFeedback, setEmailFeedback] = useState<Feedback>(null);
-  const [requestedEmail, setRequestedEmail] = useState<string | null>(null);
-  const dirty = values.first_name.trim() !== initial.first_name.trim()
-    || values.last_name.trim() !== initial.last_name.trim()
-    || values.phone_number.trim() !== (initial.phone_number ?? '').trim();
-  const normalizedEmail = email.trim().toLowerCase();
+  const dirty = (Object.keys(start) as (keyof typeof start)[]).some(key => values[key].trim() !== saved[key].trim());
+  const nextEmail = email.trim().toLowerCase();
+  const set = (key: keyof typeof start, value: string) => { setValues(current => ({ ...current, [key]: value })); setFeedback(null); };
 
   async function save(event: FormEvent) {
-    event.preventDefault(); setSaving(true); setFeedback(null);
+    event.preventDefault();
+    if (!dirty || saving) return;
+    setSaving(true); setFeedback(null);
     try {
-      const result = await updateOwnProfile(values); setFeedback(result);
-      if (result.success) router.refresh();
-    } catch { setFeedback({ success: false, message: 'Unable to save. Please try again.' }); }
+      const result = await updateOwnProfile(values);
+      setFeedback(result.success ? { success: true, message: t('saved') } : result);
+      if (result.success) { setSaved(values); router.refresh(); }
+    } catch { setFeedback({ success: false, message: t('profile.error') }); }
     finally { setSaving(false); }
   }
 
   async function changeEmail(event: FormEvent) {
-    event.preventDefault(); setEmailSaving(true); setEmailFeedback(null);
+    event.preventDefault();
+    if (!nextEmail || emailSaving) return;
+    setEmailSaving(true); setEmailFeedback(null);
     try {
-      const result = await requestOwnEmailChange(email); setEmailFeedback(result);
-      if (result.success) { setRequestedEmail(normalizedEmail); router.refresh(); }
-    } catch { setEmailFeedback({ success: false, message: 'Unable to request email change. Please try again.' }); }
+      const result = await requestOwnEmailChange(nextEmail);
+      // The action answers in English; show our own words for the two success cases.
+      const message = !result.success ? result.message : result.message === 'Email updated.' ? t('profile.emailUpdated') : t('profile.emailCheck');
+      setEmailFeedback({ success: result.success, message });
+      if (result.success) { setEmail(''); router.refresh(); }
+    } catch { setEmailFeedback({ success: false, message: t('profile.error') }); }
     finally { setEmailSaving(false); }
   }
 
-  return <Stack gap="xl" className={classes.form}>
-    <form onSubmit={save}>
-      <Stack gap="md">
-        <div>
-          <h3 className={classes.heading}>Personal details</h3>
-          <p className={classes.helper}>Choose how your name and contact details appear in DeepVisor.</p>
+  return (
+    <div className={classes.formStack}>
+      <form onSubmit={save} className={classes.group} aria-labelledby="profile-personal">
+        <h3 id="profile-personal" className={classes.groupTitle}>{t('profile.personal')}</h3>
+        <div className={classes.fieldGrid}>
+          <TextInput label={t('profile.firstName')} autoComplete="given-name" required maxLength={100} disabled={saving} value={values.first_name} onChange={event => set('first_name', event.currentTarget.value)} />
+          <TextInput label={t('profile.lastName')} autoComplete="family-name" required maxLength={100} disabled={saving} value={values.last_name} onChange={event => set('last_name', event.currentTarget.value)} />
         </div>
-        <SimpleGrid cols={{ base: 1, sm: 2 }}>
-          <TextInput label="First name" autoComplete="given-name" required maxLength={100} disabled={saving} value={values.first_name} onChange={event => { setValues({ ...values, first_name: event.currentTarget.value }); setFeedback(null); }} />
-          <TextInput label="Last name" autoComplete="family-name" required maxLength={100} disabled={saving} value={values.last_name} onChange={event => { setValues({ ...values, last_name: event.currentTarget.value }); setFeedback(null); }} />
-        </SimpleGrid>
-        <TextInput label="Phone number" type="tel" autoComplete="tel" maxLength={40} disabled={saving} value={values.phone_number} onChange={event => { setValues({ ...values, phone_number: event.currentTarget.value }); setFeedback(null); }} description="Optional. Include your country code, for example +1 202 555 0100." />
-        {feedback && <Alert color={feedback.success ? 'green' : 'red'} role="status">{feedback.message}</Alert>}
+        <TextInput label={t('profile.phone')} description={t('profile.phoneHint')} inputWrapperOrder={['label', 'input', 'description', 'error']} type="tel" autoComplete="tel" maxLength={40} disabled={saving} value={values.phone_number} onChange={event => set('phone_number', event.currentTarget.value)} />
+        {feedback && <Alert color={feedback.success ? 'green' : 'red'} variant="light" role="status">{feedback.message}</Alert>}
         <div className={classes.actions}>
-          {dirty && <Button type="button" variant="default" disabled={saving} onClick={() => {
-            setValues({ first_name: initial.first_name, last_name: initial.last_name, phone_number: initial.phone_number ?? '' });
-            setFeedback(null);
-          }}>Reset</Button>}
-          <Button type="submit" className={classes.saveButton} loading={saving} disabled={!dirty}>Save profile</Button>
+          {dirty && <Button type="button" variant="default" disabled={saving} onClick={() => { setValues(saved); setFeedback(null); }}>{t('reset')}</Button>}
+          <Button type="submit" loading={saving} disabled={!dirty}>{t('save')}</Button>
         </div>
-      </Stack>
-    </form>
-    <Divider />
-    <form onSubmit={changeEmail}>
-      <Stack gap="md">
-        <div>
-          <h3 className={classes.heading}>Sign-in email</h3>
-          <p className={classes.helper}>Update the email address you use to access your account.</p>
-        </div>
-        <Text size="sm" className={classes.currentEmail}>Current email: <strong>{initial.email}</strong></Text>
-        <TextInput label="Email address" type="email" autoComplete="email" required maxLength={254} disabled={emailSaving} value={email} onChange={event => { setEmail(event.currentTarget.value); setEmailFeedback(null); }} description="Changes require email verification and a sign-in within the last 10 minutes." />
-        {emailFeedback && <Alert color={emailFeedback.success ? 'green' : 'red'} role="status">{emailFeedback.message}</Alert>}
+      </form>
+
+      <form onSubmit={changeEmail} className={classes.group} aria-labelledby="profile-email">
+        <h3 id="profile-email" className={classes.groupTitle}>{t('profile.email')}</h3>
+        <p className={classes.groupLead}>{t.rich('profile.emailNow', { email: initial.email, strong: chunk => <strong>{chunk}</strong> }) ?? null}</p>
+        <TextInput label={t('profile.emailNew')} description={t('profile.emailHint')} inputWrapperOrder={['label', 'input', 'description', 'error']} type="email" autoComplete="email" maxLength={254} disabled={emailSaving} value={email} onChange={event => { setEmail(event.currentTarget.value); setEmailFeedback(null); }} />
+        {emailFeedback && <Alert color={emailFeedback.success ? 'green' : 'red'} variant="light" role="status">{emailFeedback.message}</Alert>}
         <div className={classes.actions}>
-          <Button type="submit" variant="light" className={classes.emailButton} loading={emailSaving} disabled={normalizedEmail === initial.email.toLowerCase() || normalizedEmail === requestedEmail}>Change email</Button>
+          <Button type="submit" variant="default" loading={emailSaving} disabled={!nextEmail || nextEmail === initial.email.toLowerCase()}>{t('profile.emailButton')}</Button>
         </div>
-      </Stack>
-    </form>
-  </Stack>;
+      </form>
+    </div>
+  );
 }

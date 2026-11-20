@@ -3,7 +3,7 @@ import en from '../../../../messages/en.json';
 import { secondaryNavItems, primaryNavItems, mobileBottomNavItems, isAppNavItemActive, primaryNavFor, mobileNavFor } from '../navigation';
 it('places Reports after Campaigns and account links below the divider', () => {
   expect(primaryNavItems.map(item => item.route)).toEqual(['/dashboard', '/leads', '/campaigns', '/reports', '/integration']);
-  expect(secondaryNavItems.map(item => item.route)).toEqual(['/notifications', '/settings/profile', '/settings']);
+  expect(secondaryNavItems.map(item => item.route)).toEqual(['/notifications', '/settings']);
   expect(mobileBottomNavItems.map(item => item.route)).toEqual(['/dashboard', '/leads', '/campaigns', '/reports', '/notifications']);
   expect(mobileBottomNavItems.map(item => en.nav[item.shortKey])).toEqual(['Overview', 'Leads', 'Campaigns', 'Reports', 'Alerts']);
   expect(isAppNavItemActive('/reports', '/reports')).toBe(true);
