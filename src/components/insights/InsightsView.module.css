@@ -277,3 +277,31 @@
   .leadUpTable tbody td[data-head] { display:flex; flex-direction:column; font-size:14px; }
   .leadUpTable tbody td[data-head]::before { content:attr(data-head); font-size:11px; font-weight:600; color:light-dark(#6a7d93,#8fa1b8); }
 }
+
+/* ---------- Readability and the opening moment ----------
+   For owners of every age: nothing under 13px, the result count leads the numbers, muted text keeps
+   AA contrast, and buttons are at least 44px. Motion plays once as the popup opens: the character
+   (its own sprite animation), the daily bars rising, and the "run it again" estimate drawing. */
+.heading { gap:16px; align-items:flex-start; }
+.heading h2 { font-family:var(--font-display, inherit); font-size:clamp(1.45rem,3.4vw,1.9rem); letter-spacing:-.03em; line-height:1.2; margin:4px 0 6px; }
+.heading p { font-size:14px; }
+.mascot { flex:none; }
+.content { gap:24px; font-size:15px; }
+.metrics { gap:16px; }
+.metrics dt { font-size:14px; }
+.metrics dd { font-family:var(--font-display, inherit); font-size:clamp(20px,3.2vw,26px); }
+.metrics .leadMetric dd { font-size:clamp(26px,4.4vw,36px); color:light-dark(var(--dv-primary-strong),#9ec5ff); }
+.date, .peak, .changeLabel, .changeNone, .contents li { font-size:13px; }
+.changePill { font-size:13px; }
+.chart { height:190px; }
+.barTrack { height:150px; }
+.bar { border-radius:6px 6px 0 0; }
+.chartHeading h3 { font-size:17px; }
+.statusBand span, .urgentNotice, .lifecycleCreative>span, .urgentCreative>span { font-size:13px; }
+.footer button { min-height:48px; font-size:16px; padding:12px 32px; }
+.actions a { min-height:44px; }
+@media (prefers-reduced-motion:no-preference) {
+  .bar { transform-origin:bottom; animation:barRise 560ms cubic-bezier(.23,1,.32,1) both; animation-delay:calc(var(--bar-index, 0) * 28ms); }
+}
+@keyframes barRise { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+@container insight (max-width:440px) { .metrics { gap:10px; } .metrics .leadMetric dd { font-size:28px; } .metrics dd { font-size:20px; } .heading h2 { font-size:22px; } }

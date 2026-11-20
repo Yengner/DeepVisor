@@ -8499,6 +8499,16 @@ export type Database = {
         }
         Returns: string
       }
+      renew_meta_read: {
+        Args: {
+          p_account: string
+          p_account_usage?: number
+          p_app_usage?: number
+          p_lease: string
+          p_retry_seconds?: number
+        }
+        Returns: boolean
+      }
       request_account_resource: {
         Args: {
           p_account: string

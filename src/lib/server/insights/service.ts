@@ -4,10 +4,10 @@ import { createAdminClient } from '@/lib/server/supabase/admin';
 import { readAllPages } from '@/lib/server/repositories/pagination';
 import { accountToday, previousReportRange } from '@/lib/shared/reports/dates';
 import {recapChange, recapRevision, revisable} from '@/lib/shared/insights/revision';
-import {urgentIssues, recapWindow, summarize, completeComparable, idleRecap } from '@/lib/shared/insights/model';
-import { accountActiveNow } from '@/lib/server/campaigns/activity';
-import { loadIdleSuggestion } from '@/lib/server/suggestions/idle';
-import type { Issue, IssueEvidence, Presentation, SavedPresentation, PerformanceRow } from '@/lib/shared/insights/model';
+import {urgentIssues, recapWindow, summarize, completeComparable, idleRecap, chooseWelcome } from '@/lib/shared/insights/model';
+import { accountActiveAdCount } from '@/lib/server/campaigns/activity';
+import { lastSpendDay, loadIdleSuggestion } from '@/lib/server/suggestions/idle';
+import type { Issue, IssueEvidence, Presentation, SavedPresentation, PerformanceRow, Welcome } from '@/lib/shared/insights/model';
 import type { Database, Json } from '@/lib/shared/types/supabase';
 import type { Observation } from '@/lib/shared/lifecycle/model';
 import { lifecycleBrief } from '@/lib/server/lifecycle/brief';
@@ -158,14 +158,26 @@ async function reviseSavedRecap(s:Scope,pub:Awaited<ReturnType<typeof publicatio
  }
  const checkedResult=await c.from('insight_reviews').update({checked_revision:pub.signature}).eq('user_id',s.user).eq('ad_account_id',s.account);if(checkedResult.error)throw checkedResult.error;
 }
+/** First-look greeting (see `chooseWelcome`); spend history is only read when no ad is running. */
+async function welcomeFor(c:ReturnType<typeof db>,account:string,activeAds:number|null):Promise<Welcome|undefined>{
+ if(activeAds!==null&&activeAds>0)return chooseWelcome(activeAds,null);
+ return chooseWelcome(activeAds,await lastSpendDay(c,account).catch(()=>undefined));
+}
 export async function prepare(s:Scope,token:string):Promise<(SavedPresentation&{additionalUpdates?:boolean})|null>{
- const c=db();await observeSavedSources(s);
- const [review,pending,pub,running]=await Promise.all([
+ const c=db();
+ // While the account is still being set up, saved data is partial: no popup until it is ready.
+ const setup=await c.from('ad_account_sync_state').select('first_full_sync_completed').eq('ad_account_id',s.account).maybeSingle();
+ if(setup.error)throw setup.error;if(setup.data&&!setup.data.first_full_sync_completed)return null;
+ await observeSavedSources(s);
+ const [review,pending,pub,activeAds]=await Promise.all([
  c.from('insight_reviews').select('*').eq('user_id',s.user).eq('ad_account_id',s.account).maybeSingle(),
- c.rpc('pending_insight_sources',{p_account:s.account,p_user:s.user}),publication(s),accountActiveNow(c,s.business,s.account)]);
+ c.rpc('pending_insight_sources',{p_account:s.account,p_user:s.user}),publication(s),accountActiveAdCount(c,s.business,s.account)]);
+ const running=activeAds===null?null:activeAds>0;
  // Nothing running and nothing spent: no recap and no missing-data notes, because no data was expected.
  const idle=running===false;
  if(review.error)throw review.error;if(pending.error)throw pending.error;
+ // No review row yet: this person's first popup for this ad account (present_insights creates it).
+ const welcome=!review.data?await welcomeFor(c,s.account,activeAds):undefined;
  const sources=pending.data as unknown as {issues:Database['public']['Tables']['insight_issues']['Row'][];events:Array<{id:string;root_id:string;affected_ids:string[]}>};
  const issues=sources.issues.map(issue),candidates=sources.events;
  const lifecycle:Presentation['lifecycle']=[];
@@ -189,10 +201,10 @@ export async function prepare(s:Scope,token:string):Promise<(SavedPresentation&{
  if(recap&&today&&recap.until<new Date(Date.parse(today+'T00:00:00Z')-86400000).toISOString().slice(0,10))limitations.push(`Published coverage currently ends ${recap.until}; more recent days are not included.`);
  if(!recap&&window&&!idle)limitations.push('A completed-day recap is not yet available, or today’s recap was already presented.');
  // Ads off for a while: now and then offer to run the best ad again or try a new one (read-only).
- const suggestion=idle&&today&&pub.account.timezone?await loadIdleSuggestion(c,{businessId:s.business,accountId:s.account,timezone:pub.account.timezone,currency:pub.account.currency_code,today,activeNow:running}).catch(()=>{console.warn('Idle suggestion unavailable');return null;}):null;
- const payload:Presentation={version:1,account:pub.account.name??'Meta account',timezone:pub.account.timezone,currency:pub.account.currency_code,preparedAt:new Date().toISOString(),syncedAt:pub.syncedAt,recap,issues,lifecycle,limitations,...(suggestion?{suggestion}:{})};
+ const suggestion=idle&&today&&pub.account.timezone?await loadIdleSuggestion(c,{businessId:s.business,accountId:s.account,timezone:pub.account.timezone,currency:pub.account.currency_code,today,activeNow:running,welcome:welcome?.kind==='off'}).catch(()=>{console.warn('Idle suggestion unavailable');return null;}):null;
+ const payload:Presentation={version:1,account:pub.account.name??'Meta account',timezone:pub.account.timezone,currency:pub.account.currency_code,preparedAt:new Date().toISOString(),syncedAt:pub.syncedAt,recap,issues,lifecycle,limitations,...(suggestion?{suggestion}:{}),...(welcome?{welcome}:{})};
  await reviseSavedRecap(s,pub,review.data?.checked_revision);
- const keys=[...issues.map(i=>`issue:${i.id}:${i.revision}`),...lifecycle.map(e=>`lifecycle:${e.eventId}`),...(suggestion?[`suggestion:${today}`]:[])];
+ const keys=[...issues.map(i=>`issue:${i.id}:${i.revision}`),...lifecycle.map(e=>`lifecycle:${e.eventId}`),...(suggestion?[`suggestion:${today}`]:[]),...(welcome?[`welcome:${welcome.kind}`]:[])];
  const fingerprint=createHash('sha256').update(JSON.stringify([keys,recap,pub.signature])).digest('hex');
  const result=await c.rpc('present_insights',{p_business:s.business,p_account:s.account,p_user:s.user,p_token:token,p_day:today??new Date().toISOString().slice(0,10),p_expected:review.data?.reviewed_through??null,p_payload:payload as unknown as Json,p_keys:keys,p_fingerprint:fingerprint,p_until:recap?.until??null,p_urgent:urgentIssues(issues).length>0});
  if(result.error)throw result.error;if(!result.data)return null;

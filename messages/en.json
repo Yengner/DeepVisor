@@ -599,9 +599,14 @@
   "suggestion": {
     "offSince": "Your ads have been off since {date}",
     "restartTitle": "Run your best ad again",
-    "plan": "Same setup at {budget}/day for {days} days, starting tomorrow.",
-    "forecast": "Estimate: about {low}–{high} conversations, based on your past {costLow}–{costHigh} per conversation.",
-    "forecastNote": "From {weeks} of your own weeks; not a guarantee.",
+    "spent": "Spent",
+    "ifAgain": "If you run it again",
+    "planShort": "{budget} a day for {days} days",
+    "planTotal": "{total} in total",
+    "day": "Day {day}",
+    "estimate": "About {low}–{high} conversations.",
+    "estimateBasis": "Based on your own weeks, when each conversation cost {costLow}–{costHigh}. An estimate, not a promise.",
+    "forecastAria": "Estimated {low} to {high} conversations over {days} days.",
     "noForecast": "Not enough past weeks with results to estimate yet.",
     "prepare": "Prepare this ad again",
     "newAd": "Try a new photo or video",
@@ -619,7 +624,18 @@
     },
     "whyCheapest": "Your lowest cost per conversation",
     "whyRecent": "Your most recent messaging ad",
-    "statsPeriod": "last {days} days"
+    "statsPeriod": "Last {days} days"
+  },
+  "welcome": {
+    "runningBody": "Here are your last 7 days. DeepVisor will tell you here when something needs you, and sum up each day.",
+    "offBody": "Your last ad ran on {date}. Here's your best recent ad, and what it could bring in if you run it again.",
+    "offBodyNoSuggestion": "Your last ad ran on {date}. When you're ready, a Quick ad takes a few minutes.",
+    "newBody": "We didn't find any ads in this account yet. A Quick ad takes about five minutes:",
+    "quickAd": "Create a Quick ad",
+    "review": "Nothing goes live until you review and publish it.",
+    "stepMedia": "Pick a photo or video of your work",
+    "stepMessage": "Write a short message",
+    "stepBudget": "Choose a daily budget"
   },
   "metaDeletion": {
     "menu": "Delete Meta data",

@@ -22,6 +22,9 @@ export const previewScenarioGroups=[
  {id:'combined',label:'Combined Updates',scenarios:[
   ['rejection','Lifecycle + rejection'],['catch-up-lifecycle','Catch-up + lifecycle'],['connection-recap','Reconnect + catch-up'],['all','All categories'],['many','Many updates · collapsed history'],
  ]},
+ {id:'welcome',label:'First Look',scenarios:[
+  ['welcome-running','Welcome · ads running + 7 days'],['welcome-off','Welcome · ads off, best ad again'],['welcome-off-account','Welcome · ads off, account problem'],['welcome-new','Welcome · never advertised'],
+ ]},
  {id:'idle',label:'Ads Off',scenarios:[
   ['ads-off','Ads off · run best ad again'],['ads-off-no-estimate','Ads off · not enough history'],['ads-off-account','Ads off · account problem first'],
  ]},
@@ -70,6 +73,10 @@ export const previewScenarioNotes:Record<string,string>={
  unknown:'No currency, timezone or creative preview saved.',
  'long-names':'Long account, campaign and ad names to test wrapping.',
  empty:'Nothing synced yet.',
+ 'welcome-running':'First popup after setup with ads delivering: greeting plus the first 7-day recap.',
+ 'welcome-off':'First popup, ads off: the best-ad suggestion is offered right away, without the 7-day wait.',
+ 'welcome-off-account':'First popup, ads off and Meta reports an account problem: fix it first.',
+ 'welcome-new':'First popup for an account that never advertised: offers a first Quick ad.',
  'ads-off':'Nothing running for 7+ days: best ad again with an estimate from past weeks, or a new photo.',
  'ads-off-no-estimate':'Same suggestion when fewer than 2 past weeks had 3+ results: no number shown.',
  'ads-off-account':'Meta reports an account problem: fix it before any new ad is suggested.',
@@ -99,8 +106,13 @@ export function previewPresentation(scenario:PreviewScenario):SavedPresentation{
  const card=lifecycle(),issue=attention();
  switch(scenario){
  case 'empty':p.syncedAt=null;break;
+ case 'welcome-running':p.welcome={kind:'running',activeAds:3};p.recap=recap;break;
+ case 'welcome-new':p.welcome={kind:'new'};p.limitations=p.limitations.filter(l=>l.includes('synthetic'));break;
+ case 'welcome-off-account':p.welcome={kind:'off',lastSpendDay:'2026-11-01'};p.suggestion={kind:'account',lastSpendDay:'2026-11-01',issue:'Meta reports an unpaid balance'};p.limitations=p.limitations.filter(l=>l.includes('synthetic'));break;
+ case 'welcome-off':p.welcome={kind:'off',lastSpendDay:'2026-11-01'};
+ // falls through: same suggestion as the ads-off scenario
  case 'ads-off':case 'ads-off-no-estimate':p.suggestion={kind:'restart',lastSpendDay:'2026-11-01',adSetId:'990000000000101',adSetName:'[PREVIEW] WhatsApp booking ad set',reason:'cheapest',costPerResult:6.2,dailyBudget:20,days:7,
-  forecast:scenario==='ads-off'?{low:14,high:28,costLow:5,costHigh:10,weeks:3}:null,
+  forecast:scenario==='ads-off'||scenario==='welcome-off'?{low:14,high:28,costLow:5,costHigh:10,weeks:3}:null,
   media:{creativeId:'preview-creative',image,fallbackImage:null,kind:'image',headline:'Autumn color appointments',text:null,cta:'WHATSAPP_MESSAGE'},
   stats:{spend:266.22,results:30,costPerResult:8.87,impressions:9850,clicks:312,ctr:3.17,cpc:0.85,cpm:27.03,reach:null,frequency:null},
   result:{kind:'whatsapp_conversations',apps:['whatsapp']}};p.limitations=p.limitations.filter(l=>l.includes('synthetic'));break;

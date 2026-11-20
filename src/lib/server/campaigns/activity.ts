@@ -10,8 +10,14 @@ import { activeDeliveryKeys } from './exploration/delivery';
  * saved ads, or the hierarchy could not be read. Unknown is never treated as "nothing running".
  */
 export async function accountActiveNow(db: SupabaseClient<Database>, businessId: string, accountId: string): Promise<boolean | null> {
+  const count = await accountActiveAdCount(db, businessId, accountId);
+  return count === null ? null : count > 0;
+}
+
+/** How many ads are on a complete active delivery chain now; null when unknown (as above). */
+export async function accountActiveAdCount(db: SupabaseClient<Database>, businessId: string, accountId: string): Promise<number | null> {
   const rows = await readAllPages((from, to) => db.from('ad_entities').select('id,external_id,parent_external_id,entity_level,status,raw')
     .eq('business_id', businessId).eq('ad_account_id', accountId).order('id').range(from, to), { nullDataError: 'Hierarchy unavailable' }).catch(() => null);
   if (!rows || !rows.some(r => r.entity_level === 'ad')) return null;
-  return activeDeliveryKeys(rows).length > 0;
+  return activeDeliveryKeys(rows).filter(key => key.startsWith('ad:')).length;
 }

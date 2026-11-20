@@ -13,7 +13,20 @@ export type Recap = { since: string; until: string; spend: number | null; result
 export type LifecycleCard = { eventId: string; rootId: string; affectedIds: string[]; brief: LifecycleBrief };
 export type Presentation = { version: 1; revisionOf?: string; account: string; timezone: string | null; currency: string | null; preparedAt: string; syncedAt: string | null; recap: Recap | null; issues: Issue[]; lifecycle: LifecycleCard[]; limitations: string[];
   /** "Your ads are off" suggestion, only on popups prepared while nothing ran (see suggestions/idle). */
-  suggestion?: IdleSuggestion };
+  suggestion?: IdleSuggestion;
+  /** One-time greeting on a person's first popup for this ad account (see `Welcome`). */
+  welcome?: Welcome };
+/**
+ * The first popup after an ad account is set up says where the account stands:
+ * - `running`: ads are delivering now; the popup also carries the first 7-day recap.
+ * - `off`: the account has advertised before but nothing runs now; the popup carries the
+ *   "run your best ad again" suggestion (or "fix your ad account first") straight away.
+ * - `new`: no ads and no spend were found; the popup offers to make a first Quick ad.
+ */
+export type Welcome =
+  | { kind: 'running'; activeAds: number }
+  | { kind: 'off'; lastSpendDay: string }
+  | { kind: 'new' };
 /** `readAt`: when this person reviewed it in the popup or opened it from history (history only). */
 export type SavedPresentation = { id: string; created_at: string; payload: Presentation; readAt?: string | null };
 
@@ -89,6 +102,7 @@ export function relatedLifecycle(issue: Issue, card: LifecycleCard) {
 }
 export function headline(p: Presentation): string {
  if(urgentIssues(p.issues).length)return p.recap?'Your results, and something to check':'Your advertising needs attention';
+ if(p.welcome)return welcomeHeadline(p.welcome);
  const active=p.issues.filter(i=>!i.resolvedAt);
  if(active.length&&!p.recap&&!p.lifecycle.length)return active.length===1?active[0].title:`${active.length} notices from Meta`;
  if(p.issues.length&&!active.length&&!p.recap&&!p.lifecycle.length)return p.issues.length===1?'An earlier issue has cleared':'Earlier issues have cleared';
@@ -96,6 +110,21 @@ export function headline(p: Presentation): string {
  if(p.lifecycle.length===1)return changeHeadline(p.lifecycle[0]);
  if(p.lifecycle.length)return `${p.lifecycle.length} changes to your advertising`;
  return p.suggestion?'Your ads are off':'No new observations yet';
+}
+/**
+ * Pick the first-look greeting. `activeAds` is null when delivery is unknown (no saved ads, or the
+ * hierarchy could not be read); `lastSpendDay` is null when the account never spent and undefined
+ * when that could not be read. Unknown delivery after earlier spend gets no greeting, never a guess.
+ */
+export function chooseWelcome(activeAds: number | null, lastSpendDay: string | null | undefined): Welcome | undefined {
+ if(activeAds!==null&&activeAds>0)return {kind:'running',activeAds};
+ if(lastSpendDay===undefined)return undefined;
+ if(lastSpendDay===null)return {kind:'new'};
+ return activeAds===0?{kind:'off',lastSpendDay}:undefined;
+}
+export function welcomeHeadline(w: Welcome): string {
+ if(w.kind==='running')return w.activeAds===1?'Welcome! Your ad is running':`Welcome! ${w.activeAds} ads are running`;
+ return w.kind==='off'?'Welcome! Your ads are off right now':'Welcome! Let’s make your first ad';
 }
 function recapHeadline(r: Recap): string {
  if(!r.since||!r.until)return 'Here’s your advertising catch-up';

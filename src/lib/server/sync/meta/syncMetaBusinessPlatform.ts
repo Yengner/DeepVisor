@@ -415,7 +415,7 @@ export async function syncMetaBusinessPlatform(input: {
         performanceRowsSynced,
       },
     });
-    await syncSavedInsights(job.id, input.accessToken).catch(() => {
+    await syncSavedInsights(job.id, input.accessToken, { learning: adsets.learning }).catch(() => {
       console.warn('Optional dashboard insights unavailable; previous retrieval times preserved.');
     });
     const completedAt = new Date().toISOString();

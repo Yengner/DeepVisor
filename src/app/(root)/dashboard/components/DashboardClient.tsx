@@ -515,7 +515,7 @@ function formatDateTime(value: string | null): string {
 
 function formatRelativeSync(value: string | null): string {
   if (!value) {
-    return 'Waiting for first sync';
+    return 'Setting up';
   }
 
   const date = new Date(value);

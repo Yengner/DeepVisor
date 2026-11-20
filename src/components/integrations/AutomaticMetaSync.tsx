@@ -56,11 +56,11 @@ export default function AutomaticMetaSync({ accountId }: { accountId: string | n
     state.status === 'reauthentication_required' ? 'Reconnect Meta in Connections to resume synchronization.' :
     state.status === 'retry_limit' ? 'Automatic refresh paused after repeated failures. Check Connections.' :
     state.status === 'failure_backoff' ? 'Automatic refresh is waiting before retrying.' :
-    state.status === 'initial_sync_required' ? 'Complete your initial account sync in Connections.' :
+    // initial_sync_required: the "Setting up your account" screen (AccountSetupGate) already explains it, with progress.
     state.status === 'timezone_unavailable' ? 'Account timezone unavailable. Check Connections.' :
     ['failed', 'partial'].includes(state.status) ? 'Last refresh did not complete. Check Connections.' :
     state.status === 'unavailable' ? 'Sync status unavailable.' : null;
   const tone: StatusTone = ['queued', 'running'].includes(state.status) ? 'info' :
-    ['reauthentication_required', 'retry_limit', 'initial_sync_required'].includes(state.status) ? 'action' : 'gap';
+    ['reauthentication_required', 'retry_limit'].includes(state.status) ? 'action' : 'gap';
   return message ? <StatusBanner key={state.status} tone={tone}>{message}</StatusBanner> : null;
 }

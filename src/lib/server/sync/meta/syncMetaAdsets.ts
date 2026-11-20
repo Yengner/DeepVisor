@@ -5,6 +5,7 @@ import type { CampaignDimRow } from '@/lib/server/repositories/campaigns/upsertC
 import type { Database } from '@/lib/shared/types/supabase';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
 import { fetchMetaAdsetSeeds } from './fetch';
+import { learningLabel } from '../resources/insightModel';
 
 type AdAccountRow = Database['public']['Tables']['ad_accounts']['Row'];
 
@@ -18,12 +19,19 @@ export async function syncMetaAdsets(input: {
   syncedAt: string;
 }) {
   const adsetInputs: Parameters<typeof upsertAdsetDims>[1] = [];
+  /** Meta learning status per ad set external id, from the same listing (no extra request). */
+  const learning: Record<string, string> = {};
 
   for (const adAccount of input.adAccounts) {
     const adsets = await fetchMetaAdsetSeeds({
       accessToken: input.accessToken,
       adAccountExternalId: adAccount.external_account_id,
     });
+
+    for (const adset of adsets) {
+      const raw = adset.raw && typeof adset.raw === 'object' && !Array.isArray(adset.raw) ? adset.raw : {};
+      learning[adset.externalId] = learningLabel((raw as Record<string, unknown>).learning_stage_info);
+    }
 
     adsetInputs.push(
       ...adsets
@@ -51,5 +59,5 @@ export async function syncMetaAdsets(input: {
     );
   }
 
-  return upsertAdsetDims(input.supabase, adsetInputs);
+  return { ...(await upsertAdsetDims(input.supabase, adsetInputs)), learning };
 }

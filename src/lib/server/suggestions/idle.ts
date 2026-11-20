@@ -13,10 +13,12 @@ import { aggregate, mediaFor } from '@/lib/server/campaigns/exploration/model';
 import { resultDefinitionFor, type ResultDefinition } from '@/lib/shared/performance/resultChannel';
 
 type Db = SupabaseClient<Database>;
-type Input = { businessId: string; accountId: string; timezone: string; currency: string | null; today: string; activeNow: boolean | null };
+type Input = { businessId: string; accountId: string; timezone: string; currency: string | null; today: string; activeNow: boolean | null;
+  /** First popup after setup: suggest right away instead of after the 7-day idle wait. */
+  welcome?: boolean };
 
 /** Latest account-local day with ad-set spend, or null when the account never spent. */
-async function lastSpendDay(db: Db, accountId: string): Promise<string | null> {
+export async function lastSpendDay(db: Db, accountId: string): Promise<string | null> {
   const { data, error } = await db.from('ad_entity_performance_daily').select('day').eq('ad_account_id', accountId)
     .eq('entity_level', 'adset').gt('spend', 0).order('day', { ascending: false }).limit(1).maybeSingle();
   if (error) throw error;
@@ -99,7 +101,8 @@ async function adSetMedia(db: Db, input: Input, adSetId: string): Promise<Sugges
 export async function loadIdleSuggestion(db: Db, input: Input): Promise<IdleSuggestion | null> {
   if (input.activeNow !== false) return null;
   const [spendDay, suggestedDay] = await Promise.all([lastSpendDay(db, input.accountId), lastSuggestedDay(db, input)]);
-  if (!idleSuggestionDue({ today: input.today, activeNow: input.activeNow, lastSpendDay: spendDay, lastSuggestedDay: suggestedDay })) return null;
+  // The welcome popup offers it right away; otherwise wait 7 days of idle, then every 14 days.
+  if (input.welcome ? !spendDay : !idleSuggestionDue({ today: input.today, activeNow: input.activeNow, lastSpendDay: spendDay, lastSuggestedDay: suggestedDay })) return null;
 
   const account = await db.from('insight_issues').select('evidence').eq('business_id', input.businessId)
     .eq('ad_account_id', input.accountId).eq('source', 'account').is('resolved_at', null).order('opened_at', { ascending: false }).limit(1).maybeSingle();

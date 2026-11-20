@@ -12,7 +12,7 @@ function fixture(account:unknown={id:'account',platform_id:'meta'},integration:u
  mocks.admin.mockReturnValue(db);return {db,eq};
 }
 beforeEach(()=>{
- vi.clearAllMocks();mocks.auth.mockResolvedValue({data:{user:{id:'user'}},error:null});mocks.context.mockResolvedValue({businessId:'business'});mocks.selection.mockResolvedValue({selectedAdAccountId:'account',selectedPlatformId:'integration'});
+ vi.stubEnv('DEEPVISOR_ASSISTANT','true');vi.clearAllMocks();mocks.auth.mockResolvedValue({data:{user:{id:'user'}},error:null});mocks.context.mockResolvedValue({businessId:'business'});mocks.selection.mockResolvedValue({selectedAdAccountId:'account',selectedPlatformId:'integration'});
 });
 it('checks session before privileged queries and rejects browser-selected account mismatch',async()=>{
  fixture();mocks.auth.mockResolvedValue({data:{user:null},error:null});
@@ -25,4 +25,9 @@ it('requires business-owned account and integration with matching Meta platform'
  fixture(null);await expect(authorizeAssistant('account')).rejects.toMatchObject({status:403});
  fixture({id:'account',platform_id:'other'});await expect(authorizeAssistant('account')).rejects.toMatchObject({status:403});
  fixture(undefined,{id:'integration',platform_id:'meta',platforms:{key:'google'}});await expect(authorizeAssistant('account')).rejects.toMatchObject({status:403});
+});
+it('refuses every request while Ask DeepVisor is hidden, before reading the session',async()=>{
+ vi.stubEnv('DEEPVISOR_ASSISTANT','');fixture();
+ await expect(authorizeAssistant('account')).rejects.toMatchObject({status:404});
+ expect(mocks.auth).not.toHaveBeenCalled();expect(mocks.admin).not.toHaveBeenCalled();
 });

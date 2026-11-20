@@ -163,7 +163,7 @@ export function getIntegrationAvailabilityCopy(
   if (isIntegrationConnected(platform.status)) {
     return platform.lastSyncedAt
       ? `Last synced ${formatRelativeTime(platform.lastSyncedAt, { emptyLabel: 'Not synced yet' })}`
-      : 'Connected and waiting for first sync';
+      : 'Connected · setting up your account';
   }
 
   if (platform.platformKey === 'meta') {

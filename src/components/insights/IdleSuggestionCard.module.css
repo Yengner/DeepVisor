@@ -1,100 +1,274 @@
+/* "Run your best ad again": one card, read top to bottom — the ad, what a rerun costs and could
+   bring in, then one main button. Sizes favour reading at arm's length (nothing under 13px). */
 .card {
   container-type: inline-size;
   display: grid;
-  gap: 8px;
-  padding: 16px;
+  gap: 18px;
+  padding: 22px;
   border: 1px solid var(--dv-card-border);
   border-radius: var(--dv-card-radius);
   background: var(--dv-card-panel);
+  color: var(--dv-text);
 }
 
-.card h3 {
+:where(.card) h3 {
   margin: 0;
-  font-size: var(--dv-text-md);
-  font-weight: 800;
+  font-family: var(--font-display, inherit);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
-.card p {
+:where(.card) p {
   margin: 0;
-  font-size: var(--dv-text-sm);
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
-.eyebrow {
-  color: var(--mantine-color-dimmed);
-  font-weight: 600;
-}
-
-.forecast {
-  font-weight: 600;
-}
-
-.muted {
-  color: var(--mantine-color-dimmed);
-  font-weight: 400;
-}
-
-.actions {
+.header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 4px;
+  align-items: center;
+  gap: 12px;
 }
 
-.title {
-  margin-bottom: 4px !important;
+.ideaIcon,
+.blockedIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.ideaIcon {
+  background: light-dark(#fff3d6, #3a2f14);
+  color: light-dark(#9a6200, #f2c45d);
+}
+
+.since {
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--dv-text-muted);
 }
 
 /* The ad: picture beside its name and numbers; stacked on narrow screens. */
 .ad {
   display: grid;
-  grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
-  gap: 14px;
+  grid-template-columns: minmax(130px, 180px) minmax(0, 1fr);
+  gap: 18px;
   align-items: start;
-  padding: 10px;
-  border: 1px solid var(--dv-card-border);
-  border-radius: var(--dv-radius-md, 12px);
-  background: var(--mantine-color-body);
 }
 
 .media {
   display: flex;
-  aspect-ratio: 1;
-  max-height: 200px;
-  border-radius: var(--dv-radius-sm, 8px);
+  aspect-ratio: 4 / 5;
+  max-height: 225px;
+  border-radius: 12px;
   overflow: hidden;
   background: var(--dv-surface-muted);
+  box-shadow: 0 6px 18px light-dark(rgb(16 44 70 / 0.12), rgb(0 0 0 / 0.35));
 }
 
 .adBody {
   display: grid;
-  gap: 6px;
+  gap: 10px;
+  align-content: start;
   min-width: 0;
 }
 
 .adName {
+  font-size: 17px;
   font-weight: 800;
+  line-height: 1.3;
   overflow-wrap: anywhere;
+}
+
+.reason {
+  justify-self: start;
+  padding: 4px 10px;
+  border-radius: var(--dv-radius-pill);
+  background: var(--dv-success-soft);
+  color: var(--dv-success);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Three plain numbers. The result count leads: it is what the owner paid for. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: -4px 0 0;
+}
+
+.stats > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stats dt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dv-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.stats dd {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.stats .lead dd {
+  font-size: 26px;
+  color: var(--dv-primary-strong);
+}
+
+.period {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dv-text-muted);
+}
+
+/* "If you run it again": the one blue panel in the card. */
+.plan {
+  display: grid;
+  gap: 12px;
+  padding: 18px 18px 16px;
+  border-radius: 14px;
+  background: var(--dv-primary-soft);
+}
+
+.plan h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dv-primary-strong);
+}
+
+.planLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  font-family: var(--font-display, inherit);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.planTotal {
+  font-family: var(--font-body, inherit);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--dv-text-muted);
+}
+
+.estimate {
+  font-size: 14px;
+  color: var(--dv-text-muted);
+}
+
+.estimate strong {
+  color: var(--dv-text);
+  font-size: 16px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.actions :global(.mantine-Button-root) {
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.reassure {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -6px;
+  font-size: 14px;
+  color: var(--dv-text-muted);
+}
+
+.reassure svg {
+  flex: none;
+}
+
+/* Account problem: fix it first. Red only here, because it blocks every ad. */
+.blocked {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  border-color: var(--dv-urgent-border);
+  background: var(--dv-urgent-soft);
+}
+
+.blockedIcon {
+  background: var(--dv-urgent);
+  color: #fff;
+}
+
+.blockedBody {
+  display: grid;
+  gap: 10px;
 }
 
 /* The popup can be narrow inside a wide window, so follow the card's own width. */
 @container (max-width: 520px) {
+  .card {
+    padding: 18px;
+  }
+
   .ad {
     grid-template-columns: 1fr;
   }
 
   .media {
-    aspect-ratio: 1.7;
-    max-height: 180px;
+    aspect-ratio: 16 / 10;
+    max-height: 200px;
   }
 
-  /* The dashboard's four stats need room; two per row on narrow cards. */
-  .stats dl {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: 4px;
+  .actions :global(.mantine-Button-root) {
+    width: 100%;
   }
 }
 
-.stats dt {
-  overflow-wrap: anywhere;
+@container (max-width: 340px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stats .lead {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Wide cards: the plan and estimate read on the left, the drawing sits beside them. */
+@container (min-width: 600px) {
+  .plan {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    grid-template-areas:
+      "title chart"
+      "line chart"
+      "estimate chart";
+    align-items: start;
+    column-gap: 24px;
+    padding: 22px 24px;
+  }
+
+  .plan > h4 { grid-area: title; }
+  .plan > .planLine { grid-area: line; }
+  .plan > .estimate { grid-area: estimate; }
+  .plan > figure { grid-area: chart; align-self: center; }
 }

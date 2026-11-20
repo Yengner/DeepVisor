@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { IconArrowUpRight, IconSparkles } from "@tabler/icons-react";
 import { askDeepVisor } from "@/lib/shared/assistant/askEvent";
+import { useAssistantAvailable } from "@/components/layout/assistantAvailability";
 import type {
   ExplorationView,
   Summary,
@@ -21,6 +22,7 @@ import classes from "./ControlCenter.module.css";
 
 export default function AdvertisingBoard({ view, signals = {}, filtered = false }: { view: ExplorationView; learning?: Record<string, string>; signals?: Record<string, AdSignalsData>; filtered?: boolean }) {
   const [selected, setSelected] = useState<string | null>(null);
+  const assistant = useAssistantAvailable();
   const trigger = useRef<HTMLButtonElement | null>(null);
   const active = (
     view.board?.activeIds ??
@@ -110,7 +112,7 @@ export default function AdvertisingBoard({ view, signals = {}, filtered = false 
                 View details
               </button>
             )}
-            <button
+            {assistant && <button
               type="button"
               onClick={() =>
                 askDeepVisor(
@@ -119,7 +121,7 @@ export default function AdvertisingBoard({ view, signals = {}, filtered = false 
               }
             >
               <IconSparkles size={14} aria-hidden="true" /> Ask DeepVisor
-            </button>
+            </button>}
           </div>
         </div>
       </article>

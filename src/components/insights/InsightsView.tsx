@@ -1,13 +1,13 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Modal } from '@mantine/core';
 import { AlertTriangle, Archive, ArrowDown, ArrowLeft, ArrowUp, ChevronRight, CircleAlert, CircleCheck, CirclePause, CirclePlay, Download, Flag, History, Info, LineChart, PlugZap, RotateCcw } from 'lucide-react';
 import { useMediaQuery } from '@mantine/hooks';
-import SpiderMascot from '@/components/brand/SpiderMascot';
+import SpiderMascot, { type SpiderMascotState } from '@/components/brand/SpiderMascot';
 import StatusBanner from '@/components/ui/states/StatusBanner';
 import { recapChart } from '@/lib/shared/insights/hourly';
 import { issueLevel, urgentIssues, headline, LIFECYCLE_LABEL, lifecycleKind, relatedLifecycle } from '@/lib/shared/insights/model';
@@ -20,6 +20,7 @@ import RangeSwitch from '@/components/design/RangeSwitch';
 import styles from './InsightsView.module.css';
 import PopupCheckin from '@/components/bookings/PopupCheckin';
 import IdleSuggestionCard from './IdleSuggestionCard';
+import WelcomeCard from './WelcomeCard';
 import { InsightDataNotice, MissingObservationTrack } from './InsightDataState';
 
 const number = (v: number | null) => v === null ? '—' : new Intl.NumberFormat('en', { maximumFractionDigits: 0 }).format(v);
@@ -63,7 +64,7 @@ function Metrics({ spend, results, cpr, currency, comparison, comparisonLabel }:
   comparison?: Recap['comparison']; comparisonLabel?: string;
 }) {
   return <dl className={styles.metrics}>
-    <div><dt>Results</dt><dd>{number(results)}</dd>{comparison ? <Change value={comparison.results} goodWhenUp label={comparisonLabel} /> : null}</div>
+    <div className={styles.leadMetric}><dt>Results</dt><dd>{number(results)}</dd>{comparison ? <Change value={comparison.results} goodWhenUp label={comparisonLabel} /> : null}</div>
     <div><dt>Spend</dt><dd>{money(spend, currency)}</dd>{comparison ? <Change value={comparison.spend} goodWhenUp={null} label={comparisonLabel} /> : null}</div>
     <div><dt>Cost / result</dt><dd>{money(cpr, currency)}</dd></div>
   </dl>;
@@ -222,7 +223,7 @@ function RecapChart({ recap, currency, timezone }: { recap: Recap; currency: str
       {chart.points.map((d, index) => <div key={d.label} className={styles.column}>
         <div className={styles.barTrack}>{d[metric] === null
           ? <span className={styles.gap} title={`${label(index)}: no observation`} />
-          : <span className={styles.bar} data-peak={(peak && index === peakIndex) || undefined} style={{ height: `${Math.max(d[metric] === 0 ? 0 : 2, d[metric]! / max * 100)}%` }} title={`${label(index)}: ${format(d[metric])}`} />}</div>
+          : <span className={styles.bar} data-peak={(peak && index === peakIndex) || undefined} style={{ height: `${Math.max(d[metric] === 0 ? 0 : 2, d[metric]! / max * 100)}%`, '--bar-index': index } as CSSProperties} title={`${label(index)}: ${format(d[metric])}`} />}</div>
         <span className={styles.date}>{showTick(index) ? chart.hourly ? formatHourShort(index) : label(index) : ''}</span>
       </div>)}
     </div>
@@ -256,6 +257,18 @@ function Contents({ p }: { p: Presentation }) {
   return items.length ? <ul className={styles.contents} aria-label="In this update">{items.map(item => <li key={item.key} data-tone={item.tone}>{item.text}</li>)}</ul> : null;
 }
 
+/**
+ * The character sets the mood before anything is read: worried when something needs attention,
+ * waving on a first look, an idea when ads are off, cheering when results went up, calm otherwise.
+ */
+function mascotState(p: Presentation): SpiderMascotState {
+  if (urgentIssues(p.issues).length) return 'attention';
+  if (p.welcome) return 'wave';
+  if (p.suggestion) return 'idea';
+  if (p.recap?.comparison && p.recap.comparison.results > 0) return 'success';
+  return 'idle';
+}
+
 export function InsightContent({ saved, preview = false }: { saved: SavedPresentation; preview?: boolean }) {
   const p = saved.payload, r = p.recap;
   const onHistory = usePathname().startsWith('/insights');
@@ -277,15 +290,16 @@ export function InsightContent({ saved, preview = false }: { saved: SavedPresent
   const comparisonLabel = r ? `vs previous ${r.expectedDays === 1 ? 'day' : `${r.expectedDays} days`}` : '';
   return <div className={styles.content} data-insight-preview={preview ? saved.id : undefined}>
     <header className={styles.heading}>
-      <SpiderMascot state={urgentIssues(p.issues).length ? 'attention' : 'idle'} size={64} paused />
+      <SpiderMascot state={mascotState(p)} size={64} className={styles.mascot} />
       <div>
         <h2>{headline(p)}</h2>
         <p>{[p.account, p.revisionOf ? 'Revised' : null, r ? dayRange(r.since, r.until) : null, r ? formatTimezone(p.timezone) : null].filter(Boolean).join(' · ')}</p>
         <Contents p={p} />
       </div>
     </header>
+    {p.welcome && <WelcomeCard welcome={p.welcome} hasSuggestion={Boolean(p.suggestion)} interactive={!preview} />}
     {lead.map(c => <div key={c.key}>{c.node}</div>)}
-    {!r && !p.issues.length && !p.lifecycle.length && !p.suggestion && <section className={`${styles.card} ${styles.dataState}`}>
+    {!r && !p.issues.length && !p.lifecycle.length && !p.suggestion && !p.welcome && <section className={`${styles.card} ${styles.dataState}`}>
       <Metrics spend={null} results={null} cpr={null} currency={p.currency} />
       <div className={styles.dataInset}><InsightDataNotice title="No saved observations available">Your catch-up will appear once synchronization provides usable data. Missing information is not zero.</InsightDataNotice><MissingObservationTrack /></div>
     </section>}
@@ -297,7 +311,7 @@ export function InsightContent({ saved, preview = false }: { saved: SavedPresent
         {unavailableHours ? <MissingObservationTrack hourly /> : <RecapChart recap={r} currency={p.currency} timezone={p.timezone} />}
       </div>
     </section>}
-    {p.suggestion && <IdleSuggestionCard suggestion={p.suggestion} currency={p.currency} interactive={!preview} />}
+    {p.suggestion && <IdleSuggestionCard suggestion={p.suggestion} currency={p.currency} interactive={!preview} welcomed={Boolean(p.welcome)} />}
     {visibleRest.map(c => <div key={c.key}>{c.node}</div>)}
     {hiddenRest.length > 0 && <details className={styles.more}><summary>{hiddenRest.length} more {hiddenRest.length === 1 ? 'update' : 'updates'} in this review</summary>{hiddenRest.map(c => <div key={c.key}>{c.node}</div>)}</details>}
     {!preview && <div className={styles.actions}>

@@ -30,8 +30,12 @@ export async function readSavedInsights(businessId: string, accountId: string) {
     fetchedAt: times.daily ?? '', audienceFetchedAt: times.audience ?? '', hourlyFetchedAt: times.hourly ?? '', source: 'stored' as const };
 }
 
-/** Optional queries run only inside an existing fenced maintenance/manual job and its shared API budget. */
-export async function syncSavedInsights(jobId: string, accessToken: string) {
+/**
+ * Optional queries run only inside an existing fenced maintenance/manual job and its shared API budget.
+ * `learning` (ad set learning labels the job already read with its ad set listing) avoids a second
+ * ad set request; without it the labels are read here.
+ */
+export async function syncSavedInsights(jobId: string, accessToken: string, options: { learning?: Record<string, string> } = {}) {
   if (!resourceRefreshEnabled()) return;
   const lease = currentSyncLease();
   if (!lease || lease.jobId !== jobId) throw new Error('Insight refresh requires a claimed worker');
@@ -76,7 +80,8 @@ export async function syncSavedInsights(jobId: string, accessToken: string) {
     } catch { console.warn('Optional Meta insight dataset not refreshed', { dataset: spec.key }); }
   }
   try {
-    const rows = await fetchMetaCollection<{ id: string; learning_stage_info?: unknown }>({ path: `${path}/adsets`, accessToken, params: { fields: 'id,learning_stage_info', limit: 100 } });
-    await publish('learning', Object.fromEntries(rows.map(r => [r.id, learningLabel(r.learning_stage_info)])), today);
+    const learning = options.learning ?? Object.fromEntries((await fetchMetaCollection<{ id: string; learning_stage_info?: unknown }>({ path: `${path}/adsets`, accessToken, params: { fields: 'id,learning_stage_info', limit: 100 } }))
+      .map(r => [r.id, learningLabel(r.learning_stage_info)]));
+    await publish('learning', learning, today);
   } catch { /* Native learning status is optional; never inferred. */ }
 }

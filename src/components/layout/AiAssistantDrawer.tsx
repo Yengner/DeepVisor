@@ -11,7 +11,15 @@ import { useAssistantConversation } from './useAssistantConversation';
 import type { GlobalAiAssistantPayload } from '@/lib/server/intelligence/types';
 import { assistantWidth } from './assistantSizing';
 import classes from './Assistant.module.css';
-export default function AiAssistantDrawer({ payload, children }: { payload: GlobalAiAssistantPayload | null; children: ReactNode }) {
+import { AssistantAvailableContext } from './assistantAvailability';
+
+/** The page workspace, plus the assistant when it is enabled (hidden for the beta). */
+export default function AiAssistantDrawer({ payload, enabled, children }: { payload: GlobalAiAssistantPayload | null; enabled: boolean; children: ReactNode }) {
+  if (!enabled) return <div className={classes.workspace}><div className={classes.main}>{children}</div></div>;
+  return <AssistantAvailableContext.Provider value={true}><AssistantDrawer payload={payload}>{children}</AssistantDrawer></AssistantAvailableContext.Provider>;
+}
+
+function AssistantDrawer({ payload, children }: { payload: GlobalAiAssistantPayload | null; children: ReactNode }) {
   const [opened, setOpened] = useState(false);
   const [width, setWidth] = useState(380);
   const [draft, setDraft] = useState('');
