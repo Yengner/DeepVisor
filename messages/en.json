@@ -859,7 +859,6 @@
     "title": "Run this ad again",
     "lead": "Choose your budget and how long it runs. You check the draft before anything goes live.",
     "back": "Back to Overview",
-    "lastTime": "Last time: {amount} a day",
     "planTitle": "Your plan",
     "budget": "Daily budget",
     "less": "Spend less per day",
@@ -882,6 +881,24 @@
     "prepare": "Prepare draft",
     "readOnly": "Only owners and admins can prepare ads.",
     "goneTitle": "This ad can't be copied",
-    "noBudgetTitle": "There is no budget to copy"
+    "noBudgetTitle": "There is no budget to copy",
+    "lastRun": "Last time it ran {days, plural, one {# day} other {# days}} ({start} – {end}) and spent {spend}, about {perDay} a day.",
+    "lastRunOne": "Last time it ran on {start} and spent {spend}.",
+    "noRun": "It hasn't spent anything in the last {days} days.",
+    "setupDaily": "Its budget was {amount} a day.",
+    "setupLifetime": "Its budget was {amount} for {days, plural, one {# day} other {# days}}, about {perDay} a day.",
+    "setupLifetimeOpen": "Its budget was {amount} in total.",
+    "from": {
+      "daily": "Starts from its daily budget",
+      "lifetime": "Starts from its total budget split by day",
+      "actual": "Starts from what it actually spent per day",
+      "account": "Starts from your account's usual spend per day"
+    },
+    "fromDays": {
+      "schedule": "for the days it was scheduled.",
+      "actual": "for as many days as it ran last time.",
+      "owner": "for your usual number of days.",
+      "usual": "for one week."
+    }
   }
 }

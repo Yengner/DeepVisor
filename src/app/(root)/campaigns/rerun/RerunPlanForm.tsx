@@ -8,7 +8,8 @@ import { CalendarDays, Eye, Minus, Plus, TriangleAlert } from 'lucide-react';
 import { MediaImage } from '@/components/campaigns/exploration/AdvertisingExplorer';
 import ProjectionChart from '@/components/insights/ProjectionChart';
 import { prepareRestartDraftAction } from '@/lib/server/actions/suggestions/restart';
-import { RESTART_DAYS, STATS_DAYS } from '@/lib/shared/suggestions/idle';
+import { STATS_DAYS } from '@/lib/shared/suggestions/idle';
+import { USUAL_DAYS } from '@/lib/shared/suggestions/lastRun';
 import { RERUN_DAY_CHOICES, RERUN_MAX_DAYS, RERUN_MIN_DAILY, RERUN_MIN_DAYS, rerunPlan, type RerunPlanData } from '@/lib/shared/suggestions/rerun';
 import styles from './Rerun.module.css';
 
@@ -26,9 +27,10 @@ export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanDat
   const locale = useLocale();
   const router = useRouter();
   const intl = locale === 'es' ? 'es-US' : 'en-US';
-  const [budget, setBudget] = useState<number>(data.previousDailyBudget);
-  const [days, setDays] = useState<number>(RESTART_DAYS);
-  const [customDays, setCustomDays] = useState(!(RERUN_DAY_CHOICES as readonly number[]).includes(RESTART_DAYS));
+  // Starts from what the ad did last time (`rerunDefaults`); the owner can change both.
+  const [budget, setBudget] = useState<number>(data.start.dailyBudget);
+  const [days, setDays] = useState<number>(data.start.days);
+  const [customDays, setCustomDays] = useState(!(RERUN_DAY_CHOICES as readonly number[]).includes(data.start.days));
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const plan = rerunPlan(data, budget, days);
@@ -74,13 +76,27 @@ export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanDat
                 <div><dt>{tAll(`results.${kind}.cost`)}</dt><dd>{data.stats.costPerResult === null ? dash : money(data.stats.costPerResult, true)}</dd></div>
               </dl>
             )}
-            <p className={styles.lastTime}>{t('lastTime', { amount: money(data.previousDailyBudget) })}</p>
+            <div className={styles.lastTime}>
+              <p>
+                {data.run === null ? t('noRun', { days: STATS_DAYS })
+                  : data.run.days === 1 ? t('lastRunOne', { start: day(data.run.firstDay), spend: money(data.run.spend) })
+                  : t('lastRun', { days: data.run.days, start: day(data.run.firstDay), end: day(data.run.lastDay), spend: money(data.run.spend), perDay: money(data.run.perDay, true) })}
+              </p>
+              {data.setup.dailyBudget !== null ? <p>{t('setupDaily', { amount: money(data.setup.dailyBudget) })}</p>
+                : data.setup.lifetimeBudget !== null ? <p>{data.setup.scheduledDays
+                  ? t('setupLifetime', { amount: money(data.setup.lifetimeBudget), days: data.setup.scheduledDays, perDay: money(data.setup.lifetimeBudget / data.setup.scheduledDays, true) })
+                  : t('setupLifetimeOpen', { amount: money(data.setup.lifetimeBudget) })}</p>
+                : null}
+            </div>
           </div>
         </div>
       </section>
 
       <section className={styles.card} aria-labelledby="rerun-plan">
-        <h2 id="rerun-plan" className={styles.cardTitle}>{t('planTitle')}</h2>
+        <div className={styles.planHead}>
+          <h2 id="rerun-plan" className={styles.cardTitle}>{t('planTitle')}</h2>
+          <p className={styles.startsFrom}>{t(`from.${data.start.budgetSource}`)}, {t(`fromDays.${data.start.daysSource}`)}</p>
+        </div>
 
         <div className={styles.field}>
           <label htmlFor="rerun-budget" className={styles.label}>{t('budget')}</label>
@@ -161,5 +177,5 @@ export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanDat
 
 /** Quick ad accepts 1–90 whole days in its link; fall back to the usual run length otherwise. */
 function validQuickDays(days: number) {
-  return Number.isInteger(days) && days >= RERUN_MIN_DAYS && days <= RERUN_MAX_DAYS ? days : RESTART_DAYS;
+  return Number.isInteger(days) && days >= RERUN_MIN_DAYS && days <= RERUN_MAX_DAYS ? days : USUAL_DAYS;
 }

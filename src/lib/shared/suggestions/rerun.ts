@@ -2,6 +2,7 @@ import { shiftReportDay } from '@/lib/shared/reports/dates';
 import { profileSpendLimit } from '@/lib/shared/campaigns/budgetGuardrail';
 import type { ResultKind } from '@/lib/shared/performance/resultChannel';
 import { restartForecast, type Forecast, type SuggestionMedia, type SuggestionStats, type WeekResult } from './idle';
+import type { BudgetSetup, BudgetSource, DaysSource, LastRun } from './lastRun';
 
 /**
  * "Run this ad again" plan page: the owner picks a daily budget and a number of days; the page
@@ -12,7 +13,7 @@ export const RERUN_MIN_DAYS = 1;
 export const RERUN_MAX_DAYS = 90;
 /** Smallest daily budget a draft accepts (major units), same as the draft builder. */
 export const RERUN_MIN_DAILY = 1;
-/** A budget this many times last time's is "much more than before": results rarely grow as fast. */
+/** A budget this many times the starting one is "much more than before": results rarely grow as fast. */
 export const RERUN_BIG_JUMP = 2;
 
 /** Everything the plan page needs, loaded and scoped on the server. Amounts in major units. */
@@ -25,8 +26,11 @@ export type RerunPlanData = {
   currency: string;
   /** Account-local today; the plan starts tomorrow. */
   today: string;
-  /** Last time's daily budget, the starting point. */
-  previousDailyBudget: number;
+  /** Where the plan starts (`rerunDefaults`) and which rule each number came from. */
+  start: { dailyBudget: number; days: number; budgetSource: BudgetSource; daysSource: DaysSource };
+  /** How the ad was set up and what it actually did last time, shown to the owner. */
+  setup: BudgetSetup;
+  run: LastRun | null;
   weeks: WeekResult[];
   /** Top of the saved monthly budget range, when one is saved; drafts above the limit are refused. */
   monthlyCap: number | null;
@@ -52,7 +56,7 @@ export function validDays(days: number) {
 }
 
 /** The plan for a daily budget and number of days, computed exactly as the draft will be made. */
-export function rerunPlan(data: Pick<RerunPlanData, 'today' | 'previousDailyBudget' | 'weeks' | 'monthlyCap' | 'maxDaily'>, dailyBudget: number, days: number): RerunPlan {
+export function rerunPlan(data: Pick<RerunPlanData, 'today' | 'start' | 'weeks' | 'monthlyCap' | 'maxDaily'>, dailyBudget: number, days: number): RerunPlan {
   const daysOk = validDays(days);
   const budgetOk = Number.isFinite(dailyBudget) && dailyBudget >= RERUN_MIN_DAILY && dailyBudget <= data.maxDaily;
   const startDay = shiftReportDay(data.today, 1);
@@ -69,7 +73,7 @@ export function rerunPlan(data: Pick<RerunPlanData, 'today' | 'previousDailyBudg
     forecast: budgetOk && daysOk ? restartForecast({ dailyBudget, days, weeks: data.weeks }) : null,
     limit,
     overLimit,
-    bigJump: budgetOk && dailyBudget > data.previousDailyBudget * RERUN_BIG_JUMP,
+    bigJump: budgetOk && dailyBudget > data.start.dailyBudget * RERUN_BIG_JUMP,
     problem,
   };
 }

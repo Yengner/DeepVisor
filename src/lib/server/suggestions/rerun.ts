@@ -39,7 +39,7 @@ export type RerunPlanLoad =
   | { kind: 'ready'; data: RerunPlanData }
   /** The ad set or its ads are gone. */
   | { kind: 'gone' }
-  /** Nothing to copy a budget from, or the account lacks a currency/timezone. */
+  /** No budget, no past spend and no account spend to start from, or no currency/timezone. */
   | { kind: 'noBudget' };
 
 /** Everything the "Run this ad again" page shows, read from saved data only (nothing sent to Meta). */
@@ -49,12 +49,12 @@ export async function loadRerunPlan(scope: AssistantAccess, adSetId: unknown): P
   const zone = scope.account.timezone, currency = scope.account.currency_code;
   if (!zone || !currency) return { kind: 'noBudget' };
   const today = dayIn(zone);
-  const [{ dailyBudget, history, media }, profile] = await Promise.all([
+  const [{ setup, run, start, history, media }, profile] = await Promise.all([
     restartSourceDetails(scope.db, { businessId: scope.businessId, accountId: scope.account.id, currency, today }, source),
     scope.db.from('business_profiles').select('monthly_budget').eq('id', scope.businessId).maybeSingle(),
   ]);
   if (profile.error) throw profile.error;
-  if (dailyBudget === null) return { kind: 'noBudget' };
+  if (start.dailyBudget === null || start.budgetSource === null) return { kind: 'noBudget' };
   return {
     kind: 'ready',
     data: {
@@ -65,7 +65,9 @@ export async function loadRerunPlan(scope: AssistantAccess, adSetId: unknown): P
       resultKind: history.result?.kind ?? 'results',
       currency,
       today,
-      previousDailyBudget: dailyBudget,
+      start: { dailyBudget: start.dailyBudget, days: start.days, budgetSource: start.budgetSource, daysSource: start.daysSource },
+      setup,
+      run,
       weeks: history.weeks,
       monthlyCap: getMonthlyBudgetUpperBound(profile.data?.monthly_budget),
       maxDaily: MAX_DAILY_CAMPAIGN_BUDGET,

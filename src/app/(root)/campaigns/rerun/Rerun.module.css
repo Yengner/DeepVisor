@@ -67,7 +67,9 @@
   font-variant-numeric: tabular-nums; letter-spacing: -0.02em; overflow-wrap: anywhere;
 }
 .stats .lead dd { font-size: 26px; color: var(--dv-primary-strong); }
-.lastTime { font-size: 15px; color: var(--dv-text-muted); }
+.lastTime { display: grid; gap: 4px; padding-top: 10px; border-top: 1px solid var(--dv-card-border); font-size: 15px; color: var(--dv-text-muted); }
+.planHead { display: grid; gap: 4px; }
+.startsFrom { font-size: 15px; color: var(--dv-text-muted); }
 
 /* ---------- The owner's choices ---------- */
 .field { display: grid; gap: 8px; }

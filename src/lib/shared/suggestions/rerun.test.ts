@@ -4,7 +4,7 @@ import { profileSpendLimit } from '@/lib/shared/campaigns/budgetGuardrail';
 
 const base = {
   today: '2026-11-20',
-  previousDailyBudget: 20,
+  start: { dailyBudget: 20, days: 7, budgetSource: 'daily' as const, daysSource: 'actual' as const },
   // Two qualifying weeks: $10 and $5 per conversation.
   weeks: [{ spend: 100, results: 10 }, { spend: 100, results: 20 }],
   monthlyCap: null as number | null,
