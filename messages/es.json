@@ -47,7 +47,8 @@
       "impressions": "No hay impresiones registradas en este período",
       "clicks": "No hay clics registrados en este período",
       "cpm": "No hay CPM registrado en este período"
-    }
+    },
+    "syncing": "Trayendo números nuevos de Meta…"
   },
   "results": {
     "whatsapp_conversations": {

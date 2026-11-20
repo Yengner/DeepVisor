@@ -1276,6 +1276,7 @@
 .sparkline { flex: 1 1 auto; min-width: 0; max-width: 120px; height: 34px; margin: 0 auto; color: var(--chart-line, var(--ui-accent)); opacity: .85; pointer-events: none; overflow: visible; }
 @container (max-width: 177px) { .sparkline { display: none; } }
 .kpis > div { container-type: inline-size; }
+.kpiCard { position: relative; }
 .kpiFoot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-height: 18px; margin-top: 6px; }
 .kpiReference { color: var(--ui-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 
