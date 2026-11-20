@@ -26,6 +26,11 @@ type MetaIntegrationFlowProps = {
   returnTo: '/onboarding' | '/integration';
   refreshAfterSuccess?: boolean;
   onConnected?: () => void;
+  /**
+   * Runs instead of returning to `returnTo` once Meta and the ad account are connected (errors and
+   * cancellations still return to `returnTo`). Connections uses it to open the Overview.
+   */
+  afterSuccess?: () => void | Promise<void>;
   children: (controls: {
     connectMeta: () => void;
     connecting: boolean;
@@ -159,6 +164,7 @@ export default function MetaIntegrationFlow({
   returnTo,
   refreshAfterSuccess = true,
   onConnected,
+  afterSuccess,
   children,
 }: MetaIntegrationFlowProps) {
   const router = useRouter();
@@ -176,7 +182,7 @@ export default function MetaIntegrationFlow({
   const [autoSyncRequested, setAutoSyncRequested] = useState(false);
   const [syncingTitle, setSyncingTitle] = useState('Connecting Meta');
   const [syncingDescription, setSyncingDescription] = useState(
-    'We are preparing your account and starting the first sync.'
+    'We are preparing your account.'
   );
   const [loadingPageSetup, setLoadingPageSetup] = useState(false);
   const [pageSelectionOpened, setPageSelectionOpened] = useState(false);
@@ -200,7 +206,7 @@ export default function MetaIntegrationFlow({
     setSubmittingAccountSelection(false);
     setAutoSyncRequested(false);
     setSyncingTitle('Connecting Meta');
-    setSyncingDescription('We are preparing your account and starting the first sync.');
+    setSyncingDescription('We are preparing your account.');
   };
 
   const resetPageSetup = () => {
@@ -214,17 +220,21 @@ export default function MetaIntegrationFlow({
     setSubmittingPageSetup(false);
   };
 
-  const finishFlow = async (callback?: () => void) => {
+  const finishFlow = async (callback?: () => void, succeeded = false) => {
     callback?.();
+    if (succeeded && afterSuccess) {
+      await afterSuccess();
+      return;
+    }
     router.replace(returnTo);
     if (refreshAfterSuccess) {
       router.refresh();
     }
   };
 
-  const finishFlowWithSuccess = async (message = 'Meta synced successfully.') => {
+  const finishFlowWithSuccess = async (message = 'Meta connected. Your data is syncing in the background.') => {
     toast.success(message);
-    await finishFlow(onConnected);
+    await finishFlow(onConnected, true);
   };
 
   const completeMetaFlow = async (message?: string) => {
@@ -283,7 +293,7 @@ export default function MetaIntegrationFlow({
     } finally {
       setLoadingPageSetup(false);
       setSyncingTitle('Connecting Meta');
-      setSyncingDescription('We are preparing your account and starting the first sync.');
+      setSyncingDescription('We are preparing your account.');
     }
   };
 
@@ -360,10 +370,8 @@ export default function MetaIntegrationFlow({
 
     selectionRequestInFlight.current = true;
     setSubmittingAccountSelection(true);
-    setSyncingTitle('Syncing your primary ad account');
-    setSyncingDescription(
-      'DeepVisor is pulling campaigns, ad sets, ads, creatives, recent performance, audience data, summaries, and analysis. Keep this open until it finishes.'
-    );
+    setSyncingTitle('Connecting your ad account');
+    setSyncingDescription('This takes a few seconds. Your campaigns and results keep syncing in the background.');
 
     try {
       const response = await fetch('/api/integrations/meta/select-ad-account', {
@@ -469,7 +477,7 @@ export default function MetaIntegrationFlow({
 
     if (flow.status === 'connected') {
       toast.success('Meta connected successfully.');
-      void finishFlow(onConnected);
+      void finishFlow(onConnected, true);
     }
   }, [searchParams]);
 
@@ -521,7 +529,7 @@ export default function MetaIntegrationFlow({
         throw new Error(body?.error?.userMessage || 'Failed to save WhatsApp setup');
       }
 
-      await completeMetaFlow('Meta synced and WhatsApp setup saved.');
+      await completeMetaFlow('Meta connected and WhatsApp setup saved. Your data is syncing in the background.');
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Failed to save WhatsApp setup.'

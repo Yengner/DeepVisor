@@ -1059,7 +1059,7 @@ export default async function SettingsPage() {
               color="signal"
               label="Latest sync"
               title={formatRelativeTime(rollup.lastSyncedAt)}
-              detail={rollup.lastSyncedAt ? formatDateTime(rollup.lastSyncedAt) : 'Waiting for first sync'}
+              detail={rollup.lastSyncedAt ? formatDateTime(rollup.lastSyncedAt) : 'Setting up'}
             />
             <SummaryCard
               icon={<IconTargetArrow size={18} />}

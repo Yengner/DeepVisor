@@ -4,13 +4,32 @@ vi.mock('./client', () => ({fetchMetaCollection: vi.fn(),fetchMetaObject:vi.fn()
 import { fetchMetaCollection, fetchMetaObject } from './client';
 import { fetchMetaAdsetSeeds, fetchMetaAdCreativeSeeds, fetchMetaAdsetPerformanceSeeds, fetchMetaAdsetAudienceBreakdownSeeds, fetchMetaAdAudienceBreakdownSeeds } from './fetch';
 it('requests large thumbnails for individual creatives and collection fallback', async () => {
-  vi.mocked(fetchMetaObject).mockResolvedValue({ id: '1', video_id: '2', thumbnail_url: 'https://media.test/large' });
+  vi.mocked(fetchMetaObject).mockResolvedValue({ '1': { id: '1', video_id: '2', thumbnail_url: 'https://media.test/large' } });
   const rows = await fetchMetaAdCreativeSeeds({accessToken: 'private', adAccountExternalId: 'act_a', creativeExternalIds: ['1']});
-  expect(fetchMetaObject).toHaveBeenCalledWith(expect.objectContaining({params: expect.objectContaining({thumbnail_width:800,thumbnail_height:800})}));
+  expect(fetchMetaObject).toHaveBeenCalledWith(expect.objectContaining({path:'', params: expect.objectContaining({ids:'1',thumbnail_width:800,thumbnail_height:800})}));
   expect(rows[0]).toMatchObject({videoId:'2', thumbnailUrl:'https://media.test/large'});
   vi.mocked(fetchMetaCollection).mockResolvedValue([]);
   await fetchMetaAdCreativeSeeds({accessToken: 'private', adAccountExternalId: 'act_a'});
   expect(fetchMetaCollection).toHaveBeenLastCalledWith(expect.objectContaining({path:'act_a/adcreatives',params:expect.objectContaining({thumbnail_width:800,thumbnail_height:800})}));
+});
+it('reads creatives 50 per request instead of one request each', async () => {
+  vi.mocked(fetchMetaObject).mockReset().mockImplementation(async (input) => Object.fromEntries(String(input.params?.ids).split(',').map(id => [id, { id, image_url: `https://media.test/${id}` }])));
+  const ids = Array.from({ length: 120 }, (_, i) => String(i + 1));
+  const rows = await fetchMetaAdCreativeSeeds({accessToken: 'private', adAccountExternalId: 'act_a', creativeExternalIds: [...ids, '1']});
+  expect(fetchMetaObject).toHaveBeenCalledTimes(3);
+  expect(vi.mocked(fetchMetaObject).mock.calls.map(([input]) => String(input.params?.ids).split(',').length)).toEqual([50, 50, 20]);
+  expect(rows).toHaveLength(120);
+});
+it('falls back to single reads for a batch Meta rejects, skipping only the inaccessible creative', async () => {
+  vi.mocked(fetchMetaObject).mockReset().mockImplementation(async (input) => {
+    if (input.path === '') throw new Error('Unsupported get request: object 2 does not exist');
+    if (input.path === '2') throw new Error('Unsupported get request');
+    return { id: input.path, image_url: `https://media.test/${input.path}` };
+  });
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  const rows = await fetchMetaAdCreativeSeeds({accessToken: 'private', adAccountExternalId: 'act_a', creativeExternalIds: ['1', '2', '3']});
+  expect(rows.map(row => row.externalId)).toEqual(['1', '3']);
+  warn.mockRestore();
 });
 it('persists Meta effective status rather than configured status or delivery statistics', async () => {
   vi.mocked(fetchMetaCollection).mockResolvedValue([
@@ -53,4 +72,22 @@ it('omits standalone placement and DMA requests at both entity levels while fetc
  await fetchMetaAdsetAudienceBreakdownSeeds({...input,allowedBreakdowns:['platform_position','dma']});
  await fetchMetaAdAudienceBreakdownSeeds({...input,allowedBreakdowns:['platform_position','dma']});
  expect(fetchMetaCollection).not.toHaveBeenCalled();
+});
+it('requests every audience breakdown together and keeps their result order', async () => {
+  let inFlight = 0, peak = 0;
+  vi.mocked(fetchMetaCollection).mockReset().mockImplementation(async (input) => {
+    inFlight++; peak = Math.max(peak, inFlight);
+    await new Promise(resolve => setTimeout(resolve, 5));
+    inFlight--;
+    const breakdown = String(input.params?.breakdowns);
+    return [{ adset_id: 's1', date_start: '2026-11-01', date_stop: '2026-11-07', spend: '1', impressions: '10', reach: '8', clicks: '1', inline_link_clicks: '1', [breakdown.split(',')[0]]: 'x', gender: 'female' }];
+  });
+  const rows = await fetchMetaAdsetAudienceBreakdownSeeds({ accessToken: 'private', adAccountExternalId: 'act_a' });
+  expect(peak).toBe(5);
+  expect(rows.map(row => row.breakdownType)).toEqual(['publisher_platform', 'age_gender', 'country', 'region', 'impression_device']);
+});
+it('lists ad sets with their learning status in the same request', async () => {
+  vi.mocked(fetchMetaCollection).mockReset().mockResolvedValue([]);
+  await fetchMetaAdsetSeeds({ accessToken: 'private', adAccountExternalId: 'act_a' });
+  expect(String(vi.mocked(fetchMetaCollection).mock.calls[0][0].params?.fields)).toContain('learning_stage_info');
 });

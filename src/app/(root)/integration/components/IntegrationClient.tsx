@@ -21,7 +21,6 @@ import {
   Menu,
   Modal,
   Paper,
-  Progress,
   Select,
   SimpleGrid,
   Stack,
@@ -120,36 +119,6 @@ type MetaSelectResponse = {
 };
 
 /**
- * Shared summary card used in the integrations page hero for workspace-level counts and status.
- */
-function SummaryCard({
-  label,
-  title,
-  detail,
-  accent,
-}: {
-  label: string;
-  title: string;
-  detail: string;
-  accent: string;
-}) {
-  return (
-    <Paper withBorder radius="xl" p="lg" className={styles.summaryCard}>
-      <div className={styles.summaryAccent} style={{ backgroundColor: accent }} />
-      <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-        {label}
-      </Text>
-      <Title order={3} mt={8}>
-        {title}
-      </Title>
-      <Text size="sm" c="dimmed" mt={6}>
-        {detail}
-      </Text>
-    </Paper>
-  );
-}
-
-/**
  * Renders either branded platform artwork or a platform icon fallback when no image is available.
  */
 function ChannelArtwork({
@@ -193,7 +162,6 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
   const tDeletion = useTranslations('metaDeletion');
   const [selectedPlatform, setSelectedPlatform] = useState<DisplayPlatform | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [focusedPlatformId, setFocusedPlatformId] = useState<string | null>(null);
   const [accountSelectionPlatform, setAccountSelectionPlatform] = useState<Platform | null>(null);
   const [accountOptions, setAccountOptions] = useState<MetaAccountOption[]>([]);
   const [selectedAccountExternalId, setSelectedAccountExternalId] = useState<string | null>(null);
@@ -233,20 +201,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
     })
   );
   const connectedPlatforms = sortedPlatforms.filter((platform) => isIntegrationConnected(platform.status));
-  const attentionPlatforms = sortedPlatforms.filter((platform) => integrationNeedsAttention(platform.status));
-  const latestSyncedPlatform = [...connectedPlatforms]
-    .filter((platform) => platform.lastSyncedAt)
-    .sort((left, right) => {
-      const leftValue = new Date(left.lastSyncedAt ?? '').getTime();
-      const rightValue = new Date(right.lastSyncedAt ?? '').getTime();
-      return rightValue - leftValue;
-    })[0] ?? null;
-
-  const syncCoverage = sortedPlatforms.length > 0
-    ? Math.round((connectedPlatforms.length / sortedPlatforms.length) * 100)
-    : 0;
   const focusedPlatform =
-    sortedPlatforms.find((platform) => platform.id === focusedPlatformId) ??
     connectedPlatforms[0] ??
     sortedPlatforms[0] ??
     null;
@@ -460,7 +415,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
 
       toast.success(
         body.data?.firstSyncJob
-          ? 'Primary Meta ad account changed. Full history sync started.'
+          ? 'Ad account changed. DeepVisor is setting it up.'
           : 'Primary Meta ad account changed and sync started.'
       );
       setAccountSelectionPlatform(null);
@@ -474,7 +429,14 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
   };
 
   return (
-    <MetaIntegrationFlow returnTo="/integration">
+    <MetaIntegrationFlow
+      returnTo="/integration"
+      afterSuccess={() => {
+        // The Overview shows "Setting up your account" with live progress while the sync finishes.
+        router.replace('/dashboard');
+        router.refresh();
+      }}
+    >
       {({ connectMeta, connecting }) => (
         <Container size="xl" pos="relative" pb="xl" className={product.page}>
           <LoadingOverlay
@@ -499,7 +461,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                 className={styles.heroGlowRight}
                 style={{ background: focusedPalette.accentSoft } as CSSProperties}
               />
-              <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="xl">
+              <SimpleGrid cols={1} spacing="xl">
                 <Stack gap="md" className={styles.heroContent}>
                   <Group gap="xs" wrap="wrap">
                     <Badge variant="light" className="app-platform-page-badge">
@@ -598,128 +560,8 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                     ) : null}
                   </Group>
 
-                  <Disclosure title="Connection summary">
-                  <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-                    <SummaryCard
-                      label="Connected"
-                      title={String(connectedPlatforms.length)}
-                      detail={`${sortedPlatforms.length} total channels in your workspace`}
-                      accent="#1877f2"
-                    />
-                    <SummaryCard
-                      label="Needs Attention"
-                      title={String(attentionPlatforms.length)}
-                      detail={
-                        attentionPlatforms.length > 0
-                          ? 'At least one channel needs review or reconnect.'
-                          : 'No reconnect or error states right now.'
-                      }
-                      accent="#f59e0b"
-                    />
-                    <SummaryCard
-                      label="Latest Sync"
-                      title={
-                        latestSyncedPlatform
-                          ? latestSyncedPlatform.platformName
-                          : 'No completed sync'
-                      }
-                      detail={
-                        latestSyncedPlatform
-                          ? formatRelativeTime(latestSyncedPlatform.lastSyncedAt, { emptyLabel: 'Not synced yet' })
-                          : 'Connect a platform to start pulling data.'
-                      }
-                      accent="#10b981"
-                    />
-                    <SummaryCard
-                      label="Primary Scope"
-                      title="1 account / platform"
-                      detail="Keeps reporting, recommendations, and queueing focused on one clean dataset."
-                      accent="#64748b"
-                    />
-                  </SimpleGrid>
-                  </Disclosure>
                 </Stack>
 
-                <Disclosure title="All connection statuses">
-                <Paper withBorder radius="xl" p="lg" className={`${styles.heroSidebar} app-platform-page-hero-panel`}>
-                  <Group justify="space-between" align="flex-start" mb="md">
-                    <div>
-                      <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                        Channel status
-                      </Text>
-                      <Title order={4} mt={4}>
-                        Current connection map
-                      </Title>
-                    </div>
-                    <Badge color={syncCoverage > 0 ? 'blue' : 'gray'} variant="light">
-                      {syncCoverage}%
-                    </Badge>
-                  </Group>
-
-                  <Progress
-                    value={syncCoverage}
-                    size="lg"
-                    radius="xl"
-                    color={focusedPalette.accent}
-                  />
-                  <Stack gap="sm" mt="lg">
-                    {sortedPlatforms.map((platform) => {
-                      const palette = getIntegrationPlatformPalette(platform.platformKey);
-                      const isFocused = focusedPlatform?.id === platform.id;
-
-                      return (
-                        <Paper
-                          key={platform.id}
-                          withBorder
-                          radius="lg"
-                          p="sm"
-                          className={`${styles.statusRow} ${isFocused ? styles.statusRowActive : ''}`}
-                          style={{
-                            borderColor: isFocused ? palette.accent : '#d9e3ef',
-                            background: isFocused ? '#edf0f4' : '#ffffff',
-                            boxShadow: 'none',
-                          } as CSSProperties}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => setFocusedPlatformId(platform.id)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault();
-                              setFocusedPlatformId(platform.id);
-                            }
-                          }}
-                        >
-                          <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
-                            <Group gap="sm" wrap="nowrap">
-                              <ThemeIcon
-                                size="lg"
-                                radius="xl"
-                                variant="light"
-                                style={{
-                                  backgroundColor: palette.accentSoft,
-                                  color: palette.accent,
-                                }}
-                              >
-                                {getPlatformIcon(platform.platformKey, 18, 1.5)}
-                              </ThemeIcon>
-                              <div style={{ minWidth: 0 }}>
-                                <Text fw={700} size="sm" lineClamp={1}>
-                                  {platform.platformName}
-                                </Text>
-                                <Text size="xs" c="dimmed" lineClamp={1}>
-                                  {getIntegrationAvailabilityCopy(platform)}
-                                </Text>
-                              </div>
-                            </Group>
-
-                            <StatusBadge status={platform.status}/>
-                          </Group>
-                        </Paper>
-                      );
-                    })}
-                  </Stack>
-                </Paper>
-                </Disclosure>
               </SimpleGrid>
             </Card>
 

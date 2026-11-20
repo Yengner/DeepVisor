@@ -8,7 +8,7 @@ and evidence-backed attention issues. No AI provider or advertising executor is 
 - Set the **server-only** `DEEPVISOR_INSIGHTS_EVENTS=true` in `.env.local`.
 - Sign in on `localhost:3000` and choose **Insights preview** (flask icon) in the desktop
   sidebar, or open `/insights/preview` directly. That sidebar item is development-only.
-- The workbench lists 39 synthetic scenarios in six categories, each with a note on what it
+- The workbench lists 46 synthetic scenarios in eight categories, each with a note on what it
   covers. Pick one from the list (or ↑/↓, J/K), switch Desktop/390px/320px, light/dark, or
   **Gallery** to see a whole category side by side. **Open as real modal** uses the Mantine
   modal as owners see it. State is in the URL (`?scenario=stale&width=390&view=gallery`) so a
@@ -83,6 +83,15 @@ stretch within 14 days, the popup carries `payload.suggestion` (source key `sugg
   (`aggregate`, `QuickStats`). "Prepare this ad again" (`prepareRestartDraftAction`) makes a paused,
   review-required Run again draft copying the latest ad; "Try a new photo or video" opens Quick ad
   with `?budget=&days=` prefilled. Nothing is published or sent to Meta.
+
+**First look (welcome).** A person's first popup for an ad account (no `insight_reviews` row yet;
+`present_insights` creates it) carries `payload.welcome` (source key `welcome:<kind>`), chosen by
+`chooseWelcome` in `shared/insights/model.ts` from the active-ad count and last spend day:
+`running` (greeting + the first 7-day recap), `off` (the ads-off suggestion is offered at once,
+skipping the 7-day idle wait; an open account issue still comes first), or `new` (never spent:
+offers a first Quick ad). Unknown delivery after earlier spend gets no greeting. No popup is prepared
+while the account's first full sync (account setup) is incomplete, so partial data never drives it.
+Card: `components/insights/WelcomeCard.tsx` (EN/ES `welcome.*`); preview group **First Look**.
 
 Lifecycle captures reuse existing sync work and preserve reconstructed provenance.
 The November 8 AlexaStyles interruption remains explicitly reconstructed; its exact

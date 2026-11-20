@@ -64,11 +64,14 @@ export function validateSimulation(simulation: Simulation) { providerError(simul
 // The only simulated boundary is the provider response. Normalizers, writers, jobs and RLS remain real.
 export function simulatedMetaResponse(token: string, path: string, params: Record<string, unknown> = {}): unknown | null {
   const simulation = readSimulation(token);
+  // Multi-ID reads (`GET /?ids=a,b`) carry the object IDs in a parameter instead of the path.
+  const ids = path === '' && typeof params.ids === 'string' ? params.ids.split(',') : null;
   if (!simulation) {
-    if (path.includes('dvsim_')) throw new Error('Synthetic IDs cannot be sent to Meta');
+    if (path.includes('dvsim_') || ids?.some(id => id.includes('dvsim_'))) throw new Error('Synthetic IDs cannot be sent to Meta');
     return null;
   }
   providerError(simulation);
+  if (ids) return Object.fromEntries(ids.map(id => [id, simulatedMetaResponse(token, id, params)]));
   const account = simulationAccounts(simulation).find(a => path === a.externalAccountId || path.startsWith(`${a.externalAccountId}/`) || path.startsWith(`${a.externalAccountId}_`));
   if (!account) throw new Error('Simulated account is outside this business');
   const id = account.externalAccountId;

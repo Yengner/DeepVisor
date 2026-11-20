@@ -52,6 +52,7 @@ type MobileAppChromeClientProps = {
   initialAccountId?: string | null;
   /** Agency Control navigation (server switch DEEPVISOR_AGENCY). */
   showAgency?: boolean;
+  showAssistant?: boolean;
 };
 
 export default function MobileAppChromeClient({
@@ -62,6 +63,7 @@ export default function MobileAppChromeClient({
   initialPlatformId,
   initialAccountId,
   showAgency = false,
+  showAssistant = false,
 }: MobileAppChromeClientProps) {
   const t = useTranslations('nav');
   const router = useRouter();
@@ -128,9 +130,9 @@ export default function MobileAppChromeClient({
           />
         </div>
 
-        <ActionIcon size={44} variant="subtle" color="gray" aria-label={t('askDeepVisor')} onClick={openDeepVisor} style={{ color: '#f5f9ff' }}>
+        {showAssistant && <ActionIcon size={44} variant="subtle" color="gray" aria-label={t('askDeepVisor')} onClick={openDeepVisor} style={{ color: '#f5f9ff' }}>
           <IconSparkles size={21} aria-hidden />
-        </ActionIcon>
+        </ActionIcon>}
 
         <Menu shadow="md" width={220} position="bottom-end">
           <Menu.Target>

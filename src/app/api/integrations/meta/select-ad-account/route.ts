@@ -10,12 +10,7 @@ import {
   applyAppSelectionCookies,
   syncSelectedMetaAdAccount,
 } from '@/lib/server/integrations/metaSelection';
-import {
-  buildFirstSyncJobStatus,
-  getAccountSyncJobById,
-  getAdAccountSyncCoverage,
-} from '@/lib/server/repositories/ad_accounts/syncState';
-import { processMetaBackfillJobs } from '@/lib/server/sync/meta/processBackfillJobs';
+import { dispatchAccountSync } from '@/lib/server/sync/dispatch';
 import { ErrorCode, fail, ok } from '@/lib/shared';
 
 /**
@@ -35,7 +30,7 @@ function getSelectionUserMessage(message: string): string {
   }
 
   if (normalized.includes('rate limit')) {
-    return 'Meta rate-limited the first sync. Wait a minute and retry.';
+    return 'Meta is busy right now. Wait a minute and try again.';
   }
 
   return message;
@@ -45,8 +40,8 @@ function getSelectionUserMessage(message: string): string {
  * Selects a primary Meta ad account for an integration and kicks off the initial sync workflow.
  *
  * The route validates the submitted integration/account pair against already-discovered server
- * state, promotes that account to the integration's primary selection, syncs it, and updates the
- * app-selection cookies used by the UI.
+ * state, promotes that account to the integration's primary selection, queues its sync and starts it
+ * in the background, and updates the app-selection cookies used by the UI. It does not wait for Meta.
  *
  * @param request - Next.js request containing the selected integration id and external account id.
  * @returns A JSON response with the selected account, sync coverage, and updated selection cookies.
@@ -115,38 +110,10 @@ export async function POST(request: NextRequest) {
       trigger: 'integration',
     });
 
-    let syncCoverage = result.syncCoverage;
-    let firstSyncJob = result.firstSyncJob;
-
-    if (result.syncJobId && firstSyncJob?.status !== 'completed') {
-      const syncResult = await processMetaBackfillJobs({
-        limit: 1,
-        targetJobId: result.syncJobId,
-      });
-      const processedJobResult =
-        syncResult.results.find((item) => item.jobId === result.syncJobId) ?? null;
-
-      const latestJob = await getAccountSyncJobById(supabase, result.syncJobId);
-
-      if (result.adAccountId) {
-        syncCoverage = await getAdAccountSyncCoverage(supabase, result.adAccountId);
-      }
-
-      if (latestJob && firstSyncJob) {
-        firstSyncJob = buildFirstSyncJobStatus(latestJob, syncCoverage);
-      }
-
-      if (processedJobResult?.status === 'failed' || latestJob?.status === 'failed') {
-        throw new Error(
-          processedJobResult?.message ||
-            latestJob?.error_message ||
-            'Meta first sync failed'
-        );
-      }
-
-      if (!processedJobResult && latestJob?.status !== 'completed') {
-        throw new Error('Meta first sync is already running. Wait for it to finish and try again.');
-      }
+    // The sync runs after this response (same durable job + lease; the cron worker picks it up if this
+    // run is cut short), so the owner continues setup instead of waiting for Meta.
+    if (result.syncJobId && result.firstSyncJob?.status !== 'completed') {
+      dispatchAccountSync(result.syncJobId, businessId);
     }
 
     const response = NextResponse.json(
@@ -154,8 +121,9 @@ export async function POST(request: NextRequest) {
         integrationId: result.integrationId,
         adAccountId: result.adAccountId,
         externalAccountId: result.externalAccountId,
-        syncCoverage,
-        firstSyncJob,
+        syncCoverage: result.syncCoverage,
+        firstSyncJob: result.firstSyncJob,
+        syncJobId: result.syncJobId,
       })
     );
     applyAppSelectionCookies(response, {

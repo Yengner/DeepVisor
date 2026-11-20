@@ -1,0 +1,72 @@
+/* The welcome reads as the popup's opening sentence, not another box. */
+.lead {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--dv-text);
+}
+
+/* Never advertised: one inviting panel with the three Quick ad steps and the button. */
+.start {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border-radius: var(--dv-card-radius);
+  background: var(--dv-primary-soft);
+}
+
+.steps {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--dv-text);
+}
+
+.steps span {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--dv-primary);
+  color: #fff;
+  font-family: var(--font-display, inherit);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.actions :global(.mantine-Button-root) {
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.reassure {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 0;
+  font-size: 14px;
+  color: var(--dv-text-muted);
+}
+
+@container (max-width: 520px) {
+  .start {
+    padding: 18px;
+  }
+
+  .actions :global(.mantine-Button-root) {
+    width: 100%;
+  }
+}

@@ -5,8 +5,11 @@ import { agencyEnabled } from '@/lib/server/agency/enabled';
 import LifecyclePopup from '@/components/lifecycle/LifecycleView';
 import { lifecycleEnabled } from '@/lib/server/lifecycle/service';
 import AiAssistantDrawer from '@/components/layout/AiAssistantDrawer';
+import { assistantEnabled } from '@/lib/server/intelligence/assistant/enabled';
 import { buildGlobalAiAssistantPayload } from '@/lib/server/intelligence/service';
 import AutomaticMetaSync from '@/components/integrations/AutomaticMetaSync';
+import AccountSetupGate, { type AccountSetupState } from '@/components/integrations/AccountSetupGate';
+import { loadOverviewSync } from '@/lib/server/dashboard/overview/load';
 import AccountSignals from '@/components/integrations/AccountSignals';
 import Topbar from '@/components/layout/topBar/TopBar';
 import Sidebar from '@/components/layout/LeftSidebar';
@@ -42,7 +45,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     && (await headers()).get('host') === 'localhost:3000';
   const hasInsights = insightsEnabled();
 
-  const assistant = await buildGlobalAiAssistantPayload({ businessId, defaultPlatformIntegrationId: selection.selectedPlatformId, defaultAdAccountId: selection.selectedAdAccountId }).catch(() => null);
+  // Business-scoped and cached for the request; a failed read leaves pages open rather than blocking them.
+  const sync = selection.selectedAdAccountId ? await loadOverviewSync(businessId, selection.selectedAdAccountId) : null;
+  const accountSetup: AccountSetupState | null = sync?.data && !sync.data.firstFullSyncCompleted
+    ? { pending: true, jobId: sync.data.activeJobId ?? null, status: sync.data.activeJobStatus ?? null }
+    : null;
+
+  const showAssistant = assistantEnabled();
+  const assistant = !showAssistant ? null : await buildGlobalAiAssistantPayload({ businessId, defaultPlatformIntegrationId: selection.selectedPlatformId, defaultAdAccountId: selection.selectedAdAccountId }).catch(() => null);
   return (
     <div className="app-platform-shell h-dvh flex flex-col" data-platform-theme={platformTheme}>
       <header className="app-platform-header w-full z-50 flex-shrink-0">
@@ -52,14 +62,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <Sidebar showInsightsPreview={showInsightsPreview} showAgency={agencyEnabled()} />
 
-        <AiAssistantDrawer key={selection.selectedAdAccountId} payload={assistant}><main className="app-platform-main relative min-h-0 min-w-0 mx-auto flex-1 space-y-5 overflow-y-auto pb-[calc(9rem+env(safe-area-inset-bottom))] pl-0 pr-0 pt-3 md:space-y-6 md:pb-24 md:pl-[3.75rem] md:pr-3 md:pt-4">
+        <AiAssistantDrawer key={selection.selectedAdAccountId} payload={assistant} enabled={showAssistant}><main className="app-platform-main relative min-h-0 min-w-0 mx-auto flex-1 space-y-5 overflow-y-auto pb-[calc(9rem+env(safe-area-inset-bottom))] pl-0 pr-0 pt-3 md:space-y-6 md:pb-24 md:pl-[3.75rem] md:pr-3 md:pt-4">
           {/* <AutonomyChrome><Suspense fallback={<p className="px-4 text-xs text-gray-600" style={{minHeight:44}}>Loading configured mode…</p>}><AutonomyIndicator businessId={businessId}/></Suspense></AutonomyChrome> */}
           <div className="app-status-region">
             <AutomaticMetaSync key={`sync:${selection.selectedAdAccountId}`} accountId={selection.selectedAdAccountId} />
             <AccountSignals key={`signals:${selection.selectedAdAccountId}`} accountId={selection.selectedAdAccountId} enabled={process.env.DEEPVISOR_META_WEBHOOKS === 'true'} />
             {hasInsights ? <InsightsPopup key={`insights:${selection.selectedAdAccountId}`} accountId={selection.selectedAdAccountId} /> : lifecycleEnabled() && <LifecyclePopup key={`lifecycle:${selection.selectedAdAccountId}`} accountId={selection.selectedAdAccountId} />}
           </div>
-          {children}
+          <AccountSetupGate key={`account-setup:${selection.selectedAdAccountId}`} state={accountSetup}>{children}</AccountSetupGate>
         </main></AiAssistantDrawer>
       </div>
     </div>

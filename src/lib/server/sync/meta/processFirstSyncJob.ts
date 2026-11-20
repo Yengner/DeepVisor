@@ -453,7 +453,7 @@ export async function processMetaFirstSyncJob(input: {
     console.error('First Meta history sync assessments failed:', error);
   }
 
-  await syncSavedInsights(input.job.id, input.accessToken).catch(() => {
+  await syncSavedInsights(input.job.id, input.accessToken, { learning: adsets.learning }).catch(() => {
     console.warn('Optional dashboard insights unavailable; previous retrieval times preserved.');
   });
   await markIntegrationSynced(input.supabase, input.job.platform_integration_id);

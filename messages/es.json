@@ -599,9 +599,14 @@
   "suggestion": {
     "offSince": "Tus anuncios están apagados desde el {date}",
     "restartTitle": "Vuelve a publicar tu mejor anuncio",
-    "plan": "La misma configuración a {budget}/día por {days} días, desde mañana.",
-    "forecast": "Estimado: unas {low}–{high} conversaciones, según tu costo anterior de {costLow}–{costHigh} por conversación.",
-    "forecastNote": "Basado en {weeks} de tus propias semanas; no es una garantía.",
+    "spent": "Gastado",
+    "ifAgain": "Si lo vuelves a activar",
+    "planShort": "{budget} al día por {days} días",
+    "planTotal": "{total} en total",
+    "day": "Día {day}",
+    "estimate": "Unas {low}–{high} conversaciones.",
+    "estimateBasis": "Según tus propias semanas, cuando cada conversación costó {costLow}–{costHigh}. Es un cálculo, no una promesa.",
+    "forecastAria": "Se calculan de {low} a {high} conversaciones en {days} días.",
     "noForecast": "Aún no hay suficientes semanas con resultados para estimar.",
     "prepare": "Preparar este anuncio otra vez",
     "newAd": "Probar una foto o video nuevo",
@@ -619,7 +624,18 @@
     },
     "whyCheapest": "Tu menor costo por conversación",
     "whyRecent": "Tu anuncio de mensajes más reciente",
-    "statsPeriod": "últimos {days} días"
+    "statsPeriod": "Últimos {days} días"
+  },
+  "welcome": {
+    "runningBody": "Aquí están tus últimos 7 días. DeepVisor te avisará aquí cuando algo necesite tu atención y te resumirá cada día.",
+    "offBody": "Tu último anuncio estuvo activo el {date}. Aquí está tu mejor anuncio reciente y lo que podría traerte si lo vuelves a activar.",
+    "offBodyNoSuggestion": "Tu último anuncio estuvo activo el {date}. Cuando quieras, un anuncio rápido toma solo unos minutos.",
+    "newBody": "Todavía no encontramos anuncios en esta cuenta. Un anuncio rápido toma unos cinco minutos:",
+    "quickAd": "Crear un anuncio rápido",
+    "review": "Nada se publica hasta que lo revises y lo publiques.",
+    "stepMedia": "Elige una foto o video de tu trabajo",
+    "stepMessage": "Escribe un mensaje corto",
+    "stepBudget": "Elige un presupuesto diario"
   },
   "metaDeletion": {
     "menu": "Eliminar datos de Meta",

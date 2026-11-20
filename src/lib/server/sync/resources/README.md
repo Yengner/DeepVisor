@@ -23,7 +23,10 @@ Implemented and verified against existing development project `gkdyyjqepzayjdpvq
   query keys/account/day, and immutable complete batches. Exact-period data is preferred;
   historical fallback retains its actual coverage. Unsupported data is negative-cached.
 - Meta HTTP reads share database admission (six globally, three/account), observed quota
-  headers and provider cooldowns. At 80% observed usage, admission pauses for five minutes.
+  headers and provider cooldowns. A finished read is recorded with `renew_meta_read`, which keeps the
+  lease for the same job's next read unless a cooldown applies (migration
+  `20261119234520_meta_read_lease_renewal`); jobs release kept leases when they end. Kept leases
+  still count toward the limits, so a run of reads costs about one database call each, not two. At 80% observed usage, admission pauses for five minutes.
   This is conservative backpressure, not knowledge of a guaranteed Meta quota. Contention
   and HTTP 429 defer work; inaccessible accounts stop; ordinary repeated failures open
   the circuit after three attempts. Reconnection or a successful covered manual job can

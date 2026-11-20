@@ -51,6 +51,9 @@ export default function ConnectAccountsStep({
           updateUserData({ connectedPlatforms: [...connectedPlatforms, 'meta'] });
         }
       }}
+      // Connecting Meta and an ad account is the last onboarding step: finish setup, which saves
+      // progress and opens the Overview, instead of asking for one more click.
+      afterSuccess={finishSetup}
     >
       {({ connectMeta, connecting }) => (
         <Stack gap="lg" className={styles.stepRoot}>

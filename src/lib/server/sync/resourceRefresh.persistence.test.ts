@@ -35,6 +35,7 @@ beforeAll(async()=>{
  await db.exec(readFileSync('supabase/migrations/20261108044833_sync_resource_completion_guards.sql','utf8'));
  await db.exec(readFileSync('supabase/migrations/20261108044834_persisted_dashboard_insights.sql','utf8'));
  await db.exec(readFileSync('supabase/migrations/20261108045250_resource_quota_deferral.sql','utf8'));
+ await db.exec(readFileSync('supabase/migrations/20261119234520_meta_read_lease_renewal.sql','utf8'));
 },30000);
 beforeEach(()=>db.exec('begin'));afterEach(()=>db.exec('rollback;reset role'));afterAll(()=>db?.close());
 it('coalesces 20 simultaneous demands into one job without consuming manual cooldown',async()=>{
@@ -87,6 +88,18 @@ it('shares quota and provider cooldown between processes',async()=>{
  expect(leases.filter(r=>r.rows[0].id)).toHaveLength(3);
  await db.query(`select finish_meta_read($1,$2,85,null,0)`,[leases[0].rows[0].id,account]);
  expect((await db.query(`select admit_meta_read('${account}') id`)).rows).toEqual([{id:null}]);
+});
+it('keeps a lease for the next read only while no cooldown applies, still counting it toward the limit',async()=>{
+ await db.exec(`delete from meta_api_request_leases;delete from meta_api_budget_state;`);
+ const lease=(await db.query<{id:string}>(`select admit_meta_read('${account}') id`)).rows[0].id;
+ expect((await db.query(`select renew_meta_read($1,$2,20,10,0) kept`,[lease,account])).rows).toEqual([{kept:true}]);
+ expect((await db.query(`select count(*)::int n from meta_api_request_leases where id=$1 and expires_at>now()`,[lease])).rows).toEqual([{n:1}]);
+ await Promise.all([1,2].map(()=>db.query(`select admit_meta_read('${account}')`)));
+ expect((await db.query(`select admit_meta_read('${account}') id`)).rows).toEqual([{id:null}]);
+ expect((await db.query(`select renew_meta_read($1,$2,null,85,0) kept`,[lease,account])).rows).toEqual([{kept:false}]);
+ expect((await db.query(`select count(*)::int n from meta_api_request_leases where id=$1`,[lease])).rows).toEqual([{n:0}]);
+ expect((await db.query(`select renew_meta_read($1,$2,null,null,0) kept`,[lease,account])).rows).toEqual([{kept:false}]);
+ await db.exec(`delete from meta_api_request_leases;delete from meta_api_budget_state;`);
 });
 it.each(['anon','authenticated'])('denies internal resource RPCs and staging access to %s',async role=>{
  await db.exec(`set local role ${role}`);await expect(request()).rejects.toMatchObject({code:'42501'});

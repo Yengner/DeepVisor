@@ -23,9 +23,25 @@ it('never contacts Meta without a shared budget permit',async()=>{
  expect(fetch).not.toHaveBeenCalled();
 });
 it('releases admission on HTTP failure and records provider cooldown',async()=>{
- const rpc=vi.fn().mockResolvedValueOnce({data:'lease',error:null}).mockResolvedValue({error:null});
+ const rpc=vi.fn().mockResolvedValueOnce({data:'lease',error:null}).mockResolvedValue({data:false,error:null});
  await withResourceBudget({rpc} as unknown as RepositoryClient,'account',()=>budgetedRead(async()=>new Response('',{status:429,headers:{'retry-after':'600','x-app-usage':'{"call_count":85}'}})));
- expect(rpc).toHaveBeenLastCalledWith('finish_meta_read',expect.objectContaining({p_lease:'lease',p_app_usage:85,p_retry_seconds:600}));
+ expect(rpc).toHaveBeenLastCalledWith('renew_meta_read',expect.objectContaining({p_lease:'lease',p_app_usage:85,p_retry_seconds:600}));
+ expect(rpc).not.toHaveBeenCalledWith('finish_meta_read',expect.anything());
+});
+it('reuses a kept lease for the next read and releases it when the job ends',async()=>{
+ const rpc=vi.fn(async(name:string)=>name==='admit_meta_read'?{data:'lease',error:null}:{data:true,error:null});
+ const ok=async()=>new Response('{}');
+ await withResourceBudget({rpc} as unknown as RepositoryClient,'account',async()=>{for(let i=0;i<5;i++)await budgetedRead(ok);});
+ const names=rpc.mock.calls.map(([name])=>name);
+ expect(names.filter(n=>n==='admit_meta_read')).toHaveLength(1);
+ expect(names.filter(n=>n==='renew_meta_read')).toHaveLength(5);
+ expect(names.at(-1)).toBe('finish_meta_read');
+});
+it('asks for a new lease when the kept one was released for a cooldown',async()=>{
+ const rpc=vi.fn(async(name:string)=>name==='admit_meta_read'?{data:'lease',error:null}:{data:false,error:null});
+ await withResourceBudget({rpc} as unknown as RepositoryClient,'account',async()=>{await budgetedRead(async()=>new Response('{}'));await budgetedRead(async()=>new Response('{}'));});
+ expect(rpc.mock.calls.filter(([name])=>name==='admit_meta_read')).toHaveLength(2);
+ expect(rpc.mock.calls.filter(([name])=>name==='finish_meta_read')).toHaveLength(0);
 });
 it('refreshes changed, missing, expired or old media while reusing recent media',()=>{
  const now=Date.parse('2026-11-07T12:00:00Z');

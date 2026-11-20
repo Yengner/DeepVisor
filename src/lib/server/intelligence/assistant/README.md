@@ -1,8 +1,9 @@
 # Ask DeepVisor
 
-> **Currently hidden:** the floating "Ask DeepVisor" launcher was removed from
-> `AiAssistantDrawer.tsx`, so the drawer has no entry point. Restore the launcher button
-> to re-enable it.
+> **Currently hidden for the beta:** off unless `DEEPVISOR_ASSISTANT=true` ([`enabled.ts`](./enabled.ts)).
+> While off, the layout renders no drawer or launcher and skips building its payload, the
+> dashboard ad-card and mobile top-bar entry points are hidden (`assistantAvailability.ts`),
+> and `authorizeAssistant` refuses both API routes with 404 before reading the session.
 
 The existing docked [assistant](../../../../components/layout/AiAssistantDrawer.tsx)
 uses the official installed OpenAI SDK and Responses API through

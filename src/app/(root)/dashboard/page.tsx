@@ -27,6 +27,7 @@ import type { ControlPerformance } from "@/lib/server/dashboard/overview/control
 import type { Period } from "@/lib/server/dashboard/overview/types";
 import { loadExploration } from "@/lib/server/campaigns/exploration/load";
 import { PeriodControl, RefreshOverview } from "./components/OverviewControls";
+import { AccountSetupProgress } from "@/components/integrations/AccountSetupProgress";
 import ControlMetrics from "./components/ControlMetrics";
 import ControlTrend from "./components/ControlTrend";
 import AdvertisingBoard from "./components/AdvertisingBoard";
@@ -323,13 +324,15 @@ async function Content({ requestedPeriod, preview, platform }: { requestedPeriod
     return (
       <section className={classes.emptyState}>
         <PixelCompanion size={64} state={sync.data?.activeJobStatus === 'failed' ? 'attention' : ['queued', 'running'].includes(sync.data?.activeJobStatus ?? '') ? 'analyzing' : 'idle'} />
-        <h1>Your first sync</h1>
+        <h1>Setting up your account</h1>
         <p>
           {sync.data?.activeJobStatus === "failed"
-            ? "The initial sync could not finish. Check Connections before trying again."
-            : "Performance will appear once your account’s initial sync completes."}
+            ? "Setting up your account could not finish. Check Connections before trying again."
+            : "Your results appear here as soon as your account is set up."}
         </p>
-        <RefreshOverview />
+        {sync.data?.activeJobId && ['queued', 'running'].includes(sync.data.activeJobStatus ?? '')
+          ? <AccountSetupProgress jobId={sync.data.activeJobId} />
+          : <RefreshOverview />}
         <Link href="/integration">Connections</Link>
       </section>
     );

@@ -1,0 +1,94 @@
+.figure {
+  margin: 0;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.axis {
+  stroke: var(--dv-border-strong);
+  stroke-width: 1;
+}
+
+/* The likely range: DeepVisor blue, soft enough that the line and the end number lead. */
+.band {
+  fill: light-dark(color-mix(in srgb, var(--dv-primary) 18%, transparent), color-mix(in srgb, var(--dv-primary) 34%, transparent));
+}
+
+.rangeEdge {
+  stroke: color-mix(in srgb, var(--dv-primary) 45%, transparent);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.line {
+  fill: none;
+  stroke: var(--dv-primary);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.dot {
+  fill: var(--dv-primary);
+  stroke: var(--dv-card-panel);
+  stroke-width: 3;
+}
+
+.endLabel {
+  fill: var(--dv-text);
+  font-family: var(--font-display, inherit);
+  font-size: 19px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.tick {
+  fill: var(--dv-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* One orchestrated moment when the card opens: the range grows across the run, the line draws,
+   then the end point lands. Ease-out so it settles, about a second in total. */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal,
+  .dot,
+  .endLabel {
+    transform-box: fill-box;
+  }
+
+  .reveal {
+    transform-origin: left center;
+    animation: grow 1100ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  .line {
+    animation: draw 1100ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  .dot,
+  .endLabel {
+    animation: land 320ms cubic-bezier(0.23, 1, 0.32, 1) 950ms both;
+  }
+}
+
+@keyframes grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes land {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}

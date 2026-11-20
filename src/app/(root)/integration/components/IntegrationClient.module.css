@@ -24,76 +24,9 @@
   background: var(--platform-accent-soft);
 }
 
-.heroContent,
-.heroSidebar {
+.heroContent {
   position: relative;
   z-index: 1;
-}
-
-.heroSidebar {
-  background: transparent !important;
-  border: 0 !important;
-  border-left: 1px solid var(--chrome-border) !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-}
-
-.heroSidebar :global(.mantine-Title-root),
-.heroSidebar .statusRow :global(.mantine-Text-root) {
-  color: var(--dv-text) !important;
-}
-
-.heroSidebar .statusRow :global(.mantine-Text-root[data-dimmed]) {
-  color: var(--dv-text-muted) !important;
-}
-
-.statusRow {
-  background: #fff;
-  cursor: pointer;
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
-    border-color 160ms ease;
-}
-
-.statusRow:hover {
-  transform: translateY(-1px);
-  box-shadow: none;
-}
-
-.statusRowActive {
-  transform: translateY(-1px);
-}
-
-.statusRow:focus-visible {
-  outline: 2px solid rgba(168, 212, 255, 0.55);
-  outline-offset: 2px;
-}
-
-.summaryCard {
-  position: relative;
-  min-height: 132px;
-  overflow: hidden;
-  background: transparent !important;
-  border: 0 !important;
-  border-top: 1px solid var(--chrome-border) !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-}
-
-.heroCard .summaryCard :global(.mantine-Text-root) {
-  color: var(--chrome-text) !important;
-}
-
-.heroCard .summaryCard :global(.mantine-Text-root[data-dimmed]) {
-  color: var(--chrome-muted) !important;
-}
-
-.summaryAccent {
-  width: 44px;
-  height: 4px;
-  border-radius: 999px;
-  margin-bottom: 14px;
 }
 
 .guideCard {
@@ -205,18 +138,13 @@
     border-radius: var(--dv-radius-md);
   }
 
-  .heroSidebar {
-    margin-top: 4px;
-  }
-
   .heroContent :global(.mantine-Button-root),
   .channelCard :global(.mantine-Button-root),
   .detailHero :global(.mantine-Button-root) {
     width: 100%;
   }
 
-  .channelCard:hover,
-  .statusRow:hover {
+  .channelCard:hover {
     transform: none;
     box-shadow: none;
   }

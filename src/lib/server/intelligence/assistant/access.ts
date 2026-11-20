@@ -1,3 +1,4 @@
+import { assistantEnabled } from './enabled';
 import 'server-only';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
@@ -7,6 +8,8 @@ export class AssistantError extends Error {
     constructor(message: string, readonly status = 400) { super(message); }
 }
 export async function authorizeAssistant(expectedAccount?: string) {
+    if (!assistantEnabled())
+        throw new AssistantError('Ask DeepVisor is not available yet.', 404);
     const session = await createServerClient();
     const { data, error } = await session.auth.getUser();
     if (error || !data.user)

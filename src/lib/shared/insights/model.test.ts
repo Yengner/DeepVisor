@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {accountToday} from '@/lib/shared/reports/dates';
-import {idleRecap,recapWindow,summarize,hierarchyIssues,fatigueIssues,issueLevel,urgentIssues,completeComparable,headline,lifecycleStatus} from './model';
+import {idleRecap,recapWindow,summarize,hierarchyIssues,fatigueIssues,issueLevel,urgentIssues,completeComparable,headline,lifecycleStatus,chooseWelcome,welcomeHeadline} from './model';
 import {changes} from '@/lib/shared/lifecycle/model';
 import {previewPresentation} from './preview';
 import type {Presentation,PerformanceRow,Recap} from './model';
@@ -171,5 +171,23 @@ describe('idleRecap', () => {
     expect(idleRecap(false, { spend: null })).toBe(false);
     expect(idleRecap(true, { spend: 0 })).toBe(false);
     expect(idleRecap(false, null)).toBe(false);
+  });
+});
+
+describe('first-look welcome', () => {
+  it('greets by where the account stands, never guessing when delivery is unknown', () => {
+    expect(chooseWelcome(3, null)).toEqual({ kind: 'running', activeAds: 3 });
+    expect(chooseWelcome(0, '2026-11-01')).toEqual({ kind: 'off', lastSpendDay: '2026-11-01' });
+    expect(chooseWelcome(null, null)).toEqual({ kind: 'new' });
+    expect(chooseWelcome(0, null)).toEqual({ kind: 'new' });
+    expect(chooseWelcome(null, '2026-11-01')).toBeUndefined();
+    expect(chooseWelcome(0, undefined)).toBeUndefined();
+  });
+  it('leads with the greeting unless something urgent needs attention', () => {
+    const base = { version: 1 as const, account: 'A', timezone: null, currency: 'USD', preparedAt: '', syncedAt: null, recap: null, issues: [], lifecycle: [], limitations: [] };
+    expect(headline({ ...base, welcome: { kind: 'running', activeAds: 1 } })).toBe('Welcome! Your ad is running');
+    expect(headline({ ...base, welcome: { kind: 'running', activeAds: 2 } })).toBe('Welcome! 2 ads are running');
+    expect(headline({ ...base, welcome: { kind: 'new' } })).toBe('Welcome! Let’s make your first ad');
+    expect(welcomeHeadline({ kind: 'off', lastSpendDay: '2026-11-01' })).toBe('Welcome! Your ads are off right now');
   });
 });

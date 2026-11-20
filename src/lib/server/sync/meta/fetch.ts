@@ -117,6 +117,9 @@ export type MetaDateRange = {
 
 const META_HOURLY_DEBUG_PREFIX = '[meta-hourly-sync]';
 
+/** Meta's maximum number of object IDs in one `GET /?ids=` read. */
+const META_MULTI_ID_LIMIT = 50;
+
 const META_INSIGHTS_WINDOW_DAYS_BY_LEVEL: Record<MetaInsightLevel, number> = {
   account: 180,
   campaign: 90,
@@ -672,6 +675,8 @@ export async function fetchMetaAdsetSeeds(input: {
         'budget_remaining',
         'created_time',
         'updated_time',
+        // Read here so the saved-insights step needs no second ad set listing.
+        'learning_stage_info',
       ].join(','),
       limit: 200,
     },
@@ -773,29 +778,33 @@ export async function fetchMetaAdCreativeSeeds(input: {
 
   if (scopedCreativeIds.length > 0) {
     const creatives: MetaAdCreativeNode[] = [];
+    const params = { fields, thumbnail_width: 800, thumbnail_height: 800 };
+    const readOne = async (creativeId: string) => {
+      try {
+        return await fetchMetaObject<MetaAdCreativeNode>({ path: creativeId, accessToken: input.accessToken, params });
+      } catch (error) {
+        console.warn(`Skipping Meta creative ${creativeId} for ad account ${input.adAccountExternalId}:`, error);
+        return null;
+      }
+    };
 
-    for (const creativeIdsChunk of chunkStrings(scopedCreativeIds, 10)) {
-      const chunkResults = await Promise.all(
-        creativeIdsChunk.map(async (creativeId) => {
-          try {
-            return await fetchMetaObject<MetaAdCreativeNode>({
-              path: creativeId,
-              accessToken: input.accessToken,
-              params: {
-                fields,
-                thumbnail_width: 800,
-                thumbnail_height: 800,
-              },
-            });
-          } catch (error) {
-            console.warn(
-              `Skipping Meta creative ${creativeId} for ad account ${input.adAccountExternalId}:`,
-              error
-            );
-            return null;
-          }
-        })
-      );
+    // One multi-ID read per 50 creatives (Meta's limit) instead of one request each. Meta fails the
+    // whole read if any ID is inaccessible, so only then that batch falls back to single reads,
+    // which skip the inaccessible creative as before.
+    for (const creativeIdsChunk of chunkStrings(scopedCreativeIds, META_MULTI_ID_LIMIT)) {
+      let byId: Record<string, MetaAdCreativeNode | undefined> | null = null;
+      try {
+        byId = await fetchMetaObject<Record<string, MetaAdCreativeNode | undefined>>({
+          path: '',
+          accessToken: input.accessToken,
+          params: { ...params, ids: creativeIdsChunk.join(',') },
+        });
+      } catch {
+        byId = null;
+      }
+      const chunkResults = byId
+        ? creativeIdsChunk.map((creativeId) => byId?.[creativeId] ?? null)
+        : await Promise.all(creativeIdsChunk.map(readOne));
 
       creatives.push(...chunkResults.filter((creative): creative is MetaAdCreativeNode => creative !== null));
     }
@@ -1119,13 +1128,14 @@ async function fetchMetaAudienceBreakdownSeedsByLevel(input: {
   const rows: MetaAudienceBreakdownSeed[] = [];
   const allowedBreakdowns = new Set(input.allowedBreakdowns ?? []);
 
-  for (const config of META_AUDIENCE_BREAKDOWN_CONFIGS) {
-    if (allowedBreakdowns.size > 0 && !allowedBreakdowns.has(config.breakdownType)) {
-      continue;
-    }
-
-    try {
-      const insights = await fetchMetaAggregateInsightsRows({
+  const configs = META_AUDIENCE_BREAKDOWN_CONFIGS.filter(
+    (config) => allowedBreakdowns.size === 0 || allowedBreakdowns.has(config.breakdownType)
+  );
+  // Request every breakdown together (the shared Meta request limit still caps concurrency), then
+  // handle the results in the same order as before, with the same unsupported/failure rules.
+  const settled = await Promise.allSettled(
+    configs.map((config) =>
+      fetchMetaAggregateInsightsRows({
         accessToken: input.accessToken,
         adAccountExternalId: input.adAccountExternalId,
         backfillDays: input.backfillDays,
@@ -1135,7 +1145,15 @@ async function fetchMetaAudienceBreakdownSeedsByLevel(input: {
         params: {
           breakdowns: config.breakdowns,
         },
-      });
+      })
+    )
+  );
+
+  for (const [index, config] of configs.entries()) {
+    const result = settled[index];
+    try {
+      if (result.status === 'rejected') throw result.reason;
+      const insights = result.value;
 
       for (const row of insights) {
         const adsetExternalId = asString(row.adset_id);
