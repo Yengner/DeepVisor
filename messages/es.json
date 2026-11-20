@@ -664,6 +664,7 @@
     "lead": "Tu negocio, tu idioma y cómo te avisa DeepVisor.",
     "navLabel": "Secciones de ajustes",
     "nav": {
+      "profile": "Tu perfil",
       "business": "Tu negocio",
       "language": "Idioma",
       "ads": "Respuestas",
@@ -671,11 +672,6 @@
       "look": "Apariencia",
       "connections": "Conexiones",
       "account": "Plan y datos"
-    },
-    "profileCard": {
-      "title": "Tu perfil",
-      "hint": "Nombre, teléfono y correo para entrar",
-      "open": "Abrir perfil"
     },
     "business": {
       "title": "Tu negocio",
@@ -737,27 +733,15 @@
       "title": "Cuéntanos qué mejorar",
       "body": "Dinos qué pasó y qué esperabas. Por favor no incluyas contraseñas.",
       "send": "Enviar comentarios"
+    },
+    "profile": {
+      "title": "Tu perfil",
+      "lead": "Tu nombre y cómo entras. Solo tú lo ves.",
+      "statusActive": "Activa",
+      "memberSince": "Miembro desde",
+      "updated": "Último cambio",
+      "roleNote": "Tu rol lo define tu espacio de trabajo. Cambiar tu perfil no cambia lo que puedes hacer.",
+      "danger": "Zona de peligro"
     }
-  },
-  "profilePage": {
-    "back": "Todos los ajustes",
-    "title": "Tu perfil",
-    "lead": "Tu nombre y cómo entras. Solo tú lo ves.",
-    "person": "Tu cuenta",
-    "status": "Estado",
-    "memberSince": "Miembro desde",
-    "updated": "Último cambio",
-    "notAvailable": "No disponible",
-    "workspace": "Tu espacio de trabajo",
-    "role": "Tu rol",
-    "category": "Tipo de negocio",
-    "businessLink": "Datos del negocio",
-    "settingsHint": "El área de servicio, el enlace de citas y los datos para anuncios están en Ajustes.",
-    "settingsLink": "Abrir ajustes",
-    "roleNote": "Tu rol lo define tu espacio de trabajo. Cambiar tu perfil no cambia lo que puedes hacer.",
-    "businessLoadError": "No se pudieron cargar los datos del negocio. Recarga la página para intentarlo de nuevo.",
-    "workspaceLoadError": "No se pudieron cargar los datos del espacio de trabajo. Inténtalo más tarde.",
-    "danger": "Zona de peligro",
-    "statusActive": "Activa"
   }
 }

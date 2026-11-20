@@ -15,6 +15,7 @@ import {
 } from '@mantine/core';
 import {
   IconBuildingStore,
+  IconUser,
   IconLanguage,
   IconMessageQuestion,
   IconPalette,
@@ -54,6 +55,8 @@ import CampaignDefaultsForm from './components/CampaignDefaultsForm';
 import BusinessProfileForm from './components/BusinessProfileForm';
 import AdFactsCard from './components/AdFactsCard';
 import SectionCard from './components/SectionCard';
+import ProfileForm from './components/ProfileForm';
+import DeleteAccount from './components/DeleteAccount';
 import AppearanceChoice from './components/AppearanceChoice';
 import LanguageSettings from './components/LanguageSettings';
 import { getTranslations } from 'next-intl/server';
@@ -498,13 +501,12 @@ export default async function SettingsPage() {
   ].filter(Boolean).length;
   const archivedReportGroups = groupArchivedReports(archivedReports);
 
-  const initials = [user.first_name, user.last_name].filter(Boolean).map((name) => name[0]).join('').toUpperCase();
-  const fullName = `${user.first_name} ${user.last_name}`.trim();
   const profileTotal = 6;
   const goals = businessProfile.ad_goals ?? [];
   const preferredPlatforms = businessProfile.preferred_platforms ?? [];
   const canEdit = role === 'owner' || role === 'admin';
   const nav: Array<[string, string]> = [
+    ['profile', t('settingsPage.nav.profile')],
     ['workspace', t('settingsPage.nav.business')],
     ['language', t('settingsPage.nav.language')],
     ['ad-facts', t('settingsPage.nav.ads')],
@@ -532,14 +534,19 @@ export default async function SettingsPage() {
         </nav>
 
         <div className={classes.stack}>
-          <a href="/settings/profile" className={classes.profileLink}>
-            <span className={classes.avatar} aria-hidden>{initials || '?'}</span>
-            <span className={classes.profileText}>
-              <strong>{fullName || t('settingsPage.profileCard.title')}</strong>
-              <span>{t('settingsPage.profileCard.hint')}</span>
-            </span>
-            <span className={classes.profileGo}><span>{t('settingsPage.profileCard.open')}</span><IconArrowUpRight size={18} aria-hidden /></span>
-          </a>
+          <SectionCard
+            id="profile"
+            icon={<IconUser size={22} />}
+            title={t('settingsPage.profile.title')}
+            lead={t('settingsPage.profile.lead')}
+            aside={<span className={`${classes.pill} ${user.status?.toLowerCase() === 'active' ? classes.pillOk : ''} ${classes.capital}`}>{user.status?.toLowerCase() === 'active' ? t('settingsPage.profile.statusActive') : formatStatusLabel(user.status)}</span>}
+          >
+            <ProfileForm initial={user} />
+            <dl className={classes.facts} style={{ margin: '22px 0 0' }}>
+              <div><dt>{t('settingsPage.profile.memberSince')}</dt><dd>{formatDateOnly(user.created_at)}</dd></div>
+              <div><dt>{t('settingsPage.profile.updated')}</dt><dd>{formatDateOnly(user.updated_at)}</dd></div>
+            </dl>
+          </SectionCard>
 
           <SectionCard
             id="workspace"
@@ -927,6 +934,12 @@ export default async function SettingsPage() {
                 <p>{t('settingsPage.account.connectionsBody')}</p>
                 <Button component="a" href="/integration" variant="light">{t('settingsPage.account.openConnections')}</Button>
               </div>
+            </div>
+            <hr className={classes.divider} />
+            <p className={classes.note} style={{ marginBottom: 16 }}><IconLock size={18} aria-hidden />{t('settingsPage.profile.roleNote')}</p>
+            <div className={classes.danger}>
+              <h3 className={classes.subTitle} style={{ color: 'var(--dv-urgent-text)' }}>{t('settingsPage.profile.danger')}</h3>
+              <DeleteAccount />
             </div>
           </SectionCard>
 

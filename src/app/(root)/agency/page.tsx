@@ -68,7 +68,7 @@ async function AgencyContent({ page, preview }: { page: number; preview: boolean
         ].map(([label, value]) => <div key={String(label)}><dt>{String(label)}</dt><dd>{typeof value === 'object' && value ? value.label : 'Not specified'}</dd></div>)}</dl> : <p role="alert">Business preferences could not be loaded.</p>}
         <p className={classes.meta}>Budget and cost preferences are saved ranges, not exact limits. Their currency is not explicitly stored.</p>
         <div className={classes.mode}><strong>Operating mode: {operatingMode}</strong><p>Preferences guide recommendations. Your safety policy and review permissions control what is allowed. Approving here saves a decision; it does not execute an advertising change.</p></div>
-        <nav className={classes.links} aria-label="Business controls"><Link href="/settings/profile">Edit business profile</Link><Link href="/settings">Goals & preferences</Link><Link href="/decisions">Reviews & safety checks</Link></nav>
+        <nav className={classes.links} aria-label="Business controls"><Link href="/settings#workspace">Edit business profile</Link><Link href="/settings">Goals & preferences</Link><Link href="/decisions">Reviews & safety checks</Link></nav>
       </section>
     </div>
     <section aria-labelledby="activity-title"><div className={classes.activityHeading}><div><p className={classes.eyebrow}>OBSERVATION → DECISION → HUMAN REVIEW</p><h2 id="activity-title">Decisions & activity</h2><p>Saved evaluations for this account. Each decision keeps its own evidence period.</p></div><Link href="/decisions">All business decisions →</Link></div>

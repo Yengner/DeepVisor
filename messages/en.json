@@ -664,6 +664,7 @@
     "lead": "Your business, your language, and how DeepVisor keeps in touch.",
     "navLabel": "Settings sections",
     "nav": {
+      "profile": "Your profile",
       "business": "Your business",
       "language": "Language",
       "ads": "Ad answers",
@@ -671,11 +672,6 @@
       "look": "Look",
       "connections": "Connections",
       "account": "Plan and data"
-    },
-    "profileCard": {
-      "title": "Your profile",
-      "hint": "Name, phone and sign-in email",
-      "open": "Open profile"
     },
     "business": {
       "title": "Your business",
@@ -737,27 +733,15 @@
       "title": "Tell us what to improve",
       "body": "Say what happened and what you expected. Please leave out passwords.",
       "send": "Send feedback"
+    },
+    "profile": {
+      "title": "Your profile",
+      "lead": "Your name and how you sign in. Only you see this.",
+      "statusActive": "Active",
+      "memberSince": "Member since",
+      "updated": "Last changed",
+      "roleNote": "Your role is set by your workspace. Changing your profile does not change what you can do.",
+      "danger": "Danger zone"
     }
-  },
-  "profilePage": {
-    "back": "All settings",
-    "title": "Your profile",
-    "lead": "Your name and how you sign in. Only you see this.",
-    "person": "Your account",
-    "status": "Status",
-    "memberSince": "Member since",
-    "updated": "Last changed",
-    "notAvailable": "Not available",
-    "workspace": "Your workspace",
-    "role": "Your role",
-    "category": "Business type",
-    "businessLink": "Business details",
-    "settingsHint": "Service area, booking link and ad defaults are in Settings.",
-    "settingsLink": "Open settings",
-    "roleNote": "Your role is set by your workspace. Changing your profile does not change what you can do.",
-    "businessLoadError": "Business details could not be loaded. Reload the page to try again.",
-    "workspaceLoadError": "Workspace details could not be loaded. Please try again later.",
-    "danger": "Danger zone",
-    "statusActive": "Active"
   }
 }

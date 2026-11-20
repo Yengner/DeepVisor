@@ -29,12 +29,6 @@
 }
 .lead { margin: 8px 0 0; max-width: 58ch; font-size: 17px; line-height: 1.55; color: var(--dv-text-muted); }
 
-.back {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
-  font-size: 15px; font-weight: 700; color: var(--dv-primary-strong); text-decoration: none;
-}
-.back:hover { text-decoration: underline; }
-
 /* ---------- Layout: sticky section list + one column ---------- */
 .layout { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 32px; align-items: start; }
 .nav {
@@ -48,18 +42,6 @@
 }
 .navLink:hover { background: var(--dv-primary-soft); color: var(--dv-primary-strong); }
 .stack { display: grid; gap: 20px; min-width: 0; }
-
-/* ---------- Profile shortcut (one tidy row, the single blue action) ---------- */
-.profileLink {
-  display: flex; align-items: center; gap: 16px; padding: 18px 20px;
-  border-radius: var(--dv-card-radius);
-  background: var(--dv-primary-soft); color: var(--dv-text); text-decoration: none;
-}
-.profileLink:hover { background: var(--dv-primary-soft-hover); }
-.profileText { flex: 1; min-width: 0; }
-.profileText strong { display: block; font-family: var(--font-display, inherit); font-size: 18px; overflow-wrap: anywhere; }
-.profileText span { font-size: 15px; color: var(--dv-text-muted); }
-.profileGo { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; color: var(--dv-primary-strong); white-space: nowrap; }
 
 /* ---------- Section card ---------- */
 .section {
@@ -160,24 +142,12 @@
 .more :global(.mantine-Paper-root) { padding: 16px; border: 1px solid var(--dv-card-border); border-radius: 12px; background: var(--dv-card-inset); box-shadow: none; }
 .more :global(.mantine-Paper-root) :global(.mantine-Paper-root) { background: var(--dv-card-panel); }
 
-/* ---------- Profile page ---------- */
-.profileLayout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
-.aside { display: grid; gap: 20px; min-width: 0; }
-.identity { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
-.avatar {
-  display: grid; place-items: center; flex: none; width: 56px; height: 56px; border-radius: 50%;
-  background: var(--dv-primary); color: #fff;
-  font-family: var(--font-display, inherit); font-size: 20px; font-weight: 800;
-}
-.identity strong { display: block; font-family: var(--font-display, inherit); font-size: 19px; line-height: 1.25; overflow-wrap: anywhere; }
-.identity span { font-size: 15px; color: var(--dv-text-muted); }
+/* ---------- Pills, notes, danger ---------- */
 .pill { display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; border-radius: 999px; background: var(--dv-neutral-soft); color: var(--dv-neutral-text); font-size: 14px; font-weight: 700; }
 .pillOk { background: var(--dv-success-soft); color: var(--dv-success); }
 .capital { text-transform: capitalize; }
 .note { display: flex; gap: 10px; align-items: flex-start; margin: 0; font-size: 15px; color: var(--dv-text-muted); }
 .note svg { flex: none; margin-top: 3px; }
-.inlineLink { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 15px; font-weight: 700; color: var(--dv-primary-strong); text-decoration: none; }
-.inlineLink:hover { text-decoration: underline; }
 
 /* Danger stays quiet until you look at it; red is only for this. */
 .danger { display: grid; gap: 12px; padding: 22px; border: 1px solid var(--dv-urgent-border); border-radius: var(--dv-card-radius); background: var(--dv-urgent-soft); }
@@ -189,7 +159,7 @@
 
 /* ---------- Narrow screens ---------- */
 @media (max-width: 62em) {
-  .layout, .profileLayout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .nav {
     position: sticky; top: 0; z-index: 5;
     display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 8px 16px;
@@ -208,8 +178,6 @@
   .sectionTitle { font-size: 20px; }
   .progressNumber strong { font-size: 36px; }
   .shortcuts { grid-template-columns: minmax(0, 1fr); }
-  .profileLink { padding: 16px; }
-  .profileGo span { display: none; }
   .more { padding: 2px 18px; }
   .feedback { padding: 20px 18px; }
   .feedback :global(.mantine-Button-root), .danger :global(.mantine-Button-root) { width: 100%; }
