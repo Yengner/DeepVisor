@@ -853,5 +853,52 @@
       "body": "Say what happened and what you expected. Please leave out passwords.",
       "send": "Send feedback"
     }
+  },
+  "rerun": {
+    "metaTitle": "Run this ad again",
+    "title": "Run this ad again",
+    "lead": "Choose your budget and how long it runs. You check the draft before anything goes live.",
+    "back": "Back to Overview",
+    "planTitle": "Your plan",
+    "budget": "Daily budget",
+    "less": "Spend less per day",
+    "more": "Spend more per day",
+    "days": "How many days",
+    "other": "Other",
+    "dayChoice": "{count, plural, one {# day} other {# days}}",
+    "customDays": "Number of days",
+    "runs": "Runs {start} – {end}",
+    "runsOne": "Runs {start}",
+    "total": "About {total}",
+    "totalDetail": "{budget} a day × {days, plural, one {# day} other {# days}}. Meta can spend a little more or less on some days.",
+    "estimateTitle": "What it could bring",
+    "bigJump": "That is much more than last time. Results usually don't grow as fast as spend.",
+    "overLimit": "This plan comes to {total}, more than your saved monthly budget allows ({limit}). Lower the budget or the days, or change your monthly budget in Settings.",
+    "openSettings": "Open Settings",
+    "budgetLow": "Enter at least {min} a day.",
+    "budgetHigh": "Enter no more than {max} a day.",
+    "daysInvalid": "Choose between 1 and 90 days.",
+    "prepare": "Prepare draft",
+    "readOnly": "Only owners and admins can prepare ads.",
+    "goneTitle": "This ad can't be copied",
+    "noBudgetTitle": "There is no budget to copy",
+    "lastRun": "Last time it ran {days, plural, one {# day} other {# days}} ({start} – {end}) and spent {spend}, about {perDay} a day.",
+    "lastRunOne": "Last time it ran on {start} and spent {spend}.",
+    "noRun": "It hasn't spent anything in the last {days} days.",
+    "setupDaily": "Its budget was {amount} a day.",
+    "setupLifetime": "Its budget was {amount} for {days, plural, one {# day} other {# days}}, about {perDay} a day.",
+    "setupLifetimeOpen": "Its budget was {amount} in total.",
+    "from": {
+      "daily": "Starts from its daily budget",
+      "lifetime": "Starts from its total budget split by day",
+      "actual": "Starts from what it actually spent per day",
+      "account": "Starts from your account's usual spend per day"
+    },
+    "fromDays": {
+      "schedule": "for the days it was scheduled.",
+      "actual": "for as many days as it ran last time.",
+      "owner": "for your usual number of days.",
+      "usual": "for one week."
+    }
   }
 }

@@ -1,19 +1,16 @@
 'use client';
-import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { Alert, Button } from '@mantine/core';
+import { Button } from '@mantine/core';
 import { Eye, Lightbulb, TriangleAlert } from 'lucide-react';
 import { STATS_DAYS, type IdleSuggestion } from '@/lib/shared/suggestions/idle';
 import { MediaImage } from '@/components/campaigns/exploration/AdvertisingExplorer';
-import { prepareRestartDraftAction } from '@/lib/server/actions/suggestions/restart';
 import ProjectionChart from './ProjectionChart';
 import styles from './IdleSuggestionCard.module.css';
 
 /**
  * "Your ads are off" card in the Insights popup: run the best ad again (paused draft for review)
- * or open Quick ad with the same budget prefilled. An ad account problem Meta reports comes first.
+ * (opens the "Run this ad again" plan page) or open Quick ad with the same budget prefilled. An ad account problem Meta reports comes first.
  * In preview/history (`interactive = false`) the buttons are shown but do nothing.
  *
  * Reading order, for owners of every age: the ad's picture and its three plain numbers, then
@@ -24,9 +21,6 @@ export default function IdleSuggestionCard({ suggestion, currency, interactive =
   const t = useTranslations('suggestion');
   const tAll = useTranslations();
   const locale = useLocale();
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
   const intlLocale = locale === 'es' ? 'es-US' : 'en-US';
   const date = new Intl.DateTimeFormat(intlLocale, { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${suggestion.lastSpendDay}T12:00:00Z`));
   // Budgets read as whole amounts when they are; costs always show cents so a range reads evenly.
@@ -51,12 +45,8 @@ export default function IdleSuggestionCard({ suggestion, currency, interactive =
     );
   }
 
-  const prepare = () => start(async () => {
-    setError(null);
-    const result = await prepareRestartDraftAction(suggestion.adSetId);
-    if (!result.success) { setError(result.error?.userMessage ?? t('error.failed')); return; }
-    if (result.data) router.push(result.data.href);
-  });
+  // The plan page lets the owner choose budget and days before a draft is made.
+  const planHref = `/campaigns/rerun?adSet=${encodeURIComponent(suggestion.adSetId)}`;
   const quickHref = `/campaigns/quick?days=${suggestion.days}${suggestion.dailyBudget !== null ? `&budget=${suggestion.dailyBudget}` : ''}`;
   const { forecast, stats } = suggestion;
   const kind = suggestion.result?.kind ?? 'results';
@@ -129,14 +119,15 @@ export default function IdleSuggestionCard({ suggestion, currency, interactive =
       <div className={styles.actions}>
         {/* Preview and history keep the real button look (main vs. second choice); they do nothing there. */}
         {suggestion.dailyBudget !== null && (
-          <Button size="md" onClick={interactive ? prepare : undefined} loading={pending} aria-disabled={!interactive || undefined}>{t('prepare')}</Button>
+          interactive
+            ? <Button size="md" component={Link} href={planHref}>{t('prepare')}</Button>
+            : <Button size="md" aria-disabled>{t('prepare')}</Button>
         )}
         {interactive
           ? <Button size="md" component={Link} href={quickHref} variant="default">{t('newAd')}</Button>
           : <Button size="md" variant="default" aria-disabled>{t('newAd')}</Button>}
       </div>
       <p className={styles.reassure}><Eye size={16} aria-hidden="true" />{t('review')}</p>
-      {error && <Alert color="red" variant="light" role="alert">{error}</Alert>}
     </section>
   );
 }

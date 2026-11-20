@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { createHash } from 'node:crypto';
+import { profileSpendLimit } from '@/lib/shared/campaigns/budgetGuardrail';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { asRecord, asString, ErrorCode } from '@/lib/shared';
 import {
@@ -323,8 +324,7 @@ export function validateBudget(input: {
     input.budgetType === 'daily'
       ? input.budgetAmount * input.durationDays
       : input.budgetAmount;
-  const coveredMonths = Math.max(1, input.durationDays / 30);
-  const profileGuardrail = monthlyCap * coveredMonths * 1.25;
+  const profileGuardrail = profileSpendLimit(monthlyCap, input.durationDays);
 
   if (projectedSpend > profileGuardrail) {
     throw new CampaignReuseDraftError(

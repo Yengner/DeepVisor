@@ -80,9 +80,20 @@ stretch within 14 days, the popup carries `payload.suggestion` (source key `sugg
   estimate from the best and worst weekly cost per result (needs 2 weeks with 3+ results; else
   no number). The card shows the ad like Overview does: the latest ad's picture or video poster
   (`mediaFor`, fallbacks on broken links), the ad set name, and its last-90-day totals
-  (`aggregate`, `QuickStats`). "Prepare this ad again" (`prepareRestartDraftAction`) makes a paused,
-  review-required Run again draft copying the latest ad; "Try a new photo or video" opens Quick ad
-  with `?budget=&days=` prefilled. Nothing is published or sent to Meta.
+  (`aggregate`, `QuickStats`). "Prepare this ad again" opens the plan page
+  `/campaigns/rerun?adSet=<id>` (`loadRerunPlan`, `RerunPlanForm`). It shows what the ad did last
+  time (`lastRun`: latest spending stretch, quiet gaps of ≤2 days joined; and its daily or lifetime
+  budget and schedule, `sourceBudgetSetup`) and starts the plan from it (`rerunDefaults`, first rule
+  that applies). Days: scheduled run length → days it actually ran → the owner's usual run length →
+  7. Daily budget: its daily budget → lifetime ÷ scheduled days → actual spend per day → the
+  account's average per spending day. The popup's "If you run it again" line uses the same start.
+  The owner can change the daily budget (− / +) and days (3/7/14/other, 1–90); the page shows the dates (starting tomorrow, account
+  timezone), "about <total>", the live estimate (`rerunPlan` → `restartForecast`, same chart), a note
+  when the budget is over 2× last time, and the saved-monthly-budget limit (`profileSpendLimit`, the
+  draft builder's own rule) before the button. "Prepare draft" (`prepareRestartDraftAction` with
+  `{ dailyBudget, days }`, re-validated) makes a paused, review-required Run again draft copying the
+  latest ad. Rules only, no AI. "Try a new photo or video" opens Quick ad with `?budget=&days=`
+  prefilled. Nothing is published or sent to Meta.
 
 **First look (welcome).** A person's first popup for an ad account (no `insight_reviews` row yet;
 `present_insights` creates it) carries `payload.welcome` (source key `welcome:<kind>`), chosen by

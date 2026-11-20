@@ -8,7 +8,9 @@ import { minorToAmount } from '@/lib/shared/agent/facts';
 import { dayIn } from '@/lib/shared/time/zone';
 import { shiftReportDay } from '@/lib/shared/reports/dates';
 import { weekStartOf } from '@/lib/shared/bookings/checkin';
-import { idleSuggestionDue, restartForecast, RESTART_DAYS, STATS_DAYS, type IdleSuggestion, type SuggestionMedia, type SuggestionStats, type WeekResult } from '@/lib/shared/suggestions/idle';
+import { idleSuggestionDue, restartForecast, STATS_DAYS, type IdleSuggestion, type SuggestionMedia, type SuggestionStats, type WeekResult } from '@/lib/shared/suggestions/idle';
+import { averagePerSpendingDay, lastRun, rerunDefaults, scheduledDays, type BudgetSetup, type DaySpend, type LastRun, type RerunDefaults } from '@/lib/shared/suggestions/lastRun';
+import { loadAdFacts } from '@/lib/server/agent/facts';
 import { aggregate, mediaFor } from '@/lib/server/campaigns/exploration/model';
 import { resultDefinitionFor, type ResultDefinition } from '@/lib/shared/performance/resultChannel';
 
@@ -16,6 +18,8 @@ type Db = SupabaseClient<Database>;
 type Input = { businessId: string; accountId: string; timezone: string; currency: string | null; today: string; activeNow: boolean | null;
   /** First popup after setup: suggest right away instead of after the 7-day idle wait. */
   welcome?: boolean };
+/** What loading one ad set's budget, history and picture needs. */
+type SourceInput = Pick<Input, 'businessId' | 'accountId' | 'currency' | 'today'>;
 
 /** Latest account-local day with ad-set spend, or null when the account never spent. */
 export async function lastSpendDay(db: Db, accountId: string): Promise<string | null> {
@@ -33,33 +37,49 @@ async function lastSuggestedDay(db: Db, input: Input): Promise<string | null> {
   return data ? dayIn(input.timezone, new Date(data.created_at)) : null;
 }
 
-/** Daily budget of the ad set, or of its campaign when the campaign holds the budget; major units. */
-export async function sourceDailyBudget(db: Db, accountId: string, adSetId: string, campaignId: string, currency: string | null): Promise<number | null> {
-  if (!currency) return null;
+/**
+ * How the ad set was set up: its daily or lifetime budget and scheduled run, or its campaign's
+ * when the campaign holds the budget (campaign budget optimization). Major units.
+ */
+export async function sourceBudgetSetup(db: Db, accountId: string, adSetId: string, campaignId: string, currency: string | null): Promise<BudgetSetup> {
+  const none: BudgetSetup = { dailyBudget: null, lifetimeBudget: null, scheduledDays: null };
+  if (!currency) return none;
   const [adSet, campaign] = await Promise.all([
     db.from('adset_dims').select('raw').eq('ad_account_id', accountId).eq('external_id', adSetId).maybeSingle(),
     db.from('campaign_dims').select('raw').eq('ad_account_id', accountId).eq('external_id', campaignId).maybeSingle(),
   ]);
   if (adSet.error) throw adSet.error;
   if (campaign.error) throw campaign.error;
-  const minor = (raw: unknown) => {
-    const value = raw && typeof raw === 'object' ? (raw as Record<string, unknown>).daily_budget : null;
+  const record = (raw: unknown) => raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
+  const minor = (value: unknown) => {
     const n = typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : typeof value === 'number' ? value : NaN;
-    return Number.isFinite(n) && n > 0 ? n : null;
+    return Number.isFinite(n) && n > 0 ? minorToAmount(n, currency) : null;
   };
-  const amount = minor(adSet.data?.raw) ?? minor(campaign.data?.raw);
-  return amount === null ? null : minorToAmount(amount, currency);
+  const a = record(adSet.data?.raw), c = record(campaign.data?.raw);
+  const adSetHasBudget = minor(a.daily_budget) !== null || minor(a.lifetime_budget) !== null;
+  const owner = adSetHasBudget ? a : c;
+  return {
+    dailyBudget: minor(owner.daily_budget),
+    lifetimeBudget: minor(owner.lifetime_budget),
+    // Ad sets end at end_time, campaigns at stop_time.
+    scheduledDays: scheduledDays(a.start_time, a.end_time) ?? scheduledDays(c.start_time, c.stop_time),
+  };
+}
+
+/** Daily budget of the ad set, or of its campaign when the campaign holds the budget; major units. */
+export async function sourceDailyBudget(db: Db, accountId: string, adSetId: string, campaignId: string, currency: string | null): Promise<number | null> {
+  return (await sourceBudgetSetup(db, accountId, adSetId, campaignId, currency)).dailyBudget;
 }
 
 /**
  * The ad set's saved daily rows for the last STATS_DAYS days: weekly totals for the estimate and
  * the same totals the dashboard cards show (`aggregate`). Empty when the ad set is not saved.
  */
-async function adSetHistory(db: Db, input: Input, adSetId: string, destinationType: string | null): Promise<{ weeks: WeekResult[]; stats: SuggestionStats | null; result: ResultDefinition | null }> {
+async function adSetHistory(db: Db, input: SourceInput, adSetId: string, destinationType: string | null): Promise<{ weeks: WeekResult[]; days: DaySpend[]; stats: SuggestionStats | null; result: ResultDefinition | null }> {
   const { data: entity, error } = await db.from('ad_entities').select('id').eq('business_id', input.businessId)
     .eq('ad_account_id', input.accountId).eq('entity_level', 'adset').eq('external_id', adSetId).maybeSingle();
   if (error) throw error;
-  if (!entity) return { weeks: [], stats: null, result: null };
+  if (!entity) return { weeks: [], days: [], stats: null, result: null };
   const rows = await readAllPages((from, to) => db.from('ad_entity_performance_daily')
     .select('entity_id, day, currency_code, spend, leads, messages, calls, impressions, clicks, reach, inline_link_clicks')
     .eq('entity_id', entity.id).gte('day', shiftReportDay(input.today, -(STATS_DAYS - 1))).order('day').range(from, to), { nullDataError: 'Performance unavailable' });
@@ -77,11 +97,11 @@ async function adSetHistory(db: Db, input: Input, adSetId: string, destinationTy
     spend: m.spend, results: m.results, costPerResult: m.costPerResult, impressions: m.impressions, clicks: m.clicks,
     ctr: m.ctr, cpc: m.cpc, cpm: m.cpm, reach: m.reach, frequency: m.frequency,
   } : null;
-  return { weeks: [...weeks.values()], stats, result: rows.length ? resultDefinitionFor(rows, () => destinationType) : null };
+  return { weeks: [...weeks.values()], days: rows.map(r => ({ day: r.day, spend: r.spend })), stats, result: rows.length ? resultDefinitionFor(rows, () => destinationType) : null };
 }
 
 /** Picture of the ad set's latest ad, chosen exactly like the dashboard cards (`mediaFor`). */
-async function adSetMedia(db: Db, input: Input, adSetId: string): Promise<SuggestionMedia | null> {
+async function adSetMedia(db: Db, input: SourceInput, adSetId: string): Promise<SuggestionMedia | null> {
   const { data: ads, error } = await db.from('ad_dims').select('creative_id, status').eq('ad_account_id', input.accountId)
     .eq('adset_external_id', adSetId).not('creative_id', 'is', null).order('created_time', { ascending: false, nullsFirst: false }).limit(5);
   if (error) throw error;
@@ -91,6 +111,52 @@ async function adSetMedia(db: Db, input: Input, adSetId: string): Promise<Sugges
     .eq('ad_account_id', input.accountId).eq('platform_creative_id', ad.creative_id).maybeSingle();
   if (creativeError) throw creativeError;
   return creative ? mediaFor(creative) : null;
+}
+
+/**
+ * One ad set's daily budget, last-90-day history (weekly totals + dashboard totals) and picture.
+ * Shared by the popup suggestion and the "Run this ad again" plan page so both show the same thing.
+ */
+export async function restartSourceDetails(db: Db, input: SourceInput, source: { adSetId: string; campaignId: string; destinationType: string | null }) {
+  const [setup, history, media] = await Promise.all([
+    sourceBudgetSetup(db, input.accountId, source.adSetId, source.campaignId, input.currency),
+    adSetHistory(db, input, source.adSetId, source.destinationType),
+    // A missing picture never blocks the suggestion; the card shows a placeholder.
+    adSetMedia(db, input, source.adSetId).catch(() => null),
+  ]);
+  const run = lastRun(history.days);
+  const start = await startingPlan(db, input, setup, run);
+  return { setup, run, start, history, media };
+}
+
+/**
+ * The plan a rerun starts from (`rerunDefaults`). The owner's usual run length and the account's
+ * average daily spend are read only when the ad itself cannot answer.
+ */
+async function startingPlan(db: Db, input: SourceInput, setup: BudgetSetup, run: LastRun | null): Promise<RerunDefaults> {
+  let plan = rerunDefaults({ setup, run, ownerDays: null, accountPerDay: null });
+  if (plan.daysSource === 'usual' || plan.budgetSource === null) {
+    const [ownerDays, accountPerDay] = await Promise.all([
+      plan.daysSource === 'usual' ? usualRunDays(db, input).catch(() => null) : null,
+      plan.budgetSource === null ? accountAverageDailySpend(db, input).catch(() => null) : null,
+    ]);
+    plan = rerunDefaults({ setup, run, ownerDays, accountPerDay });
+  }
+  return plan;
+}
+
+/** The owner's saved (or history-derived) usual run length, when there is one. */
+async function usualRunDays(db: Db, input: SourceInput): Promise<number | null> {
+  const { facts } = await loadAdFacts(db, { businessId: input.businessId, adAccountId: input.accountId });
+  return facts.run_days.source ? facts.run_days.value.days : null;
+}
+
+/** Account spend per day that had spend, over the last STATS_DAYS days (ad-set rows summed by day). */
+async function accountAverageDailySpend(db: Db, input: SourceInput): Promise<number | null> {
+  const rows = await readAllPages((from, to) => db.from('ad_entity_performance_daily').select('day, spend')
+    .eq('ad_account_id', input.accountId).eq('entity_level', 'adset').gte('day', shiftReportDay(input.today, -(STATS_DAYS - 1)))
+    .order('day').range(from, to), { nullDataError: 'Performance unavailable' });
+  return averagePerSpendingDay(rows);
 }
 
 /**
@@ -114,18 +180,15 @@ export async function loadIdleSuggestion(db: Db, input: Input): Promise<IdleSugg
 
   const source = chooseSourceAdSet(await messagingSourceCandidates({ db, businessId: input.businessId, accountId: input.accountId, today: input.today }));
   if (!source) return null;
-  const [dailyBudget, history, media] = await Promise.all([
-    sourceDailyBudget(db, input.accountId, source.adSetId, source.campaignId, input.currency),
-    adSetHistory(db, input, source.adSetId, source.destinationType),
-    // A missing picture never blocks the suggestion; the card shows a placeholder.
-    adSetMedia(db, input, source.adSetId).catch(() => null),
-  ]);
+  const { start, history, media } = await restartSourceDetails(db, input, source);
   const weeks = history.weeks;
+  // The popup's "If you run it again" line starts from the same plan as the plan page.
+  const { dailyBudget, days } = start;
   return {
     kind: 'restart', lastSpendDay: spendDay!, adSetId: source.adSetId, adSetName: source.name, reason: source.reason,
     costPerResult: source.spend !== null && source.results ? source.spend / source.results : null,
-    dailyBudget, days: RESTART_DAYS,
-    forecast: dailyBudget === null ? null : restartForecast({ dailyBudget, days: RESTART_DAYS, weeks }),
+    dailyBudget, days,
+    forecast: dailyBudget === null ? null : restartForecast({ dailyBudget, days, weeks }),
     media, stats: history.stats, result: history.result,
   };
 }

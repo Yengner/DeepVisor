@@ -853,5 +853,52 @@
       "body": "Dinos qué pasó y qué esperabas. Por favor no incluyas contraseñas.",
       "send": "Enviar comentarios"
     }
+  },
+  "rerun": {
+    "metaTitle": "Repetir este anuncio",
+    "title": "Repetir este anuncio",
+    "lead": "Elige tu presupuesto y cuánto tiempo corre. Revisas el borrador antes de que algo se publique.",
+    "back": "Volver al Resumen",
+    "planTitle": "Tu plan",
+    "budget": "Presupuesto diario",
+    "less": "Gastar menos al día",
+    "more": "Gastar más al día",
+    "days": "Cuántos días",
+    "other": "Otro",
+    "dayChoice": "{count, plural, one {# día} other {# días}}",
+    "customDays": "Número de días",
+    "runs": "Corre del {start} al {end}",
+    "runsOne": "Corre el {start}",
+    "total": "Unos {total}",
+    "totalDetail": "{budget} al día × {days, plural, one {# día} other {# días}}. Meta puede gastar un poco más o menos algunos días.",
+    "estimateTitle": "Lo que podría traer",
+    "bigJump": "Es mucho más que la última vez. Los resultados no suelen crecer tan rápido como el gasto.",
+    "overLimit": "Este plan suma {total}, más de lo que permite tu presupuesto mensual guardado ({limit}). Baja el presupuesto o los días, o cambia tu presupuesto mensual en Ajustes.",
+    "openSettings": "Abrir Ajustes",
+    "budgetLow": "Escribe al menos {min} al día.",
+    "budgetHigh": "Escribe no más de {max} al día.",
+    "daysInvalid": "Elige entre 1 y 90 días.",
+    "prepare": "Preparar borrador",
+    "readOnly": "Solo dueños(as) y administradores(as) pueden preparar anuncios.",
+    "goneTitle": "Este anuncio no se puede copiar",
+    "noBudgetTitle": "No hay presupuesto para copiar",
+    "lastRun": "La última vez corrió {days, plural, one {# día} other {# días}} ({start} – {end}) y gastó {spend}, unos {perDay} al día.",
+    "lastRunOne": "La última vez corrió el {start} y gastó {spend}.",
+    "noRun": "No ha gastado nada en los últimos {days} días.",
+    "setupDaily": "Su presupuesto era de {amount} al día.",
+    "setupLifetime": "Su presupuesto era de {amount} por {days, plural, one {# día} other {# días}}, unos {perDay} al día.",
+    "setupLifetimeOpen": "Su presupuesto era de {amount} en total.",
+    "from": {
+      "daily": "Empieza con su presupuesto diario",
+      "lifetime": "Empieza con su presupuesto total dividido por día",
+      "actual": "Empieza con lo que de verdad gastó por día",
+      "account": "Empieza con lo que tu cuenta suele gastar por día"
+    },
+    "fromDays": {
+      "schedule": "por los días para los que estaba programado.",
+      "actual": "por los mismos días que corrió la última vez.",
+      "owner": "por tu número de días habitual.",
+      "usual": "por una semana."
+    }
   }
 }

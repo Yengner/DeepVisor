@@ -1,0 +1,171 @@
+/*
+ * "Run this ad again", in the Insights popup's design language (IdleSuggestionCard.module.css):
+ * character + headline + one sentence; the ad's picture and three plain numbers; one blue "plan"
+ * panel with the total and the self-drawing estimate; one main button and a quieter second one.
+ * Nothing under 13px, 48px controls, --dv-* tokens (dark mode follows).
+ */
+.page {
+  display: grid;
+  gap: 20px;
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+  padding: 16px 24px 64px;
+  color: var(--dv-text);
+  font-size: 16px;
+  line-height: 1.55;
+}
+.page :focus-visible { outline: 3px solid var(--dv-primary-strong); outline-offset: 3px; }
+.page p { margin: 0; }
+
+.back {
+  display: inline-flex; align-items: center; gap: 8px; justify-self: start; min-height: 44px;
+  font-size: 15px; font-weight: 700; color: var(--dv-primary-strong); text-decoration: none;
+}
+.back:hover { text-decoration: underline; }
+
+.header { display: flex; align-items: center; gap: 18px; }
+.headerText { display: grid; gap: 6px; min-width: 0; }
+.title {
+  margin: 0; font-family: var(--font-display, inherit);
+  font-size: clamp(26px, 4vw, 32px); font-weight: 800; line-height: 1.15; letter-spacing: -0.025em;
+}
+.lead { max-width: 54ch; font-size: 17px; color: var(--dv-text-muted); }
+.message { font-size: 16px; color: var(--dv-text-muted); }
+
+.card {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid var(--dv-card-border);
+  border-radius: var(--dv-card-radius);
+  background: var(--dv-card-panel);
+}
+.card > * { min-width: 0; }
+.cardTitle {
+  margin: 0; font-family: var(--font-display, inherit);
+  font-size: 21px; font-weight: 700; line-height: 1.25; letter-spacing: -0.02em;
+}
+
+/* ---------- The ad ---------- */
+.ad { display: grid; grid-template-columns: minmax(130px, 180px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.media {
+  display: flex; aspect-ratio: 4 / 5; max-height: 225px; overflow: hidden; border-radius: 12px;
+  background: var(--dv-surface-muted);
+  box-shadow: 0 6px 18px light-dark(rgb(16 44 70 / 0.12), rgb(0 0 0 / 0.35));
+}
+.adBody { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.adName { margin: 0; font-size: 18px; font-weight: 800; line-height: 1.3; overflow-wrap: anywhere; }
+.muted { font-size: 13px; font-weight: 600; color: var(--dv-text-muted); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.stats > div { display: grid; gap: 2px; min-width: 0; }
+.stats dt { font-size: 13px; font-weight: 600; color: var(--dv-text-muted); overflow-wrap: anywhere; }
+.stats dd {
+  margin: 0; font-family: var(--font-display, inherit); font-size: 20px; font-weight: 700;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; overflow-wrap: anywhere;
+}
+.stats .lead dd { font-size: 26px; color: var(--dv-primary-strong); }
+.lastTime { display: grid; gap: 4px; padding-top: 10px; border-top: 1px solid var(--dv-card-border); font-size: 15px; color: var(--dv-text-muted); }
+.planHead { display: grid; gap: 4px; }
+.startsFrom { font-size: 15px; color: var(--dv-text-muted); }
+
+/* ---------- The owner's choices ---------- */
+.field { display: grid; gap: 8px; }
+.label { font-size: 15px; font-weight: 700; }
+.stepper { display: grid; grid-template-columns: 48px minmax(0, 220px) 48px; gap: 10px; align-items: center; }
+.stepper :global(.mantine-ActionIcon-root) { border-radius: var(--dv-radius-md); border-color: var(--dv-input-border); }
+.budgetInput {
+  min-height: 48px !important; text-align: center;
+  font-family: var(--font-display, inherit) !important; font-size: 22px !important; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--dv-input-border) !important; border-radius: var(--dv-radius-md) !important;
+}
+.customDays { max-width: 220px; }
+.field :global(.mantine-SegmentedControl-root) { padding: 4px; background: var(--dv-card-inset); }
+.field :global(.mantine-SegmentedControl-label) {
+  display: flex; align-items: center; justify-content: center; min-height: 42px;
+  padding-inline: 6px; font-size: 15px; font-weight: 700; line-height: 1.2; white-space: normal;
+}
+.field :global(.mantine-InputWrapper-label) { margin-bottom: 6px; font-size: 15px; font-weight: 700; }
+.field :global(.mantine-NumberInput-input) { min-height: 48px; font-size: 16px; }
+
+.dates, .problem { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; }
+.dates svg { flex: none; color: var(--dv-primary-strong); }
+.problem { color: var(--dv-gap-text); }
+.problem svg { flex: none; }
+
+/* ---------- The one blue panel: total, then what it could bring ---------- */
+.plan {
+  display: grid; gap: 10px; padding: 20px; border-radius: 14px;
+  background: var(--dv-primary-soft);
+}
+.total {
+  font-family: var(--font-display, inherit); font-size: 34px; font-weight: 800; line-height: 1.1;
+  letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--dv-primary-strong);
+}
+.totalDetail { font-size: 15px; color: var(--dv-text-muted); }
+.planHeading { margin: 8px 0 0; font-size: 14px; font-weight: 700; color: var(--dv-primary-strong); }
+.estimate { font-size: 14px; color: var(--dv-text-muted); }
+.estimate strong { font-size: 16px; color: var(--dv-text); }
+.note { padding-top: 4px; font-size: 14px; font-weight: 600; color: var(--dv-gap-text); }
+/* The chart's labels scale with its width, so it never stretches across the panel. */
+.plan > figure { width: 100%; max-width: 340px; justify-self: center; }
+
+/* Wide cards: the total reads across the top, the estimate text left and the drawing beside it
+   (the popup's "If you run it again" layout). */
+@container (min-width: 600px) {
+  .plan {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    grid-template-areas:
+      "total total"
+      "detail detail"
+      "heading chart"
+      "estimate chart"
+      "note chart";
+    align-items: start;
+    column-gap: 28px;
+    padding: 24px;
+  }
+  .plan > .total { grid-area: total; }
+  .plan > .totalDetail { grid-area: detail; }
+  .plan > .planHeading { grid-area: heading; }
+  .plan > .estimate { grid-area: estimate; }
+  .plan > .note { grid-area: note; }
+  .plan > figure { grid-area: chart; align-self: center; max-width: none; }
+  /* No estimate (too little history): the sentence uses the full width. */
+  .plan:not(:has(> figure)) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "total" "detail" "heading" "estimate" "note";
+  }
+}
+
+.limit {
+  display: grid; gap: 6px; padding: 16px 18px; border-radius: 12px;
+  border: 1px solid var(--dv-gap-border); background: var(--dv-gap-bg); color: var(--dv-gap-text);
+  font-size: 15px;
+}
+.limitLink { justify-self: start; font-weight: 700; color: inherit; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.actions :global(.mantine-Button-root) { min-height: 48px; font-size: 16px; }
+.reassure { display: flex; align-items: center; gap: 8px; margin-top: -8px !important; font-size: 14px; color: var(--dv-text-muted); }
+.reassure svg { flex: none; }
+
+@container (max-width: 520px) {
+  .ad { grid-template-columns: minmax(0, 1fr); }
+  .media { aspect-ratio: 16 / 10; max-height: 200px; }
+  .actions :global(.mantine-Button-root) { width: 100%; }
+  .stepper { grid-template-columns: 48px minmax(0, 1fr) 48px; }
+}
+@container (max-width: 340px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats .lead { grid-column: 1 / -1; }
+}
+@media (max-width: 40em) {
+  .page { padding: 8px 16px 48px; }
+  .card { padding: 18px; }
+  .header { align-items: flex-start; gap: 14px; }
+  .lead { font-size: 16px; }
+}
