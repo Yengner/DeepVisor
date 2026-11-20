@@ -2,7 +2,7 @@
 import { getTranslations } from 'next-intl/server';
 import { fail, ok, ErrorCode, type ApiResponse } from '@/lib/shared';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
-import { AssistantError, authorizeAssistant } from '@/lib/server/intelligence/assistant/access';
+import { AssistantError, authorizeSelectedMetaAccount } from '@/lib/server/intelligence/assistant/access';
 import { CampaignReuseDraftError, createCampaignReuseDraft } from '@/lib/server/campaigns/reuse';
 import { sourceDailyBudget } from '@/lib/server/suggestions/idle';
 import { dayIn, quickAdSchedule } from '@/lib/shared/quickAd/plan';
@@ -22,7 +22,7 @@ export async function prepareRestartDraftAction(adSetId: unknown): Promise<ApiRe
   const { role } = await getRequiredAppContext();
   if (role !== 'owner' && role !== 'admin') return fail('Forbidden', ErrorCode.FORBIDDEN, { userMessage: t('forbidden') });
   try {
-    const scope = await authorizeAssistant();
+    const scope = await authorizeSelectedMetaAccount();
     const zone = scope.account.timezone;
     if (!zone) return fail('No timezone', ErrorCode.VALIDATION_ERROR, { userMessage: t('failed') });
     const { data: adSet, error } = await scope.db.from('adset_dims').select('external_id, campaign_external_id, status')
@@ -50,7 +50,8 @@ export async function prepareRestartDraftAction(adSetId: unknown): Promise<ApiRe
     });
     return ok({ href: result.href });
   } catch (error) {
-    if (error instanceof AssistantError) return fail(error.message, ErrorCode.FORBIDDEN, { userMessage: t('account') });
+    // "Select your ad account" only when that is the actual problem (none selected, or not a usable Meta account).
+    if (error instanceof AssistantError) return fail(error.message, ErrorCode.FORBIDDEN, { userMessage: error.status === 409 || error.status === 403 ? t('account') : t('failed') });
     if (error instanceof CampaignReuseDraftError) return fail(error.message, ErrorCode.VALIDATION_ERROR, { userMessage: t('failed') });
     console.error('Restart draft failed', { code: (error as { code?: string })?.code });
     return fail('Restart draft failed', ErrorCode.DATABASE_ERROR, { userMessage: t('failed') });

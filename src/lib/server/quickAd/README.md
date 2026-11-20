@@ -16,7 +16,7 @@ write is reachable from this flow.
 
 ## How a draft is made
 
-1. Scope from `authorizeAssistant` (session business, selected Meta account, integration).
+1. Scope from `authorizeSelectedMetaAccount` (session business, selected Meta account, integration). It is not tied to the Ask DeepVisor beta switch (`DEEPVISOR_ASSISTANT`), so Quick ad works while the assistant is hidden.
 2. Answers from business facts (`server/agent`); missing ones are asked inline (owner/admin),
    then saved once.
 3. Source ad set from `adset_dims` (what the reuse flow reads): WhatsApp first, then other

@@ -5,7 +5,7 @@ vi.mock('@/lib/server/supabase/server',()=>({createServerClient:async()=>({auth:
 vi.mock('@/lib/server/supabase/admin',()=>({createAdminClient:mocks.admin}));
 vi.mock('@/lib/server/actions/app/context',()=>({getRequiredAppContext:mocks.context}));
 vi.mock('@/lib/server/actions/app/selection',()=>({resolveCurrentSelection:mocks.selection}));
-import { authorizeAssistant } from './access';
+import { authorizeAssistant, authorizeSelectedMetaAccount } from './access';
 function fixture(account:unknown={id:'account',platform_id:'meta'},integration:unknown={id:'integration',platform_id:'meta',platforms:{key:'meta'}}) {
  const eq=vi.fn();
  const db={from:vi.fn((table:string)=>{const q={select:vi.fn(),eq,maybeSingle:vi.fn().mockResolvedValue({data:table==='ad_accounts'?account:integration,error:null})};q.select.mockReturnValue(q);eq.mockReturnValue(q);return q;})};
@@ -30,4 +30,12 @@ it('refuses every request while Ask DeepVisor is hidden, before reading the sess
  vi.stubEnv('DEEPVISOR_ASSISTANT','');fixture();
  await expect(authorizeAssistant('account')).rejects.toMatchObject({status:404});
  expect(mocks.auth).not.toHaveBeenCalled();expect(mocks.admin).not.toHaveBeenCalled();
+});
+it('still verifies the selected Meta account for Quick ad and the restart suggestion while Ask DeepVisor is hidden',async()=>{
+ vi.stubEnv('DEEPVISOR_ASSISTANT','');const {eq}=fixture();
+ expect((await authorizeSelectedMetaAccount('account')).account.id).toBe('account');expect(eq).toHaveBeenCalledWith('business_id','business');
+ mocks.auth.mockResolvedValue({data:{user:null},error:null});
+ await expect(authorizeSelectedMetaAccount('account')).rejects.toMatchObject({status:401});
+ mocks.auth.mockResolvedValue({data:{user:{id:'user'}},error:null});mocks.selection.mockResolvedValue({selectedAdAccountId:null,selectedPlatformId:null});
+ await expect(authorizeSelectedMetaAccount()).rejects.toMatchObject({status:409});
 });

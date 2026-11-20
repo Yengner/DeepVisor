@@ -7,9 +7,12 @@ import { createAdminClient } from '@/lib/server/supabase/admin';
 export class AssistantError extends Error {
     constructor(message: string, readonly status = 400) { super(message); }
 }
-export async function authorizeAssistant(expectedAccount?: string) {
-    if (!assistantEnabled())
-        throw new AssistantError('Ask DeepVisor is not available yet.', 404);
+/**
+ * The signed-in person's selected Meta ad account, verified against their business. Quick ad and
+ * the "run your best ad again" suggestion use this directly: they are not part of Ask DeepVisor
+ * and must keep working while the assistant is hidden for the beta.
+ */
+export async function authorizeSelectedMetaAccount(expectedAccount?: string) {
     const session = await createServerClient();
     const { data, error } = await session.auth.getUser();
     if (error || !data.user)
@@ -31,4 +34,10 @@ export async function authorizeAssistant(expectedAccount?: string) {
         throw new AssistantError('Selected Meta account is unavailable.', 403);
     return { db, businessId: context.businessId, userId: data.user.id, account, integration };
 }
-export type AssistantAccess = Awaited<ReturnType<typeof authorizeAssistant>>;
+/** Ask DeepVisor (the AI assistant) only: the beta switch first, then the same account check. */
+export async function authorizeAssistant(expectedAccount?: string) {
+    if (!assistantEnabled())
+        throw new AssistantError('Ask DeepVisor is not available yet.', 404);
+    return authorizeSelectedMetaAccount(expectedAccount);
+}
+export type AssistantAccess = Awaited<ReturnType<typeof authorizeSelectedMetaAccount>>;

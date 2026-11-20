@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import DesignSurface from '@/components/design/DesignSurface';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
-import { AssistantError, authorizeAssistant } from '@/lib/server/intelligence/assistant/access';
+import { AssistantError, authorizeSelectedMetaAccount } from '@/lib/server/intelligence/assistant/access';
 import { loadQuickAdContext, quickAdSummary } from '@/lib/server/quickAd/service';
 import AdFactsCard from '../../settings/components/AdFactsCard';
 import QuickAdForm from './QuickAdForm';
@@ -24,7 +24,7 @@ export default async function QuickAdPage({ searchParams }: { searchParams: Prom
   const [{ role }, t, params] = await Promise.all([getRequiredAppContext(), getTranslations('quickAd'), searchParams]);
   let scope;
   try {
-    scope = await authorizeAssistant();
+    scope = await authorizeSelectedMetaAccount();
   } catch (error) {
     if (!(error instanceof AssistantError)) throw error;
     return <DesignSurface label="DeepVisor · Quick ad"><p>{t.rich('selectAccount', { link: chunks => <Link href="/integration">{chunks}</Link> })}</p></DesignSurface>;
