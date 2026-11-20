@@ -163,11 +163,13 @@ async function welcomeFor(c:ReturnType<typeof db>,account:string,activeAds:numbe
  if(activeAds!==null&&activeAds>0)return chooseWelcome(activeAds,null);
  return chooseWelcome(activeAds,await lastSpendDay(c,account).catch(()=>undefined));
 }
-export async function prepare(s:Scope,token:string):Promise<(SavedPresentation&{additionalUpdates?:boolean})|null>{
+/** Returned while a first look must wait for the account's setup job to finish; the client asks again. */
+export const FIRST_LOOK_WAITING='waiting' as const;
+export async function prepare(s:Scope,token:string):Promise<(SavedPresentation&{additionalUpdates?:boolean})|typeof FIRST_LOOK_WAITING|null>{
  const c=db();
  // While the account is still being set up, saved data is partial: no popup until it is ready.
  const setup=await c.from('ad_account_sync_state').select('first_full_sync_completed').eq('ad_account_id',s.account).maybeSingle();
- if(setup.error)throw setup.error;if(setup.data&&!setup.data.first_full_sync_completed)return null;
+ if(setup.error)throw setup.error;if(setup.data&&!setup.data.first_full_sync_completed)return FIRST_LOOK_WAITING;
  await observeSavedSources(s);
  const [review,pending,pub,activeAds]=await Promise.all([
  c.from('insight_reviews').select('*').eq('user_id',s.user).eq('ad_account_id',s.account).maybeSingle(),
@@ -176,6 +178,9 @@ export async function prepare(s:Scope,token:string):Promise<(SavedPresentation&{
  // Nothing running and nothing spent: no recap and no missing-data notes, because no data was expected.
  const idle=running===false;
  if(review.error)throw review.error;if(pending.error)throw pending.error;
+ // The account is marked set up a few seconds before its job finishes. A first look prepared in that
+ // gap would skip the recap and use up the one-time welcome, so it waits for the job to complete.
+ if(!review.data&&pub.running)return FIRST_LOOK_WAITING;
  // No review row yet: this person's first popup for this ad account (present_insights creates it).
  const welcome=!review.data?await welcomeFor(c,s.account,activeAds):undefined;
  const sources=pending.data as unknown as {issues:Database['public']['Tables']['insight_issues']['Row'][];events:Array<{id:string;root_id:string;affected_ids:string[]}>};

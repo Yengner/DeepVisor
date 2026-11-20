@@ -332,6 +332,8 @@ export const insightModalClassNames = { content: styles.modalContent, header: st
 export default function InsightsPopup({ accountId }: { accountId: string | null }) {
   const [saved, setSaved] = useState<SavedPresentation | null>(null), [error, setError] = useState(''), [busy, setBusy] = useState(false), [additional, setAdditional] = useState(false);
   const active = useRef<SavedPresentation | null>(null), token = useRef(''), inflight = useRef(false), mounted = useRef(true);
+  // A first look waiting on account setup: ask again every few seconds, for up to about three minutes.
+  const retry = useRef<number | undefined>(undefined), waits = useRef(0);
   const mobile = useMediaQuery('(max-width: 600px)'), pathname = usePathname(), router = useRouter();
   const load = useCallback(async () => {
     if (!accountId || pathname.startsWith('/insights') || inflight.current || document.visibilityState !== 'visible') return;
@@ -343,6 +345,11 @@ export default function InsightsPopup({ accountId }: { accountId: string | null 
       if (!res.ok) throw new Error();
       const data = await res.json();
       if (mounted.current) setAdditional(Boolean(data.presentation?.additionalUpdates));
+      if (mounted.current && !data.presentation && typeof data.retryInSeconds === 'number' && waits.current < 36) {
+        waits.current += 1;
+        window.clearTimeout(retry.current);
+        retry.current = window.setTimeout(() => window.dispatchEvent(new Event('deepvisor:data-updated')), data.retryInSeconds * 1000);
+      } else if (data.presentation) waits.current = 0;
       if (mounted.current && data.presentation && !active.current && !document.querySelector('[role="dialog"],dialog[open]')) { active.current = data.presentation; setSaved(data.presentation); setError(''); router.refresh(); /* the bell reads the notification this just created */ }
     } catch {
       if (mounted.current) setError('Updates are temporarily unavailable. Your advertising is unchanged.');
@@ -355,7 +362,7 @@ export default function InsightsPopup({ accountId }: { accountId: string | null 
     refresh();
     window.addEventListener('deepvisor:data-updated', refresh); window.addEventListener('focus', refresh); document.addEventListener('visibilitychange', refresh);
     const interval = window.setInterval(() => { if (active.current) void load(); }, 120000);
-    return () => { mounted.current = false; window.clearInterval(interval); window.removeEventListener('deepvisor:data-updated', refresh); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
+    return () => { mounted.current = false; window.clearInterval(interval); window.clearTimeout(retry.current); window.removeEventListener('deepvisor:data-updated', refresh); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
   }, [load, pathname]);
   async function dismiss() {
     if (!saved || busy) return;

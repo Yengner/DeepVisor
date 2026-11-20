@@ -104,21 +104,23 @@ const performance = cache(async (context: OverviewContext, period: Period) => {
   const stored = controlPerformance(rows, entities, period, context.today, context.account!.currency_code);
   const dated: Insight[] = rows.map(row => ({ ...row, externalId: row.entity_id, publisher: 'combined', label: '' }));
   if (resourceRefreshEnabled()) {
-    return withContext({ ...stored,
+    return withContext({
+      ...stored,
       ...comparisons(dated, 'combined', period, context.today, context.account!.currency_code, live.canonicalFetchedAt ?? '', context.now,
-        { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) }, dated, stored.result);
+        { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' })
+    }, dated, stored.result);
   }
   return withContext({ ...stored, deltas: {}, comparison: 'Comparison unavailable while using stored fallback data.' }, dated, stored.result);
 });
 function timestamp(at: string | null | undefined, zone: string) {
   return at && Number.isFinite(Date.parse(at))
     ? new Intl.DateTimeFormat("en", {
-        timeZone: zone,
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      }).format(new Date(at))
+      timeZone: zone,
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(at))
     : "Not recorded";
 }
 function Loading({
@@ -277,6 +279,8 @@ async function Activity({ context }: { context: OverviewContext }) {
     </section>
   );
 }
+
+
 /**
  * Weekly "how many became appointments?" check-in. Optional: a failure or an account without a
  * timezone (unreliable week boundaries) renders nothing rather than blocking the page.
