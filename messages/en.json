@@ -658,5 +658,106 @@
       "notFound": "That Meta connection was not found.",
       "failed": "The data could not be deleted. Nothing was changed; please try again."
     }
+  },
+  "settingsPage": {
+    "title": "Settings",
+    "lead": "Your business, your language, and how DeepVisor keeps in touch.",
+    "navLabel": "Settings sections",
+    "nav": {
+      "business": "Your business",
+      "language": "Language",
+      "ads": "Ad answers",
+      "alerts": "Alerts",
+      "look": "Look",
+      "connections": "Connections",
+      "account": "Plan and data"
+    },
+    "profileCard": {
+      "title": "Your profile",
+      "hint": "Name, phone and sign-in email",
+      "open": "Open profile"
+    },
+    "business": {
+      "title": "Your business",
+      "lead": "What DeepVisor knows about your salon. Keep it current so your ads sound like you.",
+      "filled": "{count} of {total}",
+      "filledLabel": "business details saved",
+      "setupTitle": "Setup is not finished",
+      "setupBody": "Fill in the rest and DeepVisor can write better ads for you.",
+      "goals": "Your goals",
+      "noGoals": "No goals saved yet.",
+      "platforms": "Where you advertise",
+      "noPlatforms": "No platforms saved yet.",
+      "defaultsTitle": "Ad defaults",
+      "defaultsLead": "Used when a past ad does not already have the answer."
+    },
+    "language": {
+      "lead": "Pick the language you read DeepVisor in."
+    },
+    "ads": {
+      "lead": "Short answers that DeepVisor uses when it drafts an ad."
+    },
+    "alerts": {
+      "title": "Alerts and reports",
+      "lead": "Choose what DeepVisor tells you, and when it stays quiet.",
+      "recent": "Recent messages",
+      "none": "No messages yet",
+      "noneHint": "Sync problems and important changes will show up here.",
+      "unread": "{count} unread",
+      "new": "New"
+    },
+    "look": {
+      "title": "Look",
+      "lead": "Light is easiest in a bright room. Dark is calmer at night.",
+      "light": "Light",
+      "dark": "Dark",
+      "label": "Color theme"
+    },
+    "connections": {
+      "title": "Connections",
+      "lead": "Check that DeepVisor can see your ad account.",
+      "manage": "Manage connections",
+      "reports": "Saved reports",
+      "diagnostics": "Connection details"
+    },
+    "account": {
+      "title": "Plan and data",
+      "lead": "Your plan, your role, and where to get your reports.",
+      "plan": "Plan",
+      "role": "Your role",
+      "accounts": "Ad accounts",
+      "openReports": "Open reports",
+      "openConnections": "Open connections",
+      "reportsTitle": "Reports",
+      "reportsBody": "Export your numbers as CSV or PDF.",
+      "connectionsTitle": "Connections",
+      "connectionsBody": "Reconnect Meta or choose which ad account DeepVisor follows."
+    },
+    "feedback": {
+      "title": "Tell us what to improve",
+      "body": "Say what happened and what you expected. Please leave out passwords.",
+      "send": "Send feedback"
+    }
+  },
+  "profilePage": {
+    "back": "All settings",
+    "title": "Your profile",
+    "lead": "Your name and how you sign in. Only you see this.",
+    "person": "Your account",
+    "status": "Status",
+    "memberSince": "Member since",
+    "updated": "Last changed",
+    "notAvailable": "Not available",
+    "workspace": "Your workspace",
+    "role": "Your role",
+    "category": "Business type",
+    "businessLink": "Business details",
+    "settingsHint": "Service area, booking link and ad defaults are in Settings.",
+    "settingsLink": "Open settings",
+    "roleNote": "Your role is set by your workspace. Changing your profile does not change what you can do.",
+    "businessLoadError": "Business details could not be loaded. Reload the page to try again.",
+    "workspaceLoadError": "Workspace details could not be loaded. Please try again later.",
+    "danger": "Danger zone",
+    "statusActive": "Active"
   }
 }

@@ -8,10 +8,10 @@ import { BUSINESS_CATEGORY_GROUPS, BUSINESS_CATEGORY_OPTIONS, MONTHLY_AD_BUDGET_
 import classes from './ProfileForm.module.css';
 
 type Values = { businessName: string; industry: string; website: string; monthlyBudget: string; description: string };
-type Props = { initial: Values; canEdit: boolean };
+type Props = { initial: Values; canEdit: boolean; /** The page's section card already titles this form. */ showHeading?: boolean };
 const keys: (keyof Values)[] = ['businessName', 'industry', 'website', 'monthlyBudget', 'description'];
 
-export default function BusinessProfileForm({ initial, canEdit }: Props) {
+export default function BusinessProfileForm({ initial, canEdit, showHeading = true }: Props) {
   const router = useRouter();
   const [values, setValues] = useState(initial);
   const [savedValues, setSavedValues] = useState(initial);
@@ -47,10 +47,10 @@ export default function BusinessProfileForm({ initial, canEdit }: Props) {
 
   return <form onSubmit={save} className={classes.form}>
     <Stack gap="md">
-      <div>
-        <h2 className={classes.heading}>Business details</h2>
+      {showHeading && <div>
+        <h3 className={classes.heading}>Business details</h3>
         <p className={classes.helper}>Keep the information DeepVisor uses to understand your business up to date.</p>
-      </div>
+      </div>}
       {!canEdit && <Alert color="gray">Only workspace owners and admins can edit business details.</Alert>}
       <fieldset disabled={!canEdit || saving} className={classes.fields}>
         <Stack gap="md">

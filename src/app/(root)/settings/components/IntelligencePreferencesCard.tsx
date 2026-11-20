@@ -11,10 +11,9 @@ import {
   SimpleGrid,
   Stack,
   Switch,
-  Text,
   TextInput,
 } from '@mantine/core';
-import { IconCheck, IconSettings } from '@tabler/icons-react';
+import { IconCheck } from '@tabler/icons-react';
 import type {
   NotificationPreference,
   ReportSubscriptionSetting,
@@ -105,17 +104,6 @@ export default function IntelligencePreferencesCard({
 
   return (
     <Paper withBorder radius="md" p="md">
-      <Group gap="sm" mb="md">
-        <IconSettings size={18} />
-        <div>
-          <Text fw={700}>Intelligence delivery</Text>
-          <Text size="sm" c="dimmed">
-            Control in-app trend alerts and report-ready notices. Scheduled reports are archived
-            in Settings for now instead of being emailed.
-          </Text>
-        </div>
-      </Group>
-
       <Stack gap="md">
         <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
           <Switch
@@ -241,12 +229,9 @@ export default function IntelligencePreferencesCard({
           </Alert>
         ) : null}
 
-        <Group justify="space-between" align="center" wrap="wrap">
-          <Text size="sm" c="dimmed">
-            Native iPhone push can be layered on later without changing these business rules.
-          </Text>
-          <Button onClick={() => void handleSave()} loading={saving} radius="xl">
-            Save intelligence settings
+        <Group justify="flex-end">
+          <Button onClick={() => void handleSave()} loading={saving}>
+            Save alert settings
           </Button>
         </Group>
       </Stack>
