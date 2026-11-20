@@ -1,15 +1,226 @@
-.page { width: 100%; max-width: 1180px; padding: 16px 24px 32px; color: var(--dv-text); }
-.pageStack { gap: 24px; }
-.pageStack > :global(.mantine-Card-root) { border: 0; border-top: 1px solid var(--dv-border); border-radius: 0; padding: 20px 0; background: transparent; }
-.pageStack > :global(.mantine-Card-root):first-child { border: 0; }
-.pageStack > details > :global(.mantine-Card-root) { padding: 0; background: transparent; border: 0; }
-.page :global(.mantine-Title-root) { color: var(--dv-text); font-size: 18px; font-weight: 700; }
-.page :global(.mantine-Paper-root) { box-shadow: none; padding: 14px; background: transparent; border: 0; border-bottom: 1px solid var(--dv-border); }
-.page :global(.mantine-Paper-root) :global(.mantine-Paper-root) { padding-left: 0; padding-right: 0; }
-.page :global(.mantine-ThemeIcon-root) { background: var(--dv-primary-soft); color: var(--dv-primary-strong); }
-.page :global(.mantine-Card-root[id]) { scroll-margin-top: 16px; }
-@media(max-width:48em) {
-  .pageStack { gap: 16px; }
-  .pageStack > :global(.mantine-Card-root) { padding: 16px 0; }
-  .page :global(.mantine-Paper-root) { padding: 12px 0; min-width: 0 !important; }
+/*
+ * Settings + Profile share one look, taken from the Insights popup:
+ * one calm column, display-font headings, 15–16px body, nothing under 13px,
+ * 48px controls, blue only for what to press, red only for real danger.
+ * Colors come from the --dv-* tokens; those already flip in dark mode.
+ */
+.page {
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: 20px 24px 56px;
+  color: var(--dv-text);
+  font-size: 16px;
+  line-height: 1.55;
+}
+.page :focus-visible { outline: 3px solid var(--dv-primary-strong); outline-offset: 3px; }
+
+/* ---------- Header: character + headline + one plain sentence ---------- */
+.header { display: flex; align-items: center; gap: 20px; margin: 8px 0 28px; }
+.headerText { min-width: 0; }
+.title {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(28px, 4vw, 36px);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  font-weight: 800;
+  color: var(--dv-text);
+}
+.lead { margin: 8px 0 0; max-width: 58ch; font-size: 17px; line-height: 1.55; color: var(--dv-text-muted); }
+
+.back {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
+  font-size: 15px; font-weight: 700; color: var(--dv-primary-strong); text-decoration: none;
+}
+.back:hover { text-decoration: underline; }
+
+/* ---------- Layout: sticky section list + one column ---------- */
+.layout { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 32px; align-items: start; }
+.nav {
+  position: sticky; top: 16px;
+  display: grid; gap: 4px;
+}
+.navLink {
+  display: flex; align-items: center; min-height: 44px; padding: 0 14px;
+  border-radius: var(--dv-radius-md);
+  font-size: 15px; font-weight: 600; color: var(--dv-text-muted); text-decoration: none;
+}
+.navLink:hover { background: var(--dv-primary-soft); color: var(--dv-primary-strong); }
+.stack { display: grid; gap: 20px; min-width: 0; }
+
+/* ---------- Profile shortcut (one tidy row, the single blue action) ---------- */
+.profileLink {
+  display: flex; align-items: center; gap: 16px; padding: 18px 20px;
+  border-radius: var(--dv-card-radius);
+  background: var(--dv-primary-soft); color: var(--dv-text); text-decoration: none;
+}
+.profileLink:hover { background: var(--dv-primary-soft-hover); }
+.profileText { flex: 1; min-width: 0; }
+.profileText strong { display: block; font-family: var(--font-display, inherit); font-size: 18px; overflow-wrap: anywhere; }
+.profileText span { font-size: 15px; color: var(--dv-text-muted); }
+.profileGo { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; color: var(--dv-primary-strong); white-space: nowrap; }
+
+/* ---------- Section card ---------- */
+.section {
+  min-width: 0; padding: 28px;
+  border: 1px solid var(--dv-card-border);
+  border-radius: var(--dv-card-radius);
+  background: var(--dv-card-panel);
+  scroll-margin-top: 16px;
+  container-type: inline-size; container-name: section;
+}
+.sectionHead { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 22px; }
+.sectionIcon {
+  display: grid; place-items: center; flex: none; width: 44px; height: 44px;
+  border-radius: 12px; background: var(--dv-primary-soft); color: var(--dv-primary-strong);
+}
+.sectionTitle {
+  margin: 0; font-family: var(--font-display, inherit);
+  font-size: 22px; line-height: 1.25; letter-spacing: -0.015em; font-weight: 700; color: var(--dv-text);
+}
+.sectionLead { margin: 4px 0 0; max-width: 62ch; font-size: 16px; line-height: 1.55; color: var(--dv-text-muted); }
+.sectionAside { margin-left: auto; flex: none; }
+
+/* Sub-blocks inside a card: a soft inset, never another bordered box. */
+.inset { padding: 18px; border-radius: 12px; background: var(--dv-card-inset); }
+.subTitle { margin: 0 0 4px; font-family: var(--font-display, inherit); font-size: 17px; font-weight: 700; color: var(--dv-text); }
+.subLead { margin: 0 0 16px; font-size: 15px; color: var(--dv-text-muted); }
+.divider { margin: 26px 0 22px; border: 0; border-top: 1px solid var(--dv-card-border); }
+
+/* ---------- The one big number (business setup) ---------- */
+.progress { display: grid; gap: 8px; margin-bottom: 22px; padding: 18px 20px; border-radius: 12px; background: var(--dv-primary-soft); }
+.progressNumber { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.progressNumber strong { font-family: var(--font-display, inherit); font-size: 40px; line-height: 1; font-weight: 800; letter-spacing: -0.03em; color: var(--dv-primary-strong); }
+.progressNumber span { font-size: 16px; font-weight: 600; color: var(--dv-text); }
+.track { height: 10px; border-radius: 999px; background: color-mix(in srgb, var(--dv-primary) 18%, transparent); overflow: hidden; }
+.fill { height: 100%; border-radius: inherit; background: var(--dv-primary); transform-origin: left center; }
+.progressNote { margin: 0; font-size: 15px; color: var(--dv-text-muted); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px;
+  border-radius: 999px; background: var(--dv-primary-soft); color: var(--dv-primary-strong);
+  font-size: 14px; font-weight: 700; text-transform: capitalize;
+}
+.groupLabel { margin: 18px 0 8px; font-size: 14px; font-weight: 700; color: var(--dv-text-muted); }
+.empty { margin: 0; font-size: 15px; color: var(--dv-text-muted); }
+
+/* ---------- Messages list ---------- */
+.messages { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.message { display: grid; gap: 4px; padding: 14px 16px; border-radius: 12px; background: var(--dv-card-inset); }
+.messageTop { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.message strong { font-size: 16px; }
+.message time { font-size: 13px; color: var(--dv-text-muted); white-space: nowrap; }
+.message p { margin: 0; font-size: 15px; color: var(--dv-text-muted); }
+.new { margin-left: 8px; padding: 2px 10px; border-radius: 999px; background: var(--dv-primary); color: #fff; font-size: 13px; font-weight: 700; }
+
+/* ---------- Plan & data rows ---------- */
+.facts { display: grid; gap: 0; margin: 0 0 20px; }
+.facts > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--dv-card-border); font-size: 16px; }
+.facts > div:last-child { border-bottom: 0; }
+.facts dt { color: var(--dv-text-muted); }
+.facts dd { margin: 0; text-align: right; font-weight: 700; overflow-wrap: anywhere; min-width: 0; }
+.shortcuts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.shortcut { display: grid; gap: 6px; align-content: start; padding: 18px; border-radius: 12px; background: var(--dv-card-inset); }
+.shortcut strong { font-family: var(--font-display, inherit); font-size: 17px; }
+.shortcut p { margin: 0 0 6px; font-size: 15px; color: var(--dv-text-muted); }
+
+/* ---------- Collapsed technical blocks ---------- */
+.more { padding: 4px 28px; border: 1px solid var(--dv-card-border); border-radius: var(--dv-card-radius); background: var(--dv-card-panel); }
+.more > details { border-top: 0 !important; padding: 0 !important; }
+.more > details > summary { min-height: 56px !important; display: flex; align-items: center; font-family: var(--font-display, inherit); font-size: 17px !important; }
+.more > details[open] { padding-bottom: 20px !important; }
+.more + .more { margin-top: -8px; }
+
+.feedback { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding: 22px 28px; border-radius: var(--dv-card-radius); background: var(--dv-card-inset); }
+.feedback strong { display: block; font-family: var(--font-display, inherit); font-size: 17px; }
+.feedback span { font-size: 15px; color: var(--dv-text-muted); }
+
+/* ---------- Buttons and fields: readable at arm's length ---------- */
+.page :global(.mantine-Button-root) { min-height: 48px; padding-inline: 20px; font-size: 16px; font-weight: 700; border-radius: var(--dv-action-radius); }
+.page :global(.mantine-Button-root[data-size='xs']), .page :global(.mantine-Button-root[data-size='sm']) { min-height: 44px; font-size: 15px; }
+.page :global(.mantine-InputWrapper-label) { margin-bottom: 6px; font-size: 15px; font-weight: 700; color: var(--dv-text); }
+.page :global(.mantine-InputWrapper-description) { margin-bottom: 8px; font-size: 14px; line-height: 1.5; color: var(--dv-text-muted); }
+.page :global(.mantine-Input-input) { min-height: 48px; font-size: 16px; color: var(--dv-text); background: var(--dv-surface); border: 1px solid var(--dv-input-border); border-radius: var(--dv-radius-md); }
+.page :global(.mantine-Textarea-input) { min-height: 96px; }
+.page :global(.mantine-Input-input):focus, .page :global(.mantine-Input-input):focus-within { border-color: var(--dv-primary-strong); outline: 2px solid var(--dv-primary-strong); outline-offset: 2px; }
+.page :global(.mantine-Input-input):disabled, .page :global(.mantine-Input-input)[data-disabled] { opacity: 1; color: var(--dv-text-muted); background: var(--dv-card-inset); }
+.page :global(.mantine-Switch-label) { font-size: 16px; font-weight: 600; }
+.page :global(.mantine-Switch-description) { font-size: 14px; }
+.page :global(.mantine-Switch-track) { min-width: 46px; height: 28px; }
+.page :global(.mantine-SegmentedControl-label) { min-height: 44px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; }
+.page :global(.mantine-Alert-message), .page :global(.mantine-Alert-title) { font-size: 15px; }
+.page :global(.mantine-Text-root[data-size='xs']) { font-size: 13px; }
+
+/* Existing cards inside a section become soft insets instead of nested boxes. */
+.section :global(.mantine-Paper-root) { padding: 18px; border: 0; border-radius: 12px; background: var(--dv-card-inset); box-shadow: none; }
+.section :global(.mantine-Paper-root) :global(.mantine-Paper-root) { padding: 14px; background: var(--dv-card-panel); }
+.more :global(.mantine-Card-root) { padding: 0; border: 0; background: transparent; }
+.more :global(.mantine-Paper-root) { padding: 16px; border: 1px solid var(--dv-card-border); border-radius: 12px; background: var(--dv-card-inset); box-shadow: none; }
+.more :global(.mantine-Paper-root) :global(.mantine-Paper-root) { background: var(--dv-card-panel); }
+
+/* ---------- Profile page ---------- */
+.profileLayout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+.aside { display: grid; gap: 20px; min-width: 0; }
+.identity { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+.avatar {
+  display: grid; place-items: center; flex: none; width: 56px; height: 56px; border-radius: 50%;
+  background: var(--dv-primary); color: #fff;
+  font-family: var(--font-display, inherit); font-size: 20px; font-weight: 800;
+}
+.identity strong { display: block; font-family: var(--font-display, inherit); font-size: 19px; line-height: 1.25; overflow-wrap: anywhere; }
+.identity span { font-size: 15px; color: var(--dv-text-muted); }
+.pill { display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; border-radius: 999px; background: var(--dv-neutral-soft); color: var(--dv-neutral-text); font-size: 14px; font-weight: 700; }
+.pillOk { background: var(--dv-success-soft); color: var(--dv-success); }
+.capital { text-transform: capitalize; }
+.note { display: flex; gap: 10px; align-items: flex-start; margin: 0; font-size: 15px; color: var(--dv-text-muted); }
+.note svg { flex: none; margin-top: 3px; }
+.inlineLink { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 15px; font-weight: 700; color: var(--dv-primary-strong); text-decoration: none; }
+.inlineLink:hover { text-decoration: underline; }
+
+/* Danger stays quiet until you look at it; red is only for this. */
+.danger { display: grid; gap: 12px; padding: 22px; border: 1px solid var(--dv-urgent-border); border-radius: var(--dv-card-radius); background: var(--dv-urgent-soft); }
+.danger h2 { margin: 0; font-family: var(--font-display, inherit); font-size: 17px; color: var(--dv-urgent-text); }
+.danger :global(.mantine-Alert-root) { padding: 0; border: 0; background: transparent; }
+.danger :global(.mantine-Alert-title) { display: none; }
+.danger :global(.mantine-Alert-message), .danger :global(.mantine-Alert-message) * { color: var(--dv-text); }
+.danger :global(.mantine-Alert-message) :global(.mantine-Button-root) { color: var(--dv-urgent-text); border-color: var(--dv-urgent-border); background: transparent; }
+
+/* ---------- Narrow screens ---------- */
+@media (max-width: 62em) {
+  .layout, .profileLayout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .nav {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 8px 16px;
+    background: var(--dv-canvas); scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .navLink { flex: none; border: 1px solid var(--dv-card-border); background: var(--dv-card-panel); border-radius: 999px; }
+}
+@media (max-width: 40em) {
+  .page { padding: 8px 16px 40px; }
+  .header { gap: 14px; margin-bottom: 20px; }
+  .lead { font-size: 16px; }
+  .section { padding: 20px 18px; }
+  .sectionHead { gap: 12px; margin-bottom: 18px; }
+  .sectionIcon { width: 40px; height: 40px; }
+  .sectionTitle { font-size: 20px; }
+  .progressNumber strong { font-size: 36px; }
+  .shortcuts { grid-template-columns: minmax(0, 1fr); }
+  .profileLink { padding: 16px; }
+  .profileGo span { display: none; }
+  .more { padding: 2px 18px; }
+  .feedback { padding: 20px 18px; }
+  .feedback :global(.mantine-Button-root), .danger :global(.mantine-Button-root) { width: 100%; }
+}
+@container section (max-width: 420px) {
+  .facts > div { flex-direction: column; gap: 2px; }
+  .facts dd { text-align: left; }
+}
+
+/* Motion: only the progress bar fills in when the page opens. */
+@media (prefers-reduced-motion: no-preference) {
+  .fill { animation: fill 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  @keyframes fill { from { transform: scaleX(0); } }
 }

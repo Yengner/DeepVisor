@@ -10,11 +10,11 @@ import {
   Select,
   SimpleGrid,
   Stack,
-  Text,
   TextInput,
-  ThemeIcon,
 } from '@mantine/core';
-import { IconCheck, IconDeviceFloppy, IconMapPin } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
+import { IconCheck, IconDeviceFloppy } from '@tabler/icons-react';
+import classes from '../SettingsSurface.module.css';
 import { updateBusinessProfileData } from '@/lib/server/actions/business/onboarding';
 import {
   CONTACT_METHOD_OPTIONS,
@@ -61,6 +61,7 @@ function isValidHttpUrl(value: string): boolean {
 
 export default function CampaignDefaultsForm({ initial, canEdit }: CampaignDefaultsFormProps) {
   const router = useRouter();
+  const t = useTranslations('settingsPage.business');
   const [values, setValues] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{
@@ -131,30 +132,10 @@ export default function CampaignDefaultsForm({ initial, canEdit }: CampaignDefau
   }
 
   return (
-    <section style={{ borderTop: '1px solid var(--mantine-color-gray-3)', paddingTop: 20, marginTop: 20 }}>
-      <Group justify="space-between" align="flex-start" gap="md" wrap="wrap" mb="md">
-        <Group gap="sm" align="flex-start" wrap="nowrap">
-          <ThemeIcon variant="light" color="signal" radius="md">
-            <IconMapPin size={17} />
-          </ThemeIcon>
-          <div>
-            <Text fw={700}>Campaign defaults</Text>
-            <Text size="sm" c="dimmed" maw={680}>
-              Stable salon details used when a previous ad does not contain a reusable value.
-            </Text>
-          </div>
-        </Group>
-        <Button
-          type="button"
-          size="sm"
-          leftSection={<IconDeviceFloppy size={16} />}
-          loading={saving}
-          disabled={!canEdit}
-          onClick={() => void handleSave()}
-        >
-          Save defaults
-        </Button>
-      </Group>
+    <section aria-labelledby="ad-defaults-title">
+      <hr className={classes.divider} />
+      <h3 id="ad-defaults-title" className={classes.subTitle}>{t('defaultsTitle')}</h3>
+      <p className={classes.subLead}>{t('defaultsLead')}</p>
 
       <Stack gap="md">
         {feedback ? (
@@ -166,7 +147,7 @@ export default function CampaignDefaultsForm({ initial, canEdit }: CampaignDefau
           </Alert>
         ) : null}
 
-        <SimpleGrid cols={{ base: 1, sm: 2, xl: 3 }} spacing="md">
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
           <Select
             label="Main service"
             placeholder="Choose a service"
@@ -220,6 +201,17 @@ export default function CampaignDefaultsForm({ initial, canEdit }: CampaignDefau
             }
           />
         </SimpleGrid>
+        <Group justify="flex-end">
+          <Button
+            type="button"
+            leftSection={<IconDeviceFloppy size={18} />}
+            loading={saving}
+            disabled={!canEdit}
+            onClick={() => void handleSave()}
+          >
+            Save defaults
+          </Button>
+        </Group>
       </Stack>
     </section>
   );

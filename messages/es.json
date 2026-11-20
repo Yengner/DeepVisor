@@ -658,5 +658,106 @@
       "notFound": "No se encontró esa conexión de Meta.",
       "failed": "No se pudieron eliminar los datos. No se cambió nada; inténtalo de nuevo."
     }
+  },
+  "settingsPage": {
+    "title": "Ajustes",
+    "lead": "Tu negocio, tu idioma y cómo te avisa DeepVisor.",
+    "navLabel": "Secciones de ajustes",
+    "nav": {
+      "business": "Tu negocio",
+      "language": "Idioma",
+      "ads": "Respuestas",
+      "alerts": "Avisos",
+      "look": "Apariencia",
+      "connections": "Conexiones",
+      "account": "Plan y datos"
+    },
+    "profileCard": {
+      "title": "Tu perfil",
+      "hint": "Nombre, teléfono y correo para entrar",
+      "open": "Abrir perfil"
+    },
+    "business": {
+      "title": "Tu negocio",
+      "lead": "Lo que DeepVisor sabe de tu salón. Mantenlo al día para que tus anuncios suenen como tú.",
+      "filled": "{count} de {total}",
+      "filledLabel": "datos del negocio guardados",
+      "setupTitle": "La configuración no está terminada",
+      "setupBody": "Completa lo que falta y DeepVisor escribirá mejores anuncios para ti.",
+      "goals": "Tus metas",
+      "noGoals": "Aún no hay metas guardadas.",
+      "platforms": "Dónde anuncias",
+      "noPlatforms": "Aún no hay plataformas guardadas.",
+      "defaultsTitle": "Datos para tus anuncios",
+      "defaultsLead": "Se usan cuando un anuncio anterior no tiene la respuesta."
+    },
+    "language": {
+      "lead": "Elige el idioma en que lees DeepVisor."
+    },
+    "ads": {
+      "lead": "Respuestas cortas que DeepVisor usa al preparar un anuncio."
+    },
+    "alerts": {
+      "title": "Avisos y reportes",
+      "lead": "Elige qué te cuenta DeepVisor y cuándo se queda callado.",
+      "recent": "Mensajes recientes",
+      "none": "Todavía no hay mensajes",
+      "noneHint": "Aquí verás los problemas de sincronización y los cambios importantes.",
+      "unread": "{count} sin leer",
+      "new": "Nuevo"
+    },
+    "look": {
+      "title": "Apariencia",
+      "lead": "El claro se lee mejor con mucha luz. El oscuro descansa la vista de noche.",
+      "light": "Claro",
+      "dark": "Oscuro",
+      "label": "Tema de color"
+    },
+    "connections": {
+      "title": "Conexiones",
+      "lead": "Comprueba que DeepVisor puede ver tu cuenta de anuncios.",
+      "manage": "Administrar conexiones",
+      "reports": "Reportes guardados",
+      "diagnostics": "Detalles de la conexión"
+    },
+    "account": {
+      "title": "Plan y datos",
+      "lead": "Tu plan, tu rol y dónde encontrar tus reportes.",
+      "plan": "Plan",
+      "role": "Tu rol",
+      "accounts": "Cuentas de anuncios",
+      "openReports": "Abrir reportes",
+      "openConnections": "Abrir conexiones",
+      "reportsTitle": "Reportes",
+      "reportsBody": "Exporta tus números en CSV o PDF.",
+      "connectionsTitle": "Conexiones",
+      "connectionsBody": "Vuelve a conectar Meta o elige qué cuenta de anuncios sigue DeepVisor."
+    },
+    "feedback": {
+      "title": "Cuéntanos qué mejorar",
+      "body": "Dinos qué pasó y qué esperabas. Por favor no incluyas contraseñas.",
+      "send": "Enviar comentarios"
+    }
+  },
+  "profilePage": {
+    "back": "Todos los ajustes",
+    "title": "Tu perfil",
+    "lead": "Tu nombre y cómo entras. Solo tú lo ves.",
+    "person": "Tu cuenta",
+    "status": "Estado",
+    "memberSince": "Miembro desde",
+    "updated": "Último cambio",
+    "notAvailable": "No disponible",
+    "workspace": "Tu espacio de trabajo",
+    "role": "Tu rol",
+    "category": "Tipo de negocio",
+    "businessLink": "Datos del negocio",
+    "settingsHint": "El área de servicio, el enlace de citas y los datos para anuncios están en Ajustes.",
+    "settingsLink": "Abrir ajustes",
+    "roleNote": "Tu rol lo define tu espacio de trabajo. Cambiar tu perfil no cambia lo que puedes hacer.",
+    "businessLoadError": "No se pudieron cargar los datos del negocio. Recarga la página para intentarlo de nuevo.",
+    "workspaceLoadError": "No se pudieron cargar los datos del espacio de trabajo. Inténtalo más tarde.",
+    "danger": "Zona de peligro",
+    "statusActive": "Activa"
   }
 }

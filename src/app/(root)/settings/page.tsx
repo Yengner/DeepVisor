@@ -1,4 +1,4 @@
-import { AppearanceSettings } from '@/components/design/DesignSurface';
+import SpiderMascot from '@/components/brand/SpiderMascot';
 import {
   Alert,
   Badge,
@@ -14,18 +14,19 @@ import {
   Title,
 } from '@mantine/core';
 import {
-  IconAlertTriangle,
+  IconBuildingStore,
+  IconLanguage,
+  IconMessageQuestion,
+  IconPalette,
   IconArrowUpRight,
   IconBell,
   IconChartBar,
   IconClock,
-  IconDatabase,
   IconDownload,
   IconFileAnalytics,
   IconLock,
   IconPlug,
   IconTargetArrow,
-  IconUser,
 } from '@tabler/icons-react';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
@@ -50,10 +51,10 @@ import { formatNotificationPreviewMessage } from '@/lib/shared';
 import { createServerClient } from '@/lib/server/supabase/server';
 import IntelligencePreferencesCard from './components/IntelligencePreferencesCard';
 import CampaignDefaultsForm from './components/CampaignDefaultsForm';
-import ProfileForm from './components/ProfileForm';
 import BusinessProfileForm from './components/BusinessProfileForm';
-import DeleteAccount from './components/DeleteAccount';
 import AdFactsCard from './components/AdFactsCard';
+import SectionCard from './components/SectionCard';
+import AppearanceChoice from './components/AppearanceChoice';
 import LanguageSettings from './components/LanguageSettings';
 import { getTranslations } from 'next-intl/server';
 import { isLocale } from '@/i18n/locales';
@@ -61,10 +62,8 @@ import { loadAdFacts } from '@/lib/server/agent/facts';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import classes from './SettingsSurface.module.css';
 import Disclosure from '@/components/product/Disclosure';
-import product from '@/components/product/Product.module.css';
 import { ownerMessages } from '@/components/product/presentation';
 import StatusBadge from '@/components/product/StatusBadge';
-import { BUSINESS_CATEGORY_OPTIONS, labelForOption } from '@/lib/shared/onboarding/businessProfileOptions';
 
 type BusinessProfileSettings = {
   business_name: string;
@@ -281,17 +280,6 @@ function formatPlanTier(value: string): string {
   }
 }
 
-function formatOrgType(value: string): string {
-  if (value !== 'business') {
-    return 'Partner';
-  }
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function joinOrFallback(values: string[] | null | undefined, fallback: string): string {
-  return values && values.length > 0 ? values.join(', ') : fallback;
-}
-
 function firstPlatform(value: IntegrationJoin | IntegrationJoin[]): IntegrationJoin {
   return Array.isArray(value) ? value[0] ?? null : value;
 }
@@ -339,19 +327,6 @@ function groupArchivedReports(reports: ArchivedReport[]): ReportArchiveGroup[] {
     .sort((left, right) => right.key.localeCompare(left.key));
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
-      <Text size="sm" c="dimmed">
-        {label}
-      </Text>
-      <Text size="sm" fw={600} ta="right" style={{ minWidth: 0 }}>
-        {value}
-      </Text>
-    </Group>
-  );
-}
-
 function SummaryCard({
   icon,
   color,
@@ -389,7 +364,7 @@ function SummaryCard({
 
 export default async function SettingsPage() {
   const supabase = await createServerClient();
-  const { user, businessId, organizationName, organizationType, role, onboarding } =
+  const { user, businessId, organizationName, role, onboarding } =
     await getRequiredAppContext();
   const selection = await resolveCurrentSelection(businessId);
 
@@ -523,363 +498,285 @@ export default async function SettingsPage() {
   ].filter(Boolean).length;
   const archivedReportGroups = groupArchivedReports(archivedReports);
 
+  const initials = [user.first_name, user.last_name].filter(Boolean).map((name) => name[0]).join('').toUpperCase();
+  const fullName = `${user.first_name} ${user.last_name}`.trim();
+  const profileTotal = 6;
+  const goals = businessProfile.ad_goals ?? [];
+  const preferredPlatforms = businessProfile.preferred_platforms ?? [];
+  const canEdit = role === 'owner' || role === 'admin';
+  const nav: Array<[string, string]> = [
+    ['workspace', t('settingsPage.nav.business')],
+    ['language', t('settingsPage.nav.language')],
+    ['ad-facts', t('settingsPage.nav.ads')],
+    ['signals', t('settingsPage.nav.alerts')],
+    ['appearance', t('settingsPage.nav.look')],
+    ['connections', t('settingsPage.nav.connections')],
+    ['access', t('settingsPage.nav.account')],
+  ];
+
   return (
-    <Container size="xl" pb="xl" className={`${classes.page} ${product.page} dv-app-page`}>
-      <Stack gap="lg" className={classes.pageStack}>
-        <Card
-          withBorder
-          radius="lg"
-          p="xl"
-          className="app-platform-page-hero"
-        >
-          <Group justify="space-between" align="flex-start" gap="xl" wrap="wrap">
-            <Stack gap="sm" maw={720}>
-              <Group gap="xs" wrap="wrap">
-                <Badge variant="light" className="app-platform-page-badge">
-                  Settings
-                </Badge>
-                <Badge color="signal" variant="outline">
-                  {organizationName}
-                </Badge>
-                <Badge color="signal" variant="light">
-                  {formatPlanTier(subscriptionTier)}
-                </Badge>
-              </Group>
+    <Container size="xl" className={`${classes.page} dv-app-page`}>
+      <header className={classes.header}>
+        <SpiderMascot state="idle" size={64} />
+        <div className={classes.headerText}>
+          <h1 className={classes.title}>{t('settingsPage.title')}</h1>
+          <p className={classes.lead}>{t('settingsPage.lead')}</p>
+        </div>
+      </header>
 
-              <div>
-                <Text size="sm" fw={600} className="app-platform-page-kicker">
-                  {formatOrgType(organizationType)} workspace
-                </Text>
-                <Title order={1} size="h2" mt={4} className="app-platform-page-title">
-                  Settings
-                </Title>
-                <Text size="md" maw={620} mt="xs" className="app-platform-page-copy">
-                  Your business profile, preferences, and account access.
-                </Text>
+      <div className={classes.layout}>
+        <nav className={classes.nav} aria-label={t('settingsPage.navLabel')}>
+          {nav.map(([id, label]) => (
+            <a key={id} href={`#${id}`} className={classes.navLink}>{label}</a>
+          ))}
+        </nav>
+
+        <div className={classes.stack}>
+          <a href="/settings/profile" className={classes.profileLink}>
+            <span className={classes.avatar} aria-hidden>{initials || '?'}</span>
+            <span className={classes.profileText}>
+              <strong>{fullName || t('settingsPage.profileCard.title')}</strong>
+              <span>{t('settingsPage.profileCard.hint')}</span>
+            </span>
+            <span className={classes.profileGo}><span>{t('settingsPage.profileCard.open')}</span><IconArrowUpRight size={18} aria-hidden /></span>
+          </a>
+
+          <SectionCard
+            id="workspace"
+            icon={<IconBuildingStore size={22} />}
+            title={t('settingsPage.business.title')}
+            lead={t('settingsPage.business.lead')}
+          >
+            <div className={classes.progress}>
+              <div className={classes.progressNumber}>
+                <strong>{t('settingsPage.business.filled', { count: profileSetupCount, total: profileTotal })}</strong>
+                <span>{t('settingsPage.business.filledLabel')}</span>
               </div>
-
-              <Group gap="xs" wrap="wrap">
-                <Badge color="gray" variant="outline">
-                  Role {formatStatusLabel(role)}
-                </Badge>
-                <Badge color="gray" variant="outline">
-                  {accountUsageText}
-                </Badge>
-                <Badge color="gray" variant="outline">
-                  {connectedIntegrationsCount} connected platform
-                  {connectedIntegrationsCount === 1 ? '' : 's'}
-                </Badge>
-              </Group>
-            </Stack>
-
-            <Paper
-              radius="lg"
-              p="md"
-              className="app-platform-page-hero-panel"
-              style={{ minWidth: 0, width: 'min(100%, 360px)', flex: '0 1 360px' }}
-            >
-              <Stack gap="sm">
-                <InfoRow label="Current focus" value={focusLabel} />
-                <InfoRow label="Last data sync" value={formatDateTime(rollup.lastSyncedAt)} />
-                <InfoRow
-                  label="Profile updated"
-                  value={formatRelativeTime(businessProfile.updated_at)}
-                />
-                <Group gap="sm" mt="xs" wrap="wrap">
-                  <Button
-                    component="a"
-                    href="/integration"
-                    radius="xl"
-                    variant="filled"
-                    className="app-platform-page-action-primary"
-                    size="xs"
-                  >
-                    Manage integrations
-                  </Button>
-                  <Button
-                    component="a"
-                    href="/reports"
-                    radius="xl"
-                    variant="default"
-                    className="app-platform-page-action-secondary"
-                    size="xs"
-                  >
-                    Open reports
-                  </Button>
-                </Group>
-              </Stack>
-            </Paper>
-          </Group>
-        </Card>
-
-        <Group component="nav" aria-label="Settings sections" gap="xs" wrap="wrap">
-          <Button component="a" href="#workspace" variant="subtle" size="sm" mih={44}>
-            Workspace
-          </Button>
-          <Button component="a" href="#signals" variant="subtle" size="sm" mih={44}>
-            Signals
-          </Button>
-          <Button component="a" href="#report-archive" variant="subtle" size="sm" mih={44}>
-            Reports
-          </Button>
-          <Button component="a" href="#connections" variant="subtle" size="sm" mih={44}>
-            Connections
-          </Button>
-          <Button component="a" href="#access" variant="subtle" size="sm" mih={44}>
-            Access
-          </Button>
-        </Group>
-
-        <Disclosure title="Account and workspace details">
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
-          <SummaryCard
-            icon={<IconUser size={18} />}
-            color="signal"
-            label="Account"
-            title={`${user.first_name} ${user.last_name}`.trim()}
-            detail={`${user.email}${user.phone_number ? ` · ${user.phone_number}` : ''}`}
-          />
-          <SummaryCard
-            icon={<IconTargetArrow size={18} />}
-            color="signal"
-            label="Workspace"
-            title={businessProfile.business_name}
-            detail={`${profileSetupCount}/6 profile inputs filled${businessProfile.industry ? ` · ${labelForOption(businessProfile.industry, BUSINESS_CATEGORY_OPTIONS, businessProfile.industry.replaceAll('_', ' '))}` : ''}`}
-          />
-          <SummaryCard
-            icon={<IconLock size={18} />}
-            color="signal"
-            label="Plan"
-            title={formatPlanTier(subscriptionTier)}
-            detail={`${accountUsageText} · ${limits.maxPlatforms.length} supported platform types on this tier`}
-          />
-          <SummaryCard
-            icon={<IconDatabase size={18} />}
-            color="signal"
-            label="Data"
-            title={`${rollup.syncedAccountCount}/${Math.max(rollup.accountCount, 1)} synced accounts`}
-            detail={
-              rollup.accountCount > 0
-                ? `Last workspace sync ${formatRelativeTime(rollup.lastSyncedAt)}`
-                : 'No ad accounts connected yet'
-            }
-          />
-        </SimpleGrid>
-
-        </Disclosure>
-        <Card withBorder radius="lg" p="xl" id="workspace">
-          <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
-            <div>
-              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                Workspace
-              </Text>
-              <Title order={3}>Identity and business profile</Title>
-              <Text size="sm" c="dimmed" mt={4}>
-                The practical settings DeepVisor uses to understand who is operating the
-                workspace and what the business is trying to achieve.
-              </Text>
+              <div className={classes.track} role="presentation">
+                <div className={classes.fill} style={{ width: `${Math.round((profileSetupCount / profileTotal) * 100)}%` }} />
+              </div>
+              {!onboarding.onboarding_completed && (
+                <p className={classes.progressNote}>
+                  <strong>{t('settingsPage.business.setupTitle')}.</strong> {t('settingsPage.business.setupBody')}
+                </p>
+              )}
             </div>
-            <Badge color={onboarding.onboarding_completed ? 'signal' : '#d69324'} variant="light">
-              {onboarding.onboarding_completed ? 'Onboarding complete' : 'Onboarding in progress'}
-            </Badge>
-          </Group>
 
-          {!onboarding.onboarding_completed ? (
-            <Alert
-              color="#d69324"
-              radius="md"
-              icon={<IconAlertTriangle size={16} />}
-              title="Business setup is still in progress"
-              mb="md"
-            >
-              <Text size="sm">
-                DeepVisor will keep getting better once the rest of onboarding is completed and the
-                business profile fields are filled in more fully.
-              </Text>
-            </Alert>
-          ) : null}
-
-          <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
-            <Paper withBorder radius="md" p="md">
-              <Stack gap="sm">
-                <ProfileForm initial={user} />
-                <InfoRow label="Role" value={formatStatusLabel(role)} />
-                <InfoRow label="Account status" value={formatStatusLabel(user.status)} />
-              </Stack>
-            </Paper>
-
-            <Paper withBorder radius="md" p="md">
-              <BusinessProfileForm
-                canEdit={role === 'owner' || role === 'admin'}
-                initial={{ businessName: businessProfile.business_name, industry: businessProfile.industry ?? '', website: businessProfile.website ?? '', monthlyBudget: businessProfile.monthly_budget ?? '', description: businessProfile.description ?? '' }}
-              />
-              <Text size="xs" c="dimmed" tt="uppercase" fw={700} mt="md" mb="xs">
-                Goals
-              </Text>
-              <Group gap="xs" wrap="wrap">
-                {(businessProfile.ad_goals ?? []).length > 0 ? (
-                  businessProfile.ad_goals?.map((goal) => (
-                    <Badge key={goal} color="signal" variant="light">
-                      {goal.replace(/_/g, ' ')}
-                    </Badge>
-                  ))
-                ) : (
-                  <Text size="sm" c="dimmed">
-                    No goals saved yet.
-                  </Text>
-                )}
-              </Group>
-              <Text size="xs" c="dimmed" tt="uppercase" fw={700} mt="md" mb="xs">
-                Preferred platforms
-              </Text>
-              <Group gap="xs" wrap="wrap">
-                {(businessProfile.preferred_platforms ?? []).length > 0 ? (
-                  businessProfile.preferred_platforms?.map((platform) => (
-                    <Badge key={platform} color="signal" variant="light">
-                      {platform}
-                    </Badge>
-                  ))
-                ) : (
-                  <Text size="sm" c="dimmed">
-                    No preferred platforms saved yet.
-                  </Text>
-                )}
-              </Group>
-            </Paper>
-          </SimpleGrid>
-
-          <CampaignDefaultsForm
-            canEdit={role === 'owner' || role === 'admin'}
-            initial={{
-              businessLocation: businessProfile.business_location ?? '',
-              customerRadius: businessProfile.customer_radius ?? '',
-              mainService: businessProfile.most_valuable_service ?? '',
-              promotedServices: businessProfile.promoted_services ?? [],
-              preferredContactMethod: businessProfile.preferred_contact_method ?? '',
-              bookingLink: businessProfile.booking_link ?? '',
-            }}
-          />
-        </Card>
-
-        <Card withBorder radius="lg" p="xl" id="language">
-          <Title order={3} mb="xs">{t('language.title')}</Title>
-          <LanguageSettings saved={isLocale(savedLocale) ? savedLocale : null} />
-        </Card>
-
-        <Card withBorder radius="lg" p="xl" id="ad-facts">
-          <div style={{ marginBottom: 12 }}>
-            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-              {t('facts.eyebrow')}
-            </Text>
-            <Title order={3}>{t('facts.title')}</Title>
-            <Text size="sm" c="dimmed" mt={4}>
-              {t('facts.intro')}
-            </Text>
-          </div>
-          {adFacts ? (
-            <AdFactsCard
-              facts={adFacts.facts}
-              accountCurrency={adFacts.accountCurrency}
-              canEdit={role === 'owner' || role === 'admin'}
+            <BusinessProfileForm
+              showHeading={false}
+              canEdit={canEdit}
+              initial={{ businessName: businessProfile.business_name, industry: businessProfile.industry ?? '', website: businessProfile.website ?? '', monthlyBudget: businessProfile.monthly_budget ?? '', description: businessProfile.description ?? '' }}
             />
-          ) : (
-            <Alert color="gray" variant="light">{t('facts.unavailable')}</Alert>
-          )}
-        </Card>
 
-        <Card withBorder radius="lg" p="xl" id="signals">
-          <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
-            <div>
-              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                Signals
-              </Text>
-              <Title order={3}>Notifications and operating context</Title>
-              <Text size="sm" c="dimmed" mt={4}>
-                Settings should clarify how DeepVisor is communicating with you, not bury you in
-                toggles that do not matter yet.
-              </Text>
-            </div>
-            <Badge color={unreadCount > 0 ? 'signal' : 'gray'} variant="light">
-              {unreadCount} unread
-            </Badge>
-          </Group>
+            <p className={classes.groupLabel}>{t('settingsPage.business.goals')}</p>
+            {goals.length > 0 ? (
+              <div className={classes.chips}>
+                {goals.map((goal) => <span key={goal} className={classes.chip}>{goal.replace(/_/g, ' ')}</span>)}
+              </div>
+            ) : <p className={classes.empty}>{t('settingsPage.business.noGoals')}</p>}
 
-          <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
+            <p className={classes.groupLabel}>{t('settingsPage.business.platforms')}</p>
+            {preferredPlatforms.length > 0 ? (
+              <div className={classes.chips}>
+                {preferredPlatforms.map((platform) => <span key={platform} className={classes.chip}>{platform}</span>)}
+              </div>
+            ) : <p className={classes.empty}>{t('settingsPage.business.noPlatforms')}</p>}
+
+            <CampaignDefaultsForm
+              canEdit={canEdit}
+              initial={{
+                businessLocation: businessProfile.business_location ?? '',
+                customerRadius: businessProfile.customer_radius ?? '',
+                mainService: businessProfile.most_valuable_service ?? '',
+                promotedServices: businessProfile.promoted_services ?? [],
+                preferredContactMethod: businessProfile.preferred_contact_method ?? '',
+                bookingLink: businessProfile.booking_link ?? '',
+              }}
+            />
+          </SectionCard>
+
+          <SectionCard id="language" icon={<IconLanguage size={22} />} title={t('language.title')} lead={t('settingsPage.language.lead')}>
+            <LanguageSettings saved={isLocale(savedLocale) ? savedLocale : null} />
+          </SectionCard>
+
+          <SectionCard id="ad-facts" icon={<IconMessageQuestion size={22} />} title={t('facts.title')} lead={t('facts.intro')}>
+            {adFacts ? (
+              <AdFactsCard
+                facts={adFacts.facts}
+                accountCurrency={adFacts.accountCurrency}
+                canEdit={canEdit}
+              />
+            ) : (
+              <Alert color="gray" variant="light">{t('facts.unavailable')}</Alert>
+            )}
+          </SectionCard>
+
+          <SectionCard
+            id="signals"
+            icon={<IconBell size={22} />}
+            title={t('settingsPage.alerts.title')}
+            lead={t('settingsPage.alerts.lead')}
+            aside={unreadCount > 0 ? <span className={classes.chip}>{t('settingsPage.alerts.unread', { count: unreadCount })}</span> : null}
+          >
             <IntelligencePreferencesCard
               initialNotificationPreference={notificationPreference}
               initialReportSubscription={reportSubscription}
             />
 
-            <Paper withBorder radius="md" p="md">
-              <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="signal" radius="md">
-                  <IconBell size={16} />
-                </ThemeIcon>
-                <div>
-                  <Text fw={700}>Recent notifications</Text>
-                  <Text size="sm" c="dimmed">
-                    The latest system messages and guardrail signals
-                  </Text>
-                </div>
-              </Group>
+            <hr className={classes.divider} />
+            <h3 className={classes.subTitle}>{t('settingsPage.alerts.recent')}</h3>
+            {notifications.length > 0 ? (
+              <ul className={classes.messages}>
+                {notifications.map((notification) => (
+                  <li key={notification.id} className={classes.message}>
+                    <div className={classes.messageTop}>
+                      <strong>
+                        {notification.title}
+                        {!notification.read && <span className={classes.new}>{t('settingsPage.alerts.new')}</span>}
+                      </strong>
+                      <time>{formatRelativeTime(notification.createdAt)}</time>
+                    </div>
+                    <p title={notification.message}>{formatNotificationPreviewMessage(notification.message)}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className={classes.message}>
+                <strong>{t('settingsPage.alerts.none')}</strong>
+                <p>{t('settingsPage.alerts.noneHint')}</p>
+              </div>
+            )}
+          </SectionCard>
 
-              <Stack gap="sm">
-                {notifications.length > 0 ? (
-                  notifications.map((notification) => (
-                    <Paper key={notification.id} withBorder radius="md" p="sm">
-                      <Group justify="space-between" align="flex-start" gap="md">
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <Group gap="xs" mb={4} wrap="wrap">
-                            {!notification.read ? (
-                              <Badge color="signal" variant="light">
-                                Unread
-                              </Badge>
-                            ) : null}
-                            {notification.type ? (
-                              <Badge color="gray" variant="outline">
-                                {notification.type}
-                              </Badge>
-                            ) : null}
-                          </Group>
-                          <Text fw={700} size="sm">
-                            {notification.title}
-                          </Text>
-                          <Text
-                            size="sm"
-                            c="dimmed"
-                            mt={4}
-                            lineClamp={2}
-                            title={notification.message}
-                          >
-                            {formatNotificationPreviewMessage(notification.message)}
-                          </Text>
-                        </div>
-                        <Text size="xs" c="dimmed">
-                          {formatRelativeTime(notification.createdAt)}
-                        </Text>
-                      </Group>
-                    </Paper>
-                  ))
-                ) : (
-                  <Paper withBorder radius="md" p="sm">
-                    <Text fw={700} size="sm">
-                      No recent notifications
-                    </Text>
-                    <Text size="sm" c="dimmed" mt={4}>
-                      DeepVisor will surface sync issues, notable shifts, and important account
-                      signals here as they occur.
-                    </Text>
-                  </Paper>
-                )}
-              </Stack>
-            </Paper>
+          <SectionCard id="appearance" icon={<IconPalette size={22} />} title={t('settingsPage.look.title')} lead={t('settingsPage.look.lead')}>
+            <AppearanceChoice />
+          </SectionCard>
 
+          <SectionCard
+            id="connections"
+            icon={<IconPlug size={22} />}
+            title={t('settingsPage.connections.title')}
+            lead={t('settingsPage.connections.lead')}
+            aside={<Button component="a" href="/integration" variant="light" leftSection={<IconArrowUpRight size={18} />}>{t('settingsPage.connections.manage')}</Button>}
+          >
+            <dl className={classes.facts} style={{ marginBottom: 0 }}>
+              <div><dt>Platforms</dt><dd>{connectedIntegrationsCount}/{Math.max(integrations.length, 1)} connected{integrationsNeedingAttention > 0 ? ` · ${integrationsNeedingAttention} need attention` : ''}</dd></div>
+              <div><dt>Ad accounts</dt><dd>{rollup.activeAccountCount} active · {rollup.syncedAccountCount} synced</dd></div>
+              <div><dt>Latest sync</dt><dd>{rollup.lastSyncedAt ? formatDateTime(rollup.lastSyncedAt) : 'Not synced yet'}</dd></div>
+              <div><dt>Following</dt><dd>{focusLabel}</dd></div>
+            </dl>
+          </SectionCard>
+
+          <div className={classes.more}>
+        <Disclosure title={t('settingsPage.connections.diagnostics')} id="connection-details">
+        <Card withBorder radius="lg" p="xl">
+          <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
+            <div>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                Connections
+              </Text>
+              <Title order={3}>Integrations and data health</Title>
+              <Text size="sm" c="dimmed" mt={4}>
+                This is where you confirm DeepVisor has the right platform access and enough
+                synced account data to produce useful outputs.
+              </Text>
+            </div>
+            <Button
+              component="a"
+              href="/integration"
+              variant="light"
+              radius="xl"
+              leftSection={<IconArrowUpRight size={16} />}
+            >
+              Manage integrations
+            </Button>
+          </Group>
+
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md" mb="md">
+            <SummaryCard
+              icon={<IconPlug size={18} />}
+              color="signal"
+              label="Platforms"
+              title={`${connectedIntegrationsCount}/${Math.max(integrations.length, 1)} connected`}
+              detail={
+                integrations.length > 0
+                  ? `${integrationsNeedingAttention} needing attention`
+                  : 'No platforms connected yet'
+              }
+            />
+            <SummaryCard
+              icon={<IconChartBar size={18} />}
+              color="signal"
+              label="Ad Accounts"
+              title={String(rollup.accountCount)}
+              detail={`${rollup.activeAccountCount} active · ${rollup.syncedAccountCount} synced`}
+            />
+            <SummaryCard
+              icon={<IconClock size={18} />}
+              color="signal"
+              label="Latest sync"
+              title={formatRelativeTime(rollup.lastSyncedAt)}
+              detail={rollup.lastSyncedAt ? formatDateTime(rollup.lastSyncedAt) : 'Setting up'}
+            />
+            <SummaryCard
+              icon={<IconTargetArrow size={18} />}
+              color="signal"
+              label="Current focus"
+              title={selectedAdAccount?.name ?? selectedPlatform?.displayName ?? 'Not set'}
+              detail={focusLabel}
+            />
           </SimpleGrid>
+
+          <Stack gap="sm">
+            {integrations.length > 0 ? (
+              integrations.map((integration) => (
+                <Paper key={integration.id} withBorder radius="md" p="md">
+                  <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
+                    <div style={{ flex: 1, minWidth: 240 }}>
+                      <Group gap="xs" mb={6} wrap="wrap">
+                        <StatusBadge status={integration.status}/>
+                        <Badge color="gray" variant="outline">
+                          {integration.name}
+                        </Badge>
+                      </Group>
+                      <Text fw={700}>{integration.key}</Text>
+                      <Text size="sm" c="dimmed" mt={6}>
+                        Connected {formatDateTime(integration.connectedAt)} · last synced{' '}
+                        {formatDateTime(integration.lastSyncedAt)}
+                      </Text>
+                      {integration.lastError ? (
+                        <Text size="sm" c="dimmed" mt={6}>
+                          {ownerMessages.connection}
+                        </Text>
+                      ) : null}
+                    </div>
+
+                    <Stack gap={6} align="flex-end">
+                      <Text size="xs" c="dimmed">
+                        Token expiry {formatDateTime(integration.tokenExpiresAt)}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        Updated {formatRelativeTime(integration.updatedAt)}
+                      </Text>
+                    </Stack>
+                  </Group>
+                </Paper>
+              ))
+            ) : (
+              <Paper withBorder radius="md" p="md">
+                <Text fw={700}>No platform integrations yet</Text>
+                <Text size="sm" c="dimmed" mt={6}>
+                  Connect Meta to make account performance available in Overview.
+                </Text>
+              </Paper>
+            )}
+          </Stack>
         </Card>
 
-        <AppearanceSettings />
-
-        <Disclosure title="Saved reports" id="report-archive">
+        </Disclosure>
+          </div>
+          <div className={classes.more}>
+        <Disclosure title={t('settingsPage.connections.reports')} id="report-archive">
         <Card withBorder radius="lg" p="xl">
           <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
             <div>
@@ -1011,231 +908,37 @@ export default async function SettingsPage() {
         </Card>
 
         </Disclosure>
-        <Disclosure title="Connection diagnostics" id="connections">
-        <Card withBorder radius="lg" p="xl">
-          <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
-            <div>
-              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                Connections
-              </Text>
-              <Title order={3}>Integrations and data health</Title>
-              <Text size="sm" c="dimmed" mt={4}>
-                This is where you confirm DeepVisor has the right platform access and enough
-                synced account data to produce useful outputs.
-              </Text>
+          </div>
+
+          <SectionCard id="access" icon={<IconLock size={22} />} title={t('settingsPage.account.title')} lead={t('settingsPage.account.lead')}>
+            <dl className={classes.facts}>
+              <div><dt>{t('settingsPage.account.plan')}</dt><dd>{formatPlanTier(subscriptionTier)}</dd></div>
+              <div><dt>{t('settingsPage.account.role')}</dt><dd>{formatStatusLabel(role)}</dd></div>
+              <div><dt>{t('settingsPage.account.accounts')}</dt><dd>{accountUsageText}</dd></div>
+            </dl>
+            <div className={classes.shortcuts}>
+              <div className={classes.shortcut}>
+                <strong>{t('settingsPage.account.reportsTitle')}</strong>
+                <p>{t('settingsPage.account.reportsBody')}</p>
+                <Button component="a" href="/reports" variant="light">{t('settingsPage.account.openReports')}</Button>
+              </div>
+              <div className={classes.shortcut}>
+                <strong>{t('settingsPage.account.connectionsTitle')}</strong>
+                <p>{t('settingsPage.account.connectionsBody')}</p>
+                <Button component="a" href="/integration" variant="light">{t('settingsPage.account.openConnections')}</Button>
+              </div>
             </div>
-            <Button
-              component="a"
-              href="/integration"
-              variant="light"
-              radius="xl"
-              leftSection={<IconArrowUpRight size={16} />}
-            >
-              Manage integrations
-            </Button>
-          </Group>
+          </SectionCard>
 
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md" mb="md">
-            <SummaryCard
-              icon={<IconPlug size={18} />}
-              color="signal"
-              label="Platforms"
-              title={`${connectedIntegrationsCount}/${Math.max(integrations.length, 1)} connected`}
-              detail={
-                integrations.length > 0
-                  ? `${integrationsNeedingAttention} needing attention`
-                  : 'No platforms connected yet'
-              }
-            />
-            <SummaryCard
-              icon={<IconChartBar size={18} />}
-              color="signal"
-              label="Ad Accounts"
-              title={String(rollup.accountCount)}
-              detail={`${rollup.activeAccountCount} active · ${rollup.syncedAccountCount} synced`}
-            />
-            <SummaryCard
-              icon={<IconClock size={18} />}
-              color="signal"
-              label="Latest sync"
-              title={formatRelativeTime(rollup.lastSyncedAt)}
-              detail={rollup.lastSyncedAt ? formatDateTime(rollup.lastSyncedAt) : 'Setting up'}
-            />
-            <SummaryCard
-              icon={<IconTargetArrow size={18} />}
-              color="signal"
-              label="Current focus"
-              title={selectedAdAccount?.name ?? selectedPlatform?.displayName ?? 'Not set'}
-              detail={focusLabel}
-            />
-          </SimpleGrid>
-
-          <Stack gap="sm">
-            {integrations.length > 0 ? (
-              integrations.map((integration) => (
-                <Paper key={integration.id} withBorder radius="md" p="md">
-                  <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
-                    <div style={{ flex: 1, minWidth: 240 }}>
-                      <Group gap="xs" mb={6} wrap="wrap">
-                        <StatusBadge status={integration.status}/>
-                        <Badge color="gray" variant="outline">
-                          {integration.name}
-                        </Badge>
-                      </Group>
-                      <Text fw={700}>{integration.key}</Text>
-                      <Text size="sm" c="dimmed" mt={6}>
-                        Connected {formatDateTime(integration.connectedAt)} · last synced{' '}
-                        {formatDateTime(integration.lastSyncedAt)}
-                      </Text>
-                      {integration.lastError ? (
-                        <Text size="sm" c="dimmed" mt={6}>
-                          {ownerMessages.connection}
-                        </Text>
-                      ) : null}
-                    </div>
-
-                    <Stack gap={6} align="flex-end">
-                      <Text size="xs" c="dimmed">
-                        Token expiry {formatDateTime(integration.tokenExpiresAt)}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        Updated {formatRelativeTime(integration.updatedAt)}
-                      </Text>
-                    </Stack>
-                  </Group>
-                </Paper>
-              ))
-            ) : (
-              <Paper withBorder radius="md" p="md">
-                <Text fw={700}>No platform integrations yet</Text>
-                <Text size="sm" c="dimmed" mt={6}>
-                  Connect Meta to make account performance available in Overview.
-                </Text>
-              </Paper>
-            )}
-          </Stack>
-        </Card>
-
-        </Disclosure>
-        <Card withBorder radius="lg" p="xl" id="access">
-          <Group justify="space-between" align="flex-start" mb="md" wrap="wrap">
+          <div className={classes.feedback}>
             <div>
-              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                Access
-              </Text>
-              <Title order={3}>Plan, permissions, and data actions</Title>
-              <Text size="sm" c="dimmed" mt={4}>
-                Current workspace role, plan limits, and account-level data controls.
-              </Text>
+              <strong>{t('settingsPage.feedback.title')}</strong>
+              <span>{t('settingsPage.feedback.body')}</span>
             </div>
-            <Badge color="signal" variant="light">
-              {formatPlanTier(subscriptionTier)}
-            </Badge>
-          </Group>
-
-          <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
-            <Paper withBorder radius="md" p="md">
-              <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="signal" radius="md">
-                  <IconLock size={16} />
-                </ThemeIcon>
-                <div>
-                  <Text fw={700}>Plan and permissions</Text>
-                  <Text size="sm" c="dimmed">
-                    Limits currently applied to this workspace
-                  </Text>
-                </div>
-              </Group>
-
-              <Stack gap="sm">
-                <InfoRow label="Plan tier" value={formatPlanTier(subscriptionTier)} />
-                <InfoRow label="Workspace role" value={formatStatusLabel(role)} />
-                <InfoRow label="Organization type" value={formatOrgType(organizationType)} />
-                <InfoRow
-                  label="Max ad accounts"
-                  value={unlimitedAccounts ? 'Unlimited' : String(limits.maxAdAccounts)}
-                />
-                <InfoRow
-                  label="Multiple accounts"
-                  value={limits.allowMultipleAccounts ? 'Allowed' : 'Single account only'}
-                />
-                <InfoRow
-                  label="Supported platforms"
-                  value={joinOrFallback(
-                    limits.maxPlatforms.map((platform) => formatStatusLabel(platform)),
-                    'None'
-                  )}
-                />
-              </Stack>
-            </Paper>
-
-            <Paper withBorder radius="md" p="md">
-              <Group gap="sm" mb="md">
-                <ThemeIcon variant="light" color="signal" radius="md">
-                  <IconDatabase size={16} />
-                </ThemeIcon>
-                <div>
-                  <Text fw={700}>Data and privacy</Text>
-                  <Text size="sm" c="dimmed">
-                    The realistic actions available from the current product surface
-                  </Text>
-                </div>
-              </Group>
-
-              <Stack gap="sm">
-                <Paper withBorder radius="md" p="sm">
-                  <Text fw={700} size="sm">
-                    Report exports
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    Use Reports to export the current account or workspace view as CSV or PDF.
-                  </Text>
-                  <Button
-                    component="a"
-                    href="/reports"
-                    size="xs"
-                    radius="xl"
-                    variant="light"
-                    color="signal"
-                    mt="md"
-                  >
-                    Open reports
-                  </Button>
-                </Paper>
-
-                <Paper withBorder radius="md" p="sm">
-                  <Text fw={700} size="sm">
-                    Integration review
-                  </Text>
-                  <Text size="sm" c="dimmed" mt={4}>
-                    Verify permissions, reconnect platforms, or confirm which account DeepVisor
-                    should follow.
-                  </Text>
-                  <Button
-                    component="a"
-                    href="/integration"
-                    size="xs"
-                    radius="xl"
-                    variant="light"
-                    color="gray"
-                    mt="md"
-                  >
-                    Open integrations
-                  </Button>
-                </Paper>
-
-                <DeleteAccount />
-              </Stack>
-            </Paper>
-          </SimpleGrid>
-        </Card>
-      </Stack>
-    <Card withBorder mt="lg" radius="md">
-        <Group justify="space-between" gap="sm">
-          <div><Text fw={600}>Beta feedback</Text><Text size="sm" c="dimmed">Tell us what happened and what you expected. Please omit passwords and access tokens.</Text></div>
-          <Button component="a" variant="default" href="mailto:info@deepvisor.com?subject=DeepVisor%20beta%20feedback">Send feedback</Button>
-        </Group>
-      </Card>
+            <Button component="a" variant="default" href="mailto:info@deepvisor.com?subject=DeepVisor%20beta%20feedback">{t('settingsPage.feedback.send')}</Button>
+          </div>
+        </div>
+      </div>
     </Container>
   );
 }

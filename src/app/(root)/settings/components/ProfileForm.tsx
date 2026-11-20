@@ -45,7 +45,7 @@ export default function ProfileForm({ initial }: Props) {
     <form onSubmit={save}>
       <Stack gap="md">
         <div>
-          <h2 className={classes.heading}>Personal details</h2>
+          <h3 className={classes.heading}>Personal details</h3>
           <p className={classes.helper}>Choose how your name and contact details appear in DeepVisor.</p>
         </div>
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
@@ -67,7 +67,7 @@ export default function ProfileForm({ initial }: Props) {
     <form onSubmit={changeEmail}>
       <Stack gap="md">
         <div>
-          <h2 className={classes.heading}>Sign-in email</h2>
+          <h3 className={classes.heading}>Sign-in email</h3>
           <p className={classes.helper}>Update the email address you use to access your account.</p>
         </div>
         <Text size="sm" className={classes.currentEmail}>Current email: <strong>{initial.email}</strong></Text>

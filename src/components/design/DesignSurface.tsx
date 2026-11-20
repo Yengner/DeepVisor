@@ -13,7 +13,7 @@ function subscribe(notify: () => void) {
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mantine-color-scheme'] });
   return () => observer.disconnect();
 }
-const useColorScheme = () => useSyncExternalStore(subscribe, readScheme, () => 'light' as const);
+export const useColorScheme = () => useSyncExternalStore(subscribe, readScheme, () => 'light' as const);
 
 /**
  * Theme is scoped to Stage B surfaces; it does not restyle unapproved pages.
