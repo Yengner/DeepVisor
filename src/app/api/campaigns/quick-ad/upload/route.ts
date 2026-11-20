@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { authorizeAssistant } from '@/lib/server/intelligence/assistant/access';
+import { authorizeSelectedMetaAccount } from '@/lib/server/intelligence/assistant/access';
 import { prepareQuickAdUpload } from '@/lib/server/quickAd/service';
 import { optionalNumber, quickAdFailure, readJson } from '../respond';
 
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const read = await readJson(request);
     if ('response' in read) return read.response;
     const body = Body.parse(read.body);
-    const scope = await authorizeAssistant(body.adAccountId);
+    const scope = await authorizeSelectedMetaAccount(body.adAccountId);
     const data = await prepareQuickAdUpload(scope, {
       type: body.type,
       size: body.size,

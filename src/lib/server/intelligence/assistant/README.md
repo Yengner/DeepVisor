@@ -4,6 +4,8 @@
 > While off, the layout renders no drawer or launcher and skips building its payload, the
 > dashboard ad-card and mobile top-bar entry points are hidden (`assistantAvailability.ts`),
 > and `authorizeAssistant` refuses both API routes with 404 before reading the session.
+> Quick ad and the "run your best ad again" suggestion use `authorizeSelectedMetaAccount`
+> (the same account check without the switch), so they keep working while the assistant is off.
 
 The existing docked [assistant](../../../../components/layout/AiAssistantDrawer.tsx)
 uses the official installed OpenAI SDK and Responses API through
