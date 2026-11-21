@@ -185,7 +185,7 @@ export default function ManualMetaAdSetStarter({
                                     </Card>
                                 </SimpleGrid>
 
-                                <Card withBorder radius="lg" p="md" bg="white">
+                                <Card withBorder radius="lg" p="md" bg="var(--dv-card-panel)">
                                     <Stack gap="xs">
                                         <Text size="sm" fw={700}>
                                             What happens next

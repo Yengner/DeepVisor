@@ -1,85 +1,132 @@
+/*
+ * Campaign draft builder, in the Insights popup's language: headline + one plain sentence +
+ * reassurance; the step tabs are the only step label; one main button per step; 48px controls;
+ * nothing under 13px; --dv-* tokens so dark mode follows; red only for real problems.
+ */
 .page {
   min-width: 0;
+  color: var(--dv-text);
+  font-size: 16px;
+  line-height: 1.55;
 }
+.page :focus-visible { outline: 3px solid var(--dv-primary-strong); outline-offset: 3px; }
 
-.stageHeader {
-  min-width: 0;
-  padding: 12px 2px;
-  border-top: 1px solid var(--dv-border);
-  border-bottom: 1px solid var(--dv-border);
+/* ---------- Header ---------- */
+.hero { display: grid; gap: 6px; }
+.heroTitle {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(28px, 4vw, 34px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--dv-text);
 }
+.heroLead { margin: 0; max-width: 60ch; font-size: 17px; color: var(--dv-text-muted); }
+.heroReassure { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; color: var(--dv-text-muted); }
+.heroReassure svg { flex: none; }
 
-.stageControl {
-  width: min(390px, 100%);
-}
-
-.stageVisible {
-  min-width: 0;
-}
-
-.stageHidden {
-  display: none;
-}
-
+/* ---------- Steps ---------- */
+.stageHeader { min-width: 0; }
+.stageControl { width: 100%; }
+.stageVisible { min-width: 0; }
+.stageHidden { display: none; }
 .sectionCard {
   min-width: 0;
-  border-radius: 8px;
+  border-color: var(--dv-card-border) !important;
+  border-radius: var(--dv-card-radius) !important;
+  background: var(--dv-card-panel) !important;
 }
 
+/* ---------- Pills (status words) with readable contrast in both themes ---------- */
+.pill, .pillOk, .pillWarm {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--dv-card-border);
+  background: var(--dv-card-panel);
+  color: var(--dv-neutral-text);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pillOk { color: var(--dv-success); border-color: color-mix(in srgb, var(--dv-success) 35%, transparent); }
+.pillWarm { color: var(--dv-gap-text); border-color: var(--dv-gap-border); background: var(--dv-gap-bg); }
+
+.summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 700; }
+.inlineLink { font-weight: 700; color: inherit; }
+.estimateNumber {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--dv-primary-strong);
+}
 .estimateDetails summary {
   cursor: pointer;
-  color: var(--mantine-color-dimmed);
-  font-size: var(--mantine-font-size-sm);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--dv-text-muted);
+  font-size: 15px;
   font-weight: 700;
 }
 
-/* Back / Continue under the form: just the two buttons, no bar, no step word (the step tabs at
-   the top already say where you are). */
+/* ---------- Readable at arm's length: controls 48px, text 13px and up ---------- */
+.page :global(.mantine-Title-root) { font-family: var(--font-display, inherit); color: var(--dv-text); }
+.page :global(.mantine-Title-root[data-order='3']) { font-size: 21px; letter-spacing: -0.02em; }
+.page :global(.mantine-Title-root[data-order='4']) { font-size: 18px; }
+.page :global(.mantine-Text-root[data-size='xs']) { font-size: 13px; }
+.page :global(.mantine-Text-root[data-size='sm']) { font-size: 15px; }
+.page :global(.mantine-InputWrapper-label) { margin-bottom: 6px; font-size: 15px; font-weight: 700; color: var(--dv-text); }
+.page :global(.mantine-InputWrapper-description) { margin-bottom: 6px; font-size: 14px; line-height: 1.5; color: var(--dv-text-muted); }
+.page :global(.mantine-Input-input) { min-height: 48px; font-size: 16px; }
+.page :global(.mantine-Textarea-input) { padding-block: 12px; }
+.page :global(.mantine-Button-root) { min-height: 48px; padding-inline: 18px; font-size: 16px; font-weight: 700; }
+.page :global(.mantine-SegmentedControl-root) { padding: 4px; }
+.page :global(.mantine-SegmentedControl-label) {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: normal;
+  text-align: center;
+}
+.page :global(.mantine-Switch-label), .page :global(.mantine-Checkbox-label) { font-size: 16px; font-weight: 600; }
+.page :global(.mantine-Switch-description), .page :global(.mantine-Checkbox-description) { font-size: 14px; }
+.page :global(.mantine-Checkbox-input) { width: 24px; height: 24px; }
+.page :global(.mantine-Checkbox-body) { align-items: center; min-height: 44px; }
+.page :global(.mantine-Badge-root) { height: 28px; padding-inline: 11px; font-size: 13px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.page :global(.mantine-Alert-title) { font-size: 16px; }
+.page :global(.mantine-Alert-message) { font-size: 15px; }
+
+/* Back / Continue under the form: just the two buttons, no bar, no step word. */
 .stageFooter {
   z-index: 8;
   min-width: 0;
   padding: 8px 0 0;
 }
 
-.desktopStageAction {
-  padding-top: 4px;
-}
-
 @media (max-width: 48em) {
   .page {
     width: 100%;
-    padding: 10px 12px 24px !important;
+    padding: 10px 16px 24px !important;
     overflow-x: hidden;
   }
-
-  .stageHeader {
-    padding: 10px 0;
-  }
-
-  .stageHeader :global(.mantine-Group-root) {
-    align-items: stretch;
-  }
-
-  .stageControl {
-    width: 100%;
-  }
-
-  .sectionCard {
-    padding: 14px !important;
-  }
-
+  .heroLead { font-size: 16px; }
+  .sectionCard { padding: 16px !important; }
   /* Phones: same as desktop, the buttons sit at the bottom of the page after the form. */
-  .stageFooter {
-    padding: 12px 0 0;
-  }
-
-  .desktopStageAction {
-    display: none;
-  }
-
-  .stageFooter :global(.mantine-Button-root) {
-    min-height: 46px;
-  }
+  .stageFooter { padding: 12px 0 0; }
 }
 
 @media (max-width: 360px) {
@@ -87,13 +134,7 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .stageFooter :global(.mantine-Button-root) {
-    width: 100%;
-  }
-
+  .stageFooter :global(.mantine-Button-root) { width: 100%; }
   /* First step has only Continue: let it use the whole row. */
-  .stageFooter > :only-child {
-    grid-column: 1 / -1;
-  }
+  .stageFooter > :only-child { grid-column: 1 / -1; }
 }
