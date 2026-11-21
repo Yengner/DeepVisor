@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { loadTableDelivery } from '@/lib/server/campaigns/tableDelivery';
 import CampaignDashboard from "@/components/campaigns/CampaignDashboard";
-import SavedPlans from "@/components/campaigns/SavedPlans";
+import { countDrafts } from "@/lib/server/suggestions/drafts";
+import { createServerClient } from "@/lib/server/supabase/server";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { Suspense } from "react";
 import CampaignClientFallback from "./CampaignClientFallback";
@@ -178,12 +179,11 @@ export default async function CampaignPage({
     );
   }
 
+  // Saved drafts live on /campaigns/drafts; Campaigns only shows a small count button.
+  const draftCount = await countDrafts(await createServerClient(), { businessId, adAccountId: selectedAdAccountId });
+
   return (
     <>
-      {/* Run-again plans and new-ad drafts kept in DeepVisor; hidden when there are none. */}
-      <Suspense fallback={null}>
-        <SavedPlans businessId={businessId} adAccountId={selectedAdAccountId} />
-      </Suspense>
       <Suspense fallback={<CampaignClientFallback />}>
         <CampaignDashboard
           key={tableRange.range}
@@ -199,6 +199,7 @@ export default async function CampaignPage({
           initialSelection={initialSelection}
           initialAdSets={initialAdSets}
           initialAds={initialAds}
+          draftCount={draftCount}
         />
       </Suspense>
     </>

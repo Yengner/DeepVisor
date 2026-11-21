@@ -1,0 +1,21 @@
+/* One quiet line above the builder; blue only on the link. */
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  /* Same edges as the builder below it (1320px container, 16px padding). */
+  width: calc(100% - 32px);
+  max-width: 1288px;
+  margin: 16px auto 0;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--dv-primary-soft);
+  color: var(--dv-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+.notice svg { flex: none; color: var(--dv-primary-strong); }
+.link { min-height: 32px; display: inline-flex; align-items: center; font-weight: 700; color: var(--dv-primary-strong); }
+.link:focus-visible { outline: 3px solid var(--dv-primary-strong); outline-offset: 2px; }

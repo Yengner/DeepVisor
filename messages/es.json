@@ -857,7 +857,7 @@
   "rerun": {
     "metaTitle": "Repetir este anuncio",
     "title": "Repetir este anuncio",
-    "lead": "Elige tu presupuesto y cuánto tiempo corre. Revisas el borrador antes de que algo se publique.",
+    "lead": "Elige tu presupuesto y cuánto tiempo corre, y guarda el plan. No se envía nada a Meta.",
     "back": "Volver al Resumen",
     "planTitle": "Tu plan",
     "budget": "Presupuesto diario",
@@ -908,7 +908,7 @@
     "discardYes": "Sí, descartar",
     "keep": "Conservarlo",
     "discarded": "Plan descartado.",
-    "seeSaved": "Ver planes guardados",
+    "seeSaved": "Ver tus borradores",
     "reassureSaved": "Se guarda solo en DeepVisor. No se envía nada a Meta.",
     "error": {
       "failed": "No se pudo guardar el plan. Inténtalo de nuevo.",
@@ -918,15 +918,27 @@
       "conflict": "Este plan se cambió en otra ventana. Recarga la página para ver lo más reciente."
     }
   },
-  "savedPlans": {
-    "title": "Planes guardados",
-    "lead": "Se guardan solo en DeepVisor. No se envía nada a Meta.",
+  "drafts": {
+    "metaTitle": "Borradores",
+    "title": "Tus borradores",
+    "lead": "Planes y anuncios nuevos que guardaste. Se quedan en DeepVisor; no se envía nada a Meta.",
+    "back": "Volver a Campañas",
+    "plansTitle": "Repetir un anuncio",
+    "adsTitle": "Borradores de campaña",
     "plan": "{budget} al día × {days, plural, one {# día} other {# días}}",
+    "total": "Unos {total} en total",
     "runs": "{start} – {end}",
-    "changed": "Último cambio el {date}",
-    "edit": "Editar",
-    "open": "Abrir",
-    "rerun": "Repetir",
-    "newAd": "Borrador de anuncio nuevo"
+    "datesPassed": "Las fechas nuevas se ponen cuando lo abres.",
+    "changed": "Guardado el {date}",
+    "edit": "Editar plan",
+    "open": "Abrir borrador",
+    "untitled": "Borrador sin nombre",
+    "emptyTitle": "Todavía no hay borradores",
+    "emptyBody": "Cuando guardes un plan para repetir un anuncio, o empieces un anuncio nuevo, te espera aquí hasta que lo necesites.",
+    "quickAd": "Hacer un anuncio rápido",
+    "notice": "{count, plural, one {Tienes # borrador guardado.} other {Tienes # borradores guardados.}}",
+    "noticeLink": "Ver borradores",
+    "button": "{count, plural, one {# borrador} other {# borradores}}",
+    "unavailable": "No se pudieron cargar tus borradores. Inténtalo de nuevo en un momento."
   }
 }

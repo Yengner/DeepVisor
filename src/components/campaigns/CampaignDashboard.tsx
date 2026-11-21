@@ -25,6 +25,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconFilterOff,
+  IconFileText,
   IconPlus,
   IconSearch,
 } from '@tabler/icons-react';
@@ -57,6 +58,8 @@ const RANGE_LABELS: Record<TableRange, string> = { today: 'Today', '7d': '7D', '
 const RANGE_CAPTIONS: Record<TableRange, string> = { today: 'today so far', '7d': 'last 7 days', '30d': 'last 30 days', lifetime: 'lifetime' };
 
 interface CampaignDashboardProps {
+  /** Saved plans and new-ad drafts for this account; a small button appears when above 0. */
+  draftCount?: number;
   /** Period for every number on the page; changing it reloads the page data. */
   range?: TableRange;
   /** Last successful Meta sync for the account, shown on the refresh control. */
@@ -140,6 +143,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
 
   const router = useRouter();
   const tCampaigns = useTranslations('campaigns');
+  const tDrafts = useTranslations('drafts');
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const platformColor = getPlatformColor(platform.name);
@@ -602,6 +606,11 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
               <Group gap="sm" wrap="wrap" className={classes.actionGroup}>
                 {activeTab === 'campaigns' ? (
                   <>
+                    {props.draftCount ? (
+                      <Button radius="xl" variant="subtle" leftSection={<IconFileText size={16} />} onClick={() => router.push('/campaigns/drafts')}>
+                        {tDrafts('button', { count: props.draftCount })}
+                      </Button>
+                    ) : null}
                     <Button radius="xl" variant="default" onClick={() => router.push('/campaigns/quick')}>
                       {tCampaigns('quickAd')}
                     </Button>

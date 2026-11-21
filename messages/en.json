@@ -857,7 +857,7 @@
   "rerun": {
     "metaTitle": "Run this ad again",
     "title": "Run this ad again",
-    "lead": "Choose your budget and how long it runs. You check the draft before anything goes live.",
+    "lead": "Choose your budget and how long it runs, then save the plan. Nothing is sent to Meta.",
     "back": "Back to Overview",
     "planTitle": "Your plan",
     "budget": "Daily budget",
@@ -908,7 +908,7 @@
     "discardYes": "Yes, discard",
     "keep": "Keep it",
     "discarded": "Plan discarded.",
-    "seeSaved": "See saved plans",
+    "seeSaved": "See your drafts",
     "reassureSaved": "Saved in DeepVisor only. Nothing is sent to Meta.",
     "error": {
       "failed": "The plan could not be saved. Please try again.",
@@ -918,15 +918,27 @@
       "conflict": "This plan was changed in another window. Reload the page to see the latest."
     }
   },
-  "savedPlans": {
-    "title": "Saved plans",
-    "lead": "Kept in DeepVisor only. Nothing is sent to Meta.",
+  "drafts": {
+    "metaTitle": "Drafts",
+    "title": "Your drafts",
+    "lead": "Plans and new ads you saved. They stay in DeepVisor; nothing is sent to Meta.",
+    "back": "Back to Campaigns",
+    "plansTitle": "Run an ad again",
+    "adsTitle": "Campaign drafts",
     "plan": "{budget} a day × {days, plural, one {# day} other {# days}}",
+    "total": "About {total} in total",
     "runs": "{start} – {end}",
-    "changed": "Last changed {date}",
-    "edit": "Edit",
-    "open": "Open",
-    "rerun": "Run again",
-    "newAd": "New ad draft"
+    "datesPassed": "New dates are set when you open it.",
+    "changed": "Saved {date}",
+    "edit": "Edit plan",
+    "open": "Open draft",
+    "untitled": "Untitled draft",
+    "emptyTitle": "No drafts yet",
+    "emptyBody": "When you save a plan to run an ad again, or start a new ad, it waits here until you're ready.",
+    "quickAd": "Make a Quick ad",
+    "notice": "{count, plural, one {You have # saved draft.} other {You have # saved drafts.}}",
+    "noticeLink": "See drafts",
+    "button": "{count, plural, one {# draft} other {# drafts}}",
+    "unavailable": "Your drafts could not be loaded. Please try again shortly."
   }
 }

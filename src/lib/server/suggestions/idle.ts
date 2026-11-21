@@ -101,7 +101,7 @@ async function adSetHistory(db: Db, input: SourceInput, adSetId: string, destina
 }
 
 /** Picture of the ad set's latest ad, chosen exactly like the dashboard cards (`mediaFor`). */
-async function adSetMedia(db: Db, input: SourceInput, adSetId: string): Promise<SuggestionMedia | null> {
+export async function adSetMedia(db: Db, input: Pick<SourceInput, 'businessId' | 'accountId'>, adSetId: string): Promise<SuggestionMedia | null> {
   const { data: ads, error } = await db.from('ad_dims').select('creative_id, status').eq('ad_account_id', input.accountId)
     .eq('adset_external_id', adSetId).not('creative_id', 'is', null).order('created_time', { ascending: false, nullsFirst: false }).limit(5);
   if (error) throw error;
