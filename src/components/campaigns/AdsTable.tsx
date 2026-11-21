@@ -5,6 +5,8 @@ import { MediaImage } from './exploration/AdvertisingExplorer';
 import type { AdLifetimeRow } from '@/lib/server/data';
 import { Button, Group, Menu, ScrollArea, Table, Text } from '@mantine/core';
 import { IconChartBar, IconCopyPlus, IconExternalLink } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
+import { useLabels } from '@/lib/client/hooks/useLabels';
 import {
   EmptyRow,
   lastActivity,
@@ -41,18 +43,12 @@ interface AdsTableProps {
   timezone?: string | null;
 }
 
-const EMPTY_TITLE = 'No ads in this ad set';
-const EMPTY_HINT = 'Ads appear here after the next Meta sync that includes them.';
 
 /** Only formats with an unambiguous owner-facing label; Meta's SHARE/STATUS types are omitted. */
-const FORMAT_LABELS: Record<string, string> = {
-  VIDEO: 'Video',
-  PHOTO: 'Image',
-  IMAGE: 'Image',
-  CAROUSEL: 'Carousel',
-};
-function formatLabel(value?: string | null): string | null {
-  return value ? FORMAT_LABELS[value.toUpperCase()] ?? null : null;
+const FORMATS = new Set(['VIDEO', 'PHOTO', 'IMAGE', 'CAROUSEL']);
+function formatKey(value?: string | null): 'VIDEO' | 'PHOTO' | 'IMAGE' | 'CAROUSEL' | null {
+  const key = value?.toUpperCase();
+  return key && FORMATS.has(key) ? key as 'VIDEO' | 'PHOTO' | 'IMAGE' | 'CAROUSEL' : null;
 }
 
 export default function AdsTable({
@@ -70,27 +66,30 @@ export default function AdsTable({
   timezone = null,
   range = 'lifetime',
 }: AdsTableProps) {
+  const t = useTranslations('table');
+  const labels = useLabels();
+  const EMPTY_TITLE = t('empty.adsTitle'), EMPTY_HINT = t('empty.adsHint');
   const metricCount = useMetricColumnCount();
-  const noDelivery = range === 'lifetime' ? null : 'No delivery in this period';
+  const noDelivery = range === 'lifetime' ? null : t('noDelivery');
   const { sorted, sort, toggle, benchmarkFor } = useTableRows(
     ads,
-    (ad) => ({ name: ad.name || 'Unnamed ad', metrics: rowMetrics(ad) }),
+    (ad) => ({ name: ad.name || t('unnamedAd'), metrics: rowMetrics(ad) }),
     () => 'all',
-    () => 'ads in this ad set',
+    () => t('group.ads'),
   );
-  if (loading) return <TableSkeleton label="ads" />;
+  if (loading) return <TableSkeleton label={t('loadingAds')} />;
 
   const rows = sorted.map((ad) => {
     const id = ad.ad_id ?? ad.id;
     return {
       ad,
       id,
-      name: ad.name || 'Unnamed ad',
+      name: ad.name || t('unnamedAd'),
       metrics: rowMetrics(ad),
       benchmark: benchmarkFor(ad),
       selected: selectedAdId === id,
-      format: formatLabel(ad.ad_format),
-      last: lastActivity(ad.end_date, ad.last_day, timezone),
+      format: (() => { const key = formatKey(ad.ad_format); return key ? t(`format.${key}`) : null; })(),
+      last: labels.displayDate(lastActivity(ad.end_date, ad.last_day, timezone)),
       previewImage: ad.creativePreview?.image ?? null,
       reportHref: buildEntityReportUrl({
         scope: 'ad',
@@ -109,7 +108,7 @@ export default function AdsTable({
     <>
       {onRunAgain ? (
         <Menu.Item leftSection={<IconCopyPlus size={16} />} onClick={() => onRunAgain(ad)}>
-          Run again
+          {t('runAgain')}
         </Menu.Item>
       ) : null}
       {previewImage ? (
@@ -120,11 +119,11 @@ export default function AdsTable({
           target="_blank"
           rel="noopener noreferrer"
         >
-          Open creative
+          {t('openCreative')}
         </Menu.Item>
       ) : null}
       <Menu.Item leftSection={<IconChartBar size={16} />} component="a" href={reportHref}>
-        View analytics
+        {t('viewAnalytics')}
       </Menu.Item>
     </>
   );
@@ -176,7 +175,7 @@ export default function AdsTable({
 
               <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
                 <Text size="xs" c="dimmed" lineClamp={1} className={classes.mobileActivity}>
-                  {ad.start_date || '—'} – {last}
+                  {labels.displayDate(ad.start_date)} – {last}
                 </Text>
                 {onRunAgain ? (
                   <Button
@@ -190,7 +189,7 @@ export default function AdsTable({
                       onRunAgain(ad);
                     }}
                   >
-                    Run again
+                    {t('runAgain')}
                   </Button>
                 ) : null}
               </Group>
@@ -216,12 +215,12 @@ export default function AdsTable({
         >
           <Table.Thead>
             <Table.Tr>
-              <SortHeader label="Ad" sortKey="name" sort={sort} onSort={toggle} style={{ width: 360, minWidth: 280, maxWidth: 360 }} />
+              <SortHeader label={t('col.ad')} sortKey="name" sort={sort} onSort={toggle} style={{ width: 360, minWidth: 280, maxWidth: 360 }} />
               <StatusHeader />
               <MetricHeaders sort={sort} onSort={toggle} />
-              <Table.Th className={classes.nowrap}>First activity</Table.Th>
-              <Table.Th className={classes.nowrap}>Last activity</Table.Th>
-              <Table.Th className={classes.actionCell}><span className={classes.srOnly}>Actions</span></Table.Th>
+              <Table.Th className={classes.nowrap}>{t('col.firstActivity')}</Table.Th>
+              <Table.Th className={classes.nowrap}>{t('col.lastActivity')}</Table.Th>
+              <Table.Th className={classes.actionCell}><span className={classes.srOnly}>{t('col.actions')}</span></Table.Th>
             </Table.Tr>
           </Table.Thead>
 
@@ -249,14 +248,14 @@ export default function AdsTable({
                         <TruncatedName name={name} />
                         {format ? <Text size="xs" c="dimmed">{format}</Text> : null}
                         {range === 'lifetime' && !ad.delivery && metrics.available ? (
-                          <Text size="xs" c="dimmed" className={classes.rowContext}>Not delivering now · lifetime history</Text>
+                          <Text size="xs" c="dimmed" className={classes.rowContext}>{t('notDeliveringNow')}</Text>
                         ) : null}
                       </div>
                     </div>
                   </Table.Td>
                   <Table.Td><StatusCell status={ad.status} delivering={ad.delivery} /></Table.Td>
                   <MetricCells metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} noDeliveryNote={noDelivery} />
-                  <Table.Td className={classes.nowrap}><Text size="sm">{ad.start_date || '—'}</Text></Table.Td>
+                  <Table.Td className={classes.nowrap}><Text size="sm">{labels.displayDate(ad.start_date)}</Text></Table.Td>
                   <Table.Td className={classes.nowrap}><Text size="sm">{last}</Text></Table.Td>
                   <Table.Td className={classes.actionCell}>
                     <RowActions name={name}>{menuItems(ad, previewImage, reportHref)}</RowActions>

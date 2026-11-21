@@ -3,6 +3,8 @@
 import '@mantine/dates/styles.css';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
+import { useLabels } from '@/lib/client/hooks/useLabels';
 import {
   Accordion,
   Alert,
@@ -234,11 +236,11 @@ function wallTimeDurationDays(startValue: string | null, endValue: string | null
   return Math.max(1, Math.ceil((endMs - startMs) / DAY_MS));
 }
 
-function formatWallTime(value: string | null): string {
+function formatWallTime(value: string | null, notSet: string, intl: string): string {
   const parts = parseDateTimeParts(value);
-  if (!parts) return 'Not set';
+  if (!parts) return notSet;
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(intl, {
     dateStyle: 'medium',
     timeStyle: 'short',
     timeZone: 'UTC',
@@ -281,12 +283,6 @@ function createIdempotencyKey(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-function sourceLabel(sourceType: ReuseDraftSourceType): string {
-  if (sourceType === 'adset') return 'Ad set';
-  if (sourceType === 'ad') return 'Ad';
-  return 'Campaign';
-}
-
 function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
     <div className={classes.reviewRow}>
@@ -303,6 +299,12 @@ export default function RunAgainSheet({
   accountTimezone,
   onClose,
 }: RunAgainSheetProps) {
+  const t = useTranslations('runAgainSheet');
+  const tTable = useTranslations('table');
+  const labels = useLabels();
+  const intl = useLocale() === 'es' ? 'es-US' : 'en-US';
+  const sourceLabel = (sourceType: ReuseDraftSourceType) => t(`source.${sourceType === 'adset' ? 'adset' : sourceType === 'ad' ? 'ad' : 'campaign'}`);
+  const wallTime = (value: string | null) => formatWallTime(value, t('notSet'), intl);
   const router = useRouter();
   const isMobile = useMediaQuery('(max-width: 48em)');
   const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -368,10 +370,10 @@ export default function RunAgainSheet({
   const requiresIncreaseConfirmation = budgetIncreasePercent > 25;
   const costPerResult = source && source.results > 0 ? source.spend / source.results : 0;
   const sourcePath = source?.sourceType === 'ad'
-    ? `${source.campaignName || 'Campaign'} / ${source.adSetName || 'Ad set'}`
+    ? `${source.campaignName || t('source.campaign')} / ${source.adSetName || t('source.adset')}`
     : source?.sourceType === 'adset'
-      ? source.campaignName || 'Campaign'
-      : 'Campaign-level settings';
+      ? source.campaignName || t('source.campaign')
+      : t('campaignLevel');
   const creativeCanBeReused = source?.sourceType === 'ad' && source.creativeAvailable !== false;
   const normalizedObjective = source?.objective?.trim().toUpperCase() || '';
   const sourceObjectiveSupported = SUPPORTED_RUN_AGAIN_OBJECTIVES.has(normalizedObjective);
@@ -415,25 +417,25 @@ export default function RunAgainSheet({
     const minimumBudget = budgetType === 'daily' ? 1 : 50;
 
     if (!Number.isFinite(budgetAmount) || budgetAmount < minimumBudget) {
-      nextErrors.budgetAmount = `Enter at least ${formatCurrencyAmount(minimumBudget, currencyCode)}.`;
+      nextErrors.budgetAmount = t('atLeast', { amount: formatCurrencyAmount(minimumBudget, currencyCode) });
     }
     if (!startIso) {
-      nextErrors.startAt = 'Choose a valid start date and time.';
+      nextErrors.startAt = t('startInvalid');
     } else if (new Date(startIso).getTime() <= Date.now()) {
-      nextErrors.startAt = 'Choose a start time in the future.';
+      nextErrors.startAt = t('startPast');
     }
     if (!endIso) {
-      nextErrors.endAt = 'Choose a valid end date and time.';
+      nextErrors.endAt = t('endInvalid');
     } else if (startIso && new Date(endIso).getTime() <= new Date(startIso).getTime()) {
-      nextErrors.endAt = 'End time must be after the start time.';
+      nextErrors.endAt = t('endBeforeStart');
     }
     if (requiresIncreaseConfirmation && !increaseConfirmed) {
-      nextErrors.budgetConfirmation = 'Confirm the budget increase before creating the draft.';
+      nextErrors.budgetConfirmation = t('confirmIncreaseError');
     }
     if (!sourceObjectiveSupported) {
       nextErrors.sourceCampaignId = normalizedObjective
-        ? `Objective ${normalizedObjective} needs a different campaign workflow.`
-        : 'The source campaign objective is unavailable.';
+        ? t('objectiveWorkflow', { objective: normalizedObjective })
+        : t('objectiveUnknown');
     }
 
     return nextErrors;
@@ -480,7 +482,7 @@ export default function RunAgainSheet({
         setError(submitError.message);
         setFieldErrors(submitError.fieldErrors);
       } else {
-        setError('The draft could not be created. Your original campaign was not changed.');
+        setError(t('createFailed'));
       }
       requestAnimationFrame(() => scrollRegionRef.current?.scrollTo({ top: 0, behavior: 'smooth' }));
     } finally {
@@ -511,7 +513,7 @@ export default function RunAgainSheet({
             <IconCopyPlus size={19} />
           </ThemeIcon>
           <div>
-            <Text size="xs" c="dimmed" fw={800} tt="uppercase">Run again</Text>
+            <Text size="sm" c="dimmed" fw={700}>{t('eyebrow')}</Text>
             <Text fw={800} lineClamp={1}>{source.name}</Text>
           </div>
         </Group>
@@ -532,24 +534,23 @@ export default function RunAgainSheet({
         <div ref={scrollRegionRef} className={classes.scrollRegion}>
           <Stack gap="lg">
             <Alert color="green" variant="light" icon={<IconShieldCheck size={18} />}>
-              This creates a paused DeepVisor draft for review. It does not change{' '}
-              <strong>{source.name}</strong> or publish anything on Meta.
+              {t.rich('safe', { name: source.name, b: chunks => <strong>{chunks}</strong> })}
             </Alert>
 
             {!sourceObjectiveSupported ? (
               <Alert
                 color="red"
                 icon={<IconAlertTriangle size={18} />}
-                title="This source is not available for Run again"
+                title={t('unsupportedTitle')}
               >
                 {normalizedObjective
-                  ? `Objective ${normalizedObjective} is not supported by the current review builder.`
-                  : 'The source campaign objective is unavailable.'}
+                  ? t('unsupported', { objective: normalizedObjective })
+                  : t('objectiveUnknown')}
               </Alert>
             ) : null}
 
             {error ? (
-              <Alert color="red" icon={<IconAlertTriangle size={18} />} title="Draft not created">
+              <Alert color="red" icon={<IconAlertTriangle size={18} />} title={t('notCreated')}>
                 <Stack gap={4}>
                   <Text size="sm">{error}</Text>
                   {Object.values(fieldErrors).map((message) => (
@@ -560,7 +561,7 @@ export default function RunAgainSheet({
             ) : null}
 
             {!error && Object.keys(fieldErrors).length > 0 ? (
-              <Alert color="red" icon={<IconAlertTriangle size={18} />} title="Check these settings">
+              <Alert color="red" icon={<IconAlertTriangle size={18} />} title={t('checkSettings')}>
                 <Stack gap={4}>
                   {Array.from(new Set(Object.values(fieldErrors))).map((message) => (
                     <Text key={message} size="sm">{message}</Text>
@@ -586,20 +587,20 @@ export default function RunAgainSheet({
 
               <div className={classes.metricGrid}>
                 <div>
-                  <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Spend</Text>
+                  <Text size="sm" c="dimmed" fw={700}>{tTable('metric.spend')}</Text>
                   <Text fw={800}>{formatCurrencyAmount(source.spend, currencyCode)}</Text>
                 </div>
                 <div>
-                  <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Results</Text>
-                  <Text fw={800}>{source.results.toLocaleString()}</Text>
+                  <Text size="sm" c="dimmed" fw={700}>{tTable('metric.results')}</Text>
+                  <Text fw={800}>{source.results.toLocaleString(intl)}</Text>
                 </div>
                 <div>
-                  <Text size="10px" c="dimmed" tt="uppercase" fw={800}>Cost / result</Text>
+                  <Text size="sm" c="dimmed" fw={700}>{tTable('metric.costPerResult')}</Text>
                   <Text fw={800}>{formatCurrencyAmount(costPerResult, currencyCode)}</Text>
                 </div>
                 <div>
-                  <Text size="10px" c="dimmed" tt="uppercase" fw={800}>CTR</Text>
-                  <Text fw={800}>{source.ctr != null ? `${source.ctr.toFixed(2)}%` : 'Not available'}</Text>
+                  <Text size="sm" c="dimmed" fw={700}>{tTable('metric.ctr')}</Text>
+                  <Text fw={800}>{source.ctr != null ? `${source.ctr.toFixed(2)}%` : t('notAvailable')}</Text>
                 </div>
               </div>
             </Paper>
@@ -609,18 +610,18 @@ export default function RunAgainSheet({
                 <IconTimezone size={17} aria-hidden="true" />
                 <Text size="sm" fw={700}>{normalizedCurrency} | {timezone}</Text>
               </Group>
-              <Text size="xs" c="dimmed">
+              <Text size="sm" c="dimmed">
                 {timezoneIsFallback
-                  ? 'Account timezone was unavailable, so schedule fields use your device timezone.'
-                  : 'Schedule fields use the ad account timezone.'}
+                  ? t('zoneFallback')
+                  : t('zoneAccount')}
               </Text>
             </div>
 
             <section className={classes.section}>
               <div className={classes.sectionHeading}>
-                <Text fw={800}>Budget</Text>
+                <Text fw={800}>{t('budget')}</Text>
                 <Text size="sm" c="dimmed">
-                  Previous delivery averaged {formatCurrencyAmount(historicalDailySpend, currencyCode)} per active day.
+                  {t('previousPace', { amount: formatCurrencyAmount(historicalDailySpend, currencyCode) })}
                 </Text>
               </div>
 
@@ -629,15 +630,15 @@ export default function RunAgainSheet({
                 value={budgetType}
                 onChange={handleBudgetTypeChange}
                 data={[
-                  { value: 'daily', label: 'Daily budget' },
-                  { value: 'lifetime', label: 'Lifetime budget' },
+                  { value: 'daily', label: t('daily') },
+                  { value: 'lifetime', label: t('lifetime') },
                 ]}
               />
               <NumberInput
-                label={`Budget amount (${normalizedCurrency})`}
+                label={t('amount', { currency: normalizedCurrency })}
                 description={budgetType === 'daily'
-                  ? 'Amount available each day.'
-                  : `Total amount across this ${runDays}-day run.`}
+                  ? t('amountDaily')
+                  : t('amountLifetime', { days: runDays })}
                 value={budgetAmount}
                 onChange={(value) => {
                   setBudgetAmount(Number(value) || 0);
@@ -655,7 +656,7 @@ export default function RunAgainSheet({
                 <Alert color="yellow" variant="light" icon={<IconAlertTriangle size={18} />}>
                   <Stack gap="sm">
                     <Text size="sm">
-                      This is about {Math.round(budgetIncreasePercent)}% above the source&apos;s historical daily spend pace.
+                      {t('increase', { pct: Math.round(budgetIncreasePercent) })}
                     </Text>
                     <Checkbox
                       checked={increaseConfirmed}
@@ -663,7 +664,7 @@ export default function RunAgainSheet({
                         setIncreaseConfirmed(event.currentTarget.checked);
                         clearFieldError('budgetConfirmation');
                       }}
-                      label="I confirm this budget increase"
+                      label={t('confirmIncrease')}
                       error={fieldErrors.budgetConfirmation}
                     />
                   </Stack>
@@ -673,8 +674,8 @@ export default function RunAgainSheet({
 
             <section className={classes.section}>
               <div className={classes.sectionHeading}>
-                <Text fw={800}>Schedule</Text>
-                <Text size="sm" c="dimmed">Choose a compact run window, then adjust either timestamp if needed.</Text>
+                <Text fw={800}>{t('schedule')}</Text>
+                <Text size="sm" c="dimmed">{t('scheduleHint')}</Text>
               </div>
 
               <SegmentedControl
@@ -682,16 +683,16 @@ export default function RunAgainSheet({
                 value={durationPreset}
                 onChange={handleDurationPreset}
                 data={[
-                  { value: '7', label: '7 days' },
-                  { value: '14', label: '14 days' },
-                  { value: '30', label: '30 days' },
-                  { value: 'custom', label: 'Custom' },
+                  { value: '7', label: t('days', { count: 7 }) },
+                  { value: '14', label: t('days', { count: 14 }) },
+                  { value: '30', label: t('days', { count: 30 }) },
+                  { value: 'custom', label: t('custom') },
                 ]}
               />
 
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
                 <DateTimePicker
-                  label="Start date and time"
+                  label={t('start')}
                   value={startAt}
                   onChange={(value) => {
                     setStartAt(value);
@@ -708,7 +709,7 @@ export default function RunAgainSheet({
                   required
                 />
                 <DateTimePicker
-                  label="End date and time"
+                  label={t('end')}
                   value={endAt}
                   onChange={(value) => {
                     setEndAt(value);
@@ -727,11 +728,11 @@ export default function RunAgainSheet({
 
             <section className={classes.section}>
               <div className={classes.sectionHeading}>
-                <Text fw={800}>Creative</Text>
+                <Text fw={800}>{t('creative')}</Text>
                 <Text size="sm" c="dimmed">
                   {creativeCanBeReused
-                    ? 'Reuse the exact source ad, or prepare the draft for a fresh creative.'
-                    : 'An exact source ad is required before creative can be reused safely.'}
+                    ? t('creativeReusable')
+                    : t('creativeNeedsAd')}
                 </Text>
               </div>
 
@@ -744,8 +745,8 @@ export default function RunAgainSheet({
                     clearFieldError('creativeMode');
                   }}
                   data={[
-                    { value: 'reuse', label: 'Reuse creative' },
-                    { value: 'fresh', label: 'Fresh creative' },
+                    { value: 'reuse', label: t('reuse') },
+                    { value: 'fresh', label: t('fresh') },
                   ]}
                 />
               ) : (
@@ -755,9 +756,9 @@ export default function RunAgainSheet({
                       <IconInfoCircle size={17} />
                     </ThemeIcon>
                     <div>
-                      <Text size="sm" fw={800}>Fresh creative</Text>
-                      <Text size="xs" c="dimmed">
-                        You can add or choose creative when reviewing the paused draft.
+                      <Text size="sm" fw={800}>{t('fresh')}</Text>
+                      <Text size="sm" c="dimmed">
+                        {t('freshBody')}
                       </Text>
                     </div>
                   </Group>
@@ -769,20 +770,20 @@ export default function RunAgainSheet({
               <Accordion.Item value="previous-settings">
                 <Accordion.Control icon={<IconSettings size={17} />}>
                   <div>
-                    <Text size="sm" fw={800}>Settings to verify</Text>
-                    <Text size="xs" c="dimmed">The review step confirms what is available from the source.</Text>
+                    <Text size="sm" fw={800}>{t('verifyTitle')}</Text>
+                    <Text size="sm" c="dimmed">{t('verifyBody')}</Text>
                   </div>
                 </Accordion.Control>
                 <Accordion.Panel>
                   <Stack gap={0}>
-                    <ReviewRow label="Source" value={`${sourceLabel(source.sourceType)}: ${source.name}`} />
-                    <ReviewRow label="Parent" value={sourcePath} />
-                    <ReviewRow label="Objective" value={source.objective || 'Use source setting'} />
+                    <ReviewRow label={t('row.source')} value={`${sourceLabel(source.sourceType)}: ${source.name}`} />
+                    <ReviewRow label={t('row.parent')} value={sourcePath} />
+                    <ReviewRow label={t('row.objective')} value={source.objective ? labels.objective(source.objective) : t('useSource')} />
                     <ReviewRow
-                      label="Creative"
-                      value={creativeMode === 'reuse' ? 'Exact source ad creative' : 'Choose fresh creative in review'}
+                      label={t('row.creative')}
+                      value={creativeMode === 'reuse' ? t('creativeReuse') : t('creativeFresh')}
                     />
-                    <ReviewRow label="Original" value="Remains unchanged" />
+                    <ReviewRow label={t('row.original')} value={t('unchanged')} />
                   </Stack>
                 </Accordion.Panel>
               </Accordion.Item>
@@ -790,19 +791,19 @@ export default function RunAgainSheet({
 
             <section className={classes.reviewSection}>
               <Group justify="space-between" gap="sm">
-                <Text fw={800}>Draft review</Text>
-                <Badge color="yellow" variant="light">Paused</Badge>
+                <Text fw={800}>{t('review')}</Text>
+                <Badge color="yellow" variant="light">{t('paused')}</Badge>
               </Group>
               <Divider my="sm" />
               <Stack gap={0}>
                 <ReviewRow
-                  label="Budget"
-                  value={`${formatCurrencyAmount(budgetAmount, currencyCode)} ${budgetType === 'daily' ? 'per day' : 'total'}`}
+                  label={t('row.budget')}
+                  value={t(budgetType === 'daily' ? 'perDay' : 'total', { amount: formatCurrencyAmount(budgetAmount, currencyCode) })}
                 />
-                <ReviewRow label="Start" value={formatWallTime(startAt)} />
-                <ReviewRow label="End" value={`${formatWallTime(endAt)} (${runDays} days)`} />
-                <ReviewRow label="Timezone" value={timezone} />
-                <ReviewRow label="Creation status" value="Paused draft" />
+                <ReviewRow label={t('row.start')} value={wallTime(startAt)} />
+                <ReviewRow label={t('row.end')} value={t('endWithDays', { date: wallTime(endAt), days: runDays })} />
+                <ReviewRow label={t('row.timezone')} value={timezone} />
+                <ReviewRow label={t('row.status')} value={t('pausedDraft')} />
               </Stack>
             </section>
           </Stack>
@@ -810,12 +811,12 @@ export default function RunAgainSheet({
 
         <div className={classes.footer}>
           <div className={classes.footerCopy}>
-            <Text size="sm" fw={800}>No live delivery changes</Text>
-            <Text size="xs" c="dimmed">This flow only creates a paused DeepVisor draft.</Text>
+            <Text size="sm" fw={800}>{t('footerTitle')}</Text>
+            <Text size="sm" c="dimmed">{t('footerBody')}</Text>
           </div>
           <Group gap="sm" wrap="nowrap" className={classes.footerActions}>
             <Button variant="default" onClick={handleClose} disabled={submitting}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               type="submit"
@@ -826,7 +827,7 @@ export default function RunAgainSheet({
                 (requiresIncreaseConfirmation && !increaseConfirmed)
               }
             >
-              Create draft
+              {t('create')}
             </Button>
           </Group>
         </div>

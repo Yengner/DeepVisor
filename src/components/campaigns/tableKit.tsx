@@ -2,6 +2,7 @@
 import type React from 'react';
 import { createContext, useContext, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { ActionIcon, Menu, Skeleton, Table, Text, Tooltip, UnstyledButton } from '@mantine/core';
+import { useTranslations } from 'next-intl';
 import { IconArrowDown, IconArrowUp, IconArrowsSort, IconChevronRight, IconDots, IconInfoCircle, IconTrendingUp } from '@tabler/icons-react';
 import { LiveIndicator } from '@/components/design/LiveIndicator';
 import { accountToday } from '@/lib/shared/reports/dates';
@@ -30,9 +31,10 @@ export function lastActivity(formatted: string | null | undefined, rawDay: strin
 
 /** One status chip: a delivering chain shows "Delivering"; otherwise Meta's status. */
 export function StatusCell({ status, delivering }: { status?: string | null; delivering?: boolean }) {
+  const t = useTranslations('table');
   return delivering ? (
-    <span className={classes.deliveringChip} title="Campaign, ad set and at least one ad are active in the latest saved Meta status.">
-      <LiveIndicator label="Delivering" />
+    <span className={classes.deliveringChip} title={t('deliveringTitle')}>
+      <LiveIndicator label={t('delivering')} />
     </span>
   ) : (
     <StatusBadge status={status} />
@@ -41,13 +43,14 @@ export function StatusCell({ status, delivering }: { status?: string | null; del
 
 /** See-through "more actions" control; the dropdown is unchanged. */
 export function RowActions({ name, children, extra }: { name: string; children: ReactNode; extra?: ReactNode }) {
+  const t = useTranslations('table');
   return (
     <div className={classes.rowActions} onClick={(event) => event.stopPropagation()} onDoubleClick={(event) => event.stopPropagation()}>
       {extra}
       <Menu position="bottom-end" withArrow offset={4}>
         <Menu.Target>
-          <Tooltip label="More actions" openDelay={300} withinPortal>
-            <ActionIcon variant="subtle" color="gray" radius="xl" aria-label={`More actions for ${name}`} className={classes.ghostAction}>
+          <Tooltip label={t('moreActions')} openDelay={300} withinPortal>
+            <ActionIcon variant="subtle" color="gray" radius="xl" aria-label={t('moreActionsFor', { name })} className={classes.ghostAction}>
               <IconDots size={18} />
             </ActionIcon>
           </Tooltip>
@@ -256,10 +259,11 @@ export function costAbove(metrics: RowMetrics, benchmark?: CostBenchmark | null)
 }
 
 function CostValue({ metrics, currencyCode, benchmark }: { metrics: RowMetrics; currencyCode?: string | null; benchmark?: CostBenchmark | null }) {
+  const t = useTranslations('table');
   const above = costAbove(metrics, benchmark);
   const value = formatRecordedCurrency(metrics.costPerResult, currencyCode);
   if (above == null || !benchmark) return <>{value}</>;
-  const note = `${above}% above the ${formatRecordedCurrency(benchmark.costPerResult, currencyCode)} average across ${benchmark.peers} ${benchmark.label} (lifetime).`;
+  const note = t('costAbove', { pct: above, average: formatRecordedCurrency(benchmark.costPerResult, currencyCode), peers: benchmark.peers, group: benchmark.label });
   return (
     <Tooltip label={note} multiline maw={260} withArrow withinPortal openDelay={200}>
       <span className={classes.costHigh} tabIndex={0} aria-label={`${value}, ${note}`}>
@@ -273,19 +277,19 @@ function CostValue({ metrics, currencyCode, benchmark }: { metrics: RowMetrics; 
 
 /* ---------------- Metric columns ---------------- */
 
-type MetricColumn = { key: Exclude<SortKey, 'name'>; label: string; render: (m: RowMetrics, currency?: string | null, benchmark?: CostBenchmark | null) => ReactNode; strong?: boolean };
+type MetricColumn = { key: Exclude<SortKey, 'name'>; render: (m: RowMetrics, currency?: string | null, benchmark?: CostBenchmark | null) => ReactNode; strong?: boolean };
 const METRIC_COLUMNS: MetricColumn[] = [
-  { key: 'spend', label: 'Spend', render: (m, c) => formatRecordedCurrency(m.spend, c), strong: true },
-  { key: 'results', label: 'Results', render: (m) => formatCount(m.results) },
-  { key: 'costPerResult', label: 'Cost / result', render: (m, c, b) => <CostValue metrics={m} currencyCode={c} benchmark={b} /> },
-  { key: 'ctr', label: 'CTR', render: (m) => formatPercent(m.ctr) },
-  { key: 'cpc', label: 'CPC', render: (m, c) => formatRecordedCurrency(m.cpc, c) },
-  { key: 'cpm', label: 'CPM', render: (m, c) => formatRecordedCurrency(m.cpm, c) },
-  { key: 'impressions', label: 'Impressions', render: (m) => formatCount(m.impressions) },
-  { key: 'clicks', label: 'Clicks', render: (m) => formatCount(m.clicks) },
-  { key: 'linkClicks', label: 'Link clicks', render: (m) => formatCount(m.linkClicks) },
-  { key: 'leads', label: 'Leads', render: (m) => formatCount(m.leads) },
-  { key: 'messages', label: 'Messages', render: (m) => formatCount(m.messages) },
+  { key: 'spend', render: (m, c) => formatRecordedCurrency(m.spend, c), strong: true },
+  { key: 'results', render: (m) => formatCount(m.results) },
+  { key: 'costPerResult', render: (m, c, b) => <CostValue metrics={m} currencyCode={c} benchmark={b} /> },
+  { key: 'ctr', render: (m) => formatPercent(m.ctr) },
+  { key: 'cpc', render: (m, c) => formatRecordedCurrency(m.cpc, c) },
+  { key: 'cpm', render: (m, c) => formatRecordedCurrency(m.cpm, c) },
+  { key: 'impressions', render: (m) => formatCount(m.impressions) },
+  { key: 'clicks', render: (m) => formatCount(m.clicks) },
+  { key: 'linkClicks', render: (m) => formatCount(m.linkClicks) },
+  { key: 'leads', render: (m) => formatCount(m.leads) },
+  { key: 'messages', render: (m) => formatCount(m.messages) },
 ];
 export const METRIC_COLUMN_COUNT = METRIC_COLUMNS.length;
 /** The four numbers owners decide with; the rest appear behind "More metrics". */
@@ -296,8 +300,9 @@ const useColumns = () => { const expanded = useContext(MetricColumnsContext); re
 export function useMetricColumnCount() { return useColumns().length; }
 
 export function MetricHeaders({ sort, onSort }: { sort: SortState; onSort: (key: SortKey) => void }) {
+  const t = useTranslations('table.metric');
   return useColumns().map((column) => (
-    <SortHeader key={column.key} label={column.label} sortKey={column.key} sort={sort} onSort={onSort} numeric />
+    <SortHeader key={column.key} label={t(column.key)} sortKey={column.key} sort={sort} onSort={onSort} numeric />
   ));
 }
 
@@ -316,12 +321,13 @@ export function MetricCells({ metrics, currencyCode, benchmark, noDeliveryNote }
 
 /** Status column header; the delivering rule lives in its tooltip instead of a line above the table. */
 export function StatusHeader() {
+  const t = useTranslations('table');
   return (
     <Table.Th className={classes.nowrap}>
       <span className={classes.headerWithInfo}>
-        Status
-        <Tooltip label="Delivering: the campaign, ad set and at least one ad are active in the latest saved Meta status. Delivering rows are listed first." multiline maw={280} withArrow withinPortal>
-          <span tabIndex={0} aria-label="About status" className={classes.headerInfo}><IconInfoCircle size={13} aria-hidden="true" /></span>
+        {t('col.status')}
+        <Tooltip label={t('statusInfo')} multiline maw={280} withArrow withinPortal>
+          <span tabIndex={0} aria-label={t('aboutStatus')} className={classes.headerInfo}><IconInfoCircle size={13} aria-hidden="true" /></span>
         </Tooltip>
       </span>
     </Table.Th>
@@ -358,20 +364,21 @@ export function useTableRows<T>(rows: T[], pick: (row: T) => { name: string; met
 
 /** Mobile card metrics: the three decision numbers up front, efficiency behind a disclosure. */
 export function MobileMetrics({ metrics, currencyCode, benchmark }: { metrics: RowMetrics; currencyCode?: string | null; benchmark?: CostBenchmark | null }) {
+  const t = useTranslations('table');
   return (
     <div className={classes.mobileMetricGrid}>
-      <div><Text>Spend</Text><Text>{formatRecordedCurrency(metrics.spend, currencyCode)}</Text></div>
-      <div><Text>Results</Text><Text>{formatCount(metrics.results)}</Text></div>
-      <div><Text>Cost / result</Text><Text component="div"><CostValue metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} /></Text></div>
+      <div><Text>{t('metric.spend')}</Text><Text>{formatRecordedCurrency(metrics.spend, currencyCode)}</Text></div>
+      <div><Text>{t('metric.results')}</Text><Text>{formatCount(metrics.results)}</Text></div>
+      <div><Text>{t('metric.costPerResult')}</Text><Text component="div"><CostValue metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} /></Text></div>
       <details className={classes.moreMetrics} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
-        <summary>More metrics</summary>
+        <summary>{t('moreMetrics')}</summary>
         <dl className={classes.moreMetricList}>
-          <div><dt>CTR</dt><dd>{formatPercent(metrics.ctr)}</dd></div>
-          <div><dt>CPC</dt><dd>{formatRecordedCurrency(metrics.cpc, currencyCode)}</dd></div>
-          <div><dt>CPM</dt><dd>{formatRecordedCurrency(metrics.cpm, currencyCode)}</dd></div>
-          <div><dt>Impressions</dt><dd>{formatCount(metrics.impressions)}</dd></div>
-          <div><dt>Link clicks</dt><dd>{formatCount(metrics.linkClicks)}</dd></div>
-          <div><dt>Leads</dt><dd>{formatCount(metrics.leads)}</dd></div>
+          <div><dt>{t('metric.ctr')}</dt><dd>{formatPercent(metrics.ctr)}</dd></div>
+          <div><dt>{t('metric.cpc')}</dt><dd>{formatRecordedCurrency(metrics.cpc, currencyCode)}</dd></div>
+          <div><dt>{t('metric.cpm')}</dt><dd>{formatRecordedCurrency(metrics.cpm, currencyCode)}</dd></div>
+          <div><dt>{t('metric.impressions')}</dt><dd>{formatCount(metrics.impressions)}</dd></div>
+          <div><dt>{t('metric.linkClicks')}</dt><dd>{formatCount(metrics.linkClicks)}</dd></div>
+          <div><dt>{t('metric.leads')}</dt><dd>{formatCount(metrics.leads)}</dd></div>
         </dl>
       </details>
     </div>
@@ -380,9 +387,10 @@ export function MobileMetrics({ metrics, currencyCode, benchmark }: { metrics: R
 
 /** Table-shaped loading state so the layout does not jump when rows arrive. */
 export function TableSkeleton({ label, rows = 4 }: { label: string; rows?: number }) {
+  const t = useTranslations('table');
   return (
     <div className={classes.tableSkeleton} role="status" aria-live="polite" aria-busy="true">
-      <span className={classes.srOnly}>Loading {label}…</span>
+      <span className={classes.srOnly}>{t('loading', { label })}</span>
       <div className={classes.skeletonHeader}>
         <Skeleton height={10} width="22%" radius="sm" />
         <Skeleton height={10} width="10%" radius="sm" />

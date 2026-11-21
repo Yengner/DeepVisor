@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createElement } from 'react';
+import { createElement, type ComponentProps } from 'react';
+import { NextIntlClientProvider } from 'next-intl';
+import messages from '../../../../messages/en.json';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MantineProvider } from '@mantine/core';
 vi.mock('./actions', () => ({ reviewDecisionAction: vi.fn() }));
@@ -12,8 +14,9 @@ describe('preview decision reviews', () => {
   it('renders disabled review controls even with owner access and a fingerprint', () => {
     const cards = buildDecisionPreview('2026-10-07T16:00:00Z').cards;
     cards[0].proposals[0].reviewFingerprint = 'must-not-be-used';
-    const html = renderToStaticMarkup(createElement(MantineProvider, null,
-      createElement(DecisionsFeed, { cards, canReview: true, preview: true })));
+    const intl = { locale: 'en', messages } as ComponentProps<typeof NextIntlClientProvider>;
+    const html = renderToStaticMarkup(createElement(NextIntlClientProvider, intl, createElement(MantineProvider, null,
+      createElement(DecisionsFeed, { cards, canReview: true, preview: true }))));
     const buttons = html.match(/<button\b[^>]*>/g) ?? [];
     expect(buttons).toHaveLength(2);
     expect(buttons.every(button => /\bdisabled(?:[ =]|>)/.test(button))).toBe(true);

@@ -2,7 +2,8 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ActionIcon, Alert, Button, Tooltip } from "@mantine/core";
-import RangeSwitch, { RANGE_LABELS } from "@/components/design/RangeSwitch";
+import { useLocale, useTranslations } from "next-intl";
+import RangeSwitch from "@/components/design/RangeSwitch";
 import { IconRefresh, IconBrandFacebook, IconBrandInstagram, IconBrandMeta } from "@tabler/icons-react";
 import type { Period } from "@/lib/server/dashboard/overview/types";
 import { setSyncActivity } from "@/components/integrations/syncActivity";
@@ -11,15 +12,16 @@ export function PeriodControl({ period }: { period: Period }) {
   const router = useRouter();
   const params = useSearchParams();
   const [pending, start] = useTransition();
+  const t = useTranslations("controls");
   return (
     <RangeSwitch
-      label="Performance period"
+      label={t("period")}
       value={period}
       pending={pending}
       options={[
-        { value: "today", label: RANGE_LABELS.today },
-        { value: "7d", label: RANGE_LABELS["7d"] },
-        { value: "30d", label: RANGE_LABELS["30d"] },
+        { value: "today", label: t("range.today") },
+        { value: "7d", label: t("range.7d") },
+        { value: "30d", label: t("range.30d") },
       ]}
       onChange={(value) => {
         const next = new URLSearchParams(params);
@@ -33,7 +35,10 @@ export function PeriodControl({ period }: { period: Period }) {
  * `updatedAt` turns the icon into a labeled control ("Refresh · Updated 1:34 PM") so the page says
  * which data it refreshes and how current it is.
  */
-export function RefreshOverview({ disabled = false, onCompleted, label = 'Refresh Meta data', updatedAt }: { disabled?: boolean; onCompleted?: () => void; label?: string; updatedAt?: string | null }) {
+export function RefreshOverview({ disabled = false, onCompleted, label: labelProp, updatedAt }: { disabled?: boolean; onCompleted?: () => void; label?: string; updatedAt?: string | null }) {
+  const t = useTranslations("controls");
+  const intl = useLocale() === "es" ? "es-US" : "en-US";
+  const label = labelProp ?? t("refreshMeta");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -53,7 +58,7 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
       const response = await fetch("/api/sync/refresh", { method: "POST", signal: AbortSignal.any([abort.signal, AbortSignal.timeout(30000)]) });
       const body = await response.json();
       if (response.status === 429) {
-        setMessage(`Please wait before refreshing again. Try in ${Math.max(1, Math.ceil((Number(body.retryAfterMs) || 30000) / 1000))} seconds.`);
+        setMessage(t("wait", { seconds: Math.max(1, Math.ceil((Number(body.retryAfterMs) || 30000) / 1000)) }));
         return;
       }
       if (!response.ok || !body.success || !body.jobId) throw new Error('Refresh request failed');
@@ -75,14 +80,12 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
         }
         if (status.status === 'failed' || status.status === 'partial') throw new Error('Refresh did not complete');
       }
-      setMessage('Refresh is still in progress. Status checking has stopped; check again shortly.');
+      setMessage(t("stillRunning"));
     } catch (error) {
       if (abort.signal.aborted) return;
       console.error('Overview refresh unavailable', error);
       setFailed(true);
-      setMessage(
-        'Could not confirm a completed Meta refresh. Some data may have updated; check your connection before trying again.',
-      );
+      setMessage(t("failed"));
     } finally {
       setLoading(false);
       setSyncActivity("manual", false);
@@ -102,11 +105,11 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
           onClick={refresh}
           aria-label={`${label}. ${updatedLabel(updatedAt)}`}
         >
-          Refresh<span style={{ fontWeight: 500, opacity: .7, marginLeft: 6 }}>· {updatedLabel(updatedAt)}</span>
+          {t("refresh")}<span style={{ fontWeight: 500, opacity: .7, marginLeft: 6 }}>· {updatedLabel(updatedAt)}</span>
         </Button>
-      ) : <Tooltip label={loading ? "Refreshing Meta data…" : label}>
+      ) : <Tooltip label={loading ? t("refreshing") : label}>
         <ActionIcon
-          aria-label={loading ? "Refreshing Meta data…" : label}
+          aria-label={loading ? t("refreshing") : label}
           variant="default"
           size="lg"
           radius="sm"
@@ -124,26 +127,27 @@ export function RefreshOverview({ disabled = false, onCompleted, label = 'Refres
       )}
     </div>
   );
-}
 
-function updatedLabel(at: string | null): string {
-  if (!at || !Number.isFinite(Date.parse(at))) return 'Not synced yet';
-  const date = new Date(at), today = new Date();
-  const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  return date.toDateString() === today.toDateString() ? `Updated ${time}` : `Updated ${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${time}`;
+  function updatedLabel(at: string | null): string {
+    if (!at || !Number.isFinite(Date.parse(at))) return t("notSynced");
+    const date = new Date(at), today = new Date();
+    const time = date.toLocaleTimeString(intl, { hour: 'numeric', minute: '2-digit' });
+    return date.toDateString() === today.toDateString() ? t("updatedToday", { time }) : t("updatedDay", { day: date.toLocaleDateString(intl, { month: 'short', day: 'numeric' }), time });
+  }
 }
 
 export function PlatformControl({ platform }: { platform: 'combined' | 'facebook' | 'instagram' }) {
   const router = useRouter();
   const params = useSearchParams();
   const [pending, start] = useTransition();
+  const t = useTranslations("controls");
   return (
     <RangeSwitch
-      label="Advertising delivery platform"
+      label={t("platform")}
       value={platform}
       pending={pending}
       options={[
-        { value: "combined", label: "All Meta", icon: <IconBrandMeta size={16} aria-hidden /> },
+        { value: "combined", label: t("allMeta"), icon: <IconBrandMeta size={16} aria-hidden /> },
         { value: "facebook", label: "Facebook", icon: <IconBrandFacebook size={16} color="#1264cc" aria-hidden />, iconOnlyOnPhone: true },
         { value: "instagram", label: "Instagram", icon: <IconBrandInstagram size={16} color="#c13584" aria-hidden />, iconOnlyOnPhone: true },
       ]}

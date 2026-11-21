@@ -40,7 +40,7 @@ import { RefreshOverview } from '@/app/(root)/dashboard/components/OverviewContr
 import type { AdLifetimeRow, AdSetLifetimeRow } from '@/lib/server/data';
 import { TABLE_RANGES, type TableRange } from '@/lib/shared/performance/periodTotals';
 import { MetricColumnsContext } from './tableKit';
-import { humanizeObjective } from '@/lib/shared/reports/labels';
+import { useLabels } from '@/lib/client/hooks/useLabels';
 import type { FormattedCampaign } from '@/app/(root)/campaigns/page';
 import { fetchAdSetsForCampaign, fetchAdsForAdset } from '@/lib/server/data/queries/components.query';
 import { formatRecordedCurrency as formatCurrencyAmount } from './metrics';
@@ -54,8 +54,6 @@ interface PlatformInfo {
   name: string;
 }
 
-const RANGE_LABELS: Record<TableRange, string> = { today: 'Today', '7d': '7D', '30d': '30D', lifetime: 'Lifetime' };
-const RANGE_CAPTIONS: Record<TableRange, string> = { today: 'today so far', '7d': 'last 7 days', '30d': 'last 30 days', lifetime: 'lifetime' };
 
 interface CampaignDashboardProps {
   /** Saved plans and new-ad drafts for this account; a small button appears when above 0. */
@@ -143,6 +141,8 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
 
   const router = useRouter();
   const tCampaigns = useTranslations('campaigns');
+  const t = useTranslations('table');
+  const labels = useLabels();
   const tDrafts = useTranslations('drafts');
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -229,7 +229,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
   );
   const selectedAdSetAds = activeDeliveryFirst((selectedAdSetId ? adsByAdset[selectedAdSetId] ?? [] : [])
     .map(row => ({ ...row, delivery: activeKeys.has(`ad:${row.ad_id ?? row.id}`) })));
-  const accountName = campaignData[0]?.accountName ?? 'Selected ad account';
+  const accountName = campaignData[0]?.accountName ?? t('selectedAccount');
 
   const accountSummary = useMemo(() => {
     const observed = campaignData.filter(c => c.metricsAvailable !== false);
@@ -242,7 +242,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     for (const c of observed) {
       const results = campaignResults(c);
       if (results <= 0 && c.spend <= 0) continue;
-      const key = humanizeObjective(c.objective);
+      const key = labels.objective(c.objective);
       const entry = byObjective.get(key) ?? { spend: 0, results: 0 };
       entry.spend += c.spend; entry.results += results;
       byObjective.set(key, entry);
@@ -261,7 +261,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
       costPerResult,
       spend,
     };
-  }, [campaignData]);
+  }, [campaignData, labels]);
 
   const layerSummary = useMemo(() => {
     if (activeTab === 'adsets') {
@@ -272,12 +272,11 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
       );
 
       return {
-        label: 'Ad sets',
-        singular: 'ad set',
+        layer: 'adsets' as const,
         count: selectedCampaignAdSets.length,
         spend: selectedCampaignAdSets.some(item => item.metricsAvailable !== false) ? spend : null,
         results: selectedCampaignAdSets.some(item => item.metricsAvailable !== false) ? results : null,
-        createLabel: 'Create ad set',
+        createLabel: t('createAdSet'),
         createHref: selectedCampaignId
           ? `/campaigns/create?platform=${platform.id}&scope=adset&campaign_id=${selectedCampaignId}`
           : null,
@@ -292,12 +291,11 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
       );
 
       return {
-        label: 'Ads',
-        singular: 'ad',
+        layer: 'ads' as const,
         count: selectedAdSetAds.length,
         spend: selectedAdSetAds.some(item => item.metricsAvailable !== false) ? spend : null,
         results: selectedAdSetAds.some(item => item.metricsAvailable !== false) ? results : null,
-        createLabel: 'Create ad',
+        createLabel: t('createAd'),
         createHref: selectedAdSetId
           ? `/campaigns/create?platform=${platform.id}&scope=ad&campaign_id=${selectedCampaignId ?? ''}&adset_id=${selectedAdSetId}`
           : null,
@@ -308,15 +306,15 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     const results = filteredCampaigns.reduce((sum, item) => sum + campaignResults(item), 0);
 
     return {
-      label: 'Campaigns',
-      singular: 'campaign',
+      layer: 'campaigns' as const,
       count: filteredCampaigns.length,
       spend: filteredCampaigns.some(item => item.metricsAvailable !== false) ? spend : null,
       results: filteredCampaigns.some(item => item.metricsAvailable !== false) ? results : null,
-      createLabel: 'Create campaign',
+      createLabel: t('createCampaign'),
       createHref: `/campaigns/create?platform=${platform.id}`,
     };
   }, [
+    t,
     activeTab,
     filteredCampaigns,
     platform.id,
@@ -396,7 +394,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
         if (!cancelled) {
           setDrilldownError({
             scope: 'adsets',
-            message: 'Ad sets could not be loaded. Previously loaded rows have been preserved.',
+            message: t('adSetsError'),
           });
         }
       } finally {
@@ -409,7 +407,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     return () => {
       cancelled = true;
     };
-  }, [activeTab, selectedCampaignId, adAccountId, adSetsByCampaign, range]);
+  }, [activeTab, selectedCampaignId, adAccountId, adSetsByCampaign, range, t]);
 
   useEffect(() => {
     if (activeTab !== 'ads') return;
@@ -437,7 +435,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
         if (!cancelled) {
           setDrilldownError({
             scope: 'ads',
-            message: 'Ads could not be loaded. Previously loaded rows have been preserved.',
+            message: t('adsError'),
           });
         }
       } finally {
@@ -450,7 +448,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
     return () => {
       cancelled = true;
     };
-  }, [activeTab, selectedAdSetId, adAccountId, adsByAdset, range]);
+  }, [activeTab, selectedAdSetId, adAccountId, adsByAdset, range, t]);
 
   const handleOpenCampaign = (campaignId: string) => {
     setSelectedCampaignId(campaignId);
@@ -490,7 +488,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
       campaignId: ad.campaign_id,
       adSetId: ad.adset_id,
       adId,
-      name: ad.name || 'Unnamed ad',
+      name: ad.name || t('unnamedAd'),
       campaignName: ad.campaign_name,
       adSetName: ad.adset_name,
       status: ad.status,
@@ -524,7 +522,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
             radius={0}
             className={classes.feedback}
             withCloseButton
-            closeButtonLabel="Dismiss loading error"
+            closeButtonLabel={t('dismissError')}
             onClose={() => setDrilldownError(null)}
           >
             {drilldownError.message}
@@ -544,15 +542,15 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
             <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
               <div className={classes.titleBlock}>
                 <Title order={1} className={classes.title}>
-                  Campaigns
+                  {t('title')}
                 </Title>
                 <Text className={classes.subtitle}>
                   <span className={classes.platformName}>{platform.name}</span> · {accountName}
                 </Text>
                 <section className={classes.summaryBlock} aria-labelledby="campaigns-summary-caption">
                   <div className={classes.summaryHead}>
-                    <p id="campaigns-summary-caption" className={classes.summaryCaption}>Account · {RANGE_CAPTIONS[range]}</p>
-                    <div className={classes.rangeSwitch} role="group" aria-label="Period">
+                    <p id="campaigns-summary-caption" className={classes.summaryCaption}>{t('accountCaption', { range: t(`caption.${range}`) })}</p>
+                    <div className={classes.rangeSwitch} role="group" aria-label={t('period')}>
                       {TABLE_RANGES.map((key) => (
                         <button
                           key={key}
@@ -565,23 +563,23 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                             router.push(`${pathname}${next.size ? `?${next}` : ''}`, { scroll: false });
                           }}
                         >
-                          {RANGE_LABELS[key]}
+                          {t(`range.${key}`)}
                         </button>
                       ))}
                     </div>
                   </div>
                   <div className={classes.summary}>
-                    <div className={classes.summaryTile}><span className={classes.tileLabel}>Spend</span><span className={classes.tileValue}>{accountSummary.spend === null ? '—' : formatCurrencyAmount(accountSummary.spend, currencyCode)}</span></div>
-                    <div className={classes.summaryTile}><span className={classes.tileLabel}>Results</span><span className={classes.tileValue}>{formatCompactNumber(accountSummary.totalResults)}</span>{accountSummary.mixed && <span className={classes.tileNote}>{accountSummary.objectives.map(o => `${o.objective} ${formatCompactNumber(o.results)}`).join(' · ')}</span>}</div>
+                    <div className={classes.summaryTile}><span className={classes.tileLabel}>{t('metric.spend')}</span><span className={classes.tileValue}>{accountSummary.spend === null ? '—' : formatCurrencyAmount(accountSummary.spend, currencyCode)}</span></div>
+                    <div className={classes.summaryTile}><span className={classes.tileLabel}>{t('metric.results')}</span><span className={classes.tileValue}>{formatCompactNumber(accountSummary.totalResults)}</span>{accountSummary.mixed && <span className={classes.tileNote}>{accountSummary.objectives.map(o => `${o.objective} ${formatCompactNumber(o.results)}`).join(' · ')}</span>}</div>
                     {accountSummary.mixed ? (
-                      <div className={classes.summaryTile} title="Different objectives produce different kinds of results, so one blended cost per result would be misleading.">
-                        <span className={classes.tileLabel}>Cost / result by objective</span>
+                      <div className={classes.summaryTile} title={t('mixedHint')}>
+                        <span className={classes.tileLabel}>{t('costByObjective')}</span>
                         <span className={classes.tileObjectives}>{accountSummary.objectives.map(o => <span key={o.objective}><b>{o.costPerResult === null ? '—' : formatCurrencyAmount(o.costPerResult, currencyCode)}</b> {o.objective}</span>)}</span>
                       </div>
                     ) : (
-                      <div className={classes.summaryTile}><span className={classes.tileLabel}>Cost / result</span><span className={classes.tileValue}>{accountSummary.costPerResult === null ? '—' : formatCurrencyAmount(accountSummary.costPerResult, currencyCode)}</span></div>
+                      <div className={classes.summaryTile}><span className={classes.tileLabel}>{t('metric.costPerResult')}</span><span className={classes.tileValue}>{accountSummary.costPerResult === null ? '—' : formatCurrencyAmount(accountSummary.costPerResult, currencyCode)}</span></div>
                     )}
-                    {([['delivering', 'Delivering', accountSummary.activeCampaigns], ['not-delivering', 'Not delivering', accountSummary.pausedCampaigns]] as const).map(([key, label, count]) => (
+                    {([['delivering', t('delivering'), accountSummary.activeCampaigns], ['not-delivering', t('notDelivering'), accountSummary.pausedCampaigns]] as const).map(([key, label, count]) => (
                       <button
                         key={key}
                         type="button"
@@ -589,7 +587,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                         data-filter
                         aria-pressed={deliveryFilter === key}
                         disabled={!props.deliveryState.available}
-                        title={deliveryFilter === key ? `Show all campaigns` : `Show only campaigns that are ${label.toLowerCase()}`}
+                        title={deliveryFilter === key ? t('showAll') : t('showOnly', { key: key === 'delivering' ? 'delivering' : 'not' })}
                         onClick={() => {
                           setDeliveryFilter((current) => (current === key ? null : key));
                           setActiveTab('campaigns');
@@ -620,7 +618,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                       className="app-platform-page-action-primary"
                       onClick={() => router.push(`/campaigns/create?platform=${platform.id}`)}
                     >
-                      Create campaign
+                      {t('createCampaign')}
                     </Button>
                   </>
                 ) : (
@@ -639,7 +637,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                   </Button>
                 )}
 
-                <RefreshOverview label="Refresh campaign data" updatedAt={props.syncedAt ?? null} onCompleted={() => {
+                <RefreshOverview label={t('refreshLabel')} updatedAt={props.syncedAt ?? null} onCompleted={() => {
                   setAdSetsByCampaign({});
                   setAdsByAdset({});
                 }} />
@@ -649,29 +647,29 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
             <Group justify="space-between" align="center" gap="md" wrap="wrap" mt="md">
               <Tabs.List>
                 <Tabs.Tab value="campaigns" leftSection={<IconSpeakerphone size={14} />}>
-                  Campaigns
+                  {t('tab.campaigns')}
                 </Tabs.Tab>
-                <Tooltip label="Open a campaign to see its ad sets" disabled={Boolean(selectedCampaignId)} withinPortal>
+                <Tooltip label={t('tabAdSetsHint')} disabled={Boolean(selectedCampaignId)} withinPortal>
                   <Tabs.Tab value="adsets" leftSection={<IconStack2 size={14} />} disabled={!selectedCampaignId}>
-                    Ad sets
+                    {t('tab.adSets')}
                   </Tabs.Tab>
                 </Tooltip>
-                <Tooltip label="Open an ad set to see its ads" disabled={Boolean(selectedAdSetId)} withinPortal>
+                <Tooltip label={t('tabAdsHint')} disabled={Boolean(selectedAdSetId)} withinPortal>
                   <Tabs.Tab value="ads" leftSection={<IconPhoto size={14} />} disabled={!selectedAdSetId}>
-                    Ads
+                    {t('tab.ads')}
                   </Tabs.Tab>
                 </Tooltip>
               </Tabs.List>
 
               <Group gap="sm" wrap="nowrap">
               <Button variant={allMetrics ? 'light' : 'subtle'} size="xs" radius="xl" onClick={toggleMetrics} aria-pressed={allMetrics}>
-                {allMetrics ? 'Fewer metrics' : 'More metrics'}
+                {allMetrics ? t('fewerMetrics') : t('moreMetrics')}
               </Button>
               <Text size="sm" c="dimmed" className={classes.layerSummary} aria-live="polite">
-                {(activeTab === 'adsets' && adsetsLoading) || (activeTab === 'ads' && adsLoading) ? 'Loading…' : (<>
-                <strong>{layerSummary.count}</strong> {layerSummary.count === 1 ? layerSummary.singular : layerSummary.label.toLowerCase()}
+                {(activeTab === 'adsets' && adsetsLoading) || (activeTab === 'ads' && adsLoading) ? t('loadingShort') : (<>
+                {t.rich('count', { layer: layerSummary.layer, count: layerSummary.count, b: chunks => <strong>{chunks}</strong> })}
                 {activeTab !== 'campaigns' && layerSummary.spend !== null ? (
-                  <> · {formatCurrencyAmount(layerSummary.spend, currencyCode)} spend · {formatCompactNumber(layerSummary.results)} results</>
+                  t('layerTotals', { spend: formatCurrencyAmount(layerSummary.spend, currencyCode), results: formatCompactNumber(layerSummary.results) })
                 ) : null}
                 </>)}
               </Text>
@@ -679,9 +677,9 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
             </Group>
 
             {activeTab !== 'campaigns' ? (
-              <nav aria-label="Drill-down path" className={classes.breadcrumb}>
+              <nav aria-label={t('drillPath')} className={classes.breadcrumb}>
                 <button type="button" onClick={() => setActiveTab('campaigns')}>
-                  <IconChevronLeft size={14} aria-hidden="true" /> All campaigns
+                  <IconChevronLeft size={14} aria-hidden="true" /> {t('allCampaigns')}
                 </button>
                 {selectedCampaign ? (
                   <>
@@ -707,7 +705,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
             {activeTab === 'campaigns' ? (
               <Group gap="sm" mt="md" className={classes.filterBar}>
                 <TextInput
-                  placeholder="Search campaigns"
+                  placeholder={t('search')}
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.currentTarget.value)}
                   leftSection={<IconSearch size={14} />}
@@ -715,18 +713,18 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                   size="sm"
                 />
                 <Select
-                  placeholder="All statuses"
-                  aria-label="Filter by status"
+                  placeholder={t('allStatuses')}
+                  aria-label={t('filterStatus')}
                   value={statusFilter}
                   onChange={setStatusFilter}
-                  data={statuses.map((status) => ({ value: status, label: statusPresentation(status).label }))}
+                  data={statuses.map((status) => ({ value: status, label: labels.status(statusPresentation(status).label) }))}
                   clearable
                   leftSection={<IconAdjustments size={14} />}
                   className={classes.filterSelect}
                   size="sm"
                 />
                 {searchQuery || statusFilter || deliveryFilter ? (
-                  <Tooltip label="Clear filters">
+                  <Tooltip label={t('clearFilters')}>
                     <ActionIcon onClick={resetFilters} variant="subtle" size="lg" radius="xl">
                       <IconFilterOff size={16} />
                     </ActionIcon>
@@ -739,7 +737,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
           <div className={classes.tableBody}>
             {/* The delivering rule lives in the Status column's ⓘ; only an outage is worth a line here. */}
             {!props.deliveryState.available ? (
-              <p className={classes.legend} role="status">Delivery status unavailable. Delivering highlights are withheld until status can be loaded.</p>
+              <p className={classes.legend} role="status">{t('deliveryUnavailable')}</p>
             ) : null}
             <MetricColumnsContext.Provider value={allMetrics}>
             <Tabs.Panel value="campaigns" className={classes.tablePanel}>
@@ -801,8 +799,8 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
             </Tabs.Panel>
             </MetricColumnsContext.Provider>
             <p className={classes.tableFooter} aria-hidden="true">
-              {layerSummary.count} {layerSummary.count === 1 ? layerSummary.singular : layerSummary.label.toLowerCase()}
-              {` · ${(activeTab === 'campaigns' ? filteredCampaigns : activeTab === 'adsets' ? selectedCampaignAdSets : selectedAdSetAds).filter((row) => row.delivery).length} delivering`}
+              {t('countPlain', { layer: layerSummary.layer, count: layerSummary.count })}
+              {t('delivering_count', { count: (activeTab === 'campaigns' ? filteredCampaigns : activeTab === 'adsets' ? selectedCampaignAdSets : selectedAdSetAds).filter((row) => row.delivery).length })}
             </p>
           </div>
         </Tabs>

@@ -9,9 +9,10 @@ import {
   Text,
 } from '@mantine/core';
 import { IconChartBar, IconStack2 } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
+import { useLabels } from '@/lib/client/hooks/useLabels';
 import {
   EmptyRow,
-  humanizeObjective,
   lastActivity,
   MetricCells,
   OpenRowCell,
@@ -58,8 +59,10 @@ export default function CampaignTable({
   timezone = null,
   range = 'lifetime',
 }: CampaignTableProps) {
+  const t = useTranslations('table');
+  const labels = useLabels();
   const metricCount = useMetricColumnCount();
-  const noDelivery = range === 'lifetime' ? null : 'No delivery in this period';
+  const noDelivery = range === 'lifetime' ? null : t('noDelivery');
   // One click opens the campaign's ad sets; the row stays highlighted when you come back.
   const open = (id: string) => { onSelectCampaign(id); onOpenCampaign?.(id); };
   const scrollHeight = fillHeight ? '100%' : undefined;
@@ -67,18 +70,18 @@ export default function CampaignTable({
   const { sorted, sort, toggle, benchmarkFor } = useTableRows(
     campaigns,
     (campaign) => ({ name: campaign.name, metrics: rowMetrics(campaign) }),
-    (campaign) => humanizeObjective(campaign.objective),
-    (objective) => (objective === '—' ? 'campaigns' : `${objective} campaigns`),
+    (campaign) => labels.objective(campaign.objective),
+    (objective) => (objective === '—' ? t('group.campaigns') : t('group.objectiveCampaigns', { objective })),
   );
   const menuItems = (campaign: FormattedCampaign, reportHref: string) => (
     <>
       {onOpenCampaign ? (
         <Menu.Item leftSection={<IconStack2 size={16} />} onClick={() => onOpenCampaign(campaign.id)}>
-          Open ad sets
+          {t('openAdSets')}
         </Menu.Item>
       ) : null}
       <Menu.Item leftSection={<IconChartBar size={16} />} component="a" href={reportHref}>
-        View analytics
+        {t('viewAnalytics')}
       </Menu.Item>
     </>
   );
@@ -88,8 +91,8 @@ export default function CampaignTable({
       <div className={classes.mobileEntityList}>
         {sorted.length === 0 ? (
           <div className={classes.emptyRow}>
-            <Text fw={600} size="sm">No campaigns match these filters</Text>
-            <Text size="sm" c="dimmed">Clear the search or filters to see every campaign.</Text>
+            <Text fw={600} size="sm">{t('empty.campaignsTitle')}</Text>
+            <Text size="sm" c="dimmed">{t('empty.campaignsHint')}</Text>
           </div>
         ) : (
           sorted.map((campaign) => {
@@ -128,7 +131,7 @@ export default function CampaignTable({
                     <Group gap={6} mt={6} wrap="wrap">
                       <StatusCell status={campaign.status} delivering={campaign.delivery} />
                       <Text size="xs" c="dimmed" lineClamp={1}>
-                        {humanizeObjective(campaign.objective)}
+                        {labels.objective(campaign.objective)}
                       </Text>
                     </Group>
                   </div>
@@ -139,10 +142,10 @@ export default function CampaignTable({
 
                 <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
                   <Text size="xs" c="dimmed" lineClamp={1}>
-                    {campaign.startDate || '—'} – {lastActivity(campaign.endDate, campaign.lastDay, timezone)}
+                    {labels.displayDate(campaign.startDate)} – {labels.displayDate(lastActivity(campaign.endDate, campaign.lastDay, timezone))}
                   </Text>
                   {onOpenCampaign ? (
-                    <OpenNextButton label="Ad sets" onOpen={() => onOpenCampaign(campaign.id)} />
+                    <OpenNextButton label={t('nextAdSets')} onOpen={() => onOpenCampaign(campaign.id)} />
                   ) : null}
                 </Group>
               </div>
@@ -168,14 +171,14 @@ export default function CampaignTable({
       >
         <Table.Thead>
           <Table.Tr>
-            <SortHeader label="Campaign" sortKey="name" sort={sort} onSort={toggle} style={{ width: 320, minWidth: 240, maxWidth: 320 }} />
+            <SortHeader label={t('col.campaign')} sortKey="name" sort={sort} onSort={toggle} style={{ width: 320, minWidth: 240, maxWidth: 320 }} />
             <StatusHeader />
-            <Table.Th className={classes.nowrap}>Objective</Table.Th>
+            <Table.Th className={classes.nowrap}>{t('col.objective')}</Table.Th>
             <MetricHeaders sort={sort} onSort={toggle} />
-            <Table.Th className={classes.nowrap}>First activity</Table.Th>
-            <Table.Th className={classes.nowrap}>Last activity</Table.Th>
-            <Table.Th className={classes.actionCell}><span className={classes.srOnly}>Actions</span></Table.Th>
-            {onOpenCampaign ? <Table.Th className={classes.openCell}><span className={classes.srOnly}>Open</span></Table.Th> : null}
+            <Table.Th className={classes.nowrap}>{t('col.firstActivity')}</Table.Th>
+            <Table.Th className={classes.nowrap}>{t('col.lastActivity')}</Table.Th>
+            <Table.Th className={classes.actionCell}><span className={classes.srOnly}>{t('col.actions')}</span></Table.Th>
+            {onOpenCampaign ? <Table.Th className={classes.openCell}><span className={classes.srOnly}>{t('col.open')}</span></Table.Th> : null}
           </Table.Tr>
         </Table.Thead>
 
@@ -183,8 +186,8 @@ export default function CampaignTable({
           {sorted.length === 0 ? (
             <EmptyRow
               colSpan={metricCount + (onOpenCampaign ? 7 : 6)}
-              title="No campaigns match these filters"
-              hint="Clear the search or filters to see every campaign."
+              title={t('empty.campaignsTitle')}
+              hint={t('empty.campaignsHint')}
             />
           ) : (
             sorted.map((campaign) => {
@@ -207,23 +210,23 @@ export default function CampaignTable({
                   style={{ cursor: 'pointer' }}
                   onClick={() => open(campaign.id)}
                   {...rowKeys(() => open(campaign.id))}
-                  aria-label={onOpenCampaign ? `${campaign.name}: open ad sets` : campaign.name}
+                  aria-label={onOpenCampaign ? t('rowOpenAdSets', { name: campaign.name }) : campaign.name}
                 >
                   <Table.Td style={{ width: 320, minWidth: 240, maxWidth: 320 }}>
                     <TruncatedName name={campaign.name} />
                     {range === 'lifetime' && !campaign.delivery && campaign.metricsAvailable !== false ? (
-                      <Text size="xs" c="dimmed" className={classes.rowContext}>Not delivering now · lifetime history</Text>
+                      <Text size="xs" c="dimmed" className={classes.rowContext}>{t('notDeliveringNow')}</Text>
                     ) : null}
                   </Table.Td>
                   <Table.Td><StatusCell status={campaign.status} delivering={campaign.delivery} /></Table.Td>
-                  <Table.Td className={classes.nowrap}><Text size="sm">{humanizeObjective(campaign.objective)}</Text></Table.Td>
+                  <Table.Td className={classes.nowrap}><Text size="sm">{labels.objective(campaign.objective)}</Text></Table.Td>
                   <MetricCells metrics={rowMetrics(campaign)} currencyCode={currencyCode} benchmark={benchmarkFor(campaign)} noDeliveryNote={noDelivery} />
-                  <Table.Td className={classes.nowrap}><Text size="sm">{campaign.startDate || '—'}</Text></Table.Td>
-                  <Table.Td className={classes.nowrap}><Text size="sm">{lastActivity(campaign.endDate, campaign.lastDay, timezone)}</Text></Table.Td>
+                  <Table.Td className={classes.nowrap}><Text size="sm">{labels.displayDate(campaign.startDate)}</Text></Table.Td>
+                  <Table.Td className={classes.nowrap}><Text size="sm">{labels.displayDate(lastActivity(campaign.endDate, campaign.lastDay, timezone))}</Text></Table.Td>
                   <Table.Td className={classes.actionCell}>
                     <RowActions name={campaign.name}>{menuItems(campaign, reportHref)}</RowActions>
                   </Table.Td>
-                  {onOpenCampaign ? <OpenRowCell label={`Open ad sets for ${campaign.name}`} onOpen={() => open(campaign.id)} /> : null}
+                  {onOpenCampaign ? <OpenRowCell label={t('openAdSetsFor', { name: campaign.name })} onOpen={() => open(campaign.id)} /> : null}
                 </Table.Tr>
               );
             })

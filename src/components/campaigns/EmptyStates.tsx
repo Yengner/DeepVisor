@@ -3,6 +3,7 @@
 import { Button, Card, Stack, Text, Title, ThemeIcon } from '@mantine/core';
 import { IconArrowRight, IconPlug, IconBuildingStore, IconPresentationAnalytics } from '@tabler/icons-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import product from '@/components/product/Product.module.css';
 
 interface EmptyCampaignStateProps {
@@ -11,26 +12,28 @@ interface EmptyCampaignStateProps {
 }
 
 export function EmptyCampaignState({ type, platformName }: EmptyCampaignStateProps) {
+    const t = useTranslations('emptyCampaigns');
+    const platform = platformName ?? 'Meta';
     const config = {
         platform: {
             icon: <IconPlug size={30} />,
-            title: 'No Ad Platform Connected',
-            description: 'Connect Meta to see your campaigns and their performance here.',
-            buttonText: 'Connect a Platform',
+            title: t('platformTitle'),
+            description: t('platformBody'),
+            buttonText: t('platformButton'),
             buttonLink: '/integration',
         },
         adAccount: {
             icon: <IconBuildingStore size={30} />,
-            title: `No ${platformName} Ad Accounts Synced`,
-            description: `Sync at least one ${platformName} ad account to manage campaigns and receive AI recommendations.`,
-            buttonText: 'Add Ad Account',
+            title: t('accountTitle', { platform }),
+            description: t('accountBody', { platform }),
+            buttonText: t('accountButton'),
             buttonLink: '/integration',
         },
         campaigns: {
             icon: <IconPresentationAnalytics size={30} />,
-            title: 'No Campaigns Found',
-            description: 'Create your first campaign to start advertising.',
-            buttonText: 'Create Campaign',
+            title: t('campaignsTitle'),
+            description: t('campaignsBody'),
+            buttonText: t('campaignsButton'),
             buttonLink: '/campaigns/create',
         },
     } as const;
