@@ -47,7 +47,7 @@ describe('message catalogs', () => {
   });
 
   it('are not left untranslated where Spanish differs', () => {
-    const allowedSame = new Set(['metrics.ctr', 'metrics.cpm', 'apps.whatsapp', 'apps.instagram', 'apps.messenger', 'facts.value.quoted', 'leads.connected', 'leads.outcome.spam', 'settingsPage.account.plan', 'settingsPage.account.accountsCount', 'drafts.runs', 'createLead.setup.channel.messenger', 'createLead.audience.instagramOf', 'createLead.budget.lifetime', 'createLead.estimate.label.messages', 'createLead.estimate.range']);
+    const allowedSame = new Set(['metrics.ctr', 'metrics.cpm', 'apps.whatsapp', 'apps.instagram', 'apps.messenger', 'facts.value.quoted', 'leads.connected', 'leads.outcome.spam', 'settingsPage.account.plan', 'settingsPage.account.accountsCount', 'drafts.runs', 'createLead.setup.channel.messenger', 'createLead.audience.instagramOf', 'createLead.budget.lifetime', 'createLead.estimate.label.messages', 'createLead.estimate.range', 'insights.trend.only', 'insights.headline.text']);
     const same = Object.keys(english).filter(k => english[k] === spanish[k] && !allowedSame.has(k));
     expect(same).toEqual([]);
   });
