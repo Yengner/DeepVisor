@@ -169,3 +169,17 @@
   .header { align-items: flex-start; gap: 14px; }
   .lead { font-size: 16px; }
 }
+
+/* After saving: one calm green line with the way to the list. */
+.saved {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 14px 16px;
+  border-radius: 12px; background: var(--dv-success-soft); color: var(--dv-success); font-size: 15px; font-weight: 600;
+}
+.saved svg { flex: none; }
+.savedLink { margin-left: auto; color: inherit; font-weight: 700; }
+/* Discard asks once; red only here. */
+.confirm {
+  display: grid; gap: 12px; padding: 16px; border-radius: 12px;
+  border: 1px solid var(--dv-urgent-border); background: var(--dv-urgent-soft);
+}
+.confirm p { font-size: 16px; font-weight: 700; color: var(--dv-urgent-text); }

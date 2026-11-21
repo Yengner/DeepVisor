@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { loadTableDelivery } from '@/lib/server/campaigns/tableDelivery';
 import CampaignDashboard from "@/components/campaigns/CampaignDashboard";
+import SavedPlans from "@/components/campaigns/SavedPlans";
 import { EmptyCampaignState } from "@/components/campaigns/EmptyStates";
 import { Suspense } from "react";
 import CampaignClientFallback from "./CampaignClientFallback";
@@ -179,6 +180,10 @@ export default async function CampaignPage({
 
   return (
     <>
+      {/* Run-again plans and new-ad drafts kept in DeepVisor; hidden when there are none. */}
+      <Suspense fallback={null}>
+        <SavedPlans businessId={businessId} adAccountId={selectedAdAccountId} />
+      </Suspense>
       <Suspense fallback={<CampaignClientFallback />}>
         <CampaignDashboard
           key={tableRange.range}

@@ -878,7 +878,6 @@
     "budgetLow": "Escribe al menos {min} al día.",
     "budgetHigh": "Escribe no más de {max} al día.",
     "daysInvalid": "Elige entre 1 y 90 días.",
-    "prepare": "Preparar borrador",
     "readOnly": "Solo dueños(as) y administradores(as) pueden preparar anuncios.",
     "goneTitle": "Este anuncio no se puede copiar",
     "noBudgetTitle": "No hay presupuesto para copiar",
@@ -899,6 +898,35 @@
       "actual": "por los mismos días que corrió la última vez.",
       "owner": "por tu número de días habitual.",
       "usual": "por una semana."
+    },
+    "save": "Guardar plan",
+    "saveChanges": "Guardar cambios",
+    "savedOk": "Plan guardado. No se envió nada a Meta.",
+    "savedOn": "Tu plan guardado, último cambio el {date}.",
+    "discard": "Descartar plan",
+    "discardAsk": "¿Descartar este plan guardado?",
+    "discardYes": "Sí, descartar",
+    "keep": "Conservarlo",
+    "discarded": "Plan descartado.",
+    "seeSaved": "Ver planes guardados",
+    "reassureSaved": "Se guarda solo en DeepVisor. No se envía nada a Meta.",
+    "error": {
+      "failed": "No se pudo guardar el plan. Inténtalo de nuevo.",
+      "forbidden": "Solo dueños(as) y administradores(as) pueden guardar planes.",
+      "gone": "Ese anuncio ya no está disponible.",
+      "account": "Selecciona primero tu cuenta de anuncios de Meta.",
+      "conflict": "Este plan se cambió en otra ventana. Recarga la página para ver lo más reciente."
     }
+  },
+  "savedPlans": {
+    "title": "Planes guardados",
+    "lead": "Se guardan solo en DeepVisor. No se envía nada a Meta.",
+    "plan": "{budget} al día × {days, plural, one {# día} other {# días}}",
+    "runs": "{start} – {end}",
+    "changed": "Último cambio el {date}",
+    "edit": "Editar",
+    "open": "Abrir",
+    "rerun": "Repetir",
+    "newAd": "Borrador de anuncio nuevo"
   }
 }
