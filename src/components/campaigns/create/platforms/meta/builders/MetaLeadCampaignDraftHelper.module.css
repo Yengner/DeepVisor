@@ -33,17 +33,12 @@
   font-weight: 700;
 }
 
+/* Back / Continue under the form: just the two buttons, no bar, no step word (the step tabs at
+   the top already say where you are). */
 .stageFooter {
   z-index: 8;
   min-width: 0;
-  padding: 12px 0;
-  border-top: 1px solid var(--dv-border);
-  background: var(--dv-surface);
-}
-
-.stageFooterLabel {
-  flex: 1;
-  text-align: center;
+  padding: 8px 0 0;
 }
 
 .desktopStageAction {
@@ -53,7 +48,7 @@
 @media (max-width: 48em) {
   .page {
     width: 100%;
-    padding: 10px 12px 78px !important;
+    padding: 10px 12px 24px !important;
     overflow-x: hidden;
   }
 
@@ -73,14 +68,9 @@
     padding: 14px !important;
   }
 
+  /* Phones: same as desktop, the buttons sit at the bottom of the page after the form. */
   .stageFooter {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: calc(5rem + env(safe-area-inset-bottom));
-    margin: 0;
-    padding: 10px 12px;
-    box-shadow: 0 -8px 18px rgba(8, 45, 86, 0.08);
+    padding: 12px 0 0;
   }
 
   .desktopStageAction {
@@ -89,10 +79,6 @@
 
   .stageFooter :global(.mantine-Button-root) {
     min-height: 46px;
-  }
-
-  .stageFooterLabel {
-    display: none;
   }
 }
 
@@ -104,5 +90,10 @@
 
   .stageFooter :global(.mantine-Button-root) {
     width: 100%;
+  }
+
+  /* First step has only Continue: let it use the whole row. */
+  .stageFooter > :only-child {
+    grid-column: 1 / -1;
   }
 }

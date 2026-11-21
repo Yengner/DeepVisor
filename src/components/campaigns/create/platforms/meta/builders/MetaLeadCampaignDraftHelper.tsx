@@ -2890,19 +2890,20 @@ export default function MetaLeadCampaignDraftHelper({
         </Grid>
 
         <Group justify="space-between" align="center" gap="sm" className={classes.stageFooter}>
-          <Button
-            variant="default"
-            leftSection={<IconChevronLeft size={16} />}
-            disabled={activeStage === 0 || saving}
-            onClick={() => setActiveStage((activeStage - 1) as BuilderStage)}
-          >
-            Back
-          </Button>
-          <Text size="sm" c="dimmed" className={classes.stageFooterLabel}>
-            {activeStage === 0 ? 'Setup' : activeStage === 1 ? 'Audience' : 'Creative'}
-          </Text>
+          {/* Nothing to go back to on the first step, so no disabled button there. */}
+          {activeStage > 0 ? (
+            <Button
+              variant="default"
+              leftSection={<IconChevronLeft size={16} />}
+              disabled={saving}
+              onClick={() => setActiveStage((activeStage - 1) as BuilderStage)}
+            >
+              Back
+            </Button>
+          ) : null}
           {activeStage < 2 ? (
             <Button
+              ml="auto"
               rightSection={<IconChevronRight size={16} />}
               onClick={() => {
                 setActiveStage((activeStage + 1) as BuilderStage);
@@ -2913,6 +2914,7 @@ export default function MetaLeadCampaignDraftHelper({
             </Button>
           ) : (
             <Button
+              ml="auto"
               leftSection={<IconSparkles size={18} />}
               loading={saving}
               disabled={unsupportedReuseObjective || unsupportedReuseDestination}
