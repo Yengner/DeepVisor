@@ -1194,5 +1194,22 @@
       "callsAnswer": "Confirma que las llamadas solo corren cuando alguien puede contestar.",
       "saveFailed": "No se pudo guardar el borrador. Inténtalo de nuevo."
     }
+  },
+  "notificationsPage": {
+    "metaTitle": "Notificaciones",
+    "title": "Notificaciones",
+    "lead": "Novedades sobre tus anuncios, guardadas aquí para que las vuelvas a leer.",
+    "leadUnread": "{count, plural, one {Tienes # novedad sin leer.} other {Tienes # novedades sin leer.}}",
+    "attention": "Necesita atención ahora",
+    "openOverview": "Abrir Resumen",
+    "listLabel": "Tus novedades, las más recientes primero",
+    "unread": "Sin leer:",
+    "emptyTitle": "Todavía no hay nada",
+    "emptyBody": "Cuando algo cambie en tus anuncios, DeepVisor te lo dirá aquí.",
+    "settingsHint": "Elige sobre qué te avisa DeepVisor.",
+    "settings": "Ajustes de avisos",
+    "open": "Abrir",
+    "markRead": "Marcar como leída",
+    "markFailed": "No pudimos marcarla como leída. Inténtalo de nuevo."
   }
 }

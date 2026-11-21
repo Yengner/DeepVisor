@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Button } from '@mantine/core';
 import { IconArrowRight, IconCheck } from '@tabler/icons-react';
 import { markNotificationReadClient, showError } from '@/lib/client';
@@ -19,6 +20,7 @@ export default function NotificationAction({
   href,
   className,
 }: NotificationActionProps) {
+  const t = useTranslations('notificationsPage');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -32,7 +34,7 @@ export default function NotificationAction({
     if (unread) {
       const marked = await markNotificationReadClient(notificationId);
       if (!marked) {
-        showError('The notification could not be marked as read.');
+        showError(t('markFailed'));
       }
     }
 
@@ -47,15 +49,14 @@ export default function NotificationAction({
 
   return (
     <Button
-      variant="light"
-      size="sm"
-      mih={44}
+      variant="default"
+      size="md"
       loading={loading}
       className={className}
-      rightSection={href ? <IconArrowRight size={14} /> : <IconCheck size={14} />}
+      rightSection={href ? <IconArrowRight size={16} /> : <IconCheck size={16} />}
       onClick={() => void handleClick()}
     >
-      {href ? 'Open' : 'Mark read'}
+      {href ? t('open') : t('markRead')}
     </Button>
   );
 }

@@ -84,6 +84,9 @@ type Platform = {
   discoveredAdAccountCount: number;
 };
 
+/** Confirmations can open from inside the platform Details modal (Mantine default 200), so they sit above it. */
+const CONFIRM_MODAL_Z = 400;
+
 type DisplayPlatform = Platform & {
   pitchDetached: boolean;
 };
@@ -799,6 +802,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
               }}
               title="Disconnect platform"
               centered
+              zIndex={CONFIRM_MODAL_Z}
               closeOnClickOutside={!disconnectingPlatformId}
               closeOnEscape={!disconnectingPlatformId}
               withCloseButton={!disconnectingPlatformId}
@@ -837,6 +841,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
               }}
               title="Change Meta ad account"
               centered
+              zIndex={CONFIRM_MODAL_Z}
             >
               <Stack gap="md">
                 <Text size="sm" c="dimmed">

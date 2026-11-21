@@ -1194,5 +1194,22 @@
       "callsAnswer": "Confirm calls only run when someone can answer.",
       "saveFailed": "The draft couldn't be saved. Please try again."
     }
+  },
+  "notificationsPage": {
+    "metaTitle": "Notifications",
+    "title": "Notifications",
+    "lead": "Updates about your ads, saved here so you can read them again.",
+    "leadUnread": "{count, plural, one {You have # update you haven’t read.} other {You have # updates you haven’t read.}}",
+    "attention": "Needs attention now",
+    "openOverview": "Open Overview",
+    "listLabel": "Your updates, newest first",
+    "unread": "Not read yet:",
+    "emptyTitle": "Nothing here yet",
+    "emptyBody": "When something changes with your ads, DeepVisor tells you here.",
+    "settingsHint": "Choose what DeepVisor tells you about.",
+    "settings": "Alert settings",
+    "open": "Open",
+    "markRead": "Mark read",
+    "markFailed": "We couldn’t mark this as read. Try again."
   }
 }
