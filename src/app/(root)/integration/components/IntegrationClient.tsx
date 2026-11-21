@@ -1,9 +1,8 @@
 'use client';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import DeleteMetaDataModal from './DeleteMetaDataModal';
 import Disclosure from '@/components/product/Disclosure';
 import product from '@/components/product/Product.module.css';
-import { ownerMessages } from '@/components/product/presentation';
 import StatusBadge from '@/components/product/StatusBadge';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -48,14 +47,9 @@ import {
 } from '@/components/integrations/pitchDetach';
 import { getPlatformIcon } from '@/components/utils/utils';
 import {
-  formatDateTime,
-  formatRelativeTime,
-  formatRetryDelay,
-  getIntegrationAvailabilityCopy,
   getIntegrationPlatformImage,
   getIntegrationPlatformPalette,
   getIntegrationStatusColor,
-  getIntegrationStatusLabel,
   integrationNeedsAttention,
   isIntegrationConnected,
   sortIntegrationPlatforms,
@@ -163,6 +157,31 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
   const [disconnectTarget, setDisconnectTarget] = useState<Platform | null>(null);
   const [deleteDataTarget, setDeleteDataTarget] = useState<string | null>(null);
   const tDeletion = useTranslations('metaDeletion');
+  const t = useTranslations('connections');
+  const intl = useLocale() === 'es' ? 'es-US' : 'en-US';
+  const when = (value: string | null) => {
+    if (!value) return t('notAvailable');
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString(intl, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  };
+  /** "5 minutes ago" / "hace 5 minutos". */
+  const ago = (value: string | null) => {
+    const time = value ? Date.parse(value) : Number.NaN;
+    if (!Number.isFinite(time)) return t('notSynced');
+    const seconds = (time - Date.now()) / 1000;
+    const format = new Intl.RelativeTimeFormat(intl, { numeric: 'auto' });
+    for (const [unit, size] of [['day', 86400], ['hour', 3600], ['minute', 60]] as const) {
+      if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit);
+    }
+    return format.format(0, 'minute');
+  };
+  const statusLabel = (status: IntegrationStatus) => t(`status.${status === 'connected' || status === 'needs_reauth' || status === 'error' ? status : 'other'}`);
+  const availability = (platform: Pick<Platform, 'platformKey' | 'status' | 'lastSyncedAt'>) => isIntegrationConnected(platform.status)
+    ? (platform.lastSyncedAt ? t('lastSynced', { when: ago(platform.lastSyncedAt) }) : t('settingUp'))
+    : platform.platformKey === 'meta'
+      ? t(integrationNeedsAttention(platform.status) ? 'reconnectHint' : 'availableNow')
+      : t('preview');
   const [selectedPlatform, setSelectedPlatform] = useState<DisplayPlatform | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [accountSelectionPlatform, setAccountSelectionPlatform] = useState<Platform | null>(null);
@@ -219,31 +238,32 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
   const focusedPlatformUnavailable = Boolean(focusedPlatform) &&
     !focusedPlatformConnected &&
     focusedPlatform?.platformKey !== 'meta';
+  const platformName = focusedPlatform?.platformName ?? '';
   const focusedHeroTitle = !focusedPlatform
-    ? 'Connect your advertising account'
+    ? t('heroNone')
     : focusedPlatformPitchDetached
-      ? `Reconnect ${focusedPlatform.platformName} and reattach saved workspace data.`
+      ? t('heroDetached', { platform: platformName })
     : focusedPlatformConnected
-      ? `${focusedPlatform.platformName} is connected`
-      : `Connect ${focusedPlatform.platformName}`;
+      ? t('heroConnected', { platform: platformName })
+      : t('heroConnect', { platform: platformName });
   const focusedHeroDescription = !focusedPlatform
-    ? 'Review live connections, selected ad accounts, and sync health across the workspace.'
+    ? t('leadNone')
     : focusedPlatformPitchDetached
-      ? `${focusedPlatform.platformName} is disconnected while its existing synced workspace data remains available. Reconnect to resume updates.`
+      ? t('leadDetached', { platform: platformName })
     : focusedPlatformConnected
-      ? 'Review your selected account and sync its latest performance.'
+      ? t('leadConnected')
       : focusedPlatform.platformKey === 'meta'
-        ? 'Connect Meta and choose the ad account to use in DeepVisor.'
-        : `${focusedPlatform.platformName} connections are not available yet.`;
+        ? t('leadMeta')
+        : t('leadUnavailable', { platform: platformName });
   const focusedPrimaryLabel = !focusedPlatform
-    ? 'Sync connected channels'
+    ? t('primaryNone')
     : focusedPlatformPitchDetached
-      ? `Reconnect ${focusedPlatform.platformName}`
+      ? t('reconnect', { platform: platformName })
     : focusedPlatformConnected
-      ? `Sync ${focusedPlatform.platformName}`
+      ? t('sync', { platform: platformName })
       : focusedPlatformNeedsAttention
-        ? `Reconnect ${focusedPlatform.platformName}`
-        : `Connect ${focusedPlatform.platformName}`;
+        ? t('reconnect', { platform: platformName })
+        : t('connect', { platform: platformName });
   const heroCardStyle = {
     background: '#082d56',
     borderColor: '#284665',
@@ -275,7 +295,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
 
   const handleDisconnect = async (platform: Platform) => {
     if (!platform.integrationId) {
-      toast.error('No integration found for this platform.');
+      toast.error(t('noIntegration'));
       return;
     }
 
@@ -302,12 +322,12 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
         throw new Error('Failed to disconnect integration');
       }
 
-      toast.success(`${platform.platformName} disconnected successfully.`);
+      toast.success(t('disconnected', { platform: platform.platformName }));
       router.refresh();
       setSelectedPlatform((current) => (current?.id === platform.id ? null : current));
     } catch (error) {
       console.error(`Error disconnecting ${platform.platformName}:`, error);
-      toast.error(`Failed to disconnect ${platform.platformName}. Please try again.`);
+      toast.error(t('disconnectFailed', { platform: platform.platformName }));
     } finally {
       setDisconnectingPlatformId(null);
       setDisconnectTarget(null);
@@ -328,17 +348,17 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
 
       if (!response.ok || !result.success) {
         if (response.status === 429) {
-          throw new Error(result.message || formatRetryDelay(result.retryAfterMs));
+          throw new Error(t('waitSeconds', { seconds: Math.max(1, Math.ceil((result.retryAfterMs || 30000) / 1000)) }));
         }
 
         throw new Error(result.message || 'Failed to refresh sync');
       }
 
-      toast.success(result.message || 'Sync completed successfully.');
+      toast.success(t('syncDone'));
       router.refresh();
     } catch (error) {
       console.error('Error refreshing connections:', error);
-      toast.error(ownerMessages.refresh);
+      toast.error(t('owner.refresh'));
     } finally {
       setRefreshing(false);
     }
@@ -381,7 +401,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
       );
     } catch (error) {
       console.error('Error loading Meta ad accounts:', error);
-      toast.error(ownerMessages.accounts);
+      toast.error(t('owner.accounts'));
       setAccountSelectionPlatform(null);
     } finally {
       setLoadingAccountOptions(false);
@@ -418,14 +438,14 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
 
       toast.success(
         body.data?.firstSyncJob
-          ? 'Ad account changed. DeepVisor is setting it up.'
-          : 'Primary Meta ad account changed and sync started.'
+          ? t('accountChangedSetup')
+          : t('accountChanged')
       );
       setAccountSelectionPlatform(null);
       router.refresh();
     } catch (error) {
       console.error('Error selecting Meta ad account:', error);
-      toast.error(ownerMessages.selection);
+      toast.error(t('owner.selection'));
     } finally {
       setSubmittingAccountSelection(false);
     }
@@ -468,7 +488,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                 <Stack gap="md" className={styles.heroContent}>
                   <Group gap="xs" wrap="wrap">
                     <Badge variant="light" className="app-platform-page-badge">
-                      Connections
+                      {t('badge')}
                     </Badge>
                     {focusedPlatform ? (
                       <Badge
@@ -485,7 +505,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
 
                   <div>
                     <Title order={1} size="h2" className="app-platform-page-title">
-                      Connections
+                      {t('title')}
                     </Title>
                     <Text size="md" mt="sm" maw={680} className="app-platform-page-copy">
                       {focusedHeroDescription}
@@ -495,7 +515,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
 
                   <Group gap="sm" wrap="wrap">
                     {focusedPlatformUnavailable || !focusedPlatform ? (
-                      <Badge variant="outline" color="gray">Unavailable</Badge>
+                      <Badge variant="outline" color="gray">{t('unavailable')}</Badge>
                     ) : (
                       <Button
                       leftSection={
@@ -557,8 +577,8 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                         {focusedPlatformConnected &&
                         focusedPlatform.platformKey === 'meta' &&
                         focusedPlatform.discoveredAdAccountCount > 1
-                          ? 'Change ad account'
-                          : `View ${focusedPlatform.platformName}`}
+                          ? t('changeAccount')
+                          : t('view', { platform: focusedPlatform.platformName })}
                       </Button>
                     ) : null}
                   </Group>
@@ -571,19 +591,18 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
             <div>
               <Group justify="space-between" align="flex-end" mb="md" wrap="wrap">
                 <div>
-                  <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                    Channel Directory
+                  <Text size="sm" c="dimmed" fw={700}>
+                    {t('directory')}
                   </Text>
                   <Title order={3} mt={4}>
-                    Your connections
+                    {t('yours')}
                   </Title>
                   <Text size="sm" c="dimmed" mt={4}>
-                    Connected channels surface health and sync timing. Unavailable channels are
-                    clearly marked.
+                    {t('yoursLead')}
                   </Text>
                 </div>
                 <Badge color="gray" variant="light">
-                  {sortedPlatforms.length} platforms
+                  {t('platforms', { count: sortedPlatforms.length })}
                 </Badge>
               </Group>
 
@@ -651,30 +670,30 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                             </Text>
                             {!platform.integrationId && platform.platformKey !== 'meta' ? (
                               <Badge color="gray" variant="light">
-                                Unavailable
+                                {t('unavailable')}
                               </Badge>
                             ) : null}
                           </Group>
                           <Text size="sm" c="dimmed">
-                            {platform.description || platform.fullDescription || 'No description available yet.'}
+                            {platform.description || platform.fullDescription || t('noDescription')}
                           </Text>
                         </div>
 
                         <SimpleGrid cols={2} spacing="sm">
                           <Paper withBorder radius="lg" p="sm" className={styles.metricCard}>
-                            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                              Sync state
+                            <Text size="sm" c="dimmed" fw={700}>
+                              {t('syncState')}
                             </Text>
                             <Text fw={700} mt={4}>
-                              {formatRelativeTime(platform.lastSyncedAt, { emptyLabel: 'Not synced yet' })}
+                              {ago(platform.lastSyncedAt)}
                             </Text>
                           </Paper>
                           <Paper withBorder radius="lg" p="sm" className={styles.metricCard}>
-                            <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                              Account rule
+                            <Text size="sm" c="dimmed" fw={700}>
+                              {t('accountRule')}
                             </Text>
                             <Text fw={700} mt={4}>
-                              1 primary account
+                              {t('onePrimary')}
                             </Text>
                           </Paper>
                         </SimpleGrid>
@@ -686,7 +705,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                             variant="light"
                             icon={<IconAlertTriangle size={16} />}
                           >
-                            {ownerMessages.connection}
+                            {t('owner.connection')}
                           </Alert>
                         ) : null}
 
@@ -700,11 +719,11 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                             backgroundColor: palette.accentSoft,
                           }}
                         >
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                            What this channel is good at
+                          <Text size="sm" c="dimmed" fw={700}>
+                            {t('goodAt')}
                           </Text>
                           <Text size="sm" mt={6}>
-                            {platform.strengths || platform.description || 'No strengths summary yet.'}
+                            {platform.strengths || platform.description || t('noStrengths')}
                           </Text>
                         </Paper>
 
@@ -718,7 +737,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                   onClick={handleRefreshConnections}
                                   loading={refreshing}
                                 >
-                                  Refresh data
+                                  {t('refreshData')}
                                 </Button>
                                 {platform.platformKey === 'meta' &&
                                 platform.discoveredAdAccountCount > 1 ? (
@@ -726,7 +745,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                     variant="default"
                                     onClick={() => void handleOpenAccountSelection(platform)}
                                   >
-                                    Change ad account
+                                    {t('changeAccount')}
                                   </Button>
                                 ) : null}
   
@@ -739,31 +758,31 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                 }}
                                 loading={connecting}
                               >
-                                {integrationNeedsAttention(platform.status) ? 'Reconnect Meta' : 'Connect Meta'}
+                                {integrationNeedsAttention(platform.status) ? t('reconnectMeta') : t('connectMeta')}
                               </Button>
                             ) : (
-                              <Badge variant="outline" color="gray">Unavailable</Badge>
+                              <Badge variant="outline" color="gray">{t('unavailable')}</Badge>
                             )}
 
                             <Button
                               variant="default"
                               onClick={() => setSelectedPlatform(platform)}
                             >
-                              Details
+                              {t('details')}
                             </Button>
                           </Group>
 
                           {platform.integrationId ? (
                             <Menu shadow="md" position="bottom-end">
                               <Menu.Target>
-                                <ActionIcon variant="default" radius="xl" size="lg">
+                                <ActionIcon variant="default" radius="xl" size="lg" aria-label={t('settings', { platform: platform.platformName })}>
                                   <IconSettings size={16} />
                                 </ActionIcon>
                               </Menu.Target>
                               <Menu.Dropdown>
                                 <Menu.Label>{platform.platformName}</Menu.Label>
                                 <Menu.Item onClick={() => setSelectedPlatform(platform)}>
-                                  View details
+                                  {t('viewDetails')}
                                 </Menu.Item>
 
                                 <Menu.Divider />
@@ -773,7 +792,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                   onClick={() => handleDisconnect(platform)}
                                   disabled={disconnecting}
                                 >
-                                  {disconnecting ? 'Disconnecting...' : 'Disconnect'}
+                                  {disconnecting ? t('disconnecting') : t('disconnect')}
                                 </Menu.Item>
                                 {platform.platformKey === 'meta' && (
                                   <Menu.Item color="red" leftSection={<IconTrash size={14} />} onClick={() => setDeleteDataTarget(platform.integrationId)}>
@@ -800,7 +819,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                   setDisconnectTarget(null);
                 }
               }}
-              title="Disconnect platform"
+              title={t('disconnectTitle')}
               centered
               zIndex={CONFIRM_MODAL_Z}
               closeOnClickOutside={!disconnectingPlatformId}
@@ -809,9 +828,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
             >
               <Stack gap="md">
                 <Text size="sm">
-                  Disconnect {disconnectTarget?.platformName ?? 'this platform'}? DeepVisor stops all access and
-                  deletes the stored login. Data already synced stays so reports keep working; use
-                  Delete Meta data to remove it.
+                  {t('disconnectBody', { platform: disconnectTarget?.platformName ?? t('thisPlatform') })}
                 </Text>
                 <Group justify="flex-end">
                   <Button
@@ -819,14 +836,14 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                     onClick={() => setDisconnectTarget(null)}
                     disabled={Boolean(disconnectingPlatformId)}
                   >
-                    Cancel
+                    {t('cancel')}
                   </Button>
                   <Button
                     color="red"
                     onClick={() => void confirmDisconnect()}
                     loading={Boolean(disconnectingPlatformId)}
                   >
-                    Disconnect
+                    {t('disconnect')}
                   </Button>
                 </Group>
               </Stack>
@@ -839,33 +856,31 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                   setAccountSelectionPlatform(null);
                 }
               }}
-              title="Change Meta ad account"
+              title={t('changeTitle')}
               centered
               zIndex={CONFIRM_MODAL_Z}
             >
               <Stack gap="md">
                 <Text size="sm" c="dimmed">
-                  Choose which discovered Meta ad account DeepVisor should watch next. Saving this
-                  selection also starts sync for that account.
+                  {t('changeBody')}
                 </Text>
 
                 <Select
-                  label="Discovered Meta ad accounts"
-                  placeholder={loadingAccountOptions ? 'Loading ad accounts...' : 'Select one ad account'}
+                  label={t('accounts')}
+                  placeholder={loadingAccountOptions ? t('loadingAccounts') : t('selectAccount')}
                   data={accountOptions}
                   value={selectedAccountExternalId}
                   onChange={setSelectedAccountExternalId}
                   disabled={loadingAccountOptions || submittingAccountSelection}
                   searchable
-                  nothingFoundMessage="No discovered ad accounts found"
+                  nothingFoundMessage={t('noAccounts')}
                 />
 
                 {accountSelectionPlatform ? (
                   <Text size="sm" c="dimmed">
-                    Current primary account:{' '}
-                    {accountSelectionPlatform.primaryAdAccountName ||
+                    {t('currentAccount', { name: accountSelectionPlatform.primaryAdAccountName ||
                       accountSelectionPlatform.primaryAdAccountExternalId ||
-                      'Not selected yet'}
+                      t('notSelected') })}
                   </Text>
                 ) : null}
 
@@ -875,14 +890,14 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                     onClick={() => setAccountSelectionPlatform(null)}
                     disabled={submittingAccountSelection}
                   >
-                    Cancel
+                    {t('cancel')}
                   </Button>
                   <Button
                     onClick={handleSelectAdAccount}
                     loading={submittingAccountSelection}
                     disabled={!selectedAccountExternalId || loadingAccountOptions}
                   >
-                    Save and sync account
+                    {t('saveAndSync')}
                   </Button>
                 </Group>
               </Stack>
@@ -932,70 +947,70 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                               <Text size="sm" maw={460}>
                                 {selectedPlatform.fullDescription ||
                                   selectedPlatform.description ||
-                                  'No detailed description available yet.'}
+                                  t('noDetail')}
                               </Text>
                             </div>
                           </Group>
 
                           <Button variant="subtle" onClick={() => setSelectedPlatform(null)}>
-                            Close
+                            {t('close')}
                           </Button>
                         </Group>
                       </Paper>
 
-                      <Disclosure title="Connection diagnostics">
+                      <Disclosure title={t('diagnostics')}>
                       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                         <Paper withBorder radius="lg" p="md" className={styles.metricCard}>
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                            Connected on
+                          <Text size="sm" c="dimmed" fw={700}>
+                            {t('connectedOn')}
                           </Text>
                           <Text fw={700} mt={4}>
-                            {formatDateTime(selectedPlatform.connectedAt)}
+                            {when(selectedPlatform.connectedAt)}
                           </Text>
                         </Paper>
 
                         <Paper withBorder radius="lg" p="md" className={styles.metricCard}>
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                            Last sync
+                          <Text size="sm" c="dimmed" fw={700}>
+                            {t('lastSync')}
                           </Text>
                           <Text fw={700} mt={4}>
-                            {formatDateTime(selectedPlatform.lastSyncedAt)}
+                            {when(selectedPlatform.lastSyncedAt)}
                           </Text>
                         </Paper>
 
                         <Paper withBorder radius="lg" p="md" className={styles.metricCard}>
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                            Current status
+                          <Text size="sm" c="dimmed" fw={700}>
+                            {t('currentStatus')}
                           </Text>
                           <Text fw={700} mt={4}>
-                            {getIntegrationStatusLabel(selectedPlatform.status)}
+                            {statusLabel(selectedPlatform.status)}
                           </Text>
                         </Paper>
 
                         <Paper withBorder radius="lg" p="md" className={styles.metricCard}>
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                            Last updated
+                          <Text size="sm" c="dimmed" fw={700}>
+                            {t('lastUpdated')}
                           </Text>
                           <Text fw={700} mt={4}>
-                            {formatDateTime(selectedPlatform.updatedAt)}
+                            {when(selectedPlatform.updatedAt)}
                           </Text>
                         </Paper>
 
                         <Paper withBorder radius="lg" p="md" className={styles.metricCard}>
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                            Sync rule
+                          <Text size="sm" c="dimmed" fw={700}>
+                            {t('syncRule')}
                           </Text>
                           <Text fw={700} mt={4}>
-                            One primary ad account
+                            {t('onePrimaryLong')}
                           </Text>
                         </Paper>
 
                         <Paper withBorder radius="lg" p="md" className={styles.metricCard}>
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                            Channel readiness
+                          <Text size="sm" c="dimmed" fw={700}>
+                            {t('readiness')}
                           </Text>
                           <Text fw={700} mt={4}>
-                            {getIntegrationAvailabilityCopy(selectedPlatform)}
+                            {availability(selectedPlatform)}
                           </Text>
                         </Paper>
                       </SimpleGrid>
@@ -1003,8 +1018,8 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                       </Disclosure>
                       {selectedPlatform.platformKey === 'meta' && connected ? (
                         <div>
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                            Primary ad account
+                          <Text size="sm" c="dimmed" fw={700}>
+                            {t('primaryAccount')}
                           </Text>
                           <Group gap="xs" mt="sm" wrap="wrap">
                             {canChangeMetaAccount ? (
@@ -1015,21 +1030,21 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                               >
                                 {selectedPlatform.primaryAdAccountName ||
                                   selectedPlatform.primaryAdAccountExternalId ||
-                                  'Not selected yet'}
+                                  t('notSelected')}
                               </Button>
                             ) : (
                               <Badge variant="light" color="signal" size="lg">
                                 {selectedPlatform.primaryAdAccountName ||
                                   selectedPlatform.primaryAdAccountExternalId ||
-                                  'Not selected yet'}
+                                  t('notSelected')}
                               </Badge>
                             )}
                             <Text size="sm" c="dimmed">
                               {selectedPlatform.discoveredAdAccountCount > 1
-                                ? `${selectedPlatform.discoveredAdAccountCount} discovered ad accounts can be switched and synced from here.`
+                                ? t('accountsMany', { count: selectedPlatform.discoveredAdAccountCount })
                                 : selectedPlatform.discoveredAdAccountCount === 1
-                                  ? 'Only one discovered ad account is currently available.'
-                                  : 'No saved Meta ad accounts have been discovered yet.'}
+                                  ? t('accountsOne')
+                                  : t('accountsNone')}
                             </Text>
                           </Group>
                         </div>
@@ -1037,22 +1052,22 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
 
                       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                         <Paper withBorder radius="lg" p="md">
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                            Strengths
+                          <Text size="sm" c="dimmed" fw={700}>
+                            {t('strengths')}
                           </Text>
                           <Text size="sm" mt="sm">
                             {selectedPlatform.strengths ||
-                              'Strengths summary is not available yet for this platform.'}
+                              t('noStrengthsLong')}
                           </Text>
                         </Paper>
 
                         <Paper withBorder radius="lg" p="md">
-                          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                            Watchouts
+                          <Text size="sm" c="dimmed" fw={700}>
+                            {t('watchouts')}
                           </Text>
                           <Text size="sm" mt="sm">
                             {selectedPlatform.weaknesses ||
-                              'Known limitations are not available yet for this platform.'}
+                              t('noWatchouts')}
                           </Text>
                         </Paper>
                       </SimpleGrid>
@@ -1064,7 +1079,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                           variant="light"
                           icon={<IconAlertTriangle size={16} />}
                         >
-                          {ownerMessages.connection}
+                          {t('owner.connection')}
                         </Alert>
                       ) : null}
 
@@ -1078,14 +1093,14 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                 onClick={handleRefreshConnections}
                                 loading={refreshing}
                               >
-                                Refresh data
+                                {t('refreshData')}
                               </Button>
                               {canChangeMetaAccount ? (
                                 <Button
                                   variant="default"
                                   onClick={() => void handleOpenAccountSelection(selectedPlatform)}
                                 >
-                                  Change ad account
+                                  {t('changeAccount')}
                                 </Button>
                               ) : null}
                   
@@ -1096,7 +1111,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                                 onClick={() => handleDisconnect(selectedPlatform)}
                                 loading={disconnecting}
                               >
-                                Disconnect
+                                {t('disconnect')}
                               </Button>
                             </>
                           ) : canConnectNow ? (
@@ -1107,10 +1122,10 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                               }}
                               loading={connecting}
                             >
-                              {integrationNeedsAttention(selectedPlatform.status) ? 'Reconnect Meta' : 'Connect Meta'}
+                              {integrationNeedsAttention(selectedPlatform.status) ? t('reconnectMeta') : t('connectMeta')}
                             </Button>
                           ) : (
-                            <Badge variant="outline" color="gray">Unavailable</Badge>
+                            <Badge variant="outline" color="gray">{t('unavailable')}</Badge>
                           )}
                         </Group>
 
@@ -1119,7 +1134,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                             <IconClock size={16} />
                           </ThemeIcon>
                           <Text size="sm" c="dimmed">
-                            {getIntegrationAvailabilityCopy(selectedPlatform)}
+                            {availability(selectedPlatform)}
                           </Text>
                         </Group>
                       </Group>

@@ -50,7 +50,7 @@ describe('message catalogs', () => {
     const allowedSame = new Set(['metrics.ctr', 'metrics.cpm', 'apps.whatsapp', 'apps.instagram', 'apps.messenger', 'facts.value.quoted', 'leads.connected', 'leads.outcome.spam', 'settingsPage.account.plan', 'settingsPage.account.accountsCount', 'drafts.runs', 'createLead.setup.channel.messenger', 'createLead.audience.instagramOf', 'createLead.budget.lifetime', 'createLead.estimate.label.messages', 'createLead.estimate.range', 'insights.trend.only', 'insights.headline.text',
       // Brand names, metric acronyms and words that are spelled the same in Spanish.
       'labels.objective.THRUPLAY', 'labels.device.iphone', 'labels.device.ipad', 'labels.device.ipod',
-      'table.metric.ctr', 'table.metric.cpc', 'table.metric.cpm', 'table.format.VIDEO', 'runAgainSheet.row.source']);
+      'table.metric.ctr', 'table.metric.cpc', 'table.metric.cpm', 'table.format.VIDEO', 'runAgainSheet.row.source', 'metaFlow.instagram']);
     const same = Object.keys(english).filter(k => english[k] === spanish[k] && !allowedSame.has(k));
     expect(same).toEqual([]);
   });
