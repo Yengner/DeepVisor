@@ -100,16 +100,23 @@ export function relatedLifecycle(issue: Issue, card: LifecycleCard) {
  const consistentStatus=card.brief.affected.some(e=>e.effective===issue.code);
  return sameObservation&&consistentStatus&&issue.entities.some(id=>id===card.rootId||card.affectedIds.includes(id));
 }
-export function headline(p: Presentation): string {
- if(urgentIssues(p.issues).length)return p.recap?'Your results, and something to check':'Your advertising needs attention';
- if(p.welcome)return welcomeHeadline(p.welcome);
+/**
+ * The update's headline as a message key under `insights.headline` plus its values, so the popup
+ * can show it in the reader's language. `day` values are report days (YYYY-MM-DD) the caller
+ * formats; `text` is saved text (a Meta issue title) shown as it is.
+ */
+export type HeadlineMessage = { key: string; values: Record<string, string | number> };
+export function headlineMessage(p: Presentation): HeadlineMessage {
+ const m=(key:string,values:Record<string,string|number>={}):HeadlineMessage=>({key,values});
+ if(urgentIssues(p.issues).length)return m(p.recap?'resultsAndCheck':'needsAttention');
+ if(p.welcome)return welcomeMessage(p.welcome);
  const active=p.issues.filter(i=>!i.resolvedAt);
- if(active.length&&!p.recap&&!p.lifecycle.length)return active.length===1?active[0].title:`${active.length} notices from Meta`;
- if(p.issues.length&&!active.length&&!p.recap&&!p.lifecycle.length)return p.issues.length===1?'An earlier issue has cleared':'Earlier issues have cleared';
- if(p.recap)return p.lifecycle.length?'Your results and recent changes':recapHeadline(p.recap);
- if(p.lifecycle.length===1)return changeHeadline(p.lifecycle[0]);
- if(p.lifecycle.length)return `${p.lifecycle.length} changes to your advertising`;
- return p.suggestion?'Your ads are off':'No new observations yet';
+ if(active.length&&!p.recap&&!p.lifecycle.length)return active.length===1?m('text',{text:active[0].title}):m('notices',{count:active.length});
+ if(p.issues.length&&!active.length&&!p.recap&&!p.lifecycle.length)return m('cleared',{count:p.issues.length});
+ if(p.recap)return p.lifecycle.length?m('resultsAndChanges'):recapMessage(p.recap);
+ if(p.lifecycle.length===1)return changeMessage(p.lifecycle[0]);
+ if(p.lifecycle.length)return m('changes',{count:p.lifecycle.length});
+ return m(p.suggestion?'off':'none');
 }
 /**
  * Pick the first-look greeting. `activeAds` is null when delivery is unknown (no saved ads, or the
@@ -122,32 +129,59 @@ export function chooseWelcome(activeAds: number | null, lastSpendDay: string | n
  if(lastSpendDay===null)return {kind:'new'};
  return activeAds===0?{kind:'off',lastSpendDay}:undefined;
 }
-export function welcomeHeadline(w: Welcome): string {
- if(w.kind==='running')return w.activeAds===1?'Welcome! Your ad is running':`Welcome! ${w.activeAds} ads are running`;
- return w.kind==='off'?'Welcome! Your ads are off right now':'Welcome! Let’s make your first ad';
+export function welcomeMessage(w: Welcome): HeadlineMessage {
+ if(w.kind==='running')return {key:'welcomeRunning',values:{count:w.activeAds}};
+ return {key:w.kind==='off'?'welcomeOff':'welcomeNew',values:{}};
 }
-function recapHeadline(r: Recap): string {
- if(!r.since||!r.until)return 'Here’s your advertising catch-up';
- return r.since===r.until?`Your results for ${formatReportDay(r.since,false)}`:`Your last ${r.expectedDays} days of results`;
+function recapMessage(r: Recap): HeadlineMessage {
+ if(!r.since||!r.until)return {key:'recap',values:{}};
+ return r.since===r.until?{key:'recapDay',values:{day:r.since}}:{key:'recapDays',values:{count:r.expectedDays}};
 }
 /** Say what happened when an update holds one change, using the same labels as the card. */
-function changeHeadline(card: LifecycleCard): string {
- if(!card.brief?.explanation)return 'Your advertising changed';
+function changeMessage(card: LifecycleCard): HeadlineMessage {
+ if(!card.brief?.explanation)return {key:'changed',values:{}};
  const ads=(card.brief.affected??[]).filter(a=>a.level==='ad').length;
  const onlyAds=ads>0&&ads===card.brief.affected.length;
- const subject=onlyAds?(ads===1?'An ad':`${ads} ads`):'Your advertising';
- const plural=onlyAds&&ads>1;
- switch(lifecycleKind(card)){
-  case 'ended':return `${subject} reached ${plural?'their':'its'} scheduled end`;
-  case 'active':return `${subject} ${plural?'are':'is'} now active`;
-  case 'resumed':return `${subject} ${plural?'are':'is'} active again`;
-  case 'paused':return `${subject} ${plural?'were':'was'} paused`;
-  case 'interrupted':return onlyAds?`Delivery stopped for ${ads===1?'an ad':`${ads} ads`}`:'Delivery was interrupted';
-  case 'archived':return `${subject} ${plural?'were':'was'} archived`;
-  case 'rejected':return plural?`Meta rejected ${ads} ads`:'Meta rejected an ad';
-  default:return 'Your advertising changed';
- }
+ const subject=!onlyAds?'all':ads===1?'one':'many';
+ const kind=lifecycleKind(card);
+ return kind==='update'?{key:'changed',values:{}}:{key:`change.${kind}`,values:{subject,count:ads}};
 }
+
+/** English headline text, for places without a reader language (notifications, exports, emails). */
+const HEADLINE_EN: Record<string, (v: Record<string, string | number>) => string> = {
+ resultsAndCheck:()=>'Your results, and something to check',
+ needsAttention:()=>'Your advertising needs attention',
+ text:v=>String(v.text),
+ notices:v=>`${v.count} notices from Meta`,
+ cleared:v=>v.count===1?'An earlier issue has cleared':'Earlier issues have cleared',
+ resultsAndChanges:()=>'Your results and recent changes',
+ changes:v=>`${v.count} changes to your advertising`,
+ off:()=>'Your ads are off',
+ none:()=>'No new observations yet',
+ welcomeRunning:v=>v.count===1?'Welcome! Your ad is running':`Welcome! ${v.count} ads are running`,
+ welcomeOff:()=>'Welcome! Your ads are off right now',
+ welcomeNew:()=>'Welcome! Let’s make your first ad',
+ recap:()=>'Here’s your advertising catch-up',
+ recapDay:v=>`Your results for ${formatReportDay(String(v.day),false)}`,
+ recapDays:v=>`Your last ${v.count} days of results`,
+ changed:()=>'Your advertising changed',
+};
+const SUBJECT_EN=(v:Record<string,string|number>)=>v.subject==='one'?'An ad':v.subject==='many'?`${v.count} ads`:'Your advertising';
+const CHANGE_EN: Record<string, (v: Record<string, string | number>) => string> = {
+ ended:v=>`${SUBJECT_EN(v)} reached ${v.subject==='many'?'their':'its'} scheduled end`,
+ active:v=>`${SUBJECT_EN(v)} ${v.subject==='many'?'are':'is'} now active`,
+ resumed:v=>`${SUBJECT_EN(v)} ${v.subject==='many'?'are':'is'} active again`,
+ paused:v=>`${SUBJECT_EN(v)} ${v.subject==='many'?'were':'was'} paused`,
+ interrupted:v=>v.subject==='all'?'Delivery was interrupted':`Delivery stopped for ${v.subject==='one'?'an ad':`${v.count} ads`}`,
+ archived:v=>`${SUBJECT_EN(v)} ${v.subject==='many'?'were':'was'} archived`,
+ rejected:v=>v.subject==='many'?`Meta rejected ${v.count} ads`:'Meta rejected an ad',
+};
+function englishHeadline(msg: HeadlineMessage): string {
+ if(msg.key.startsWith('change.'))return CHANGE_EN[msg.key.slice(7)]?.(msg.values)??'Your advertising changed';
+ return HEADLINE_EN[msg.key]?.(msg.values)??'Your advertising changed';
+}
+export function headline(p: Presentation): string { return englishHeadline(headlineMessage(p)); }
+export function welcomeHeadline(w: Welcome): string { return englishHeadline(welcomeMessage(w)); }
 
 /**
  * Presentation-only status for a lifecycle card. Saved briefs carry no change kind, so this

@@ -212,23 +212,41 @@
   min-width: 0;
 }
 
+/* Card numbers (phones): results lead in big blue, spend and cost per result beside it — the
+   Insights popup's reading order. Labels sit under the numbers, 13px and up. */
 .mobileMetricGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--platform-card-border);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 4px 12px;
+  margin-top: 16px;
 }
-
+.mobileLead, .mobileStat { display: grid; gap: 2px; margin: 0; min-width: 0; }
+.mobileLeadValue {
+  font-family: var(--font-display), sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--dv-primary-strong);
+}
+.mobileStatValue {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--dv-text);
+  overflow-wrap: anywhere;
+}
+.mobileStatLabel { font-size: 13px; font-weight: 500; color: var(--dv-text-muted); }
 .mobileActivity {
   min-width: 0;
   flex: 1 1 auto;
 }
-.mobileMetricGrid > div > :global(.mantine-Text-root):first-child { font-size: 12px; font-weight: 500; text-transform: none; color: var(--dv-text-muted); }
-.mobileMetricGrid > div > :global(.mantine-Text-root):last-child { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
-.moreMetrics { grid-column: 1 / -1; font-size: 13px; }
-.moreMetrics summary { min-height: 44px; padding: 12px 0; cursor: pointer; color: var(--dv-primary-strong); }
+.moreMetrics { grid-column: 1 / -1; margin-top: 6px; font-size: 14px; }
+.moreMetrics summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-weight: 600; color: var(--dv-text-muted); }
+.moreMetrics[open] summary { color: var(--dv-text); }
 
 .mobileEntityActions,
 .mobileRunAgainButton {
@@ -316,19 +334,12 @@
   }
 }
 
-/* Delivery (green accent) and selection (blue tint) are distinct states. Delivery reflects the
-   latest saved Meta status, independent of selection and historical spend. */
-.desktopDataTable tr[data-delivering] > td:first-child {
-  box-shadow: inset 3px 0 var(--dv-success, #226443);
-}
+/* Delivery shows as the green "Delivering" chip in the status column; selection is the blue tint. */
 .desktopDataTable tr[data-selected] > td {
   background: var(--dv-primary-soft) !important;
 }
 .desktopDataTable tr[data-selected] > td:first-child {
   box-shadow: inset 3px 0 var(--dv-primary);
-}
-.mobileEntityCard[data-delivering] {
-  box-shadow: inset 3px 0 var(--dv-success, #226443), var(--platform-card-shadow);
 }
 .mobileEntityCard[data-selected] {
   border-color: var(--dv-primary);
@@ -449,4 +460,100 @@ th[data-num] .sortButton { flex-direction: row-reverse; }
   .pageShell, .tableSurface { min-height: 0; max-height: none; }
   .tabs { max-height: none; }
   .tableBody { flex: none; overflow: visible; }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Phones: no panel. The page sits on the app canvas like Drafts and Notifications; the summary,
+   the actions and each campaign are their own calm cards. One big blue number (results) leads,
+   48px controls, nothing under 13px, --dv-* tokens so dark mode follows.
+   --------------------------------------------------------------------------------------------- */
+@media (max-width: 760px) {
+  .pageShell { padding: 4px 16px 0; }
+  .pageShell .tableSurface { background: transparent; border: 0; border-radius: 0; box-shadow: none; overflow: visible; }
+  .tableHeader { padding: 0 0 8px; border-bottom: 0; }
+  .title { font-size: 28px; }
+  .subtitle { font-size: 15px; }
+
+  /* Period first, full width, big enough to tap. */
+  .summaryBlock { margin-top: 14px; }
+  .summaryHead { flex-direction: column; align-items: stretch; gap: 8px; margin-bottom: 10px; }
+  .summaryCaption { font-size: 13px; letter-spacing: 0; text-transform: none; }
+  .rangeSwitch { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 4px; border-radius: 12px; }
+  .rangeSwitch button { min-height: 40px; padding: 0 4px; font-size: 15px; border-radius: 9px; }
+
+  /* Summary: results across the top, then spend + cost, then the two delivery filters. */
+  .summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; overflow: visible; margin: 0; padding: 0; }
+  .summaryTile { min-width: 0; min-height: 76px; padding: 12px 14px; justify-content: center; border-color: var(--dv-card-border); border-radius: var(--dv-card-radius, 14px); background: var(--dv-card-panel); }
+  .summaryTile[data-tile='results'] { grid-column: 1 / -1; order: -2; min-height: 0; padding: 16px; }
+  .summaryTile[data-tile='results'] .tileValue { font-family: var(--font-display), sans-serif; font-size: 40px; font-weight: 800; line-height: 1.05; letter-spacing: -.03em; color: var(--dv-primary-strong); }
+  .summaryTile[data-tile='spend'] { order: -1; }
+  .summaryTile[data-tile='cost-mixed'] { grid-column: 1 / -1; }
+  /* Delivery filters: one line each, label left and count right, so the list starts sooner. */
+  .summaryTile[data-filter] { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; padding: 8px 14px; }
+  .summaryTile[data-filter] .tileValue { margin: 0; font-size: 18px; }
+  .tileLabel { font-size: 14px; }
+  .tileValue { font-size: 20px; }
+  .tileNote { font-size: 13px; }
+
+  /* Actions: one main button, two quieter ones beside each other, refresh as a plain line. */
+  .actionGroup { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; margin-top: 4px; }
+  .actionGroup > * { min-width: 0; }
+  .actionGroup [data-action='create'] { grid-column: 1 / -1; order: -1; }
+  .actionGroup [data-action] :global(.mantine-Button-root), .actionGroup > :global(.mantine-Button-root) { width: 100%; min-height: 48px; font-size: 16px; }
+  .actionGroup:not(:has([data-action='drafts'])) [data-action='quick'] { grid-column: 1 / -1; }
+  .actionGroup [data-action='drafts'] { border: 1px solid var(--dv-card-border); background: var(--dv-card-panel); }
+  .actionGroup [data-action='refresh'] { grid-column: 1 / -1; }
+  .actionGroup [data-action='refresh'] :global(.mantine-Button-root) { justify-content: flex-start; border: 0; background: transparent; padding-inline: 2px; min-height: 44px; font-size: 15px; color: var(--dv-text-muted); }
+
+  /* Inside a campaign or ad set, the account totals step aside: the level's own totals sit by the back link. */
+  .tableHeader[data-drilled] .summaryBlock { display: none; }
+  /* The way back comes first, as on Drafts. */
+  .tableHeader[data-drilled] { display: flex; flex-direction: column; }
+  .tableHeader[data-drilled] .breadcrumb { order: -1; margin: 0 0 8px; }
+  .tableHeader[data-drilled] .layerSummary { font-size: 15px; color: var(--dv-text); }
+
+  /* Tabs repeat what the cards and the back link already do. */
+  .tabs :global(.mantine-Tabs-list) { display: none; }
+  .layerBar { width: 100%; justify-content: space-between; }
+  .metricsToggle { display: none; }
+  .layerSummary { font-size: 15px; }
+
+  .breadcrumb { margin-top: 4px; }
+  .breadcrumb button { min-height: 44px; font-size: 15px; font-weight: 700; color: var(--dv-primary-strong); }
+
+  .filterBar { gap: 10px; }
+  .filterBar :global(.mantine-Input-input) { min-height: 48px; font-size: 16px; }
+
+  .tablePanelInner { padding: 8px 0 16px; }
+  .mobileEntityList { gap: 12px; }
+  .mobileEntityCard {
+    padding: 16px;
+    border-color: var(--dv-card-border);
+    border-radius: var(--dv-card-radius, 14px);
+    background: var(--dv-card-panel);
+    box-shadow: 0 1px 2px light-dark(rgb(16 44 70 / .06), rgb(0 0 0 / .3));
+    cursor: pointer;
+  }
+  .mobileEntityCard[data-selected] { border-color: color-mix(in srgb, var(--dv-primary-strong) 45%, var(--dv-card-border)); background: var(--dv-card-panel); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-primary-strong) 45%, transparent); }
+  .mobileCardTitle { font-size: 16px; font-weight: 700; line-height: 1.35; color: var(--dv-text); }
+  .mobileEntityTitleBlock :global(.mantine-Text-root[data-size='xs']) { font-size: 14px; }
+  .mobileFooter { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--dv-card-border); align-items: center; flex-wrap: wrap; row-gap: 8px; }
+  /* Dates take their own line when two buttons share the footer. */
+  .mobileFooter > .mobileActivity { flex: 1 1 150px; }
+  .mobileEntityActions { flex-wrap: wrap; gap: 8px; }
+  /* A cost flag sits above the price instead of squeezing it. */
+  .mobileStatValue .costHigh { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .mobileStatValue .costHighTag { order: -1; font-size: 13px; }
+  .mobileEntityCard :global(.mantine-Text-root[data-size='xs']) { font-size: 14px; }
+  .mobileEntityCard .mobileActivity { font-size: 14px; white-space: normal; -webkit-line-clamp: 2 !important; line-height: 1.4; }
+  .mobileEntityCard [class*='status'] { font-size: 13px; }
+  .moreMetricList dt, .moreMetricList dd { font-size: 14px; }
+  .openNext { flex: none; min-height: 44px; padding: 0 12px 0 16px; font-size: 15px; font-weight: 700; white-space: nowrap; background: var(--dv-primary-soft); }
+  .moreMetrics summary { list-style: none; gap: 6px; min-height: 40px; }
+  .moreMetrics summary::-webkit-details-marker { display: none; }
+  .moreMetrics summary::after { content: ''; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform 160ms ease; }
+  .moreMetrics[open] summary::after { transform: translateY(2px) rotate(-135deg); }
+  .mobileRunAgainButton { min-height: 44px; padding-inline: 14px; border-radius: 999px !important; font-size: 15px; font-weight: 700; }
+  .breadcrumb button[title] { display: block; width: 100%; text-align: left; }
+  .tableFooter { border-top: 0; padding: 4px 0 16px; font-size: 14px; }
 }

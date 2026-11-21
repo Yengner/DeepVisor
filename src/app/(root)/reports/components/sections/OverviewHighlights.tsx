@@ -1,10 +1,10 @@
 'use client';
 import { IconChevronRight, IconPhoto, IconSpeakerphone, IconStack2 } from '@tabler/icons-react';
 import type { ReportPayload } from '@/lib/server/reports/types';
-import { formatReportMetric } from '@/lib/shared/reports/metrics';
-import { WEEKDAYS } from '@/lib/shared/reports/timeAnalysis';
+import { useLabels } from '@/lib/client/hooks/useLabels';
+import { useReportFormat, type ReportFormat } from '../useReportFormat';
 import { busiestHour, MIN_HOUR_OBSERVATIONS, snapshotShares, topAdvertising, type SnapshotHighlight } from '@/lib/shared/reports/highlights';
-import { formatHour, formatSnapshotWindow, humanizeContext } from '@/lib/shared/reports/labels';
+import { humanizeContext } from '@/lib/shared/reports/labels';
 import { previewSources } from '@/lib/shared/media/preview';
 import type { ReportSection } from '../layout/ReportSections';
 import classes from '../Workspace.module.css';
@@ -12,17 +12,16 @@ import classes from '../Workspace.module.css';
 /** Whole percent; a real but tiny share reads "<1%" rather than a misleading 0%. */
 const pct = (share: number) => share > 0 && share < 0.005 ? '<1%' : `${Math.round(share * 100)}%`;
 const barWidth = (share: number) => `${Math.max(share * 100, share > 0 ? 1 : 0)}%`;
-const LEVEL = { campaign: 'Campaign', adset: 'Ad set', ad: 'Ad' } as const;
 
-function Card({ title, target, onOpen, wide, children }: {
-  title: string; target: ReportSection; onOpen: (section: ReportSection) => void; wide?: boolean; children: React.ReactNode;
+function Card({ title, target, onOpen, wide, children, details }: {
+  title: string; target: ReportSection; onOpen: (section: ReportSection) => void; wide?: boolean; children: React.ReactNode; details: string;
 }) {
   return (
     <article className={`${classes.highlight} ${wide ? classes.highlightWide : ''}`}>
       <div className={classes.highlightHeader}>
         <h3>{title}</h3>
         <button type="button" className={classes.highlightLink} onClick={() => onOpen(target)}>
-          Details<IconChevronRight size={14} aria-hidden="true" />
+          {details}<IconChevronRight size={14} aria-hidden="true" />
         </button>
       </div>
       {children}
@@ -30,16 +29,16 @@ function Card({ title, target, onOpen, wide, children }: {
   );
 }
 
-function Shares({ data, emptyText }: { data: SnapshotHighlight | null; emptyText: string }) {
+function Shares({ data, emptyText, f, dimension }: { data: SnapshotHighlight | null; emptyText: string; f: ReportFormat; dimension: string }) {
   if (!data) return <p className={classes.highlightEmpty}>{emptyText}</p>;
   return <>
     <p className={classes.highlightMeta}>{data.periodBased
-      ? `Share of spend · ${formatSnapshotWindow(data.window)}`
-      : `Share of spend · all-time snapshot, not the selected dates`}</p>
+      ? f.t('highlights.share', { window: f.snapshot(data.window) })
+      : f.t('highlights.shareSnapshot')}</p>
     <ul className={classes.shares}>
       {data.segments.map(segment => (
         <li key={segment.label} className={classes.share}>
-          <span>{segment.label}</span><strong>{pct(segment.share)}</strong>
+          <span>{f.segment(dimension, segment.label)}</span><strong>{pct(segment.share)}</strong>
           <span className={classes.shareTrack} aria-hidden="true"><span style={{ width: barWidth(segment.share) }} /></span>
         </li>
       ))}
@@ -52,30 +51,32 @@ function Shares({ data, emptyText }: { data: SnapshotHighlight | null; emptyText
  * linked section uses; when evidence is thin the card says so instead of naming a winner.
  */
 export function OverviewHighlights({ payload, onOpen }: { payload: ReportPayload; onOpen: (section: ReportSection) => void }) {
+  const f = useReportFormat(), t = f.t, labels = useLabels();
+  const details = t('highlights.details');
+  const formatReportMetric = f.value;
   const currency = payload.meta.currencyCode;
   const top = topAdvertising(payload);
   const audience = snapshotShares(payload, 'age_gender');
   const platforms = snapshotShares(payload, 'publisher_platform');
   const countries = snapshotShares(payload, 'country', 1);
   const peak = busiestHour(payload);
-  const metricLabel = top.metric === 'conversion' ? 'results' : 'spend';
 
   return (
-    <section className={classes.highlights} aria-label="Report highlights">
-      <Card title="Top advertising" target="advertising" onOpen={onOpen} wide>
+    <section className={classes.highlights} aria-label={t('highlights.label')}>
+      <Card title={t('highlights.top')} target="advertising" onOpen={onOpen} wide details={details}>
         {top.rows.length === 1 ? <>
           {/* One entity is not a ranking: say what it is. */}
-          <p className={classes.highlightMeta}>Selected dates</p>
+          <p className={classes.highlightMeta}>{t('highlights.selectedDates')}</p>
           <p className={classes.soleSource}>
-            <span className={classes.soleLead}>All {metricLabel} came from <strong>{top.rows[0].name}</strong></span>
-            <span className={classes.soleValue}>{formatReportMetric(top.rows[0], top.metric, currency)} {top.metric === 'conversion' ? `results · ${formatReportMetric(top.rows[0], 'costPerResult', currency)} each` : 'spend'}</span>
+            <span className={classes.soleLead}>{t.rich('highlights.allFrom', { metric: top.metric === 'conversion' ? 'conversion' : 'spend', name: top.rows[0].name, b: chunks => <strong>{chunks}</strong> })}</span>
+            <span className={classes.soleValue}>{top.metric === 'conversion' ? t('highlights.resultsEach', { value: formatReportMetric(top.rows[0], top.metric, currency), cost: formatReportMetric(top.rows[0], 'costPerResult', currency) }) : t('highlights.spendValue', { value: formatReportMetric(top.rows[0], top.metric, currency) })}</span>
           </p>
         </> : top.rows.length ? <>
-          <p className={classes.highlightMeta}>Ranked by {metricLabel} for the selected dates</p>
+          <p className={classes.highlightMeta}>{t('highlights.ranked', { metric: top.metric === 'conversion' ? 'conversion' : 'spend' })}</p>
           <ol className={classes.rankList}>
             {top.rows.map(row => {
               const image = row.level === 'ad' ? previewSources(row.creativePreview ?? undefined, [])[0] : undefined;
-              const context = [row.secondaryContext, row.primaryContext].map(humanizeContext).filter(v => v && v !== '—').join(' · ');
+              const context = [row.secondaryContext, row.primaryContext].map(v => v && /^[A-Z][A-Z0-9_]+$/.test(v) ? labels.objective(v) : humanizeContext(v)).filter(v => v && v !== '—').join(' · ');
               return (
                 <li key={`${row.level}:${row.id}`} className={classes.rankItem}>
                   <span className={classes.rankThumb} aria-hidden="true">
@@ -84,48 +85,48 @@ export function OverviewHighlights({ payload, onOpen }: { payload: ReportPayload
                   </span>
                   <span className={classes.rankName}>
                     <strong title={row.name}>{row.name}</strong>
-                    <span>{LEVEL[row.level]}{context ? ` · ${context}` : ''}</span>
+                    <span>{t(`level.${row.level}`)}{context ? ` · ${context}` : ''}</span>
                   </span>
                   <span className={classes.rankValue}>
                     <strong>{formatReportMetric(row, top.metric, currency)}</strong>
-                    <span>{top.metric === 'conversion' ? `${formatReportMetric(row, 'costPerResult', currency)} each` : 'spend'}</span>
+                    <span>{top.metric === 'conversion' ? t('highlights.each', { cost: formatReportMetric(row, 'costPerResult', currency) }) : t('highlights.spend')}</span>
                   </span>
                 </li>
               );
             })}
           </ol>
-        </> : <p className={classes.highlightEmpty}>No advertising recorded activity in this period.</p>}
+        </> : <p className={classes.highlightEmpty}>{t('highlights.none')}</p>}
       </Card>
 
-      <Card title="Audience" target="audience" onOpen={onOpen}>
-        <Shares data={audience} emptyText="No audience breakdown is available for this selection." />
+      <Card title={t('highlights.audience')} target="audience" onOpen={onOpen} details={details}>
+        <Shares data={audience} f={f} dimension="age_gender" emptyText={t('highlights.audienceEmpty')} />
       </Card>
 
-      <Card title="Placements" target="delivery" onOpen={onOpen}>
-        <Shares data={platforms} emptyText="No placement breakdown is available for this selection." />
+      <Card title={t('highlights.placements')} target="delivery" onOpen={onOpen} details={details}>
+        <Shares data={platforms} f={f} dimension="publisher_platform" emptyText={t('highlights.placementsEmpty')} />
       </Card>
 
-      <Card title="Busiest hours" target="time" onOpen={onOpen}>
-        <p className={classes.highlightMeta}>Most clicks on average · account time</p>
+      <Card title={t('highlights.busiest')} target="time" onOpen={onOpen} details={details}>
+        <p className={classes.highlightMeta}>{t('highlights.busiestMeta')}</p>
         {peak ? (
           <p className={classes.statement}>
-            {WEEKDAYS[peak.day]}s, {formatHour(peak.hour)}–{formatHour(peak.hour + 1)}
-            <small>{peak.value.toLocaleString('en-US', { maximumFractionDigits: 1 })} clicks per {WEEKDAYS[peak.day]} across {peak.observations} observed days</small>
+            {t('highlights.hourSpan', { day: f.weekday(peak.day), from: f.hour(peak.hour), to: f.hour(peak.hour + 1) })}
+            <small>{t('highlights.busiestValue', { value: f.number(peak.value, 1), day: f.weekday(peak.day), days: peak.observations })}</small>
           </p>
         ) : (
           <p className={classes.highlightEmpty}>
-            {payload.meta.timezone ? `Not enough days yet to name a busiest hour — each hour needs at least ${MIN_HOUR_OBSERVATIONS} observed days.` : 'Needs a verified account timezone.'}
+            {payload.meta.timezone ? t('highlights.busiestThin', { min: MIN_HOUR_OBSERVATIONS }) : t('highlights.needsZone')}
           </p>
         )}
       </Card>
 
-      <Card title="Geography" target="geography" onOpen={onOpen}>
+      <Card title={t('highlights.geography')} target="geography" onOpen={onOpen} details={details}>
         {countries ? <>
-          <p className={classes.highlightMeta}>Share of spend · {countries.periodBased ? formatSnapshotWindow(countries.window) : 'all-time snapshot, not the selected dates'}</p>
+          <p className={classes.highlightMeta}>{countries.periodBased ? t('highlights.share', { window: f.snapshot(countries.window) }) : t('highlights.shareSnapshot')}</p>
           <p className={classes.statement}>
-            {countries.segments[0].share >= 0.995 ? `All spend in ${countries.segments[0].label}` : `${pct(countries.segments[0].share)} of spend in ${countries.segments[0].label}`}
+            {countries.segments[0].share >= 0.995 ? t('highlights.allIn', { place: f.segment('country', countries.segments[0].label) }) : t('highlights.shareIn', { pct: pct(countries.segments[0].share), place: f.segment('country', countries.segments[0].label) })}
           </p>
-        </> : <p className={classes.highlightEmpty}>No country breakdown is available for this selection.</p>}
+        </> : <p className={classes.highlightEmpty}>{t('highlights.geoEmpty')}</p>}
       </Card>
     </section>
   );

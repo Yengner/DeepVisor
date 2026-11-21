@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ActionIcon, Button, Checkbox, Menu, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { IconBookmark, IconBookmarkPlus, IconCheck, IconChevronDown, IconLink, IconTrash } from '@tabler/icons-react';
 import { MAX_VIEW_NAME, savedViewRangeLabel } from '@/lib/shared/reports/savedViews';
@@ -38,14 +39,15 @@ export function SavedViewsMenu({ rollingPreset, isDemo }: { rollingPreset: 7 | 3
     }
   }, []);
 
+  const t = useTranslations('reports.views');
   const flash = (message: string) => { setStatus(message); window.setTimeout(() => setStatus(null), 2400); };
 
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      flash('Link copied — teammates with access see this exact view');
+      flash(t('copied'));
     } catch {
-      flash('Copy failed — copy the address bar instead');
+      flash(t('copyFailed'));
     }
   };
 
@@ -59,13 +61,14 @@ export function SavedViewsMenu({ rollingPreset, isDemo }: { rollingPreset: 7 | 3
         body: JSON.stringify({ name, query: window.location.search, preset: keepRolling ? rollingPreset : null }),
       });
       const body = await response.json();
-      if (!response.ok || !body.success) throw new Error(body.error ?? 'The view could not be saved.');
+      if (!response.ok || !body.success) throw new Error(t('saveFailed'));
       setViews(current => [body.view, ...current]);
       setModalOpen(false);
       setName('');
-      flash(`Saved “${body.view.name}”`);
+      flash(t('saved', { name: body.view.name }));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'The view could not be saved.');
+      console.error('Saving report view failed', cause);
+      setError(t('saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -76,7 +79,7 @@ export function SavedViewsMenu({ rollingPreset, isDemo }: { rollingPreset: 7 | 3
     setConfirmDelete(null);
     const response = await fetch(`/api/reports/views/${id}`, { method: 'DELETE' }).catch(() => null);
     if (response?.ok) setViews(current => current.filter(view => view.id !== id));
-    else flash('That view could not be deleted');
+    else flash(t('deleteFailed'));
   };
 
   return (
@@ -84,32 +87,32 @@ export function SavedViewsMenu({ rollingPreset, isDemo }: { rollingPreset: 7 | 3
       <Menu position="bottom-end" shadow="md" width={300} closeOnItemClick onOpen={() => { setConfirmDelete(null); if (state !== 'ready' && !isDemo) void load(); }}>
         <Menu.Target>
           <Button leftSection={status ? <IconCheck size={16} /> : <IconBookmark size={16} />} rightSection={<IconChevronDown size={14} />} radius="xl" variant="default">
-            Views
+            {t('button')}
           </Button>
         </Menu.Target>
         <Menu.Dropdown>
-          <Menu.Item leftSection={<IconLink size={16} />} onClick={copyLink}>Copy link to this view</Menu.Item>
+          <Menu.Item leftSection={<IconLink size={16} />} onClick={copyLink}>{t('copy')}</Menu.Item>
           <Menu.Item leftSection={<IconBookmarkPlus size={16} />} disabled={isDemo} onClick={() => { setError(null); setModalOpen(true); }}>
-            Save current view…
+            {t('save')}
           </Menu.Item>
           <Menu.Divider />
-          <Menu.Label>Saved for your team</Menu.Label>
-          {isDemo ? <Text size="xs" c="dimmed" px="sm" pb="xs">Saved views are unavailable on demo data.</Text>
-            : state === 'loading' || state === 'idle' ? <Text size="xs" c="dimmed" px="sm" pb="xs">Loading…</Text>
-            : state === 'error' ? <Text size="xs" c="dimmed" px="sm" pb="xs">Saved views could not be loaded.</Text>
-            : !views.length ? <Text size="xs" c="dimmed" px="sm" pb="xs">No saved views yet. Save the filters and period you use often.</Text>
+          <Menu.Label>{t('team')}</Menu.Label>
+          {isDemo ? <Text size="sm" c="dimmed" px="sm" pb="xs">{t('demo')}</Text>
+            : state === 'loading' || state === 'idle' ? <Text size="sm" c="dimmed" px="sm" pb="xs">{t('loading')}</Text>
+            : state === 'error' ? <Text size="sm" c="dimmed" px="sm" pb="xs">{t('loadFailed')}</Text>
+            : !views.length ? <Text size="sm" c="dimmed" px="sm" pb="xs">{t('empty')}</Text>
             : views.map(view => (
               <div key={view.id} className={classes.savedView}>
                 <Menu.Item component="a" href={`/reports?${view.query}`} className={classes.savedViewLink}>
                   <span className={classes.savedViewName}>{view.name}</span>
-                  <span className={classes.savedViewMeta}>{savedViewRangeLabel(view.query)}{view.isMine ? '' : ' · shared by a teammate'}</span>
+                  <span className={classes.savedViewMeta}>{savedViewRangeLabel(view.query)}{view.isMine ? '' : t('shared')}</span>
                 </Menu.Item>
                 {view.isMine ? (
                   <ActionIcon
                     variant={confirmDelete === view.id ? 'filled' : 'subtle'}
                     color={confirmDelete === view.id ? 'red' : 'gray'}
-                    aria-label={confirmDelete === view.id ? `Confirm delete ${view.name}` : `Delete ${view.name}`}
-                    title={confirmDelete === view.id ? 'Click again to delete' : 'Delete'}
+                    aria-label={confirmDelete === view.id ? t('confirmDelete', { name: view.name }) : t('delete', { name: view.name })}
+                    title={confirmDelete === view.id ? t('clickAgain') : t('deleteShort')}
                     onClick={event => { event.stopPropagation(); void remove(view.id); }}
                   >
                     <IconTrash size={14} />
@@ -122,12 +125,12 @@ export function SavedViewsMenu({ rollingPreset, isDemo }: { rollingPreset: 7 | 3
       <span className={classes.srOnly} role="status" aria-live="polite">{status ?? ''}</span>
       {status ? <span className={classes.viewsToast} aria-hidden="true">{status}</span> : null}
 
-      <Modal opened={modalOpen} onClose={() => setModalOpen(false)} title="Save this view" radius="lg" centered>
+      <Modal opened={modalOpen} onClose={() => setModalOpen(false)} title={t('modalTitle')} radius="lg" centered>
         <form onSubmit={event => { event.preventDefault(); void save(); }}>
           <Stack gap="md">
             <TextInput
-              label="Name"
-              placeholder="e.g. Monthly client report"
+              label={t('name')}
+              placeholder={t('namePlaceholder')}
               value={name}
               maxLength={MAX_VIEW_NAME}
               onChange={event => setName(event.currentTarget.value)}
@@ -138,13 +141,13 @@ export function SavedViewsMenu({ rollingPreset, isDemo }: { rollingPreset: 7 | 3
               <Checkbox
                 checked={keepRolling}
                 onChange={event => setKeepRolling(event.currentTarget.checked)}
-                label={`Keep it rolling (always the last ${rollingPreset} completed days)`}
-                description="Off saves the exact dates shown now."
+                label={t('rolling', { days: rollingPreset })}
+                description={t('rollingHint')}
               />
             ) : null}
-            <Text size="xs" c="dimmed">Everyone in this business can open saved views. Only you can delete yours.</Text>
+            <Text size="sm" c="dimmed">{t('everyone')}</Text>
             {error ? <Text size="sm" c="red" role="alert">{error}</Text> : null}
-            <Button type="submit" loading={saving} disabled={!name.trim()} radius="xl">Save view</Button>
+            <Button type="submit" loading={saving} disabled={!name.trim()} radius="xl">{t('saveButton')}</Button>
           </Stack>
         </form>
       </Modal>

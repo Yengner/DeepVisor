@@ -1,22 +1,21 @@
 import { IconInfoCircle } from '@tabler/icons-react';
 import type { ReportPayload } from '@/lib/server/reports/types';
-import { coverageSentence, formatReportRange } from '@/lib/shared/reports/labels';
 import classes from './Workspace.module.css';
-
-const formatDay = (day: string) => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${day}T12:00:00Z`));
+import { useReportFormat } from './useReportFormat';
 
 /**
  * Data-quality banner for the report period: coverage in plain words, source warnings and why a
  * requested comparison is unavailable. Missing records are described as gaps, never zero.
  */
 export function ReportDataStatus({ payload, onUpdate }: { payload: ReportPayload; onUpdate?: (mutate: (params: URLSearchParams) => void) => void }) {
-  const coverage = coverageSentence(payload.meta.coverage);
+  const f = useReportFormat(), t = f.t;
+  const coverage = f.coverageSentence(payload.meta.coverage);
   const messages = [...new Set([
     ...(coverage ? [coverage] : []),
     ...(payload.meta.warnings ?? []),
     ...(payload.comparison.disabledReason ? [payload.comparison.disabledReason] : []),
     ...(payload.comparison.basis === 'matched_days' && payload.comparison.matchedDays
-      ? [`Changes compare only the ${payload.comparison.matchedDays} days with records in both periods (${formatReportRange(payload.comparison.previousDateFrom, payload.comparison.previousDateTo)} is the previous period).`]
+      ? [t('status.matched', { count: payload.comparison.matchedDays, range: f.range(payload.comparison.previousDateFrom, payload.comparison.previousDateTo) })]
       : []),
   ])];
   if (!messages.length) return null;
@@ -37,7 +36,7 @@ export function ReportDataStatus({ payload, onUpdate }: { payload: ReportPayload
             params.set('date_from', recordedFrom);
             params.set('date_to', payload.query.dateTo);
           })}>
-            Show {formatDay(recordedFrom)} onward
+            {t('status.showFrom', { day: f.day(recordedFrom, false) })}
           </button>
         ) : null}
       </div>

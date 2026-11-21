@@ -4,6 +4,7 @@ import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
 import { Fragment, useMemo, useState, useTransition } from 'react';
 import { Drawer, Loader } from '@mantine/core';
+import { useTranslations } from 'next-intl';
 import { IconChevronRight } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -28,6 +29,7 @@ import classes from './Workspace.module.css';
 export function ReportsClient({ payload, filterOptions, isDemo = false }: {
   payload: ReportPayload; filterOptions: ReportFilterOptions; isDemo?: boolean;
 }) {
+  const t = useTranslations('reports');
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -56,21 +58,21 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: {
   };
 
   return <div className={classes.workspace}>
-    <Drawer opened={filtersOpened} onClose={() => setFiltersOpened(false)} title="Report filters" position="right" size="md">
+    <Drawer opened={filtersOpened} onClose={() => setFiltersOpened(false)} title={t('filters.drawer')} position="right" size="md">
       <ReportsSidebar query={payload.query} filterOptions={filterOptions} onUpdate={mutate => { setFiltersOpened(false); updateSearch(mutate); }} />
     </Drawer>
     <ReportsHeader payload={payload} filterOptions={filterOptions} exportLinks={exportLinks} onUpdate={updateSearch}
       onRefresh={() => startTransition(() => router.refresh())} onOpenFilters={() => setFiltersOpened(true)}
       activeFilterCount={getActiveFilterCount(payload)} scopeName={scopeName} isDemo={isDemo} isPending={isPending} />
-    {trail.length > 1 && <nav aria-label="Report scope" className={classes.scope}>
+    {trail.length > 1 && <nav aria-label={t('client.scope')} className={classes.scope}>
       {trail.map((item, index) => <Fragment key={index}>
         {index > 0 && <IconChevronRight size={14} aria-hidden="true" />}
         {item.href ? <Link href={`${item.href}${isDemo ? '&demo=1' : ''}#${section}`}>{item.label}</Link>
           : <span aria-current="page">{item.label}</span>}
       </Fragment>)}
     </nav>}
-    {payload.meta.syncCoverage?.historicalAnalysisPending && <div className={classes.banner}><p>Historical sync is still adding older data. Reloading the report reads what has been saved so far.</p></div>}
-    {isPending && <div className={classes.pending} role="status"><Loader size="xs" /> Updating report…</div>}
+    {payload.meta.syncCoverage?.historicalAnalysisPending && <div className={classes.banner}><p>{t('client.historical')}</p></div>}
+    {isPending && <div className={classes.pending} role="status"><Loader size="xs" /> {t('client.updating')}</div>}
     <ReportDataStatus payload={payload} onUpdate={updateSearch} />
     <ReportMetrics payload={payload} chartMetric={chartMetric} onChartMetric={showChart} />
     <ReportSections section={section} onSelect={select} hidden={[...hiddenSections]} />

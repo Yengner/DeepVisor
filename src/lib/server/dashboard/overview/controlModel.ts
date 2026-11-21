@@ -57,7 +57,7 @@ export function runningCostPerResult<T extends Pick<Metrics, "spend" | "results"
       return { ...point, costPerResult: null };
     spend += point.spend;
     results += point.results;
-    return { ...point, costPerResult: results > 0 ? spend / results : null };
+    return { ...point, costPerResult: results > 0 && spend > 0 ? spend / results : null };
   });
 }
 

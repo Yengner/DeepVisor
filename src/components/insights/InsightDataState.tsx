@@ -1,4 +1,5 @@
 import {Clock3,Info} from 'lucide-react';
+import {useLocale,useTranslations} from 'next-intl';
 import type {CSSProperties,ReactNode} from 'react';
 import styles from './InsightsView.module.css';
 
@@ -9,5 +10,8 @@ export function InsightDataNotice({title,children,hourly=false,tone='gap'}:{titl
 }
 /** An availability diagram, never a substitute for measured performance. */
 export function MissingObservationTrack({hourly=false}:{hourly?:boolean}){
- return <div><div className={styles.missingTrack} style={{'--slots':hourly?24:7} as CSSProperties}><span>{hourly?'0 of 24 hour slots have data':'No performance observations available'}</span></div>{hourly&&<div className={styles.missingAxis} aria-hidden="true">{['12 AM','6 AM','12 PM','6 PM','11 PM'].map(label=><span key={label}>{label}</span>)}</div>}</div>;
+ const t=useTranslations('insights.chart');
+ const intl=useLocale()==='es'?'es-US':'en-US';
+ const hour=(h:number)=>new Intl.DateTimeFormat(intl,{hour:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(2000,0,1,h)));
+ return <div><div className={styles.missingTrack} style={{'--slots':hourly?24:7} as CSSProperties}><span>{hourly?t('hourSlotsEmpty'):t('noObservations')}</span></div>{hourly&&<div className={styles.missingAxis} aria-hidden="true">{[0,6,12,18,23].map(h=><span key={h}>{hour(h)}</span>)}</div>}</div>;
 }

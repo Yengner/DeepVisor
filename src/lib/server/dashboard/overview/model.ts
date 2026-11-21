@@ -78,7 +78,8 @@ export function metricsFor(rows: DailyRow[], currency: string | null): Metrics {
   return {
     spend: totals.spend,
     results,
-    costPerResult: results > 0 ? derived.cost_per_result : null,
+    // No spend means no cost to divide: a late-credited result on a $0 day is not "$0.00 each".
+    costPerResult: results > 0 && totals.spend > 0 ? derived.cost_per_result : null,
   };
 }
 function scoped(

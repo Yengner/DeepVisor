@@ -1,4 +1,6 @@
-import { createElement } from 'react';
+import { createElement, type ComponentProps } from 'react';
+import { NextIntlClientProvider } from 'next-intl';
+import messages from '../../../messages/en.json';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MantineProvider } from '@mantine/core';
 import { expect, it, vi } from 'vitest';
@@ -6,7 +8,8 @@ vi.mock('./exploration/AdvertisingExplorer', () => ({ MediaImage: () => null }))
 import AdsTable from './AdsTable';
 
 it('distinguishes missing ad observations from recorded zero results on desktop and mobile', () => {
-  const render = (metricsAvailable: boolean) => renderToStaticMarkup(createElement(MantineProvider, null,
+  const intl = { locale: 'en', messages } as ComponentProps<typeof NextIntlClientProvider>;
+  const render = (metricsAvailable: boolean) => renderToStaticMarkup(createElement(NextIntlClientProvider, intl, createElement(MantineProvider, null,
     createElement(AdsTable, {
       ads: [{ id: 'ad', ad_id: 'ad', name: 'Fixture', status: 'PAUSED', spend: '0',
         leads: 0, messages: 0, calls: 0, impressions: 0, clicks: 0, reach: null,
@@ -15,7 +18,7 @@ it('distinguishes missing ad observations from recorded zero results on desktop 
         cpl: null, frequency: null, start_date: '', end_date: '', platform_name: 'meta',
         raw_data: null, ad_format: null,
         metricsAvailable }], currencyCode: 'USD', onSelectAd: () => {},
-    })));
+    }))));
   const missing = render(false), observed = render(true);
   // A recorded zero renders as 0 / $0.00; a missing observation renders as an em dash.
   expect(missing).not.toMatch(/>0</);

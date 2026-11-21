@@ -17,6 +17,7 @@ import {
 } from '@mantine/core';
 import { IconAlertCircle, IconBrandMeta, IconCheck, IconLock } from '@tabler/icons-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import type { FirstSyncJobStatus, SyncCoverage } from '@/lib/shared/types/integrations';
 import type { WhatsAppNumberSource } from '@/lib/shared/types/whatsappSetup';
@@ -127,10 +128,10 @@ function avatarLabel(name: string | null | undefined): string {
   return trimmed ? trimmed.charAt(0).toUpperCase() : 'P';
 }
 
-function formatAccountStatus(status: string | null | undefined): string {
-  const trimmed = status?.trim();
-  return trimmed ? `Status: ${trimmed}` : 'Meta ad account';
-}
+type Phase = 'connecting' | 'findingPage' | 'checking' | 'found' | 'linking';
+
+/** Replaced by the translated label when shown; only a marker for "connected, but no name". */
+const INSTAGRAM_FALLBACK = '\u0000instagram';
 
 function instagramLabelForPage(
   page: Pick<
@@ -146,7 +147,7 @@ function instagramLabelForPage(
     return `@${page.instagram_account_username}`;
   }
 
-  return page.instagram_account_name?.trim() || 'Connected Instagram account';
+  return page.instagram_account_name?.trim() || INSTAGRAM_FALLBACK;
 }
 
 function readFlowState(searchParams: { get: (key: string) => string | null }): SearchDrivenFlow {
@@ -167,6 +168,12 @@ export default function MetaIntegrationFlow({
   afterSuccess,
   children,
 }: MetaIntegrationFlowProps) {
+  const t = useTranslations('metaFlow');
+  const formatAccountStatus = (status: string | null | undefined) => status?.trim() ? t('accountStatus', { status: status.trim() }) : t('metaAccount');
+  const instagramName = (page: Parameters<typeof instagramLabelForPage>[0]) => {
+    const label = instagramLabelForPage(page);
+    return label === INSTAGRAM_FALLBACK ? t('instagramConnected') : label;
+  };
   const router = useRouter();
   const searchParams = useSearchParams();
   const handledSearchKey = useRef<string | null>(null);
@@ -180,10 +187,7 @@ export default function MetaIntegrationFlow({
   const [loadingAccountOptions, setLoadingAccountOptions] = useState(false);
   const [submittingAccountSelection, setSubmittingAccountSelection] = useState(false);
   const [autoSyncRequested, setAutoSyncRequested] = useState(false);
-  const [syncingTitle, setSyncingTitle] = useState('Connecting Meta');
-  const [syncingDescription, setSyncingDescription] = useState(
-    'We are preparing your account.'
-  );
+  const [phase, setPhase] = useState<Phase>('connecting');
   const [loadingPageSetup, setLoadingPageSetup] = useState(false);
   const [pageSelectionOpened, setPageSelectionOpened] = useState(false);
   const [pageSetupContext, setPageSetupContext] = useState<MetaPageSetupContext | null>(null);
@@ -205,8 +209,7 @@ export default function MetaIntegrationFlow({
     setLoadingAccountOptions(false);
     setSubmittingAccountSelection(false);
     setAutoSyncRequested(false);
-    setSyncingTitle('Connecting Meta');
-    setSyncingDescription('We are preparing your account.');
+    setPhase('connecting');
   };
 
   const resetPageSetup = () => {
@@ -232,8 +235,8 @@ export default function MetaIntegrationFlow({
     }
   };
 
-  const finishFlowWithSuccess = async (message = 'Meta connected. Your data is syncing in the background.') => {
-    toast.success(message);
+  const finishFlowWithSuccess = async (message?: string) => {
+    toast.success(message ?? t('connected'));
     await finishFlow(onConnected, true);
   };
 
@@ -247,8 +250,7 @@ export default function MetaIntegrationFlow({
     externalAccountId?: string | null;
   }): Promise<boolean> => {
     setLoadingPageSetup(true);
-    setSyncingTitle('Finding your Facebook Page');
-    setSyncingDescription('We are checking Facebook Pages so DeepVisor can prepare WhatsApp lead setup.');
+    setPhase('findingPage');
 
     try {
       const params = new URLSearchParams({
@@ -284,16 +286,12 @@ export default function MetaIntegrationFlow({
       setPageSelectionOpened(true);
       return true;
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? `${error.message}. You can set your Facebook Page later.`
-          : 'We could not load Facebook Pages. You can set this later.'
-      );
+      console.error('Facebook Pages unavailable', error);
+      toast.error(t('pagesFailed'));
       return false;
     } finally {
       setLoadingPageSetup(false);
-      setSyncingTitle('Connecting Meta');
-      setSyncingDescription('We are preparing your account.');
+      setPhase('connecting');
     }
   };
 
@@ -309,8 +307,7 @@ export default function MetaIntegrationFlow({
     setAccountSelectionOpened(true);
 
     if (input.autoSync) {
-      setSyncingTitle('Checking your Meta ad account');
-      setSyncingDescription('We are confirming the account and getting ready to sync its data.');
+      setPhase('checking');
     }
 
     try {
@@ -345,7 +342,8 @@ export default function MetaIntegrationFlow({
       setSelectedAccountExternalId(resolvedExternalAccountId);
     } catch (error) {
       resetFlow();
-      toast.error(error instanceof Error ? error.message : 'Failed to load Meta ad accounts');
+      console.error('Meta ad accounts unavailable', error);
+      toast.error(t('accountsFailed'));
       await finishFlow();
     } finally {
       setLoadingAccountOptions(false);
@@ -370,8 +368,7 @@ export default function MetaIntegrationFlow({
 
     selectionRequestInFlight.current = true;
     setSubmittingAccountSelection(true);
-    setSyncingTitle('Connecting your ad account');
-    setSyncingDescription('This takes a few seconds. Your campaigns and results keep syncing in the background.');
+    setPhase('linking');
 
     try {
       const response = await fetch('/api/integrations/meta/select-ad-account', {
@@ -404,9 +401,8 @@ export default function MetaIntegrationFlow({
     } catch (error) {
       setSubmittingAccountSelection(false);
       setAutoSyncRequested(false);
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to select Meta ad account'
-      );
+      console.error('Meta ad account selection failed', error);
+      toast.error(t('selectFailed'));
     } finally {
       selectionRequestInFlight.current = false;
     }
@@ -448,7 +444,7 @@ export default function MetaIntegrationFlow({
     setConnecting(false);
 
     if (flow.status === 'error') {
-      toast.error('Failed to connect Meta. Please try again.');
+      toast.error(t('connectFailed'));
       void finishFlow();
       return;
     }
@@ -457,8 +453,7 @@ export default function MetaIntegrationFlow({
       setAccountSelectionIntegrationId(flow.integrationId);
       setSelectedAccountExternalId(flow.externalAccountId);
       setAutoSyncRequested(true);
-      setSyncingTitle('Checking your Meta ad account');
-      setSyncingDescription('We found your Meta ad account and are syncing it now.');
+      setPhase('found');
       void syncMetaAdAccount({
         integrationId: flow.integrationId,
         externalAccountId: flow.externalAccountId,
@@ -476,7 +471,7 @@ export default function MetaIntegrationFlow({
     }
 
     if (flow.status === 'connected') {
-      toast.success('Meta connected successfully.');
+      toast.success(t('connectedShort'));
       void finishFlow(onConnected, true);
     }
   }, [searchParams]);
@@ -490,7 +485,7 @@ export default function MetaIntegrationFlow({
   const handleContinuePageSelection = () => {
     const page = pageSetupContext?.pages.find((item) => item.page_id === selectedPageId) ?? null;
     if (!page) {
-      toast.error('Choose a Facebook Page to continue.');
+      toast.error(t('choosePage'));
       return;
     }
 
@@ -529,11 +524,10 @@ export default function MetaIntegrationFlow({
         throw new Error(body?.error?.userMessage || 'Failed to save WhatsApp setup');
       }
 
-      await completeMetaFlow('Meta connected and WhatsApp setup saved. Your data is syncing in the background.');
+      await completeMetaFlow(t('connectedWhatsApp'));
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to save WhatsApp setup.'
-      );
+      console.error('WhatsApp setup not saved', error);
+      toast.error(t('whatsAppFailed'));
       setSubmittingPageSetup(false);
     }
   };
@@ -546,7 +540,7 @@ export default function MetaIntegrationFlow({
     value: page.page_id,
     label: page.name,
     phone: page.phone,
-    instagramLabel: instagramLabelForPage(page),
+    instagramLabel: instagramName(page),
     pictureUrl: page.picture_url ?? null,
   }));
   const skipSource: WhatsAppNumberSource = whatsappSetupPage?.phone ? 'skipped' : 'not_available';
@@ -561,7 +555,7 @@ export default function MetaIntegrationFlow({
       <Modal
         opened={accountSelectionOpened}
         onClose={() => {}}
-        title="Choose one Meta ad account"
+        title={t('accountTitle')}
         centered
         withCloseButton={false}
         closeOnClickOutside={false}
@@ -571,17 +565,15 @@ export default function MetaIntegrationFlow({
           <Group justify="space-between" align="flex-start">
             <Stack gap={4}>
               <Text size="sm" c="dimmed">
-                DeepVisor syncs one primary Meta ad account per connection. If your Meta login can
-                access multiple accounts, choose the one you want to populate first.
+                {t('accountLead')}
               </Text>
-              <Text size="xs" c="dimmed">
-                You can keep more accounts connected in Meta, but this integration will sync only
-                the selected primary account.
+              <Text size="sm" c="dimmed">
+                {t('accountNote')}
               </Text>
             </Stack>
             <Group gap="xs">
               <Badge color="blue" variant="light">
-                1 primary account
+                {t('oneAccount')}
               </Badge>
             </Group>
           </Group>
@@ -591,7 +583,7 @@ export default function MetaIntegrationFlow({
               <IconLock size={16} />
             </ThemeIcon>
             <Text size="sm">
-              Choosing a primary account keeps onboarding, reporting, and AI analysis focused on one clean dataset.
+              {t('accountWhy')}
             </Text>
           </Group>
 
@@ -601,13 +593,13 @@ export default function MetaIntegrationFlow({
             </Group>
           ) : (
             <Select
-              label="Primary Meta ad account"
+              label={t('accountLabel')}
               data={accountOptions}
               value={selectedAccountExternalId}
               onChange={setSelectedAccountExternalId}
-              placeholder="Choose an ad account"
+              placeholder={t('accountPlaceholder')}
               searchable
-              nothingFoundMessage="No ad accounts found"
+              nothingFoundMessage={t('noAccounts')}
               leftSection={
                 selectedAccountForDisplay ? (
                   <Avatar color="blue" size={24} radius="xl">
@@ -640,9 +632,8 @@ export default function MetaIntegrationFlow({
             <ThemeIcon color="orange" variant="light" radius="xl" mt={2}>
               <IconAlertCircle size={16} />
             </ThemeIcon>
-            <Text size="xs" c="dimmed">
-              We only continue once one account is selected. This local sync waits until the
-              selected account is populated.
+            <Text size="sm" c="dimmed">
+              {t('accountWait')}
             </Text>
           </Group>
 
@@ -655,7 +646,7 @@ export default function MetaIntegrationFlow({
             disabled={!selectedAccountExternalId || loadingAccountOptions}
             leftSection={!submittingAccountSelection ? <IconCheck size={16} /> : undefined}
           >
-            Select primary account and start sync
+            {t('accountButton')}
           </Button>
         </Stack>
       </Modal>
@@ -663,7 +654,7 @@ export default function MetaIntegrationFlow({
       <Modal
         opened={pageSelectionOpened}
         onClose={() => {}}
-        title="Choose your Facebook Page"
+        title={t('pageTitle')}
         centered
         withCloseButton={false}
         closeOnClickOutside={false}
@@ -672,18 +663,17 @@ export default function MetaIntegrationFlow({
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            DeepVisor uses your Facebook Page to prepare message-ready ads and keep the customer
-            handoff simple.
+            {t('pageLead')}
           </Text>
 
           <Select
-            label="Facebook Page"
+            label={t('pageLabel')}
             data={pageSelectOptions}
             value={selectedPageId}
             onChange={setSelectedPageId}
-            placeholder="Choose a Page"
+            placeholder={t('pagePlaceholder')}
             searchable
-            nothingFoundMessage="No Pages found"
+            nothingFoundMessage={t('noPages')}
             leftSection={
               selectedPageForDisplay ? (
                 <Avatar
@@ -708,8 +698,8 @@ export default function MetaIntegrationFlow({
                     </Text>
                     <Text size="xs" c="dimmed">
                       {[
-                        pageOption.phone ? `Page phone: ${pageOption.phone}` : 'No Page phone found',
-                        pageOption.instagramLabel ? `Instagram: ${pageOption.instagramLabel}` : null,
+                        pageOption.phone ? t('pagePhone', { phone: pageOption.phone }) : t('noPagePhone'),
+                        pageOption.instagramLabel ? t('instagram', { name: pageOption.instagramLabel }) : null,
                       ]
                         .filter(Boolean)
                         .join(' - ')}
@@ -732,13 +722,13 @@ export default function MetaIntegrationFlow({
                   </Text>
                   <Text size="xs" c="dimmed">
                     {selectedPageForDisplay.phone
-                      ? `Page phone: ${selectedPageForDisplay.phone}`
-                      : 'No phone number found on this Page'}
+                      ? t('pagePhone', { phone: selectedPageForDisplay.phone })
+                      : t('noPhoneOnPage')}
                   </Text>
                   <Text size="xs" c="dimmed">
-                    {instagramLabelForPage(selectedPageForDisplay)
-                      ? `Instagram: ${instagramLabelForPage(selectedPageForDisplay)}`
-                      : 'No Instagram account found for this Page'}
+                    {instagramName(selectedPageForDisplay)
+                      ? t('instagram', { name: instagramName(selectedPageForDisplay) ?? '' })
+                      : t('noInstagram')}
                   </Text>
                 </Stack>
               </Group>
@@ -753,14 +743,14 @@ export default function MetaIntegrationFlow({
               }}
               disabled={submittingPageSetup}
             >
-              Skip Page setup
+              {t('skipPage')}
             </Button>
             <Button
               onClick={handleContinuePageSelection}
               disabled={!selectedPageId}
               leftSection={<IconCheck size={16} />}
             >
-              Continue
+              {t('continue')}
             </Button>
           </Group>
         </Stack>
@@ -769,7 +759,7 @@ export default function MetaIntegrationFlow({
       <Modal
         opened={Boolean(whatsappSetupPage)}
         onClose={() => {}}
-        title="Set up WhatsApp leads"
+        title={t('whatsAppTitle')}
         centered
         withCloseButton={false}
         closeOnClickOutside={false}
@@ -783,15 +773,14 @@ export default function MetaIntegrationFlow({
                 <IconCheck size={16} />
               </ThemeIcon>
               <Text size="sm" c="dimmed">
-                WhatsApp helps customers message you directly from ads. This is optional and can be
-                updated later.
+                {t('whatsAppLead')}
               </Text>
             </Group>
 
             {whatsappSetupPage.phone && !manualWhatsAppEntry ? (
               <>
                 <Text size="sm">
-                  We found this phone number on your Facebook Page:
+                  {t('foundNumber')}
                 </Text>
                 <Paper withBorder radius="lg" p="md">
                   <Group gap="sm" wrap="nowrap">
@@ -807,7 +796,7 @@ export default function MetaIntegrationFlow({
                   </Group>
                 </Paper>
                 <Text size="sm">
-                  Is this also the WhatsApp number customers should message from your ads?
+                  {t('sameNumber')}
                 </Text>
 
                 <Stack gap="xs">
@@ -818,7 +807,7 @@ export default function MetaIntegrationFlow({
                     }}
                     loading={submittingPageSetup}
                   >
-                    Yes, use this number
+                    {t('useNumber')}
                   </Button>
                   <Button
                     fullWidth
@@ -826,7 +815,7 @@ export default function MetaIntegrationFlow({
                     onClick={() => setManualWhatsAppEntry(true)}
                     disabled={submittingPageSetup}
                   >
-                    No, enter a different WhatsApp number
+                    {t('otherNumber')}
                   </Button>
                   <Button
                     fullWidth
@@ -837,7 +826,7 @@ export default function MetaIntegrationFlow({
                     }}
                     disabled={submittingPageSetup}
                   >
-                    Skip WhatsApp for now
+                    {t('skipWhatsApp')}
                   </Button>
                 </Stack>
               </>
@@ -845,12 +834,12 @@ export default function MetaIntegrationFlow({
               <>
                 <Text size="sm">
                   {whatsappSetupPage.phone
-                    ? 'Enter the WhatsApp number customers should message from your ads.'
-                    : 'We could not find a phone number on your Facebook Page. If you want customers to message you on WhatsApp, enter your WhatsApp business number below.'}
+                    ? t('enterNumber')
+                    : t('noNumber')}
                 </Text>
 
                 <TextInput
-                  label="WhatsApp number"
+                  label={t('numberLabel')}
                   placeholder="+1 813 555 1234"
                   value={manualWhatsAppNumber}
                   onChange={(event) => setManualWhatsAppNumber(event.currentTarget.value)}
@@ -867,7 +856,7 @@ export default function MetaIntegrationFlow({
                     loading={submittingPageSetup}
                     disabled={!manualWhatsAppNumber.trim()}
                   >
-                    Save WhatsApp number
+                    {t('saveNumber')}
                   </Button>
                   <Button
                     fullWidth
@@ -878,7 +867,7 @@ export default function MetaIntegrationFlow({
                     }}
                     disabled={submittingPageSetup}
                   >
-                    Skip WhatsApp for now
+                    {t('skipWhatsApp')}
                   </Button>
                 </Stack>
               </>
@@ -889,10 +878,10 @@ export default function MetaIntegrationFlow({
 
       <BlockingTaskScreen
         opened={syncingOpened}
-        title={syncingTitle}
-        description={syncingDescription}
+        title={t(`phase.${phase}.title`)}
+        description={t(`phase.${phase}.body`)}
         // Connecting is setup work; every later phase reads Meta account data.
-        mascotState={syncingTitle === 'Connecting Meta' ? 'working' : 'scanning'}
+        mascotState={phase === 'connecting' ? 'working' : 'scanning'}
       />
     </>
   );

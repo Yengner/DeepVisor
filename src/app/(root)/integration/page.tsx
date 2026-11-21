@@ -7,6 +7,7 @@ import type { Database } from '@/lib/shared/types/supabase';
 import type { IntegrationStatus } from '@/lib/shared/types/integrations';
 import { getPrimaryAdAccountSelection } from '@/lib/server/integrations/service';
 import { ErrorState } from '@/components/ui/states/ErrorState';
+import { getTranslations } from 'next-intl/server';
 
 type PlatformRow = Pick<Database['public']['Tables']['platforms']['Row'], 'id' | 'key' | 'name' | 'api_info'>;
 type PlatformIntegrationRow = {
@@ -69,6 +70,11 @@ const FALLBACK_PLATFORMS: PlatformRow[] = [
 ];
 
 export default async function IntegrationPage() {
+  const t = await getTranslations('connections');
+  const copy = (key: string, field: 'description' | 'full' | 'strengths' | 'weaknesses', fallback: string) => {
+    const path = `channel.${key}.${field}`;
+    return t.has(path as never) ? t(path as never) : fallback;
+  };
   const supabase = await createServerClient();
   const { businessId } = await getRequiredAppContext();
 
@@ -101,9 +107,9 @@ export default async function IntegrationPage() {
     return (
       <div className="dv-app-page px-4 py-8 md:px-6">
         <ErrorState
-          title="Connections could not load"
-          message="DeepVisor could not read the connected advertising accounts. Try again from the overview."
-          primaryAction={{ label: 'Return to overview', href: '/dashboard' }}
+          title={t('loadErrorTitle')}
+          message={t('loadErrorBody')}
+          primaryAction={{ label: t('loadErrorAction'), href: '/dashboard' }}
         />
       </div>
     );
@@ -163,10 +169,10 @@ export default async function IntegrationPage() {
       id: platform.id,
       platformKey: platform.key,
       platformName: platform.name,
-      description: asString(apiInfo.description),
-      fullDescription: asString(apiInfo.full_description),
-      strengths: asString(apiInfo.strengths),
-      weaknesses: asString(apiInfo.weaknesses),
+      description: copy(platform.key, 'description', asString(apiInfo.description)),
+      fullDescription: copy(platform.key, 'full', asString(apiInfo.full_description)),
+      strengths: copy(platform.key, 'strengths', asString(apiInfo.strengths)),
+      weaknesses: copy(platform.key, 'weaknesses', asString(apiInfo.weaknesses)),
       imageUrl: asString(apiInfo.image_url),
       status,
       integrationId: integration?.id ?? null,

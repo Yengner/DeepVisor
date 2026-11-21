@@ -37,7 +37,16 @@ export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanDat
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const [pending, start] = useTransition();
+  // The form updates as soon as the server answers; the page refresh runs afterwards in the
+  // background, so a slow re-render never leaves the buttons looking stuck.
+  const [busy, setBusy] = useState(false);
+  const [, startRefresh] = useTransition();
+  const pending = busy;
+  const run = (work: () => Promise<void>) => async () => {
+    if (busy) return;
+    setBusy(true);
+    try { await work(); } finally { setBusy(false); }
+  };
   const plan = rerunPlan(data, budget, days);
 
   const money = (value: number, cents = !Number.isInteger(value)) => new Intl.NumberFormat(intl, {
@@ -54,17 +63,17 @@ export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanDat
   const changed = !saved || saved.dailyBudget !== budget || saved.days !== days;
   const edit = <T,>(set: (value: T) => void) => (value: T) => { set(value); setNotice(null); setError(null); };
 
-  const save = () => start(async () => {
+  const save = run(async () => {
     setError(null); setNotice(null);
     const result = await savePlanAction(data.adSetId, { dailyBudget: budget, days, version: saved?.version ?? null });
     if (!result.success) { setError(result.error?.userMessage ?? t('error.failed')); return; }
     const plan = result.data;
     setSaved({ dailyBudget: plan.dailyBudget, days: plan.days, version: plan.version, updatedAt: plan.updatedAt });
     setNotice(t('savedOk'));
-    router.refresh();
+    startRefresh(() => router.refresh());
   });
 
-  const discard = () => start(async () => {
+  const discard = run(async () => {
     setError(null); setNotice(null);
     const result = await discardPlanAction(data.adSetId);
     if (!result.success) { setError(result.error?.userMessage ?? t('error.failed')); return; }
@@ -72,7 +81,7 @@ export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanDat
     setBudget(data.start.dailyBudget); setDays(data.start.days);
     setCustomDays(!(RERUN_DAY_CHOICES as readonly number[]).includes(data.start.days));
     setNotice(t('discarded'));
-    router.refresh();
+    startRefresh(() => router.refresh());
   });
   const savedOn = (value: string) => new Intl.DateTimeFormat(intl, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(value));
 

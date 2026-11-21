@@ -3,9 +3,10 @@
 import type { AdSetLifetimeRow } from '@/lib/server/data';
 import { Button, Group, Menu, ScrollArea, Table, Text } from '@mantine/core';
 import { IconChartBar, IconCopyPlus, IconPhoto } from '@tabler/icons-react';
+import { useTranslations } from 'next-intl';
+import { useLabels } from '@/lib/client/hooks/useLabels';
 import {
   EmptyRow,
-  humanizeObjective,
   lastActivity,
   MetricCells,
   OpenRowCell,
@@ -42,8 +43,6 @@ interface AdSetTableProps {
   range?: TableRange;
 }
 
-const EMPTY_TITLE = 'No ad sets in this campaign';
-const EMPTY_HINT = 'Ad sets appear here after the next Meta sync that includes them.';
 
 export default function AdSetTable({
   adSets = [],
@@ -60,8 +59,11 @@ export default function AdSetTable({
   timezone = null,
   range = 'lifetime',
 }: AdSetTableProps) {
+  const t = useTranslations('table');
+  const labels = useLabels();
+  const EMPTY_TITLE = t('empty.adSetsTitle'), EMPTY_HINT = t('empty.adSetsHint');
   const metricCount = useMetricColumnCount();
-  const noDelivery = range === 'lifetime' ? null : 'No delivery in this period';
+  const noDelivery = range === 'lifetime' ? null : t('noDelivery');
   // One click opens the ad set's ads; the row stays highlighted when you come back.
   const open = (id: string) => { onSelectAdSet?.(id); onOpenAdSet?.(id); };
   // Ad sets inside one campaign share its objective, so they form a single comparison group.
@@ -69,17 +71,17 @@ export default function AdSetTable({
     adSets,
     (adSet) => ({ name: adSet.name, metrics: rowMetrics(adSet) }),
     () => 'all',
-    () => 'ad sets in this campaign',
+    () => t('group.adSets'),
   );
-  if (loading) return <TableSkeleton label="ad sets" />;
+  if (loading) return <TableSkeleton label={t('loadingAdSets')} />;
 
   const rows = sorted.map((adSet) => ({
     adSet,
     metrics: rowMetrics(adSet),
     benchmark: benchmarkFor(adSet),
     selected: selectedAdSetId === adSet.id,
-    goal: humanizeObjective(adSet.optimization_goal || adSet.objective),
-    last: lastActivity(adSet.end_date, adSet.last_day, timezone),
+    goal: labels.objective(adSet.optimization_goal || adSet.objective),
+    last: labels.displayDate(lastActivity(adSet.end_date, adSet.last_day, timezone)),
     reportHref: buildEntityReportUrl({
       scope: 'adset',
       platformIntegrationId,
@@ -95,16 +97,16 @@ export default function AdSetTable({
     <>
       {onOpenAdSet ? (
         <Menu.Item leftSection={<IconPhoto size={16} />} onClick={() => onOpenAdSet(adSet.id)}>
-          Open ads
+          {t('openAds')}
         </Menu.Item>
       ) : null}
       {onRunAgain ? (
         <Menu.Item leftSection={<IconCopyPlus size={16} />} onClick={() => onRunAgain(adSet)}>
-          Run again
+          {t('runAgain')}
         </Menu.Item>
       ) : null}
       <Menu.Item leftSection={<IconChartBar size={16} />} component="a" href={reportHref}>
-        View analytics
+        {t('viewAnalytics')}
       </Menu.Item>
     </>
   );
@@ -137,7 +139,7 @@ export default function AdSetTable({
             >
               <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
                 <div className={classes.mobileEntityTitleBlock}>
-                  <Text fw={700} size="sm" lineClamp={2}>{adSet.name}</Text>
+                  <Text lineClamp={2} className={classes.mobileCardTitle}>{adSet.name}</Text>
                   <Group gap={6} mt={6} wrap="wrap">
                     <StatusCell status={adSet.status} delivering={adSet.delivery} />
                     <Text size="xs" c="dimmed" lineClamp={1}>{goal}</Text>
@@ -148,12 +150,12 @@ export default function AdSetTable({
 
               <MobileMetrics metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} />
 
-              <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
+              <Group justify="space-between" gap="sm" wrap="nowrap" className={classes.mobileFooter}>
                 <Text size="xs" c="dimmed" lineClamp={1} className={classes.mobileActivity}>
-                  {adSet.start_date || '—'} – {last}
+                  {labels.displayDate(adSet.start_date)} – {last}
                 </Text>
                 <Group gap={4} wrap="nowrap" className={classes.mobileEntityActions}>
-                  {onOpenAdSet ? <OpenNextButton label="Ads" onOpen={() => onOpenAdSet(adSet.id)} /> : null}
+                  {onOpenAdSet ? <OpenNextButton label={t('tab.ads')} onOpen={() => onOpenAdSet(adSet.id)} /> : null}
                   {onRunAgain ? (
                     <Button
                       size="compact-xs"
@@ -166,7 +168,7 @@ export default function AdSetTable({
                         onRunAgain(adSet);
                       }}
                     >
-                      Run again
+                      {t('runAgain')}
                     </Button>
                   ) : null}
                 </Group>
@@ -193,14 +195,14 @@ export default function AdSetTable({
         >
           <Table.Thead>
             <Table.Tr>
-              <SortHeader label="Ad set" sortKey="name" sort={sort} onSort={toggle} style={{ width: 320, minWidth: 240, maxWidth: 320 }} />
+              <SortHeader label={t('col.adSet')} sortKey="name" sort={sort} onSort={toggle} style={{ width: 320, minWidth: 240, maxWidth: 320 }} />
               <StatusHeader />
-              <Table.Th className={classes.nowrap}>Optimization</Table.Th>
+              <Table.Th className={classes.nowrap}>{t('col.optimization')}</Table.Th>
               <MetricHeaders sort={sort} onSort={toggle} />
-              <Table.Th className={classes.nowrap}>First activity</Table.Th>
-              <Table.Th className={classes.nowrap}>Last activity</Table.Th>
-              <Table.Th className={classes.actionCell}><span className={classes.srOnly}>Actions</span></Table.Th>
-              {onOpenAdSet ? <Table.Th className={classes.openCell}><span className={classes.srOnly}>Open</span></Table.Th> : null}
+              <Table.Th className={classes.nowrap}>{t('col.firstActivity')}</Table.Th>
+              <Table.Th className={classes.nowrap}>{t('col.lastActivity')}</Table.Th>
+              <Table.Th className={classes.actionCell}><span className={classes.srOnly}>{t('col.actions')}</span></Table.Th>
+              {onOpenAdSet ? <Table.Th className={classes.openCell}><span className={classes.srOnly}>{t('col.open')}</span></Table.Th> : null}
             </Table.Tr>
           </Table.Thead>
 
@@ -217,23 +219,23 @@ export default function AdSetTable({
                   style={{ cursor: onSelectAdSet || onOpenAdSet ? 'pointer' : 'default' }}
                   onClick={() => open(adSet.id)}
                   {...rowKeys(() => open(adSet.id))}
-                  aria-label={onOpenAdSet ? `${adSet.name}: open ads` : adSet.name}
+                  aria-label={onOpenAdSet ? t('rowOpenAds', { name: adSet.name }) : adSet.name}
                 >
                   <Table.Td style={{ width: 320, minWidth: 240, maxWidth: 320 }}>
                     <TruncatedName name={adSet.name} />
                     {range === 'lifetime' && !adSet.delivery && metrics.available ? (
-                      <Text size="xs" c="dimmed" className={classes.rowContext}>Not delivering now · lifetime history</Text>
+                      <Text size="xs" c="dimmed" className={classes.rowContext}>{t('notDeliveringNow')}</Text>
                     ) : null}
                   </Table.Td>
                   <Table.Td><StatusCell status={adSet.status} delivering={adSet.delivery} /></Table.Td>
                   <Table.Td className={classes.nowrap}><Text size="sm">{goal}</Text></Table.Td>
                   <MetricCells metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} noDeliveryNote={noDelivery} />
-                  <Table.Td className={classes.nowrap}><Text size="sm">{adSet.start_date || '—'}</Text></Table.Td>
+                  <Table.Td className={classes.nowrap}><Text size="sm">{labels.displayDate(adSet.start_date)}</Text></Table.Td>
                   <Table.Td className={classes.nowrap}><Text size="sm">{last}</Text></Table.Td>
                   <Table.Td className={classes.actionCell}>
                     <RowActions name={adSet.name}>{menuItems(adSet, reportHref)}</RowActions>
                   </Table.Td>
-                  {onOpenAdSet ? <OpenRowCell label={`Open ads for ${adSet.name}`} onOpen={() => open(adSet.id)} /> : null}
+                  {onOpenAdSet ? <OpenRowCell label={t('openAdsFor', { name: adSet.name })} onOpen={() => open(adSet.id)} /> : null}
                 </Table.Tr>
               ))
             )}
