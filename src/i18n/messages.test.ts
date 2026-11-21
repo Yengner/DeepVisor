@@ -47,7 +47,7 @@ describe('message catalogs', () => {
   });
 
   it('are not left untranslated where Spanish differs', () => {
-    const allowedSame = new Set(['metrics.ctr', 'metrics.cpm', 'apps.whatsapp', 'apps.instagram', 'apps.messenger', 'facts.value.quoted', 'leads.connected', 'leads.outcome.spam', 'settingsPage.account.plan', 'settingsPage.account.accountsCount', 'savedPlans.runs']);
+    const allowedSame = new Set(['metrics.ctr', 'metrics.cpm', 'apps.whatsapp', 'apps.instagram', 'apps.messenger', 'facts.value.quoted', 'leads.connected', 'leads.outcome.spam', 'settingsPage.account.plan', 'settingsPage.account.accountsCount', 'drafts.runs']);
     const same = Object.keys(english).filter(k => english[k] === spanish[k] && !allowedSame.has(k));
     expect(same).toEqual([]);
   });

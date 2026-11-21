@@ -93,8 +93,10 @@ stretch within 14 days, the popup carries `payload.suggestion` (source key `sugg
   draft builder's own rule) before the button. "Save plan" (`savePlanAction`, re-validated, owner/
   admin) stores it in `ad_set_plans`, **one plan per ad set** (unique account + ad set): saving
   again updates the same row with an optimistic `version`, and "Discard plan" deletes it. The page
-  opens with the saved plan when there is one. Saved plans and new-ad drafts are listed at the top
-  of Campaigns (`components/campaigns/SavedPlans.tsx`, `/campaigns#saved-plans`). Kept in DeepVisor
+  opens with the saved plan when there is one. Saved plans and campaign drafts are listed on the
+  Drafts page `/campaigns/drafts` (`suggestions/drafts.ts` → `loadDrafts`, with each plan's ad
+  picture), reached from a quiet "N drafts" button on Campaigns and a one-line notice on a fresh
+  create page (`countDrafts`); the Campaigns table itself is left alone. Kept in DeepVisor
   only: nothing is published or sent to Meta. When Meta writes are allowed later, a plan for the
   same ad set is meant to update that ad set in place (budget, end date) instead of creating a
   copy. Rules only, no AI. "Try a new photo or video" opens Quick ad with `?budget=&days=`

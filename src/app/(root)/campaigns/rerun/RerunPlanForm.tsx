@@ -191,7 +191,7 @@ export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanDat
           <div className={styles.saved} role="status">
             <CircleCheck size={20} aria-hidden="true" />
             <span>{notice}</span>
-            <Link href="/campaigns#saved-plans" className={styles.savedLink}>{t('seeSaved')}</Link>
+            <Link href="/campaigns/drafts" className={styles.savedLink}>{t('seeSaved')}</Link>
           </div>
         )}
 
