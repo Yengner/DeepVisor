@@ -226,7 +226,13 @@ async function notifyDaily(s:Scope,saved:SavedPresentation,urgent:boolean){
   const existing=await c.from('notifications').select('id,payload_json').eq('user_id',s.user).eq('dedupe_key',key).maybeSingle();
   if(existing.error)throw existing.error;
   const prior=existing.data?.payload_json as unknown as Partial<DailyBundle>|null;
-  const next=dailyNotification(prior&&Array.isArray(prior.presentationIds)?{day,presentationIds:prior.presentationIds,urgent:Boolean(prior.urgent)}:null,{id:saved.id,urgent,day});
+  // Count only updates that still exist: reconnecting or deleting data removes saved ones, and the
+  // bell must not promise "3 updates" when the day's history shows 1.
+  const priorIds=prior&&Array.isArray(prior.presentationIds)?prior.presentationIds.filter((id):id is string=>typeof id==='string'):[];
+  const kept=priorIds.length?await c.from('insight_presentations').select('id').eq('user_id',s.user).in('id',priorIds):{data:[],error:null};
+  if(kept.error)throw kept.error;
+  const live=new Set((kept.data??[]).map(row=>row.id));
+  const next=dailyNotification(prior?{day,presentationIds:priorIds.filter(id=>live.has(id)),urgent:Boolean(prior.urgent)}:null,{id:saved.id,urgent,day});
   const fields={title:next.title,message:next.message,link:next.link,severity:next.severity,source_id:saved.id,payload_json:{surface:'bell',...next.bundle} as unknown as Json};
   if(existing.data){
    const r=await c.from('notifications').update({...fields,read:false,read_at:null,updated_at:new Date().toISOString()}).eq('id',existing.data.id);
