@@ -190,7 +190,7 @@ function CreativeCard({
         cursor: 'pointer',
         borderColor: selected ? 'var(--mantine-color-blue-6)' : 'var(--dv-border)',
         borderWidth: selected ? 2 : 1,
-        background: selected ? 'var(--dv-primary-soft)' : 'white',
+        background: selected ? 'var(--dv-primary-soft)' : 'var(--dv-card-panel)',
       }}
     >
       <Stack gap="xs">
@@ -510,7 +510,7 @@ export default function MediaSelectionModal({
                       border: '1px solid var(--dv-border)',
                       borderRadius: 8,
                       overflow: 'hidden',
-                      background: 'white',
+                      background: 'var(--dv-card-panel)',
                     }}
                   />
                 ) : null}
@@ -523,7 +523,7 @@ export default function MediaSelectionModal({
                       border: '1px solid var(--dv-border)',
                       borderRadius: 8,
                       overflow: 'hidden',
-                      background: 'white',
+                      background: 'var(--dv-card-panel)',
                     }}
                   >
                     <Image
@@ -540,19 +540,19 @@ export default function MediaSelectionModal({
               <Divider />
               <StatsGrid stats={selectedCreative.stats} currencyCode={currencyCode} />
               <SimpleGrid cols={3} spacing="xs">
-                <Paper withBorder radius="md" p="xs" bg="white">
+                <Paper withBorder radius="md" p="xs" bg="var(--dv-card-panel)">
                   <Text size="10px" tt="uppercase" fw={800} c="dimmed" style={{ letterSpacing: 0.3 }}>
                     Clicks
                   </Text>
                   <Text fw={900}>{formatNumber(selectedCreative.stats.clicks)}</Text>
                 </Paper>
-                <Paper withBorder radius="md" p="xs" bg="white">
+                <Paper withBorder radius="md" p="xs" bg="var(--dv-card-panel)">
                   <Text size="10px" tt="uppercase" fw={800} c="dimmed" style={{ letterSpacing: 0.3 }}>
                     Impressions
                   </Text>
                   <Text fw={900}>{formatNumber(selectedCreative.stats.impressions)}</Text>
                 </Paper>
-                <Paper withBorder radius="md" p="xs" bg="white">
+                <Paper withBorder radius="md" p="xs" bg="var(--dv-card-panel)">
                   <Text size="10px" tt="uppercase" fw={800} c="dimmed" style={{ letterSpacing: 0.3 }}>
                     Cost/result
                   </Text>
@@ -595,7 +595,7 @@ export default function MediaSelectionModal({
           position: 'sticky',
           bottom: 0,
           padding: '14px 18px',
-          background: 'white',
+          background: 'var(--dv-card-panel)',
           borderTop: '1px solid var(--dv-border)',
           display: 'flex',
           justifyContent: 'space-between',

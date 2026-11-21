@@ -517,7 +517,7 @@ export default function AdSetStep({
                                     </Group>
 
                                     {!form.values.adSets[idx].useAdvantagePlacements && !isSmart && (
-                                        <Paper withBorder p="md" radius="md" bg="white" shadow="xs" mt="xl">
+                                        <Paper withBorder p="md" radius="md" bg="var(--dv-card-panel)" shadow="xs" mt="xl">
                                             <Stack gap="xs">
                                                 <Text fw={600} size="sm">Manual Placements</Text>
                                                 <Text size="xs" c="dimmed">Select where your ads will appear</Text>
@@ -614,7 +614,7 @@ export default function AdSetStep({
                                     </Stack>
                                 </Paper>
 
-                                <Paper withBorder p="md" radius="md" shadow="xs" bg={isSmart ? "blue.0" : "white"}>
+                                <Paper withBorder p="md" radius="md" shadow="xs" bg={isSmart ? "var(--dv-primary-soft)" : "var(--dv-card-panel)"}>
                                     <Stack gap="xs">
                                         <Group justify="apart">
                                             <Text fw={600} size="sm">Recommendations</Text>
@@ -624,7 +624,7 @@ export default function AdSetStep({
                                         </Group>
 
                                         {isSmart ? (
-                                            <Paper withBorder p="sm" radius="md" bg="white" shadow="xs">
+                                            <Paper withBorder p="sm" radius="md" bg="var(--dv-card-panel)" shadow="xs">
                                                 <Group>
                                                     <ThemeIcon variant="light" size="md" color="blue" radius="xl">
                                                         <IconTarget size={18} />

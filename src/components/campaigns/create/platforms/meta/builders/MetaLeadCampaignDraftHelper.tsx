@@ -4,6 +4,7 @@ import '@mantine/dates/styles.css';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   Alert,
   Avatar,
@@ -39,13 +40,10 @@ import {
   IconCheck,
   IconChevronLeft,
   IconChevronRight,
-  IconCirclePlus,
   IconDeviceMobileMessage,
-  IconFileDescription,
-  IconLayersIntersect,
+  IconEye,
   IconMapPin,
   IconMessageCircle,
-  IconPhone,
   IconPhoto,
   IconPlus,
   IconSparkles,
@@ -72,6 +70,13 @@ import type { MetaPage } from '@/lib/server/actions/meta/pages/actions';
 import { formatCurrencyAmount } from '@/lib/shared';
 import MediaSelectionModal from '../components/MediaSelectionModal';
 import classes from './MetaLeadCampaignDraftHelper.module.css';
+
+/** Interface text for this builder (`createLead.*`, EN/ES). Names and ad text people type stay as typed. */
+type Translator = ReturnType<typeof useTranslations<'createLead'>>;
+const CTA_KEYS = ['GET_OFFER', 'BOOK_NOW', 'LEARN_MORE', 'CONTACT_US', 'CALL_NOW', 'SIGN_UP'] as const;
+function ctaLabel(t: Translator, value: string): string {
+  return (CTA_KEYS as readonly string[]).includes(value) ? t(`creative.ctas.${value as typeof CTA_KEYS[number]}`) : value.replaceAll('_', ' ');
+}
 
 type MetaLeadCampaignDraftHelperProps = {
   platformData: {
@@ -175,9 +180,10 @@ function instagramLabelForPage(
 }
 
 type LeadEstimate = {
-  label: string;
-  sourceLabel: string;
-  sourceDetail: string;
+  method: LeadCampaignLeadMethod;
+  /** The ad set or campaign the estimate came from (its own name), when it came from one. */
+  sourceName: string | null;
+  sourceKind: 'adSet' | 'campaign' | 'account' | 'benchmark';
   estimate: number;
   low: number;
   high: number;
@@ -326,29 +332,16 @@ function isBrowserPreviewableVideo(file: File): boolean {
 
 function formatPerformance(
   item: CampaignTreeNode | CampaignTreeAdsetNode | null,
-  currencyCode: string | null
+  currencyCode: string | null,
+  t: Translator
 ): string {
   if (!item?.performance) {
-    return 'No synced performance yet';
+    return t('setup.perfNone');
   }
-
-  const cost = item.performance.costPerResult != null
-    ? `${formatMoney(item.performance.costPerResult, currencyCode)}/result`
-    : 'cost pending';
-
-  return `${item.performance.results} results, ${cost}`;
-}
-
-function leadEstimateLabel(method: LeadCampaignLeadMethod): string {
-  if (method === 'messages') {
-    return 'message leads';
-  }
-
-  if (method === 'calls') {
-    return 'call leads';
-  }
-
-  return 'form leads';
+  const results = item.performance.results;
+  return item.performance.costPerResult != null
+    ? t('setup.perf', { results, cost: formatMoney(item.performance.costPerResult, currencyCode) })
+    : t('setup.perfCostPending', { results });
 }
 
 function fallbackCostPerOutcome(method: LeadCampaignLeadMethod): number {
@@ -451,21 +444,9 @@ function buildLeadEstimate(input: {
 }): LeadEstimate {
   const fallbackCost = fallbackCostPerOutcome(input.leadMethod);
   const candidates = [
-    {
-      label: input.selectedAdSet?.name ?? 'Selected ad set',
-      detail: 'Selected ad set history',
-      performance: input.selectedAdSet?.performance ?? null,
-    },
-    {
-      label: input.selectedCampaign?.name ?? 'Selected campaign',
-      detail: 'Selected campaign history',
-      performance: input.selectedCampaign?.performance ?? null,
-    },
-    {
-      label: 'Account average',
-      detail: 'Synced account history',
-      performance: aggregateCampaignPerformance(input.campaigns),
-    },
+    { kind: 'adSet' as const, name: input.selectedAdSet?.name ?? null, performance: input.selectedAdSet?.performance ?? null },
+    { kind: 'campaign' as const, name: input.selectedCampaign?.name ?? null, performance: input.selectedCampaign?.performance ?? null },
+    { kind: 'account' as const, name: null, performance: aggregateCampaignPerformance(input.campaigns) },
   ];
   const source = candidates.find((candidate) => {
     if (!candidate.performance || candidate.performance.spend <= 0) {
@@ -501,9 +482,9 @@ function buildLeadEstimate(input: {
   }));
 
   return {
-    label: leadEstimateLabel(input.leadMethod),
-    sourceLabel: source?.label ?? 'Benchmark fallback',
-    sourceDetail: source?.detail ?? 'No reliable synced result history yet',
+    method: input.leadMethod,
+    sourceName: source?.name ?? null,
+    sourceKind: source?.kind ?? 'benchmark',
     estimate,
     low: estimate * 0.75,
     high: estimate * 1.25,
@@ -520,6 +501,7 @@ function LeadEstimateChart({
   points: LeadEstimatePoint[];
   currencyCode: string | null;
 }) {
+  const t = useTranslations('createLead');
   const width = 320;
   const height = 118;
   const padding = 16;
@@ -538,7 +520,7 @@ function LeadEstimateChart({
 
   return (
     <Box>
-      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} role="img" aria-label="Estimated leads by budget">
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} role="img" aria-label={t('estimate.chartAria')}>
         <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="var(--dv-border)" />
         <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="var(--dv-border)" />
         <path d={path} fill="none" stroke="var(--mantine-color-blue-6)" strokeWidth="3" strokeLinecap="round" />
@@ -551,7 +533,7 @@ function LeadEstimateChart({
               cx={x}
               cy={y}
               r={3.5}
-              fill="white"
+              fill="var(--dv-card-panel)"
               stroke="var(--mantine-color-blue-6)"
               strokeWidth="2"
             />
@@ -575,6 +557,7 @@ function CreativeAdPreview({
   pageName: string;
   fullHeight?: boolean;
 }) {
+  const t = useTranslations('createLead');
   const uploadedFile = creative.uploadedFiles[0] ?? null;
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
@@ -595,8 +578,8 @@ function CreativeAdPreview({
 
   const assetLabel =
     creative.contentSource === 'existing'
-      ? creative.selectedCreativeName || creative.existingCreativeIds[0] || 'Choose an existing creative'
-      : uploadedFile?.name || creative.uploadedFileNames?.[0] || 'Upload Meta-supported media';
+      ? creative.selectedCreativeName || creative.existingCreativeIds[0] || t('preview.chooseExisting')
+      : uploadedFile?.name || creative.uploadedFileNames?.[0] || t('preview.uploadMedia');
   const showImagePreview = Boolean(previewUrl && uploadedFile && isMetaImageFile(uploadedFile) && !previewFailed);
   const showVideoPreview = Boolean(previewUrl && uploadedFile && isMetaVideoFile(uploadedFile) && !previewFailed);
 
@@ -617,13 +600,13 @@ function CreativeAdPreview({
               {pageName}
             </Text>
             <Text size="xs" c="dimmed">
-              Sponsored
+              {t('preview.sponsored')}
             </Text>
           </div>
         </Group>
 
         <Text size="sm" lineClamp={3}>
-          {creative.adPrimaryText || 'Primary text preview will show here.'}
+          {creative.adPrimaryText || t('preview.primaryEmpty')}
         </Text>
 
         <Box
@@ -633,7 +616,7 @@ function CreativeAdPreview({
             borderRadius: 8,
             overflow: 'hidden',
             border: '1px solid var(--dv-border)',
-            background: 'white',
+            background: 'var(--dv-card-panel)',
             display: 'flex',
             flex: fullHeight ? 1 : undefined,
             alignItems: 'center',
@@ -680,14 +663,14 @@ function CreativeAdPreview({
 
         <Group justify="space-between" align="center" gap="sm" wrap="nowrap">
           <div style={{ minWidth: 0 }}>
-            <Text size="xs" c="dimmed" tt="uppercase">
-              Lead ad
+            <Text size="xs" c="dimmed">
+              {t('preview.leadAd')}
             </Text>
             <Text size="sm" fw={800} lineClamp={1}>
-              {creative.adHeadline || 'Headline preview'}
+              {creative.adHeadline || t('preview.headlineEmpty')}
             </Text>
             <Text size="xs" c="dimmed" lineClamp={1}>
-              {creative.adDescription || 'Description preview'}
+              {creative.adDescription || t('preview.descriptionEmpty')}
             </Text>
           </div>
           <Box
@@ -698,11 +681,11 @@ function CreativeAdPreview({
               flexShrink: 0,
               border: '1px solid var(--dv-border-strong)',
               borderRadius: 6,
-              fontSize: 'var(--mantine-font-size-xs)',
+              fontSize: 13,
               fontWeight: 700,
             }}
           >
-            {creative.adCallToAction.replaceAll('_', ' ')}
+            {ctaLabel(t, creative.adCallToAction)}
           </Box>
         </Group>
       </Stack>
@@ -1145,6 +1128,7 @@ export default function MetaLeadCampaignDraftHelper({
   configuredWhatsAppNumbers = [],
 }: MetaLeadCampaignDraftHelperProps) {
   const router = useRouter();
+  const t = useTranslations('createLead');
   const [state, setState] = useState<HelperState>(() =>
     buildInitialState(draft, {
       pageId: metaPages[0]?.page_id,
@@ -1186,25 +1170,25 @@ export default function MetaLeadCampaignDraftHelper({
           value: page.page_id,
           label: page.name,
           description: [
-            page.phone ? `Page phone: ${page.phone}` : 'No Page phone found',
-            instagramLabel ? `Instagram: ${instagramLabel}` : null,
+            page.phone ? t('audience.pagePhone', { phone: page.phone }) : t('audience.noPagePhone'),
+            instagramLabel ? t('audience.instagramOf', { name: instagramLabel }) : null,
           ]
             .filter(Boolean)
             .join(' - '),
           imageUrl: page.picture_url ?? null,
         };
       }),
-    [metaPages]
+    [metaPages, t]
   );
   const whatsappPhoneNumberOptions = useMemo(
     () =>
       configuredWhatsAppNumbers.map((phoneNumber) => ({
         value: phoneNumber.id,
         label: phoneNumber.display_phone_number,
-        description: phoneNumber.label || phoneNumber.pageName || 'Saved during Meta setup',
+        description: phoneNumber.label || phoneNumber.pageName || t('setup.savedDuringSetup'),
         imageUrl: phoneNumber.pagePictureUrl ?? null,
       })),
-    [configuredWhatsAppNumbers]
+    [configuredWhatsAppNumbers, t]
   );
   const selectedWhatsAppPhoneNumber = useMemo(
     () =>
@@ -1429,131 +1413,61 @@ export default function MetaLeadCampaignDraftHelper({
     });
   }
 
-  function validate(): string[] {
-    const nextErrors: string[] = [];
+  /** Problems to fix before saving, each with the step where it is fixed. */
+  function validate(): Array<{ stage: BuilderStage; message: string }> {
+    const issues: Array<{ stage: BuilderStage; message: string }> = [];
+    const add = (stage: BuilderStage, message: string) => issues.push({ stage, message });
     const primaryAdSet = state.adSets[0];
     const primaryCreative = primaryAdSet.creatives[0];
 
-    if (unsupportedReuseObjective) {
-      nextErrors.push(
-        `The source objective ${state.objective || 'is unavailable'} cannot be safely edited in this lead campaign helper.`
-      );
-    }
-
-    if (unsupportedReuseDestination) {
-      nextErrors.push(
-        `The source destination ${reuseDestination} cannot be safely edited in this lead campaign helper.`
-      );
-    }
-
-    if (state.draftTargetMode === 'new_campaign' && !state.campaignName.trim()) {
-      nextErrors.push('Add a campaign name.');
-    }
-
-    if (state.draftTargetMode === 'existing_campaign' && !selectedCampaign) {
-      nextErrors.push('Choose the existing campaign to build the new ad set inside.');
-    }
-
+    if (unsupportedReuseObjective) add(0, t('errors.objective'));
+    if (unsupportedReuseDestination) add(0, t('errors.destination'));
+    if (state.draftTargetMode === 'new_campaign' && !state.campaignName.trim()) add(0, t('errors.campaignName'));
+    if (state.draftTargetMode === 'existing_campaign' && !selectedCampaign) add(0, t('errors.chooseCampaign'));
     if (state.draftTargetMode === 'existing_adset') {
-      if (!selectedCampaign) {
-        nextErrors.push('Choose the existing campaign that contains the ad set.');
-      }
-
-      if (!selectedAdSet) {
-        nextErrors.push('Choose the existing ad set for the new creative.');
-      }
+      if (!selectedCampaign) add(0, t('errors.chooseCampaignForAdSet'));
+      if (!selectedAdSet) add(0, t('errors.chooseAdSet'));
     }
 
-    if (!state.pageId) {
-      nextErrors.push('Select the Facebook Page that will run the ad.');
-    } else if (state.reuseSource && !selectedPage) {
-      nextErrors.push(
-        'The source Facebook Page is not available to this Meta connection. Select an accessible Page before saving.'
-      );
+    if (!state.pageId) add(1, t('errors.page'));
+    else if (state.reuseSource && !selectedPage) add(1, t('errors.pageUnavailable'));
+    if (state.leadMethod === 'messages' && state.methodSettings.messages.channel === 'instagram' && !selectedPage?.instagram_account_id) {
+      add(1, t('errors.instagram'));
     }
-
-    if (
-      state.leadMethod === 'messages' &&
-      state.methodSettings.messages.channel === 'instagram' &&
-      !selectedPage?.instagram_account_id
-    ) {
-      nextErrors.push('Select a Facebook Page with a connected Instagram account for Instagram DM leads.');
-    }
-
-    if (state.draftTargetMode !== 'existing_adset' && !state.serviceArea.trim()) {
-      nextErrors.push('Enter the service area or city.');
-    }
-
-    if (state.draftTargetMode !== 'existing_adset' && (!state.radius || state.radius <= 0)) {
-      nextErrors.push('Set a location radius.');
-    }
+    if (state.draftTargetMode !== 'existing_adset' && !state.serviceArea.trim()) add(1, t('errors.area'));
+    if (state.draftTargetMode !== 'existing_adset' && (!state.radius || state.radius <= 0)) add(1, t('errors.radius'));
 
     const minimumBudget = state.budgetType === 'daily' ? 1 : 50;
     if (!state.budgetAmount || state.budgetAmount < minimumBudget) {
-      nextErrors.push(
-        `Set a ${state.budgetType} budget of at least ${formatMoney(minimumBudget, currencyCode)}.`
-      );
+      add(0, t(state.budgetType === 'daily' ? 'errors.budgetDaily' : 'errors.budgetLifetime', { amount: formatMoney(minimumBudget, currencyCode) }));
     }
+    if (!state.endDate) add(0, t('errors.end'));
 
-    if (!state.endDate) {
-      nextErrors.push('Set a fixed campaign end date.');
-    }
-
-    const usesExistingCreative =
-      primaryCreative.contentSource === 'existing' &&
-      primaryCreative.existingCreativeIds.length > 0;
-    if (
-      !usesExistingCreative &&
-      (!primaryCreative.adHeadline.trim() || !primaryCreative.adPrimaryText.trim())
-    ) {
-      nextErrors.push('Add a headline and primary text for the primary ad.');
-    }
+    const usesExistingCreative = primaryCreative.contentSource === 'existing' && primaryCreative.existingCreativeIds.length > 0;
+    if (!usesExistingCreative && (!primaryCreative.adHeadline.trim() || !primaryCreative.adPrimaryText.trim())) add(2, t('errors.copy'));
 
     if (state.leadMethod === 'messages') {
       if (state.methodSettings.messages.channel === 'whatsapp') {
-        if (!state.methodSettings.messages.whatsappPhoneNumber?.trim()) {
-          nextErrors.push('Select the WhatsApp number customers should message from ads.');
-        } else if (configuredWhatsAppNumbers.length > 0 && !selectedWhatsAppPhoneNumber) {
-          nextErrors.push('Select a saved WhatsApp number for this business.');
-        }
+        if (!state.methodSettings.messages.whatsappPhoneNumber?.trim()) add(0, t('errors.whatsapp'));
+        else if (configuredWhatsAppNumbers.length > 0 && !selectedWhatsAppPhoneNumber) add(0, t('errors.whatsappSaved'));
       }
-
-      if (!state.methodSettings.messages.responseReady) {
-        nextErrors.push('Confirm the business can respond quickly before using messages.');
-      }
+      if (!state.methodSettings.messages.responseReady) add(0, t('errors.respond'));
     }
-
     if (state.leadMethod === 'calls') {
-      if (!state.methodSettings.calls.phoneNumber.trim()) {
-        nextErrors.push('Add the phone number for call ads.');
-      }
-
-      if (!state.methodSettings.calls.staffedHoursAcknowledged) {
-        nextErrors.push('Confirm calls will only run when the phone can be answered.');
-      }
+      if (!state.methodSettings.calls.phoneNumber.trim()) add(0, t('errors.phone'));
+      if (!state.methodSettings.calls.staffedHoursAcknowledged) add(0, t('errors.callsAnswer'));
     }
-
-    return nextErrors;
+    return issues;
   }
 
   async function handleSaveDraft() {
-    const nextErrors = validate();
-    setErrors(nextErrors);
+    const issues = validate();
+    setErrors(issues.map(issue => issue.message));
     setSavedDraft(null);
 
-    if (nextErrors.length > 0) {
-      const firstError = nextErrors[0].toLowerCase();
-      if (
-        firstError.includes('facebook page') ||
-        firstError.includes('service area') ||
-        firstError.includes('location radius')
-      ) {
-        setActiveStage(1);
-      } else if (firstError.includes('headline') || firstError.includes('primary text')) {
-        setActiveStage(2);
-      } else {
-        setActiveStage(0);
-      }
+    if (issues.length > 0) {
+      // Open the step where the first problem is fixed.
+      setActiveStage(issues[0].stage);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -1576,7 +1490,7 @@ export default function MetaLeadCampaignDraftHelper({
       const result = (await response.json().catch(() => ({}))) as SaveDraftResponse;
 
       if (!response.ok || !result.success || !result.data) {
-        throw new Error(result.error || 'Failed to save campaign draft.');
+        throw new Error(result.error || t('errors.saveFailed'));
       }
 
       setSavedDraft(result.data);
@@ -1587,56 +1501,20 @@ export default function MetaLeadCampaignDraftHelper({
         router.refresh();
       }
     } catch (error) {
-      setErrors([error instanceof Error ? error.message : 'Failed to save campaign draft.']);
+      setErrors([error instanceof Error ? error.message : t('errors.saveFailed')]);
     } finally {
       setSaving(false);
     }
   }
 
-  const methodCardCopy = {
-    messages: {
-      title: 'Messages',
-      icon: IconMessageCircle,
-      description: 'Primary focus for now: start a WhatsApp conversation quickly, with DMs available as backup.',
-    },
-    instant_form: {
-      title: 'Instant Form',
-      icon: IconFileDescription,
-      description: 'Optional later path for mobile form capture.',
-    },
-    calls: {
-      title: 'Calls',
-      icon: IconPhone,
-      description: 'Use for staffed phone windows, same-day openings, or consult booking.',
-    },
-  } satisfies Record<LeadCampaignLeadMethod, { title: string; icon: typeof IconFileDescription; description: string }>;
-  const targetCardCopy = [
-    {
-      mode: 'new_campaign' as const,
-      title: 'New campaign',
-      description: 'Create a clean Leads campaign draft with one primary ad set.',
-      icon: IconCirclePlus,
-    },
-    {
-      mode: 'existing_campaign' as const,
-      title: 'Existing campaign',
-      description: 'Use a current campaign and draft a new ad set inside it.',
-      icon: IconLayersIntersect,
-    },
-    {
-      mode: 'existing_adset' as const,
-      title: 'Existing ad set',
-      description: 'Keep the winning ad set context and draft new creative into it.',
-      icon: IconTargetArrow,
-    },
-  ];
+  const targetModes = ['new_campaign', 'existing_campaign', 'existing_adset'] as const;
   const campaignSelectData = campaigns.map((campaign) => ({
     value: campaign.id,
-    label: `${campaign.isBest ? 'Best performer - ' : ''}${campaign.name}`,
+    label: campaign.isBest ? t('setup.bestOption', { name: campaign.name }) : campaign.name,
   }));
   const adSetSelectData = (selectedCampaign?.adset_metrics ?? []).map((adSet) => ({
       value: adSet.id,
-      label: `${adSet.isBest ? 'Best performer - ' : ''}${adSet.name}`,
+      label: adSet.isBest ? t('setup.bestOption', { name: adSet.name }) : adSet.name,
     }));
   const recommendedTarget =
     state.draftTargetMode === 'existing_adset'
@@ -1660,22 +1538,17 @@ export default function MetaLeadCampaignDraftHelper({
   function renderCreativeFields(adSet: AdSetState, creative: CreativeState) {
     return (
       <>
-        <SimpleGrid cols={2} spacing="xs">
-          <Button
-            variant={creative.contentSource === 'upload' ? 'filled' : 'light'}
-            leftSection={<IconUpload size={15} />}
-            onClick={() => updateCreative(adSet.id, creative.id, { contentSource: 'upload' })}
-          >
-            Upload
-          </Button>
-          <Button
-            variant={creative.contentSource === 'existing' ? 'filled' : 'light'}
-            leftSection={<IconPhoto size={15} />}
-            onClick={() => updateCreative(adSet.id, creative.id, { contentSource: 'existing' })}
-          >
-            Existing
-          </Button>
-        </SimpleGrid>
+        {/* A choice, not two blue buttons competing with Save. */}
+        <SegmentedControl
+          fullWidth
+          aria-label={t('creative.source')}
+          value={creative.contentSource}
+          onChange={(value) => updateCreative(adSet.id, creative.id, { contentSource: value as CreativeState['contentSource'] })}
+          data={[
+            { value: 'upload', label: t('creative.upload') },
+            { value: 'existing', label: t('creative.existing') },
+          ]}
+        />
 
         {creative.contentSource === 'existing' ? (
           <Button
@@ -1684,14 +1557,14 @@ export default function MetaLeadCampaignDraftHelper({
             onClick={() => setMediaTarget({ adSetId: adSet.id, creativeId: creative.id })}
           >
             {creative.selectedCreativeName || creative.existingCreativeIds[0]
-              ? 'Change existing creative'
-              : 'Choose existing creative'}
+              ? t('creative.change')
+              : t('creative.choose')}
           </Button>
         ) : (
           <FileInput
-            label="Upload creative"
-            description="Supports Meta image and video upload formats. Browser-previewable videos play here."
-            placeholder="Choose image, GIF, or video"
+            label={t('creative.uploadLabel')}
+            description={t('creative.uploadHint')}
+            placeholder={t('creative.uploadPlaceholder')}
             accept={META_CREATIVE_ACCEPT}
             leftSection={<IconUpload size={16} />}
             value={creative.uploadedFiles[0] ?? null}
@@ -1706,18 +1579,18 @@ export default function MetaLeadCampaignDraftHelper({
 
         {creative.selectedCreativeName ? (
           <Text size="xs" c="dimmed">
-            Selected: {creative.selectedCreativeName}
+            {t('creative.selectedName', { name: creative.selectedCreativeName })}
           </Text>
         ) : null}
 
         <TextInput
-          label="Headline"
+          label={t('creative.headline')}
           maxLength={40}
           value={creative.adHeadline}
           onChange={(event) => updateCreative(adSet.id, creative.id, { adHeadline: event.currentTarget.value })}
         />
         <Textarea
-          label="Primary text"
+          label={t('creative.primaryText')}
           autosize
           minRows={3}
           maxLength={180}
@@ -1725,29 +1598,22 @@ export default function MetaLeadCampaignDraftHelper({
           onChange={(event) => updateCreative(adSet.id, creative.id, { adPrimaryText: event.currentTarget.value })}
         />
         <TextInput
-          label="Description"
+          label={t('creative.description')}
           maxLength={40}
           value={creative.adDescription}
           onChange={(event) => updateCreative(adSet.id, creative.id, { adDescription: event.currentTarget.value })}
         />
         <TextInput
-          label="Destination URL"
-          description="Booking page, service page, or website used by this creative."
+          label={t('creative.url')}
+          description={t('creative.urlHint')}
           placeholder="https://example.com/book"
           type="url"
           value={creative.linkUrl || ''}
           onChange={(event) => updateCreative(adSet.id, creative.id, { linkUrl: event.currentTarget.value })}
         />
         <Select
-          label="Call to action"
-          data={[
-            { value: 'GET_OFFER', label: 'Get Offer' },
-            { value: 'BOOK_NOW', label: 'Book Now' },
-            { value: 'LEARN_MORE', label: 'Learn More' },
-            { value: 'CONTACT_US', label: 'Contact Us' },
-            { value: 'CALL_NOW', label: 'Call Now' },
-            { value: 'SIGN_UP', label: 'Sign Up' },
-          ]}
+          label={t('creative.cta')}
+          data={CTA_KEYS.map((value) => ({ value, label: t(`creative.ctas.${value}`) }))}
           value={creative.adCallToAction}
           onChange={(value) => updateCreative(adSet.id, creative.id, { adCallToAction: value || 'LEARN_MORE' })}
           allowDeselect={false}
@@ -1765,11 +1631,9 @@ export default function MetaLeadCampaignDraftHelper({
               <IconDeviceMobileMessage size={18} />
             </ThemeIcon>
             <div>
-              <Title order={4}>Lead method setup</Title>
+              <Title order={4}>{t('setup.settingsTitle')}</Title>
               <Text size="sm" c="dimmed">
-                {state.leadMethod === 'messages'
-                  ? 'WhatsApp is the default message path. Keep response time tight so chats turn into booked leads.'
-                  : 'Configure the selected lead path before saving the draft.'}
+                {state.leadMethod === 'messages' ? t('setup.settingsLeadMessages') : t('setup.settingsLeadOther')}
               </Text>
             </div>
           </Group>
@@ -1777,10 +1641,10 @@ export default function MetaLeadCampaignDraftHelper({
           {state.leadMethod === 'instant_form' ? (
             <Stack gap="sm">
               <Select
-                label="Instant form style"
+                label={t('setup.formStyle')}
                 data={[
-                  { value: 'higher_intent', label: 'Higher intent' },
-                  { value: 'more_volume', label: 'More volume' },
+                  { value: 'higher_intent', label: t('setup.higherIntent') },
+                  { value: 'more_volume', label: t('setup.moreVolume') },
                 ]}
                 value={state.methodSettings.instantForm.formStyle}
                 onChange={(value) =>
@@ -1794,7 +1658,7 @@ export default function MetaLeadCampaignDraftHelper({
                 allowDeselect={false}
               />
               <TextInput
-                label="Privacy policy URL"
+                label={t('setup.privacy')}
                 placeholder="https://example.com/privacy"
                 value={state.methodSettings.instantForm.privacyPolicyUrl}
                 onChange={(event) =>
@@ -1807,8 +1671,8 @@ export default function MetaLeadCampaignDraftHelper({
                 }
               />
               <Textarea
-                label="Qualifying questions"
-                description="One per line"
+                label={t('setup.questions')}
+                description={t('setup.questionsHint')}
                 autosize
                 minRows={4}
                 value={state.methodSettings.instantForm.qualifyingQuestions.join('\n')}
@@ -1830,11 +1694,11 @@ export default function MetaLeadCampaignDraftHelper({
           {state.leadMethod === 'messages' ? (
             <Stack gap="sm">
               <Select
-                label="Message destination"
+                label={t('setup.sendTo')}
                 data={[
-                  { value: 'whatsapp', label: 'WhatsApp (recommended)' },
-                  { value: 'instagram', label: 'Instagram DMs' },
-                  { value: 'messenger', label: 'Messenger' },
+                  { value: 'whatsapp', label: t('setup.channel.whatsapp') },
+                  { value: 'instagram', label: t('setup.channel.instagram') },
+                  { value: 'messenger', label: t('setup.channel.messenger') },
                 ]}
                 value={state.methodSettings.messages.channel}
                 onChange={(value) => {
@@ -1861,26 +1725,25 @@ export default function MetaLeadCampaignDraftHelper({
               />
 
               {state.methodSettings.messages.channel === 'whatsapp' ? (
-                <Paper withBorder radius="md" p="md" bg="white">
+                <Paper withBorder radius="md" p="md" bg="var(--dv-card-panel)">
                   <Stack gap="sm">
                     <Group gap="sm" align="flex-start">
                       <ThemeIcon color="green" variant="filled" radius="xl">
                         <IconMessageCircle size={18} />
                       </ThemeIcon>
                       <div>
-                        <Text fw={900}>WhatsApp-first chat funnel</Text>
+                        <Text fw={900}>{t('setup.whatsappTitle')}</Text>
                         <Text size="sm" c="dimmed">
-                          The draft will save WhatsApp as the message destination. Use the number confirmed during
-                          Meta setup so message leads know where to reach the business.
+                          {t('setup.whatsappBody')}
                         </Text>
                       </div>
                     </Group>
                     <Select
-                      label="WhatsApp number"
+                      label={t('setup.whatsappNumber')}
                       placeholder={
                         whatsappPhoneNumberOptions.length > 0
-                          ? 'Choose a WhatsApp number'
-                          : 'No saved WhatsApp number found'
+                          ? t('setup.chooseNumber')
+                          : t('setup.noNumber')
                       }
                       data={whatsappPhoneNumberOptions}
                       value={state.methodSettings.messages.whatsappPhoneNumberId || null}
@@ -1953,20 +1816,17 @@ export default function MetaLeadCampaignDraftHelper({
                                 {selectedWhatsAppPhoneNumber.display_phone_number}
                               </Text>
                               <Text size="xs" c="dimmed">
-                                {selectedWhatsAppPhoneNumber.label || 'Saved during Meta setup'}
+                                {selectedWhatsAppPhoneNumber.label || t('setup.savedDuringSetup')}
                               </Text>
                             </Stack>
                           </Group>
-                          <Badge color="green" variant="light">
-                            Saved
-                          </Badge>
+                          <span className={classes.pillOk}>{t('setup.saved')}</span>
                         </Group>
                       </Paper>
                     ) : null}
                     {whatsappPhoneNumberOptions.length === 0 ? (
                       <Alert color="yellow" radius="md" icon={<IconAlertTriangle size={16} />}>
-                        No WhatsApp number has been saved for this business yet. Finish Meta Page WhatsApp setup from
-                        Integrations or choose Instagram DMs/Messenger for this draft.
+                        {t('setup.noNumberAlert')}
                       </Alert>
                     ) : null}
                   </Stack>
@@ -1974,7 +1834,7 @@ export default function MetaLeadCampaignDraftHelper({
               ) : null}
 
               <Checkbox
-                label="The business can respond quickly to new message leads."
+                label={t('setup.respondQuickly')}
                 checked={state.methodSettings.messages.responseReady}
                 onChange={(event) =>
                   updateMethodSettings({
@@ -1991,7 +1851,7 @@ export default function MetaLeadCampaignDraftHelper({
           {state.leadMethod === 'calls' ? (
             <Stack gap="sm">
               <TextInput
-                label="Phone number"
+                label={t('setup.phone')}
                 placeholder="(555) 555-5555"
                 value={state.methodSettings.calls.phoneNumber}
                 onChange={(event) =>
@@ -2004,7 +1864,7 @@ export default function MetaLeadCampaignDraftHelper({
                 }
               />
               <TextInput
-                label="Call window"
+                label={t('setup.callWindow')}
                 value={state.methodSettings.calls.callWindow}
                 onChange={(event) =>
                   updateMethodSettings({
@@ -2016,7 +1876,7 @@ export default function MetaLeadCampaignDraftHelper({
                 }
               />
               <Checkbox
-                label="Calls will only run when someone can answer the phone."
+                label={t('setup.callsAnswer')}
                 checked={state.methodSettings.calls.staffedHoursAcknowledged}
                 onChange={(event) =>
                   updateMethodSettings({
@@ -2037,27 +1897,21 @@ export default function MetaLeadCampaignDraftHelper({
   return (
     <Container size="xl" py="xl" className={classes.page}>
       <Stack gap="xl">
-        <Group justify="space-between" align="flex-start" gap="md" className="dv-create-hero">
-          <Stack gap="xs" maw={780}>
-            <Badge w="fit-content" size="lg" variant="light" className="app-platform-page-badge">
-              {state.reuseSource ? 'Paused run-again draft' : 'Meta lead campaign'}
-            </Badge>
-            <Title order={1}>{state.reuseSource ? 'Review run-again draft' : 'Create a lead campaign'}</Title>
-          </Stack>
-          <Badge size="lg" variant="outline" color="gray" c="var(--chrome-text)" bd="1px solid var(--chrome-muted)">
-            Draft review only
-          </Badge>
-        </Group>
+        {/* Headline, one plain sentence, and the reassurance, like the Insights popup. */}
+        <header className={classes.hero}>
+          <h1 className={classes.heroTitle}>{state.reuseSource ? t('hero.titleRerun') : t('hero.title')}</h1>
+          <p className={classes.heroLead}>{t('hero.lead')}</p>
+          <p className={classes.heroReassure}><IconEye size={16} aria-hidden="true" />{t('hero.reassure')}</p>
+        </header>
 
         {state.initialStatus === 'PAUSED' ? (
-          <Alert color="green" radius="md" icon={<IconCheck size={18} />} title="Paused draft only">
-            Saving updates only this paused DeepVisor draft. It does not change the source or
-            publish anything on Meta.
+          <Alert color="green" radius="md" icon={<IconCheck size={18} />} title={t('notice.pausedTitle')}>
+            {t('notice.pausedBody')}
           </Alert>
         ) : null}
 
-        {!!state.assistantMedia?.length && currentDraftId && <Alert color="blue" title="Private draft attachments">
-          These files are saved with this draft and have not been uploaded to Meta.
+        {!!state.assistantMedia?.length && currentDraftId && <Alert color="blue" title={t('notice.attachmentsTitle')}>
+          {t('notice.attachmentsBody')}
           {state.assistantMedia.map(file => <div key={file.id}><a href={`/api/intelligence/assistant/media?id=${encodeURIComponent(file.id)}&draft=${encodeURIComponent(currentDraftId)}&account=${encodeURIComponent(adAccountId)}`} target="_blank" rel="noreferrer">{file.name} ↗</a></div>)}
         </Alert>}
 
@@ -2066,11 +1920,9 @@ export default function MetaLeadCampaignDraftHelper({
             color="yellow"
             radius="md"
             icon={<IconAlertTriangle size={18} />}
-            title="Some source settings need confirmation"
+            title={t('notice.partialTitle')}
           >
-            Historical sync did not include{' '}
-            {state.reuseSource.missingConfiguration?.join(', ') || 'all source configuration'}.
-            Saved salon defaults were used where available. Review these settings before saving.
+            {t('notice.partialBody', { fields: state.reuseSource.missingConfiguration?.join(', ') || t('notice.partialAll') })}
           </Alert>
         ) : null}
 
@@ -2079,10 +1931,9 @@ export default function MetaLeadCampaignDraftHelper({
             color="red"
             radius="md"
             icon={<IconAlertTriangle size={18} />}
-            title="This source objective needs a full campaign review"
+            title={t('notice.reviewTitle')}
           >
-            Objective {state.objective || 'unknown'} is not represented by this lead campaign helper.
-            Saving is blocked so the source is not converted to {LEADS_OBJECTIVE}.
+            {t('notice.objectiveBody', { objective: state.objective || t('notice.unknown') })}
           </Alert>
         ) : null}
 
@@ -2091,15 +1942,14 @@ export default function MetaLeadCampaignDraftHelper({
             color="red"
             radius="md"
             icon={<IconAlertTriangle size={18} />}
-            title="This source destination needs a full campaign review"
+            title={t('notice.reviewTitle')}
           >
-            Destination {reuseDestination} is not represented by this lead campaign helper.
-            Saving is blocked so it is not converted to {FORM_DESTINATION}.
+            {t('notice.destinationBody', { destination: reuseDestination ?? t('notice.unknown') })}
           </Alert>
         ) : null}
 
         {errors.length > 0 ? (
-          <Alert color="red" radius="lg" icon={<IconAlertTriangle size={18} />} title="Finish these items before saving">
+          <Alert color="red" radius="lg" icon={<IconAlertTriangle size={18} />} title={t('notice.errorsTitle')}>
             <Stack gap={4}>
               {errors.map((error) => (
                 <Text key={error} size="sm">
@@ -2111,33 +1961,26 @@ export default function MetaLeadCampaignDraftHelper({
         ) : null}
 
         {savedDraft ? (
-          <Alert color="green" radius="lg" icon={<IconCheck size={18} />} title="Campaign draft saved">
-            {savedDraft.status === 'updated' ? 'Updated' : 'Created'} draft {savedDraft.draftId}.
+          <Alert color="green" radius="lg" icon={<IconCheck size={18} />} title={t('notice.savedTitle')}>
+            {savedDraft.status === 'updated' ? t('notice.savedUpdated') : t('notice.savedCreated')}{' '}
+            <a href="/campaigns/drafts" className={classes.inlineLink}>{t('notice.seeDrafts')}</a>
           </Alert>
         ) : null}
 
+        {/* The tabs are the only step label. */}
         <div className={classes.stageHeader}>
-          <Group justify="space-between" align="center" gap="sm" wrap="wrap">
-            <div>
-              <Text size="xs" c="dimmed" tt="uppercase" fw={800}>
-                Step {activeStage + 1} of 3
-              </Text>
-              <Text fw={900}>
-                {activeStage === 0 ? 'Campaign setup' : activeStage === 1 ? 'Audience' : 'Creative and review'}
-              </Text>
-            </div>
-            <SegmentedControl
-              value={String(activeStage)}
-              onChange={(value) => setActiveStage(Number(value) as BuilderStage)}
-              data={[
-                { value: '0', label: 'Setup' },
-                { value: '1', label: 'Audience' },
-                { value: '2', label: 'Creative' },
-              ]}
-              aria-label="Campaign setup stage"
-              className={classes.stageControl}
-            />
-          </Group>
+          <SegmentedControl
+            fullWidth
+            value={String(activeStage)}
+            onChange={(value) => setActiveStage(Number(value) as BuilderStage)}
+            data={[
+              { value: '0', label: t('steps.setup') },
+              { value: '1', label: t('steps.audience') },
+              { value: '2', label: t('steps.creative') },
+            ]}
+            aria-label={t('steps.label')}
+            className={classes.stageControl}
+          />
         </div>
 
         <Grid gutter="lg">
@@ -2151,45 +1994,30 @@ export default function MetaLeadCampaignDraftHelper({
                       <IconTargetArrow size={18} />
                     </ThemeIcon>
                     <div>
-                      <Title order={3}>Where should this draft build?</Title>
+                      <Title order={3}>{t('setup.title')}</Title>
                       <Text size="sm" c="dimmed">
-                        Use the top-ranked existing campaign or ad set when Meta already has useful delivery history.
+                        {t('setup.lead')}
                       </Text>
                     </div>
                   </Group>
 
                   <Stack gap="sm">
-                    <Group justify="space-between" align="center" gap="sm">
-                      <div>
-                        <Text fw={800}>Build target</Text>
-                        <Text size="sm" c="dimmed">
-                          Start fresh only when you need a clean campaign. Otherwise use the existing delivery history.
-                        </Text>
-                      </div>
-                      {selectedCampaign?.isBest || selectedAdSet?.isBest ? (
-                        <Badge color="yellow" variant="light" leftSection={<IconStarFilled size={12} />}>
-                          Best selected
-                        </Badge>
-                      ) : null}
-                    </Group>
+                    {selectedCampaign?.isBest || selectedAdSet?.isBest ? (
+                      <span className={classes.pillOk}><IconStarFilled size={12} aria-hidden="true" /> {t('setup.bestSelected')}</span>
+                    ) : null}
 
                     <SegmentedControl
                       fullWidth
                       value={state.draftTargetMode}
                       onChange={(value) => updateDraftTargetMode(value as CampaignDraftTargetMode)}
-                      data={targetCardCopy.map((target) => ({
-                        value: target.mode,
-                        label:
-                          target.mode === 'new_campaign'
-                            ? 'New'
-                            : target.mode === 'existing_campaign'
-                              ? 'Campaign'
-                              : 'Ad set',
-                        disabled: target.mode !== 'new_campaign' && campaigns.length === 0,
+                      data={targetModes.map((mode) => ({
+                        value: mode,
+                        label: t(`setup.target.${mode}`),
+                        disabled: mode !== 'new_campaign' && campaigns.length === 0,
                       }))}
                     />
                     <Text size="sm" c="dimmed">
-                      {targetCardCopy.find((target) => target.mode === state.draftTargetMode)?.description}
+                      {t(`setup.targetHelp.${state.draftTargetMode}`)}
                     </Text>
 
                     {state.draftTargetMode !== 'new_campaign' ? (
@@ -2213,26 +2041,23 @@ export default function MetaLeadCampaignDraftHelper({
                                   </ThemeIcon>
                                   <Stack gap={3}>
                                     <Group gap="xs">
-                                      <Text size="xs" fw={900} tt="uppercase" c="yellow.8">
-                                        Recommended best performer
+                                      <Text size="sm" fw={800}>
+                                        {t('setup.recommended')}
                                       </Text>
                                       {selectedTarget?.id === recommendedTarget.id ? (
-                                        <Badge color="green" variant="light">
-                                          Selected
-                                        </Badge>
+                                        <span className={classes.pillOk}>{t('setup.selected')}</span>
                                       ) : null}
                                     </Group>
                                     <Text fw={900}>{recommendedTarget.name}</Text>
                                     <Text size="sm" c="dimmed">
-                                      {formatPerformance(recommendedTarget, currencyCode)}
+                                      {formatPerformance(recommendedTarget, currencyCode, t)}
                                     </Text>
                                   </Stack>
                                 </Group>
                                 {selectedTarget?.id !== recommendedTarget.id ? (
                                   <Button
-                                    size="xs"
-                                    color="yellow"
-                                    variant="filled"
+                                    size="sm"
+                                    variant="default"
                                     onClick={() => {
                                       if (state.draftTargetMode === 'existing_adset') {
                                         const parentCampaign = selectedCampaign ?? recommendedCampaign;
@@ -2245,7 +2070,7 @@ export default function MetaLeadCampaignDraftHelper({
                                       }
                                     }}
                                   >
-                                    Use best
+                                    {t('setup.useBest')}
                                   </Button>
                                 ) : null}
                               </Group>
@@ -2253,14 +2078,14 @@ export default function MetaLeadCampaignDraftHelper({
                           ) : null}
 
                           <Select
-                            label="Existing campaign"
-                            placeholder={campaigns.length > 0 ? 'Choose a campaign' : 'No synced campaigns found'}
+                            label={t('setup.campaign')}
+                            placeholder={campaigns.length > 0 ? t('setup.chooseCampaign') : t('setup.noCampaigns')}
                             searchable
                             data={campaignSelectData}
                             value={state.existingCampaignId || null}
                             onChange={updateExistingCampaign}
                             disabled={campaigns.length === 0}
-                            nothingFoundMessage="No campaigns found for this ad account"
+                            nothingFoundMessage={t('setup.noCampaignsFound')}
                           />
 
                           {selectedCampaign ? (
@@ -2268,7 +2093,7 @@ export default function MetaLeadCampaignDraftHelper({
                               withBorder
                               radius="md"
                               p="sm"
-                              bg={selectedCampaign.isBest ? 'var(--dv-gap-bg)' : 'gray.0'}
+                              bg={selectedCampaign.isBest ? 'var(--dv-gap-bg)' : 'var(--dv-card-inset)'}
                               style={{
                                 borderColor: selectedCampaign.isBest ? 'var(--mantine-color-yellow-5)' : undefined,
                               }}
@@ -2278,17 +2103,15 @@ export default function MetaLeadCampaignDraftHelper({
                                 <Group gap="xs">
                                   <Text size="sm" fw={800}>{selectedCampaign.name}</Text>
                                   {selectedCampaign.isBest ? (
-                                    <Badge color="yellow" variant="filled" leftSection={<IconStarFilled size={12} />}>
-                                      Best performer
-                                    </Badge>
+                                    <span className={classes.pillWarm}><IconStarFilled size={12} aria-hidden="true" /> {t('setup.bestPerformer')}</span>
                                   ) : null}
                                 </Group>
                                 <Text size="xs" c="dimmed">
-                                  {formatPerformance(selectedCampaign, currencyCode)}
+                                  {formatPerformance(selectedCampaign, currencyCode, t)}
                                 </Text>
                               </Stack>
                               <Badge variant="light" color={selectedCampaign.status?.toLowerCase() === 'active' ? 'green' : 'gray'}>
-                                {selectedCampaign.status ?? 'Status unavailable'}
+                                {selectedCampaign.status ?? t('setup.statusUnknown')}
                               </Badge>
                             </Group>
                             </Paper>
@@ -2297,14 +2120,14 @@ export default function MetaLeadCampaignDraftHelper({
                           {state.draftTargetMode === 'existing_adset' ? (
                             <Stack gap="sm">
                               <Select
-                                label="Existing ad set"
-                                placeholder={selectedCampaign ? 'Choose an ad set' : 'Choose a campaign first'}
+                                label={t('setup.adSet')}
+                                placeholder={selectedCampaign ? t('setup.chooseAdSet') : t('setup.chooseCampaignFirst')}
                                 searchable
                                 data={adSetSelectData}
                                 value={state.existingAdSetId || null}
                                 onChange={(value) => patchState({ existingAdSetId: value ?? '' })}
                                 disabled={!selectedCampaign || selectedCampaign.adset_metrics.length === 0}
-                                nothingFoundMessage="No ad sets found in this campaign"
+                                nothingFoundMessage={t('setup.noAdSets')}
                               />
 
                               {selectedAdSet ? (
@@ -2312,7 +2135,7 @@ export default function MetaLeadCampaignDraftHelper({
                                   withBorder
                                   radius="md"
                                   p="sm"
-                                  bg={selectedAdSet.isBest ? 'var(--dv-gap-bg)' : 'gray.0'}
+                                  bg={selectedAdSet.isBest ? 'var(--dv-gap-bg)' : 'var(--dv-card-inset)'}
                                   style={{
                                     borderColor: selectedAdSet.isBest ? 'var(--mantine-color-yellow-5)' : undefined,
                                   }}
@@ -2322,17 +2145,15 @@ export default function MetaLeadCampaignDraftHelper({
                                     <Group gap="xs">
                                       <Text size="sm" fw={800}>{selectedAdSet.name}</Text>
                                       {selectedAdSet.isBest ? (
-                                        <Badge color="yellow" variant="filled" leftSection={<IconStarFilled size={12} />}>
-                                          Best performer
-                                        </Badge>
+                                        <span className={classes.pillWarm}><IconStarFilled size={12} aria-hidden="true" /> {t('setup.bestPerformer')}</span>
                                       ) : null}
                                     </Group>
                                     <Text size="xs" c="dimmed">
-                                      {formatPerformance(selectedAdSet, currencyCode)}
+                                      {formatPerformance(selectedAdSet, currencyCode, t)}
                                     </Text>
                                   </Stack>
                                   <Badge variant="light" color="blue">
-                                    {selectedAdSet.ads_metrics.length} ads
+                                    {t('setup.adsCount', { count: selectedAdSet.ads_metrics.length })}
                                   </Badge>
                                 </Group>
                                 </Paper>
@@ -2346,8 +2167,8 @@ export default function MetaLeadCampaignDraftHelper({
 
 	                  {state.draftTargetMode === 'new_campaign' ? (
 	                    <TextInput
-	                      label="Campaign name"
-	                      placeholder="New client lead campaign"
+	                      label={t('setup.campaignName')}
+	                      placeholder={t('setup.campaignNamePlaceholder')}
 	                      value={state.campaignName}
                       onChange={(event) => patchState({ campaignName: event.currentTarget.value })}
                       required
@@ -2357,9 +2178,9 @@ export default function MetaLeadCampaignDraftHelper({
                   <Divider />
 
                   <Stack gap={4}>
-                    <Title order={3}>Lead method</Title>
+                    <Title order={3}>{t('setup.methodTitle')}</Title>
                     <Text size="sm" c="dimmed">
-                      Objective is locked to Meta Leads; choose the lead path that matches operations.
+                      {t('setup.methodLead')}
                     </Text>
                   </Stack>
 
@@ -2385,13 +2206,13 @@ export default function MetaLeadCampaignDraftHelper({
                       }));
                     }}
                     data={[
-                      { value: 'messages', label: 'Messages' },
-                      { value: 'instant_form', label: 'Form' },
-                      { value: 'calls', label: 'Calls' },
+                      { value: 'messages', label: t('setup.method.messages') },
+                      { value: 'instant_form', label: t('setup.method.instant_form') },
+                      { value: 'calls', label: t('setup.method.calls') },
                     ]}
                   />
                   <Text size="sm" c="dimmed">
-                    {methodCardCopy[state.leadMethod].description}
+                    {t(`setup.methodHelp.${state.leadMethod}`)}
                   </Text>
 
                   {renderLeadMethodSetup()}
@@ -2408,16 +2229,16 @@ export default function MetaLeadCampaignDraftHelper({
                       <IconMapPin size={18} />
                     </ThemeIcon>
                     <div>
-                      <Title order={3}>Audience and Page</Title>
+                      <Title order={3}>{t('audience.title')}</Title>
 	                      <Text size="sm" c="dimmed">
-	                        Keep the audience broad enough for Meta to learn, with location as the main control.
+	                        {t('audience.lead')}
 	                      </Text>
                     </div>
                   </Group>
 
                   <Select
-                    label="Facebook Page"
-                    placeholder={metaPages.length > 0 ? 'Select a Page' : 'No Meta Pages found'}
+                    label={t('audience.page')}
+                    placeholder={metaPages.length > 0 ? t('audience.selectPage') : t('audience.noPages')}
                     data={pageSelectOptions}
                     value={state.pageId}
                     onChange={(value) => patchState({ pageId: value ?? '' })}
@@ -2452,7 +2273,7 @@ export default function MetaLeadCampaignDraftHelper({
                     }}
                   />
 
-                  <Paper withBorder radius="md" p="sm" bg={selectedInstagramLabel ? 'pink.0' : 'var(--dv-surface-muted)'}>
+                  <Paper withBorder radius="md" p="sm" bg="var(--dv-card-inset)">
                     <Group gap="sm" wrap="nowrap" align="center">
                       {selectedInstagramLabel ? (
                         <Avatar
@@ -2471,23 +2292,19 @@ export default function MetaLeadCampaignDraftHelper({
                       <Stack gap={2}>
                         <Group gap="xs" wrap="wrap">
                           <Text fw={800} size="sm">
-                            Instagram account
+                            {t('audience.instagram')}
                           </Text>
                           {selectedInstagramLabel ? (
-                            <Badge color="pink" variant="light">
-                              Connected
-                            </Badge>
+                            <span className={classes.pillOk}>{t('audience.connected')}</span>
                           ) : (
-                            <Badge color="gray" variant="light">
-                              Not found
-                            </Badge>
+                            <span className={classes.pill}>{t('audience.notFound')}</span>
                           )}
                         </Group>
                         <Text size="sm">
-                          {selectedInstagramLabel ?? 'No Instagram account is linked to this Facebook Page.'}
+                          {selectedInstagramLabel ?? t('audience.noInstagram')}
                         </Text>
                         <Text size="xs" c="dimmed">
-                          This identity is saved with the draft for Instagram placements and Instagram DM leads.
+                          {t('audience.instagramHint')}
                         </Text>
                       </Stack>
                     </Group>
@@ -2498,22 +2315,20 @@ export default function MetaLeadCampaignDraftHelper({
                       <Stack gap="xs">
                         <Group justify="space-between" align="center" gap="sm">
                           <div>
-                            <Text fw={800}>Using existing ad set</Text>
+                            <Text fw={800}>{t('audience.usingAdSet')}</Text>
                             <Text size="sm" c="dimmed">
-                              The saved draft will keep the selected ad set context and focus on the new creative angles.
+                              {t('audience.usingAdSetHint')}
                             </Text>
                           </div>
                           {selectedAdSet?.isBest ? (
-                            <Badge color="yellow" variant="light" leftSection={<IconStarFilled size={12} />}>
-                              Best ad set
-                            </Badge>
+                            <span className={classes.pillWarm}><IconStarFilled size={12} aria-hidden="true" /> {t('audience.bestAdSet')}</span>
                           ) : null}
                         </Group>
                         <Text size="sm">
-                          {selectedAdSet?.name ?? 'Choose an ad set above'}
+                          {selectedAdSet?.name ?? t('audience.chooseAdSetAbove')}
                         </Text>
                         <Text size="xs" c="dimmed">
-                          {formatPerformance(selectedAdSet, currencyCode)}
+                          {formatPerformance(selectedAdSet, currencyCode, t)}
                         </Text>
                       </Stack>
                     </Paper>
@@ -2522,8 +2337,8 @@ export default function MetaLeadCampaignDraftHelper({
                       <Grid gutter="md">
                         <Grid.Col span={{ base: 12, md: 8 }}>
                           <TextInput
-                            label="Service area"
-                            placeholder="Tampa, FL or Downtown Austin"
+                            label={t('audience.area')}
+                            placeholder={t('audience.areaPlaceholder')}
                             value={state.serviceArea}
                             onChange={(event) => patchState({ serviceArea: event.currentTarget.value })}
                             leftSection={<IconMapPin size={16} />}
@@ -2532,8 +2347,9 @@ export default function MetaLeadCampaignDraftHelper({
                         </Grid.Col>
                         <Grid.Col span={{ base: 12, md: 4 }}>
                           <NumberInput
-                            label="Radius"
-                            suffix=" miles"
+                            label={t('audience.radius')}
+                            suffix={t('audience.miles')}
+                            hideControls
                             min={1}
                             max={50}
                             value={state.radius}
@@ -2548,38 +2364,36 @@ export default function MetaLeadCampaignDraftHelper({
                           <Stack gap="md">
                             <Group justify="space-between" align="flex-start" gap="md">
                               <div>
-                                <Text fw={800}>{index === 0 ? 'Primary ad set' : 'Challenger ad set'}</Text>
+                                <Text fw={800}>{index === 0 ? t('audience.primary') : t('audience.challenger')}</Text>
                                 <Text size="sm" c="dimmed">
                                   {index === 0
                                     ? state.draftTargetMode === 'existing_campaign'
-                                      ? 'New ad set inside the selected existing campaign.'
-                                      : 'Main delivery context for the campaign.'
-                                    : 'Use only when you intentionally want to test a different audience.'}
+                                      ? t('audience.primaryNew')
+                                      : t('audience.primaryMain')
+                                    : t('audience.challengerHint')}
                                 </Text>
                               </div>
                               {index > 0 ? (
-                                <Badge color="yellow" variant="light">
-                                  Advanced
-                                </Badge>
+                                <span className={classes.pill}>{t('audience.advanced')}</span>
                               ) : null}
                             </Group>
 
                             <TextInput
-                              label="Ad set name"
+                              label={t('audience.adSetName')}
                               value={adSet.adSetName}
                               onChange={(event) => updateAdSet(adSet.id, { adSetName: event.currentTarget.value })}
                             />
 
                             <Group grow align="flex-start">
                               <Switch
-                                label="Advantage+ Audience"
-                                description="Recommended for lead learning."
+                                label={t('audience.advantageAudience')}
+                                description={t('audience.advantageAudienceHint')}
                                 checked={adSet.useAdvantageAudience}
                                 onChange={(event) => updateAdSet(adSet.id, { useAdvantageAudience: event.currentTarget.checked })}
                               />
                               <Switch
-                                label="Advantage+ Placements"
-                                description="Recommended for Facebook and Instagram delivery."
+                                label={t('audience.advantagePlacements')}
+                                description={t('audience.advantagePlacementsHint')}
                                 checked={adSet.useAdvantagePlacements}
                                 onChange={(event) => updateAdSet(adSet.id, { useAdvantagePlacements: event.currentTarget.checked })}
                               />
@@ -2587,14 +2401,15 @@ export default function MetaLeadCampaignDraftHelper({
 
                             <Box py="sm">
                               <details>
-                                <summary style={{ cursor: 'pointer', fontWeight: 700 }}>
-                                  Advanced targeting
+                                <summary className={classes.summary}>
+                                  {t('audience.moreTargeting')}
                                 </summary>
                                 <Paper withBorder radius="md" p="md" mt="sm" bg="var(--dv-surface-muted)">
                                   <Grid gutter="md">
                                     <Grid.Col span={{ base: 6, md: 3 }}>
                                       <NumberInput
-                                        label="Min age"
+                                        label={t('audience.minAge')}
+                                        hideControls
                                         min={18}
                                         max={65}
                                         value={adSet.ageMin}
@@ -2603,7 +2418,8 @@ export default function MetaLeadCampaignDraftHelper({
                                     </Grid.Col>
                                     <Grid.Col span={{ base: 6, md: 3 }}>
                                       <NumberInput
-                                        label="Max age"
+                                        label={t('audience.maxAge')}
+                                        hideControls
                                         min={18}
                                         max={65}
                                         value={adSet.ageMax}
@@ -2612,9 +2428,9 @@ export default function MetaLeadCampaignDraftHelper({
                                     </Grid.Col>
                                     <Grid.Col span={{ base: 12, md: 6 }}>
                                       <TextInput
-                                        label="Interests"
-                                        description="Optional; leave blank for broader learning."
-                                        placeholder="Premium service, consultation, same-day opening"
+                                        label={t('audience.interests')}
+                                        description={t('audience.interestsHint')}
+                                        placeholder={t('audience.interestsPlaceholder')}
                                         value={adSet.interestsText}
                                         onChange={(event) => updateAdSet(adSet.id, { interestsText: event.currentTarget.value })}
                                       />
@@ -2628,11 +2444,11 @@ export default function MetaLeadCampaignDraftHelper({
                       ))}
 
                       <Alert color="yellow" variant="light" radius="lg" icon={<IconAlertTriangle size={18} />}>
-                        A second ad set can fragment learning. Use it only when the audience or lead method is materially different.
+                        {t('audience.secondWarning')}
                       </Alert>
                       <Switch
-                        label="Add challenger ad set"
-                        description="Advanced option for a separate audience test."
+                        label={t('audience.addSecond')}
+                        description={t('audience.addSecondHint')}
                         checked={state.adSets.length > 1}
                         onChange={(event) => toggleChallengerAdSet(event.currentTarget.checked)}
                       />
@@ -2650,9 +2466,9 @@ export default function MetaLeadCampaignDraftHelper({
                       <IconPhoto size={18} />
                     </ThemeIcon>
 	                    <div>
-	                      <Title order={3}>Creative angles</Title>
+	                      <Title order={3}>{t('creative.title')}</Title>
 	                      <Text size="sm" c="dimmed">
-	                        Start with one ad angle. Add another when you want to compare a different hook, visual, or offer.
+	                        {t('creative.lead')}
 	                      </Text>
 	                    </div>
 	                  </Group>
@@ -2661,17 +2477,16 @@ export default function MetaLeadCampaignDraftHelper({
 	                    <Stack key={adSet.id} gap="md">
 	                      <Group justify="space-between" align="center" gap="sm">
 	                        <Text fw={800}>
-	                          {state.draftTargetMode === 'existing_adset'
-	                            ? selectedAdSet?.name ?? 'Selected ad set'
-	                            : adSet.adSetName || 'Ad set'} creatives
+	                          {t('creative.adsFor', {
+	                            name: (state.draftTargetMode === 'existing_adset' ? selectedAdSet?.name : adSet.adSetName) || t('creative.thisAudience'),
+	                          })}
 	                        </Text>
 	                        <Button
-	                          size="xs"
 	                          variant="light"
-	                          leftSection={<IconPlus size={14} />}
+	                          leftSection={<IconPlus size={16} />}
 	                          onClick={() => addCreativeAngle(adSet.id)}
 	                        >
-	                          Add creative angle
+	                          {t('creative.addVersion')}
 	                        </Button>
 	                      </Group>
 
@@ -2682,7 +2497,7 @@ export default function MetaLeadCampaignDraftHelper({
 	                              <Grid.Col span={{ base: 12, md: 7 }}>
 	                                <Stack gap="sm">
 	                                  <Badge w="fit-content" color="violet" variant="light">
-	                                    Angle 1
+	                                    {t('creative.version', { n: 1 })}
 	                                  </Badge>
 	                                  {renderCreativeFields(adSet, creative)}
 	                                </Stack>
@@ -2712,17 +2527,17 @@ export default function MetaLeadCampaignDraftHelper({
 	                                <Stack gap="sm" h="100%">
 	                                  <Group justify="space-between" align="center">
 	                                    <Badge color={creativeIndex === 0 ? 'violet' : 'gray'} variant="light">
-	                                      {creativeIndex === 0 ? 'Angle 1' : `Angle ${creativeIndex + 1}`}
+	                                      {t('creative.version', { n: creativeIndex + 1 })}
 	                                    </Badge>
 	                                    {creativeIndex > 0 ? (
 	                                      <Button
-	                                        size="compact-xs"
+	                                        size="sm"
 	                                        variant="subtle"
 	                                        color="red"
-	                                        leftSection={<IconTrash size={13} />}
+	                                        leftSection={<IconTrash size={16} />}
 	                                        onClick={() => removeCreativeAngle(adSet.id, creative.id)}
 	                                      >
-	                                        Remove
+	                                        {t('creative.remove')}
 	                                      </Button>
 	                                    ) : null}
 	                                  </Group>
@@ -2755,7 +2570,7 @@ export default function MetaLeadCampaignDraftHelper({
                       <ThemeIcon color="green" variant="light" radius="xl">
                         <IconCalendar size={18} />
                       </ThemeIcon>
-                      <Title order={3}>{activeStage === 0 ? 'Budget and dates' : 'Review and save'}</Title>
+                      <Title order={3}>{t('budget.title')}</Title>
                     </Group>
                     <SegmentedControl
                       fullWidth
@@ -2776,27 +2591,28 @@ export default function MetaLeadCampaignDraftHelper({
                         });
                       }}
                       data={[
-                        { value: 'daily', label: 'Daily' },
-                        { value: 'lifetime', label: 'Lifetime' },
+                        { value: 'daily', label: t('budget.daily') },
+                        { value: 'lifetime', label: t('budget.lifetime') },
                       ]}
                     />
                     <NumberInput
-                      label={`${state.budgetType === 'daily' ? 'Daily' : 'Lifetime'} budget (${
-                        currencyCode?.trim().toUpperCase() || 'USD'
-                      })`}
+                      label={t(state.budgetType === 'daily' ? 'budget.dailyLabel' : 'budget.lifetimeLabel', {
+                        currency: currencyCode?.trim().toUpperCase() || 'USD',
+                      })}
+                      hideControls
                       min={state.budgetType === 'daily' ? 1 : 50}
                       value={state.budgetAmount}
                       onChange={(value) => patchState({ budgetAmount: Number(value) || 0 })}
                       required
                     />
                     <DateTimePicker
-                      label="Start date"
+                      label={t('budget.start')}
                       value={state.startDate}
                       onChange={(value) => patchState({ startDate: pickerValueToDate(value, new Date()) ?? new Date() })}
                       minDate={new Date()}
                     />
                     <DateTimePicker
-                      label="End date"
+                      label={t('budget.end')}
                       value={state.endDate}
                       onChange={(value) => patchState({ endDate: pickerValueToDate(value, state.endDate) })}
                       minDate={state.startDate}
@@ -2806,15 +2622,15 @@ export default function MetaLeadCampaignDraftHelper({
                     <Paper withBorder radius="md" p="md" bg="var(--dv-success-soft)">
                       <Text fw={800}>
                         {dailyEquivalent
-                          ? `${formatMoney(dailyEquivalent.amount, currencyCode)}/day equivalent`
-                          : 'Set an end date'}
+                          ? t('budget.perDay', { amount: formatMoney(dailyEquivalent.amount, currencyCode) })
+                          : t('budget.setEnd')}
                       </Text>
                       <Text size="sm" c="dimmed">
                         {dailyEquivalent
                           ? state.budgetType === 'daily'
-                            ? `${dailyEquivalent.days} day run, about ${formatMoney(dailyEquivalent.totalAmount, currencyCode)} total.`
-                            : `${dailyEquivalent.days} day run with a hard lifetime budget.`
-                          : 'DeepVisor recommends a fixed 30-day window.'}
+                            ? t('budget.runDaily', { days: dailyEquivalent.days, total: formatMoney(dailyEquivalent.totalAmount, currencyCode) })
+                            : t('budget.runLifetime', { days: dailyEquivalent.days })
+                          : t('budget.recommend')}
                       </Text>
                     </Paper>
                     {activeStage === 2 ? (
@@ -2825,35 +2641,42 @@ export default function MetaLeadCampaignDraftHelper({
                             <IconChartLine size={18} />
                           </ThemeIcon>
                           <div>
-                            <Text fw={800}>Estimated {leadEstimate.label}</Text>
+                            <Text fw={800}>{t('estimate.title')}</Text>
                           </div>
                         </Group>
-                        <Text fw={900} size="1.35rem">
-                          {formatOutcomeCount(leadEstimate.low)}-{formatOutcomeCount(leadEstimate.high)}
-                        </Text>
+                        <p className={classes.estimateNumber}>
+                          {t('estimate.range', {
+                            low: formatOutcomeCount(leadEstimate.low),
+                            high: formatOutcomeCount(leadEstimate.high),
+                            label: t(`estimate.label.${leadEstimate.method}`),
+                          })}
+                        </p>
                         <Text size="sm" c="dimmed">
-                          Around {formatOutcomeCount(leadEstimate.estimate)} {leadEstimate.label} at{' '}
-                          {formatMoney(plannedBudgetAmount, currencyCode)} planned spend.
+                          {t('estimate.around', {
+                            estimate: formatOutcomeCount(leadEstimate.estimate),
+                            label: t(`estimate.label.${leadEstimate.method}`),
+                            budget: formatMoney(plannedBudgetAmount, currencyCode),
+                          })}
                         </Text>
                         <details className={classes.estimateDetails}>
-                          <summary>Estimate details</summary>
+                          <summary>{t('estimate.details')}</summary>
                           <Stack gap="sm" mt="sm">
                             <LeadEstimateChart points={leadEstimate.points} currencyCode={currencyCode} />
                             <SimpleGrid cols={2} spacing="xs">
                               <Paper withBorder radius="sm" p="xs" bg="var(--dv-surface-muted)">
-                                <Text size="xs" c="dimmed">Modeled cost</Text>
+                                <Text size="xs" c="dimmed">{t('estimate.cost')}</Text>
                                 <Text size="sm" fw={800}>{formatMoney(leadEstimate.costPerOutcome, currencyCode)}</Text>
                               </Paper>
                               <Paper withBorder radius="sm" p="xs" bg="var(--dv-surface-muted)">
-                                <Text size="xs" c="dimmed">Data source</Text>
+                                <Text size="xs" c="dimmed">{t('estimate.source')}</Text>
                                 <Text size="sm" fw={800} lineClamp={1}>
-                                  {leadEstimate.sourceLabel}
+                                  {leadEstimate.sourceName ?? t(`estimate.sources.${leadEstimate.sourceKind}`)}
                                 </Text>
                               </Paper>
                             </SimpleGrid>
                             {leadEstimate.usesFallback ? (
                               <Text size="xs" c="dimmed">
-                                Estimate uses a general baseline until more Meta performance is synced.
+                                {t('estimate.fallback')}
                               </Text>
                             ) : null}
                           </Stack>
@@ -2861,27 +2684,6 @@ export default function MetaLeadCampaignDraftHelper({
                       </Stack>
                     </Paper>
                     ) : null}
-                    <div className={classes.desktopStageAction}>
-                      {activeStage === 0 ? (
-                        <Button
-                          fullWidth
-                          rightSection={<IconChevronRight size={16} />}
-                          onClick={() => setActiveStage(1)}
-                        >
-                          Continue to audience
-                        </Button>
-                      ) : (
-                        <Button
-                          fullWidth
-                          leftSection={<IconSparkles size={18} />}
-                          loading={saving}
-                          disabled={unsupportedReuseObjective || unsupportedReuseDestination}
-                          onClick={handleSaveDraft}
-                        >
-                          Save draft
-                        </Button>
-                      )}
-                    </div>
                   </Stack>
                 </Card>
               </Stack>
@@ -2898,7 +2700,7 @@ export default function MetaLeadCampaignDraftHelper({
               disabled={saving}
               onClick={() => setActiveStage((activeStage - 1) as BuilderStage)}
             >
-              Back
+              {t('footer.back')}
             </Button>
           ) : null}
           {activeStage < 2 ? (
@@ -2910,7 +2712,7 @@ export default function MetaLeadCampaignDraftHelper({
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             >
-              Continue
+              {t('footer.continue')}
             </Button>
           ) : (
             <Button
@@ -2920,7 +2722,7 @@ export default function MetaLeadCampaignDraftHelper({
               disabled={unsupportedReuseObjective || unsupportedReuseDestination}
               onClick={handleSaveDraft}
             >
-              Save draft
+              {t('footer.save')}
             </Button>
           )}
         </Group>

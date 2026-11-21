@@ -487,7 +487,7 @@ export default function CampaignDetailsStep({
                             </Group>
 
                             <Stack gap="md">
-                                <Paper withBorder p="xs" radius="sm" bg="white">
+                                <Paper withBorder p="xs" radius="sm" bg="var(--dv-card-panel)">
                                     <Group justify="apart">
                                         <Text size="sm" fw={500}>Buying Type:</Text>
                                         <Badge color={isUsingRecommendedBuying ? "green" : "yellow"} size="lg">
@@ -496,7 +496,7 @@ export default function CampaignDetailsStep({
                                     </Group>
                                 </Paper>
 
-                                <Paper withBorder p="xs" radius="sm" bg="white">
+                                <Paper withBorder p="xs" radius="sm" bg="var(--dv-card-panel)">
                                     <Group justify="apart">
                                         <Text size="sm" fw={500}>CBO:</Text>
                                         <Badge color={isUsingRecommendedCBO ? "green" : "yellow"} size="lg">
@@ -505,7 +505,7 @@ export default function CampaignDetailsStep({
                                     </Group>
                                 </Paper>
 
-                                <Paper withBorder p="xs" radius="sm" bg="white">
+                                <Paper withBorder p="xs" radius="sm" bg="var(--dv-card-panel)">
                                     <Group justify="apart">
                                         <Text size="sm" fw={500}>Budget Type:</Text>
                                         <Badge color={isUsingRecommendedBudgetType ? "green" : "yellow"} size="lg">
@@ -514,7 +514,7 @@ export default function CampaignDetailsStep({
                                     </Group>
                                 </Paper>
 
-                                <Paper withBorder p="xs" radius="sm" bg="white">
+                                <Paper withBorder p="xs" radius="sm" bg="var(--dv-card-panel)">
                                     <Group justify="apart">
                                         <Text size="sm" fw={500}>Budget Amount:</Text>
                                         <Badge color={isUsingRecommendedBudgetAmount ? "green" : "yellow"} size="lg">
@@ -523,7 +523,7 @@ export default function CampaignDetailsStep({
                                     </Group>
                                 </Paper>
 
-                                <Paper withBorder p="xs" radius="sm" bg="white">
+                                <Paper withBorder p="xs" radius="sm" bg="var(--dv-card-panel)">
                                     <Group justify="apart">
                                         <Text size="sm" fw={500}>Bid Strategy:</Text>
                                         <Badge color={isUsingRecommendedBidStrategy ? "green" : "yellow"} size="lg">
@@ -533,7 +533,7 @@ export default function CampaignDetailsStep({
                                 </Paper>
 
                                 {recommended.abTesting && (
-                                    <Paper withBorder p="xs" radius="sm" bg="white">
+                                    <Paper withBorder p="xs" radius="sm" bg="var(--dv-card-panel)">
                                         <Group justify="apart">
                                             <Text size="sm" fw={500}>A/B Testing:</Text>
                                             <Badge color={isUsingRecommendedABTesting ? "green" : "yellow"} size="lg">
