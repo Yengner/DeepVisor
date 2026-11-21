@@ -367,11 +367,12 @@ export function MobileMetrics({ metrics, currencyCode, benchmark }: { metrics: R
   const t = useTranslations('table');
   return (
     <div className={classes.mobileMetricGrid}>
-      <div><Text>{t('metric.spend')}</Text><Text>{formatRecordedCurrency(metrics.spend, currencyCode)}</Text></div>
-      <div><Text>{t('metric.results')}</Text><Text>{formatCount(metrics.results)}</Text></div>
-      <div><Text>{t('metric.costPerResult')}</Text><Text component="div"><CostValue metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} /></Text></div>
+      {/* Results lead, as in the Insights popup; spend and cost per result sit beside it. */}
+      <p className={classes.mobileLead}><span className={classes.mobileLeadValue}>{formatCount(metrics.results)}</span><span className={classes.mobileStatLabel}>{t('mobile.results', { count: metrics.results ?? 0 })}</span></p>
+      <p className={classes.mobileStat}><span className={classes.mobileStatValue}>{formatRecordedCurrency(metrics.spend, currencyCode)}</span><span className={classes.mobileStatLabel}>{t('mobile.spent')}</span></p>
+      <div className={classes.mobileStat}><span className={classes.mobileStatValue}><CostValue metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} /></span><span className={classes.mobileStatLabel}>{t('mobile.each')}</span></div>
       <details className={classes.moreMetrics} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
-        <summary>{t('moreMetrics')}</summary>
+        <summary>{t('mobile.more')}</summary>
         <dl className={classes.moreMetricList}>
           <div><dt>{t('metric.ctr')}</dt><dd>{formatPercent(metrics.ctr)}</dd></div>
           <div><dt>{t('metric.cpc')}</dt><dd>{formatRecordedCurrency(metrics.cpc, currencyCode)}</dd></div>

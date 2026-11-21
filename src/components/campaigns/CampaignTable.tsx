@@ -125,7 +125,7 @@ export default function CampaignTable({
               >
                 <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
                   <div className={classes.mobileEntityTitleBlock}>
-                    <Text fw={700} size="sm" lineClamp={2}>
+                    <Text lineClamp={2} className={classes.mobileCardTitle}>
                       {campaign.name}
                     </Text>
                     <Group gap={6} mt={6} wrap="wrap">
@@ -140,7 +140,7 @@ export default function CampaignTable({
 
                 <MobileMetrics metrics={rowMetrics(campaign)} currencyCode={currencyCode} benchmark={benchmarkFor(campaign)} />
 
-                <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
+                <Group justify="space-between" gap="sm" wrap="nowrap" className={classes.mobileFooter}>
                   <Text size="xs" c="dimmed" lineClamp={1}>
                     {labels.displayDate(campaign.startDate)} – {labels.displayDate(lastActivity(campaign.endDate, campaign.lastDay, timezone))}
                   </Text>

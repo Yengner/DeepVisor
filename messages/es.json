@@ -1653,7 +1653,13 @@
     "dismissError": "Cerrar el error",
     "deliveryUnavailable": "El estado de publicación no está disponible. No se marcan las filas que se publican hasta poder cargarlo.",
     "adSetsError": "No se pudieron cargar los conjuntos. Se conservan las filas que ya estaban cargadas.",
-    "adsError": "No se pudieron cargar los anuncios. Se conservan las filas que ya estaban cargadas."
+    "adsError": "No se pudieron cargar los anuncios. Se conservan las filas que ya estaban cargadas.",
+    "mobile": {
+      "results": "{count, plural, one {resultado} other {resultados}}",
+      "spent": "gastado",
+      "each": "cada uno",
+      "more": "Más números"
+    }
   },
   "controls": {
     "range": {

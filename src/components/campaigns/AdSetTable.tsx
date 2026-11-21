@@ -139,7 +139,7 @@ export default function AdSetTable({
             >
               <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
                 <div className={classes.mobileEntityTitleBlock}>
-                  <Text fw={700} size="sm" lineClamp={2}>{adSet.name}</Text>
+                  <Text lineClamp={2} className={classes.mobileCardTitle}>{adSet.name}</Text>
                   <Group gap={6} mt={6} wrap="wrap">
                     <StatusCell status={adSet.status} delivering={adSet.delivery} />
                     <Text size="xs" c="dimmed" lineClamp={1}>{goal}</Text>
@@ -150,12 +150,12 @@ export default function AdSetTable({
 
               <MobileMetrics metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} />
 
-              <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
+              <Group justify="space-between" gap="sm" wrap="nowrap" className={classes.mobileFooter}>
                 <Text size="xs" c="dimmed" lineClamp={1} className={classes.mobileActivity}>
-                  {adSet.start_date || '—'} – {last}
+                  {labels.displayDate(adSet.start_date)} – {last}
                 </Text>
                 <Group gap={4} wrap="nowrap" className={classes.mobileEntityActions}>
-                  {onOpenAdSet ? <OpenNextButton label="Ads" onOpen={() => onOpenAdSet(adSet.id)} /> : null}
+                  {onOpenAdSet ? <OpenNextButton label={t('tab.ads')} onOpen={() => onOpenAdSet(adSet.id)} /> : null}
                   {onRunAgain ? (
                     <Button
                       size="compact-xs"
@@ -168,7 +168,7 @@ export default function AdSetTable({
                         onRunAgain(adSet);
                       }}
                     >
-                      Run again
+                      {t('runAgain')}
                     </Button>
                   ) : null}
                 </Group>

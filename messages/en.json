@@ -1653,7 +1653,13 @@
     "dismissError": "Dismiss loading error",
     "deliveryUnavailable": "Delivery status unavailable. Delivering highlights are withheld until status can be loaded.",
     "adSetsError": "Ad sets could not be loaded. Previously loaded rows have been preserved.",
-    "adsError": "Ads could not be loaded. Previously loaded rows have been preserved."
+    "adsError": "Ads could not be loaded. Previously loaded rows have been preserved.",
+    "mobile": {
+      "results": "{count, plural, one {result} other {results}}",
+      "spent": "spent",
+      "each": "each",
+      "more": "More numbers"
+    }
   },
   "controls": {
     "range": {

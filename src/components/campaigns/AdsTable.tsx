@@ -161,7 +161,7 @@ export default function AdsTable({
                     <MediaImage media={ad.creativePreview} name={name} />
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <Text fw={700} size="sm" lineClamp={2}>{name}</Text>
+                    <Text lineClamp={2} className={classes.mobileCardTitle}>{name}</Text>
                     <Group gap={6} mt={6} wrap="wrap">
                       <StatusCell status={ad.status} delivering={ad.delivery} />
                       {format ? <Text size="xs" c="dimmed">{format}</Text> : null}
@@ -173,7 +173,7 @@ export default function AdsTable({
 
               <MobileMetrics metrics={metrics} currencyCode={currencyCode} benchmark={benchmark} />
 
-              <Group justify="space-between" gap="sm" wrap="nowrap" mt="sm">
+              <Group justify="space-between" gap="sm" wrap="nowrap" className={classes.mobileFooter}>
                 <Text size="xs" c="dimmed" lineClamp={1} className={classes.mobileActivity}>
                   {labels.displayDate(ad.start_date)} – {last}
                 </Text>

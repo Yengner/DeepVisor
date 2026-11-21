@@ -538,7 +538,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
           }}
           className={classes.tabs}
         >
-          <div className={classes.tableHeader}>
+          <div className={classes.tableHeader} data-drilled={activeTab !== 'campaigns' || undefined}>
             <Group justify="space-between" align="flex-start" gap="md" wrap="wrap">
               <div className={classes.titleBlock}>
                 <Title order={1} className={classes.title}>
@@ -569,21 +569,22 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                     </div>
                   </div>
                   <div className={classes.summary}>
-                    <div className={classes.summaryTile}><span className={classes.tileLabel}>{t('metric.spend')}</span><span className={classes.tileValue}>{accountSummary.spend === null ? '—' : formatCurrencyAmount(accountSummary.spend, currencyCode)}</span></div>
-                    <div className={classes.summaryTile}><span className={classes.tileLabel}>{t('metric.results')}</span><span className={classes.tileValue}>{formatCompactNumber(accountSummary.totalResults)}</span>{accountSummary.mixed && <span className={classes.tileNote}>{accountSummary.objectives.map(o => `${o.objective} ${formatCompactNumber(o.results)}`).join(' · ')}</span>}</div>
+                    <div className={classes.summaryTile} data-tile="spend"><span className={classes.tileLabel}>{t('metric.spend')}</span><span className={classes.tileValue}>{accountSummary.spend === null ? '—' : formatCurrencyAmount(accountSummary.spend, currencyCode)}</span></div>
+                    <div className={classes.summaryTile} data-tile="results"><span className={classes.tileLabel}>{t('metric.results')}</span><span className={classes.tileValue}>{formatCompactNumber(accountSummary.totalResults)}</span>{accountSummary.mixed && <span className={classes.tileNote}>{accountSummary.objectives.map(o => `${o.objective} ${formatCompactNumber(o.results)}`).join(' · ')}</span>}</div>
                     {accountSummary.mixed ? (
-                      <div className={classes.summaryTile} title={t('mixedHint')}>
+                      <div className={classes.summaryTile} data-tile="cost-mixed" title={t('mixedHint')}>
                         <span className={classes.tileLabel}>{t('costByObjective')}</span>
                         <span className={classes.tileObjectives}>{accountSummary.objectives.map(o => <span key={o.objective}><b>{o.costPerResult === null ? '—' : formatCurrencyAmount(o.costPerResult, currencyCode)}</b> {o.objective}</span>)}</span>
                       </div>
                     ) : (
-                      <div className={classes.summaryTile}><span className={classes.tileLabel}>{t('metric.costPerResult')}</span><span className={classes.tileValue}>{accountSummary.costPerResult === null ? '—' : formatCurrencyAmount(accountSummary.costPerResult, currencyCode)}</span></div>
+                      <div className={classes.summaryTile} data-tile="cost"><span className={classes.tileLabel}>{t('metric.costPerResult')}</span><span className={classes.tileValue}>{accountSummary.costPerResult === null ? '—' : formatCurrencyAmount(accountSummary.costPerResult, currencyCode)}</span></div>
                     )}
                     {([['delivering', t('delivering'), accountSummary.activeCampaigns], ['not-delivering', t('notDelivering'), accountSummary.pausedCampaigns]] as const).map(([key, label, count]) => (
                       <button
                         key={key}
                         type="button"
                         className={classes.summaryTile}
+                        data-tile={key}
                         data-filter
                         aria-pressed={deliveryFilter === key}
                         disabled={!props.deliveryState.available}
@@ -605,16 +606,17 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                 {activeTab === 'campaigns' ? (
                   <>
                     {props.draftCount ? (
-                      <Button radius="xl" variant="subtle" leftSection={<IconFileText size={16} />} onClick={() => router.push('/campaigns/drafts')}>
+                      <Button radius="xl" variant="subtle" data-action="drafts" leftSection={<IconFileText size={16} />} onClick={() => router.push('/campaigns/drafts')}>
                         {tDrafts('button', { count: props.draftCount })}
                       </Button>
                     ) : null}
-                    <Button radius="xl" variant="default" onClick={() => router.push('/campaigns/quick')}>
+                    <Button radius="xl" variant="default" data-action="quick" onClick={() => router.push('/campaigns/quick')}>
                       {tCampaigns('quickAd')}
                     </Button>
                     <Button
                       leftSection={<IconPlus size={16} />}
                       radius="xl"
+                      data-action="create"
                       className="app-platform-page-action-primary"
                       onClick={() => router.push(`/campaigns/create?platform=${platform.id}`)}
                     >
@@ -625,6 +627,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                   <Button
                     leftSection={<IconPlus size={16} />}
                     radius="xl"
+                    data-action="create"
                     disabled={!layerSummary.createHref}
                     onClick={() => {
                       if (layerSummary.createHref) {
@@ -637,10 +640,12 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                   </Button>
                 )}
 
-                <RefreshOverview label={t('refreshLabel')} updatedAt={props.syncedAt ?? null} onCompleted={() => {
-                  setAdSetsByCampaign({});
-                  setAdsByAdset({});
-                }} />
+                <div data-action="refresh">
+                  <RefreshOverview label={t('refreshLabel')} updatedAt={props.syncedAt ?? null} onCompleted={() => {
+                    setAdSetsByCampaign({});
+                    setAdsByAdset({});
+                  }} />
+                </div>
               </Group>
             </Group>
 
@@ -661,8 +666,8 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                 </Tooltip>
               </Tabs.List>
 
-              <Group gap="sm" wrap="nowrap">
-              <Button variant={allMetrics ? 'light' : 'subtle'} size="xs" radius="xl" onClick={toggleMetrics} aria-pressed={allMetrics}>
+              <Group gap="sm" wrap="nowrap" className={classes.layerBar}>
+              <Button variant={allMetrics ? 'light' : 'subtle'} size="xs" radius="xl" onClick={toggleMetrics} aria-pressed={allMetrics} className={classes.metricsToggle}>
                 {allMetrics ? t('fewerMetrics') : t('moreMetrics')}
               </Button>
               <Text size="sm" c="dimmed" className={classes.layerSummary} aria-live="polite">
