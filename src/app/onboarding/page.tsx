@@ -3,7 +3,6 @@ import { getLoggedInUserOrRedirect } from '@/lib/server/actions/user/account';
 import { getOnboardingInitial } from '@/lib/server/actions/business/onboarding';
 import { countryOptions } from '@/lib/shared/onboarding/countries';
 import { Button, Stack, Text, Title } from '@mantine/core';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import classes from './components/OnboardingProvider.module.css';
 
@@ -21,7 +20,7 @@ export default async function OnboardingPage() {
             <Text c="dimmed">
               {res.error.userMessage || 'We could not load your onboarding workspace.'}
             </Text>
-            <Button component={Link} href="/login" variant="light">
+            <Button component="a" href="/login" variant="light">
               Back to login
             </Button>
           </Stack>

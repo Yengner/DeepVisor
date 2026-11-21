@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 import { Button, Stack, Text, Title } from '@mantine/core';
-import Link from 'next/link';
 import { getOnboardingInitial } from '@/lib/server/actions/business/onboarding';
 import { getLoggedInUserOrRedirect } from '@/lib/server/actions/user/account';
 import PreparationClient from './PreparationClient';
@@ -20,7 +19,7 @@ export default async function PreparingPage() {
             <Text c="dimmed">
               {initial.error.userMessage || 'We could not load your onboarding workspace.'}
             </Text>
-            <Button component={Link} href="/onboarding" variant="light">
+            <Button component="a" href="/onboarding" variant="light">
               Back to onboarding
             </Button>
           </Stack>

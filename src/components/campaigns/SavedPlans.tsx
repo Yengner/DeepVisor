@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Button } from '@mantine/core';
 import { CalendarDays, FilePen } from 'lucide-react';
@@ -54,7 +53,7 @@ export default async function SavedPlans({ businessId, adAccountId }: { business
               </span>
               <span className={classes.muted}>{t('changed', { date: changed(plan.updated_at) })}</span>
             </div>
-            <Button component={Link} href={`/campaigns/rerun?adSet=${encodeURIComponent(plan.adset_external_id)}`} variant="default">{t('edit')}</Button>
+            <Button component="a" href={`/campaigns/rerun?adSet=${encodeURIComponent(plan.adset_external_id)}`} variant="default">{t('edit')}</Button>
           </li>
         ))}
         {draftRows.map(draft => (
@@ -65,7 +64,7 @@ export default async function SavedPlans({ businessId, adAccountId }: { business
               <strong>{draft.title ?? t('newAd')}</strong>
               <span className={classes.muted}>{t('changed', { date: changed(draft.updated_at) })}</span>
             </div>
-            <Button component={Link} href={`/campaigns/create?draft=${encodeURIComponent(draft.id)}`} variant="default">{t('open')}</Button>
+            <Button component="a" href={`/campaigns/create?draft=${encodeURIComponent(draft.id)}`} variant="default">{t('open')}</Button>
           </li>
         ))}
       </ul>

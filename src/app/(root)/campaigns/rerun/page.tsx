@@ -41,7 +41,7 @@ export default async function RerunPage({ searchParams }: { searchParams: Promis
           <h1 className={styles.cardTitle}>{gone ? t('goneTitle') : t('noBudgetTitle')}</h1>
           <p className={styles.message}>{gone ? tSuggestion('error.gone') : tSuggestion('error.noBudget')}</p>
           <div className={styles.actions}>
-            <Button size="md" component={Link} href="/campaigns/quick">{tSuggestion('newAd')}</Button>
+            <Button size="md" component="a" href="/campaigns/quick">{tSuggestion('newAd')}</Button>
           </div>
         </section>
       </Shell>
