@@ -3,7 +3,8 @@
 import { Badge, Button, Card, Table, Text } from '@mantine/core';
 import { IconStarFilled } from '@tabler/icons-react';
 import type { ReportBreakdownRow } from '@/lib/server/reports/types';
-import { formatReportMetric } from '@/lib/shared/reports/metrics';
+import { useLabels } from '@/lib/client/hooks/useLabels';
+import { useReportFormat } from '../useReportFormat';
 import classes from './PerformanceTable.module.css';
 
 interface PerformanceTableProps {
@@ -31,66 +32,6 @@ const REPORT_TABLE_COLUMN_WIDTHS = [
 ] as const;
 const RANKED_REPORT_TABLE_COLUMN_WIDTHS = ['110px', ...REPORT_TABLE_COLUMN_WIDTHS] as const;
 
-function formatDateWindow(startDate: string | null, endDate: string | null) {
-  if (!startDate && !endDate) {
-    return '—';
-  }
-
-  const startLabel = formatReportDate(startDate);
-  const endLabel = formatReportDate(endDate);
-
-  if (startDate && endDate && startDate !== endDate && startLabel && endLabel) {
-    return formatReportDateRange(startDate, endDate);
-  }
-
-  return startLabel ?? endLabel ?? '—';
-}
-
-function formatReportDate(value: string | null) {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
-}
-
-function formatReportDateRange(startDate: string, endDate: string) {
-  const start = new Date(`${startDate}T00:00:00Z`);
-  const end = new Date(`${endDate}T00:00:00Z`);
-
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return `${formatReportDate(startDate) ?? startDate} - ${formatReportDate(endDate) ?? endDate}`;
-  }
-
-  const sameYear = start.getUTCFullYear() === end.getUTCFullYear();
-  const sameMonth = sameYear && start.getUTCMonth() === end.getUTCMonth();
-  const startMonth = start.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
-  const endMonth = end.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
-  const startDay = start.getUTCDate();
-  const endDay = end.getUTCDate();
-  const endYear = end.getUTCFullYear();
-
-  if (sameMonth) {
-    return `${startMonth} ${startDay} - ${endDay}, ${endYear}`;
-  }
-
-  if (sameYear) {
-    return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${endYear}`;
-  }
-
-  return `${formatReportDate(startDate)} - ${formatReportDate(endDate)}`;
-}
-
 function getLevelColor(level: ReportBreakdownRow['level']) {
   if (level === 'campaign') {
     return 'blue';
@@ -103,25 +44,6 @@ function getLevelColor(level: ReportBreakdownRow['level']) {
   return 'teal';
 }
 
-function getContextLines(row: ReportBreakdownRow) {
-  if (row.level === 'campaign') {
-    return row.secondaryContext ? [`Objective: ${row.secondaryContext}`] : [];
-  }
-
-  if (row.level === 'adset') {
-    return [
-      row.primaryContext ? `Campaign: ${row.primaryContext}` : null,
-      row.secondaryContext ? `Goal: ${row.secondaryContext}` : null,
-    ].filter((value): value is string => Boolean(value));
-  }
-
-  return [
-    row.primaryContext ? `Ad set: ${row.primaryContext}` : null,
-    row.secondaryContext ? `Campaign: ${row.secondaryContext}` : null,
-    row.creativeContext ? `Creative: ${row.creativeContext}` : null,
-  ].filter((value): value is string => Boolean(value));
-}
-
 export default function PerformanceTable({
   title,
   rows,
@@ -129,6 +51,23 @@ export default function PerformanceTable({
   hideTitle = false,
   showRanking = false,
 }: PerformanceTableProps) {
+  const f = useReportFormat(), t = f.t, labels = useLabels();
+  const formatReportMetric = f.value;
+  const formatDateWindow = (startDate: string | null, endDate: string | null) =>
+    !startDate && !endDate ? '—' : startDate && endDate && startDate !== endDate ? f.range(startDate, endDate) : f.day(startDate ?? endDate);
+  const objective = (value: string) => /^[A-Z][A-Z0-9_]+$/.test(value) ? labels.objective(value) : value;
+  const getContextLines = (row: ReportBreakdownRow) => {
+    if (row.level === 'campaign') return row.secondaryContext ? [t('table.objective', { value: objective(row.secondaryContext) })] : [];
+    if (row.level === 'adset') return [
+      row.primaryContext ? t('table.campaign', { value: row.primaryContext }) : null,
+      row.secondaryContext ? t('table.goal', { value: objective(row.secondaryContext) }) : null,
+    ].filter((value): value is string => Boolean(value));
+    return [
+      row.primaryContext ? t('table.adset', { value: row.primaryContext }) : null,
+      row.secondaryContext ? t('table.campaign', { value: row.secondaryContext }) : null,
+      row.creativeContext ? t('table.creative', { value: row.creativeContext }) : null,
+    ].filter((value): value is string => Boolean(value));
+  };
   const columnWidths = showRanking ? RANKED_REPORT_TABLE_COLUMN_WIDTHS : REPORT_TABLE_COLUMN_WIDTHS;
   const tableMinWidth = columnWidths.reduce((sum, width) => sum + Number(width.replace('px', '')), 0);
 
@@ -142,7 +81,7 @@ export default function PerformanceTable({
 
       {rows.length === 0 ? (
         <Text ta="center" c="dimmed" py="md" className={classes.mobileEmpty}>
-          No performance rows available for the selected filters.
+          {t('table.empty')}
         </Text>
       ) : (
         <div className={classes.mobileCardList}>
@@ -167,11 +106,11 @@ export default function PerformanceTable({
                         </Badge>
                       ) : null}
                       <Badge variant="light" color={getLevelColor(row.level)} radius="sm">
-                        {row.level}
+                        {t(`level.${row.level}`)}
                       </Badge>
                       {row.status ? (
                         <Badge variant="light" color="gray" radius="sm">
-                          {row.status}
+                          {labels.status(row.status)}
                         </Badge>
                       ) : null}
                     </div>
@@ -190,7 +129,7 @@ export default function PerformanceTable({
                       size="xs"
                       radius="xl"
                     >
-                      {row.drilldownLabel ?? 'Open'}
+                      {row.drilldownLabel ?? t('table.open')}
                     </Button>
                   ) : null}
                 </div>
@@ -207,26 +146,26 @@ export default function PerformanceTable({
 
                 <div className={classes.mobileMetricGrid}>
                   <div>
-                    <Text size="xs" c="dimmed" fw={700}>
-                      Spend
+                    <Text size="sm" c="dimmed" fw={700}>
+                      {f.metric('spend')}
                     </Text>
                     <Text fw={800}>{formatReportMetric(row, "spend", currencyCode)}</Text>
                   </div>
                   <div>
-                    <Text size="xs" c="dimmed" fw={700}>
-                      Results
+                    <Text size="sm" c="dimmed" fw={700}>
+                      {f.metric('conversion')}
                     </Text>
                     <Text fw={800}>{formatReportMetric(row, "conversion", currencyCode)}</Text>
                   </div>
                   <div>
-                    <Text size="xs" c="dimmed" fw={700}>
-                      Cost/result
+                    <Text size="sm" c="dimmed" fw={700}>
+                      {t('table.costResult')}
                     </Text>
                     <Text fw={800}>{formatReportMetric(row, "costPerResult", currencyCode)}</Text>
                   </div>
                   <div>
-                    <Text size="xs" c="dimmed" fw={700}>
-                      CTR
+                    <Text size="sm" c="dimmed" fw={700}>
+                      {f.metric('ctr')}
                     </Text>
                     <Text fw={800}>{formatReportMetric(row, "ctr", currencyCode)}</Text>
                   </div>
@@ -255,20 +194,20 @@ export default function PerformanceTable({
           </colgroup>
           <Table.Thead>
             <Table.Tr>
-              {showRanking ? <Table.Th ta="center">Rank</Table.Th> : null}
-              <Table.Th>Entity</Table.Th>
-              <Table.Th>Level</Table.Th>
-              <Table.Th>Status</Table.Th>
-              <Table.Th>Context</Table.Th>
-              <Table.Th>Window</Table.Th>
-              <Table.Th ta="right">Spend</Table.Th>
-              <Table.Th ta="right">Results</Table.Th>
-              <Table.Th ta="right">Impressions</Table.Th>
-              <Table.Th ta="right">Clicks</Table.Th>
-              <Table.Th ta="right">CTR</Table.Th>
-              <Table.Th ta="right">CPC</Table.Th>
-              <Table.Th ta="right">Cost / Result</Table.Th>
-              <Table.Th ta="right">Report</Table.Th>
+              {showRanking ? <Table.Th ta="center">{t('table.rank')}</Table.Th> : null}
+              <Table.Th>{t('table.entity')}</Table.Th>
+              <Table.Th>{t('table.level')}</Table.Th>
+              <Table.Th>{t('table.status')}</Table.Th>
+              <Table.Th>{t('table.context')}</Table.Th>
+              <Table.Th>{t('table.window')}</Table.Th>
+              <Table.Th ta="right">{f.metric('spend')}</Table.Th>
+              <Table.Th ta="right">{f.metric('conversion')}</Table.Th>
+              <Table.Th ta="right">{f.metric('impressions')}</Table.Th>
+              <Table.Th ta="right">{f.metric('clicks')}</Table.Th>
+              <Table.Th ta="right">{f.metric('ctr')}</Table.Th>
+              <Table.Th ta="right">{f.metric('cpc')}</Table.Th>
+              <Table.Th ta="right">{f.metric('costPerResult')}</Table.Th>
+              <Table.Th ta="right">{t('table.report')}</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -276,7 +215,7 @@ export default function PerformanceTable({
               <Table.Tr>
                 <Table.Td colSpan={showRanking ? 14 : 13}>
                   <Text ta="center" c="dimmed" py="md">
-                    No performance rows available for the selected filters.
+                    {t('table.empty')}
                   </Text>
                 </Table.Td>
               </Table.Tr>
@@ -307,13 +246,13 @@ export default function PerformanceTable({
                     </Table.Td>
                     <Table.Td>
                       <Badge variant="light" color={getLevelColor(row.level)}>
-                        {row.level}
+                        {t(`level.${row.level}`)}
                       </Badge>
                     </Table.Td>
                     <Table.Td>
                       {row.status ? (
                         <Badge variant="light" color="gray">
-                          {row.status}
+                          {labels.status(row.status)}
                         </Badge>
                       ) : (
                         '—'
@@ -353,7 +292,7 @@ export default function PerformanceTable({
                           size="xs"
                           radius="xl"
                         >
-                          {row.drilldownLabel ?? 'Open'}
+                          {row.drilldownLabel ?? t('table.open')}
                         </Button>
                       ) : (
                         <Text size="sm" c="dimmed">

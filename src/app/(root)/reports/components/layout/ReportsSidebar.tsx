@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button, Card, Group, MultiSelect, Select, Stack, Text } from '@mantine/core';
 import type { ReportFilterOptions, ReportQueryInput } from '@/lib/server/reports/types';
 
@@ -15,6 +16,7 @@ export default function ReportsSidebar({
   filterOptions,
   onUpdate,
 }: ReportsSidebarProps) {
+  const t = useTranslations('reports.filters');
   const [draftPlatformIntegrationId, setDraftPlatformIntegrationId] = useState<string | null>(
     query.platformIntegrationId ?? null
   );
@@ -70,15 +72,15 @@ export default function ReportsSidebar({
     <Card withBorder radius="lg" p="md" h="fit-content">
       <Stack gap="md">
         <div>
-          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-            Filters
+          <Text size="sm" c="dimmed" fw={700}>
+            {t('eyebrow')}
           </Text>
-          <Text fw={700}>Reporting scope</Text>
+          <Text fw={700}>{t('scope')}</Text>
         </div>
 
         <Select
-          label="Platform"
-          placeholder="All platforms"
+          label={t('platform')}
+          placeholder={t('allPlatforms')}
           searchable
           clearable
           value={draftPlatformIntegrationId}
@@ -96,8 +98,8 @@ export default function ReportsSidebar({
         />
 
         <MultiSelect
-          label="Ad accounts"
-          placeholder="All ad accounts"
+          label={t('accounts')}
+          placeholder={t('allAccounts')}
           searchable
           value={draftAdAccountIds}
           data={adAccountOptions.map((option) => ({
@@ -113,8 +115,8 @@ export default function ReportsSidebar({
         />
 
         <MultiSelect
-          label="Campaigns"
-          placeholder="All campaigns"
+          label={t('campaigns')}
+          placeholder={t('allCampaigns')}
           searchable
           value={draftCampaignIds}
           data={campaignOptions.map((option) => ({
@@ -129,8 +131,8 @@ export default function ReportsSidebar({
         />
 
         <MultiSelect
-          label="Ad sets"
-          placeholder="All ad sets"
+          label={t('adsets')}
+          placeholder={t('allAdsets')}
           searchable
           value={draftAdsetIds}
           data={adsetOptions.map((option) => ({
@@ -144,8 +146,8 @@ export default function ReportsSidebar({
         />
 
         <MultiSelect
-          label="Ads"
-          placeholder="All ads"
+          label={t('ads')}
+          placeholder={t('allAds')}
           searchable
           value={draftAdIds}
           data={adOptions.map((option) => ({
@@ -167,7 +169,7 @@ export default function ReportsSidebar({
               setDraftAdIds([]);
             }}
           >
-            Clear
+            {t('clear')}
           </Button>
           <Button
             radius="xl"
@@ -205,7 +207,7 @@ export default function ReportsSidebar({
               });
             }}
           >
-            Apply filters
+            {t('apply')}
           </Button>
         </Group>
       </Stack>

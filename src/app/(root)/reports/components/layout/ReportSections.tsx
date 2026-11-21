@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import classes from '../Workspace.module.css';
 export const REPORT_SECTIONS = [
   ['performance', 'Overview'], ['audience', 'Audience'], ['geography', 'Geography'],
@@ -26,6 +27,7 @@ export function useReportSection() {
 }
 /** `hidden` sections have nothing to show for this report (e.g. no saved findings) and get no tab. */
 export function ReportSections({ section, onSelect, hidden = [] }: { section: ReportSection; onSelect: (section: ReportSection) => void; hidden?: ReportSection[] }) {
+  const t = useTranslations('reports.sections');
   const navigation = useRef<HTMLElement>(null);
   useEffect(() => {
     const container = navigation.current;
@@ -36,8 +38,8 @@ export function ReportSections({ section, onSelect, hidden = [] }: { section: Re
     if (selected.left < bounds.left) container.scrollLeft -= bounds.left - selected.left;
     else if (selected.right > bounds.right) container.scrollLeft += selected.right - bounds.right;
   }, [section]);
-  return <nav ref={navigation} aria-label="Report sections" className={classes.navigation}>
-    {REPORT_SECTIONS.filter(([key]) => !hidden.includes(key)).map(([key, label]) => <button key={key} type="button"
-      aria-current={section === key ? 'page' : undefined} onClick={() => onSelect(key)}>{label}</button>)}
+  return <nav ref={navigation} aria-label={t('label')} className={classes.navigation}>
+    {REPORT_SECTIONS.filter(([key]) => !hidden.includes(key)).map(([key]) => <button key={key} type="button"
+      aria-current={section === key ? 'page' : undefined} onClick={() => onSelect(key)}>{t(key)}</button>)}
   </nav>;
 }
