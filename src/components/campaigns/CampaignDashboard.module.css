@@ -334,19 +334,12 @@
   }
 }
 
-/* Delivery (green accent) and selection (blue tint) are distinct states. Delivery reflects the
-   latest saved Meta status, independent of selection and historical spend. */
-.desktopDataTable tr[data-delivering] > td:first-child {
-  box-shadow: inset 3px 0 var(--dv-success, #226443);
-}
+/* Delivery shows as the green "Delivering" chip in the status column; selection is the blue tint. */
 .desktopDataTable tr[data-selected] > td {
   background: var(--dv-primary-soft) !important;
 }
 .desktopDataTable tr[data-selected] > td:first-child {
   box-shadow: inset 3px 0 var(--dv-primary);
-}
-.mobileEntityCard[data-delivering] {
-  box-shadow: inset 3px 0 var(--dv-success, #226443), var(--platform-card-shadow);
 }
 .mobileEntityCard[data-selected] {
   border-color: var(--dv-primary);
