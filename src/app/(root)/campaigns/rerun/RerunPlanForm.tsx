@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { ActionIcon, Alert, Button, NumberInput, SegmentedControl } from '@mantine/core';
-import { CalendarDays, Eye, Minus, Plus, TriangleAlert } from 'lucide-react';
+import { CalendarDays, CircleCheck, Eye, Minus, Plus, TriangleAlert } from 'lucide-react';
 import { MediaImage } from '@/components/campaigns/exploration/AdvertisingExplorer';
 import ProjectionChart from '@/components/insights/ProjectionChart';
-import { prepareRestartDraftAction } from '@/lib/server/actions/suggestions/restart';
+import { discardPlanAction, savePlanAction } from '@/lib/server/actions/suggestions/plans';
 import { STATS_DAYS } from '@/lib/shared/suggestions/idle';
 import { USUAL_DAYS } from '@/lib/shared/suggestions/lastRun';
 import { RERUN_DAY_CHOICES, RERUN_MAX_DAYS, RERUN_MIN_DAILY, RERUN_MIN_DAYS, rerunPlan, type RerunPlanData } from '@/lib/shared/suggestions/rerun';
@@ -17,8 +17,9 @@ const OTHER = 'other';
 
 /**
  * "Run this ad again": the ad, then the plan the owner controls (daily budget and days), with the
- * dates, total and an estimate that follow every change, then one main button that prepares a
- * paused draft. Rules only (`rerunPlan`), the owner's own history, nothing sent to Meta.
+ * dates, total and an estimate that follow every change, then one main button that saves the plan
+ * for this ad set (one per ad set; saving again updates it). Rules only (`rerunPlan`), the owner's
+ * own history; saved in DeepVisor only, nothing sent to Meta.
  */
 export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanData; canPrepare: boolean }) {
   const t = useTranslations('rerun');
@@ -27,11 +28,15 @@ export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanDat
   const locale = useLocale();
   const router = useRouter();
   const intl = locale === 'es' ? 'es-US' : 'en-US';
-  // Starts from what the ad did last time (`rerunDefaults`); the owner can change both.
-  const [budget, setBudget] = useState<number>(data.start.dailyBudget);
-  const [days, setDays] = useState<number>(data.start.days);
-  const [customDays, setCustomDays] = useState(!(RERUN_DAY_CHOICES as readonly number[]).includes(data.start.days));
+  // Opens with the saved plan, or else what the ad did last time (`rerunDefaults`).
+  const initial = data.saved ?? data.start;
+  const [saved, setSaved] = useState(data.saved);
+  const [budget, setBudget] = useState<number>(initial.dailyBudget);
+  const [days, setDays] = useState<number>(initial.days);
+  const [customDays, setCustomDays] = useState(!(RERUN_DAY_CHOICES as readonly number[]).includes(initial.days));
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [pending, start] = useTransition();
   const plan = rerunPlan(data, budget, days);
 
@@ -46,12 +51,30 @@ export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanDat
   const kind = data.resultKind;
   const dash = '—';
 
-  const prepare = () => start(async () => {
-    setError(null);
-    const result = await prepareRestartDraftAction(data.adSetId, { dailyBudget: budget, days });
-    if (!result.success) { setError(result.error?.userMessage ?? tSuggestion('error.failed')); return; }
-    if (result.data) router.push(result.data.href);
+  const changed = !saved || saved.dailyBudget !== budget || saved.days !== days;
+  const edit = <T,>(set: (value: T) => void) => (value: T) => { set(value); setNotice(null); setError(null); };
+
+  const save = () => start(async () => {
+    setError(null); setNotice(null);
+    const result = await savePlanAction(data.adSetId, { dailyBudget: budget, days, version: saved?.version ?? null });
+    if (!result.success) { setError(result.error?.userMessage ?? t('error.failed')); return; }
+    const plan = result.data;
+    setSaved({ dailyBudget: plan.dailyBudget, days: plan.days, version: plan.version, updatedAt: plan.updatedAt });
+    setNotice(t('savedOk'));
+    router.refresh();
   });
+
+  const discard = () => start(async () => {
+    setError(null); setNotice(null);
+    const result = await discardPlanAction(data.adSetId);
+    if (!result.success) { setError(result.error?.userMessage ?? t('error.failed')); return; }
+    setSaved(null); setConfirmDiscard(false);
+    setBudget(data.start.dailyBudget); setDays(data.start.days);
+    setCustomDays(!(RERUN_DAY_CHOICES as readonly number[]).includes(data.start.days));
+    setNotice(t('discarded'));
+    router.refresh();
+  });
+  const savedOn = (value: string) => new Intl.DateTimeFormat(intl, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(value));
 
   const problem = plan.problem === 'budget-low' ? t('budgetLow', { min: money(RERUN_MIN_DAILY) })
     : plan.problem === 'budget-high' ? t('budgetHigh', { max: money(data.maxDaily) })
@@ -95,19 +118,21 @@ export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanDat
       <section className={styles.card} aria-labelledby="rerun-plan">
         <div className={styles.planHead}>
           <h2 id="rerun-plan" className={styles.cardTitle}>{t('planTitle')}</h2>
-          <p className={styles.startsFrom}>{t(`from.${data.start.budgetSource}`)}, {t(`fromDays.${data.start.daysSource}`)}</p>
+          <p className={styles.startsFrom}>
+            {saved ? t('savedOn', { date: savedOn(saved.updatedAt) }) : <>{t(`from.${data.start.budgetSource}`)}, {t(`fromDays.${data.start.daysSource}`)}</>}
+          </p>
         </div>
 
         <div className={styles.field}>
           <label htmlFor="rerun-budget" className={styles.label}>{t('budget')}</label>
           <div className={styles.stepper}>
             <ActionIcon size={48} variant="default" aria-label={t('less')} disabled={!canPrepare || budget - step < RERUN_MIN_DAILY}
-              onClick={() => setBudget(b => Math.max(RERUN_MIN_DAILY, Math.round((b - step) * 100) / 100))}><Minus size={20} /></ActionIcon>
+              onClick={() => edit(setBudget)(Math.max(RERUN_MIN_DAILY, Math.round((budget - step) * 100) / 100))}><Minus size={20} /></ActionIcon>
             <NumberInput id="rerun-budget" aria-label={t('budget')} value={budget} hideControls min={RERUN_MIN_DAILY} max={data.maxDaily} decimalScale={2}
               prefix={symbol.length === 1 ? symbol : undefined} suffix={symbol.length === 1 ? undefined : ` ${symbol}`} thousandSeparator="," inputMode="decimal"
-              disabled={!canPrepare} onChange={value => setBudget(typeof value === 'number' ? value : Number.NaN)} classNames={{ input: styles.budgetInput }} />
+              disabled={!canPrepare} onChange={value => edit(setBudget)(typeof value === 'number' ? value : Number.NaN)} classNames={{ input: styles.budgetInput }} />
             <ActionIcon size={48} variant="default" aria-label={t('more')} disabled={!canPrepare || budget + step > data.maxDaily}
-              onClick={() => setBudget(b => Math.min(data.maxDaily, Math.round(((Number.isFinite(b) ? b : 0) + step) * 100) / 100))}><Plus size={20} /></ActionIcon>
+              onClick={() => edit(setBudget)(Math.min(data.maxDaily, Math.round(((Number.isFinite(budget) ? budget : 0) + step) * 100) / 100))}><Plus size={20} /></ActionIcon>
           </div>
         </div>
 
@@ -118,11 +143,11 @@ export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanDat
             data={[...RERUN_DAY_CHOICES.map(n => ({ value: String(n), label: t('dayChoice', { count: n }) })), { value: OTHER, label: t('other') }]}
             onChange={value => {
               if (value === OTHER) { setCustomDays(true); return; }
-              setCustomDays(false); setDays(Number(value));
+              setCustomDays(false); edit(setDays)(Number(value));
             }} />
           {customDays && (
             <NumberInput label={t('customDays')} value={days} min={RERUN_MIN_DAYS} max={RERUN_MAX_DAYS} allowDecimal={false} disabled={!canPrepare}
-              onChange={value => setDays(typeof value === 'number' ? value : Number.NaN)} className={styles.customDays} />
+              onChange={value => edit(setDays)(typeof value === 'number' ? value : Number.NaN)} className={styles.customDays} />
           )}
         </div>
 
@@ -162,14 +187,36 @@ export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanDat
         {!canPrepare && <Alert color="gray" variant="light">{t('readOnly')}</Alert>}
         {error && <Alert color="red" variant="light" role="alert">{error}</Alert>}
 
+        {notice && (
+          <div className={styles.saved} role="status">
+            <CircleCheck size={20} aria-hidden="true" />
+            <span>{notice}</span>
+            <Link href="/campaigns#saved-plans" className={styles.savedLink}>{t('seeSaved')}</Link>
+          </div>
+        )}
+
+        {confirmDiscard ? (
+          <div className={styles.confirm} role="alertdialog" aria-labelledby="discard-ask">
+            <p id="discard-ask">{t('discardAsk')}</p>
+            <div className={styles.actions}>
+              <Button size="md" color="red" variant="outline" onClick={discard} loading={pending}>{t('discardYes')}</Button>
+              <Button size="md" variant="default" onClick={() => setConfirmDiscard(false)} disabled={pending}>{t('keep')}</Button>
+            </div>
+          </div>
+        ) : null}
+
         <div className={styles.actions}>
-          <Button size="md" onClick={canPrepare && !blocked ? prepare : undefined} loading={pending} disabled={!canPrepare || blocked}>{t('prepare')}</Button>
+          <Button size="md" onClick={canPrepare && !blocked && changed ? save : undefined} loading={pending && !confirmDiscard}
+            disabled={!canPrepare || blocked || !changed}>{saved ? t('saveChanges') : t('save')}</Button>
           <Button size="md" variant="default" component={Link}
             href={`/campaigns/quick?days=${validQuickDays(days)}${Number.isFinite(budget) && budget >= RERUN_MIN_DAILY ? `&budget=${budget}` : ''}`}>
             {tSuggestion('newAd')}
           </Button>
+          {saved && canPrepare && !confirmDiscard && (
+            <Button size="md" variant="subtle" color="red" onClick={() => setConfirmDiscard(true)} disabled={pending}>{t('discard')}</Button>
+          )}
         </div>
-        <p className={styles.reassure}><Eye size={16} aria-hidden="true" />{tSuggestion('review')}</p>
+        <p className={styles.reassure}><Eye size={16} aria-hidden="true" />{t('reassureSaved')}</p>
       </section>
     </>
   );

@@ -6396,6 +6396,68 @@ export type Database = {
           },
         ]
       }
+      ad_set_plans: {
+        Row: {
+          ad_account_id: string
+          adset_external_id: string
+          adset_name: string | null
+          business_id: string
+          campaign_external_id: string
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          daily_budget: number
+          days: number
+          end_day: string
+          id: string
+          start_day: string
+          updated_at: string
+          updated_by_user_id: string | null
+          version: number
+        }
+        Insert: {
+          ad_account_id: string
+          adset_external_id: string
+          adset_name?: string | null
+          business_id: string
+          campaign_external_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          currency_code: string
+          daily_budget: number
+          days: number
+          end_day: string
+          id?: string
+          start_day: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
+        }
+        Update: {
+          ad_account_id?: string
+          adset_external_id?: string
+          adset_name?: string | null
+          business_id?: string
+          campaign_external_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          currency_code?: string
+          daily_budget?: number
+          days?: number
+          end_day?: string
+          id?: string
+          start_day?: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          { foreignKeyName: "ad_set_plans_ad_account_id_fkey"; columns: ["ad_account_id"]; isOneToOne: false; referencedRelation: "ad_accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "ad_set_plans_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "business_profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "ad_set_plans_created_by_user_id_fkey"; columns: ["created_by_user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
+          { foreignKeyName: "ad_set_plans_updated_by_user_id_fkey"; columns: ["updated_by_user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
+        ]
+      }
       adset_dims: {
         Row: {
           ad_account_id: string | null

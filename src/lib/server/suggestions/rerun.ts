@@ -4,6 +4,7 @@ import { getMonthlyBudgetUpperBound, MAX_DAILY_CAMPAIGN_BUDGET } from '@/lib/ser
 import { dayIn } from '@/lib/shared/time/zone';
 import type { RerunPlanData } from '@/lib/shared/suggestions/rerun';
 import { restartSourceDetails } from './idle';
+import { getSavedPlan } from './plans';
 
 const META_ID = /^\d{1,30}$/;
 
@@ -49,12 +50,14 @@ export async function loadRerunPlan(scope: AssistantAccess, adSetId: unknown): P
   const zone = scope.account.timezone, currency = scope.account.currency_code;
   if (!zone || !currency) return { kind: 'noBudget' };
   const today = dayIn(zone);
-  const [{ setup, run, start, history, media }, profile] = await Promise.all([
+  const [{ setup, run, start, history, media }, profile, saved] = await Promise.all([
     restartSourceDetails(scope.db, { businessId: scope.businessId, accountId: scope.account.id, currency, today }, source),
     scope.db.from('business_profiles').select('monthly_budget').eq('id', scope.businessId).maybeSingle(),
+    getSavedPlan(scope, source.adSetId),
   ]);
   if (profile.error) throw profile.error;
-  if (start.dailyBudget === null || start.budgetSource === null) return { kind: 'noBudget' };
+  // A saved plan always opens, even when history alone could not suggest a budget.
+  if ((start.dailyBudget === null || start.budgetSource === null) && !saved) return { kind: 'noBudget' };
   return {
     kind: 'ready',
     data: {
@@ -65,9 +68,10 @@ export async function loadRerunPlan(scope: AssistantAccess, adSetId: unknown): P
       resultKind: history.result?.kind ?? 'results',
       currency,
       today,
-      start: { dailyBudget: start.dailyBudget, days: start.days, budgetSource: start.budgetSource, daysSource: start.daysSource },
+      start: { dailyBudget: start.dailyBudget ?? saved!.dailyBudget, days: start.days, budgetSource: start.budgetSource ?? 'daily', daysSource: start.daysSource },
       setup,
       run,
+      saved: saved && { dailyBudget: saved.dailyBudget, days: saved.days, version: saved.version, updatedAt: saved.updatedAt },
       weeks: history.weeks,
       monthlyCap: getMonthlyBudgetUpperBound(profile.data?.monthly_budget),
       maxDaily: MAX_DAILY_CAMPAIGN_BUDGET,

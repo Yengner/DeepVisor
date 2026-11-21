@@ -878,7 +878,6 @@
     "budgetLow": "Enter at least {min} a day.",
     "budgetHigh": "Enter no more than {max} a day.",
     "daysInvalid": "Choose between 1 and 90 days.",
-    "prepare": "Prepare draft",
     "readOnly": "Only owners and admins can prepare ads.",
     "goneTitle": "This ad can't be copied",
     "noBudgetTitle": "There is no budget to copy",
@@ -899,6 +898,35 @@
       "actual": "for as many days as it ran last time.",
       "owner": "for your usual number of days.",
       "usual": "for one week."
+    },
+    "save": "Save plan",
+    "saveChanges": "Save changes",
+    "savedOk": "Plan saved. Nothing was sent to Meta.",
+    "savedOn": "Your saved plan, last changed {date}.",
+    "discard": "Discard plan",
+    "discardAsk": "Discard this saved plan?",
+    "discardYes": "Yes, discard",
+    "keep": "Keep it",
+    "discarded": "Plan discarded.",
+    "seeSaved": "See saved plans",
+    "reassureSaved": "Saved in DeepVisor only. Nothing is sent to Meta.",
+    "error": {
+      "failed": "The plan could not be saved. Please try again.",
+      "forbidden": "Only owners and admins can save plans.",
+      "gone": "That ad is no longer available.",
+      "account": "Select your Meta ad account first.",
+      "conflict": "This plan was changed in another window. Reload the page to see the latest."
     }
+  },
+  "savedPlans": {
+    "title": "Saved plans",
+    "lead": "Kept in DeepVisor only. Nothing is sent to Meta.",
+    "plan": "{budget} a day × {days, plural, one {# day} other {# days}}",
+    "runs": "{start} – {end}",
+    "changed": "Last changed {date}",
+    "edit": "Edit",
+    "open": "Open",
+    "rerun": "Run again",
+    "newAd": "New ad draft"
   }
 }

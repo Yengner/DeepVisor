@@ -31,6 +31,8 @@ export type RerunPlanData = {
   /** How the ad was set up and what it actually did last time, shown to the owner. */
   setup: BudgetSetup;
   run: LastRun | null;
+  /** The plan already saved for this ad set (DeepVisor only), which the page opens with. */
+  saved: { dailyBudget: number; days: number; version: number; updatedAt: string } | null;
   weeks: WeekResult[];
   /** Top of the saved monthly budget range, when one is saved; drafts above the limit are refused. */
   monthlyCap: number | null;
@@ -51,6 +53,12 @@ export type RerunPlan = {
   problem: 'budget-low' | 'budget-high' | 'days' | 'over-limit' | null;
 };
 
+/** Starts the day after `today` (account-local) and runs whole days; last day inclusive. */
+export function planDates(today: string, days: number) {
+  const startDay = shiftReportDay(today, 1);
+  return { startDay, lastDay: shiftReportDay(startDay, Math.max(validDays(days) ? days : 1, 1) - 1) };
+}
+
 export function validDays(days: number) {
   return Number.isInteger(days) && days >= RERUN_MIN_DAYS && days <= RERUN_MAX_DAYS;
 }
@@ -59,8 +67,7 @@ export function validDays(days: number) {
 export function rerunPlan(data: Pick<RerunPlanData, 'today' | 'start' | 'weeks' | 'monthlyCap' | 'maxDaily'>, dailyBudget: number, days: number): RerunPlan {
   const daysOk = validDays(days);
   const budgetOk = Number.isFinite(dailyBudget) && dailyBudget >= RERUN_MIN_DAILY && dailyBudget <= data.maxDaily;
-  const startDay = shiftReportDay(data.today, 1);
-  const lastDay = shiftReportDay(startDay, Math.max(daysOk ? days : 1, 1) - 1);
+  const { startDay, lastDay } = planDates(data.today, days);
   const total = budgetOk && daysOk ? dailyBudget * days : 0;
   const limit = data.monthlyCap !== null && daysOk ? profileSpendLimit(data.monthlyCap, days) : null;
   const overLimit = limit !== null && total > limit;

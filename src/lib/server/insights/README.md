@@ -90,10 +90,15 @@ stretch within 14 days, the popup carries `payload.suggestion` (source key `sugg
   The owner can change the daily budget (− / +) and days (3/7/14/other, 1–90); the page shows the dates (starting tomorrow, account
   timezone), "about <total>", the live estimate (`rerunPlan` → `restartForecast`, same chart), a note
   when the budget is over 2× last time, and the saved-monthly-budget limit (`profileSpendLimit`, the
-  draft builder's own rule) before the button. "Prepare draft" (`prepareRestartDraftAction` with
-  `{ dailyBudget, days }`, re-validated) makes a paused, review-required Run again draft copying the
-  latest ad. Rules only, no AI. "Try a new photo or video" opens Quick ad with `?budget=&days=`
-  prefilled. Nothing is published or sent to Meta.
+  draft builder's own rule) before the button. "Save plan" (`savePlanAction`, re-validated, owner/
+  admin) stores it in `ad_set_plans`, **one plan per ad set** (unique account + ad set): saving
+  again updates the same row with an optimistic `version`, and "Discard plan" deletes it. The page
+  opens with the saved plan when there is one. Saved plans and new-ad drafts are listed at the top
+  of Campaigns (`components/campaigns/SavedPlans.tsx`, `/campaigns#saved-plans`). Kept in DeepVisor
+  only: nothing is published or sent to Meta. When Meta writes are allowed later, a plan for the
+  same ad set is meant to update that ad set in place (budget, end date) instead of creating a
+  copy. Rules only, no AI. "Try a new photo or video" opens Quick ad with `?budget=&days=`
+  prefilled.
 
 **First look (welcome).** A person's first popup for an ad account (no `insight_reviews` row yet;
 `present_insights` creates it) carries `payload.welcome` (source key `welcome:<kind>`), chosen by
