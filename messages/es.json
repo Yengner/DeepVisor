@@ -48,7 +48,6 @@
       "costPerResult": "Gasto dividido entre el número de la izquierda. No disponible cuando ese número es cero o desconocido."
     },
     "about": "Acerca de {label}",
-    "overDays": "{label} en los últimos {days} días",
     "fromApps": "De {apps}.",
     "more": "Más",
     "moreSelected": "Más: {label}",
@@ -264,9 +263,6 @@
     "placeholder": "p. ej. 5",
     "save": "Guardar",
     "notSure": "No lo sé",
-    "title": "Citas de tus anuncios",
-    "summary": "Reportaste <b>{bookings}</b> {bookings, plural, one {cita} other {citas}} en {answered} de las últimas {weeks} semanas con anuncios",
-    "cost": " · aproximadamente <b>{cost}</b> por cita",
     "error": {
       "wholeNumber": "Escribe un número entero, como 0 o 5.",
       "invalid": "Revisa el número e inténtalo de nuevo.",
@@ -278,7 +274,9 @@
       "failed": "No se pudo guardar tu respuesta. Inténtalo de nuevo.",
       "retry": "Inténtalo de nuevo."
     },
-    "thanks": "Gracias, guardado. Actualiza tu costo por cita."
+    "thanks": "Gracias, guardado. Actualiza tu costo por cita.",
+    "note": "Reportaste {bookings, plural, one {# cita} other {# citas}} en {answered} de las últimas {weeks} semanas con anuncios.",
+    "noteCost": " Unos {cost} por cita."
   },
   "language": {
     "title": "Idioma",
@@ -2877,5 +2875,19 @@
     "found": "Hasta ahora se encontraron {found}",
     "leaveNote": "Puedes salir de esta página. Tu panel se llenará cuando termine.",
     "stalled": "Esto está tardando más de lo normal. Sigue en marcha: recarga esta página en unos minutos."
+  },
+  "dashboardInfo": {
+    "label": "Sobre estos números",
+    "live": "Hoy va en vivo. Los números se actualizan cuando Meta reporta la entrega.",
+    "updated": "Actualizado {time}",
+    "storedSync": "Última sincronización guardada: {time}.",
+    "comparison": "De los {days} días anteriores, solo {observed} tienen datos, así que las comparaciones son limitadas. Los días sin datos no se cuentan como cero.",
+    "attribution": "Meta puede ajustar los resultados después de reportarlos.",
+    "timezone": "Las horas están en {zone}.",
+    "recover": "Recuperar datos guardados de Meta",
+    "connection": "Ajustes de conexión",
+    "savedData": "Mostrando números guardados. Los datos en vivo no están disponibles ahora.",
+    "platformUnavailable": "Los números de esta plataforma no están disponibles ahora.",
+    "stale": "Estos números son de {time}."
   }
 }

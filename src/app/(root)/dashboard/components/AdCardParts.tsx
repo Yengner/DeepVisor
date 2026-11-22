@@ -15,32 +15,32 @@ function urgency(daysLeft: number) {
   return daysLeft <= 2 ? "urgent" : daysLeft <= 7 ? "soon" : "calm";
 }
 
-/** The countdown is the card's headline: days left, a start→end bar, and both dates. */
+/**
+ * When the ad set ends. Close to the end (a week or less) the countdown is the card's headline,
+ * with a start→end bar and both dates. Further out, or with no end date, it is one quiet line:
+ * there is nothing to act on yet.
+ */
 export function RunWindow({ schedule }: { schedule?: AdSchedule }) {
   if (!schedule || (!schedule.start && !schedule.end)) return null;
   const { startDay, endDay, daysLeft, elapsedPercent, daysRunning } = schedule;
 
   if (schedule.ended && endDay) {
-    return (
-      <div className={classes.run} data-tone="open">
-        <p className={classes.count}><strong>Ended</strong></p>
-        <p className={classes.dates}>{startDay ? <span>{day(startDay)}</span> : <span />}<span>{day(endDay)}</span></p>
-      </div>
-    );
+    return <p className={classes.runLine}><strong>Ended</strong> {day(endDay)}</p>;
   }
 
   if (endDay === null || daysLeft === null) {
     return (
-      <div className={classes.run} data-tone="open">
-        <p className={classes.count}>
-          {daysRunning !== null ? <><strong>{daysRunning}</strong> {daysRunning === 1 ? "day" : "days"} running</> : <strong>Running</strong>}
-        </p>
-        <p className={classes.dates}>{startDay ? `Started ${day(startDay)}` : null}<span>No end date</span></p>
-      </div>
+      <p className={classes.runLine}>
+        {daysRunning !== null ? <><strong>{daysRunning}</strong> {daysRunning === 1 ? "day" : "days"} running</> : <strong>Running</strong>}
+        {" · No end date"}
+      </p>
     );
   }
 
   const tone = urgency(daysLeft);
+  if (tone === "calm") {
+    return <p className={classes.runLine}><strong>{daysLeft}</strong> {daysLeft === 1 ? "day" : "days"} left · Ends {day(endDay)}</p>;
+  }
   const label = daysLeft === 0 ? "Ends today" : `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`;
   return (
     <div className={classes.run} data-tone={tone}>
@@ -68,13 +68,16 @@ const learningText: Record<LearningProgress["tone"], (p: LearningProgress) => st
   unknown: () => "Unavailable",
 };
 
-/** Meta's learning phase as one thin bar. */
+/**
+ * Meta's learning phase as one thin bar, only while it is still learning or limited. A finished or
+ * unknown phase gives the owner nothing to do, so it takes no space.
+ */
 export function LearningBar({ learning }: { learning?: LearningProgress }) {
-  if (!learning) return null;
+  if (!learning || (learning.tone !== "learning" && learning.tone !== "limited")) return null;
   const value = learningText[learning.tone](learning);
   return (
     <div className={classes.learning} data-tone={learning.tone}>
-      <p><span>Meta learning</span><strong>{value}</strong></p>
+      <p><span>Learning</span><strong>{value}</strong></p>
       <div className={classes.thin} role="meter" aria-label={`Meta learning: ${value}`}
         aria-valuemin={0} aria-valuemax={100} aria-valuenow={learning.percent ?? undefined}
         aria-valuetext={learning.percent === null ? value : `${learning.percent}%`} data-empty={learning.percent === null}>
@@ -84,29 +87,30 @@ export function LearningBar({ learning }: { learning?: LearningProgress }) {
   );
 }
 
-const kpis = [
-  { key: "results" },
-  { key: "costPerResult" },
-  { key: "spend" },
-  { key: "ctr" },
-] as const;
-
-/** Four quick numbers. Missing values show as a dash, never zero. */
+/** Three numbers: results lead, then cost and spend. Missing values show as a dash, never zero. */
 export function QuickStats({ metrics, deltas, currency, comparison, result }: {
   metrics: Metrics; deltas: Partial<Record<keyof Metrics, Delta>>; currency: string | null; comparison: string | null;
   /** Names the results (e.g. WhatsApp conversations); absent means "Results". */
   result?: ResultDefinition;
 }) {
   const { labels, help, short } = useMetricLabels(result);
+  const value = (key: "results" | "costPerResult" | "spend") => (metrics[key] === null ? "—" : metricValue(key, metrics[key], currency, true));
   return (
     <dl className={classes.stats}>
-      {kpis.map(({ key }) => (
-        <div key={key}>
-          <dt title={key === "results" ? help.results : undefined}>{key === "results" ? short : labels[key]}</dt>
-          <dd>{metrics[key] === null ? "—" : metricValue(key, metrics[key], currency, key !== "ctr")}</dd>
-          {(key === "results" || key === "costPerResult") && <MetricDelta change={deltas[key]} description={comparison} />}
-        </div>
-      ))}
+      <div className={classes.statMain}>
+        <dt title={help.results}>{short}</dt>
+        <dd>{value("results")}</dd>
+        <MetricDelta change={deltas.results} description={comparison} />
+      </div>
+      <div>
+        <dt>{labels.costPerResult}</dt>
+        <dd>{value("costPerResult")}</dd>
+        <MetricDelta change={deltas.costPerResult} description={comparison} />
+      </div>
+      <div>
+        <dt>{labels.spend}</dt>
+        <dd>{value("spend")}</dd>
+      </div>
     </dl>
   );
 }

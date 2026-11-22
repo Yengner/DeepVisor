@@ -2,6 +2,7 @@ import { agencyEnabled } from '@/lib/server/agency/enabled';
 import { attentionText } from '@/lib/server/insights/attentionText';
 import { comparisons } from '@/lib/server/dashboard/insights/comparisons';
 import { cache, Suspense } from "react";
+import { getLocale, getTranslations } from "next-intl/server";
 import Link from "next/link";
 import {
   IconArrowRight,
@@ -27,7 +28,9 @@ import {
 import type { ControlPerformance } from "@/lib/server/dashboard/overview/controlModel";
 import type { Period } from "@/lib/server/dashboard/overview/types";
 import { loadExploration } from "@/lib/server/campaigns/exploration/load";
-import { PeriodControl, RefreshOverview } from "./components/OverviewControls";
+import { RefreshOverview } from "./components/OverviewControls";
+import DashboardHeader from "./components/DashboardHeader";
+import DataInfo, { type DataInfoProps } from "./components/DataInfo";
 import { AccountSetupProgress } from "@/components/integrations/AccountSetupProgress";
 import ControlMetrics from "./components/ControlMetrics";
 import ControlTrend from "./components/ControlTrend";
@@ -41,7 +44,6 @@ import SetupChecklist from './components/SetupChecklist';
 import { resourceRefreshEnabled } from '@/lib/server/sync/resources/coordinator';
 import { loadInsights } from '@/lib/server/dashboard/insights/load';
 import { selectRows, publisher, advertisingMetrics, livePerformance, deliveredToday, type Publisher, type Insight } from '@/lib/server/dashboard/insights/model';
-import { LiveIndicator } from '@/components/design/LiveIndicator';
 import { adSetSignals } from '@/lib/server/dashboard/insights/signals';
 import { periodContext, sameHourComparison } from '@/lib/server/dashboard/insights/compare';
 import { chartMarkers } from '@/lib/server/dashboard/overview/markers';
@@ -50,7 +52,6 @@ import AttentionList from '@/components/product/AttentionList';
 import { attentionItems } from '@/lib/shared/insights/attention';
 import { insightsEnabled, openUrgentIssues } from '@/lib/server/insights/issues';
 import { audienceObservations, hourlyObservations } from '@/lib/server/dashboard/insights/charts';
-import { PlatformControl } from './components/OverviewControls';
 import InsightsEntry from '@/components/insights/InsightsEntry';
 import { resultDefinitionFor, type ResultDefinition } from '@/lib/shared/performance/resultChannel';
 import BookingCheckin from './components/BookingCheckin';
@@ -113,16 +114,16 @@ const performance = cache(async (context: OverviewContext, period: Period) => {
   }
   return withContext({ ...stored, deltas: {}, comparison: 'Comparison unavailable while using stored fallback data.' }, dated, stored.result);
 });
-function timestamp(at: string | null | undefined, zone: string) {
+function timestamp(at: string | null | undefined, zone: string, intl: string) {
   return at && Number.isFinite(Date.parse(at))
-    ? new Intl.DateTimeFormat("en", {
+    ? new Intl.DateTimeFormat(intl, {
       timeZone: zone,
       month: "short",
       day: "numeric",
       hour: "numeric",
       minute: "2-digit",
     }).format(new Date(at))
-    : "Not recorded";
+    : null;
 }
 function Loading({
   kind = "rows",
@@ -167,6 +168,31 @@ function ErrorMessage({ children }: { children: string }) {
     </p>
   );
 }
+/** The weekly check-in read, shared by the question card and the note in the Results tooltip. */
+const checkins = cache(async (context: OverviewContext) => {
+  if (context.decisionPreview || context.timezoneUnavailable) return null;
+  return loadCheckins(createAdminClient(), { businessId: context.businessId, adAccountId: context.account!.id, today: context.today }).catch((error) => {
+    console.error("Booking check-in unavailable", { code: (error as { code?: string })?.code });
+    return null;
+  });
+});
+/** "You reported 11 appointments in 3 of the last 4 weeks…" for the Results tooltip; nothing until a week is answered. */
+async function AppointmentsNote({ context }: { context: OverviewContext }) {
+  const summary = (await checkins(context))?.summary;
+  if (!summary?.weeksAnswered) return null;
+  const [t, locale] = await Promise.all([getTranslations("checkin"), getLocale()]);
+  const currency = context.account!.currency_code;
+  const cost = summary.costPerBooking !== null && currency
+    ? new Intl.NumberFormat(locale === "es" ? "es-US" : "en-US", { style: "currency", currency }).format(summary.costPerBooking)
+    : null;
+  return <>{t("note", { bookings: summary.bookings ?? 0, answered: summary.weeksAnswered, weeks: summary.weeksWithSpend })}{cost ? t("noteCost", { cost }) : null}</>;
+}
+/** The ⓘ next to the controls. It waits for the comparison so it can say when that is limited. */
+async function CoverageInfo({ context, period, base }: { context: OverviewContext; period: Period; base: Omit<DataInfoProps, "coverage"> }) {
+  const view = await performance(context, period).catch(() => null);
+  const reference = view?.context;
+  return <DataInfo {...base} coverage={reference?.coverage ?? null} />;
+}
 async function Metrics({
   context,
   period,
@@ -179,7 +205,7 @@ async function Metrics({
     return null;
   });
   return view ? (
-    <ControlMetrics view={view} />
+    <ControlMetrics view={view} note={<Suspense fallback={null}><AppointmentsNote context={context} /></Suspense>} />
   ) : (
     <ErrorMessage>
       Performance unavailable. Please try again shortly.
@@ -287,15 +313,8 @@ async function Activity({ context }: { context: OverviewContext }) {
  * timezone (unreliable week boundaries) renders nothing rather than blocking the page.
  */
 async function Checkin({ context }: { context: OverviewContext }) {
-  if (context.decisionPreview || context.timezoneUnavailable) return null;
-  const [{ role }, view] = await Promise.all([
-    getRequiredAppContext(),
-    loadCheckins(createAdminClient(), { businessId: context.businessId, adAccountId: context.account!.id, today: context.today }).catch((error) => {
-      console.error("Booking check-in unavailable", { code: (error as { code?: string })?.code });
-      return null;
-    }),
-  ]);
-  return view ? <BookingCheckin view={view} currency={context.account!.currency_code} canAnswer={role === 'owner' || role === 'admin'} /> : null;
+  const [{ role }, view] = await Promise.all([getRequiredAppContext(), checkins(context)]);
+  return view ? <BookingCheckin view={view} canAnswer={role === 'owner' || role === 'admin'} /> : null;
 }
 /** Meta issues that stop delivery and ad sets about to end, above everything else. */
 async function Attention({ context, period }: { context: OverviewContext; period: Period }) {
@@ -349,14 +368,24 @@ async function Content({ requestedPeriod, preview, platform }: { requestedPeriod
   const hourly = live.hourly === null ? null : hourlyObservations(selectRows(live.hourly, platform, period, context.today));
   const retrievedAt = resourceRefreshEnabled() && platform === 'combined' ? live.canonicalFetchedAt : live.fetchedAt;
   const age = retrievedAt ? Date.parse(context.now) - Date.parse(retrievedAt) : Infinity;
+  // The page only speaks up when the numbers are unavailable or old; the rest sits behind the ⓘ.
+  const [tInfo, locale] = await Promise.all([getTranslations('dashboardInfo'), getLocale()]);
+  const readAt = timestamp(retrievedAt, context.zone, locale === 'es' ? 'es-US' : 'en-US');
+  const notice = !(live.source === 'api' || live.source === 'stored')
+    ? tInfo(platform === 'combined' ? 'savedData' : 'platformUnavailable')
+    : readAt && age > 6 * 3600_000 ? tInfo('stale', { time: readAt }) : null;
+  const info = { live: delivering, retrievedAt: retrievedAt ?? null, storedSyncAt: context.account.last_synced ?? null, zone: context.zone, disabled: preview };
   return <div className={classes.page} data-publisher={platform}>
     {preview && <DecisionPreviewBanner page="dashboard" />}
-    <header className={classes.workspaceHeader}><div><h1>{context.businessName}</h1><p>{context.account.name}</p>{insightsEnabled() && <InsightsEntry countIssues={false} />}</div><div className={classes.headerControls}><PlatformControl platform={platform} /><PeriodControl period={period} /></div></header>
-    <details className={classes.freshness}><summary>{delivering && <LiveIndicator />}<span>{live.source === 'api' || live.source === 'stored' ? `${age > 600000 ? 'Last updated' : 'Updated'} ${retrievedAt ? timestamp(retrievedAt, context.zone) : 'recently'}` : platform === 'combined' ? 'Stored data · live retrieval unavailable' : 'Platform data unavailable'}</span></summary>
-      <p>Meta attribution may change after reporting. {retrievedAt ? `Retrieved ${timestamp(retrievedAt, context.zone)}.` : `Stored sync ${timestamp(context.account.last_synced, context.zone)}.`} Account timezone: {context.zone}.</p>
-      <p>Today is live and updates as Meta reports delivery.</p>
-      <RefreshOverview disabled={preview} label="Recover stored Meta data" /><Link href="/integration">Connection settings</Link>
-    </details>
+    <DashboardHeader
+      businessName={context.businessName}
+      accountName={context.account.name ?? ""}
+      platform={platform}
+      period={period}
+      insights={insightsEnabled() ? <InsightsEntry countIssues={false} /> : null}
+      notice={notice}
+      info={<Suspense key={`${period}:${platform}`} fallback={<DataInfo {...info} coverage={null} />}><CoverageInfo context={context} period={period} base={info} /></Suspense>}
+    />
     {!connected && <ErrorMessage>Meta connection needs attention. Saved data remains available; reconnect in Connections.</ErrorMessage>}
     <Suspense key={`attention:${period}`} fallback={null}><Attention context={context} period={period} /></Suspense>
     <section aria-label="Account performance" className={classes.kpiSection}><Suspense key={`${period}:${platform}`} fallback={<Loading kind="metrics" />}><Metrics context={context} period={period} /></Suspense></section>

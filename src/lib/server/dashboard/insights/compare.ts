@@ -27,6 +27,8 @@ export type PeriodContext = {
   referenceLabel: string | null;
   /** Shown after the reference when it covers only part of the window (missing days are not zero). */
   referenceNote?: string | null;
+  /** The same fact as plain numbers, for screens that word it themselves: `observed` of `days` days have data. */
+  coverage?: { days: number; observed: number } | null;
   /** Hourly cumulative series for the Today chart. */
   hourly: HourPoint[] | null;
 };
@@ -96,7 +98,8 @@ export function periodContext(input: {
   }
   const { previousPoints, reference, observedDays, days } = previousPeriod(input.daily, input.platform, input.period, input.today, input.currency);
   return { previousPoints, hourly: null, reference, referenceLabel: reference ? `Previous ${days} days` : null,
-    referenceNote: reference && observedDays < days ? `${observedDays} of ${days} days with data` : null };
+    referenceNote: reference && observedDays < days ? `${observedDays} of ${days} days with data` : null,
+    coverage: reference && observedDays < days ? { days, observed: observedDays } : null };
 }
 
 /**

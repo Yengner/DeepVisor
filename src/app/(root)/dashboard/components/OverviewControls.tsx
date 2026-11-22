@@ -35,7 +35,7 @@ export function PeriodControl({ period }: { period: Period }) {
  * `updatedAt` turns the icon into a labeled control ("Refresh · Updated 1:34 PM") so the page says
  * which data it refreshes and how current it is.
  */
-export function RefreshOverview({ disabled = false, onCompleted, label: labelProp, updatedAt }: { disabled?: boolean; onCompleted?: () => void; label?: string; updatedAt?: string | null }) {
+export function RefreshOverview({ disabled = false, onCompleted, label: labelProp, updatedAt, visibleLabel = false }: { disabled?: boolean; onCompleted?: () => void; label?: string; updatedAt?: string | null; /** Show the label as text instead of an icon-only button. */ visibleLabel?: boolean }) {
   const t = useTranslations("controls");
   const intl = useLocale() === "es" ? "es-US" : "en-US";
   const label = labelProp ?? t("refreshMeta");
@@ -106,6 +106,10 @@ export function RefreshOverview({ disabled = false, onCompleted, label: labelPro
           aria-label={`${label}. ${updatedLabel(updatedAt)}`}
         >
           {t("refresh")}<span style={{ fontWeight: 500, opacity: .7, marginLeft: 6 }}>· {updatedLabel(updatedAt)}</span>
+        </Button>
+      ) : visibleLabel ? (
+        <Button variant="default" size="sm" radius="xl" leftSection={<IconRefresh size={15} aria-hidden="true" />} loading={loading} disabled={disabled} onClick={refresh}>
+          {loading ? t("refreshing") : label}
         </Button>
       ) : <Tooltip label={loading ? t("refreshing") : label}>
         <ActionIcon

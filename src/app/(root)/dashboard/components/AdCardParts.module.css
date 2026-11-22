@@ -80,13 +80,24 @@
 }
 .thin span { display: block; height: 100%; border-radius: inherit; background: var(--tone); }
 
+/* The quiet one-liner for an ad set that is not about to end. */
+.runLine {
+  margin: 2px 0 10px;
+  color: var(--ui-muted, #53677d);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.runLine strong { color: var(--ui-text, #102c46); font-weight: 700; }
+
+/* Results lead (large, brand blue); cost and spend sit beside it. */
 .stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1.25fr 1fr 1fr;
   margin: 0;
   border-top: 1px solid var(--ui-line, #d9e3ef);
 }
 .stats > div { min-width: 0; padding: 14px 10px 0 0; }
+.stats .statMain dd { color: var(--ui-accent, #0056db); font-size: 30px; line-height: 1.15; letter-spacing: -.03em; }
 .stats dt { color: var(--ui-muted, #53677d); font-size: 13px; font-weight: 600; }
 .stats dd {
   margin: 4px 0 2px;
@@ -103,24 +114,16 @@
 /* Narrow cards (supporting column, phones): two by two, still large. */
 @container adcard (max-width: 420px) {
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 4px; }
+  .statMain { grid-column: 1 / -1; }
 }
 @media (max-width: 520px) {
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 4px; }
+  .statMain { grid-column: 1 / -1; }
   .count strong { font-size: 32px; }
+}
+/* Two ad cards side by side on a phone are too narrow for two numbers per row. */
+@container adcard (max-width: 230px) {
+  .stats { grid-template-columns: minmax(0, 1fr); }
 }
 .body { container: adcard / inline-size; }
 
-/* Beside the "Active now" heading when a delivering ad set is within two days of its end. */
-.endingTag {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 10px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--ui-warning-soft, #fff3d9);
-  color: var(--ui-warning, #855a13);
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 700;
-  vertical-align: 3px;
-}
