@@ -48,7 +48,6 @@
       "costPerResult": "Spend divided by the count to the left. Unavailable when that count is zero or unknown."
     },
     "about": "About {label}",
-    "overDays": "{label} over the last {days} days",
     "fromApps": "From {apps}.",
     "more": "More",
     "moreSelected": "More: {label}",
@@ -264,9 +263,6 @@
     "placeholder": "e.g. 5",
     "save": "Save",
     "notSure": "Not sure",
-    "title": "Appointments from ads",
-    "summary": "You reported <b>{bookings}</b> {bookings, plural, one {appointment} other {appointments}} in {answered} of the last {weeks} weeks with ads",
-    "cost": " · about <b>{cost}</b> per appointment",
     "error": {
       "wholeNumber": "Enter a whole number, like 0 or 5.",
       "invalid": "Check the number and try again.",
@@ -278,7 +274,9 @@
       "failed": "Your answer could not be saved. Please try again.",
       "retry": "Please try again."
     },
-    "thanks": "Thanks — saved. It updates your cost per appointment."
+    "thanks": "Thanks — saved. It updates your cost per appointment.",
+    "note": "You reported {bookings, plural, one {# appointment} other {# appointments}} in {answered} of the last {weeks} weeks with ads.",
+    "noteCost": " About {cost} per appointment."
   },
   "language": {
     "title": "Language",
@@ -2877,5 +2875,19 @@
     "found": "Found {found} so far",
     "leaveNote": "You can leave this page. Your dashboard fills in when it is done.",
     "stalled": "This is taking longer than usual. It keeps running — reload this page in a few minutes."
+  },
+  "dashboardInfo": {
+    "label": "About these numbers",
+    "live": "Today is live. Numbers update as Meta reports delivery.",
+    "updated": "Updated {time}",
+    "storedSync": "Last saved sync {time}.",
+    "comparison": "The previous {days} days have data for only {observed} of {days} days, so comparisons are limited. Missing days are not counted as zero.",
+    "attribution": "Meta can adjust results after it reports them.",
+    "timezone": "Times are in {zone}.",
+    "recover": "Recover stored Meta data",
+    "connection": "Connection settings",
+    "savedData": "Showing saved numbers. Live data is unavailable right now.",
+    "platformUnavailable": "Numbers for this platform are unavailable right now.",
+    "stale": "These numbers are from {time}."
   }
 }

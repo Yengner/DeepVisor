@@ -103,13 +103,15 @@ export default function ControlTrend({
             </Menu.Dropdown>
           </Menu>
         </div>
-        <div className={classes.chartLegend} aria-hidden="true">
-          <span><i className={classes.legendCurrent} />{currentName}</span>
-          {hasPrevious && previousName && <span><i className={classes.legendPrevious} />{previousName}</span>}
-          {!hourly && rows.some((r) => r.live && r.current !== null) && <span><i className={classes.legendLive} />Today so far</span>}
-          {partialPrevious && previousName && <span className={classes.legendMuted}>{previousName}: not enough data to compare</span>}
-          {shownMarkers.length > 0 && <span><i className={classes.legendMarker} />Changes</span>}
-        </div>
+        {/* One line only explains what a second mark means; a single line needs no key. A partial
+            previous period is explained behind the page's ⓘ, and the hollow "today" dot in the hover. */}
+        {((hasPrevious && previousName) || shownMarkers.length > 0) && (
+          <div className={classes.chartLegend} aria-hidden="true">
+            {hasPrevious && previousName && <span><i className={classes.legendCurrent} />{currentName}</span>}
+            {hasPrevious && previousName && <span><i className={classes.legendPrevious} />{previousName}</span>}
+            {shownMarkers.length > 0 && <span><i className={classes.legendMarker} />Changes</span>}
+          </div>
+        )}
       </div>
       <div
         className={classes.bigChart}

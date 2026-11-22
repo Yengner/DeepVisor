@@ -1,0 +1,24 @@
+.trigger { flex: none; }
+
+.dropdown {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-line);
+}
+.dropdown p { margin: 0; color: var(--ui-muted); }
+
+.dropdown p.status { color: var(--ui-text); font-weight: 700; }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding-top: 4px;
+}
+.actions a { font-weight: 600; color: var(--ui-accent, #0056db); text-underline-offset: 3px; }

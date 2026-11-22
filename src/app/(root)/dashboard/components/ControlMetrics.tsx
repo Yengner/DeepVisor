@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Tooltip } from '@mantine/core';
 import type { PeriodContext } from "@/lib/server/dashboard/insights/compare";
 import type { ControlPerformance } from "@/lib/server/dashboard/overview/controlModel";
@@ -77,60 +78,35 @@ export function MetricDelta({
     </span></Tooltip>
   ) : null;
 }
-function Sparkline({ values, label }: { values: Array<number | null>; label: string }) {
-  const known = values.filter((v): v is number => v !== null);
-  if (known.length < 2) return null;
-  const max = Math.max(...known), min = Math.min(...known);
-  const span = max - min || 1;
-  const w = 96, h = 28, step = w / Math.max(1, values.length - 1);
-  // Gaps stay gaps: break the path at missing days.
-  let path = "", open = false;
-  values.forEach((v, i) => {
-    if (v === null) { open = false; return; }
-    const x = i * step, y = h - 3 - ((v - min) / span) * (h - 6);
-    path += `${open ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)} `;
-    open = true;
-  });
-  return (
-    <svg className={classes.sparkline} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label={label}>
-      <path d={path} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-    </svg>
-  );
-}
-
-export default function ControlMetrics({ view }: { view: ControlPerformance & { context?: PeriodContext } }) {
+/**
+ * Four numbers, each with an arrow badge. What the badge compares against (and the earlier value)
+ * is in its hover, and why a comparison may be limited is behind the page's ⓘ, so the cards carry
+ * only the figure. `note` adds a line to the Results help (the weekly appointments the owner reported).
+ */
+export default function ControlMetrics({ view, note = null }: { view: ControlPerformance & { context?: PeriodContext }; note?: ReactNode }) {
   const reference = view.context?.reference ?? null;
   const referenceLabel = view.context?.referenceLabel ?? null;
-  const referenceNote = view.context?.referenceNote ?? null;
   const { labels, help, appsNote, t } = useMetricLabels(view.result);
   return (
     <>
-      {referenceNote && referenceLabel && (
-        <p className={classes.kpiCoverage}>
-          {referenceLabel} has data for only {referenceNote.replace(/ with data$/, "")}, so comparisons are limited. Missing days are not counted as zero.
-        </p>
-      )}
       <dl className={classes.kpis}>
         {CONTROL_METRICS.map((key, index) => (
           <div key={key} className={classes.kpiCard}>
             <SyncSpider announce={index === 0} />
-            <dt>{labels[key]} <Tooltip events={{ hover: true, focus: true, touch: true }} multiline w={260} label={key === "results" && appsNote ? `${help[key]} ${appsNote}` : help[key]}><button type="button" aria-label={t("metrics.about", { label: labels[key] })}>ⓘ</button></Tooltip></dt>
+            <dt>{labels[key]} <Tooltip events={{ hover: true, focus: true, touch: true }} multiline w={260} label={<>{key === "results" && appsNote ? `${help[key]} ${appsNote}` : help[key]}{key === "results" ? <span className={classes.tipNote}>{note}</span> : null}</>}><button type="button" aria-label={t("metrics.about", { label: labels[key] })}>ⓘ</button></Tooltip></dt>
             <div className={classes.kpiValueRow}>
               <dd title={metricValue(key, view.metrics[key], view.currency)}>
                 <TickerNumber text={metricValue(key, view.metrics[key], view.currency, true)} value={view.metrics[key]} polarity={POLARITY[key]} />
               </dd>
-              <Sparkline values={view.points.map((p) => p[key])} label={t("metrics.overDays", { label: labels[key], days: view.points.length })} />
             </div>
             <div className={classes.kpiFoot}>
               <MetricDelta
                 change={view.deltas[key]}
-                description={view.comparison}
+                description={[
+                  reference && referenceLabel ? `${referenceLabel}: ${metricValue(key, reference[key], view.currency, true)}` : null,
+                  view.comparison,
+                ].filter(Boolean).join(" · ") || null}
               />
-              {reference && referenceLabel && (
-                <span className={classes.kpiReference}>
-                  {referenceLabel} {metricValue(key, reference[key], view.currency, true)}
-                </span>
-              )}
             </div>
           </div>
         ))}

@@ -16,7 +16,6 @@ import StatusBadge from "@/components/product/StatusBadge";
 import { LiveIndicator } from "@/components/design/LiveIndicator";
 import type { AdSignals as AdSignalsData } from "@/lib/server/dashboard/insights/signals";
 import { LearningBar, QuickStats, RunWindow } from "./AdCardParts";
-import { endingSoon } from "@/lib/shared/performance/schedule";
 import parts from "./AdCardParts.module.css";
 import classes from "./ControlCenter.module.css";
 
@@ -30,7 +29,6 @@ export default function AdvertisingBoard({ view, signals = {}, filtered = false 
   ).flatMap((id) => view.items.find((i) => i.id === id) ?? []);
   const featured =
     active.find((i) => i.id === view.board?.activeFeaturedId) ?? active[0];
-  const ending = active.filter((i) => endingSoon(i.schedule)).length;
   const periodLabel =
     view.period === "today"
       ? "Today"
@@ -56,7 +54,8 @@ export default function AdvertisingBoard({ view, signals = {}, filtered = false 
           : null;
     const hasData = item.metrics.spend !== null;
     const inactive = item.delivery !== "ACTIVE";
-    const badge = item.state && item.state !== "Insufficient data" && item.state !== "Paused";
+    // A healthy ad set needs no badge: only something to look at earns one.
+    const badge = item.state && item.state !== "Insufficient data" && item.state !== "Paused" && item.state !== "Healthy";
     return (
       <article
         key={item.id}
@@ -130,17 +129,12 @@ export default function AdvertisingBoard({ view, signals = {}, filtered = false 
   return (
     <>
       <div className={classes.boardHeader}>
-        <h2>Your advertising</h2>
+        <h2>{featured && <LiveIndicator label={null} title="Ad sets delivering now" />} Your advertising</h2>
         <Link href="/campaigns">
           Campaigns <IconArrowUpRight size={15} />
         </Link>
       </div>
-      <h3 className={classes.boardSubheading}>
-        {featured && <LiveIndicator label={null} title="Ad sets delivering now" />} Active now
-        {ending > 0 && <em className={parts.endingTag}>{ending === 1 ? "Ending soon" : `${ending} ending soon`}</em>}
-        <span>{periodLabel} performance</span>
-      </h3>
-      {filtered && <p>Performance is filtered by delivery platform. Current status and health describe the whole Meta ad set.</p>}
+      {filtered && <p className={classes.quiet}>Performance is filtered by delivery platform. Current status and health describe the whole Meta ad set.</p>}
       {featured ? (
         <div
           className={`${classes.adBoard} ${active.length === 1 ? classes.singleActive : ""}`}
