@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   Alert,
   Button,
@@ -195,6 +196,7 @@ function findSelectedAdSet(
 }
 
 function CampaignCreateRenderer({ context }: { context: CampaignCreateReadyContext }) {
+  const t = useTranslations('createManual.client');
   const selectedCampaign = useMemo(() => findSelectedCampaign(context), [context]);
   const selectedAdSet = useMemo(
     () => findSelectedAdSet(selectedCampaign, context.requestedAdSetId),
@@ -205,9 +207,9 @@ function CampaignCreateRenderer({ context }: { context: CampaignCreateReadyConte
     if (context.campaigns.length === 0) {
       return (
         <EmptyState
-          title="No campaigns found yet"
-          message="Create at least one Meta campaign before adding a new ad set inside it."
-          action={{ label: 'Create a campaign', href: '/campaigns/create' }}
+          title={t('noCampaignsTitle')}
+          message={t('adSetNeedsCampaign')}
+          action={{ label: t('createCampaign'), href: '/campaigns/create' }}
         />
       );
     }
@@ -234,9 +236,9 @@ function CampaignCreateRenderer({ context }: { context: CampaignCreateReadyConte
     if (context.campaigns.length === 0) {
       return (
         <EmptyState
-          title="No campaigns found yet"
-          message="Create at least one Meta campaign and ad set before adding a new ad inside it."
-          action={{ label: 'Create a campaign', href: '/campaigns/create' }}
+          title={t('noCampaignsTitle')}
+          message={t('adNeedsCampaign')}
+          action={{ label: t('createCampaign'), href: '/campaigns/create' }}
         />
       );
     }
@@ -249,10 +251,10 @@ function CampaignCreateRenderer({ context }: { context: CampaignCreateReadyConte
     if (adSetCount === 0) {
       return (
         <EmptyState
-          title="No ad sets found yet"
-          message="Create at least one Meta ad set before adding a new ad inside it."
+          title={t('noAdSetsTitle')}
+          message={t('adNeedsAdSet')}
           action={{
-            label: 'Create an ad set',
+            label: t('createAdSet'),
             href: `/campaigns/create?scope=adset&campaign_id=${context.campaigns[0]?.id ?? ''}`,
           }}
         />
@@ -296,11 +298,12 @@ function CampaignCreateRenderer({ context }: { context: CampaignCreateReadyConte
 }
 
 export default function CampaignCreateClient() {
+  const t = useTranslations('createManual.client');
   const searchParams = useSearchParams();
   const queryString = searchParams.toString();
   const [context, setContext] = useState<CampaignCreateContext | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string | null } | null>(null);
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
@@ -322,11 +325,7 @@ export default function CampaignCreateClient() {
         const body = (await response.json().catch(() => ({}))) as CampaignCreateContextResponse;
 
         if (!response.ok || !body.success) {
-          throw new Error(
-            !body.success
-              ? body.error?.userMessage || body.error?.message || 'Failed to load campaign builder.'
-              : 'Failed to load campaign builder.'
-          );
+          throw new Error(!body.success ? body.error?.userMessage || body.error?.message || '' : '');
         }
 
         setContext(body.data);
@@ -335,7 +334,7 @@ export default function CampaignCreateClient() {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load campaign builder.');
+        setError({ message: loadError instanceof Error && loadError.message ? loadError.message : null });
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -359,8 +358,8 @@ export default function CampaignCreateClient() {
       <Container size="sm" py="xl">
         <Alert color="red" radius="md" icon={<IconAlertCircle size={18} />}>
           <Stack gap="sm">
-            <Text fw={800}>Campaign builder could not load</Text>
-            <Text size="sm">{error}</Text>
+            <Text fw={800}>{t('loadFailedTitle')}</Text>
+            <Text size="sm">{error.message ?? t('loadFailed')}</Text>
             <Button
               w="fit-content"
               variant="light"
@@ -368,7 +367,7 @@ export default function CampaignCreateClient() {
               leftSection={<IconRefresh size={16} />}
               onClick={() => setRetryKey((current) => current + 1)}
             >
-              Retry
+              {t('retry')}
             </Button>
           </Stack>
         </Alert>
@@ -383,9 +382,9 @@ export default function CampaignCreateClient() {
   if (context.state === 'needs_selection') {
     return (
       <EmptyState
-        title="Select an ad account first"
+        title={t('needsSelectionTitle')}
         message={context.message}
-        action={{ label: 'Open connections', href: '/integration' }}
+        action={{ label: t('openConnections'), href: '/integration' }}
       />
     );
   }
@@ -393,10 +392,10 @@ export default function CampaignCreateClient() {
   if (context.state === 'invalid_selection') {
     return (
       <EmptyState
-        title="Ad account unavailable"
+        title={t('invalidTitle')}
         message={context.message}
         iconColor="red"
-        action={{ label: 'Review connections', href: '/integration' }}
+        action={{ label: t('reviewConnections'), href: '/integration' }}
       />
     );
   }

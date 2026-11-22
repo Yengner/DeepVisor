@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
     Badge,
     Button,
@@ -36,6 +37,8 @@ export default function ManualMetaAdSetBuilder({
     existingCampaign,
 }: ManualMetaAdSetBuilderProps) {
     const router = useRouter();
+    const t = useTranslations('createManual.adSetBuilder');
+    const tc = useTranslations('createManual.common');
     const form = useMetaCampaignForm(platformData.id, adAccountId, false, null);
     const [active, setActive] = useState(0);
     const initializedKeyRef = useRef<string | null>(null);
@@ -61,7 +64,7 @@ export default function ManualMetaAdSetBuilder({
             form.setFieldValue('campaign.objective', existingCampaign.objective);
         }
         if (!form.values.adSets[0]?.adSetName) {
-            form.setFieldValue('adSets.0.adSetName', `${existingCampaign.name} - New ad set`);
+            form.setFieldValue('adSets.0.adSetName', `${existingCampaign.name} - ${t('newAdSetSuffix')}`);
         }
     }, [existingCampaign.id, existingCampaign.name, existingCampaign.objective]);
 
@@ -85,16 +88,15 @@ export default function ManualMetaAdSetBuilder({
                 <Group justify="apart" align="flex-start" className="dv-create-hero">
                     <Stack gap="xs">
                         <Badge w="fit-content" size="lg" variant="light" color="blue">
-                            Add Ad Set
+                            {t('badge')}
                         </Badge>
-                        <Title order={2}>Build a new ad set inside {existingCampaign.name}</Title>
+                        <Title order={2}>{t('title', { campaign: existingCampaign.name })}</Title>
                         <Text c="dimmed" maw={760}>
-                            You are working inside an existing campaign now, so the flow is focused on
-                            audience targeting and the first creative instead of the full campaign setup.
+                            {t('intro')}
                         </Text>
                     </Stack>
                     <Button variant="subtle" leftSection={<IconArrowLeft size={16} />} onClick={handleBackToStarter}>
-                        Choose a different campaign
+                        {t('chooseDifferent')}
                     </Button>
                 </Group>
 
@@ -105,7 +107,7 @@ export default function ManualMetaAdSetBuilder({
                                 <IconLayersIntersect size={18} />
                             </ThemeIcon>
                             <Stack gap={0}>
-                                <Text size="sm" fw={700}>Parent campaign</Text>
+                                <Text size="sm" fw={700}>{tc('parentCampaign')}</Text>
                                 <Text size="sm" c="dimmed">{existingCampaign.name}</Text>
                             </Stack>
                         </Group>
@@ -113,7 +115,7 @@ export default function ManualMetaAdSetBuilder({
                             {existingCampaign.objective || 'LEADS'}
                         </Badge>
                         <Badge variant="light" color="gray">
-                            {existingCampaign.adset_metrics.length} existing ad sets
+                            {t('existingAdSets', { count: existingCampaign.adset_metrics.length })}
                         </Badge>
                     </Group>
                 </Paper>
@@ -128,24 +130,24 @@ export default function ManualMetaAdSetBuilder({
                         iconSize={34}
                     >
                         <Stepper.Step
-                            label="Ad Set"
-                            description="Targeting and delivery"
+                            label={t('stepAdSet')}
+                            description={t('stepAdSetHint')}
                             icon={<IconTargetArrow size={18} />}
                         >
                             <AdSetStep form={form} isSmart={false} />
                             <Group justify="apart" mt="md">
                                 <Button variant="subtle" leftSection={<IconArrowLeft size={16} />} onClick={handleBackToStarter}>
-                                    Back
+                                    {tc('back')}
                                 </Button>
                                 <Button rightSection={<IconArrowRight size={16} />} onClick={openCreativeStep}>
-                                    Continue to creative
+                                    {t('continueToCreative')}
                                 </Button>
                             </Group>
                         </Stepper.Step>
 
                         <Stepper.Step
-                            label="Creative"
-                            description="First ad creative"
+                            label={tc('creative')}
+                            description={t('stepCreativeHint')}
                             icon={<IconBrush size={18} />}
                         >
                             <CreativeAssetsStep
@@ -156,17 +158,17 @@ export default function ManualMetaAdSetBuilder({
                             />
                             <Group justify="apart" mt="md">
                                 <Button variant="subtle" leftSection={<IconArrowLeft size={16} />} onClick={openAdSetStep}>
-                                    Back to ad set
+                                    {t('backToAdSet')}
                                 </Button>
                                 <Button rightSection={<IconArrowRight size={16} />} onClick={() => setActive(2)}>
-                                    Review
+                                    {t('review')}
                                 </Button>
                             </Group>
                         </Stepper.Step>
 
                         <Stepper.Step
-                            label="Review"
-                            description="Ready to submit"
+                            label={tc('stepReview')}
+                            description={tc('stepReviewHint')}
                             icon={<IconLayersIntersect size={18} />}
                         >
                             <ManualMetaAdSetReview
