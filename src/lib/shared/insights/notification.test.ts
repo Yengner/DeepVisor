@@ -9,7 +9,7 @@ describe('daily insight notifications', () => {
   it('bundles later updates into the day and links to the day', () => {
     const first = dailyNotification(null, { id: 'a', urgent: false, day: '2026-11-13' });
     const second = dailyNotification(first.bundle, { id: 'b', urgent: false, day: '2026-11-13' });
-    expect(second).toMatchObject({ title: '2 advertising updates today', link: '/insights?day=2026-11-13' });
+    expect(second).toMatchObject({ title: '2 advertising updates', link: '/insights?day=2026-11-13' });
     expect(second.bundle.presentationIds).toEqual(['a', 'b']);
     expect(dailyNotification(second.bundle, { id: 'b', urgent: false, day: '2026-11-13' }).bundle.presentationIds).toHaveLength(2);
   });

@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocale, useTranslations } from 'next-intl';
 import {
     Alert,
     Badge,
@@ -33,10 +34,6 @@ interface ManualMetaAdReviewProps {
     onBack: () => void;
 }
 
-function formatDate(value: Date | null): string {
-    return value ? new Date(value).toLocaleString() : 'Ongoing';
-}
-
 export default function ManualMetaAdReview({
     values,
     campaignName,
@@ -50,6 +47,12 @@ export default function ManualMetaAdReview({
         submitSuccess,
     } = useCampaignSubmit();
 
+    const t = useTranslations('createManual.adReview');
+    const tc = useTranslations('createManual.common');
+    const intl = useLocale() === 'es' ? 'es-US' : 'en-US';
+    const formatDate = (value: Date | null): string =>
+        value ? new Date(value).toLocaleString(intl) : tc('ongoing');
+
     const currentCreative = values.adSets[0]?.creatives?.[0];
 
     return (
@@ -59,12 +62,15 @@ export default function ManualMetaAdReview({
                     <Group justify="apart" align="flex-start">
                         <Stack gap={4}>
                             <Badge w="fit-content" variant="light" color="violet">
-                                Add Ad
+                                {t('badge')}
                             </Badge>
-                            <Title order={3}>Review your new ad</Title>
+                            <Title order={3}>{t('title')}</Title>
                             <Text c="dimmed">
-                                This ad will be attached to <strong>{adSetName}</strong> inside{' '}
-                                <strong>{campaignName}</strong> so you can reuse the ad set delivery context.
+                                {t.rich('intro', {
+                                    adSet: adSetName,
+                                    campaign: campaignName,
+                                    b: (chunks) => <strong>{chunks}</strong>,
+                                })}
                             </Text>
                         </Stack>
                         {submitSuccess ? (
@@ -81,7 +87,7 @@ export default function ManualMetaAdReview({
                                     <ThemeIcon color="blue" variant="light" radius="xl">
                                         <IconLayersIntersect size={18} />
                                     </ThemeIcon>
-                                    <Text fw={700}>Placement context</Text>
+                                    <Text fw={700}>{t('placementContext')}</Text>
                                 </Group>
                                 <Text size="sm">{campaignName}</Text>
                                 <Text size="sm" c="dimmed">{adSetName}</Text>
@@ -94,11 +100,11 @@ export default function ManualMetaAdReview({
                                     <ThemeIcon color="indigo" variant="light" radius="xl">
                                         <IconCalendar size={18} />
                                     </ThemeIcon>
-                                    <Text fw={700}>Ad schedule</Text>
+                                    <Text fw={700}>{tc('adSchedule')}</Text>
                                 </Group>
-                                <Text size="sm">Start: {formatDate(values.schedule.startDate)}</Text>
+                                <Text size="sm">{t('start', { date: formatDate(values.schedule.startDate) })}</Text>
                                 <Text size="sm" c="dimmed">
-                                    End: {formatDate(values.schedule.endDate)}
+                                    {t('end', { date: formatDate(values.schedule.endDate) })}
                                 </Text>
                             </Stack>
                         </Paper>
@@ -109,14 +115,14 @@ export default function ManualMetaAdReview({
                                     <ThemeIcon color="orange" variant="light" radius="xl">
                                         <IconBrush size={18} />
                                     </ThemeIcon>
-                                    <Text fw={700}>Creative</Text>
+                                    <Text fw={700}>{tc('creative')}</Text>
                                 </Group>
-                                <Text size="sm">{currentCreative?.adHeadline || 'Headline not set yet'}</Text>
+                                <Text size="sm">{currentCreative?.adHeadline || tc('headlineEmpty')}</Text>
                                 <Text size="sm" c="dimmed">
-                                    CTA: {currentCreative?.adCallToAction || 'Learn more'}
+                                    {tc('ctaLine', { value: currentCreative?.adCallToAction || tc('ctaDefault') })}
                                 </Text>
                                 <Text size="sm" c="dimmed" lineClamp={2}>
-                                    {currentCreative?.adPrimaryText || 'Primary text will show here once added.'}
+                                    {currentCreative?.adPrimaryText || tc('primaryTextEmpty')}
                                 </Text>
                             </Stack>
                         </Paper>
@@ -127,10 +133,10 @@ export default function ManualMetaAdReview({
                                     <ThemeIcon color="violet" variant="light" radius="xl">
                                         <IconAd size={18} />
                                     </ThemeIcon>
-                                    <Text fw={700}>Why this path</Text>
+                                    <Text fw={700}>{t('whyThisPath')}</Text>
                                 </Group>
                                 <Text size="sm" c="dimmed">
-                                    This creates a fresh ad inside the existing ad set instead of rebuilding the audience layer from scratch.
+                                    {t('whyThisPathBody')}
                                 </Text>
                             </Stack>
                         </Paper>
@@ -139,8 +145,8 @@ export default function ManualMetaAdReview({
                     <Divider />
 
                     {submitSuccess ? (
-                        <Alert color="green" radius="lg" title="Submitted">
-                            Your ad request has been sent successfully.
+                        <Alert color="green" radius="lg" title={tc('submittedTitle')}>
+                            {t('submittedBody')}
                         </Alert>
                     ) : null}
 
@@ -148,7 +154,7 @@ export default function ManualMetaAdReview({
                         <Alert
                             color="red"
                             radius="lg"
-                            title="Submission error"
+                            title={tc('submissionError')}
                             icon={<IconAlertCircle size={16} />}
                         >
                             {submitError}
@@ -161,14 +167,14 @@ export default function ManualMetaAdReview({
                             leftSection={<IconArrowLeft size={16} />}
                             onClick={onBack}
                         >
-                            Back to creative
+                            {tc('backToCreative')}
                         </Button>
                         <Button
                             size="md"
                             loading={isSubmitting}
                             onClick={() => void submitCampaign(values)}
                         >
-                            Create ad
+                            {t('create')}
                         </Button>
                     </Group>
                 </Stack>

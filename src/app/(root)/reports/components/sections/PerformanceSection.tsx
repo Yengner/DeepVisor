@@ -64,8 +64,8 @@ export function PerformanceSection({ payload, metric, onGroupBy, pending = false
             </linearGradient>
           </defs>
           <CartesianGrid vertical={false} stroke="var(--dv-border)" />
-          <XAxis dataKey="date" tickFormatter={shortDate} minTickGap={36} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'var(--dv-text-muted)' }} />
-          <YAxis width={58} tickFormatter={axis} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'var(--dv-text-muted)' }} />
+          <XAxis dataKey="date" tickFormatter={shortDate} minTickGap={36} tickLine={false} axisLine={false} tick={{ fontSize: 13, fill: 'var(--dv-text-muted)' }} />
+          <YAxis width={58} tickFormatter={axis} tickLine={false} axisLine={false} tick={{ fontSize: 13, fill: 'var(--dv-text-muted)' }} />
           <Tooltip cursor={{ stroke: 'var(--dv-border-strong, var(--dv-border))' }} content={({ active, payload: items }) => {
             const point = items?.[0]?.payload as PerformancePoint | undefined;
             return active && point ? <div className={classes.tooltip}>

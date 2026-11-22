@@ -4,6 +4,7 @@ import '@mantine/dates/styles.css';
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
     Alert,
     Badge,
@@ -50,6 +51,8 @@ export default function ManualMetaAdBuilder({
     existingAdSet,
 }: ManualMetaAdBuilderProps) {
     const router = useRouter();
+    const t = useTranslations('createManual.adBuilder');
+    const tc = useTranslations('createManual.common');
     const form = useMetaCampaignForm(platformData.id, adAccountId, false, null);
     const [active, setActive] = useState(0);
     const initializedKeyRef = useRef<string | null>(null);
@@ -86,16 +89,15 @@ export default function ManualMetaAdBuilder({
                 <Group justify="apart" align="flex-start" className="dv-create-hero">
                     <Stack gap="xs">
                         <Badge w="fit-content" size="lg" variant="light" color="violet">
-                            Add Ad
+                            {t('badge')}
                         </Badge>
-                        <Title order={2}>Build a new ad inside {existingAdSet.name}</Title>
+                        <Title order={2}>{t('title', { adSet: existingAdSet.name })}</Title>
                         <Text c="dimmed" maw={760}>
-                            This flow keeps the ad set in place and lets you launch a fresh creative with its own timing,
-                            so Meta can keep learning from the audience and delivery setup that is already favorable.
+                            {t('intro')}
                         </Text>
                     </Stack>
                     <Button variant="subtle" leftSection={<IconArrowLeft size={16} />} onClick={handleBackToStarter}>
-                        Choose a different ad set
+                        {t('chooseDifferent')}
                     </Button>
                 </Group>
 
@@ -106,7 +108,7 @@ export default function ManualMetaAdBuilder({
                                 <IconLayersIntersect size={18} />
                             </ThemeIcon>
                             <Stack gap={0}>
-                                <Text size="sm" fw={700}>Parent campaign</Text>
+                                <Text size="sm" fw={700}>{tc('parentCampaign')}</Text>
                                 <Text size="sm" c="dimmed">{existingCampaign.name}</Text>
                             </Stack>
                         </Group>
@@ -115,12 +117,12 @@ export default function ManualMetaAdBuilder({
                                 <IconAd size={18} />
                             </ThemeIcon>
                             <Stack gap={0}>
-                                <Text size="sm" fw={700}>Target ad set</Text>
+                                <Text size="sm" fw={700}>{t('targetAdSet')}</Text>
                                 <Text size="sm" c="dimmed">{existingAdSet.name}</Text>
                             </Stack>
                         </Group>
                         <Badge variant="light" color="gray">
-                            {existingAdSet.ads_metrics.length} existing ads
+                            {t('existingAds', { count: existingAdSet.ads_metrics.length })}
                         </Badge>
                     </Group>
                 </Paper>
@@ -135,8 +137,8 @@ export default function ManualMetaAdBuilder({
                         iconSize={34}
                     >
                         <Stepper.Step
-                            label="Creative"
-                            description="Creative and timing"
+                            label={tc('creative')}
+                            description={t('stepCreativeHint')}
                             icon={<IconBrush size={18} />}
                         >
                             <Paper withBorder radius="lg" p="md" mb="md">
@@ -146,9 +148,9 @@ export default function ManualMetaAdBuilder({
                                             <IconCalendar size={18} />
                                         </ThemeIcon>
                                         <Stack gap={2}>
-                                            <Text fw={700}>Ad schedule</Text>
+                                            <Text fw={700}>{tc('adSchedule')}</Text>
                                             <Text size="sm" c="dimmed">
-                                                Give this new ad its own launch window while keeping it inside the existing ad set.
+                                                {t('scheduleHint')}
                                             </Text>
                                         </Stack>
                                     </Group>
@@ -156,8 +158,8 @@ export default function ManualMetaAdBuilder({
                                     <Grid gutter="md">
                                         <Grid.Col span={{ base: 12, md: 6 }}>
                                             <DateTimePicker
-                                                label="Start date"
-                                                placeholder="Select date and time"
+                                                label={t('startDate')}
+                                                placeholder={t('selectDateTime')}
                                                 required
                                                 minDate={new Date()}
                                                 size="md"
@@ -166,8 +168,8 @@ export default function ManualMetaAdBuilder({
                                         </Grid.Col>
                                         <Grid.Col span={{ base: 12, md: 6 }}>
                                             <DateTimePicker
-                                                label="End date"
-                                                placeholder="Optional"
+                                                label={t('endDate')}
+                                                placeholder={tc('optional')}
                                                 clearable
                                                 minDate={form.values.schedule.startDate || new Date()}
                                                 size="md"
@@ -182,7 +184,7 @@ export default function ManualMetaAdBuilder({
                                         radius="md"
                                         icon={<IconInfoCircle size={16} />}
                                     >
-                                        Use a new start date so this ad launches as a fresh delivery branch inside the ad set that is already working.
+                                        {t('scheduleAlert')}
                                     </Alert>
                                 </Stack>
                             </Paper>
@@ -196,17 +198,17 @@ export default function ManualMetaAdBuilder({
 
                             <Group justify="apart" mt="md">
                                 <Button variant="subtle" leftSection={<IconArrowLeft size={16} />} onClick={handleBackToStarter}>
-                                    Back
+                                    {tc('back')}
                                 </Button>
                                 <Button rightSection={<IconArrowRight size={16} />} onClick={() => setActive(1)}>
-                                    Continue to review
+                                    {t('continueToReview')}
                                 </Button>
                             </Group>
                         </Stepper.Step>
 
                         <Stepper.Step
-                            label="Review"
-                            description="Ready to submit"
+                            label={tc('stepReview')}
+                            description={tc('stepReviewHint')}
                             icon={<IconLayersIntersect size={18} />}
                         >
                             <ManualMetaAdReview

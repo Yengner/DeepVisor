@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { GoogleMap, useJsApiLoader, Autocomplete } from '@react-google-maps/api';
 import { TextInput, Slider, Stack, Text, Button, Group } from '@mantine/core';
 import { IconSearch, IconMapPin } from '@tabler/icons-react';
@@ -12,6 +13,7 @@ const defaultCenter = { lat: 27.9506, lng: -82.4572 };
 const containerStyle = { width: '100%', height: '400px' };
 
 export default function GoogleMapSelector({ onLocationSelect }: Props) {
+    const t = useTranslations('createManual.map');
     const { isLoaded, loadError } = useJsApiLoader({
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
         libraries: ['places', 'marker'], // include marker library
@@ -68,8 +70,8 @@ export default function GoogleMapSelector({ onLocationSelect }: Props) {
     // Update circle radius dynamically
     useEffect(() => { if (circleRef.current) circleRef.current.setRadius(radius * 1609.34); }, [radius]);
 
-    if (loadError) return <div>Error loading maps</div>;
-    if (!isLoaded) return <div>Loading Maps...</div>;
+    if (loadError) return <div>{t('loadError')}</div>;
+    if (!isLoaded) return <div>{t('loading')}</div>;
 
     return (
         <div>
@@ -83,7 +85,7 @@ export default function GoogleMapSelector({ onLocationSelect }: Props) {
                     }
                 }
             }}>
-                <TextInput placeholder="Search…" leftSection={<IconSearch size={16} />} mb="md" />
+                <TextInput placeholder={t('search')} aria-label={t('search')} leftSection={<IconSearch size={16} />} mb="md" />
             </Autocomplete>
 
             <GoogleMap
@@ -98,11 +100,11 @@ export default function GoogleMapSelector({ onLocationSelect }: Props) {
             />
 
             <Stack mt="md" gap="sm">
-                <Text size="sm" fw={500}>Radius (miles):</Text>
+                <Text size="sm" fw={500}>{t('radius')}</Text>
                 <Slider
                     value={radius}
                     onChange={r => { setRadius(r); if (markerPosition) onLocationSelect({ markerPosition, radius: r }); }}
-                    min={1} max={50} label={r => `${r} mi`} labelAlwaysOn size="sm"
+                    min={1} max={50} label={r => t('miles', { n: r })} labelAlwaysOn size="sm"
                 />
             </Stack>
 
@@ -111,7 +113,7 @@ export default function GoogleMapSelector({ onLocationSelect }: Props) {
                     onClick={() => onLocationSelect({ markerPosition, radius })}
                     disabled={!markerPosition} leftSection={<IconMapPin size={16} />}
                 >
-                    Confirm Location
+                    {t('confirm')}
                 </Button>
             </Group>
         </div>

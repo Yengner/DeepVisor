@@ -182,3 +182,7 @@
     max-height: 96px;
   }
 }
+
+/* Readable at arm's length: badges are 13px and up; muted labels follow the theme in dark mode. */
+.page :global(.mantine-Badge-root) { height: 26px; padding-inline: 10px; font-size: 13px; }
+.page :global(.mantine-Text-root[data-size='xs']) { font-size: 13px; }

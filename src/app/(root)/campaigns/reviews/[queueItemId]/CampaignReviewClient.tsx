@@ -405,10 +405,10 @@ export default function CampaignReviewClient({
             </Button>
             <Button
               component="a"
-              href="/calendar"
+              href="/campaigns"
               rightSection={<IconArrowUpRight size={16} />}
             >
-              Calendar
+              Campaigns
             </Button>
           </Group>
         </Group>

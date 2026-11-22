@@ -84,10 +84,10 @@ export default function AlertSettings({ initialNotificationPreference, initialRe
             onChange={event => { const zone = event.currentTarget.value || null; setNotify(current => ({ ...current, timeZone: zone })); setReport(current => ({ ...current, timeZone: zone })); touch(); }} />
           <div>
             <div className={classes.fieldGrid}>
-              <Select label={t('alerts.quietStart')} placeholder={t('alerts.none')} clearable data={hours}
+              <Select label={t('alerts.quietStart')} placeholder={t('alerts.none')} clearable clearButtonProps={{ 'aria-label': t('clearValue') }} data={hours}
                 value={notify.quietHoursStart == null ? null : String(notify.quietHoursStart)}
                 onChange={value => { setNotify(current => ({ ...current, quietHoursStart: value == null ? null : Number(value) })); touch(); }} />
-              <Select label={t('alerts.quietEnd')} placeholder={t('alerts.none')} clearable data={hours}
+              <Select label={t('alerts.quietEnd')} placeholder={t('alerts.none')} clearable clearButtonProps={{ 'aria-label': t('clearValue') }} data={hours}
                 value={notify.quietHoursEnd == null ? null : String(notify.quietHoursEnd)}
                 onChange={value => { setNotify(current => ({ ...current, quietHoursEnd: value == null ? null : Number(value) })); touch(); }} />
             </div>

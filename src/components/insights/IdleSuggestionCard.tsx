@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@mantine/core';
 import { Eye, Lightbulb, TriangleAlert } from 'lucide-react';
 import { STATS_DAYS, type IdleSuggestion } from '@/lib/shared/suggestions/idle';
+import { causeFromTitle } from '@/lib/shared/insights/health';
 import { MediaImage } from '@/components/campaigns/exploration/AdvertisingExplorer';
 import ProjectionChart from './ProjectionChart';
 import styles from './IdleSuggestionCard.module.css';
@@ -20,6 +21,7 @@ import styles from './IdleSuggestionCard.module.css';
 export default function IdleSuggestionCard({ suggestion, currency, interactive = true, welcomed = false }: { suggestion: IdleSuggestion; currency: string | null; interactive?: boolean; welcomed?: boolean }) {
   const t = useTranslations('suggestion');
   const tAll = useTranslations();
+  const tIssue = useTranslations('issueText');
   const locale = useLocale();
   const intlLocale = locale === 'es' ? 'es-US' : 'en-US';
   const date = new Intl.DateTimeFormat(intlLocale, { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${suggestion.lastSpendDay}T12:00:00Z`));
@@ -29,6 +31,12 @@ export default function IdleSuggestionCard({ suggestion, currency, interactive =
     : v.toFixed(2);
   const count = (v: number) => new Intl.NumberFormat(intlLocale).format(v);
 
+  // The saved suggestion keeps the issue's English title; word the known account causes in the reader's language.
+  const accountIssueTitle = (title: string) => {
+    const cause = causeFromTitle(title);
+    return cause ? tIssue(`cause.${cause}.title`) : title;
+  };
+
   if (suggestion.kind === 'account') {
     return (
       <section className={`${styles.card} ${styles.blocked}`} aria-labelledby="idle-suggestion">
@@ -36,7 +44,7 @@ export default function IdleSuggestionCard({ suggestion, currency, interactive =
         <div className={styles.blockedBody}>
           {!welcomed && <p className={styles.since}>{t('offSince', { date })}</p>}
           <h3 id="idle-suggestion">{t('accountTitle')}</h3>
-          <p>{suggestion.issue ? t('accountBody', { issue: suggestion.issue }) : t('accountBodyGeneric')}</p>
+          <p>{suggestion.issue ? t('accountBody', { issue: accountIssueTitle(suggestion.issue) }) : t('accountBodyGeneric')}</p>
           <div className={styles.actions}>
             <Button component="a" href="https://adsmanager.facebook.com/" target="_blank" rel="noreferrer" size="md" color="red">{t('openAdsManager')}</Button>
           </div>

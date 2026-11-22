@@ -20,7 +20,7 @@ export function dailyNotification(previous: DailyBundle | null, next: { id: stri
   const many = ids.length > 1;
   return {
     bundle: { day: next.day, presentationIds: ids, urgent } satisfies DailyBundle,
-    title: many ? `${ids.length} advertising updates today` : 'Your advertising update',
+    title: many ? `${ids.length} advertising updates` : 'Your advertising update',
     message: urgent
       ? many ? 'At least one of today’s updates needs your attention.' : 'An advertising update needs your attention.'
       : many ? 'Your catch-up and recent changes are ready.' : 'Your saved advertising catch-up is ready.',

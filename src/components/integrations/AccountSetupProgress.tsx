@@ -1,20 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Loader, Progress } from "@mantine/core";
 import type { FirstSyncJobStatus, FirstSyncStage } from "@/lib/shared/types/integrations";
 
-/** Plain-language step for each first-sync stage, in the order the worker runs them. */
-const STEPS: Array<{ stage: FirstSyncStage; label: string }> = [
-  { stage: "resolving_account", label: "Opening your ad account" },
-  { stage: "syncing_campaigns", label: "Getting your campaigns" },
-  { stage: "syncing_adsets", label: "Getting your ad sets" },
-  { stage: "syncing_ads", label: "Getting your ads" },
-  { stage: "syncing_creatives", label: "Getting your ad images and videos" },
-  { stage: "syncing_performance_windows", label: "Getting your results" },
-  { stage: "finalizing_summaries", label: "Adding up your results" },
-  { stage: "running_assessments", label: "Checking how your ads are doing" },
-];
+/** The first-sync stages in the order the worker runs them; each is worded in the catalog (`accountSetup.steps`). */
+const STEPS = [
+  "resolving_account",
+  "syncing_campaigns",
+  "syncing_adsets",
+  "syncing_ads",
+  "syncing_creatives",
+  "syncing_performance_windows",
+  "finalizing_summaries",
+  "running_assessments",
+] as const satisfies readonly FirstSyncStage[];
 
 const POLL_MS = 4000;
 const GIVE_UP_MS = 15 * 60_000;
@@ -26,6 +27,7 @@ const GIVE_UP_MS = 15 * 60_000;
  */
 export function AccountSetupProgress({ jobId }: { jobId: string }) {
   const router = useRouter();
+  const t = useTranslations("accountSetup");
   const [job, setJob] = useState<FirstSyncJobStatus | null>(null);
   const [stalled, setStalled] = useState(false);
 
@@ -63,32 +65,32 @@ export function AccountSetupProgress({ jobId }: { jobId: string }) {
     };
   }, [jobId, router]);
 
-  const index = job?.stage ? STEPS.findIndex((step) => step.stage === job.stage) : -1;
+  const index = job?.stage ? STEPS.findIndex((stage) => stage === job.stage) : -1;
   const current = index >= 0 ? STEPS[index] : null;
   const counts = job?.counts;
   const found = counts
     ? [
-        counts.campaignsSynced ? `${counts.campaignsSynced} campaigns` : null,
-        counts.adsSynced ? `${counts.adsSynced} ads` : null,
+        counts.campaignsSynced ? t("campaigns", { count: counts.campaignsSynced }) : null,
+        counts.adsSynced ? t("ads", { count: counts.adsSynced }) : null,
       ].filter(Boolean).join(" · ")
     : "";
 
   if (stalled) {
-    return <p role="status">This is taking longer than usual. It keeps running — reload this page in a few minutes.</p>;
+    return <p role="status">{t("stalled")}</p>;
   }
   return (
     <div role="status" aria-live="polite" style={{ display: "grid", gap: 8, width: "min(360px, 100%)" }}>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
         <Loader size="xs" aria-hidden />
-        {current ? current.label : job?.status === "queued" ? "Starting your account setup" : "Syncing your Meta data"}
+        {current ? t(`steps.${current}`) : job?.status === "queued" ? t("queued") : t("syncing")}
       </span>
       <Progress
         value={index >= 0 ? Math.round(((index + 1) / (STEPS.length + 1)) * 100) : 5}
-        aria-label="Account setup progress"
+        aria-label={t("progressAria")}
         animated
       />
-      {found && <small>Found {found} so far</small>}
-      <small>You can leave this page. Your dashboard fills in when it is done.</small>
+      {found && <small>{t("found", { found })}</small>}
+      <small>{t("leaveNote")}</small>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
     Badge,
     Button,
@@ -23,22 +24,11 @@ import {
     IconTargetArrow,
 } from '@tabler/icons-react';
 import type { CampaignTreeNode } from '@/lib/server/data';
+import { useCodeLabels } from '../hooks/useCodeLabels';
 
 interface ManualMetaAdSetStarterProps {
     campaigns: CampaignTreeNode[];
     initialCampaignId?: string | null;
-}
-
-function formatObjective(value: string | null): string {
-    if (!value) {
-        return 'Lead generation';
-    }
-
-    return value
-        .toLowerCase()
-        .split('_')
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' ');
 }
 
 export default function ManualMetaAdSetStarter({
@@ -46,6 +36,8 @@ export default function ManualMetaAdSetStarter({
     initialCampaignId = null,
 }: ManualMetaAdSetStarterProps) {
     const router = useRouter();
+    const t = useTranslations('createManual.adSetStarter');
+    const codes = useCodeLabels();
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
         initialCampaignId && campaigns.some((campaign) => campaign.id === initialCampaignId)
             ? initialCampaignId
@@ -70,13 +62,11 @@ export default function ManualMetaAdSetStarter({
             <Stack gap="xl">
                 <Stack gap="xs" className="dv-create-hero">
                     <Badge w="fit-content" size="lg" variant="light" className="app-platform-page-badge">
-                        Meta Ad Set Builder
+                        {t('badge')}
                     </Badge>
-                    <Title order={2}>Add a new ad set inside an existing campaign</Title>
+                    <Title order={2}>{t('title')}</Title>
                     <Text c="dimmed" maw={720}>
-                        Choose the campaign you want to build inside first. DeepVisor will then open
-                        a focused ad set flow so you can dial in targeting and add the first creative
-                        without stepping through the full campaign wizard.
+                        {t('intro')}
                     </Text>
                 </Stack>
 
@@ -88,17 +78,16 @@ export default function ManualMetaAdSetStarter({
                                     <IconLayersIntersect size={22} />
                                 </ThemeIcon>
                                 <Stack gap={2}>
-                                    <Text fw={700}>Choose the parent campaign</Text>
+                                    <Text fw={700}>{t('chooseTitle')}</Text>
                                     <Text size="sm" c="dimmed">
-                                        Your new ad set and its first creative will live inside this
-                                        existing campaign.
+                                        {t('chooseHint')}
                                     </Text>
                                 </Stack>
                             </Group>
 
                             <Select
-                                label="Existing campaign"
-                                placeholder="Pick a campaign"
+                                label={t('campaignLabel')}
+                                placeholder={t('campaignPlaceholder')}
                                 searchable
                                 size="md"
                                 value={selectedCampaignId}
@@ -107,7 +96,7 @@ export default function ManualMetaAdSetStarter({
                                     value: campaign.id,
                                     label: campaign.name,
                                 }))}
-                                nothingFoundMessage="No campaigns found for this ad account"
+                                nothingFoundMessage={t('noCampaigns')}
                             />
 
                             <Group justify="apart">
@@ -116,7 +105,7 @@ export default function ManualMetaAdSetStarter({
                                     leftSection={<IconArrowLeft size={16} />}
                                     onClick={() => router.push('/campaigns')}
                                 >
-                                    Back to campaigns
+                                    {t('backToCampaigns')}
                                 </Button>
                                 <Button
                                     size="md"
@@ -124,7 +113,7 @@ export default function ManualMetaAdSetStarter({
                                     disabled={!selectedCampaignId}
                                     onClick={handleContinue}
                                 >
-                                    Continue to ad set form
+                                    {t('continue')}
                                 </Button>
                             </Group>
                         </Stack>
@@ -143,7 +132,7 @@ export default function ManualMetaAdSetStarter({
                                 <Group justify="apart" align="flex-start">
                                     <Stack gap={4}>
                                         <Text size="sm" tt="uppercase" fw={700} c="dimmed" lts="0.08em">
-                                            Selected campaign
+                                            {t('selectedCampaign')}
                                         </Text>
                                         <Title order={3}>{selectedCampaign.name}</Title>
                                     </Stack>
@@ -151,7 +140,7 @@ export default function ManualMetaAdSetStarter({
                                         variant="light"
                                         color={selectedCampaign.status?.toLowerCase() === 'active' ? 'green' : 'gray'}
                                     >
-                                        {selectedCampaign.status ?? 'Status unavailable'}
+                                        {selectedCampaign.status ? codes.status(selectedCampaign.status) : t('statusUnavailable')}
                                     </Badge>
                                 </Group>
 
@@ -162,9 +151,9 @@ export default function ManualMetaAdSetStarter({
                                                 <IconTargetArrow size={18} />
                                             </ThemeIcon>
                                             <Stack gap={2}>
-                                                <Text size="sm" fw={600}>Objective</Text>
+                                                <Text size="sm" fw={600}>{t('objective')}</Text>
                                                 <Text size="sm" c="dimmed">
-                                                    {formatObjective(selectedCampaign.objective)}
+                                                    {selectedCampaign.objective ? codes.objective(selectedCampaign.objective) : t('leadGeneration')}
                                                 </Text>
                                             </Stack>
                                         </Group>
@@ -176,9 +165,9 @@ export default function ManualMetaAdSetStarter({
                                                 <IconBriefcase size={18} />
                                             </ThemeIcon>
                                             <Stack gap={2}>
-                                                <Text size="sm" fw={600}>Existing ad sets</Text>
+                                                <Text size="sm" fw={600}>{t('existingAdSets')}</Text>
                                                 <Text size="sm" c="dimmed">
-                                                    {selectedCampaign.adset_metrics.length} currently inside this campaign
+                                                    {t('existingAdSetsCount', { count: selectedCampaign.adset_metrics.length })}
                                                 </Text>
                                             </Stack>
                                         </Group>
@@ -188,21 +177,19 @@ export default function ManualMetaAdSetStarter({
                                 <Card withBorder radius="lg" p="md" bg="var(--dv-card-panel)">
                                     <Stack gap="xs">
                                         <Text size="sm" fw={700}>
-                                            What happens next
+                                            {t('whatNext')}
                                         </Text>
                                         <Text size="sm" c="dimmed">
-                                            You will go straight into the ad set builder with this
-                                            campaign already chosen, then add the first creative for
-                                            the new ad set before review.
+                                            {t('whatNextBody')}
                                         </Text>
                                     </Stack>
                                 </Card>
                             </Stack>
                         ) : (
                             <Stack justify="center" align="center" h="100%" gap="sm">
-                                <Text fw={600}>No campaign selected yet</Text>
+                                <Text fw={600}>{t('emptyTitle')}</Text>
                                 <Text size="sm" c="dimmed" ta="center">
-                                    Pick a campaign on the left and the builder preview will update here.
+                                    {t('emptyBody')}
                                 </Text>
                             </Stack>
                         )}
