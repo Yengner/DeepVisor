@@ -22,7 +22,18 @@
     "primaryMobileNavigation": "Primary mobile navigation",
     "toCheck": "{label} · {count} to check",
     "overviewHome": "DeepVisor Overview",
-    "leads": "Leads"
+    "leads": "Leads",
+    "bell": {
+      "open": "Open notifications",
+      "title": "Notifications",
+      "subtitle": "Recent updates",
+      "markRead": "Mark read",
+      "viewAll": "View notification center",
+      "caughtUp": "You are caught up",
+      "caughtUpHint": "New updates will appear here.",
+      "recently": "Recently",
+      "justNow": "Just now"
+    }
   },
   "metrics": {
     "spend": "Spend",
@@ -852,7 +863,8 @@
       "title": "Tell us what to improve",
       "body": "Say what happened and what you expected. Please leave out passwords.",
       "send": "Send feedback"
-    }
+    },
+    "clearValue": "Clear this answer"
   },
   "rerun": {
     "metaTitle": "Run this ad again",
@@ -916,7 +928,9 @@
       "gone": "That ad is no longer available.",
       "account": "Select your Meta ad account first.",
       "conflict": "This plan was changed in another window. Reload the page to see the latest."
-    }
+    },
+    "fewerDays": "One day fewer",
+    "moreDays": "One day more"
   },
   "drafts": {
     "metaTitle": "Drafts",
@@ -1430,7 +1444,8 @@
       "moreWaiting": "More updates are waiting. They stay unread until shown.",
       "inHistory": "This update stays in your history.",
       "saving": "Saving…",
-      "gotIt": "Got it"
+      "gotIt": "Got it",
+      "close": "Close"
     },
     "history": {
       "back": "Back",
@@ -1467,7 +1482,8 @@
       "loading": "Loading saved updates…",
       "loadOlder": "Load older updates",
       "savedTitle": "Saved advertising update"
-    }
+    },
+    "close": "Close"
   },
   "labels": {
     "status": {

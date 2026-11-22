@@ -22,7 +22,18 @@
     "primaryMobileNavigation": "Navegación principal móvil",
     "toCheck": "{label} · {count} por revisar",
     "overviewHome": "Resumen de DeepVisor",
-    "leads": "Clientes"
+    "leads": "Clientes",
+    "bell": {
+      "open": "Abrir notificaciones",
+      "title": "Notificaciones",
+      "subtitle": "Novedades recientes",
+      "markRead": "Marcar como leídas",
+      "viewAll": "Ver todas las notificaciones",
+      "caughtUp": "Estás al día",
+      "caughtUpHint": "Las novedades nuevas aparecerán aquí.",
+      "recently": "Hace poco",
+      "justNow": "Ahora mismo"
+    }
   },
   "metrics": {
     "spend": "Gasto",
@@ -852,7 +863,8 @@
       "title": "Cuéntanos qué mejorar",
       "body": "Dinos qué pasó y qué esperabas. Por favor no incluyas contraseñas.",
       "send": "Enviar comentarios"
-    }
+    },
+    "clearValue": "Borrar esta respuesta"
   },
   "rerun": {
     "metaTitle": "Repetir este anuncio",
@@ -916,7 +928,9 @@
       "gone": "Ese anuncio ya no está disponible.",
       "account": "Selecciona primero tu cuenta de anuncios de Meta.",
       "conflict": "Este plan se cambió en otra ventana. Recarga la página para ver lo más reciente."
-    }
+    },
+    "fewerDays": "Un día menos",
+    "moreDays": "Un día más"
   },
   "drafts": {
     "metaTitle": "Borradores",
@@ -1430,7 +1444,8 @@
       "moreWaiting": "Hay más novedades esperando. Quedan sin leer hasta que las veas.",
       "inHistory": "Esta novedad queda en tu historial.",
       "saving": "Guardando…",
-      "gotIt": "Entendido"
+      "gotIt": "Entendido",
+      "close": "Cerrar"
     },
     "history": {
       "back": "Volver",
@@ -1467,7 +1482,8 @@
       "loading": "Cargando novedades guardadas…",
       "loadOlder": "Cargar novedades anteriores",
       "savedTitle": "Novedad guardada"
-    }
+    },
+    "close": "Cerrar"
   },
   "labels": {
     "status": {

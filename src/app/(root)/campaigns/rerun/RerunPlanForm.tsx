@@ -155,8 +155,14 @@ export default function RerunPlanForm({ data, canPrepare }: { data: RerunPlanDat
               setCustomDays(false); edit(setDays)(Number(value));
             }} />
           {customDays && (
-            <NumberInput label={t('customDays')} value={days} min={RERUN_MIN_DAYS} max={RERUN_MAX_DAYS} allowDecimal={false} disabled={!canPrepare}
-              onChange={value => edit(setDays)(typeof value === 'number' ? value : Number.NaN)} className={styles.customDays} />
+            <div className={styles.stepper} role="group" aria-label={t('customDays')}>
+              <ActionIcon size={48} variant="default" aria-label={t('fewerDays')} disabled={!canPrepare || !(days > RERUN_MIN_DAYS)}
+                onClick={() => edit(setDays)(Math.max(RERUN_MIN_DAYS, (Number.isFinite(days) ? days : RERUN_MIN_DAYS + 1) - 1))}><Minus size={20} /></ActionIcon>
+              <NumberInput aria-label={t('customDays')} value={days} hideControls min={RERUN_MIN_DAYS} max={RERUN_MAX_DAYS} allowDecimal={false} inputMode="numeric" disabled={!canPrepare}
+                onChange={value => edit(setDays)(typeof value === 'number' ? value : Number.NaN)} classNames={{ input: styles.budgetInput }} />
+              <ActionIcon size={48} variant="default" aria-label={t('moreDays')} disabled={!canPrepare || !(days < RERUN_MAX_DAYS)}
+                onClick={() => edit(setDays)(Math.min(RERUN_MAX_DAYS, (Number.isFinite(days) ? days : 0) + 1))}><Plus size={20} /></ActionIcon>
+            </div>
           )}
         </div>
 

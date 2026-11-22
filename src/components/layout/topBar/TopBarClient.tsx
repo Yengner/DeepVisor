@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   ActionIcon,
   Avatar,
@@ -31,7 +31,6 @@ import {
 } from '@/lib/client';
 import {
   formatNotificationPreviewMessage,
-  formatRelativeTime,
   type NotificationFeedItem,
 } from '@/lib/shared';
 import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
@@ -60,6 +59,7 @@ export default function TopBarClient({
   initialAccountId,
 }: TopBarClientProps) {
   const t = useTranslations('nav');
+  const intl = useLocale() === 'es' ? 'es-US' : 'en-US';
   const router = useRouter();
   const onCampaigns = (usePathname() ?? "").startsWith("/campaigns");
   const [userNotifications, setUserNotifications] =
@@ -81,19 +81,27 @@ export default function TopBarClient({
       .join('')
       .toUpperCase() || 'DV';
 
-  const formatNotificationTime = (value: string) =>
-    formatRelativeTime(value, {
-      emptyLabel: 'Recently',
-      futureLabel: 'Just now',
-      includeSeconds: true,
-    });
+  // "Now" is read once when the bar mounts, so relative times don't depend on the render clock.
+  const [now] = useState(() => Date.now());
+  const formatNotificationTime = (value: string) => {
+    const time = Date.parse(value);
+    if (!Number.isFinite(time)) return t('bell.recently');
+    const seconds = (time - now) / 1000;
+    if (seconds > 0 || Math.abs(seconds) < 60) return t('bell.justNow');
+    const format = new Intl.RelativeTimeFormat(intl, { numeric: 'auto', style: 'narrow' });
+    for (const [unit, size] of [['day', 86400], ['hour', 3600], ['minute', 60]] as const) {
+      if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit);
+    }
+    return t('bell.justNow');
+  };
 
   const markAllRead = () => {
     setUserNotifications((current) =>
       current.map((notification) => ({ ...notification, read: true }))
     );
     setUnreadIds([]);
-    void markAllNotificationsAsReadClient(unreadIds);
+    // Refresh so the phone nav's unread count (rendered by the server) follows the bell.
+    void markAllNotificationsAsReadClient(unreadIds).then(() => router.refresh());
   };
 
   const handleNotificationClick = (notification: NotificationFeedItem) => {
@@ -104,7 +112,7 @@ export default function TopBarClient({
         )
       );
       setUnreadIds((current) => current.filter((id) => id !== notification.id));
-      void markNotificationReadClient(notification.id);
+      void markNotificationReadClient(notification.id).then(() => router.refresh());
     }
 
     if (notification.link) {
@@ -152,7 +160,7 @@ export default function TopBarClient({
               <ActionIcon
                 size={38}
                 variant="subtle"
-                aria-label="Open notifications"
+                aria-label={t('bell.open')}
                 styles={{
                   root: {
                     color: '#d4d8dd',
@@ -175,12 +183,12 @@ export default function TopBarClient({
           >
             <Group justify="space-between" px="sm" py={8}>
               <div>
-                <Text fw={800} size="sm">Notifications</Text>
-                <Text size="xs" c="dimmed">Recent workspace signals</Text>
+                <Text fw={800} size="md">{t('bell.title')}</Text>
+                <Text size="sm" c="dimmed">{t('bell.subtitle')}</Text>
               </div>
               {notificationCount > 0 ? (
-                <Button variant="subtle" size="compact-xs" onClick={markAllRead}>
-                  Mark read
+                <Button variant="subtle" size="compact-md" onClick={markAllRead}>
+                  {t('bell.markRead')}
                 </Button>
               ) : null}
             </Group>
@@ -188,7 +196,7 @@ export default function TopBarClient({
 
             {userNotifications.length > 0 ? (
               <>
-                <Box px={6} pb={6} mah="54vh" style={{ overflowY: 'auto' }}>
+                <Box px={6} pb={6} mah="min(46vh, 290px)" style={{ overflowY: 'auto' }}>
                   {userNotifications.map((notification) => (
                     <Menu.Item
                       key={notification.id}
@@ -197,14 +205,14 @@ export default function TopBarClient({
                     >
                       <div className="w-full py-0.5">
                         <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
-                          <Text size="sm" fw={800} lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
+                          <Text size="md" fw={800} lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
                             {notification.title}
                           </Text>
-                          <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>
+                          <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
                             {formatNotificationTime(notification.created_at)}
                           </Text>
                         </Group>
-                        <Text size="xs" c="dimmed" lineClamp={2} mt={3} title={notification.message}>
+                        <Text size="sm" c="dimmed" lineClamp={2} mt={3} title={notification.message}>
                           {formatNotificationPreviewMessage(notification.message)}
                         </Text>
                       </div>
@@ -214,14 +222,14 @@ export default function TopBarClient({
                 <Menu.Divider />
                 <Menu.Item onClick={() => router.push('/notifications')}>
                   <Text size="sm" fw={700} ta="center" c="signal.8">
-                    View notification center
+                    {t('bell.viewAll')}
                   </Text>
                 </Menu.Item>
               </>
             ) : (
               <Box p="lg" ta="center">
-                <Text fw={700} size="sm">You are caught up</Text>
-                <Text size="xs" c="dimmed" mt={3}>New account signals will appear here.</Text>
+                <Text fw={700} size="md">{t('bell.caughtUp')}</Text>
+                <Text size="sm" c="dimmed" mt={3}>{t('bell.caughtUpHint')}</Text>
               </Box>
             )}
           </Menu.Dropdown>
@@ -231,7 +239,7 @@ export default function TopBarClient({
           <Menu.Target>
             <UnstyledButton
               className="rounded-md border border-[#284665] bg-[#102f50] px-1.5 py-1 transition-colors hover:border-[#4d5662]"
-              aria-label="Open account menu"
+              aria-label={t('openAccountMenu')}
             >
               <Group gap={8} wrap="nowrap">
                 <Avatar
@@ -250,10 +258,10 @@ export default function TopBarClient({
                   {userInitials}
                 </Avatar>
                 <div className="hidden max-w-36 min-w-0 lg:block">
-                  <Text size="xs" fw={800} c="white" lineClamp={1}>
-                    {fullName || 'Account'}
+                  <Text size="sm" fw={800} c="white" lineClamp={1}>
+                    {fullName || t('account')}
                   </Text>
-                  <Text size="10px" c="#b0c4da" lineClamp={1}>
+                  <Text size="xs" c="#b0c4da" lineClamp={1}>
                     {workspaceName || 'Workspace'}
                   </Text>
                 </div>
@@ -263,16 +271,16 @@ export default function TopBarClient({
           </Menu.Target>
 
           <Menu.Dropdown>
-            <Menu.Label>{fullName || 'Account'}</Menu.Label>
+            <Menu.Label>{fullName || t('account')}</Menu.Label>
             <Menu.Item leftSection={<IconUser size={16} />} onClick={() => router.push('/settings#profile')}>
-              Profile
+              {t('profile')}
             </Menu.Item>
             <Menu.Item leftSection={<IconSettings size={16} />} onClick={() => router.push('/settings')}>
-              Settings
+              {t('settings')}
             </Menu.Item>
             <Menu.Divider />
             <Menu.Item color="red" leftSection={<IconLogout size={16} />} onClick={clientHandleSignOut}>
-              Log out
+              {t('logOut')}
             </Menu.Item>
           </Menu.Dropdown>
         </Menu>

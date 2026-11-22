@@ -82,7 +82,7 @@
   font-variant-numeric: tabular-nums;
   border: 1px solid var(--dv-input-border) !important; border-radius: var(--dv-radius-md) !important;
 }
-.customDays { max-width: 220px; }
+
 .field :global(.mantine-SegmentedControl-root) { padding: 4px; background: var(--dv-card-inset); }
 .field :global(.mantine-SegmentedControl-label) {
   display: flex; align-items: center; justify-content: center; min-height: 42px;

@@ -428,7 +428,7 @@ export default function InsightsPopup({ accountId }: { accountId: string | null 
   }
   return <>
     {!saved && error && <StatusBanner tone="gap">{error}</StatusBanner>}
-    <Modal opened={Boolean(saved)} onClose={() => void dismiss()} title={t('title')} size={740} fullScreen={mobile} radius="lg" closeOnClickOutside={false} closeOnEscape={!busy} classNames={insightModalClassNames}>
+    <Modal opened={Boolean(saved)} onClose={() => void dismiss()} title={t('title')} closeButtonProps={{ 'aria-label': t('close') }} size={740} fullScreen={mobile} radius="lg" closeOnClickOutside={false} closeOnEscape={!busy} classNames={insightModalClassNames}>
       {saved && <InsightContent saved={saved} />}
       {saved && <PopupCheckin key={saved.id} />}
       <InsightFooter error={error} note={additional ? t('moreWaiting') : t('inHistory')} action={busy ? t('saving') : t('gotIt')} onAction={() => void dismiss()} busy={busy} />
@@ -579,6 +579,6 @@ export function InsightsHistory() {
     </section>)}
     {loading && <p role="status" className={styles.caption}>{t('history.loading')}</p>}
     {next && <button type="button" className={styles.loadMore} disabled={loading} onClick={() => void load(next)}>{t('history.loadOlder')}</button>}
-    <Modal opened={Boolean(selected)} onClose={() => setSelected(null)} title={t('history.savedTitle')} classNames={insightModalClassNames} size={740} fullScreen={mobile} radius="lg">{selected && <InsightContent saved={selected} />}</Modal>
+    <Modal opened={Boolean(selected)} onClose={() => setSelected(null)} title={t('history.savedTitle')} closeButtonProps={{ 'aria-label': t('close') }} classNames={insightModalClassNames} size={740} fullScreen={mobile} radius="lg">{selected && <InsightContent saved={selected} />}</Modal>
   </div>;
 }

@@ -461,7 +461,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
       }}
     >
       {({ connectMeta, connecting }) => (
-        <Container size="xl" pos="relative" pb="xl" className={product.page}>
+        <Container size="xl" pos="relative" pb="xl" className={`${product.page} ${styles.page}`}>
           <LoadingOverlay
             visible={refreshing}
             zIndex={1000}
@@ -665,7 +665,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                       <Stack gap="md" p="lg" style={{ flex: 1 }}>
                         <div>
                           <Group gap="xs" wrap="wrap" mb={6}>
-                            <Text fw={700} size="lg" style={{ color: palette.text }}>
+                            <Text fw={700} size="lg" style={{ color: `light-dark(${palette.text}, var(--dv-text))` }}>
                               {platform.platformName}
                             </Text>
                             {!platform.integrationId && platform.platformKey !== 'meta' ? (
@@ -938,7 +938,7 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                             <ChannelArtwork platform={selectedPlatform} size={96} />
                             <div>
                               <Group gap="xs" wrap="wrap" mb={8}>
-                              <Text fw={700} size="xl" style={{ color: palette.text }}>
+                              <Text fw={700} size="xl" style={{ color: `light-dark(${palette.text}, var(--dv-text))` }}>
                                   {selectedPlatform.platformName}
                                 </Text>
                                 <StatusBadge status={selectedPlatform.status}/>

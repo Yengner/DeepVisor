@@ -1,4 +1,4 @@
-.status { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 3px 7px; border-radius: var(--dv-radius-sm); font-size: 12px; line-height: 1.4; font-weight: 700; white-space: normal; letter-spacing: 0; }
+.status { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 3px 8px; border-radius: var(--dv-radius-sm); font-size: 13px; line-height: 1.4; font-weight: 700; white-space: normal; letter-spacing: 0; }
 .positive { background: var(--dv-success-soft); color: var(--dv-success); }
 .information { background: var(--dv-info-soft); color: var(--dv-info-text); }
 .attention { background: var(--dv-gap-bg); color: var(--dv-gap-text); }
