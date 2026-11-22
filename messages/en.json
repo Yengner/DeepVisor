@@ -2838,5 +2838,44 @@
     "archivedNamed": "Meta reports {name} as archived or deleted.",
     "interrupted": "Delivery is interrupted because {name} is paused.",
     "unavailable": "Delivery eligibility changed. The available evidence does not establish a more specific cause."
+  },
+  "profileErrors": {
+    "invalidProfile": "Enter your first and last name (up to 100 characters) and a valid optional phone number.",
+    "signInProfile": "Sign in to update your profile.",
+    "saveFailed": "Your profile could not be saved. Please try again.",
+    "invalidEmail": "Enter a valid email address.",
+    "signInEmail": "Sign in to change your email.",
+    "recentSignInEmail": "For security, sign out and sign in again before changing your email.",
+    "sameEmail": "Enter a different email address.",
+    "emailRequestFailedCheck": "Email change could not be requested. Check the address and try again later.",
+    "emailRequestFailed": "Email change could not be requested. Please try again later.",
+    "deleteConfirm": "Type DELETE to confirm permanent account deletion.",
+    "signInDelete": "Sign in to delete your account.",
+    "recentSignInDelete": "For security, sign out and sign in again before deleting your account.",
+    "deleteUnavailable": "Account deletion is unavailable. Contact support before trying again.",
+    "deleteUnconfirmed": "Account deletion could not be confirmed. Please sign in again to check your account before retrying.",
+    "deleteLastOwner": "Transfer ownership to another member before deleting your account. Shared workspaces need a remaining owner.",
+    "deleteStorage": "Your account owns uploaded files. Contact support to remove or transfer those files before deleting your account.",
+    "deleteBusy": "A sync or advertising operation is still running or needs reconciliation. Please wait, or contact support if it is stuck."
+  },
+  "accountSetup": {
+    "steps": {
+      "resolving_account": "Opening your ad account",
+      "syncing_campaigns": "Getting your campaigns",
+      "syncing_adsets": "Getting your ad sets",
+      "syncing_ads": "Getting your ads",
+      "syncing_creatives": "Getting your ad images and videos",
+      "syncing_performance_windows": "Getting your results",
+      "finalizing_summaries": "Adding up your results",
+      "running_assessments": "Checking how your ads are doing"
+    },
+    "queued": "Starting your account setup",
+    "syncing": "Syncing your Meta data",
+    "progressAria": "Account setup progress",
+    "campaigns": "{count, plural, one {# campaign} other {# campaigns}}",
+    "ads": "{count, plural, one {# ad} other {# ads}}",
+    "found": "Found {found} so far",
+    "leaveNote": "You can leave this page. Your dashboard fills in when it is done.",
+    "stalled": "This is taking longer than usual. It keeps running — reload this page in a few minutes."
   }
 }

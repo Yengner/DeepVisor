@@ -2838,5 +2838,44 @@
     "archivedNamed": "Meta reporta que {name} fue archivado o eliminado.",
     "interrupted": "La entrega está interrumpida porque {name} está en pausa.",
     "unavailable": "Cambió la elegibilidad de entrega. La evidencia disponible no permite establecer una causa más específica."
+  },
+  "profileErrors": {
+    "invalidProfile": "Escribe tu nombre y apellido (hasta 100 caracteres) y, si quieres, un teléfono válido.",
+    "signInProfile": "Inicia sesión para actualizar tu perfil.",
+    "saveFailed": "No se pudo guardar tu perfil. Inténtalo de nuevo.",
+    "invalidEmail": "Escribe un correo electrónico válido.",
+    "signInEmail": "Inicia sesión para cambiar tu correo.",
+    "recentSignInEmail": "Por seguridad, cierra sesión y vuelve a iniciarla antes de cambiar tu correo.",
+    "sameEmail": "Escribe un correo diferente al actual.",
+    "emailRequestFailedCheck": "No se pudo solicitar el cambio de correo. Revisa la dirección e inténtalo más tarde.",
+    "emailRequestFailed": "No se pudo solicitar el cambio de correo. Inténtalo más tarde.",
+    "deleteConfirm": "Escribe DELETE para confirmar que quieres eliminar tu cuenta de forma permanente.",
+    "signInDelete": "Inicia sesión para eliminar tu cuenta.",
+    "recentSignInDelete": "Por seguridad, cierra sesión y vuelve a iniciarla antes de eliminar tu cuenta.",
+    "deleteUnavailable": "Ahora no se puede eliminar la cuenta. Contacta a soporte antes de volver a intentarlo.",
+    "deleteUnconfirmed": "No se pudo confirmar la eliminación de la cuenta. Inicia sesión de nuevo para revisar tu cuenta antes de reintentar.",
+    "deleteLastOwner": "Transfiere la propiedad a otro miembro antes de eliminar tu cuenta. Los espacios de trabajo compartidos necesitan un propietario.",
+    "deleteStorage": "Tu cuenta tiene archivos subidos. Contacta a soporte para eliminarlos o transferirlos antes de eliminar tu cuenta.",
+    "deleteBusy": "Todavía hay una sincronización u operación de publicidad en curso, o que necesita conciliarse. Espera, o contacta a soporte si se quedó atascada."
+  },
+  "accountSetup": {
+    "steps": {
+      "resolving_account": "Abriendo tu cuenta de anuncios",
+      "syncing_campaigns": "Obteniendo tus campañas",
+      "syncing_adsets": "Obteniendo tus conjuntos de anuncios",
+      "syncing_ads": "Obteniendo tus anuncios",
+      "syncing_creatives": "Obteniendo tus imágenes y videos",
+      "syncing_performance_windows": "Obteniendo tus resultados",
+      "finalizing_summaries": "Sumando tus resultados",
+      "running_assessments": "Revisando cómo van tus anuncios"
+    },
+    "queued": "Iniciando la configuración de tu cuenta",
+    "syncing": "Sincronizando tus datos de Meta",
+    "progressAria": "Avance de la configuración de la cuenta",
+    "campaigns": "{count, plural, one {# campaña} other {# campañas}}",
+    "ads": "{count, plural, one {# anuncio} other {# anuncios}}",
+    "found": "Hasta ahora se encontraron {found}",
+    "leaveNote": "Puedes salir de esta página. Tu panel se llenará cuando termine.",
+    "stalled": "Esto está tardando más de lo normal. Sigue en marcha: recarga esta página en unos minutos."
   }
 }

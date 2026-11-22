@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import en from '../../../../messages/en.json';
 import es from '../../../../messages/es.json';
-import { accountHealthIssues } from './health';
+import { accountHealthIssues, causeFromCode, causeFromTitle } from './health';
 import { fatigueIssues, hierarchyIssues } from './model';
 import type { Observation } from '@/lib/shared/lifecycle/model';
 import { issueWords, parseDelivery, parseDisapproved, parseFatigue, type IssueTranslate } from './issueText';
@@ -95,6 +95,14 @@ describe('issueWords', () => {
   it('puts the ad name and Meta’s notice into the Spanish sentence', () => {
     const [issue] = hierarchyIssues([entity({ effective: 'DISAPPROVED' })], noted);
     expect(issueWords(issue, translatorFor(es)).explanation).toBe('Autumn promo aparece como no aprobado. Aviso de Meta: “Card declined”');
+  });
+
+  it('finds the cause again from a saved title (the idle suggestion only keeps the title)', () => {
+    for (const [status, reason] of [[3], [8], [2, 3], [2, 1], [7], [2, 15], [101], [2, 99]]) {
+      const [issue] = accountHealthIssues({ account_status: status, disable_reason: reason }, '1') ?? [];
+      expect(causeFromTitle(issue.title), issue.title).toBe(causeFromCode(issue.code));
+    }
+    expect(causeFromTitle('Something else')).toBeNull();
   });
 
   it('keeps the saved English for a code or sentence it does not know', () => {

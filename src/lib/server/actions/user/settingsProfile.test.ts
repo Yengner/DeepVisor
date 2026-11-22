@@ -4,6 +4,11 @@ const m = vi.hoisted(() => ({
   rpc: vi.fn(), deleteUser: vi.fn(), signOut: vi.fn(), revalidate: vi.fn(), cookieDelete: vi.fn(), admin: vi.fn(),
 }));
 vi.mock('server-only', () => ({}));
+// Words messages from the real English catalog, so the assertions below read as the person would.
+vi.mock('next-intl/server', async () => {
+  const { default: en } = await import('../../../../../messages/en.json');
+  return { getTranslations: async (namespace: string) => (key: string) => (en as unknown as Record<string, Record<string, string>>)[namespace][key] };
+});
 vi.mock('next/cache', () => ({ revalidatePath: m.revalidate }));
 vi.mock('next/headers', () => ({ cookies: async () => ({ getAll: () => [{ name: 'sb-project-auth-token' }, { name: 'ad_account_row_id' }, { name: 'unrelated' }], delete: m.cookieDelete }) }));
 vi.mock('@/lib/server/supabase/server', () => ({ createServerClient: async () => ({

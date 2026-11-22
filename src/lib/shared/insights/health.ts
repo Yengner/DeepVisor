@@ -41,6 +41,12 @@ export function accountCause(status?:number,reason?:number):AccountCause|null{
  }
 }
 
+/** The cause whose saved English title this is, for places that only kept the title (the idle suggestion). */
+export function causeFromTitle(title:string):AccountCause|null{
+ const found=(Object.entries(CAUSES) as Array<[AccountCause,{title:string}]>).find(([,copy])=>copy.title===title);
+ return found?found[0]:null;
+}
+
 /** Read the cause back from a saved issue code such as `ACCOUNT_STATUS_2_REASON_3`. */
 export function causeFromCode(code:string):AccountCause|null{
  const match=/^ACCOUNT_STATUS_(\d+)(?:_REASON_(\d+))?$/.exec(code);
