@@ -10,6 +10,7 @@ import {
     IconBuildingStore, IconSettings, IconTarget, IconMessageCircle
 } from '@tabler/icons-react';
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { UseFormReturnType } from '@mantine/form';
 import type { CampaignFormValues } from '@/lib/server/actions/meta/types';
 import { useFilePreview } from '../hooks/useFilePreview';
@@ -43,6 +44,7 @@ export default function CreativeAssetsStep({
     platformData,
     adAccountId,
 }: CreativeAssetsStepProps) {
+    const t = useTranslations('createManual.creativeStep');
     // Get current ad set index
     const idx = form.values.activeAdSetIdx ?? 0;
     console.log('Current ad set index:', idx);
@@ -95,9 +97,9 @@ export default function CreativeAssetsStep({
             (!creative.existingCreativeIds || creative.existingCreativeIds.length === 0));
 
     const placeholderAd = {
-        headline: "Amazing Product Launch",
-        primaryText: "Discover our new collection with exclusive discounts for early buyers!",
-        description: "Free shipping on all orders",
+        headline: t('phHeadline'),
+        primaryText: t('phPrimary'),
+        description: t('phDescription'),
         image: "https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=500&auto=format&fit=crop",
     };
 
@@ -115,6 +117,12 @@ export default function CreativeAssetsStep({
         return ['upload', 'existing', 'auto'];
     };
 
+    const ctaCodes = ['LEARN_MORE', 'SHOP_NOW', 'SIGN_UP', 'BOOK_NOW', 'CONTACT_US', 'GET_OFFER'] as const;
+    const ctaOptions = ctaCodes.map((code) => ({ value: code, label: t(`ctas.${code}`) }));
+    const ctaLabel = t(
+        `ctas.${ctaCodes.find((code) => code === creative.adCallToAction) ?? 'LEARN_MORE'}`
+    );
+
     const handleOpenMediaModal = () => {
         setMediaModalOpened(true);
     };
@@ -127,9 +135,9 @@ export default function CreativeAssetsStep({
                     <Stack>
                         <Group justify="apart">
                             <Stack gap={0}>
-                                <Text fw={500} size="lg">Ad Creative Selection</Text>
+                                <Text fw={500} size="lg">{t('selectionTitle')}</Text>
                                 <Text size="sm" c="dimmed">
-                                    Choose how to create your ad
+                                    {t('selectionHint')}
                                 </Text>
                             </Stack>
                             <ThemeIcon size={42} radius="md" color="blue" variant="light">
@@ -141,8 +149,8 @@ export default function CreativeAssetsStep({
 
                         {/* Content Source Selection */}
                         <Radio.Group
-                            label="Content Source"
-                            description="Choose where your ad content comes from"
+                            label={t('sourceLabel')}
+                            description={t('sourceHint')}
                             {...form.getInputProps(`adSets.${idx}.creatives.0.contentSource`)}
                         >
                             <Stack mt="xs" gap="md">
@@ -161,8 +169,8 @@ export default function CreativeAssetsStep({
                                         <Group align="flex-start">
                                             <Radio value="upload" />
                                             <Stack gap={0}>
-                                                <Text fw={600}>Upload New Content</Text>
-                                                <Text size="sm" c="dimmed">Upload your own images or videos for the ad</Text>
+                                                <Text fw={600}>{t('uploadTitle')}</Text>
+                                                <Text size="sm" c="dimmed">{t('uploadHint')}</Text>
                                             </Stack>
                                         </Group>
                                     </Paper>
@@ -183,9 +191,9 @@ export default function CreativeAssetsStep({
                                         <Group align="flex-start">
                                             <Radio value="existing" />
                                             <Stack gap={0}>
-                                                <Text fw={600}>Use Existing Creatives</Text>
+                                                <Text fw={600}>{t('existingTitle')}</Text>
                                                 <Text size="sm" c="dimmed">
-                                                    Select from existing creatives in your account
+                                                    {t('existingHint')}
                                                 </Text>
                                             </Stack>
                                         </Group>
@@ -207,9 +215,9 @@ export default function CreativeAssetsStep({
                                         <Group align="flex-start">
                                             <Radio value="auto" />
                                             <Stack gap={0}>
-                                                <Text fw={600}>AI Content Selection</Text>
+                                                <Text fw={600}>{t('autoTitle')}</Text>
                                                 <Text size="sm" c="dimmed">
-                                                    AI selects the best content for your campaign
+                                                    {t('autoHint')}
                                                 </Text>
                                             </Stack>
                                         </Group>
@@ -222,9 +230,9 @@ export default function CreativeAssetsStep({
                         {creative.contentSource === 'upload' && (
                             <Stack mt="md">
                                 <FileInput
-                                    label="Upload Images/Videos"
-                                    description="Recommended size: 1080x1080px. Max 10 files."
-                                    placeholder="Select files"
+                                    label={t('fileLabel')}
+                                    description={t('fileHint')}
+                                    placeholder={t('filePlaceholder')}
                                     multiple
                                     accept="image/*,video/*"
                                     leftSection={<IconUpload size={16} />}
@@ -237,7 +245,7 @@ export default function CreativeAssetsStep({
 
                                 {filePreview.length > 0 && (
                                     <>
-                                        <Text size="sm" fw={500} mt="md">Preview</Text>
+                                        <Text size="sm" fw={500} mt="md">{t('preview')}</Text>
                                         <SimpleGrid cols={3} spacing="md">
                                             {filePreview.map((preview, index) => (
                                                 <Box
@@ -253,7 +261,7 @@ export default function CreativeAssetsStep({
                                                         height={120}
                                                         fit="cover"
                                                         radius="md"
-                                                        alt={`Preview ${index + 1}`}
+                                                        alt={t('previewAlt', { n: index + 1 })}
                                                     />
                                                     <Badge
                                                         size="xs"
@@ -279,7 +287,7 @@ export default function CreativeAssetsStep({
                         {/* Select Existing Creatives Option */}
                         {creative.contentSource === 'existing' && (
                             <Stack mt="md">
-                                <Text fw={500} size="sm">Use existing creative content</Text>
+                                <Text fw={500} size="sm">{t('useExisting')}</Text>
 
                                 {/* Show selected creative if any */}
                                 {creative.existingCreativeIds?.length > 0 ? (
@@ -290,14 +298,14 @@ export default function CreativeAssetsStep({
                                                     <Image
                                                         src={creative.adPrimaryText || placeholderAd.image}
                                                         radius="md"
-                                                        alt="Selected creative"
+                                                        alt={t('selectedAlt')}
                                                         fit="cover"
                                                     />
                                                 </AspectRatio>
                                                 <Stack gap={0}>
-                                                    <Text size="sm" fw={500}>{creative.adHeadline || "Selected Creative"}</Text>
+                                                    <Text size="sm" fw={500}>{creative.adHeadline || t('selectedFallback')}</Text>
                                                     <Text size="xs" c="dimmed">
-                                                        ID: {creative.existingCreativeIds[0]?.slice(-8) || ""}
+                                                        {t('idLine', { id: creative.existingCreativeIds[0]?.slice(-8) || '' })}
                                                     </Text>
                                                     <Button
                                                         variant="light"
@@ -305,7 +313,7 @@ export default function CreativeAssetsStep({
                                                         mt={5}
                                                         onClick={handleOpenMediaModal}
                                                     >
-                                                        Change
+                                                        {t('change')}
                                                     </Button>
                                                 </Stack>
                                             </Group>
@@ -318,7 +326,7 @@ export default function CreativeAssetsStep({
                                         variant="filled"
                                         color="blue"
                                     >
-                                        Browse Creative Content
+                                        {t('browse')}
                                     </Button>
                                 )}
                             </Stack>
@@ -344,34 +352,34 @@ export default function CreativeAssetsStep({
                                 </Center>
                                 <Paper p="md" withBorder radius="md" bg="var(--dv-primary-soft)" shadow="xs">
                                     <Stack gap="sm">
-                                        <Title order={5}>How AI Content Selection Works:</Title>
+                                        <Title order={5}>{t('howTitle')}</Title>
 
                                         <Group>
                                             <ThemeIcon color="blue" variant="light" radius="xl">
                                                 <IconSearch size={16} />
                                             </ThemeIcon>
-                                            <Text size="sm">Our AI analyzes your <b>existing content</b> across your connected accounts</Text>
+                                            <Text size="sm">{t.rich('how1', { b: (chunks) => <b>{chunks}</b> })}</Text>
                                         </Group>
 
                                         <Group>
                                             <ThemeIcon color="blue" variant="light" radius="xl">
                                                 <IconChartBar size={16} />
                                             </ThemeIcon>
-                                            <Text size="sm">We identify your <b>best performing</b> images, videos, and ad copy</Text>
+                                            <Text size="sm">{t.rich('how2', { b: (chunks) => <b>{chunks}</b> })}</Text>
                                         </Group>
 
                                         <Group>
                                             <ThemeIcon color="blue" variant="light" radius="xl">
                                                 <IconBuildingStore size={16} />
                                             </ThemeIcon>
-                                            <Text size="sm">We also draw from our <b>industry-specific content library</b> when needed</Text>
+                                            <Text size="sm">{t.rich('how3', { b: (chunks) => <b>{chunks}</b> })}</Text>
                                         </Group>
 
                                         <Group>
                                             <ThemeIcon color="blue" variant="light" radius="xl">
                                                 <IconSettings size={16} />
                                             </ThemeIcon>
-                                            <Text size="sm">We create <b>multiple variations</b> to test and optimize performance</Text>
+                                            <Text size="sm">{t.rich('how4', { b: (chunks) => <b>{chunks}</b> })}</Text>
                                         </Group>
                                     </Stack>
                                 </Paper>
@@ -387,32 +395,32 @@ export default function CreativeAssetsStep({
                                     <ThemeIcon size="md" variant="filled" radius="md" color="violet">
                                         <IconMessageCircle size={18} />
                                     </ThemeIcon>
-                                    <Title order={4}>Ad Content</Title>
+                                    <Title order={4}>{t('adContent')}</Title>
                                 </Group>
 
                                 <Stack gap="md">
                                     <TextInput
-                                        label="Headline"
-                                        description="Main title of your ad (max 40 characters)"
-                                        placeholder="e.g. Summer Sale - 50% Off Everything"
+                                        label={t('headline')}
+                                        description={t('headlineHint')}
+                                        placeholder={t('headlinePlaceholder')}
                                         maxLength={40}
                                         size="md"
                                         {...form.getInputProps(`adSets.${idx}.creatives.0.adHeadline`)}
                                     />
 
                                     <TextInput
-                                        label="Primary Text"
-                                        description="Main body text of your ad (max 125 characters)"
-                                        placeholder="e.g. Don't miss our biggest sale of the year! Limited time offer."
+                                        label={t('primaryText')}
+                                        description={t('primaryHint')}
+                                        placeholder={t('primaryPlaceholder')}
                                         maxLength={125}
                                         size="md"
                                         {...form.getInputProps(`adSets.${idx}.creatives.0.adPrimaryText`)}
                                     />
 
                                     <TextInput
-                                        label="Description"
-                                        description="Additional details (max 30 characters)"
-                                        placeholder="e.g. Free shipping on all orders"
+                                        label={t('description')}
+                                        description={t('descriptionHint')}
+                                        placeholder={t('descriptionPlaceholder')}
                                         maxLength={30}
                                         size="md"
                                         {...form.getInputProps(`adSets.${idx}.creatives.0.adDescription`)}
@@ -420,16 +428,9 @@ export default function CreativeAssetsStep({
 
                                     {/* Call to Action Button */}
                                     <Select
-                                        label="Call to Action"
-                                        description="Button text for your ad"
-                                        data={[
-                                            { value: 'LEARN_MORE', label: 'Learn More' },
-                                            { value: 'SHOP_NOW', label: 'Shop Now' },
-                                            { value: 'SIGN_UP', label: 'Sign Up' },
-                                            { value: 'BOOK_NOW', label: 'Book Now' },
-                                            { value: 'CONTACT_US', label: 'Contact Us' },
-                                            { value: 'GET_OFFER', label: 'Get Offer' },
-                                        ]}
+                                        label={t('cta')}
+                                        description={t('ctaHint')}
+                                        data={ctaOptions}
                                         size="md"
                                         {...form.getInputProps(`adSets.${idx}.creatives.0.adCallToAction`)}
                                     />
@@ -446,7 +447,7 @@ export default function CreativeAssetsStep({
                     <Card p="md" withBorder radius="md" mb="md" mt="lg" shadow="xs">
                         <Stack>
                             <Group mb="md" justify="apart">
-                                <Title order={4}>Ad Preview</Title>
+                                <Title order={4}>{t('previewTitle')}</Title>
                                 <ThemeIcon size="md" radius="md" color="blue" variant="light">
                                     <IconBrandMeta size={18} />
                                 </ThemeIcon>
@@ -460,13 +461,13 @@ export default function CreativeAssetsStep({
                                             <Center py="xl">
                                                 <Stack align="center">
                                                     <Loader size="sm" />
-                                                    <Text size="sm" c="dimmed">Loading preview...</Text>
+                                                    <Text size="sm" c="dimmed">{t('loadingPreview')}</Text>
                                                 </Stack>
                                             </Center>
                                         )}
 
                                         {previewError && (
-                                            <Alert color="red" title="Preview Error" mb="md">
+                                            <Alert color="red" title={t('previewErrorTitle')} mb="md">
                                                 {previewError}
                                             </Alert>
                                         )}
@@ -496,12 +497,12 @@ export default function CreativeAssetsStep({
                                                                 <Image
                                                                     src="https://placehold.co/100/4267B2/FFFFFF?text=FB"
                                                                     radius="xl"
-                                                                    alt="Facebook page"
+                                                                    alt={t('fbAlt')}
                                                                 />
                                                             </AspectRatio>
                                                             <Stack gap={0}>
-                                                                <Text size="sm" fw={500}>Your Business</Text>
-                                                                <Text size="xs" c="dimmed">Sponsored</Text>
+                                                                <Text size="sm" fw={500}>{t('yourBusiness')}</Text>
+                                                                <Text size="xs" c="dimmed">{t('sponsored')}</Text>
                                                             </Stack>
                                                         </Group>
                                                     </Group>
@@ -514,7 +515,7 @@ export default function CreativeAssetsStep({
                                                     {/* Ad image */}
                                                     <Image
                                                         src={getPreviewImage()}
-                                                        alt="Ad preview"
+                                                        alt={t('adPreviewAlt')}
                                                         height={180}
                                                         fit="cover"
                                                     />
@@ -537,13 +538,7 @@ export default function CreativeAssetsStep({
                                                                 fontWeight: 700,
                                                             }}
                                                         >
-                                                            {creative.adCallToAction === 'SHOP_NOW' ? 'Shop Now' :
-                                                                creative.adCallToAction === 'LEARN_MORE' ? 'Learn More' :
-                                                                    creative.adCallToAction === 'SIGN_UP' ? 'Sign Up' :
-                                                                        creative.adCallToAction === 'BOOK_NOW' ? 'Book Now' :
-                                                                            creative.adCallToAction === 'CONTACT_US' ? 'Contact Us' :
-                                                                                creative.adCallToAction === 'GET_OFFER' ? 'Get Offer' :
-                                                                                    'Learn More'}
+                                                            {ctaLabel}
                                                         </Box>
                                                     </Box>
                                                 </Paper>
@@ -564,12 +559,12 @@ export default function CreativeAssetsStep({
                                                     <Image
                                                         src="https://placehold.co/100/4267B2/FFFFFF?text=FB"
                                                         radius="xl"
-                                                        alt="Facebook page"
+                                                        alt={t('fbAlt')}
                                                     />
                                                 </AspectRatio>
                                                 <Stack gap={0}>
-                                                    <Text size="sm" fw={500}>Your Business</Text>
-                                                    <Text size="xs" c="dimmed">Sponsored</Text>
+                                                    <Text size="sm" fw={500}>{t('yourBusiness')}</Text>
+                                                    <Text size="xs" c="dimmed">{t('sponsored')}</Text>
                                                 </Stack>
                                             </Group>
                                         </Group>
@@ -582,7 +577,7 @@ export default function CreativeAssetsStep({
                                         {/* Ad image */}
                                         <Image
                                             src={getPreviewImage()}
-                                            alt="Ad preview"
+                                            alt={t('adPreviewAlt')}
                                             height={180}
                                             fit="cover"
                                         />
@@ -605,13 +600,7 @@ export default function CreativeAssetsStep({
                                                     fontWeight: 700,
                                                 }}
                                             >
-                                                {creative.adCallToAction === 'SHOP_NOW' ? 'Shop Now' :
-                                                    creative.adCallToAction === 'LEARN_MORE' ? 'Learn More' :
-                                                        creative.adCallToAction === 'SIGN_UP' ? 'Sign Up' :
-                                                            creative.adCallToAction === 'BOOK_NOW' ? 'Book Now' :
-                                                                creative.adCallToAction === 'CONTACT_US' ? 'Contact Us' :
-                                                                    creative.adCallToAction === 'GET_OFFER' ? 'Get Offer' :
-                                                                        'Learn More'}
+                                                {ctaLabel}
                                             </Box>
                                         </Box>
                                     </Paper>

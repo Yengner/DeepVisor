@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   Alert,
   AspectRatio,
@@ -42,7 +43,11 @@ import { formatCurrencyAmount } from '@/lib/shared';
 import { useExistingCreatives } from '../hooks/useExistingCreatives';
 import { useCreativePreview } from '../hooks/useCreativePreview';
 
-const FALLBACK_PREVIEW = 'https://placehold.co/640x640/f4f7fb/64748b?text=No+Preview';
+type Translate = ReturnType<typeof useTranslations<'createManual.media'>>;
+
+function fallbackPreview(t: Translate): string {
+  return `https://placehold.co/640x640/f4f7fb/64748b?text=${encodeURIComponent(t('noPreview'))}`;
+}
 
 interface MediaSelectionModalProps {
   opened: boolean;
@@ -67,8 +72,8 @@ export interface SelectedCreative {
   creativeIds?: string[];
 }
 
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat('en-US', {
+function formatNumber(value: number, intl: string): string {
+  return new Intl.NumberFormat(intl, {
     maximumFractionDigits: 1,
     notation: value >= 10000 ? 'compact' : 'standard',
   }).format(value);
@@ -83,67 +88,71 @@ function formatRate(value: number | null): string {
   return `${normalized.toFixed(normalized >= 10 ? 1 : 2)}%`;
 }
 
-function formatDate(value: string | null): string {
+function formatDate(value: string | null, intl: string, t: Translate): string {
   if (!value) {
-    return 'No date yet';
+    return t('noDate');
   }
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(intl, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   }).format(new Date(value));
 }
 
-function statLabel(stats: CreativeLibraryStats): string {
+function statLabel(stats: CreativeLibraryStats, intl: string, t: Translate): string {
   if (stats.results > 0) {
-    return `${formatNumber(stats.results)} results`;
+    return t('statResults', { n: stats.results, value: formatNumber(stats.results, intl) });
   }
 
   if (stats.clicks > 0) {
-    return `${formatNumber(stats.clicks)} clicks`;
+    return t('statClicks', { n: stats.clicks, value: formatNumber(stats.clicks, intl) });
   }
 
   if (stats.impressions > 0) {
-    return `${formatNumber(stats.impressions)} impressions`;
+    return t('statImpressions', { n: stats.impressions, value: formatNumber(stats.impressions, intl) });
   }
 
-  return 'No delivery yet';
+  return t('noDelivery');
 }
 
-function sortLabel(sort: CreativeLibrarySort): string {
+function sortLabel(sort: CreativeLibrarySort, t: Translate): string {
   switch (sort) {
     case 'newest':
-      return 'Newest first';
+      return t('sort.newest');
     case 'oldest':
-      return 'Oldest first';
+      return t('sort.oldest');
     case 'spend':
-      return 'Highest spend';
+      return t('sort.spend');
     case 'results':
-      return 'Most results';
+      return t('sort.results');
     case 'best':
     default:
-      return 'Best first';
+      return t('sort.best');
   }
 }
 
 function StatsGrid({
   stats,
   currencyCode,
+  intl,
+  t,
 }: {
   stats: CreativeLibraryStats;
   currencyCode?: string | null;
+  intl: string;
+  t: Translate;
 }) {
   const items = [
     {
-      label: 'Spend',
+      label: t('spend'),
       value: formatCurrencyAmount(stats.spend, currencyCode, {
         minimumFractionDigits: 0,
         maximumFractionDigits: stats.spend >= 100 ? 0 : 2,
       }),
       icon: IconCurrencyDollar,
     },
-    { label: 'Results', value: formatNumber(stats.results), icon: IconTargetArrow },
+    { label: t('results'), value: formatNumber(stats.results, intl), icon: IconTargetArrow },
     { label: 'CTR', value: formatRate(stats.ctr), icon: IconSparkles },
   ];
 
@@ -174,11 +183,15 @@ function CreativeCard({
   selected,
   onClick,
   currencyCode,
+  intl,
+  t,
 }: {
   creative: CreativeLibraryItem;
   selected: boolean;
   onClick: () => void;
   currencyCode?: string | null;
+  intl: string;
+  t: Translate;
 }) {
   return (
     <Paper
@@ -197,7 +210,7 @@ function CreativeCard({
         <Box style={{ position: 'relative' }}>
           <AspectRatio ratio={1}>
             <Image
-              src={creative.thumbnail_url || FALLBACK_PREVIEW}
+              src={creative.thumbnail_url || fallbackPreview(t)}
               alt={creative.name}
               fit="cover"
               radius="md"
@@ -211,7 +224,7 @@ function CreativeCard({
               leftSection={<IconStarFilled size={12} />}
               style={{ position: 'absolute', top: 8, left: 8 }}
             >
-              Best
+              {t('best')}
             </Badge>
           ) : null}
           {selected ? (
@@ -235,12 +248,12 @@ function CreativeCard({
               {creative.type}
             </Badge>
             <Text size="xs" c="dimmed">
-              {statLabel(creative.stats)}
+              {statLabel(creative.stats, intl, t)}
             </Text>
           </Group>
         </Stack>
 
-        <StatsGrid stats={creative.stats} currencyCode={currencyCode} />
+        <StatsGrid stats={creative.stats} currencyCode={currencyCode} intl={intl} t={t} />
       </Stack>
     </Paper>
   );
@@ -255,6 +268,8 @@ export default function MediaSelectionModal({
   currencyCode,
   initialSelectedId = null,
 }: MediaSelectionModalProps) {
+  const t = useTranslations('createManual.media');
+  const intl = useLocale() === 'es' ? 'es-US' : 'en-US';
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
   const [activeSource, setActiveSource] = useState<CreativeLibrarySource>(
     initialSelectedId?.startsWith('post:') ? 'page_post' : 'ad_creative'
@@ -339,8 +354,8 @@ export default function MediaSelectionModal({
 
   const activeEmptyText =
     activeSource === 'page_post'
-      ? 'No synced Page posts with ad history yet.'
-      : 'No synced ad creatives yet.';
+      ? t('emptyPosts')
+      : t('emptyCreatives');
 
   return (
     <Modal
@@ -360,9 +375,9 @@ export default function MediaSelectionModal({
             <IconPhoto size={18} />
           </ThemeIcon>
           <Stack gap={0}>
-            <Text fw={900}>Select existing creative</Text>
+            <Text fw={900}>{t('title')}</Text>
             <Text size="xs" c="dimmed">
-              Ranked by synced Meta performance
+              {t('subtitle')}
             </Text>
           </Stack>
         </Group>
@@ -389,28 +404,27 @@ export default function MediaSelectionModal({
             }}
           >
             <Tabs.List grow>
-              <Tabs.Tab value="ad_creative">Ad creatives</Tabs.Tab>
-              <Tabs.Tab value="page_post">Page posts</Tabs.Tab>
+              <Tabs.Tab value="ad_creative">{t('tabAds')}</Tabs.Tab>
+              <Tabs.Tab value="page_post">{t('tabPosts')}</Tabs.Tab>
             </Tabs.List>
           </Tabs>
 
           <Group justify="space-between" align="center" gap="xs" wrap="nowrap">
             <Text size="sm" fw={800} c="dark.8">
-              {creatives.length} {activeSource === 'page_post' ? 'posts' : 'creatives'}
+              {activeSource === 'page_post'
+                ? t('countPosts', { count: creatives.length })
+                : t('countCreatives', { count: creatives.length })}
             </Text>
             <Select
-              aria-label="Sort creative library"
+              aria-label={t('sortAria')}
               value={sort}
               onChange={(value) => setSort((value || 'best') as CreativeLibrarySort)}
               size="xs"
               w={170}
-              data={[
-                { value: 'best', label: 'Best first' },
-                { value: 'results', label: 'Most results' },
-                { value: 'spend', label: 'Highest spend' },
-                { value: 'newest', label: 'Newest first' },
-                { value: 'oldest', label: 'Oldest first' },
-              ]}
+              data={(['best', 'results', 'spend', 'newest', 'oldest'] as const).map((value) => ({
+                value,
+                label: t(`sort.${value}`),
+              }))}
             />
           </Group>
 
@@ -421,7 +435,7 @@ export default function MediaSelectionModal({
                   <Stack align="center" gap="xs">
                     <Loader size="md" />
                     <Text size="sm" c="dimmed">
-                      Loading existing creative performance...
+                      {t('loading')}
                     </Text>
                   </Stack>
                 </Center>
@@ -453,6 +467,8 @@ export default function MediaSelectionModal({
                   selected={selectedId === creative.id}
                   onClick={() => handleSelection(creative)}
                   currencyCode={currencyCode}
+                  intl={intl}
+                  t={t}
                 />
               ))}
             </Stack>
@@ -467,11 +483,11 @@ export default function MediaSelectionModal({
                   <Group gap="xs">
                     {selectedCreative.isBest ? (
                       <Badge color="yellow" variant="filled" leftSection={<IconStarFilled size={12} />}>
-                        Best performer
+                        {t('bestPerformer')}
                       </Badge>
                     ) : null}
                     <Badge color={selectedCreative.source === 'page_post' ? 'grape' : 'blue'} variant="light">
-                      {selectedCreative.source === 'page_post' ? 'Page post' : 'Ad creative'}
+                      {selectedCreative.source === 'page_post' ? t('sourcePost') : t('sourceAd')}
                     </Badge>
                   </Group>
                   <Text fw={900} size="lg" lineClamp={2} c="dark.8">
@@ -480,7 +496,10 @@ export default function MediaSelectionModal({
                   <Group gap={6} c="dimmed">
                     <IconCalendar size={14} />
                     <Text size="xs">
-                      {sortLabel(sort)} · Updated {formatDate(selectedCreative.updatedTime)}
+                      {t('updated', {
+                        sort: sortLabel(sort, t),
+                        date: formatDate(selectedCreative.updatedTime, intl, t),
+                      })}
                     </Text>
                   </Group>
                 </Stack>
@@ -527,7 +546,7 @@ export default function MediaSelectionModal({
                     }}
                   >
                     <Image
-                      src={selectedCreative.thumbnail_url || FALLBACK_PREVIEW}
+                      src={selectedCreative.thumbnail_url || fallbackPreview(t)}
                       alt={selectedCreative.name}
                       fit="contain"
                       maw="100%"
@@ -538,23 +557,23 @@ export default function MediaSelectionModal({
               </Box>
 
               <Divider />
-              <StatsGrid stats={selectedCreative.stats} currencyCode={currencyCode} />
+              <StatsGrid stats={selectedCreative.stats} currencyCode={currencyCode} intl={intl} t={t} />
               <SimpleGrid cols={3} spacing="xs">
                 <Paper withBorder radius="md" p="xs" bg="var(--dv-card-panel)">
                   <Text size="10px" tt="uppercase" fw={800} c="dimmed" style={{ letterSpacing: 0.3 }}>
-                    Clicks
+                    {t('clicks')}
                   </Text>
-                  <Text fw={900}>{formatNumber(selectedCreative.stats.clicks)}</Text>
+                  <Text fw={900}>{formatNumber(selectedCreative.stats.clicks, intl)}</Text>
                 </Paper>
                 <Paper withBorder radius="md" p="xs" bg="var(--dv-card-panel)">
                   <Text size="10px" tt="uppercase" fw={800} c="dimmed" style={{ letterSpacing: 0.3 }}>
-                    Impressions
+                    {t('impressions')}
                   </Text>
-                  <Text fw={900}>{formatNumber(selectedCreative.stats.impressions)}</Text>
+                  <Text fw={900}>{formatNumber(selectedCreative.stats.impressions, intl)}</Text>
                 </Paper>
                 <Paper withBorder radius="md" p="xs" bg="var(--dv-card-panel)">
                   <Text size="10px" tt="uppercase" fw={800} c="dimmed" style={{ letterSpacing: 0.3 }}>
-                    Cost/result
+                    {t('costPerResult')}
                   </Text>
                   <Text fw={900}>
                     {selectedCreative.stats.costPerResult == null
@@ -579,10 +598,10 @@ export default function MediaSelectionModal({
                   <IconPhoto size={24} />
                 </ThemeIcon>
                 <Text fw={800} c="dark.7">
-                  Pick a creative to preview it
+                  {t('pickTitle')}
                 </Text>
                 <Text size="sm" c="dimmed" ta="center" maw={300}>
-                  Start with the starred top performer, or switch sorting when you want the newest or oldest assets.
+                  {t('pickBody')}
                 </Text>
               </Stack>
             </Center>
@@ -604,15 +623,15 @@ export default function MediaSelectionModal({
         }}
       >
         <Badge size="lg" color={selectedId ? 'blue' : 'gray'} variant="light" radius="md">
-          {selectedId ? '1 creative selected' : 'No selection'}
+          {selectedId ? t('selectedOne') : t('noSelection')}
         </Badge>
 
         <Group>
           <Button variant="subtle" onClick={onClose}>
-            Cancel
+            {t('cancel')}
           </Button>
           <Button onClick={handleConfirmSelection} disabled={!selectedId}>
-            Use selected creative
+            {t('useSelected')}
           </Button>
         </Group>
       </Box>
