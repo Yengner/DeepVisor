@@ -62,7 +62,7 @@
   },
   "results": {
     "whatsapp_conversations": {
-      "metric": "WhatsApp conversations",
+      "metric": "Conversations",
       "short": "Conversations",
       "cost": "Cost / conversation",
       "help": "WhatsApp conversations Meta reports as started from your ads. They are not bookings or unique customers.",
