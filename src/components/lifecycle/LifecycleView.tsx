@@ -6,8 +6,10 @@ import {Alert,Badge,Button,Group,Loader,Modal,Paper,SimpleGrid,Stack,Text,Title}
 import Link from 'next/link';
 import Image from 'next/image';
 import SpiderMascot from '@/components/brand/SpiderMascot';
+import {useLifecycleExplanation} from './useLifecycleExplanation';
 import type {LifecycleBrief} from '@/lib/shared/lifecycle/types';
 export function LifecycleReport({id}:{id:string}){
+ const explain=useLifecycleExplanation();
  const [data,setData]=useState<LifecycleBrief|null>(null),[error,setError]=useState(false);
  useEffect(()=>{const c=new AbortController();fetch(`/api/lifecycle?id=${id}`,{signal:c.signal}).then(async r=>{if(!r.ok)throw Error();setData(await r.json());}).catch(()=>{if(!c.signal.aborted)setError(true);});return()=>c.abort();},[id]);
  if(error)return <Alert color="orange">This saved report is unavailable. Try again from Notifications.</Alert>;
@@ -18,7 +20,7 @@ export function LifecycleReport({id}:{id:string}){
  return <Stack gap="lg">
   <Group><SpiderMascot state="idle" size={64}/><div><Badge variant="light">{data.provenance==='reconstructed'?'Reconstructed interruption':'Meta lifecycle update'}</Badge><Title order={2} size="h3" mt={8}>{data.title}</Title></div></Group>
   {data.media?.length>0&&<Group>{data.media.slice(0,4).map((m,i)=>m.image?<Image key={i} src={m.image} alt={m.name} width={160} height={160} unoptimized style={{objectFit:'contain',borderRadius:12,maxWidth:'40%'}} onError={e=>{e.currentTarget.style.display='none';}}/>:null)}</Group>}
-  <Text size="lg">{data.explanation}</Text>
+  <Text size="lg">{explain(data.explanation)}</Text>
   <Text size="sm" c="dimmed">Observed {date(data.observedAt)} · {data.affected.length} affected ad{data.affected.length===1?'':'s'}</Text>
   <SimpleGrid cols={3} spacing="xs">{[['Spend',money(data.spend)],['Reported results',data.results??'Unavailable'],['Cost / result',money(data.cpr)]].map(([label,value])=><Paper key={label} p="sm" radius="md" bg="var(--mantine-color-default)"><Text size="xs" c="dimmed">{label}</Text><Text fw={700} style={{fontSize:'clamp(14px,3vw,24px)',overflowWrap:'anywhere'}}>{value}</Text></Paper>)}</SimpleGrid>
   <LifecycleOutcomeSection id={id}/>

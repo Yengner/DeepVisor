@@ -2827,5 +2827,16 @@
       "days": "{name} termina en {days} días",
       "detail": "Para que siga activo, amplía su programación en Meta."
     }
+  },
+  "lifecycleText": {
+    "scheduledEnd": "Se alcanzó el fin programado guardado. Esto por sí solo no confirma cuándo se detuvo la entrega.",
+    "activeAds": "Meta ahora reporta que esta publicidad está activa. La entrega y los resultados no están garantizados.",
+    "activeNamed": "Meta ahora reporta que {name} está activo. La entrega y los resultados no están garantizados.",
+    "pausedAd": "Meta ahora reporta que este anuncio está en pausa.",
+    "pausedNamed": "Meta ahora reporta que {name} está en pausa.",
+    "archivedAds": "Meta reporta que esta publicidad está archivada o eliminada.",
+    "archivedNamed": "Meta reporta que {name} fue archivado o eliminado.",
+    "interrupted": "La entrega está interrumpida porque {name} está en pausa.",
+    "unavailable": "Cambió la elegibilidad de entrega. La evidencia disponible no permite establecer una causa más específica."
   }
 }

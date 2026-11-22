@@ -25,6 +25,7 @@ import IdleSuggestionCard from './IdleSuggestionCard';
 import WelcomeCard from './WelcomeCard';
 import { InsightDataNotice, MissingObservationTrack } from './InsightDataState';
 import { useIssueWords } from './useIssueWords';
+import { useLifecycleExplanation } from '@/components/lifecycle/useLifecycleExplanation';
 
 type T = ReturnType<typeof useTranslations<'insights'>>;
 
@@ -120,6 +121,7 @@ const KIND_ICON: Record<LifecycleKind, typeof Info> = {
 
 function Creative({ card, currency, timezone, preview = false }: { card: LifecycleCard; currency: string | null; timezone: string | null; preview?: boolean }) {
   const f = useInsightFormat(), t = f.t;
+  const explain = useLifecycleExplanation();
   const b = card.brief, creative = b.media.find(m => m.image), config = b.configuration;
   const kind = lifecycleKind(card), ended = kind === 'ended';
   const Icon = KIND_ICON[kind];
@@ -137,7 +139,7 @@ function Creative({ card, currency, timezone, preview = false }: { card: Lifecyc
     <div className={styles.lifecycleBody}>
       <div className={styles.creativeHeading}>
         {creative?.image && <div className={styles.lifecycleCreative}><Image src={creative.image} alt={creative.name} width={72} height={92} unoptimized onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }} />{ended && <span>{t('endedBadge')}</span>}</div>}
-        <div><h3>{b.title}</h3><p>{ended ? t('endedExplanation') : b.explanation}</p></div>
+        <div><h3>{b.title}</h3><p>{ended ? t('endedExplanation') : explain(b.explanation)}</p></div>
       </div>
       {b.provenance === 'reconstructed' && <p className={styles.notice}>{t('reconstructed')}</p>}
       {!(ended && noMetrics) && <p className={styles.metricsRange}>{t('totals', { range: f.dayRange(b.since, b.until) })}</p>}

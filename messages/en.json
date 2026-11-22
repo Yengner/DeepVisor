@@ -2827,5 +2827,16 @@
       "days": "{name} ends in {days} days",
       "detail": "To keep it running, extend its schedule in Meta."
     }
+  },
+  "lifecycleText": {
+    "scheduledEnd": "The saved scheduled end has been reached. This alone does not confirm when delivery stopped.",
+    "activeAds": "Meta now reports this advertising as active. Delivery and results are not guaranteed.",
+    "activeNamed": "Meta now reports {name} as active. Delivery and results are not guaranteed.",
+    "pausedAd": "Meta now reports this ad as paused.",
+    "pausedNamed": "Meta now reports {name} as paused.",
+    "archivedAds": "Meta reports this advertising as archived or deleted.",
+    "archivedNamed": "Meta reports {name} as archived or deleted.",
+    "interrupted": "Delivery is interrupted because {name} is paused.",
+    "unavailable": "Delivery eligibility changed. The available evidence does not establish a more specific cause."
   }
 }
