@@ -46,8 +46,9 @@ export default function DataInfo({ live, retrievedAt, storedSyncAt, zone, covera
         {live ? <p>{t("live")}</p> : null}
         {coverage ? <p>{t("comparison", { days: coverage.days, observed: coverage.observed })}</p> : null}
         <p>{t("attribution")} {t("timezone", { zone })}</p>
+        <p>{t("refreshHint")}</p>
         <div className={classes.actions}>
-          <RefreshOverview disabled={disabled} label={t("recover")} visibleLabel />
+          <RefreshOverview disabled={disabled} label={t("refresh")} visibleLabel />
           <Link href="/integration">{t("connection")}</Link>
         </div>
       </Popover.Dropdown>

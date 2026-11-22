@@ -2884,10 +2884,11 @@
     "comparison": "De los {days} días anteriores, solo {observed} tienen datos, así que las comparaciones son limitadas. Los días sin datos no se cuentan como cero.",
     "attribution": "Meta puede ajustar los resultados después de reportarlos.",
     "timezone": "Las horas están en {zone}.",
-    "recover": "Recuperar datos guardados de Meta",
     "connection": "Ajustes de conexión",
     "savedData": "Mostrando números guardados. Los datos en vivo no están disponibles ahora.",
     "platformUnavailable": "Los números de esta plataforma no están disponibles ahora.",
-    "stale": "Estos números son de {time}."
+    "stale": "Estos números son de {time}.",
+    "refresh": "Traer lo último de Meta",
+    "refreshHint": "Le pide a Meta tus números más recientes ahora. Puede tardar un minuto; la página se actualiza cuando termina."
   }
 }
