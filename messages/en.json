@@ -2884,10 +2884,11 @@
     "comparison": "The previous {days} days have data for only {observed} of {days} days, so comparisons are limited. Missing days are not counted as zero.",
     "attribution": "Meta can adjust results after it reports them.",
     "timezone": "Times are in {zone}.",
-    "recover": "Recover stored Meta data",
     "connection": "Connection settings",
     "savedData": "Showing saved numbers. Live data is unavailable right now.",
     "platformUnavailable": "Numbers for this platform are unavailable right now.",
-    "stale": "These numbers are from {time}."
+    "stale": "These numbers are from {time}.",
+    "refresh": "Get the latest from Meta",
+    "refreshHint": "Asks Meta for your newest numbers now. It can take a minute; the page updates when it is done."
   }
 }

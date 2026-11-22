@@ -1258,6 +1258,11 @@
 .kpiValueRow dd { flex: none; white-space: nowrap; }
 .kpis > div { container-type: inline-size; }
 .kpiCard { position: relative; }
+/* Values line up across a row even when one label wraps to two lines ("WhatsApp conversations"). */
+.kpis > .kpiCard { display: flex; flex-direction: column; }
+.kpis > .kpiCard .kpiValueRow { margin-top: auto; }
+/* Keeps the info mark on the same line as the last word of its label. */
+.nowrap { white-space: nowrap; }
 .kpiFoot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-height: 18px; margin-top: 6px; }
 /* A line added to a tooltip (the Results help) only takes space once it has text. */
 .tipNote:not(:empty) { display: block; margin-top: 8px; }

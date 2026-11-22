@@ -78,6 +78,14 @@ export function MetricDelta({
     </span></Tooltip>
   ) : null;
 }
+/** A label whose last word never parts from the info mark after it, so the mark never wraps alone. */
+function LabelWithInfo({ label, children }: { label: string; children: ReactNode }) {
+  const cut = label.lastIndexOf(" ");
+  const head = cut === -1 ? "" : label.slice(0, cut + 1);
+  const last = cut === -1 ? label : label.slice(cut + 1);
+  return <>{head}<span className={classes.nowrap}>{last} {children}</span></>;
+}
+
 /**
  * Four numbers, each with an arrow badge. What the badge compares against (and the earlier value)
  * is in its hover, and why a comparison may be limited is behind the page's ⓘ, so the cards carry
@@ -93,7 +101,7 @@ export default function ControlMetrics({ view, note = null }: { view: ControlPer
         {CONTROL_METRICS.map((key, index) => (
           <div key={key} className={classes.kpiCard}>
             <SyncSpider announce={index === 0} />
-            <dt>{labels[key]} <Tooltip events={{ hover: true, focus: true, touch: true }} multiline w={260} label={<>{key === "results" && appsNote ? `${help[key]} ${appsNote}` : help[key]}{key === "results" ? <span className={classes.tipNote}>{note}</span> : null}</>}><button type="button" aria-label={t("metrics.about", { label: labels[key] })}>ⓘ</button></Tooltip></dt>
+            <dt><LabelWithInfo label={labels[key]}><Tooltip events={{ hover: true, focus: true, touch: true }} multiline w={260} label={<>{key === "results" && appsNote ? `${help[key]} ${appsNote}` : help[key]}{key === "results" ? <span className={classes.tipNote}>{note}</span> : null}</>}><button type="button" aria-label={t("metrics.about", { label: labels[key] })}>ⓘ</button></Tooltip></LabelWithInfo></dt>
             <div className={classes.kpiValueRow}>
               <dd title={metricValue(key, view.metrics[key], view.currency)}>
                 <TickerNumber text={metricValue(key, view.metrics[key], view.currency, true)} value={view.metrics[key]} polarity={POLARITY[key]} />
