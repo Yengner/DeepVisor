@@ -2740,5 +2740,92 @@
       "cancel": "Cancelar",
       "useSelected": "Usar el creativo elegido"
     }
+  },
+  "notificationText": {
+    "dailyTitleOne": "Tu actualización de publicidad",
+    "dailyTitleMany": "{count} actualizaciones de publicidad",
+    "urgentOne": "Una actualización de publicidad necesita tu atención.",
+    "urgentMany": "Al menos una de las actualizaciones de hoy necesita tu atención.",
+    "calmOne": "Tu resumen de publicidad guardado está listo.",
+    "calmMany": "Tu resumen y los cambios recientes están listos."
+  },
+  "issueText": {
+    "cause": {
+      "billing": {
+        "title": "Meta indica un saldo pendiente",
+        "explanation": "Meta marca esta cuenta de anuncios como no saldada, así que los anuncios no pueden publicarse hasta que se pague el saldo pendiente.",
+        "action": "Revisar la facturación en Meta"
+      },
+      "billing-pending": {
+        "title": "Meta está esperando un pago",
+        "explanation": "Meta indica un pago pendiente o un período de gracia. Los anuncios pueden seguir publicándose por ahora, pero Meta podría detenerlos si el pago no se completa.",
+        "action": "Revisar la facturación en Meta"
+      },
+      "payment-risk": {
+        "title": "Meta desactivó esta cuenta por un problema de pago",
+        "explanation": "Meta desactivó la cuenta de anuncios y da un motivo de riesgo de pago. El aviso de Meta explica qué necesita.",
+        "action": "Revisar la facturación en Meta"
+      },
+      "policy": {
+        "title": "Meta desactivó esta cuenta por un motivo de políticas",
+        "explanation": "Meta desactivó la cuenta de anuncios según sus políticas de publicidad o de integridad comercial. Normalmente puedes pedir una revisión en Calidad de la cuenta.",
+        "action": "Abrir Calidad de la cuenta"
+      },
+      "review": {
+        "title": "Meta está revisando esta cuenta de anuncios",
+        "explanation": "Meta indica que la cuenta está en revisión. Es posible que los anuncios no se publiquen hasta que termine la revisión.",
+        "action": "Abrir Calidad de la cuenta"
+      },
+      "compromised": {
+        "title": "Meta marcó esta cuenta como vulnerada",
+        "explanation": "Meta desactivó la cuenta de anuncios porque pudo haberse accedido a ella sin permiso. Protege la cuenta en Meta antes de volver a anunciarte.",
+        "action": "Abrir Calidad de la cuenta"
+      },
+      "closed": {
+        "title": "Esta cuenta de anuncios está cerrada",
+        "explanation": "Meta indica que la cuenta de anuncios está cerrada o en proceso de cierre. No se pueden publicar anuncios desde ella.",
+        "action": "Abrir conexiones"
+      },
+      "unavailable": {
+        "title": "Meta indica que la cuenta de anuncios no está disponible",
+        "explanation": "Es posible que la entrega esté bloqueada a nivel de cuenta. Revisa los avisos de cuenta y facturación de Meta para ver el motivo confirmado.",
+        "action": "Abrir conexiones"
+      }
+    },
+    "reauth": {
+      "title": "Reconecta Meta para mantener tus datos al día",
+      "explanation": "La conexión guardada necesita una autorización nueva. Tus reportes existentes siguen disponibles."
+    },
+    "action": {
+      "openConnections": "Abrir conexiones",
+      "reviewInCampaigns": "Revisar en Campañas"
+    },
+    "disapproved": {
+      "title": "Meta rechazó este anuncio",
+      "withNotice": "{name} aparece como no aprobado. Aviso de Meta: “{notice}”",
+      "plain": "{name} aparece como no aprobado. Revisa la explicación de Meta antes de hacer cambios."
+    },
+    "delivery": {
+      "title": "Meta indica un problema de entrega",
+      "withNotice": "{name} tiene un problema de entrega. Aviso de Meta: “{notice}”",
+      "plain": "{name} tiene un problema de entrega. Los datos guardados no establecen la causa."
+    },
+    "fatigue": {
+      "title": "Meta señala fatiga del creativo",
+      "explanation": "Meta indica que {name} muestra fatiga del creativo{level}.{notice} Un creativo nuevo podría ayudar; no se cambió nada.",
+      "notice": "Aviso de Meta: “{notice}”",
+      "level": {
+        "low": "baja",
+        "medium": "media",
+        "high": "alta"
+      }
+    },
+    "staleNote": "Último aviso de Meta el {day}",
+    "ending": {
+      "today": "{name} termina hoy",
+      "tomorrow": "{name} termina mañana",
+      "days": "{name} termina en {days} días",
+      "detail": "Para que siga activo, amplía su programación en Meta."
+    }
   }
 }

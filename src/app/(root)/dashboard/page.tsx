@@ -1,4 +1,5 @@
 import { agencyEnabled } from '@/lib/server/agency/enabled';
+import { attentionText } from '@/lib/server/insights/attentionText';
 import { comparisons } from '@/lib/server/dashboard/insights/comparisons';
 import { cache, Suspense } from "react";
 import Link from "next/link";
@@ -306,7 +307,7 @@ async function Attention({ context, period }: { context: OverviewContext; period
     // Same cached call the advertising board makes, so this adds no extra read.
     loadExploration(period, "adset", null, true).catch(() => null),
   ]);
-  const items = attentionItems(issues, view?.items ?? [], { now: context.now, zone: context.zone });
+  const items = attentionItems(issues, view?.items ?? [], { now: context.now, zone: context.zone, ...(await attentionText()) });
   return <AttentionList items={items} />;
 }
 async function Content({ requestedPeriod, preview, platform }: { requestedPeriod: Period | null; preview: boolean; platform: Publisher }) {

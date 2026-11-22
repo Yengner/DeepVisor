@@ -2740,5 +2740,92 @@
       "cancel": "Cancel",
       "useSelected": "Use selected creative"
     }
+  },
+  "notificationText": {
+    "dailyTitleOne": "Your advertising update",
+    "dailyTitleMany": "{count} advertising updates",
+    "urgentOne": "An advertising update needs your attention.",
+    "urgentMany": "At least one of today’s updates needs your attention.",
+    "calmOne": "Your saved advertising catch-up is ready.",
+    "calmMany": "Your catch-up and recent changes are ready."
+  },
+  "issueText": {
+    "cause": {
+      "billing": {
+        "title": "Meta reports an unpaid balance",
+        "explanation": "Meta lists this ad account as unsettled, so ads can’t run until the outstanding balance is paid.",
+        "action": "Review billing in Meta"
+      },
+      "billing-pending": {
+        "title": "Meta is waiting on a payment",
+        "explanation": "Meta reports a pending settlement or grace period. Ads can keep running for now, but Meta may stop them if the payment isn’t completed.",
+        "action": "Review billing in Meta"
+      },
+      "payment-risk": {
+        "title": "Meta disabled this account over a payment concern",
+        "explanation": "Meta disabled the ad account and gives a payment-risk reason. Meta’s notice explains what it needs.",
+        "action": "Review billing in Meta"
+      },
+      "policy": {
+        "title": "Meta disabled this account for a policy reason",
+        "explanation": "Meta disabled the ad account under its advertising or business integrity policies. You can usually request a review in Account Quality.",
+        "action": "Open Account Quality"
+      },
+      "review": {
+        "title": "Meta is reviewing this ad account",
+        "explanation": "Meta reports the account as under review. Ads may not run until the review finishes.",
+        "action": "Open Account Quality"
+      },
+      "compromised": {
+        "title": "Meta flagged this account as compromised",
+        "explanation": "Meta disabled the ad account because it may have been accessed without permission. Secure the account in Meta before advertising again.",
+        "action": "Open Account Quality"
+      },
+      "closed": {
+        "title": "This ad account is closed",
+        "explanation": "Meta reports the ad account as closed or closing. Ads can’t run from it.",
+        "action": "Open Connections"
+      },
+      "unavailable": {
+        "title": "Meta reports an unavailable advertising account",
+        "explanation": "Delivery may be blocked at the account level. Check Meta’s account and billing notices for the confirmed reason.",
+        "action": "Open Connections"
+      }
+    },
+    "reauth": {
+      "title": "Reconnect Meta to keep data current",
+      "explanation": "The saved connection requires renewed authorization. Existing reports remain available."
+    },
+    "action": {
+      "openConnections": "Open Connections",
+      "reviewInCampaigns": "Review in Campaigns"
+    },
+    "disapproved": {
+      "title": "Meta rejected this advertisement",
+      "withNotice": "{name} is reported as disapproved. Meta’s notice: “{notice}”",
+      "plain": "{name} is reported as disapproved. Review Meta’s explanation before making changes."
+    },
+    "delivery": {
+      "title": "Meta reports a delivery issue",
+      "withNotice": "{name} has a delivery issue. Meta’s notice: “{notice}”",
+      "plain": "{name} has a delivery issue. The saved data does not establish its cause."
+    },
+    "fatigue": {
+      "title": "Meta flags creative fatigue",
+      "explanation": "Meta reports that {name} is showing creative fatigue{level}.{notice} A fresh creative may help; nothing has been changed.",
+      "notice": "Meta’s notice: “{notice}”",
+      "level": {
+        "low": "low",
+        "medium": "medium",
+        "high": "high"
+      }
+    },
+    "staleNote": "Last reported by Meta on {day}",
+    "ending": {
+      "today": "{name} ends today",
+      "tomorrow": "{name} ends tomorrow",
+      "days": "{name} ends in {days} days",
+      "detail": "To keep it running, extend its schedule in Meta."
+    }
   }
 }

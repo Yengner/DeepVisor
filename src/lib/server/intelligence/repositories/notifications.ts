@@ -59,8 +59,17 @@ function resolveNotificationSurface(row: Pick<NotificationRow, 'payload_json'>):
     : 'bell';
 }
 
+/** The daily advertising-update bundle saved on an `insights` row (see `dailyNotification`). */
+function dailyBundle(row: NotificationRow): NotificationFeedItem['daily'] {
+  if (row.source_type !== 'insights') return undefined;
+  const payload = row.payload_json as { presentationIds?: unknown; urgent?: unknown } | null;
+  if (!payload || !Array.isArray(payload.presentationIds) || payload.presentationIds.length === 0) return undefined;
+  return { count: payload.presentationIds.length, urgent: payload.urgent === true };
+}
+
 function mapNotificationRow(row: NotificationRow): NotificationFeedItem {
   return {
+    daily: dailyBundle(row),
     id: row.id,
     user_id: row.user_id,
     title: row.title,

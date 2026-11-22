@@ -24,6 +24,7 @@ import PopupCheckin from '@/components/bookings/PopupCheckin';
 import IdleSuggestionCard from './IdleSuggestionCard';
 import WelcomeCard from './WelcomeCard';
 import { InsightDataNotice, MissingObservationTrack } from './InsightDataState';
+import { useIssueWords } from './useIssueWords';
 
 type T = ReturnType<typeof useTranslations<'insights'>>;
 
@@ -217,29 +218,30 @@ function issueKind(issue: Issue): IssueKind {
 
 function AttentionCard({ issue: i, related, currency, timezone, preview = false }: { issue: Issue; related: LifecycleCard[]; currency: string | null; timezone: string | null; preview?: boolean }) {
   const f = useInsightFormat(), t = f.t;
+  const words = useIssueWords()(i);
   const creative = related.flatMap(c => c.brief.media).find(m => m.image);
   const kind = issueKind(i), rejected = i.code === 'DISAPPROVED';
   const tag = t(`issue.tag.${kind.tag}`);
   const status = t(`issue.status.${i.stale ? 'needsConfirmation' : kind.status}`);
   const Icon = i.code === 'REAUTH_REQUIRED' ? PlugZap : i.code === 'CREATIVE_FATIGUE' ? CircleAlert : AlertTriangle;
   const notice = issueLevel(i) === 'notice';
-  if (i.resolvedAt) return <section className={styles.urgentCard} data-level="resolved" aria-label={t('issue.ariaResolved', { title: i.title })}>
+  if (i.resolvedAt) return <section className={styles.urgentCard} data-level="resolved" aria-label={t('issue.ariaResolved', { title: words.title })}>
     <div className={styles.urgentHeader}><span><CircleCheck size={16} aria-hidden="true" />{t('issue.resolved', { tag })}</span><span>{t('issue.status.noLonger')}</span></div>
     <div className={styles.urgentBody}><div className={styles.urgentDetail}>
-      <h3>{i.title}</h3><p>{i.explanation}</p>
+      <h3>{words.title}</h3><p>{words.explanation}</p>
       <div className={styles.urgentNotice}><CircleCheck size={15} aria-hidden="true" /><span>{t('issue.resolvedNote', { day: f.day(i.resolvedAt.slice(0, 10)) })}</span></div>
     </div></div>
   </section>;
   const note = i.stale ? t('issue.staleNote', { day: f.day(i.observedAt.slice(0, 10)) }) : notice ? t('issue.noticeNote') : rejected ? t('issue.rejectedNote')
     : i.code === 'REAUTH_REQUIRED' ? t('issue.reauthNote') : causeFromCode(i.code) ? t('issue.causeNote') : t('issue.reviewNote');
-  return <section className={styles.urgentCard} data-level={notice ? 'notice' : undefined} aria-label={t(notice ? 'issue.ariaNotice' : 'issue.ariaAttention', { title: i.title })}>
+  return <section className={styles.urgentCard} data-level={notice ? 'notice' : undefined} aria-label={t(notice ? 'issue.ariaNotice' : 'issue.ariaAttention', { title: words.title })}>
     <div className={styles.urgentHeader}><span><Icon size={16} aria-hidden="true" />{t(notice ? 'issue.worthALook' : 'issue.actionRequired')} · {tag}</span><span>{status}</span></div>
     <div className={styles.urgentBody}>
       {creative?.image && <div className={styles.urgentCreative}><Image src={creative.image} alt={creative.name} width={84} height={108} unoptimized onError={e => { e.currentTarget.parentElement!.style.display = 'none'; }} /><span>{t(`issue.badge.${i.stale ? 'lastObserved' : kind.badge}`)}</span></div>}
       <div className={styles.urgentDetail}>
-        <h3>{i.title}</h3><p>{i.explanation}</p>
+        <h3>{words.title}</h3><p>{words.explanation}</p>
         <div className={styles.urgentNotice}><CircleAlert size={15} aria-hidden="true" /><span>{note}</span></div>
-        <div className={styles.urgentActions}>{preview ? <button type="button" className={styles.urgentPrimary} disabled>{i.action}</button> : (/^https?:/.test(i.href) ? <a className={styles.urgentPrimary} href={i.href} target="_blank" rel="noopener noreferrer">{i.action}<span className={styles.srOnly}>{t('issue.opensMeta')}</span></a> : <Link className={styles.urgentPrimary} href={i.href}>{i.action}</Link>)}</div>
+        <div className={styles.urgentActions}>{preview ? <button type="button" className={styles.urgentPrimary} disabled>{words.action}</button> : (/^https?:/.test(i.href) ? <a className={styles.urgentPrimary} href={i.href} target="_blank" rel="noopener noreferrer">{words.action}<span className={styles.srOnly}>{t('issue.opensMeta')}</span></a> : <Link className={styles.urgentPrimary} href={i.href}>{words.action}</Link>)}</div>
         {related.length > 0 && <details className={styles.urgentRelated}><summary>{t('issue.viewPerformance')}</summary>{related.map(c => <Creative key={c.eventId} card={c} currency={currency} timezone={timezone} preview={preview} />)}</details>}
         {preview && <p className={styles.caption}>{t('issue.previewOnly')}</p>}
       </div>
@@ -450,6 +452,7 @@ function dayHeading(f: Format, day: string, timezone: string | null) {
   return f.weekday(day, day.slice(0, 4) !== today.slice(0, 4));
 }
 function HistoryRow({ item, onOpen }: { item: SavedPresentation; onOpen: () => void }) {
+  const issueWords = useIssueWords();
   const f = useInsightFormat(), t = f.t;
   const headline = useHeadline();
   const p = item.payload, r = p.recap;
@@ -467,7 +470,7 @@ function HistoryRow({ item, onOpen }: { item: SavedPresentation; onOpen: () => v
     <span className={styles.historyIcon} data-tone={tone} aria-hidden="true"><Icon size={18} />{unread ? <span className={styles.unreadDot} /> : null}</span>
     <span className={styles.historyMain}>
       <strong>{unread ? <span className={styles.srOnly}>{t('history.unread')}</span> : null}{p.revisionOf ? t('history.revisedReport') : ''}{headline(p)}</strong>
-      <span>{summary || (p.lifecycle[0]?.brief.title ?? p.issues[0]?.title ?? p.account)}</span>
+      <span>{summary || (p.lifecycle[0]?.brief.title ?? (p.issues[0] ? issueWords(p.issues[0]).title : undefined) ?? p.account)}</span>
       <Contents p={p} />
     </span>
     <span className={styles.historyTime}>{f.time(item.created_at)}</span>
@@ -476,6 +479,7 @@ function HistoryRow({ item, onOpen }: { item: SavedPresentation; onOpen: () => v
 }
 
 export function InsightsHistory() {
+  const issueWords = useIssueWords();
   const f = useInsightFormat(), t = f.t;
   const [items, setItems] = useState<SavedPresentation[]>([]), [issues, setIssues] = useState<Issue[]>([]), [next, setNext] = useState<string | null>(null), [selected, setSelected] = useState<SavedPresentation | null>(null), [filter, setFilter] = useState<HistoryFilter>('all'), [error, setError] = useState(''), [loading, setLoading] = useState(true), [day, setDay] = useState<string | null>(null);
   const mobile = useMediaQuery('(max-width: 600px)');
@@ -553,12 +557,12 @@ export function InsightsHistory() {
     </header>
     {open.length > 0 && <section className={styles.attention} aria-labelledby="still-open">
       <h2 id="still-open"><AlertTriangle size={16} aria-hidden="true" />{t('history.openIssues', { count: open.length })}</h2>
-      <ul>{open.map(i => <li key={i.id}><div><strong>{i.title}</strong>{i.stale ? <span>{t('history.staleObs')}</span> : null}</div><Link href={i.href}>{i.action}<ChevronRight size={14} aria-hidden="true" /></Link></li>)}</ul>
+      <ul>{open.map(i => <li key={i.id}><div><strong>{issueWords(i).title}</strong>{i.stale ? <span>{t('history.staleObs')}</span> : null}</div><Link href={i.href}>{issueWords(i).action}<ChevronRight size={14} aria-hidden="true" /></Link></li>)}</ul>
       <p>{t('history.readNote')}</p>
     </section>}
     {notices.length > 0 && <section className={styles.attention} data-level="notice" aria-labelledby="open-notices">
       <h2 id="open-notices"><CircleAlert size={16} aria-hidden="true" />{t('history.noticesTitle', { count: notices.length })}</h2>
-      <ul>{notices.map(i => <li key={i.id}><div><strong>{i.title}</strong><span>{i.explanation}</span></div><Link href={i.href}>{i.action}<ChevronRight size={14} aria-hidden="true" /></Link></li>)}</ul>
+      <ul>{notices.map(i => <li key={i.id}><div><strong>{issueWords(i).title}</strong><span>{issueWords(i).explanation}</span></div><Link href={i.href}>{issueWords(i).action}<ChevronRight size={14} aria-hidden="true" /></Link></li>)}</ul>
       <p>{t('history.noticesNote')}</p>
     </section>}
     <div className={styles.listBar}>

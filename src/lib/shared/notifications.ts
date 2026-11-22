@@ -7,7 +7,26 @@ export type NotificationFeedItem = {
   read: boolean;
   type: string;
   link?: string | null;
+  /**
+   * Set on the daily advertising-update bell row. The saved `title`/`message` are English, so
+   * screens word these rows from the bundle instead (see `dailyNotificationKeys`).
+   */
+  daily?: { count: number; urgent: boolean };
 };
+
+/** Catalog keys (under `notificationText`) for a daily advertising-update row, or null for any other row. */
+export function dailyNotificationKeys(item: Pick<NotificationFeedItem, 'daily'>) {
+  if (!item.daily) return null;
+  const { count, urgent } = item.daily;
+  const many = count > 1;
+  return {
+    count,
+    title: many ? ('dailyTitleMany' as const) : ('dailyTitleOne' as const),
+    message: urgent
+      ? many ? ('urgentMany' as const) : ('urgentOne' as const)
+      : many ? ('calmMany' as const) : ('calmOne' as const),
+  };
+}
 
 export function formatNotificationPreviewMessage(message: string): string {
   const normalized = message.trim().replace(/\s+/g, ' ');

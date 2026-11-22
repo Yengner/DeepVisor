@@ -30,6 +30,7 @@ import {
   markNotificationReadClient,
 } from '@/lib/client';
 import {
+  dailyNotificationKeys,
   formatNotificationPreviewMessage,
   type NotificationFeedItem,
 } from '@/lib/shared';
@@ -59,6 +60,7 @@ export default function TopBarClient({
   initialAccountId,
 }: TopBarClientProps) {
   const t = useTranslations('nav');
+  const tText = useTranslations('notificationText');
   const intl = useLocale() === 'es' ? 'es-US' : 'en-US';
   const router = useRouter();
   const onCampaigns = (usePathname() ?? "").startsWith("/campaigns");
@@ -197,7 +199,12 @@ export default function TopBarClient({
             {userNotifications.length > 0 ? (
               <>
                 <Box px={6} pb={6} mah="min(46vh, 290px)" style={{ overflowY: 'auto' }}>
-                  {userNotifications.map((notification) => (
+                  {userNotifications.map((notification) => {
+                    // The daily update row is worded here, in the reader's language.
+                    const daily = dailyNotificationKeys(notification);
+                    const title = daily ? tText(daily.title, { count: daily.count }) : notification.title;
+                    const message = daily ? tText(daily.message) : formatNotificationPreviewMessage(notification.message);
+                    return (
                     <Menu.Item
                       key={notification.id}
                       className={notification.read ? 'opacity-65' : ''}
@@ -206,18 +213,19 @@ export default function TopBarClient({
                       <div className="w-full py-0.5">
                         <Group justify="space-between" align="flex-start" gap="sm" wrap="nowrap">
                           <Text size="md" fw={800} lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
-                            {notification.title}
+                            {title}
                           </Text>
                           <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
                             {formatNotificationTime(notification.created_at)}
                           </Text>
                         </Group>
-                        <Text size="sm" c="dimmed" lineClamp={2} mt={3} title={notification.message}>
-                          {formatNotificationPreviewMessage(notification.message)}
+                        <Text size="sm" c="dimmed" lineClamp={2} mt={3} title={message}>
+                          {message}
                         </Text>
                       </div>
                     </Menu.Item>
-                  ))}
+                    );
+                  })}
                 </Box>
                 <Menu.Divider />
                 <Menu.Item onClick={() => router.push('/notifications')}>

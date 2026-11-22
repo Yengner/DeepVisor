@@ -4,11 +4,12 @@ import { Button } from '@mantine/core';
 import DesignSurface from '@/components/design/DesignSurface';
 import SpiderMascot from '@/components/brand/SpiderMascot';
 import AttentionList from '@/components/product/AttentionList';
-import { formatNotificationPreviewMessage } from '@/lib/shared';
+import { dailyNotificationKeys, formatNotificationPreviewMessage } from '@/lib/shared';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { getUserNotifications } from '@/lib/server/actions/user/settings';
 import { attentionItems } from '@/lib/shared/insights/attention';
 import { openUrgentIssues } from '@/lib/server/insights/issues';
+import { attentionText } from '@/lib/server/insights/attentionText';
 import { loadOverviewContext } from '@/lib/server/dashboard/overview/load';
 import { loadExploration } from '@/lib/server/campaigns/exploration/load';
 import NotificationAction from './NotificationAction';
@@ -32,6 +33,7 @@ async function PinnedAttention({ label, openOverview }: { label: string; openOve
   ]);
   const items = attentionItems(issues, view?.items ?? [], {
     now: context.now, zone: context.zone, endingAction: { label: openOverview, href: '/dashboard' },
+    ...(await attentionText()),
   });
   return <AttentionList items={items} label={label} />;
 }
@@ -54,6 +56,7 @@ function relative(value: string, locale: string): string {
  */
 export default async function NotificationsPage() {
   const t = await getTranslations('notificationsPage');
+  const tText = await getTranslations('notificationText');
   const locale = (await getLocale()) === 'es' ? 'es-US' : 'en-US';
   const { user } = await getRequiredAppContext();
   const notifications = await getUserNotifications(user.id, 50);
@@ -82,15 +85,20 @@ export default async function NotificationsPage() {
           </section>
         ) : (
           <ul className={styles.list} aria-label={t('listLabel')}>
-            {notifications.map(item => (
+            {notifications.map(item => {
+              // The daily update row is worded here, in the reader's language; other rows show what was saved.
+              const daily = dailyNotificationKeys(item);
+              const title = daily ? tText(daily.title, { count: daily.count }) : item.title;
+              const message = daily ? tText(daily.message) : item.message ? formatNotificationPreviewMessage(item.message) : '';
+              return (
               <li key={item.id} className={styles.card} data-unread={item.read ? undefined : ''}>
                 <div className={styles.body}>
                   <p className={styles.name}>
                     {!item.read && <span className={styles.dot} aria-hidden="true" />}
                     {!item.read && <span className={styles.srOnly}>{t('unread')} </span>}
-                    {item.title}
+                    {title}
                   </p>
-                  {item.message && <p className={styles.message}>{formatNotificationPreviewMessage(item.message)}</p>}
+                  {message && <p className={styles.message}>{message}</p>}
                   {item.created_at && (
                     <p className={styles.meta}>
                       <time dateTime={item.created_at}>{date(item.created_at)}</time>
@@ -105,7 +113,8 @@ export default async function NotificationsPage() {
                   className={styles.action}
                 />
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
 
