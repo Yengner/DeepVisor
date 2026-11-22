@@ -62,7 +62,7 @@
   },
   "results": {
     "whatsapp_conversations": {
-      "metric": "Conversaciones",
+      "metric": "Conversaciones de WhatsApp",
       "short": "Conversaciones",
       "cost": "Costo / conversación",
       "help": "Conversaciones de WhatsApp que Meta reporta como iniciadas desde tus anuncios. No son citas ni clientes únicos.",
