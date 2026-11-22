@@ -53,7 +53,6 @@ import { attentionItems } from '@/lib/shared/insights/attention';
 import { insightsEnabled, openUrgentIssues } from '@/lib/server/insights/issues';
 import { audienceObservations, hourlyObservations } from '@/lib/server/dashboard/insights/charts';
 import InsightsEntry from '@/components/insights/InsightsEntry';
-import { resultDefinitionFor, type ResultDefinition } from '@/lib/shared/performance/resultChannel';
 import BookingCheckin from './components/BookingCheckin';
 import { loadCheckins } from '@/lib/server/bookings/checkins';
 import { createAdminClient } from '@/lib/server/supabase/admin';
@@ -87,19 +86,18 @@ const performance = cache(async (context: OverviewContext, period: Period) => {
       return null;
     }),
   ]);
-  // Names the KPI "results" from the same rows that produce them. Live rows carry Meta ad-set ids;
-  // saved rows are named inside controlPerformance. Anything unprovable stays "Results".
-  const destinationByExternal = new Map((entities ?? []).map(e => [e.external_id, e.destination_type]));
-  const withContext = <T extends Pick<ControlPerformance, 'metrics' | 'deltas' | 'comparison'>>(view: T, daily: Insight[] | null, result: ResultDefinition | undefined) => {
+  // The KPIs and chart always say "Results". They used to switch to "WhatsApp conversations" whenever
+  // every ad set in the period happened to be a WhatsApp one, so the same card changed its name when
+  // the period changed (7D "Results", 30D "WhatsApp conversations"). The ⓘ help explains what counts.
+  const withContext = <T extends Pick<ControlPerformance, 'metrics' | 'deltas' | 'comparison'>>(view: T, daily: Insight[] | null) => {
     const ctx = periodContext({ daily, hourly: live.hourly, platform: context.publisher, period, today: context.today, now: context.now, zone: context.zone, currency: context.account!.currency_code });
     // Today's badges compare against the "Yesterday by now" figure the card prints beside them.
-    return { ...view, ...sameHourComparison(period, view.metrics, ctx, { deltas: view.deltas, comparison: view.comparison }), context: ctx, result };
+    return { ...view, ...sameHourComparison(period, view.metrics, ctx, { deltas: view.deltas, comparison: view.comparison }), context: ctx, result: undefined };
   };
   if (live.daily !== null && !(resourceRefreshEnabled() && context.publisher === 'combined')) {
-    const result = resultDefinitionFor(selectRows(live.daily, context.publisher, period, context.today), r => destinationByExternal.get(r.externalId));
-    return withContext({ ...livePerformance(live.daily, context.publisher, period, context.today, context.account!.currency_code), ...comparisons(live.daily, context.publisher, period, context.today, context.account!.currency_code, live.fetchedAt, context.now, { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) }, live.daily, result);
+    return withContext({ ...livePerformance(live.daily, context.publisher, period, context.today, context.account!.currency_code), ...comparisons(live.daily, context.publisher, period, context.today, context.account!.currency_code, live.fetchedAt, context.now, { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' }) }, live.daily);
   }
-  if (context.publisher !== 'combined') return withContext(livePerformance([], context.publisher, period, context.today, context.account!.currency_code), null, undefined);
+  if (context.publisher !== 'combined') return withContext(livePerformance([], context.publisher, period, context.today, context.account!.currency_code), null);
   // Saved rows are scoped through the entity list, so the stored path still requires it.
   if (!entities) throw new Error("Overview entities unavailable");
   const rows = await loadOverviewHistory(context.businessId, context.account!.id, context.today);
@@ -110,9 +108,9 @@ const performance = cache(async (context: OverviewContext, period: Period) => {
       ...stored,
       ...comparisons(dated, 'combined', period, context.today, context.account!.currency_code, live.canonicalFetchedAt ?? '', context.now,
         { timezone: context.timezoneUnavailable ? undefined : context.zone, cutoff: process.env.DEEPVISOR_KPI_TODAY_CUTOFF ?? '20:00' })
-    }, dated, stored.result);
+    }, dated);
   }
-  return withContext({ ...stored, deltas: {}, comparison: 'Comparison unavailable while using stored fallback data.' }, dated, stored.result);
+  return withContext({ ...stored, deltas: {}, comparison: 'Comparison unavailable while using stored fallback data.' }, dated);
 });
 function timestamp(at: string | null | undefined, zone: string, intl: string) {
   return at && Number.isFinite(Date.parse(at))
