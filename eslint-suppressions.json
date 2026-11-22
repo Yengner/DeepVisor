@@ -4,11 +4,6 @@
       "count": 1
     }
   },
-  "src/app/(root)/calendar/page.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
   "src/app/(root)/campaigns/reports/[queueItemId]/page.tsx": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
