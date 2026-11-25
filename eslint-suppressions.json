@@ -152,22 +152,12 @@
       "count": 1
     }
   },
-  "src/lib/server/jobs/accountIntelligenceRetention.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
   "src/lib/server/openai/structured.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3
     }
   },
   "src/lib/server/repositories/ad_accounts/syncState.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "src/lib/server/repositories/ad_entities/refreshAdEntityPerformanceSummaries.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
     }
