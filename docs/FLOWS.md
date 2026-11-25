@@ -145,12 +145,7 @@ records current development schema/schedule evidence without asserting activatio
 ```mermaid
 flowchart TD
   M[Meta hierarchy, creative and Insights reads] --> F[(Normalized entities and performance facts)]
-  F --> A[Account assessment and trends]
-  A --> S[(Assessments, signals and findings)]
-  A -.->|optional summary| O[OpenAI structured adapter]
-  S --> Q[Calendar queue, notifications and report context]
   F --> V[Overview, Campaigns and Reports read models]
-  S --> V
   F --> L[Observed lifecycle and health evidence]
   L --> I[(Issues, lifecycle events and briefs)]
   I --> P[Immutable per-user Insights presentations]
@@ -165,7 +160,7 @@ flowchart TD
   R --> X[Separate approval and gated executor]
   X --> U[(Execution audit and observed outcomes)]
   classDef data fill:#f3eeff,stroke:#b9a6f0,color:#1b1f24
-  class F,S,I,E,R,U data
+  class F,I,E,R,U data
 ```
 
 [`sync/meta/fetch.ts`](../src/lib/server/sync/meta/fetch.ts) and
@@ -176,30 +171,21 @@ repository names/views retain compatibility contracts. Creative media follows Me
 → [`exploration/model.ts`](../src/lib/server/campaigns/exploration/model.ts) / shared
 media helpers → presentation. Ad-set card metrics remain ad-set metrics.
 
-[`syncBusinessPlatform`](../src/lib/server/sync/syncBusinessPlatform.ts) invokes
-`runMetaAdAccountAssessment`, `syncMetaAccountIntelligenceArtifacts`,
-`syncMetaTrendIntelligenceArtifactsForQueueState` and `runBusinessAssessment` on its
-eligible non-simulation path. Initial-history orchestration has its own completion
-path in [`processFirstSyncJob.ts`](../src/lib/server/sync/meta/processFirstSyncJob.ts).
-Assessment/trend code owns persisted digests/findings and existing queue artifacts;
-it is distinct from versioned Feature Engine/DecisionEngine evaluations.
+[`syncBusinessPlatform`](../src/lib/server/sync/syncBusinessPlatform.ts) and
+initial-history orchestration in
+[`processFirstSyncJob.ts`](../src/lib/server/sync/meta/processFirstSyncJob.ts) end
+with saved facts. Since November 2026 neither runs the older assessment, signal or
+trend engines; those are [dormant](../src/lib/server/intelligence/README.md).
 
-Account-level read composition starts at
-[`intelligence/service.ts`](../src/lib/server/intelligence/service.ts). Current
-Overview reads normalized persisted facts through
+Current Overview reads normalized persisted facts through
 [`overview/load.ts`](../src/lib/server/dashboard/overview/load.ts), with decision
 lineage in [`decisionRecords.ts`](../src/lib/server/dashboard/overview/decisionRecords.ts).
 No provider is called by those Overview loaders. Optional missing evidence is
 reported unavailable; a successful sync is not a completed decision evaluation.
+Jev failure produces a failed decision run, never a fallback HOLD.
+[Evaluation orchestration](../src/lib/server/decisions/shadow/service.ts).
 
-The assessment branch and Jev branch have different ownership: assessment/trend
-services own digests and workflow suggestions; versioned features and validated
-runs own decision evidence. OpenAI summary failure can fall back to deterministic
-assessment text; Jev failure produces a failed decision run, never a fallback HOLD.
-[Assessment service](../src/lib/server/intelligence/assessments/service.ts),
-[evaluation orchestration](../src/lib/server/decisions/shadow/service.ts).
-
-Insights & Events is a third, deterministic saved-evidence path: no inference provider
+Insights & Events is a separate, deterministic saved-evidence path: no inference provider
 or advertising executor. [Issue capture](../src/lib/server/insights/issues.ts) and
 [lifecycle capture](../src/lib/server/lifecycle/service.ts) run within existing sync
 work; failures preserve prior evidence instead of asserting resolution. Per-user
@@ -295,47 +281,11 @@ distinct source lineage. Measurements use equal completed hourly windows for
 and completed observations are immutable. See [outcome semantics](../src/lib/server/decisions/outcomes/README.md)
 for DST, currency and attribution limitations.
 
-## 5. Organize → preview → approve → rename → restore
+## 5. Account Organizer (retired)
 
-[`campaigns/organize/actions.ts`](../src/app/(root)/campaigns/organize/actions.ts)
-is the existing server-action boundary. Every workflow reauthorizes selected-account
-and business scope through `organizerScope`.
-
-```mermaid
-flowchart LR
-  C[Consent and inspect] --> B[Immutable baseline and source snapshot]
-  B --> D[Deterministic naming draft]
-  D --> S[Save version after stale-state check]
-  S --> P[Fresh rename preview]
-  P --> A[Exact fingerprint approval]
-  A --> E[Separate execute and readback]
-  E --> H[Immutable events/history]
-  H --> R[Verified restoration draft with lineage]
-  R --> S
-```
-
-[`organizer/service.ts`](../src/lib/server/organizer/service.ts) owns `inspect`,
-`history`, `save` and synchronized capture. Active sync or a changed sync completion
-blocks capture; saving compares source names/hierarchy/creative associations.
-The first baseline remains preserved; each version retains its own source snapshot.
-[`shared/organizer/model.ts`](../src/lib/shared/organizer/model.ts) owns naming and
-validation; dates and conceptual similarities are not invented by AI.
-
-[`renaming.ts`](../src/lib/server/organizer/renaming.ts) owns `previewRename`,
-`approveRename`, `executeRename`, `reconcileRename`, `restoreRename` and history.
-[`renamePlan.ts`](../src/lib/shared/organizer/renamePlan.ts) builds the exact selected
-changes; approvals cover one to five names and expire after 15 minutes. Fresh
-observations, source version, account/business and provider mode are fingerprinted.
-The service-only `organizer_approve` and `organizer_claim` RPCs protect immutable
-approvals, duplicate submissions and business locks shared with advertising execution.
-
-[`advertising/organizer/execute.ts`](../src/lib/server/advertising/organizer/execute.ts)
-records intent before each name-only write and verifies each readback. Uncertain
-results stay locked; explicit reconciliation is read-only. Restoration requires
-verified prior results and a current state matching that readback. It creates a new
-unselected proposal with lineage, then repeats save/preview/approval/execution;
-it never blindly overwrites later external edits. Details and residual Meta
-compare-and-set limitations live in [PHASE2.md](../src/lib/server/organizer/PHASE2.md).
+The inspect, naming, approval, rename and restore workflow was removed in November
+2026. `/campaigns/organize` redirects to Campaigns. Its tables and history are
+[preserved](../src/lib/server/organizer/README.md).
 
 ## 6. Agency requests and available capabilities
 
@@ -357,7 +307,6 @@ through the existing draft repository. Tools do not publish or execute Meta writ
 Eligible analytics requests can request a gated background refresh through
 [`assistant/freshness.ts`](../src/lib/server/intelligence/assistant/freshness.ts);
 the current answer still uses saved evidence dates, not promised fresh measurements.
-The older keyword-based `service.ts` is compatibility code, not this route's handler.
 See the [assistant contract](../src/lib/server/intelligence/assistant/README.md).
 
 No autonomous live campaign creation or arbitrary conversational account edits

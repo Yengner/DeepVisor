@@ -30,6 +30,10 @@ Next.js app is not deployed yet (its automatic-refresh endpoint returns 404).**
   persisted completion. A queue response does not claim updated data.
 - Sync uses the existing Meta read adapter and worker, never the advertising executor.
 
+> The cleanup migration `20261119211138` removed the inactive job `cron_sync_ad_metrics`.
+> The activation SQL below would create it again, with a new job ID. It also sets the
+> worker's `limit` to 5; the live job used 1 on 2026-11-24. Review both before running it.
+
 ## Approval and activation order
 
 1. Deploy the updated Next.js app through the existing hosting workflow. The queue

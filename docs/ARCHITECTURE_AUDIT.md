@@ -167,3 +167,24 @@ No new defect issue or duplicate feature backlog was created. Existing documenta
 work KAN-5 and environment-inventory work KAN-4 receive evidence updates; neither is
 certified Done by this bounded documentation follow-up. No application, database,
 schedule, deployment or advertising changes were made.
+
+
+## Engineering cleanup — 2026-11-25
+
+Carries out the 2026-11-24 audit (local `CLEANUP_PLAN.md`) with the owner's
+decisions D1–D6. Earlier sections above are historical: the legacy dashboard,
+`_archive`, deprecated marketing code, the old manual campaign builder, the
+`server/data` layer, Organizer application code, Stripe billing, the smart builder
+and revive drafts, and the broken retention job no longer exist. Sync no longer runs
+the older assessment, signal and trend engines. No migration, table, row, schedule,
+deployment or advertising change was made.
+
+| Still open | Detail |
+| --- | --- |
+| Kept intelligence engines | Owner kept assessments, signals and trends; calendar, campaign reviews and report archive pages were then deleted, and stored findings hidden. See `server/intelligence/README.md` |
+| Retention | Nothing enforces `business_data_policies` history limits. A new design needs paginated reads and tests before any delete |
+| Hidden features | `shared/productAvailability.ts` |
+| Unverified callers | `api/integrations/refresh`, `refetch-ad-accounts`, `sync-jobs/[jobId]/dispatch`, `notifications/[id]/read`: no in-repository caller; check hosting logs |
+| External leftovers | Deployed Edge `process_meta_backfill_jobs` and `process_calendar_queue` (source now removed); DB `invoke_*` and `accept_calendar_queue_workflow` functions; calendar tables, storage bucket and paused cron |
+| Possible data correctness | Report breakdown helpers return `0` for a zero denominator (`dashboard/buildPayload.ts`, `repositories/reports/surfaces.ts`); on-screen effect not traced |
+

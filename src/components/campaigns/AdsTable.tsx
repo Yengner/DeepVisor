@@ -2,7 +2,7 @@
 
 import { MediaImage } from './exploration/AdvertisingExplorer';
 
-import type { AdLifetimeRow } from '@/lib/server/data';
+import type { AdLifetimeRow } from '@/lib/server/repositories/ads/getAdsMetrics';
 import { Button, Group, Menu, ScrollArea, Table, Text } from '@mantine/core';
 import { IconChartBar, IconCopyPlus, IconExternalLink } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';

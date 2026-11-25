@@ -34,30 +34,12 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "src/app/(root)/integration/meta/unsuccessful",
     ".next/dev/types/**/*.ts",
-    ".next/beta-phase2/types/**/*.ts",
-    ".next/beta-phase2/dev/types/**/*.ts",
     ".next-beta-simulation/types/**/*.ts",
     ".next-beta-simulation/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "supabase/functions/**",
-    "src/_archive/**",
-    "src/app/(auth)/(unused)/**",
-    "src/app/(auth)/(unused)/**/*",
-    "src/components/campaigns/create/flows/manual/CustomCampaignFlow.tsx",
-    "src/components/campaigns/create/flows/manual/MetaCampaignBuilder.tsx",
-    "src/components/public/depricated/Benefits/**",
-    "src/components/public/depricated/CTA.tsx",
-    "src/components/public/depricated/FAQ.tsx",
-    "src/components/public/depricated/Footer.tsx",
-    "src/components/public/depricated/FreeEstimateButton.tsx",
-    "src/components/public/depricated/Header.tsx",
-    "src/components/public/depricated/Hero.tsx",
-    "src/components/public/depricated/Pricing/**",
-    "src/components/public/depricated/Stats.tsx",
-    "src/components/public/depricated/Testimonials.tsx"
+    "supabase/functions/**"
   ]
 }

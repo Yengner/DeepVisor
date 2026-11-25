@@ -13,12 +13,7 @@ import {
   buildDefaultNotificationPreference,
   listNotificationPreferencesForBusiness,
 } from '../repositories/notificationPreferences';
-import {
-  buildDefaultReportSubscription,
-  getReportSubscription,
-} from '../repositories/reportSubscriptions';
-import { hasActiveReviewReportQueueItem } from '../repositories/calendarQueue';
-import { listActiveTrendFindings } from '../repositories/trendFindings';
+import { getReportSubscription } from '../repositories/reportSubscriptions';
 import { syncTrendFindings } from '../repositories/trendFindings';
 import type {
   MetaTrendIntelligenceArtifacts,
@@ -269,8 +264,8 @@ function buildFindingAction(input: {
     case 'best_time_window':
       return {
         type: 'launch_test',
-        label: 'Send timing suggestion to calendar',
-        destination: 'calendar',
+        label: 'Review this timing window',
+        destination: 'reports',
         href: reportHref,
         reportHref,
         queueSuggested: true,
@@ -310,8 +305,8 @@ function buildFindingAction(input: {
     case 'stale_live_delivery':
       return {
         type: 'refresh_creative',
-        label: 'Queue a creative refresh review',
-        destination: 'calendar',
+        label: 'Review a creative refresh',
+        destination: 'reports',
         href: reportHref,
         reportHref,
         queueSuggested: true,
@@ -1296,37 +1291,4 @@ export async function syncMetaTrendIntelligenceArtifacts(input: {
     patternCount,
     refreshMode: 'recomputed',
   };
-}
-
-export async function syncMetaTrendIntelligenceArtifactsForQueueState(input: {
-  supabase: IntelligenceClient;
-  businessId: string;
-  platformIntegrationId: string;
-  adAccountId: string;
-  forceRefresh?: boolean;
-}): Promise<MetaTrendIntelligenceArtifacts> {
-  if (input.forceRefresh) {
-    return syncMetaTrendIntelligenceArtifacts(input);
-  }
-
-  const hasReviewQueue = await hasActiveReviewReportQueueItem(input.supabase, {
-    businessId: input.businessId,
-    adAccountId: input.adAccountId,
-  });
-
-  if (!hasReviewQueue) {
-    const findings = await listActiveTrendFindings(input.supabase, {
-      businessId: input.businessId,
-      adAccountId: input.adAccountId,
-    });
-
-    return {
-      findings,
-      notificationSummary: [],
-      patternCount: 0,
-      refreshMode: 'stored',
-    };
-  }
-
-  return syncMetaTrendIntelligenceArtifacts(input);
 }

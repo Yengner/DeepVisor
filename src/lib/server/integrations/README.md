@@ -64,7 +64,7 @@ coverage does not prove fresh attribution or completed decision evaluation.
 | Creatives and saved media | `syncMetaAdCreatives`; `ad_creatives`, creative feature snapshot repository |
 | Daily/summary/hourly/audience facts | `syncMetaPerformance` and corresponding repositories; preserve entity level, account currency/timezone and missingness |
 | Account Insights metadata | `updateAdAccountMetadataFromInsights`; despite the old filename, this does not persist separate daily account metrics |
-| Assessments, signals and trends | Existing `intelligence` services, including `ai.business_assessments` |
+| Legacy assessments, signals and trends | Not part of sync; [dormant engines](../intelligence/README.md) |
 | Versioned decisions | Separately gated post-sync enqueue and Review/Shadow workers; [decision contracts](../decisions/README.md) |
 
 Creative sync performs bounded video-poster reads through the existing Meta client;

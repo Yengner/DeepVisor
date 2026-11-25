@@ -680,7 +680,7 @@
       "display": "Language and look",
       "ads": "Ad answers",
       "alerts": "Alerts",
-      "account": "Account and plan"
+      "account": "Account"
     },
     "saved": "Saved.",
     "save": "Save changes",
@@ -770,6 +770,7 @@
     "alerts": {
       "title": "Alerts",
       "lead": "Choose what DeepVisor tells you, and when it stays quiet.",
+      "leadSaved": "Updates about your ads are saved in DeepVisor.",
       "unread": "{count, plural, one {# new message} other {# new messages}}",
       "noUnread": "No new messages.",
       "openMessages": "Open messages",
@@ -797,8 +798,8 @@
       "error": "Your alert settings could not be saved. Please try again."
     },
     "account": {
-      "title": "Account and plan",
-      "lead": "Your Meta connection, your plan, and your reports.",
+      "title": "Account",
+      "lead": "Your Meta connection and your reports.",
       "connected": "Meta is connected",
       "attention": "Meta needs attention",
       "notConnected": "Meta is not connected",
@@ -807,20 +808,12 @@
       "attentionHint": "Open Connections to reconnect.",
       "notConnectedHint": "Connect Meta to see how your ads are doing.",
       "manage": "Manage connections",
-      "plan": "Plan",
       "role": "Your role",
       "accounts": "Ad accounts",
-      "accountsUsage": "{count} of {max}",
       "accountsCount": "{count}",
       "following": "Showing",
       "followingNone": "No ad account chosen",
       "reports": "Download reports",
-      "savedReports": "Saved reports ({count})",
-      "noReports": "No saved reports yet. When a report is made, it is kept here.",
-      "view": "View",
-      "download": "Download",
-      "spent": "Spent {amount}",
-      "results": "{count, plural, one {# result} other {# results}}",
       "details": "Connection details",
       "noConnections": "No connections yet.",
       "statusConnected": "Connected",
@@ -830,13 +823,6 @@
       "expires": "Access ends {date}",
       "problem": "The last update did not finish. Your ads are unchanged.",
       "notAvailable": "Not available",
-      "tier": {
-        "free": "Free",
-        "tier1": "Starter",
-        "tier2": "Growth",
-        "tier3": "Scale",
-        "managed_service": "Managed service"
-      },
       "roles": {
         "owner": "Owner",
         "admin": "Admin",
@@ -2864,8 +2850,7 @@
       "syncing_ads": "Getting your ads",
       "syncing_creatives": "Getting your ad images and videos",
       "syncing_performance_windows": "Getting your results",
-      "finalizing_summaries": "Adding up your results",
-      "running_assessments": "Checking how your ads are doing"
+      "finalizing_summaries": "Adding up your results"
     },
     "queued": "Starting your account setup",
     "syncing": "Syncing your Meta data",

@@ -10,6 +10,7 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { loadDecisionSurface } from '@/lib/server/decisions/loadSurface';
 import DecisionsFeed, { FindingsFeed } from './DecisionsFeed';
+import { STORED_FINDINGS_AVAILABLE } from '@/lib/shared/productAvailability';
 import classes from './Decisions.module.css';
 import { buildDecisionPreview, isDecisionPreview } from '@/lib/server/decisions/preview';
 import DecisionPreviewBanner from '@/components/product/DecisionPreviewBanner';
@@ -34,7 +35,7 @@ async function DecisionContent({ page, preview }: { page: number; preview: boole
       <Text size="sm" c="dimmed">Page {page + 1}</Text>
       <ProductLinkButton href={`/decisions?page=${page + 1}`} disabled={!data.hasNext}>Older decisions</ProductLinkButton>
     </Group>}
-    <FindingsFeed findings={data.findings} unavailable={data.findingsUnavailable} />
+    {STORED_FINDINGS_AVAILABLE && <FindingsFeed findings={data.findings} unavailable={data.findingsUnavailable} />}
   </>;
 }
 

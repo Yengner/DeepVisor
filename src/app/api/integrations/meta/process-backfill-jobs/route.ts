@@ -1,3 +1,4 @@
+import { refuseWithoutInternalApiKey } from '@/lib/server/auth/internalApiKey';
 import { after, NextRequest, NextResponse } from 'next/server';
 import { processMetaBackfillJobs } from '@/lib/server/sync/meta/processBackfillJobs';
 import { drainShadowJobs } from '@/lib/server/decisions/shadow/service';
@@ -5,53 +6,8 @@ import { processActionOutcomes } from '@/lib/server/decisions/outcomes/service';
 
 export const maxDuration = 300;
 
-function getRequestApiKey(request: NextRequest): string | null {
-  const apiKeyHeader = request.headers.get('x-internal-api-key');
-  if (apiKeyHeader) {
-    return apiKeyHeader;
-  }
-
-  const authorization = request.headers.get('authorization');
-  if (!authorization) {
-    return null;
-  }
-
-  const [scheme, token] = authorization.split(' ');
-  if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    return null;
-  }
-
-  return token;
-}
-
-function assertAuthorized(request: NextRequest): NextResponse | null {
-  const expectedApiKey = process.env.INTERNAL_API_KEY;
-  if (!expectedApiKey) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'INTERNAL_API_KEY is not configured',
-      },
-      { status: 500 }
-    );
-  }
-
-  const requestApiKey = getRequestApiKey(request);
-  if (!requestApiKey || requestApiKey !== expectedApiKey) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Unauthorized',
-      },
-      { status: 401 }
-    );
-  }
-
-  return null;
-}
-
 export async function POST(request: NextRequest) {
-  const authError = assertAuthorized(request);
+  const authError = refuseWithoutInternalApiKey(request);
   if (authError) {
     return authError;
   }

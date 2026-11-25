@@ -6,7 +6,7 @@ import LifecyclePopup from '@/components/lifecycle/LifecycleView';
 import { lifecycleEnabled } from '@/lib/server/lifecycle/service';
 import AiAssistantDrawer from '@/components/layout/AiAssistantDrawer';
 import { assistantEnabled } from '@/lib/server/intelligence/assistant/enabled';
-import { buildGlobalAiAssistantPayload } from '@/lib/server/intelligence/service';
+import { loadAssistantAccount } from '@/lib/server/intelligence/assistant/account';
 import AutomaticMetaSync from '@/components/integrations/AutomaticMetaSync';
 import AccountSetupGate, { type AccountSetupState } from '@/components/integrations/AccountSetupGate';
 import { loadOverviewSync } from '@/lib/server/dashboard/overview/load';
@@ -15,10 +15,9 @@ import Topbar from '@/components/layout/topBar/TopBar';
 import Sidebar from '@/components/layout/LeftSidebar';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
-import { getPlatformDetails } from '@/lib/server/data';
-import { Suspense } from 'react';
-import AutonomyIndicator from '@/components/product/AutonomyIndicator';
-import AutonomyChrome from '@/components/product/AutonomyChrome';
+import { getPlatformDetails } from '@/lib/server/repositories/platforms/getPlatformDetails';
+
+
 
 function resolvePlatformTheme(value: string | null | undefined): 'default' | 'meta' | 'google' | 'tiktok' {
   switch (value) {
@@ -52,7 +51,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     : null;
 
   const showAssistant = assistantEnabled();
-  const assistant = !showAssistant ? null : await buildGlobalAiAssistantPayload({ businessId, defaultPlatformIntegrationId: selection.selectedPlatformId, defaultAdAccountId: selection.selectedAdAccountId }).catch(() => null);
+  const assistant = !showAssistant ? null : await loadAssistantAccount({ businessId, adAccountId: selection.selectedAdAccountId }).catch(() => null);
   return (
     <div className="app-platform-shell h-dvh flex flex-col" data-platform-theme={platformTheme}>
       <header className="app-platform-header w-full z-50 flex-shrink-0">
@@ -63,7 +62,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Sidebar showInsightsPreview={showInsightsPreview} showAgency={agencyEnabled()} />
 
         <AiAssistantDrawer key={selection.selectedAdAccountId} payload={assistant} enabled={showAssistant}><main className="app-platform-main relative min-h-0 min-w-0 mx-auto flex-1 space-y-5 overflow-y-auto pb-[calc(9rem+env(safe-area-inset-bottom))] pl-0 pr-0 pt-3 md:space-y-6 md:pb-24 md:pl-[3.75rem] md:pr-3 md:pt-4">
-          {/* <AutonomyChrome><Suspense fallback={<p className="px-4 text-xs text-gray-600" style={{minHeight:44}}>Loading configured mode…</p>}><AutonomyIndicator businessId={businessId}/></Suspense></AutonomyChrome> */}
           <div className="app-status-region">
             <AutomaticMetaSync key={`sync:${selection.selectedAdAccountId}`} accountId={selection.selectedAdAccountId} />
             <AccountSignals key={`signals:${selection.selectedAdAccountId}`} accountId={selection.selectedAdAccountId} enabled={process.env.DEEPVISOR_META_WEBHOOKS === 'true'} />

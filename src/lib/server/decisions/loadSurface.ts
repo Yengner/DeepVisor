@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/shared/types/supabase';
 import { getAutonomyPolicy } from './repository';
 import { listTrendFindingsForBusiness } from '../intelligence/repositories/trendFindings';
+import { STORED_FINDINGS_AVAILABLE } from '@/lib/shared/productAvailability';
 import { toDecisionCard } from './surface';
 
 export async function loadDecisionSurface(client: SupabaseClient<Database>, businessId: string, page: number, accountId?: string) {
@@ -12,7 +13,7 @@ export async function loadDecisionSurface(client: SupabaseClient<Database>, busi
   const [runsResult, policy, findingsResult] = await Promise.all([
     runsQuery.order('created_at', { ascending: false }).order('id', { ascending: false }).range(page * 20, page * 20 + 20),
     getAutonomyPolicy(client, businessId),
-    accountId ? Promise.resolve({ findings: [], failed: false }) : listTrendFindingsForBusiness(client, { businessId, status: 'all', limit: 10 })
+    accountId || !STORED_FINDINGS_AVAILABLE ? Promise.resolve({ findings: [], failed: false }) : listTrendFindingsForBusiness(client, { businessId, status: 'all', limit: 10 })
       .then((findings) => ({ findings, failed: false })).catch(() => ({ findings: [], failed: true })),
   ]);
   if (runsResult.error) throw runsResult.error;

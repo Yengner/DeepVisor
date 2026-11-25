@@ -1,14 +1,13 @@
 import { isLocale } from '@/i18n/locales';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
-import { getTierLimits, getUnreadUserNotificationIds, getUserSubscriptionTier } from '@/lib/server/actions/user/settings';
+import { getUnreadUserNotificationIds } from '@/lib/server/actions/user/settings';
 import { loadAdFacts } from '@/lib/server/agent/facts';
-import { getAdAccountData, getBusinessAdAccountsRollup } from '@/lib/server/data';
 import { getNotificationPreference } from '@/lib/server/intelligence/repositories/notificationPreferences';
-import { listArchivedReports } from '@/lib/server/intelligence/repositories/reportArchive';
 import { getReportSubscription } from '@/lib/server/intelligence/repositories/reportSubscriptions';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { createServerClient } from '@/lib/server/supabase/server';
+import { ALERT_PREFERENCES_AVAILABLE } from '@/lib/shared/productAvailability';
 import SettingsView, { type SettingsIntegration } from './SettingsView';
 
 type IntegrationRow = {
@@ -27,7 +26,7 @@ export default async function SettingsPage() {
   const { user, businessId, organizationName, role } = await getRequiredAppContext();
   const selection = await resolveCurrentSelection(businessId);
 
-  const [businessResult, integrationsResult, rollup, tier, unreadIds, selectedAdAccount, notificationPreference, reportSubscription, archivedReports, localeRow] = await Promise.all([
+  const [businessResult, integrationsResult, accountsResult, unreadIds, alertPreferences, localeRow] = await Promise.all([
     supabase
       .from('business_profiles')
       .select('business_name, industry, website, description, monthly_budget, booking_link, business_location, customer_radius, most_valuable_service, promoted_services, preferred_contact_method')
@@ -38,24 +37,29 @@ export default async function SettingsPage() {
       .select('id, status, connected_at, last_synced_at, last_error, token_expires_at, platforms ( key, name )')
       .eq('business_id', businessId)
       .order('created_at', { ascending: true }),
-    getBusinessAdAccountsRollup(businessId),
-    getUserSubscriptionTier(user.id),
+    // Settings shows only how many accounts there are, the last sync and the selected name.
+    supabase.from('ad_accounts').select('id, name, last_synced').eq('business_id', businessId),
     getUnreadUserNotificationIds(user.id),
-    selection.selectedPlatformId && selection.selectedAdAccountId
-      ? getAdAccountData(selection.selectedAdAccountId, selection.selectedPlatformId, businessId)
+    // Saved preferences are only read while the form that edits them is shown.
+    ALERT_PREFERENCES_AVAILABLE
+      ? Promise.all([
+        getNotificationPreference(supabase, { businessId, userId: user.id }),
+        getReportSubscription(supabase, { businessId, userId: user.id }),
+      ]).then(([notification, report]) => ({ notification, report }))
       : Promise.resolve(null),
-    getNotificationPreference(supabase, { businessId, userId: user.id }),
-    getReportSubscription(supabase, { businessId, userId: user.id }),
-    listArchivedReports(supabase, { businessId, limit: 60 }),
     supabase.from('users').select('preferred_locale').eq('id', user.id).maybeSingle(),
   ]);
 
-  const limits = await getTierLimits(tier);
   // Owner answers plus what the selected account's ad sets show. Failure is shown, not hidden.
   const adFacts = await loadAdFacts(createAdminClient(), { businessId, adAccountId: selection.selectedAdAccountId }).catch(error => {
     console.error('Settings ad facts unavailable', { code: (error as { code?: string })?.code ?? (error as Error)?.message });
     return null;
   });
+
+  if (accountsResult.error) console.error('Settings ad accounts unavailable', { code: accountsResult.error.code });
+  const accounts = accountsResult.data ?? [];
+  const lastSyncedAt = accounts.reduce<string | null>((latest, account) =>
+    account.last_synced && (!latest || Date.parse(account.last_synced) > Date.parse(latest)) ? account.last_synced : latest, null);
 
   const business = businessResult.data;
   const integrations: SettingsIntegration[] = ((integrationsResult.data ?? []) as IntegrationRow[]).map(row => {
@@ -92,16 +96,12 @@ export default async function SettingsPage() {
       promotedServices: (business?.promoted_services ?? []) as string[],
       savedLocale: isLocale(savedLocale) ? savedLocale : null,
       adFacts: adFacts ? { facts: adFacts.facts, accountCurrency: adFacts.accountCurrency } : null,
-      notificationPreference,
-      reportSubscription,
+      alertPreferences,
       unreadCount: unreadIds.length,
       integrations,
-      lastSyncedAt: rollup.lastSyncedAt,
-      tier,
-      accountCount: rollup.accountCount,
-      maxAdAccounts: limits.maxAdAccounts,
-      selectedAdAccountName: selectedAdAccount?.name ?? null,
-      archivedReports,
+      lastSyncedAt,
+      accountCount: accounts.length,
+      selectedAdAccountName: accounts.find(account => account.id === selection.selectedAdAccountId)?.name ?? null,
     }} />
   );
 }

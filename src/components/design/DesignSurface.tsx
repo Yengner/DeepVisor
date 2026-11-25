@@ -1,7 +1,6 @@
 'use client';
 
 import { useSyncExternalStore, type ReactNode } from 'react';
-import { Card, SegmentedControl, Text, Title, useMantineColorScheme } from '@mantine/core';
 import classes from './DesignSurface.module.css';
 
 /** Mantine writes the resolved scheme to <html>; reading it keeps SSR ('light') and hydration consistent. */
@@ -24,16 +23,4 @@ export default function DesignSurface({ children }: { children: ReactNode; label
   return <div className={classes.surface} data-dv-theme={theme}>
     {children}
   </div>;
-}
-
-export function AppearanceSettings() {
-  const theme = useColorScheme();
-  const { setColorScheme } = useMantineColorScheme();
-  return <Card withBorder radius="lg" p="xl" component="section" aria-labelledby="appearance-title">
-    <Title order={3} id="appearance-title">Appearance</Title>
-    <Text size="sm" fw={600} mt="md" mb={6} aria-hidden="true">Color theme</Text>
-    <SegmentedControl aria-label="Color theme" value={theme} size="md" data={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} onChange={value => {
-      setColorScheme(value === 'dark' ? 'dark' : 'light');
-    }} />
-  </Card>;
 }

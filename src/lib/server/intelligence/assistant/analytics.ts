@@ -13,8 +13,11 @@ import { buildTimeAnalysis } from '@/lib/shared/reports/timeAnalysis';
 import { listActiveTrendFindingViews } from '@/lib/server/intelligence/repositories/trendFindings';
 import { learningLabel } from '@/lib/server/dashboard/insights/model';
 import { asRecord } from '@/lib/shared/utils/format';
+import { STORED_FINDINGS_AVAILABLE } from '@/lib/shared/productAvailability';
 
-export const analyticsNames = ['getAccountPerformance', 'getPerformanceRankings', 'getPerformanceBreakdown', 'getStoredFindings'] as const;
+const ALL_ANALYTICS = ['getAccountPerformance', 'getPerformanceRankings', 'getPerformanceBreakdown', 'getStoredFindings'] as const;
+/** The tools offered to the model. A name left out here is also refused if the model asks for it. */
+export const analyticsNames = ALL_ANALYTICS.filter(name => STORED_FINDINGS_AVAILABLE || name !== 'getStoredFindings');
 export const analyticsTools = analyticsNames.map(name => zodResponsesFunction({ name, parameters: analyticsArguments,
   description: name === 'getAccountPerformance' ? 'Stored period metrics, daily averages, previous-period comparisons and daily trends. Today uses seven completed baseline days with 8 PM eligibility. Account or an entity; native entityId optional. Platform-specific daily data may be unavailable.'
     : name === 'getPerformanceRankings' ? 'Top/bottom saved campaign, adset or ad observations for a period and metric. Coverage and outcome compatibility gate rankings. Learning is an ad-set state, not proof of poor performance.'

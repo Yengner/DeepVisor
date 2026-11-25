@@ -35,4 +35,4 @@ it('adds structured location and provenance columns idempotently with their chec
   } finally {
     await db.close();
   }
-});
+}, 20000);

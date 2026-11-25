@@ -1,29 +1,15 @@
 import 'server-only';
 
-import { getTrailingUtcDateRange, uniqueStrings } from '@/lib/shared';
+import { uniqueStrings } from '@/lib/shared';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { createServerClient } from '@/lib/server/supabase/server';
-import { buildReportPayload } from '@/lib/server/repositories/reports/buildReportPayload';
-import type { ReportQueryInput } from '@/lib/server/reports/types';
 import type {
   AdAccountAssessment,
   BusinessIntelligenceAdAccountSummary,
-  BusinessIntelligenceOverview,
   BusinessIntelligencePlanningScope,
   BusinessIntelligencePlatformSummary,
   BusinessIntelligenceSelection,
-  BusinessIntelligenceWorkspace,
-  GlobalAiAssistantPayload,
-  IntelligenceTopCampaign,
 } from './types';
-import {
-  getLatestBusinessAssessment as getLatestBusinessAssessmentRecord,
-  listLatestAdAccountAssessmentsForBusiness,
-} from './repositories/assessments';
-import {
-  listActiveTrendFindings,
-  toTrendFindingView,
-} from './repositories/trendFindings';
 import {
   runBusinessAssessment,
   runMetaAdAccountAssessment,
@@ -55,14 +41,6 @@ type AdAccountRow = {
   timezone: string | null;
   currency_code: string | null;
   created_at: string | null;
-};
-
-type WorkspaceSelectionInput = {
-  scope?: BusinessIntelligencePlanningScope | null;
-  platformIntegrationId?: string | null;
-  platformIntegrationIds?: string[];
-  defaultPlatformIntegrationId?: string | null;
-  defaultAdAccountId?: string | null;
 };
 
 function getPlatformLabel(value: PlatformIntegrationRow['platforms'], fallback: string) {
@@ -306,58 +284,6 @@ function normalizeIntelligenceSelection(input: {
   };
 }
 
-function buildReportQuery(input: {
-  businessId: string;
-  selection: BusinessIntelligenceSelection;
-}): ReportQueryInput {
-  const { dateFrom, dateTo } = getTrailingUtcDateRange(30);
-
-  return {
-    businessId: input.businessId,
-    scope: input.selection.scope === 'integration' ? 'platform' : 'business',
-    platformIntegrationId:
-      input.selection.scope === 'integration' ? input.selection.platformIntegrationId : null,
-    adAccountIds: input.selection.adAccountIds,
-    campaignIds: [],
-    adsetIds: [],
-    adIds: [],
-    dateFrom,
-    dateTo,
-    groupBy: 'day',
-    compareMode: 'none',
-  };
-}
-
-async function loadIntelligenceOverview(input: {
-  businessId: string;
-  selection: BusinessIntelligenceSelection;
-}): Promise<BusinessIntelligenceOverview> {
-  const payload = await buildReportPayload(
-    buildReportQuery({
-      businessId: input.businessId,
-      selection: input.selection,
-    })
-  );
-
-  const topCampaigns: IntelligenceTopCampaign[] = payload.breakdown.rows.slice(0, 5).map((row) => ({
-    id: row.id,
-    name: row.name,
-    status: row.status ?? 'UNKNOWN',
-    spend: row.spend,
-    conversion: row.conversion,
-    ctr: row.ctr,
-    costPerResult: row.costPerResult,
-  }));
-
-  return {
-    scopeLabel: input.selection.scopeLabel,
-    summary: payload.summary,
-    kpis: payload.kpis,
-    series: payload.series,
-    topCampaigns,
-  };
-}
-
 function selectLatestAssessmentForSelection(
   selection: BusinessIntelligenceSelection,
   assessments: AdAccountAssessment[]
@@ -378,50 +304,6 @@ function selectLatestAssessmentForSelection(
     (left, right) =>
       right.digest.weightedAverages.last30d.spend - left.digest.weightedAverages.last30d.spend
   )[0] ?? null;
-}
-
-export async function buildBusinessIntelligenceWorkspace(
-  businessId: string,
-  input?: WorkspaceSelectionInput
-): Promise<BusinessIntelligenceWorkspace> {
-  const supabase = await createServerClient();
-  const { businessName, platforms, adAccounts } = await loadBusinessHeader(supabase, businessId);
-  const selection = normalizeIntelligenceSelection({
-    scope: input?.scope,
-    platformIntegrationId: input?.platformIntegrationId,
-    platformIntegrationIds: input?.platformIntegrationIds,
-    defaultPlatformIntegrationId: input?.defaultPlatformIntegrationId,
-    defaultAdAccountId: input?.defaultAdAccountId,
-    platforms,
-    adAccounts,
-  });
-
-  const [overview, latestBusinessAssessment, latestAccountAssessments] = await Promise.all([
-    loadIntelligenceOverview({
-      businessId,
-      selection,
-    }),
-    getLatestBusinessAssessmentRecord(supabase, businessId),
-    listLatestAdAccountAssessmentsForBusiness(supabase, businessId),
-  ]);
-
-  const selectedAdAccountName =
-    adAccounts.find((account) => account.id === selection.primaryAdAccountId)?.name ?? null;
-
-  return {
-    businessId,
-    businessName,
-    platforms,
-    selection,
-    selectedPlatformIntegrationId: selection.platformIntegrationId,
-    selectedAdAccountId: selection.primaryAdAccountId,
-    selectedAdAccountName,
-    adAccounts,
-    overview,
-    latestBusinessAssessment,
-    latestAccountAssessments,
-    latestSelectedAssessment: selectLatestAssessmentForSelection(selection, latestAccountAssessments),
-  };
 }
 
 export async function runBusinessIntelligenceAssessment(input: {
@@ -476,69 +358,5 @@ export async function runBusinessIntelligenceAssessment(input: {
     selection,
     accountAssessments,
     businessAssessment,
-  };
-}
-
-export async function buildGlobalAiAssistantPayload(input: {
-  businessId: string;
-  defaultPlatformIntegrationId?: string | null;
-  defaultAdAccountId?: string | null;
-}): Promise<GlobalAiAssistantPayload> {
-  const supabase = await createServerClient();
-  const { businessName, platforms, adAccounts } = await loadBusinessHeader(supabase, input.businessId);
-  const selection = normalizeIntelligenceSelection({
-    scope: 'integration',
-    platformIntegrationId: input.defaultPlatformIntegrationId,
-    defaultPlatformIntegrationId: input.defaultPlatformIntegrationId,
-    defaultAdAccountId: input.defaultAdAccountId,
-    platforms,
-    adAccounts,
-  });
-
-  const [latestBusinessAssessment, latestAccountAssessments] = platforms.length
-    ? await Promise.all([
-      getLatestBusinessAssessmentRecord(supabase, input.businessId),
-      listLatestAdAccountAssessmentsForBusiness(supabase, input.businessId),
-    ])
-    : [null, []];
-
-  const latestSelectedAssessment = selectLatestAssessmentForSelection(
-    selection,
-    latestAccountAssessments
-  );
-  const selectedPlatform = selection.platformIntegrationId
-    ? platforms.find((platform) => platform.id === selection.platformIntegrationId) ?? null
-    : null;
-  const selectedAdAccount = selection.primaryAdAccountId
-    ? adAccounts.find((account) => account.id === selection.primaryAdAccountId) ?? null
-    : null;
-  const activeFindings =
-    selectedAdAccount?.id
-      ? await listActiveTrendFindings(supabase as any, {
-          businessId: input.businessId,
-          adAccountId: selectedAdAccount.id,
-        })
-      : [];
-
-  return {
-    businessId: input.businessId,
-    businessName,
-    state:
-      platforms.length === 0
-        ? 'no_platform_connected'
-        : selection.primaryAdAccountId
-          ? latestSelectedAssessment
-            ? 'ready'
-            : 'needs_assessment'
-          : 'no_ad_account_selected',
-    selectionScope: selection.scope,
-    selectedPlatformIntegrationId: selection.platformIntegrationId,
-    selectedPlatformLabel: selectedPlatform?.label ?? null,
-    selectedAdAccountId: selectedAdAccount?.id ?? null,
-    selectedAdAccountName: selectedAdAccount?.name ?? null,
-    selectedAdAccountExternalId: selectedAdAccount?.externalAccountId ?? null,
-    latestBusinessAssessment,
-    latestSelectedAssessment,
-    activeFindings: activeFindings.map(toTrendFindingView),
   };
 }

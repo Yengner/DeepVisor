@@ -3,7 +3,9 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getMetaPages, type MetaPage } from '@/lib/server/actions/meta/pages/actions';
 import { getCampaignDraftById, readCampaignDraftPayload } from '@/lib/server/campaigns/drafts';
-import { getAdAccountData, getCampaignsWithAdSetsAndAds, getPlatformDetails } from '@/lib/server/data';
+import { getAdAccountData } from '@/lib/server/repositories/ad_accounts/getAdAccountData';
+import { getCampaignsWithAdSetsAndAds } from '@/lib/server/repositories/campaigns/getCampaignsWithAdSetsAndAds';
+import { getPlatformDetails } from '@/lib/server/repositories/platforms/getPlatformDetails';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { ErrorCode, fail, ok } from '@/lib/shared';
 import type { ConfiguredWhatsAppNumber } from '@/lib/shared/types/whatsappSetup';
@@ -123,8 +125,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const draftPayload = readCampaignDraftPayload(draftRow);
-    const manualDraft = draftPayload?.mode === 'manual' ? draftPayload.form : null;
+    const manualDraft = readCampaignDraftPayload(draftRow)?.form ?? null;
+
+    // Opening it as a blank manual draft would let the next save replace what is stored.
+    if (requestedDraftId && createScope === 'campaign' && !manualDraft) {
+      return NextResponse.json(
+        fail('Campaign draft format is no longer supported.', ErrorCode.CONFLICT, {
+          userMessage: 'This draft was made with a builder we no longer use, so it cannot be opened. It is kept unchanged.',
+        }),
+        { status: 409 }
+      );
+    }
     let metaPages: MetaPage[] = [];
     let pagesError: string | null = null;
     let configuredWhatsAppNumbers: ConfiguredWhatsAppNumber[] = [];

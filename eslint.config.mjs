@@ -8,7 +8,7 @@ export default [
   {
     ignores: [
       '.next*/**', 'out/**', 'build/**', 'next-env.d.ts',
-      'src/_archive/**', 'src/lib/shared/types/supabase.ts',
+      'src/lib/shared/types/supabase.ts',
     ],
   },
 ];

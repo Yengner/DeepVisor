@@ -7,9 +7,10 @@ import { createSupabaseClient } from '../../supabase/server';
 import { buildReportPayload, getReportFilterOptions } from './buildReportPayload';
 import { loadReportSurfaces } from './surfaces';
 import { parseReportQueryInput } from '../../reports/query';
-import { reportCsvRows } from './buildReportCsvRows';
+
 import { buildReportPdfPayload } from './buildReportPdfPayload';
 import { reportMetricValue } from '@/lib/shared/reports/metrics';
+import { reportWorkspaceCsvRows } from '../../reports/csv';
 
 const transport = vi.fn<typeof fetch>();
 const client = createClient<Database>('https://isolated.example.test', 'test', {
@@ -132,8 +133,10 @@ describe('report repository correctness', () => {
   it('uses the same dates and available values for PDF and CSV contracts', async () => {
     const payload = await buildReportPdfPayload(query(), client);
     expect(payload.query.dateFrom).toBe('2026-01-10');
-    const rows = reportCsvRows(payload);
-    expect(rows[0]).toMatchObject({ report_date_from: '2026-01-10', report_date_to: '2026-01-11', account_timezone: 'America/New_York', reach: '', frequency: '', spend: 20, ctr: 1 });
+    const rows = reportWorkspaceCsvRows(payload);
+    const summary = rows[0], entry = rows.find(row => row.row_type === 'advertising' && row.id === payload.breakdown.rows[0].id);
+    expect(entry).toMatchObject({ reach: '', frequency: '', spend: 20, ctr: 1 });
+    expect(summary).toMatchObject({ row_type: 'summary', report_date_from: '2026-01-10', report_date_to: '2026-01-11', account_timezone: 'America/New_York', reach: '', frequency: '', spend: 40, ctr: 1 });
   });
 });
 describe('snapshot and hourly repositories', () => {

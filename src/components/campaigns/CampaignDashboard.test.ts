@@ -6,7 +6,7 @@ import messages from '../../../messages/en.json';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const captured = vi.hoisted(() => ({ adsets: [] as Array<{id:string;delivery?:boolean}>, ads: [] as Array<{id:string;delivery?:boolean}> }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace:vi.fn() }), usePathname:()=>'/campaigns', useSearchParams:()=>new URLSearchParams() }));
-vi.mock('@/lib/server/data/queries/components.query', () => ({ fetchAdSetsForCampaign:vi.fn(), fetchAdsForAdset:vi.fn() }));
+vi.mock('@/lib/server/actions/campaigns/tableRows', () => ({ fetchAdSetsForCampaign:vi.fn(), fetchAdsForAdset:vi.fn() }));
 vi.mock('@/lib/shared', () => ({ formatCurrencyAmount:(value:number)=>String(value), formatRetryDelay:()=>'' }));
 vi.mock('./RunAgainSheet', () => ({default:()=>null}));
 vi.mock('./CampaignTable', () => ({default:()=>null}));
@@ -27,13 +27,12 @@ function render(tab:'adsets'|'ads', pausedParent=false) {
     campaigns:[{id:'campaign',name:'Campaign',status:'ACTIVE'}] as Props['campaigns'],
     deliveryState:{activeKeys:activeDeliveryKeys(hierarchy),available:true},
     platform:{id:'integration',name:'meta'},adAccountId:'account',currencyCode:'USD',
-    accountMetrics:{spend:0,impressions:0,clicks:0,link_clicks:0,reach:0,leads:0,messages:0,ctr:0,cpc:0,cpm:0},
     initialSelection:{tab,campaignId:'campaign',adsetId:'live-set'},
     initialAdSets:[{id:'empty-set',status:'ACTIVE',name:'No active ads'},{id:'live-set',status:'ACTIVE',name:'Active child'}] as Props['initialAdSets'],
     initialAds:[{id:'paused-ad',ad_id:'paused-ad',status:'PAUSED'},{id:'live-ad',ad_id:'live-ad',status:'ACTIVE'}] as Props['initialAds'],
   };
   const intl = { locale: 'en', messages } as ComponentProps<typeof NextIntlClientProvider>;
-  renderToStaticMarkup(createElement(NextIntlClientProvider,intl,createElement(MantineProvider,null,createElement(CampaignDashboard,props))));
+  return renderToStaticMarkup(createElement(NextIntlClientProvider,intl,createElement(MantineProvider,null,createElement(CampaignDashboard,props))));
 }
 describe('nested campaign tab delivery wiring',()=>{
   beforeEach(()=>{captured.adsets=[];captured.ads=[];});
@@ -48,6 +47,11 @@ describe('nested campaign tab delivery wiring',()=>{
     expect(captured.ads.map(({id,delivery})=>({id,delivery}))).toEqual([
       {id:'live-ad',delivery:true},{id:'paused-ad',delivery:false},
     ]);
+  });
+  it.each(['adsets','ads'] as const)('offers no create button on the %s tab while that flow cannot finish',tab=>{
+    const html=render(tab);
+    expect(html).toContain('data-action="refresh"');
+    expect(html).not.toContain('data-action="create"');
   });
   it.each(['adsets','ads'] as const)('withholds all %s highlights under a paused campaign',tab=>{
     render(tab,true);

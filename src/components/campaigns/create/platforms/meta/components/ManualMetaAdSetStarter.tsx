@@ -23,7 +23,7 @@ import {
     IconLayersIntersect,
     IconTargetArrow,
 } from '@tabler/icons-react';
-import type { CampaignTreeNode } from '@/lib/server/data';
+import type { CampaignTreeNode } from '@/lib/server/repositories/campaigns/getCampaignsWithAdSetsAndAds';
 import { useCodeLabels } from '../hooks/useCodeLabels';
 
 interface ManualMetaAdSetStarterProps {

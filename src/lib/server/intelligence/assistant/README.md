@@ -63,7 +63,7 @@ cost, not billing guarantees. Prices are pinned estimates verified against the
    explicit confirmation checkbox and validates the full submitted proposal,
    source hierarchy, creative ownership, schedule and existing budget guardrails.
 6. [`draft.ts`](./draft.ts) reuses the campaign draft repository, scoped reuse source
-   lookup and deterministic organizer naming engine. Drafts are `PAUSED` and
+   lookup and deterministic naming templates (`shared/campaigns/naming`). Drafts are `PAUSED` and
    `reviewRequired`; no Meta write/execution code is reachable from these tools.
 
 Existing campaigns/ad sets are represented by native Meta IDs, checked against

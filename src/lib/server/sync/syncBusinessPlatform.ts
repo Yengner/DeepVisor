@@ -1,4 +1,3 @@
-import { readSimulation } from '@/lib/server/integrations/simulation/meta';
 import 'server-only';
 
 import { createAdminClient } from '@/lib/server/supabase/admin';
@@ -6,12 +5,6 @@ import {
   clampHistoryDays,
   getOrCreateBusinessDataPolicy,
 } from '@/lib/server/repositories/business_data_policies/getBusinessDataPolicy';
-import {
-  runBusinessAssessment,
-  runMetaAdAccountAssessment,
-  syncMetaAccountIntelligenceArtifacts,
-} from '@/lib/server/intelligence';
-import { syncMetaTrendIntelligenceArtifactsForQueueState } from '@/lib/server/intelligence/trends/service';
 import { toIntegrationStatus } from '@/lib/server/integrations/normalizers';
 import {
   getPrimaryAdAccountSelection,
@@ -80,16 +73,6 @@ function resolveBackfillDays(trigger: SyncTrigger, override?: number): number {
     default:
       return 30;
   }
-}
-
-/**
- * Maps a sync trigger into the assessment trigger vocabulary used by the AI assessment pipeline.
- *
- * @param trigger - Sync trigger from the platform sync orchestration layer.
- * @returns `integration` for first-connect flows, otherwise `sync`.
- */
-function toAssessmentTrigger(trigger: SyncTrigger): 'integration' | 'sync' {
-  return trigger === 'integration' ? 'integration' : 'sync';
 }
 
 /**
@@ -213,7 +196,7 @@ async function getBusinessPlatformIntegration(input: {
  * Runs the full sync workflow for one business/platform integration.
  *
  * The function resolves the target integration, validates sync eligibility, loads the live
- * access token from Vault, executes the provider-specific sync, triggers post-sync assessments,
+ * access token from Vault, executes the provider-specific sync,
  * and persists the final integration health state.
  *
  * @param input - Business, integration/platform selector, trigger metadata, and optional sync overrides.
@@ -290,45 +273,6 @@ export async function syncBusinessPlatform(input: {
 
     if (!syncResult) {
       throw new Error(`Unsupported sync platform: ${integration.platformKey}`);
-    }
-
-    if (integration.platformKey === 'meta' && primaryExternalAccountId && !readSimulation(accessToken)) {
-      const { data: syncedAccount, error: syncedAccountError } = await supabase
-        .from('ad_accounts')
-        .select('id')
-        .eq('business_id', input.businessId)
-        .eq('platform_id', integration.platformId)
-        .eq('external_account_id', primaryExternalAccountId)
-        .maybeSingle();
-
-      if (syncedAccountError) {
-        throw syncedAccountError;
-      }
-
-      if (syncedAccount?.id) {
-        const adAccountAssessment = await runMetaAdAccountAssessment({
-          supabase,
-          businessId: input.businessId,
-          platformIntegrationId: integration.id,
-          adAccountId: syncedAccount.id,
-          trigger: toAssessmentTrigger(input.trigger),
-        });
-        await syncMetaAccountIntelligenceArtifacts({
-          supabase,
-          assessment: adAccountAssessment,
-        });
-        await syncMetaTrendIntelligenceArtifactsForQueueState({
-          supabase,
-          businessId: input.businessId,
-          platformIntegrationId: integration.id,
-          adAccountId: syncedAccount.id,
-        });
-        await runBusinessAssessment({
-          supabase,
-          businessId: input.businessId,
-          trigger: toAssessmentTrigger(input.trigger),
-        });
-      }
     }
 
     await markIntegrationSynced(supabase, integration.id);

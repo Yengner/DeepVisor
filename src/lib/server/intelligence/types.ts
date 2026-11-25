@@ -57,8 +57,8 @@ export type TrendFindingStatus =
   | 'dismissed'
   | 'resolved'
   | 'converted_to_queue';
-export type CalendarQueueSourceType = 'signal' | 'ai' | 'manual' | 'system';
-export type CalendarQueueItemType =
+/** What a signal or finding suggests doing. A suggestion only; nothing acts on it. */
+export type RecommendedActionType =
   | 'revive_campaign'
   | 'refresh_creative'
   | 'investigate_efficiency'
@@ -66,19 +66,6 @@ export type CalendarQueueItemType =
   | 'launch_test'
   | 'fix_tracking'
   | 'review_report';
-export type CalendarQueueWorkflowKind =
-  | 'revive_workflow'
-  | 'efficiency_workflow'
-  | 'tracking_workflow'
-  | 'testing_workflow';
-export type CalendarQueuePriority = 'low' | 'medium' | 'high' | 'critical';
-export type CalendarQueueStatus =
-  | 'ready'
-  | 'approved'
-  | 'scheduled'
-  | 'in_progress'
-  | 'completed'
-  | 'dismissed';
 
 export interface IntelligenceTopCampaign {
   id: string;
@@ -267,9 +254,9 @@ export interface AdAccountDigest {
 }
 
 export interface AdAccountSignalRecommendedAction {
-  type: CalendarQueueItemType;
+  type: RecommendedActionType;
   label: string;
-  destination: 'campaign_draft' | 'dashboard' | 'calendar' | 'reports' | 'settings';
+  destination: 'campaign_draft' | 'dashboard' | 'reports' | 'settings';
   href: string | null;
   draftSource?: 'historic_clone' | 'fresh_relaunch' | 'manual_defaults' | null;
   queueSuggested: boolean;
@@ -327,9 +314,9 @@ export interface AdAccountSignalView {
 }
 
 export interface TrendFindingRecommendedAction {
-  type: CalendarQueueItemType;
+  type: RecommendedActionType;
   label: string;
-  destination: 'campaign_draft' | 'dashboard' | 'calendar' | 'reports' | 'settings';
+  destination: 'campaign_draft' | 'dashboard' | 'reports' | 'settings';
   href: string | null;
   reportHref?: string | null;
   queueSuggested: boolean;
@@ -461,54 +448,9 @@ export interface MetaTrendIntelligenceArtifacts {
   refreshMode: 'recomputed' | 'stored';
 }
 
-export interface CalendarQueueItemDraft {
-  businessId: string;
-  platformIntegrationId: string;
-  adAccountId: string;
-  sourceSignalId: string | null;
-  sourceType: CalendarQueueSourceType;
-  itemType: CalendarQueueItemType;
-  priority: CalendarQueuePriority;
-  title: string;
-  description: string | null;
-  destinationHref: string | null;
-  scheduledFor?: string | null;
-  dueDate?: string | null;
-  parentQueueItemId?: string | null;
-  workflowKey?: CalendarQueueWorkflowKind | null;
-  materializedFromBlueprintKey?: string | null;
-  childBlueprints?: CalendarQueueChildBlueprint[];
-  createdByUserId?: string | null;
-  updatedByUserId?: string | null;
-  payload: Record<string, unknown>;
-}
-
-export interface CalendarQueueItem extends CalendarQueueItemDraft {
-  id: string;
-  status: CalendarQueueStatus;
-  campaignDraftId: string | null;
-  createdByUserId: string | null;
-  updatedByUserId: string | null;
-  completedAt: string | null;
-  dismissedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CalendarQueueChildBlueprint {
-  key: string;
-  itemType: CalendarQueueItemType;
-  priority: CalendarQueuePriority;
-  title: string;
-  description: string | null;
-  destinationHref: string | null;
-  payload: Record<string, unknown>;
-}
-
 export interface MetaAccountIntelligenceArtifacts {
   assessment: AdAccountAssessment;
   signals: AdAccountSignal[];
-  queueItems: CalendarQueueItem[];
 }
 
 export interface AdAccountAssessmentSummary {
@@ -595,25 +537,4 @@ export interface BusinessIntelligenceWorkspace {
   latestBusinessAssessment: BusinessAssessment | null;
   latestAccountAssessments: AdAccountAssessment[];
   latestSelectedAssessment: AdAccountAssessment | null;
-}
-
-export type GlobalAiAssistantState =
-  | 'no_platform_connected'
-  | 'no_ad_account_selected'
-  | 'needs_assessment'
-  | 'ready';
-
-export interface GlobalAiAssistantPayload {
-  businessId: string;
-  businessName: string;
-  state: GlobalAiAssistantState;
-  selectionScope: BusinessIntelligencePlanningScope;
-  selectedPlatformIntegrationId: string | null;
-  selectedPlatformLabel: string | null;
-  selectedAdAccountId: string | null;
-  selectedAdAccountName: string | null;
-  selectedAdAccountExternalId: string | null;
-  latestBusinessAssessment: BusinessAssessment | null;
-  latestSelectedAssessment: AdAccountAssessment | null;
-  activeFindings: TrendFindingView[];
 }

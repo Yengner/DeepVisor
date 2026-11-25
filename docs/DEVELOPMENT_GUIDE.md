@@ -28,8 +28,8 @@ Ask DeepVisor setup, private persistence, usage limits and draft-only capabiliti
 Optional provider configuration belongs to its adapter: [Jev contract and variables](../src/lib/server/decisions/README.md),
 [`openai/config.ts`](../src/lib/server/openai/config.ts) and
 [`openai/structured.ts`](../src/lib/server/openai/structured.ts). `JEV_API_KEY`
-remains server-only; the default pinned Jev model is `jev-1.13.0`. Keep all execution,
-Limited Auto and organizer-write flags unset during ordinary development. Starting
+remains server-only; the default pinned Jev model is `jev-1.13.0`. Keep all execution
+and Limited Auto flags unset during ordinary development. Starting
 the app must not be treated as authorization to run fixture scripts or activate cron.
 
 The migrations are incremental and assume existing database objects. Do not run

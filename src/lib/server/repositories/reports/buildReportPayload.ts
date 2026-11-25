@@ -11,6 +11,7 @@ import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { nonOverlappingHistory } from '@/lib/shared/reports/history';
 import { chunkArray } from '@/lib/server/repositories/utils';
 import { listActiveTrendFindingViews } from '@/lib/server/intelligence/repositories/trendFindings';
+import { STORED_FINDINGS_AVAILABLE } from '@/lib/shared/productAvailability';
 import {
   buildAudienceBreakdowns,
   buildPlatformBreakdowns,
@@ -274,17 +275,6 @@ function addUtcDays(value: string, days: number): string {
   const date = new Date(`${value}T00:00:00.000Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return toIsoDate(date);
-}
-
-function monthEnd(value: string): string {
-  const year = Number(value.slice(0, 4));
-  const month = Number(value.slice(5, 7));
-
-  if (!Number.isFinite(year) || !Number.isFinite(month)) {
-    return value;
-  }
-
-  return toIsoDate(new Date(Date.UTC(year, month, 0)));
 }
 
 function minDate(current: string | null, candidate: string | null): string | null {
@@ -2787,7 +2777,7 @@ export async function buildReportPayload(
     ? buildActiveDateContext(supabase, effectiveQuery, adAccountIds)
     : Promise.resolve(null);
   const findingsPromise =
-    adAccountIds.length === 1
+    STORED_FINDINGS_AVAILABLE && adAccountIds.length === 1
       ? listActiveTrendFindingViews(supabase as any, {
           businessId: effectiveQuery.businessId,
           adAccountId: adAccountIds[0],

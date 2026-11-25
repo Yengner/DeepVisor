@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { metaStateSchema } from './advertising/types';
 vi.mock('server-only',()=>({}));
@@ -14,10 +13,6 @@ describe('beta release safety',()=>{
   expect((await handler(new Request('https://test.invalid'))).status).toBe(403);
   env.CRON_SECRET='expected';expect((await handler(new Request('https://test.invalid',{headers:{'x-cron-secret':'wrong'}}))).status).toBe(403);expect(fetch).not.toHaveBeenCalled();
   fetch.mockResolvedValue(new Response('{}',{status:200}));expect((await handler(new Request('https://test.invalid',{headers:{'x-cron-secret':'expected'}}))).status).toBe(200);
- });
- it('keeps the calendar worker fail-closed too',()=>{
-  const source=readFileSync('supabase/functions/process_calendar_queue/index.ts','utf8');
-  expect(source).toContain('if (!secrets.expected?.trim()) return false');expect(source).not.toContain('SKIP_CRON_SECRET');expect(source).not.toContain('Fingerprint');
  });
  it('rejects synthetic IDs at the live transport and production state boundary',()=>{
   vi.stubEnv('NODE_ENV','production');vi.stubEnv('DEEPVISOR_META_SIMULATION','gkdyyjqepzayjdpvqnja');

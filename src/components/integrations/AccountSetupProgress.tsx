@@ -14,7 +14,6 @@ const STEPS = [
   "syncing_creatives",
   "syncing_performance_windows",
   "finalizing_summaries",
-  "running_assessments",
 ] as const satisfies readonly FirstSyncStage[];
 
 const POLL_MS = 4000;

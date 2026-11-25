@@ -37,15 +37,17 @@ import AdsTable from './AdsTable';
 import RunAgainSheet, { type RunAgainSource } from './RunAgainSheet';
 import { EmptyCampaignState } from './EmptyStates';
 import { RefreshOverview } from '@/app/(root)/dashboard/components/OverviewControls';
-import type { AdLifetimeRow, AdSetLifetimeRow } from '@/lib/server/data';
+import type { AdLifetimeRow } from '@/lib/server/repositories/ads/getAdsMetrics';
+import type { AdSetLifetimeRow } from '@/lib/server/repositories/adsets/getAdSetsMetrics';
 import { TABLE_RANGES, type TableRange } from '@/lib/shared/performance/periodTotals';
 import { MetricColumnsContext } from './tableKit';
 import { useLabels } from '@/lib/client/hooks/useLabels';
 import type { FormattedCampaign } from '@/app/(root)/campaigns/page';
-import { fetchAdSetsForCampaign, fetchAdsForAdset } from '@/lib/server/data/queries/components.query';
+import { fetchAdSetsForCampaign, fetchAdsForAdset } from '@/lib/server/actions/campaigns/tableRows';
 import { formatRecordedCurrency as formatCurrencyAmount } from './metrics';
 import { statusPresentation } from '@/components/product/presentation';
 import classes from './CampaignDashboard.module.css';
+import { META_CHILD_CREATION_AVAILABLE } from '@/lib/shared/productAvailability';
 
 type TabKey = 'campaigns' | 'adsets' | 'ads';
 
@@ -68,18 +70,6 @@ interface CampaignDashboardProps {
   adAccountId: string;
   currencyCode: string | null;
   accountTimezone?: string | null;
-  accountMetrics: {
-    spend: number;
-    impressions: number;
-    clicks: number;
-    link_clicks: number;
-    reach: number;
-    leads: number;
-    messages: number;
-    ctr: number;
-    cpc: number;
-    cpm: number;
-  };
   initialSelection?: {
     tab?: TabKey;
     campaignId?: string | null;
@@ -623,7 +613,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                       {t('createCampaign')}
                     </Button>
                   </>
-                ) : (
+                ) : META_CHILD_CREATION_AVAILABLE ? (
                   <Button
                     leftSection={<IconPlus size={16} />}
                     radius="xl"
@@ -638,7 +628,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                   >
                     {layerSummary.createLabel}
                   </Button>
-                )}
+                ) : null}
 
                 <div data-action="refresh">
                   <RefreshOverview label={t('refreshLabel')} updatedAt={props.syncedAt ?? null} onCompleted={() => {

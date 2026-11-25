@@ -3,7 +3,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { asRecord, toSupportedIntegrationPlatform } from '@/lib/shared';
 import { generateState } from '@/lib/shared/utils/guards';
 import type { Database, Json } from '@/lib/shared/types/supabase';
-import { upsertAdAccounts } from '@/lib/server/repositories/ad_accounts/upsertAdAccounts';
 import type {
   IntegrationDetails,
   IntegrationPlatform,
@@ -14,10 +13,7 @@ import type {
   UpsertIntegrationInput,
 } from '@/lib/server/integrations/types';
 import { toIntegrationStatus } from '@/lib/server/integrations/normalizers';
-import {
-  fetchMetaAdAccountSnapshots,
-  validateMetaAccessToken,
-} from '@/lib/server/integrations/adapters/meta';
+import { validateMetaAccessToken } from '@/lib/server/integrations/adapters/meta';
 
 type AppSupabaseClient = SupabaseClient<Database>;
 type PlatformIntegrationStorageRow = {
@@ -488,53 +484,6 @@ export type BusinessIntegration = {
   integrationDetails: Json;
 };
 
-export type MetaIntegrationAccountOption = {
-  externalAccountId: string;
-  name: string | null;
-  status: string | null;
-};
-
-export type RefreshBusinessAdAccountsResult = {
-  refreshedCount: number;
-  failedCount: number;
-  syncedAccountCount: number;
-};
-
-/**
- * Lists every integration for a business and normalizes each row for app-layer consumption.
- *
- * @param supabase - Server Supabase client used to query the integration rows.
- * @param businessId - Business whose platform integrations should be listed.
- * @returns An array of normalized business-integration records.
- */
-export async function listBusinessIntegrations(
-  supabase: AppSupabaseClient,
-  businessId: string
-): Promise<BusinessIntegration[]> {
-  const { data, error } = await supabase
-    .from('platform_integrations')
-    .select('*, platforms ( key )')
-    .eq('business_id', businessId);
-
-  if (error) throw error;
-
-  return ((data ?? []) as unknown as PlatformIntegrationStorageRow[]).map((row) => {
-    const platform = Array.isArray(row.platforms) ? row.platforms[0] : row.platforms;
-    const details = asRecord(row.integration_details);
-    const status = toIntegrationStatus(row.status ?? details.status);
-
-    return {
-      id: row.id,
-      platformId: row.platform_id,
-      platformKey: platform?.key ?? '',
-      status,
-      isIntegrated: status === 'connected',
-      accessToken: row.access_token_secret_id,
-      integrationDetails: row.integration_details,
-    };
-  });
-}
-
 /**
  * Resolves the live access token for an integration by reading the stored Vault secret.
  *
@@ -639,34 +588,6 @@ export async function getBusinessIntegrationById(
 }
 
 /**
- * Lists the Meta ad accounts currently accessible for an existing integration.
- *
- * @param supabase - Server Supabase client used to resolve the live access token.
- * @param integration - Normalized business integration record for the selected platform.
- * @returns A normalized list of accessible Meta ad account options.
- */
-export async function listMetaAccessibleAdAccounts(
-  supabase: AppSupabaseClient,
-  integration: BusinessIntegration
-): Promise<MetaIntegrationAccountOption[]> {
-  if (integration.platformKey !== 'meta') {
-    return [];
-  }
-
-  const accessToken = await resolveIntegrationAccessToken(supabase, integration);
-  if (!accessToken) {
-    throw new Error('Missing access token');
-  }
-
-  const snapshots = await fetchMetaAdAccountSnapshots(accessToken);
-  return snapshots.map((snapshot) => ({
-    externalAccountId: snapshot.externalAccountId,
-    name: snapshot.name,
-    status: snapshot.status,
-  }));
-}
-
-/**
  * Stores the user's chosen primary Meta ad account on the integration record.
  *
  * @param supabase - Server Supabase client used to patch integration details.
@@ -694,113 +615,6 @@ export async function setPrimaryMetaAdAccount(
       last_error: null,
     }
   );
-}
-
-/**
- * @deprecated Prefer `syncConnectedBusinessPlatforms` / `syncBusinessPlatform`
- * from `@/lib/server/sync` for business-platform sync orchestration.
- *
- * Refreshes accessible Meta ad accounts for one business and records per-integration health.
- *
- * @param supabase - Server Supabase client used for integration lookups and updates.
- * @param input - Business id plus an optional platform filter.
- * @returns Aggregate counts describing how many integrations refreshed or failed.
- */
-export async function refreshBusinessAdAccounts(
-  supabase: AppSupabaseClient,
-  input: { businessId: string; platform?: SupportedIntegrationPlatform }
-): Promise<RefreshBusinessAdAccountsResult> {
-  const integrations = await listBusinessIntegrations(supabase, input.businessId);
-
-  let refreshedCount = 0;
-  let failedCount = 0;
-  let syncedAccountCount = 0;
-
-  for (const integration of integrations) {
-    if (!integration.isIntegrated) {
-      continue;
-    }
-
-    if (input.platform && integration.platformKey !== input.platform) {
-      continue;
-    }
-
-    if (integration.platformKey !== 'meta') {
-      continue;
-    }
-
-    const accessToken = await resolveIntegrationAccessToken(supabase, integration);
-    if (!accessToken) {
-      failedCount += 1;
-      await markIntegrationError(supabase, integration.id, 'Missing access token');
-      continue;
-    }
-
-    try {
-      await validateMetaAccessToken(accessToken);
-
-      const syncedAccounts = await syncMetaAdAccountsSnapshot(supabase, {
-        businessId: input.businessId,
-        platformId: integration.platformId,
-        accessToken,
-      });
-
-      await markIntegrationHealthy(supabase, integration.id);
-
-      refreshedCount += 1;
-      syncedAccountCount += syncedAccounts;
-    } catch (error) {
-      failedCount += 1;
-      await markIntegrationError(
-        supabase,
-        integration.id,
-        error instanceof Error ? error.message : 'Failed to refresh integration'
-      );
-    }
-  }
-
-  return {
-    refreshedCount,
-    failedCount,
-    syncedAccountCount,
-  };
-}
-
-/**
- * @deprecated Prefer `syncBusinessPlatform` from `@/lib/server/sync`.
- *
- * Syncs only the metadata snapshot of Meta ad accounts for an integration.
- *
- * @param supabase - Server Supabase client used to upsert ad-account rows.
- * @param input - Business/platform context plus the Meta access token to read from.
- * @returns The number of ad-account rows written during the snapshot sync.
- */
-export async function syncMetaAdAccountsSnapshot(
-  supabase: AppSupabaseClient,
-  input: {
-    businessId: string;
-    platformId: string;
-    accessToken: string;
-  }
-): Promise<number> {
-  const snapshots = await fetchMetaAdAccountSnapshots(input.accessToken);
-
-  if (snapshots.length === 0) {
-    return 0;
-  }
-
-  // Deprecated path kept metadata-only so discovery does not imply a completed sync.
-  const result = await upsertAdAccounts(supabase, snapshots.map((snapshot) => ({
-    businessId: input.businessId,
-    platformId: input.platformId,
-    externalAccountId: snapshot.externalAccountId,
-    name: snapshot.name,
-    status: snapshot.status,
-    currencyCode: snapshot.currencyCode,
-    timezone: snapshot.timezone,
-  })));
-
-  return result.count;
 }
 
 /**
@@ -838,20 +652,6 @@ async function patchIntegrationDetails(
     .eq('id', integrationId);
 
   if (error) throw error;
-}
-
-/**
- * Marks an integration as healthy by forwarding to the synced-state updater.
- *
- * @param supabase - Server Supabase client used to patch the integration row.
- * @param integrationId - The integration record that should be marked healthy.
- * @returns A promise that resolves once the integration has been marked synced.
- */
-export async function markIntegrationHealthy(
-  supabase: AppSupabaseClient,
-  integrationId: string
-): Promise<void> {
-  await markIntegrationSynced(supabase, integrationId);
 }
 
 /**

@@ -36,6 +36,8 @@ export const assistantReplySchema = z.object({
     questions: z.array(z.string().max(300)).max(3),
 }).strict();
 export type AssistantReply = z.infer<typeof assistantReplySchema>;
+/** The account the assistant is scoped to, as shown in its drawer. */
+export type AssistantAccountRef = { selectedAdAccountId: string | null; selectedAdAccountName: string | null };
 export type CreativeCard = {
     id: string;
     name: string;

@@ -4,16 +4,6 @@ import type { Database } from '@/lib/shared/types/supabase';
 import { readAllPages } from '@/lib/server/repositories/pagination';
 import { activeDeliveryKeys } from './exploration/delivery';
 
-/**
- * Whether any ad is on a complete active delivery chain now, from the saved hierarchy (the same
- * rule as Campaigns: configured ACTIVE past its end date is COMPLETED). Null when unknown: no
- * saved ads, or the hierarchy could not be read. Unknown is never treated as "nothing running".
- */
-export async function accountActiveNow(db: SupabaseClient<Database>, businessId: string, accountId: string): Promise<boolean | null> {
-  const count = await accountActiveAdCount(db, businessId, accountId);
-  return count === null ? null : count > 0;
-}
-
 /** How many ads are on a complete active delivery chain now; null when unknown (as above). */
 export async function accountActiveAdCount(db: SupabaseClient<Database>, businessId: string, accountId: string): Promise<number | null> {
   const rows = await readAllPages((from, to) => db.from('ad_entities').select('id,external_id,parent_external_id,entity_level,status,raw')

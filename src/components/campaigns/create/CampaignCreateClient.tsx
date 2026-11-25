@@ -19,7 +19,7 @@ import {
 } from '@mantine/core';
 import { IconAlertCircle, IconRefresh, IconSelector } from '@tabler/icons-react';
 import type { MetaPage } from '@/lib/server/actions/meta/pages/actions';
-import type { CampaignTreeAdsetNode, CampaignTreeNode } from '@/lib/server/data';
+import type { CampaignTreeAdsetNode, CampaignTreeNode } from '@/lib/server/repositories/campaigns/getCampaignsWithAdSetsAndAds';
 import type { ManualCampaignDraftForm } from '@/lib/shared/types/campaignDrafts';
 import type { ConfiguredWhatsAppNumber } from '@/lib/shared/types/whatsappSetup';
 

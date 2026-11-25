@@ -24,6 +24,7 @@ import { BreakdownSection } from './sections/BreakdownSection';
 import { TimeSection } from './sections/TimeSection';
 import { AdvertisingSection } from './sections/AdvertisingSection';
 import { FindingsSection } from './sections/FindingsSection';
+import { STORED_FINDINGS_AVAILABLE } from '@/lib/shared/productAvailability';
 import classes from './Workspace.module.css';
 
 export function ReportsClient({ payload, filterOptions, isDemo = false }: {
@@ -39,7 +40,7 @@ export function ReportsClient({ payload, filterOptions, isDemo = false }: {
   const [chartMetric, setChartMetric] = useState<PerformanceMetric>('spend');
   const { section: requested, select } = useReportSection();
   // Findings gets a tab only when something was flagged; an old #findings link falls back to Overview.
-  const hiddenSections = payload.findings.length ? [] : (['findings'] as const);
+  const hiddenSections = STORED_FINDINGS_AVAILABLE && payload.findings.length ? [] : (['findings'] as const);
   const section = (hiddenSections as readonly string[]).includes(requested) ? 'performance' : requested;
   const currentSearchString = searchParams?.toString() ?? '';
   const updateSearch = (mutate: (params: URLSearchParams) => void) => {

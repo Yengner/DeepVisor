@@ -14,6 +14,7 @@ import { loadOverviewContext } from '@/lib/server/dashboard/overview/load';
 import { loadExploration } from '@/lib/server/campaigns/exploration/load';
 import NotificationAction from './NotificationAction';
 import styles from './NotificationsPage.module.css';
+import { ALERT_PREFERENCES_AVAILABLE } from '@/lib/shared/productAvailability';
 
 export async function generateMetadata() {
   const t = await getTranslations('notificationsPage');
@@ -118,12 +119,14 @@ export default async function NotificationsPage() {
           </ul>
         )}
 
-        <p className={styles.footer}>
-          {t('settingsHint')}{' '}
-          <Button component="a" href="/settings#alerts" variant="subtle" size="md" className={styles.settingsLink}>
-            {t('settings')}
-          </Button>
-        </p>
+        {ALERT_PREFERENCES_AVAILABLE && (
+          <p className={styles.footer}>
+            {t('settingsHint')}{' '}
+            <Button component="a" href="/settings#alerts" variant="subtle" size="md" className={styles.settingsLink}>
+              {t('settings')}
+            </Button>
+          </p>
+        )}
       </div>
     </DesignSurface>
   );

@@ -3,7 +3,7 @@
 DeepVisor is a Meta-first advertising intelligence and decision product. It connects
 an ad account, preserves history, explains observed performance, and presents
 reviewable decisions. Primary surfaces are Overview, AI Agency, Decisions,
-Campaigns, Connections and Settings. Reports, Calendar and campaign draft workflows
+Campaigns, Connections and Settings. Reports and campaign draft workflows
 remain available through existing navigation or compatibility routes.
 
 The core architecture is **Meta data → versioned features → provider-neutral
@@ -17,7 +17,7 @@ insufficient-data results remain explicit states.
 
 - [Architecture](docs/ARCHITECTURE.md): responsibilities, data models and security boundaries.
 - [Codebase map](docs/CODEBASE_MAP.md): directory ownership, entry points and compatibility code.
-- [Workflow traces](docs/FLOWS.md): connection/sync, intelligence, decisions, execution, organizer and Agency.
+- [Workflow traces](docs/FLOWS.md): connection/sync, intelligence, decisions, execution and Agency.
 - [Development guide](docs/DEVELOPMENT_GUIDE.md): setup, conventions, tests and migrations.
 - [Architecture audit](docs/ARCHITECTURE_AUDIT.md): improvements, retained debt and verification scope.
 - Coding-agent instructions and tooling (agent roles, skills, design-tool config) are kept locally and are not published.

@@ -65,7 +65,7 @@ import type {
   LeadCampaignOfferTemplate,
 } from '@/lib/shared/types/campaignDrafts';
 import type { ConfiguredWhatsAppNumber } from '@/lib/shared/types/whatsappSetup';
-import type { CampaignTreeAdsetNode, CampaignTreeNode } from '@/lib/server/data';
+import type { CampaignTreeAdsetNode, CampaignTreeNode } from '@/lib/server/repositories/campaigns/getCampaignsWithAdSetsAndAds';
 import type { MetaPage } from '@/lib/server/actions/meta/pages/actions';
 import { formatCurrencyAmount } from '@/lib/shared';
 import MediaSelectionModal from '../components/MediaSelectionModal';

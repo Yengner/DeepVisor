@@ -42,8 +42,6 @@ export type FactValues = { [K in FactKey]: FactValue<K> };
 export const FACT_FRESH_DAYS: Record<FactKey, number> = {
   daily_budget: 90, run_days: 180, monthly_ceiling: 90, whatsapp_greeting: 365, client_languages: 365, slow_days: 120,
 };
-/** Facts the ad history can supply. Others only come from the owner. */
-export const HISTORY_FACTS = ['daily_budget', 'run_days'] as const satisfies readonly FactKey[];
 
 export function isFactKey(value: unknown): value is FactKey {
   return typeof value === 'string' && (FACT_KEYS as readonly string[]).includes(value);

@@ -109,7 +109,6 @@ jobs:
           # Build-only placeholders; CI never receives real credentials.
           NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
-          STRIPE_SECRET_KEY: sk_test_ci_placeholder
 
   dependencies:
     name: Dependency review

@@ -1,6 +1,6 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { chunkArray, readAllPages } from '../utils';
-import { derivePerformanceMetrics } from './normalizers';
+import { derivePerformanceMetrics } from '@/lib/shared/performance/metrics';
 import { periodTotals, rangeWindow, type DailyTotals, type SummaryTotals, type TableRange } from '@/lib/shared/performance/periodTotals';
 
 type SupabaseClient = Awaited<ReturnType<typeof createSupabaseClient>>;

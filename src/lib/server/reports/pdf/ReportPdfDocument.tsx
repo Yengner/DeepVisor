@@ -37,7 +37,7 @@ export function ReportPdfDocument({ payload, demo = false }: { payload: ReportPa
       {payload.meta.warnings?.map(warning => <Text key={warning} style={styles.note}>{warning}</Text>)}
       <Text style={styles.note}>This export includes all report sections for the selected scope, independent of local chart selections. Snapshot windows are separate from the reporting period. Different dimensions and account-context views must not be added together.</Text>
       <Text style={styles.note}>Unavailable means missing, unsupported or incompatible measurements; it does not mean zero. Ratios use aggregate inputs. Unique reach/frequency are unavailable without verified period-unique reach. Previous-period CTR changes use percentage points (pp).</Text>
-      <Text style={styles.note}>Saved findings are historical observations, not a new evaluation. Recorded entity status is separate from selected-period performance. Reloading or exporting a report does not synchronize Meta.</Text>
+      <Text style={styles.note}>{payload.findings.length > 0 && 'Saved findings are historical observations, not a new evaluation. '}Recorded entity status is separate from selected-period performance. Reloading or exporting a report does not synchronize Meta.</Text>
       <PdfFooter payload={payload} demo={demo} />
     </Page>
     <ReportPdfSections payload={payload} records={records} demo={demo} />

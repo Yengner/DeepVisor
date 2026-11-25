@@ -222,8 +222,9 @@ Missing lifecycle capture does not imply no transition or a healthy account.
 Organizer is a separate immutable lineage: account → baseline (unique business/account)
 → version (unique baseline/version) → preview → approval → run → events. Composite
 scope FKs protect previews/versions and audit links; restore links point back to runs.
-It shares execution exclusion with review, not decision-provider authority.
-[Organizer contract](../src/lib/server/organizer/PHASE2.md) owns the full safety model.
+It shares execution exclusion with review, not decision-provider authority. The
+application code was retired in November 2026; these tables and rules are preserved.
+[Organizer note](../src/lib/server/organizer/README.md).
 
 
 ## Webhook routing and resource demand

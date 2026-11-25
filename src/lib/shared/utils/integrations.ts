@@ -1,6 +1,6 @@
 import type { SupportedIntegrationPlatform } from '@/lib/shared/types/integrations';
 import type { IntegrationStatus } from '@/lib/shared/types/integrations';
-import { formatRelativeTime } from './date';
+
 
 export interface IntegrationPlatformPalette {
   accent: string;
@@ -95,16 +95,6 @@ export function getIntegrationStatusColor(
 }
 
 /**
- * Returns the human-readable label shown for each integration status.
- */
-export function getIntegrationStatusLabel(status: IntegrationStatus): string {
-  if (status === 'connected') return 'Connected';
-  if (status === 'needs_reauth') return 'Reconnect needed';
-  if (status === 'error') return 'Issue detected';
-  return 'Not connected';
-}
-
-/**
  * Returns the branded palette used to skin integration cards, glows, and accent surfaces.
  */
 export function getIntegrationPlatformPalette(platformKey: string): IntegrationPlatformPalette {
@@ -152,25 +142,4 @@ export function sortIntegrationPlatforms<
 
     return left.platformName.localeCompare(right.platformName);
   });
-}
-
-/**
- * Produces the short availability sentence used in integration list and detail views.
- */
-export function getIntegrationAvailabilityCopy(
-  platform: Pick<IntegrationPlatformDisplayLike, 'platformKey' | 'status' | 'lastSyncedAt'>
-): string {
-  if (isIntegrationConnected(platform.status)) {
-    return platform.lastSyncedAt
-      ? `Last synced ${formatRelativeTime(platform.lastSyncedAt, { emptyLabel: 'Not synced yet' })}`
-      : 'Connected · setting up your account';
-  }
-
-  if (platform.platformKey === 'meta') {
-    return integrationNeedsAttention(platform.status)
-      ? 'Reconnect Meta to restore syncing.'
-      : 'Available to connect now.';
-  }
-
-  return 'Preview channel for future integrations.';
 }

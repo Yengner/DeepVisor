@@ -5,7 +5,6 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import SpiderMascot from '@/components/brand/SpiderMascot';
 import type { Locale } from '@/i18n/locales';
 import type { NotificationPreference, ReportSubscriptionSetting } from '@/lib/server/intelligence/types';
-import type { ArchivedReport } from '@/lib/server/intelligence/repositories/reportArchive';
 import type { ResolvedFacts } from '@/lib/shared/agent/facts';
 import AdFactsCard from './components/AdFactsCard';
 import AlertSettings from './components/AlertSettings';
@@ -44,22 +43,18 @@ export type SettingsData = {
   promotedServices: string[];
   savedLocale: Locale | null;
   adFacts: { facts: ResolvedFacts; accountCurrency: string | null } | null;
-  notificationPreference: NotificationPreference;
-  reportSubscription: ReportSubscriptionSetting;
+  /** Null while alert preferences are hidden because nothing honors them yet. */
+  alertPreferences: { notification: NotificationPreference; report: ReportSubscriptionSetting } | null;
   unreadCount: number;
   integrations: SettingsIntegration[];
   lastSyncedAt: string | null;
-  tier: string;
   accountCount: number;
-  maxAdAccounts: number;
   selectedAdAccountName: string | null;
-  archivedReports: ArchivedReport[];
 };
 
-const TIERS = ['free', 'tier1', 'tier2', 'tier3', 'managed_service'] as const;
 type Formatters = ReturnType<typeof formatters>;
 
-/** Dates, times and money in the person's language, never raw ISO strings. */
+/** Dates and times in the person's language, never raw ISO strings. */
 function formatters(locale: string) {
   const intl = locale === 'es' ? 'es-US' : 'en-US';
   const valid = (value: string | null | undefined) => {
@@ -82,11 +77,6 @@ function formatters(locale: string) {
       for (const [unit, size] of steps) if (Math.abs(seconds) >= size) return rtf.format(Math.round(seconds / size), unit);
       return rtf.format(0, 'minute');
     },
-    money(value: number | null, currency: string | null) {
-      if (value === null || !currency || currency.toUpperCase() === 'MIXED') return null;
-      try { return new Intl.NumberFormat(intl, { style: 'currency', currency, maximumFractionDigits: 0 }).format(value); }
-      catch { return null; }
-    },
   };
 }
 
@@ -95,47 +85,6 @@ function Facts({ rows }: { rows: Array<[string, ReactNode]> }) {
     <dl className={classes.facts}>
       {rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
     </dl>
-  );
-}
-
-async function SavedReports({ reports, f }: { reports: ArchivedReport[]; f: Formatters }) {
-  const t = await getTranslations('settingsPage');
-  const range = (report: ArchivedReport) => {
-    const start = f.day(report.dateFrom ?? report.dateTo);
-    const end = f.day(report.dateTo ?? report.dateFrom);
-    return start && end && start !== end ? `${start} – ${end}` : start ?? end;
-  };
-  return (
-    <details className={classes.more}>
-      <summary>{t('account.savedReports', { count: reports.length })}<ChevronDown size={18} aria-hidden="true" /></summary>
-      <div className={classes.moreBody}>
-        {reports.length === 0 ? <p className={classes.hint}>{t('account.noReports')}</p> : (
-          <ul className={classes.list}>
-            {reports.map(report => {
-              const spend = f.money(report.summary.spend, report.currencyCode);
-              const meta = [
-                range(report),
-                report.adAccountName,
-                spend && t('account.spent', { amount: spend }),
-                report.summary.results !== null && t('account.results', { count: report.summary.results }),
-              ].filter(Boolean).join(' · ');
-              return (
-                <li key={report.id} className={classes.listRow}>
-                  <div className={classes.listText}>
-                    <strong>{report.title}</strong>
-                    {meta && <span>{meta}</span>}
-                  </div>
-                  <div className={classes.listActions}>
-                    <Button component="a" href={report.viewerHref} variant="default" size="sm">{t('account.view')}</Button>
-                    {report.downloadHref && <Button component="a" href={report.downloadHref} variant="subtle" size="sm">{t('account.download')}</Button>}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-    </details>
   );
 }
 
@@ -178,7 +127,7 @@ async function ConnectionDetails({ integrations, f }: { integrations: SettingsIn
 
 /**
  * Settings, with the profile inside it. Order follows what an owner reaches for: who I am, my
- * business, how it reads, what ads should know, alerts, then the account/plan and, last, deleting.
+ * business, how it reads, what ads should know, alerts, then the account and, last, deleting.
  */
 export default async function SettingsView({ data }: { data: SettingsData }) {
   const t = await getTranslations('settingsPage');
@@ -199,10 +148,7 @@ export default async function SettingsView({ data }: { data: SettingsData }) {
 
   const connection = data.integrations.length === 0 ? 'none' : data.integrations.every(item => item.connected) ? 'ok' : 'attention';
   const syncedAgo = f.ago(data.lastSyncedAt);
-  const tierKey = (TIERS as readonly string[]).includes(data.tier) ? (data.tier as typeof TIERS[number]) : 'free';
-  const accounts = data.maxAdAccounts >= 999
-    ? t('account.accountsCount', { count: data.accountCount })
-    : t('account.accountsUsage', { count: data.accountCount, max: data.maxAdAccounts });
+  const accounts = t('account.accountsCount', { count: data.accountCount });
 
   const nav: Array<[string, string]> = [
     ['profile', t('nav.profile')],
@@ -285,9 +231,9 @@ export default async function SettingsView({ data }: { data: SettingsData }) {
             id="alerts"
             icon={<Bell size={20} />}
             title={t('alerts.title')}
-            lead={t('alerts.lead')}
+            lead={data.alertPreferences ? t('alerts.lead') : t('alerts.leadSaved')}
           >
-            <AlertSettings initialNotificationPreference={data.notificationPreference} initialReportSubscription={data.reportSubscription} />
+            {data.alertPreferences && <AlertSettings initialNotificationPreference={data.alertPreferences.notification} initialReportSubscription={data.alertPreferences.report} />}
             <div className={classes.inlineRow}>
               <span>{data.unreadCount > 0 ? t('alerts.unread', { count: data.unreadCount }) : t('alerts.noUnread')}</span>
               <Button component="a" href="/notifications" variant="subtle">{t('alerts.openMessages')}</Button>
@@ -309,7 +255,6 @@ export default async function SettingsView({ data }: { data: SettingsData }) {
             </div>
 
             <Facts rows={[
-              [t('account.plan'), t(`account.tier.${tierKey}`)],
               [t('account.role'), t(`account.roles.${data.role}`)],
               [t('account.accounts'), accounts],
               [t('account.following'), data.selectedAdAccountName ?? t('account.followingNone')],
@@ -320,7 +265,6 @@ export default async function SettingsView({ data }: { data: SettingsData }) {
             </div>
 
             <div className={classes.moreGroup}>
-              <SavedReports reports={data.archivedReports} f={f} />
               <ConnectionDetails integrations={data.integrations} f={f} />
             </div>
           </SectionCard>

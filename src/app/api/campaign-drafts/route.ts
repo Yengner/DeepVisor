@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { createAdminClient } from '@/lib/server/supabase/admin';
-import { createCampaignDraft, getCampaignDraftById } from '@/lib/server/campaigns/drafts';
+import { createCampaignDraft, getCampaignDraftById, readCampaignDraftPayload } from '@/lib/server/campaigns/drafts';
 import type { CampaignDraftPayload } from '@/lib/shared/types/campaignDrafts';
 import type { Database } from '@/lib/shared/types/supabase';
 
@@ -20,7 +20,7 @@ function isCampaignDraftPayload(value: unknown): value is CampaignDraftPayload {
 
   const record = value as Record<string, unknown>;
   return (
-    (record.mode === 'manual' || record.mode === 'smart') &&
+    record.mode === 'manual' &&
     Boolean(record.form) &&
     typeof record.form === 'object' &&
     !Array.isArray(record.form)
@@ -136,6 +136,16 @@ export async function POST(request: NextRequest) {
             success: false,
             error:
               'This draft belongs to a different Meta ad account. Switch to its original account before editing it.',
+          },
+          { status: 409 }
+        );
+      }
+
+      if (!readCampaignDraftPayload(existingDraft)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'This draft was made with a builder we no longer use. It is kept unchanged.',
           },
           { status: 409 }
         );

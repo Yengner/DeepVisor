@@ -19,10 +19,3 @@ export const showError = (message: string, title?: string) => {
     { duration: 6000 }
   );
 };
-
-// For handling errors from API calls or other operations
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const handleError = (error: any) => {
-  const message = error?.message || 'Something went wrong. Please try again.';
-  return showError(message);
-};

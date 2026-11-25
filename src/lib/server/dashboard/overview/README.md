@@ -3,9 +3,7 @@
 `/dashboard` reads persisted decision evidence and uses a separate, authorized
 read-through Meta Insights layer for recent performance. See
 [`../insights/README.md`](../insights/README.md) for caching, publisher scope and
-unavailable-data behavior. `LegacyDashboard.tsx` preserves the former
-analytics page without exposing a second route. Calendar, Reports, analytics
-components, notifications, sync and execution services are unchanged.
+unavailable-data behavior.
 
 ## Sources and scope
 

@@ -1,24 +1,15 @@
 import type {
-  IntegrationCallbackStatus,
   IntegrationReturnTo,
   IntegrationStatus,
   SupportedIntegrationPlatform,
 } from '@/lib/shared/types/integrations';
 
-export type { IntegrationStatus, SupportedIntegrationPlatform, IntegrationReturnTo, IntegrationCallbackStatus };
+export type { IntegrationStatus, SupportedIntegrationPlatform, IntegrationReturnTo };
 
 export interface IntegrationPlatform {
   id: string;
   key: SupportedIntegrationPlatform;
   name: string;
-}
-
-export interface IntegrationTokenDetails {
-  access_token: string;
-  refresh_token?: string;
-  expires_in?: number;
-  token_type?: string;
-  issued_at: string;
 }
 
 export interface IntegrationDetails extends Record<string, unknown> {

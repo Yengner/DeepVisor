@@ -2,7 +2,7 @@ import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { formatDisplayDate } from '@/lib/shared';
 import type { Json } from '@/lib/shared/types/supabase';
 import { asRecord, asString } from '@/lib/shared/utils/format';
-import { derivePerformanceMetrics } from '../campaigns/normalizers';
+import { derivePerformanceMetrics } from '@/lib/shared/performance/metrics';
 import { chunkArray, readAllPages } from '../utils';
 import { periodTotals, rangeWindow, type DailyTotals, type TableRange } from '@/lib/shared/performance/periodTotals';
 import { mediaFor } from '@/lib/server/campaigns/exploration/model';

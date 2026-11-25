@@ -2,7 +2,7 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 import { assistantPlanSchema, type AssistantPlan, type AssistantMedia } from '@/lib/shared/assistant/contracts';
 import type { CampaignDraftPayload } from '@/lib/shared/types/campaignDrafts';
-import { defaults, renderName } from '@/lib/shared/organizer/model';
+import { defaultNaming, renderName } from '@/lib/shared/campaigns/naming';
 import { createCampaignDraft, getCampaignDraftById } from '@/lib/server/campaigns/drafts';
 import { validateBudget } from '@/lib/server/campaigns/reuse';
 import { getCampaignReuseSource } from '@/lib/server/repositories/campaigns/getCampaignReuseSource';
@@ -77,8 +77,8 @@ export function buildAssistantDraft(plan: AssistantPlan, context: {
     mode: 'manual';
 }> {
     const date = new Intl.DateTimeFormat('en-CA', { timeZone: context.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(plan.startAt!));
-    const campaignName = context.campaignName ?? renderName(defaults.campaign, { Objective: plan.objective!, Initiative: plan.concept!, StartDate: date }, defaults);
-    const adSetName = context.adSetName ?? renderName(defaults.adset, { Geography: plan.location!, StartDate: date }, defaults);
+    const campaignName = context.campaignName ?? renderName(defaultNaming.campaign, { Objective: plan.objective!, Initiative: plan.concept!, StartDate: date }, defaultNaming);
+    const adSetName = context.adSetName ?? renderName(defaultNaming.adset, { Geography: plan.location!, StartDate: date }, defaultNaming);
     const creative = { contentSource: plan.creativeId ? 'existing' : 'upload', existingCreativeIds: plan.creativeId ? [plan.creativeId] : [], imageHash: context.imageHash, adHeadline: plan.headline ?? '', adPrimaryText: plan.primaryText ?? '', adDescription: '', adCallToAction: '' };
     const targeting = { markerPosition: plan.latitude !== null && plan.longitude !== null ? { lat: plan.latitude, lng: plan.longitude } : null, locationLabel: plan.location!, radius: plan.radius!, ageMin: plan.ageMin!, ageMax: plan.ageMax!, genders: plan.genders.map(gender => gender === 'male' ? '1' : '2'), interests: [] };
     const optimizationGoal = plan.destination === 'PHONE_CALL' ? 'QUALITY_CALL' : 'LEAD_GENERATION';

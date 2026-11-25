@@ -68,6 +68,3 @@ export async function updateAdAccountMetadataFromInsights(
 
   return { count: latestByAccount.size };
 }
-
-/** @deprecated Account insights only update metadata; no daily rows are persisted here. */
-export const upsertAdAccountPerformanceDaily = updateAdAccountMetadataFromInsights;

@@ -1,5 +1,9 @@
 # System relationships
 
+> November 2026 cleanup: sync no longer runs the older assessment, signal or trend
+> engines, and the calendar, Organizer, billing and legacy dashboard code were removed.
+> Parts of this diagram, and `system-overview.drawio`, predate that. [Flows](FLOWS.md) is current.
+
 Purpose: locate runtime boundaries before following a workflow or changing a contract.
 The [editable draw.io overview](system-overview.drawio) contains **System context**
 and **Runtime containers** pages. The runtime page follows the Mermaid below; the
@@ -44,7 +48,6 @@ source. Browser refresh reloads saved data; the sync API initiates Meta reads.
 | Application authorization versus RLS | [Session client](../src/lib/server/supabase/server.ts), [admin client](../src/lib/server/supabase/admin.ts). Service-role access bypasses RLS; callers/RPCs must preserve tenant scope. |
 | Durable queue versus response lifecycle | [Dispatch](../src/lib/server/sync/dispatch.ts), [Edge forwarder](../supabase/functions/_shared/processAccountSyncJobs.ts). `after()` work can be interrupted; claims/recovery live in PostgreSQL. |
 | Inference versus authority to act | [DecisionEngine](../src/lib/server/decisions/DecisionEngine.ts), [review](../src/lib/server/decisions/review/service.ts), [executor](../src/lib/server/advertising/ReviewExecutor.ts). Provider output and approval cannot directly write to Meta. |
-| Saved report files | [Archive storage](../src/lib/server/reports/pdf/archiveStorage.ts). Storage availability and report queue state are separate. |
 
 ## Verification ledger — 2026-11-13
 
@@ -69,8 +72,8 @@ Deployment host/project, hosted Next.js revision, external Meta subscriptions,
 provider credentials, resource/Insights feature flags and live execution gates remain
 **unverified**. Local resource and Insights implementations are gated; schema existence
 is not enablement. CI checks/builds the app in [ci.yml](../.github/workflows/ci.yml);
-that workflow does not deploy it. Stripe and other installed libraries do not establish
-an enabled integration. The earlier webhook absence finding is superseded by the
+that workflow does not deploy it. Installed libraries do not establish an enabled
+integration. The earlier webhook absence finding is superseded by the
 committed implementation described in [Flows](FLOWS.md#webhook-triggered-status-reads-and-refresh)
 and the addendum below.
 

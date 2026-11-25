@@ -29,7 +29,7 @@ import {
     IconInfoCircle,
     IconLayersIntersect,
 } from '@tabler/icons-react';
-import type { CampaignTreeAdsetNode, CampaignTreeNode } from '@/lib/server/data';
+import type { CampaignTreeAdsetNode, CampaignTreeNode } from '@/lib/server/repositories/campaigns/getCampaignsWithAdSetsAndAds';
 import { useMetaCampaignForm } from '../hooks/useMetaCampaignForm';
 import CreativeAssetsStep from '../steps/CreativeAssetsStep';
 import ManualMetaAdReview from '../components/ManualMetaAdReview';

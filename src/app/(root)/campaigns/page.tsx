@@ -1,4 +1,4 @@
-import Link from 'next/link';
+
 import { loadTableDelivery } from '@/lib/server/campaigns/tableDelivery';
 import CampaignDashboard from "@/components/campaigns/CampaignDashboard";
 import { countDrafts } from "@/lib/server/suggestions/drafts";
@@ -8,21 +8,16 @@ import { Suspense } from "react";
 import CampaignClientFallback from "./CampaignClientFallback";
 import { resolveCurrentSelection } from "@/lib/server/actions/app/selection";
 import { getRequiredAppContext } from "@/lib/server/actions/app/context";
-import {
-  getAdAccountData,
-  getAdSetsLifetimeIncludingZeros,
-  getAdsLifetimeIncludingZeros,
-  getCampaignLifetimeIncludingZeros,
-  getPlatformDetails,
-} from '@/lib/server/data';
-import type { AdLifetimeRow, AdSetLifetimeRow, CampaignLifetimeRow } from '@/lib/server/data';
+import { getAdAccountData } from '@/lib/server/repositories/ad_accounts/getAdAccountData';
+import { getAdSetsLifetimeIncludingZeros } from '@/lib/server/repositories/adsets/getAdSetsMetrics';
+import { getAdsLifetimeIncludingZeros } from '@/lib/server/repositories/ads/getAdsMetrics';
+import { getCampaignLifetimeIncludingZeros } from '@/lib/server/repositories/campaigns/getCampaignsMetrics';
+import { getPlatformDetails } from '@/lib/server/repositories/platforms/getPlatformDetails';
+import type { AdLifetimeRow } from '@/lib/server/repositories/ads/getAdsMetrics';
+import type { AdSetLifetimeRow } from '@/lib/server/repositories/adsets/getAdSetsMetrics';
+import type { CampaignLifetimeRow } from '@/lib/server/repositories/campaigns/getCampaignsMetrics';
 import { parseTableRange } from '@/lib/shared/performance/periodTotals';
 import { accountToday } from '@/lib/shared/reports/dates';
-
-interface AggregatedMetrics {
-  spend: number; impressions: number; clicks: number; link_clicks: number; reach: number;
-  leads: number; messages: number; ctr: number; cpc: number; cpm: number;
-}
 
 export interface FormattedCampaign {
   id: string;
@@ -81,22 +76,6 @@ export default async function CampaignPage({
   if (!adAccountDetails) {
     return <EmptyCampaignState type="adAccount" platformName={platformDetails.vendor} />;
   }
-  //
-  //Refactor # Too many calculation on pre-server load, Do this on the database to pre fetch dashboard data and then grab it. 
-  //
-  const accountMetrics: AggregatedMetrics = {
-    spend: adAccountDetails.aggregated_metrics?.spend || 0,
-    impressions: adAccountDetails.aggregated_metrics?.impressions || 0,
-    clicks: adAccountDetails.aggregated_metrics?.clicks || 0,
-    link_clicks: adAccountDetails.aggregated_metrics?.link_clicks || 0,
-    reach: adAccountDetails.aggregated_metrics?.reach || 0,
-    leads: adAccountDetails.aggregated_metrics?.leads || 0,
-    messages: adAccountDetails.aggregated_metrics?.messages || 0,
-    ctr: adAccountDetails.aggregated_metrics?.ctr || 0,
-    cpc: adAccountDetails.aggregated_metrics?.cpc || 0,
-    cpm: adAccountDetails.aggregated_metrics?.cpm || 0,
-  };
-
   const params = await searchParams;
   // One period for the whole page: header totals, campaigns, ad sets and ads (account-local days).
   const timezone = adAccountDetails.timezone ?? null;
@@ -195,7 +174,6 @@ export default async function CampaignPage({
           adAccountId={selectedAdAccountId}
           currencyCode={adAccountDetails.currency_code}
           accountTimezone={adAccountDetails.timezone ?? null}
-          accountMetrics={accountMetrics}
           initialSelection={initialSelection}
           initialAdSets={initialAdSets}
           initialAds={initialAds}
