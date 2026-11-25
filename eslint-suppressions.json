@@ -1,14 +1,4 @@
 {
-  "src/app/(root)/campaigns/reports/[queueItemId]/page.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "src/app/(root)/reports/archive/[queueItemId]/page.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
   "src/app/(root)/reports/components/layout/ReportsSidebar.tsx": {
     "react-hooks/set-state-in-effect": {
       "count": 1
@@ -54,16 +44,6 @@
       "count": 2
     }
   },
-  "src/lib/server/intelligence/campaignReviews/service.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
-    }
-  },
-  "src/lib/server/intelligence/repositories/calendarQueueTemplates.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 7
-    }
-  },
   "src/lib/server/intelligence/repositories/notificationPreferences.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3
@@ -72,11 +52,6 @@
   "src/lib/server/intelligence/repositories/notifications.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 6
-    }
-  },
-  "src/lib/server/intelligence/repositories/reportArchive.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
     }
   },
   "src/lib/server/intelligence/repositories/reportSubscriptions.ts": {
@@ -91,7 +66,7 @@
   },
   "src/lib/server/intelligence/repositories/trendFindings.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 8
+      "count": 6
     }
   },
   "src/lib/server/intelligence/trends/service.ts": {

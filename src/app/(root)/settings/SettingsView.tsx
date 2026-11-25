@@ -5,7 +5,6 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import SpiderMascot from '@/components/brand/SpiderMascot';
 import type { Locale } from '@/i18n/locales';
 import type { NotificationPreference, ReportSubscriptionSetting } from '@/lib/server/intelligence/types';
-import type { ArchivedReport } from '@/lib/server/intelligence/repositories/reportArchive';
 import type { ResolvedFacts } from '@/lib/shared/agent/facts';
 import AdFactsCard from './components/AdFactsCard';
 import AlertSettings from './components/AlertSettings';
@@ -51,12 +50,11 @@ export type SettingsData = {
   lastSyncedAt: string | null;
   accountCount: number;
   selectedAdAccountName: string | null;
-  archivedReports: ArchivedReport[];
 };
 
 type Formatters = ReturnType<typeof formatters>;
 
-/** Dates, times and money in the person's language, never raw ISO strings. */
+/** Dates and times in the person's language, never raw ISO strings. */
 function formatters(locale: string) {
   const intl = locale === 'es' ? 'es-US' : 'en-US';
   const valid = (value: string | null | undefined) => {
@@ -79,11 +77,6 @@ function formatters(locale: string) {
       for (const [unit, size] of steps) if (Math.abs(seconds) >= size) return rtf.format(Math.round(seconds / size), unit);
       return rtf.format(0, 'minute');
     },
-    money(value: number | null, currency: string | null) {
-      if (value === null || !currency || currency.toUpperCase() === 'MIXED') return null;
-      try { return new Intl.NumberFormat(intl, { style: 'currency', currency, maximumFractionDigits: 0 }).format(value); }
-      catch { return null; }
-    },
   };
 }
 
@@ -92,45 +85,6 @@ function Facts({ rows }: { rows: Array<[string, ReactNode]> }) {
     <dl className={classes.facts}>
       {rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
     </dl>
-  );
-}
-
-async function SavedReports({ reports, f }: { reports: ArchivedReport[]; f: Formatters }) {
-  const t = await getTranslations('settingsPage');
-  const range = (report: ArchivedReport) => {
-    const start = f.day(report.dateFrom ?? report.dateTo);
-    const end = f.day(report.dateTo ?? report.dateFrom);
-    return start && end && start !== end ? `${start} – ${end}` : start ?? end;
-  };
-  return (
-    <details className={classes.more}>
-      <summary>{t('account.savedReports', { count: reports.length })}<ChevronDown size={18} aria-hidden="true" /></summary>
-      <div className={classes.moreBody}>
-        <ul className={classes.list}>
-            {reports.map(report => {
-              const spend = f.money(report.summary.spend, report.currencyCode);
-              const meta = [
-                range(report),
-                report.adAccountName,
-                spend && t('account.spent', { amount: spend }),
-                report.summary.results !== null && t('account.results', { count: report.summary.results }),
-              ].filter(Boolean).join(' · ');
-              return (
-                <li key={report.id} className={classes.listRow}>
-                  <div className={classes.listText}>
-                    <strong>{report.title}</strong>
-                    {meta && <span>{meta}</span>}
-                  </div>
-                  <div className={classes.listActions}>
-                    <Button component="a" href={report.viewerHref} variant="default" size="sm">{t('account.view')}</Button>
-                    {report.downloadHref && <Button component="a" href={report.downloadHref} variant="subtle" size="sm">{t('account.download')}</Button>}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-      </div>
-    </details>
   );
 }
 
@@ -311,8 +265,6 @@ export default async function SettingsView({ data }: { data: SettingsData }) {
             </div>
 
             <div className={classes.moreGroup}>
-              {/* Nothing creates new reports today, so the list only appears when older ones exist. */}
-              {data.archivedReports.length > 0 && <SavedReports reports={data.archivedReports} f={f} />}
               <ConnectionDetails integrations={data.integrations} f={f} />
             </div>
           </SectionCard>

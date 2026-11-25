@@ -4,7 +4,6 @@ import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getUnreadUserNotificationIds } from '@/lib/server/actions/user/settings';
 import { loadAdFacts } from '@/lib/server/agent/facts';
 import { getNotificationPreference } from '@/lib/server/intelligence/repositories/notificationPreferences';
-import { listArchivedReports } from '@/lib/server/intelligence/repositories/reportArchive';
 import { getReportSubscription } from '@/lib/server/intelligence/repositories/reportSubscriptions';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { createServerClient } from '@/lib/server/supabase/server';
@@ -27,7 +26,7 @@ export default async function SettingsPage() {
   const { user, businessId, organizationName, role } = await getRequiredAppContext();
   const selection = await resolveCurrentSelection(businessId);
 
-  const [businessResult, integrationsResult, accountsResult, unreadIds, alertPreferences, archivedReports, localeRow] = await Promise.all([
+  const [businessResult, integrationsResult, accountsResult, unreadIds, alertPreferences, localeRow] = await Promise.all([
     supabase
       .from('business_profiles')
       .select('business_name, industry, website, description, monthly_budget, booking_link, business_location, customer_radius, most_valuable_service, promoted_services, preferred_contact_method')
@@ -48,7 +47,6 @@ export default async function SettingsPage() {
         getReportSubscription(supabase, { businessId, userId: user.id }),
       ]).then(([notification, report]) => ({ notification, report }))
       : Promise.resolve(null),
-    listArchivedReports(supabase, { businessId, limit: 60 }),
     supabase.from('users').select('preferred_locale').eq('id', user.id).maybeSingle(),
   ]);
 
@@ -104,7 +102,6 @@ export default async function SettingsPage() {
       lastSyncedAt,
       accountCount: accounts.length,
       selectedAdAccountName: accounts.find(account => account.id === selection.selectedAdAccountId)?.name ?? null,
-      archivedReports,
     }} />
   );
 }

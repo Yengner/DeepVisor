@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 
-export default function CampaignStatusPage() {
-  redirect('/calendar');
+// Legacy route: the campaign status screen was removed. Kept as a redirect because saved links may still point here.
+export default function Page() {
+  redirect('/campaigns');
 }

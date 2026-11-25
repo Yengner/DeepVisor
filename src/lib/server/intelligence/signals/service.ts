@@ -1,27 +1,17 @@
 import 'server-only';
 
 import { createServerClient } from '@/lib/server/supabase/server';
-import type { Database } from '@/lib/shared/types/supabase';
-import { isCalendarManualMode } from '../calendarMode';
-import {
-  syncSignalCalendarQueueItems,
-} from '../repositories/calendarQueue';
 import {
   syncAdAccountSignals,
 } from '../repositories/signals';
 import type {
   AdAccountAssessment,
-  AdAccountSignal,
   AdAccountSignalDraft,
-  CalendarQueueChildBlueprint,
-  CalendarQueueItem,
-  CalendarQueueItemDraft,
-  CalendarQueueWorkflowKind,
   MetaAccountIntelligenceArtifacts,
+  RecommendedActionType,
 } from '../types';
 
 type AssessmentClient = Awaited<ReturnType<typeof createServerClient>>;
-type QueueItemType = CalendarQueueItem['itemType'];
 
 function buildBaseEvidence(
   assessment: AdAccountAssessment
@@ -43,10 +33,10 @@ function buildBaseEvidence(
 }
 
 function buildRecommendedAction(input: {
-  type: QueueItemType;
+  type: RecommendedActionType;
   label: string;
   href: string | null;
-  destination: 'campaign_draft' | 'dashboard' | 'calendar' | 'reports' | 'settings';
+  destination: 'campaign_draft' | 'dashboard' | 'reports' | 'settings';
   draftSource?: 'historic_clone' | 'fresh_relaunch' | 'manual_defaults' | null;
   payload?: Record<string, unknown>;
 }): AdAccountSignalDraft['recommendedAction'] {
@@ -293,398 +283,9 @@ export function evaluateMetaAccountSignals(
   return signals;
 }
 
-function priorityFromSignals(signals: AdAccountSignal[]): CalendarQueueItem['priority'] {
-  if (signals.some((signal) => signal.severity === 'critical')) {
-    return 'critical';
-  }
-
-  if (signals.some((signal) => signal.severity === 'warning')) {
-    return 'high';
-  }
-
-  return 'medium';
-}
-
-function childBlueprint(input: {
-  key: string;
-  itemType: CalendarQueueItem['itemType'];
-  priority: CalendarQueueItem['priority'];
-  title: string;
-  description: string | null;
-  destinationHref: string | null;
-  payload?: Record<string, unknown>;
-}): CalendarQueueChildBlueprint {
-  return {
-    key: input.key,
-    itemType: input.itemType,
-    priority: input.priority,
-    title: input.title,
-    description: input.description,
-    destinationHref: input.destinationHref,
-    payload: input.payload ?? {},
-  };
-}
-
-function buildWorkflowQueueDraft(input: {
-  kind: CalendarQueueWorkflowKind;
-  itemType: CalendarQueueItem['itemType'];
-  title: string;
-  description: string;
-  destinationHref: string | null;
-  supportingSignals: AdAccountSignal[];
-  childBlueprints: CalendarQueueChildBlueprint[];
-}): CalendarQueueItemDraft {
-  const primarySignal = input.supportingSignals[0] ?? null;
-
-  return {
-    businessId: primarySignal?.businessId ?? '',
-    platformIntegrationId: primarySignal?.platformIntegrationId ?? '',
-    adAccountId: primarySignal?.adAccountId ?? '',
-    sourceSignalId: null,
-    sourceType: 'signal',
-    itemType: input.itemType,
-    priority: priorityFromSignals(input.supportingSignals),
-    title: input.title,
-    description: input.description,
-    destinationHref: input.destinationHref,
-    workflowKey: input.kind,
-    childBlueprints: input.childBlueprints,
-    payload: {
-      workflowKind: input.kind,
-      supportingSignalIds: input.supportingSignals.map((signal) => signal.id),
-      supportingSignalTypes: input.supportingSignals.map((signal) => signal.signalType),
-      sourceDigestHash: primarySignal?.sourceDigestHash ?? null,
-    },
-  };
-}
-
-function buildQueueItemDraftsFromSignals(signals: AdAccountSignal[]): CalendarQueueItemDraft[] {
-  const byType = new Map(
-    signals.map((signal) => [signal.signalType, signal] satisfies [AdAccountSignal['signalType'], AdAccountSignal])
-  );
-  const dormantSignal = byType.get('dormant_account') ?? null;
-  const reviveSignal = byType.get('revive_best_historic_winner') ?? null;
-  const efficiencySignal = byType.get('efficiency_deterioration') ?? null;
-  const testingSignal = byType.get('no_recent_testing') ?? null;
-  const trackingSignal = byType.get('weak_tracking') ?? null;
-  const queueDrafts: CalendarQueueItemDraft[] = [];
-  const hasReviveWorkflow = Boolean(dormantSignal || reviveSignal);
-
-  if (hasReviveWorkflow) {
-    const topCampaignName =
-      typeof reviveSignal?.evidence.reviveCampaignName === 'string'
-        ? reviveSignal.evidence.reviveCampaignName
-        : typeof dormantSignal?.evidence.topCampaignName === 'string'
-          ? dormantSignal.evidence.topCampaignName
-          : null;
-    const supportingSignals = [
-      dormantSignal,
-      reviveSignal,
-      trackingSignal,
-      testingSignal,
-    ].filter((signal): signal is AdAccountSignal => Boolean(signal));
-    const childBlueprints: CalendarQueueChildBlueprint[] = [
-      childBlueprint({
-        key: 'review_report',
-        itemType: 'review_report',
-        priority: 'high',
-        title: 'Review historic account performance',
-        description: 'Confirm what period, offer, and campaign structure are worth carrying into the revive motion.',
-        destinationHref: '/reports',
-      }),
-    ];
-
-    if (trackingSignal) {
-      childBlueprints.push(
-        childBlueprint({
-          key: 'fix_tracking',
-          itemType: 'fix_tracking',
-          priority: 'critical',
-          title: 'Fix tracking quality before relaunch',
-          description: 'Tighten measurement so the revive workflow can trust winners and losers.',
-          destinationHref: '/settings',
-        })
-      );
-    }
-
-    if (reviveSignal) {
-      const reviveActionHref =
-        buildCreateAdHref({
-          campaignId:
-            typeof reviveSignal.evidence.reviveCampaignId === 'string'
-              ? reviveSignal.evidence.reviveCampaignId
-              : null,
-          adSetId:
-            typeof reviveSignal.evidence.reviveAdSetId === 'string'
-              ? reviveSignal.evidence.reviveAdSetId
-              : null,
-        }) ??
-        buildCreateAdSetHref(
-          typeof reviveSignal.evidence.reviveCampaignId === 'string'
-            ? reviveSignal.evidence.reviveCampaignId
-            : null
-        ) ??
-        '/campaigns/create';
-
-      childBlueprints.push(
-        childBlueprint({
-          key: 'revive_campaign',
-          itemType: 'revive_campaign',
-          priority: priorityFromSignals([reviveSignal]),
-          title:
-            typeof reviveSignal.evidence.reviveAdSetName === 'string'
-              ? `Add a fresh ad to ${reviveSignal.evidence.reviveAdSetName}`
-              : 'Build the revive campaign draft',
-          description:
-            typeof reviveSignal.evidence.reviveAdSetName === 'string'
-              ? `Use ${reviveSignal.evidence.reviveAdSetName} as the favorable ad set and launch a new creative inside it.`
-              : topCampaignName
-                ? `Start from ${topCampaignName} as the best historic winner.`
-                : 'Start from the strongest historic campaign structure.',
-          destinationHref: reviveActionHref,
-          payload: {
-            draftSource: 'historic_clone',
-            campaignId: reviveSignal.evidence.reviveCampaignId ?? null,
-            campaignName: topCampaignName,
-            adSetId: reviveSignal.evidence.reviveAdSetId ?? null,
-            adSetName: reviveSignal.evidence.reviveAdSetName ?? null,
-          },
-        })
-      );
-    }
-
-    if (testingSignal) {
-      const launchTestHref =
-        buildCreateAdHref({
-          campaignId:
-            typeof reviveSignal?.evidence.reviveCampaignId === 'string'
-              ? reviveSignal.evidence.reviveCampaignId
-              : null,
-          adSetId:
-            typeof reviveSignal?.evidence.reviveAdSetId === 'string'
-              ? reviveSignal.evidence.reviveAdSetId
-              : null,
-        }) ?? '/campaigns/create';
-
-      childBlueprints.push(
-        childBlueprint({
-          key: 'launch_test',
-          itemType: 'launch_test',
-          priority: 'high',
-          title:
-            typeof reviveSignal?.evidence.reviveAdSetName === 'string'
-              ? `Launch a new ad inside ${reviveSignal.evidence.reviveAdSetName}`
-              : 'Launch a fresh test alongside the revive',
-          description:
-            typeof reviveSignal?.evidence.reviveAdSetName === 'string'
-              ? 'Add a new creative into the favorable ad set so the account can test without rebuilding the audience layer.'
-              : 'Add at least one fresh testing branch so the relaunch does not depend only on the old winner.',
-          destinationHref: launchTestHref,
-          payload: {
-            draftSource: 'fresh_relaunch',
-            adSetId: reviveSignal?.evidence.reviveAdSetId ?? null,
-          },
-        })
-      );
-    }
-
-    queueDrafts.push(
-      buildWorkflowQueueDraft({
-        kind: 'revive_workflow',
-        itemType: 'revive_campaign',
-        title: topCampaignName
-          ? `Revive ${topCampaignName} with staged follow-up`
-          : 'Run a guided revive workflow',
-        description:
-          'DeepVisor found enough historic signal to relaunch from a real winner, then layer in the review and remediation tasks that support the comeback.',
-        destinationHref:
-          buildCreateAdHref({
-            campaignId:
-              typeof reviveSignal?.evidence.reviveCampaignId === 'string'
-                ? reviveSignal.evidence.reviveCampaignId
-                : null,
-            adSetId:
-              typeof reviveSignal?.evidence.reviveAdSetId === 'string'
-                ? reviveSignal.evidence.reviveAdSetId
-                : null,
-          }) ?? '/calendar',
-        supportingSignals,
-        childBlueprints,
-      })
-    );
-  }
-
-  if (efficiencySignal && !hasReviveWorkflow) {
-    const supportingSignals = [efficiencySignal, testingSignal].filter(
-      (signal): signal is AdAccountSignal => Boolean(signal)
-    );
-    const childBlueprints: CalendarQueueChildBlueprint[] = [
-      childBlueprint({
-        key: 'investigate_efficiency',
-        itemType: 'investigate_efficiency',
-        priority: 'high',
-        title: 'Investigate the efficiency drop',
-        description: 'Review the recent spend and conversion change before scaling or editing budgets.',
-        destinationHref: '/reports',
-      }),
-      childBlueprint({
-        key: 'review_report',
-        itemType: 'review_report',
-        priority: 'medium',
-        title: 'Review the recent report window',
-        description: 'Compare the strongest and weakest recent periods before acting on the account.',
-        destinationHref: '/reports',
-      }),
-      childBlueprint({
-        key: 'refresh_creative',
-        itemType: 'refresh_creative',
-        priority: 'medium',
-        title: 'Queue a creative refresh',
-        description: 'Prepare a fresh creative angle to relieve fatigue while the account is being stabilized.',
-        destinationHref: '/calendar',
-      }),
-    ];
-
-    if (testingSignal) {
-      const launchTestHref =
-        buildCreateAdHref({
-          campaignId:
-            typeof testingSignal.evidence.reviveCampaignId === 'string'
-              ? testingSignal.evidence.reviveCampaignId
-              : null,
-          adSetId:
-            typeof testingSignal.evidence.reviveAdSetId === 'string'
-              ? testingSignal.evidence.reviveAdSetId
-              : null,
-        }) ?? '/campaigns/create';
-
-      childBlueprints.push(
-        childBlueprint({
-          key: 'launch_test',
-          itemType: 'launch_test',
-          priority: 'high',
-          title:
-            typeof testingSignal.evidence.reviveAdSetName === 'string'
-              ? `Add a new ad inside ${testingSignal.evidence.reviveAdSetName}`
-              : 'Launch a new controlled test',
-          description:
-            typeof testingSignal.evidence.reviveAdSetName === 'string'
-              ? 'Use the favorable ad set as the test bed and swap in a fresh creative with a new launch window.'
-              : 'Add a new test branch so the account can relearn efficiently after the recent drop.',
-          destinationHref: launchTestHref,
-          payload: {
-            draftSource: 'fresh_relaunch',
-            adSetId: testingSignal.evidence.reviveAdSetId ?? null,
-          },
-        })
-      );
-    }
-
-    queueDrafts.push(
-      buildWorkflowQueueDraft({
-        kind: 'efficiency_workflow',
-        itemType: 'investigate_efficiency',
-        title: 'Run an efficiency remediation workflow',
-        description:
-          'DeepVisor sees a meaningful drop in conversion efficiency and wants to walk through the review, creative, and testing steps together.',
-        destinationHref: '/calendar',
-        supportingSignals,
-        childBlueprints,
-      })
-    );
-  }
-
-  if (trackingSignal && !hasReviveWorkflow) {
-    queueDrafts.push(
-      buildWorkflowQueueDraft({
-        kind: 'tracking_workflow',
-        itemType: 'fix_tracking',
-        title: 'Repair tracking before trusting optimization',
-        description:
-          'DeepVisor wants measurement quality corrected first so later campaign decisions are based on reliable signal.',
-        destinationHref: '/calendar',
-        supportingSignals: [trackingSignal],
-        childBlueprints: [
-          childBlueprint({
-            key: 'fix_tracking',
-            itemType: 'fix_tracking',
-            priority: 'critical',
-            title: 'Fix tracking quality',
-            description: 'Review pixel, offline conversion, and CRM handoff quality before changing campaigns.',
-            destinationHref: '/settings',
-          }),
-          childBlueprint({
-            key: 'review_report',
-            itemType: 'review_report',
-            priority: 'medium',
-            title: 'Review the measurement gap in reports',
-            description: 'Compare clicks, link clicks, and conversions to locate the measurement blind spot.',
-            destinationHref: '/reports',
-          }),
-        ],
-      })
-    );
-  }
-
-  if (testingSignal && !hasReviveWorkflow && !efficiencySignal) {
-    queueDrafts.push(
-      buildWorkflowQueueDraft({
-        kind: 'testing_workflow',
-        itemType: 'launch_test',
-        title: 'Restart testing velocity in this account',
-        description:
-          'DeepVisor wants to restore recent testing activity so the account can uncover fresh winners instead of relying on stale structure.',
-        destinationHref: '/calendar',
-        supportingSignals: [testingSignal],
-        childBlueprints: [
-          childBlueprint({
-            key: 'launch_test',
-            itemType: 'launch_test',
-            priority: 'high',
-            title:
-              typeof testingSignal.evidence.reviveAdSetName === 'string'
-                ? `Add a new ad inside ${testingSignal.evidence.reviveAdSetName}`
-                : 'Launch a new test',
-            description:
-              typeof testingSignal.evidence.reviveAdSetName === 'string'
-                ? 'Add a fresh creative to the favorable ad set so the account can learn from an already-working audience setup.'
-                : 'Open a fresh branch with a controlled budget and one clear variable to learn from.',
-            destinationHref:
-              buildCreateAdHref({
-                campaignId:
-                  typeof testingSignal.evidence.reviveCampaignId === 'string'
-                    ? testingSignal.evidence.reviveCampaignId
-                    : null,
-                adSetId:
-                  typeof testingSignal.evidence.reviveAdSetId === 'string'
-                    ? testingSignal.evidence.reviveAdSetId
-                    : null,
-              }) ?? '/campaigns/create',
-            payload: {
-              draftSource: 'fresh_relaunch',
-              adSetId: testingSignal.evidence.reviveAdSetId ?? null,
-            },
-          }),
-          childBlueprint({
-            key: 'review_report',
-            itemType: 'review_report',
-            priority: 'medium',
-            title: 'Review the recent testing gap',
-            description: 'Look at the recent account history before deciding which hypothesis to test first.',
-            destinationHref: '/reports',
-          }),
-        ],
-      })
-    );
-  }
-
-  return queueDrafts.filter((draft) => draft.businessId && draft.adAccountId);
-}
-
 /**
- * Persists the deterministic signal set and the first queue-item layer derived
- * from it so dashboard, calendar, and revive flows can all reuse the same
- * source of truth.
+ * Persists the deterministic signal set for one assessment. No sync or schedule calls
+ * this today; see the intelligence README.
  */
 export async function syncMetaAccountIntelligenceArtifacts(input: {
   supabase?: AssessmentClient;
@@ -698,17 +299,8 @@ export async function syncMetaAccountIntelligenceArtifacts(input: {
     sourceDigestHash: input.assessment.digest.digestHash,
     drafts: signalDrafts,
   });
-  const queueItems = isCalendarManualMode()
-    ? []
-    : await syncSignalCalendarQueueItems(supabase, {
-        businessId: input.assessment.businessId,
-        adAccountId: input.assessment.adAccountId,
-        drafts: buildQueueItemDraftsFromSignals(signals),
-      });
-
   return {
     assessment: input.assessment,
     signals,
-    queueItems,
   };
 }

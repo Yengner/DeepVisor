@@ -1,5 +1,4 @@
 export * from './collections'
-export * from './calendarQueue'
 
 export * from './currency'
 export * from './date'

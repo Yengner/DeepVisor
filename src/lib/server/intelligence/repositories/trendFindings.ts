@@ -320,28 +320,6 @@ export async function syncTrendFindings(
   return ((data ?? []) as TrendFindingRow[]).map(mapTrendFindingRow);
 }
 
-export async function getTrendFindingById(
-  supabase: IntelligenceClient,
-  input: {
-    businessId: string;
-    findingId: string;
-  }
-): Promise<TrendFinding | null> {
-  const { data, error } = await (supabase as any)
-    .schema('ai')
-    .from('trend_findings')
-    .select('*')
-    .eq('business_id', input.businessId)
-    .eq('id', input.findingId)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  return data ? mapTrendFindingRow(data as TrendFindingRow) : null;
-}
-
 export async function dismissTrendFinding(
   supabase: IntelligenceClient,
   input: {
@@ -356,34 +334,6 @@ export async function dismissTrendFinding(
     .update({
       status: 'dismissed',
       dismissed_at: now,
-      updated_at: now,
-    })
-    .eq('business_id', input.businessId)
-    .eq('id', input.findingId)
-    .select('*')
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  return data ? mapTrendFindingRow(data as TrendFindingRow) : null;
-}
-
-export async function markTrendFindingConvertedToQueue(
-  supabase: IntelligenceClient,
-  input: {
-    businessId: string;
-    findingId: string;
-  }
-): Promise<TrendFinding | null> {
-  const now = new Date().toISOString();
-  const { data, error } = await (supabase as any)
-    .schema('ai')
-    .from('trend_findings')
-    .update({
-      status: 'converted_to_queue',
-      converted_to_queue_at: now,
       updated_at: now,
     })
     .eq('business_id', input.businessId)
