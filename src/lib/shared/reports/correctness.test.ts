@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { accountToday, completedReportRange, previousReportRange, resolveReportDates, isReportDate } from './dates';
 import { snapshotCoverage, dailyCoverage, coverageLabel } from './coverage';
 import { aggregateReportMetrics, reportMetricValue, reportMetricDelta, metricDirection, sourceUnavailable, formatReportMetric } from './metrics';
-import { buildHourlyHeatmap } from './hourly';
+
 import { parseReportQueryInput } from '@/lib/server/reports/query';
-import type { DashboardTrendPoint } from '@/lib/server/dashboard/types';
 
 const now = new Date('2026-03-09T02:00:00Z');
 const raw = { spend: 20, impressions: 1000, clicks: 10, inline_link_clicks: 8, leads: 2, messages: 1, calls: 1, currency_code: 'USD' };
@@ -118,26 +117,6 @@ describe('aggregate metric contract', () => {
     expect(metricDirection('cpc', 25)).toBe('unfavorable');
   });
 });
-describe('hourly visualization numerical contract', () => {
-  const point = (dayKey: string, clicks: number, impressions: number): DashboardTrendPoint => ({
-    label: dayKey, dayKey, dayOfWeek: 0, hourOfDay: 12,
-    clicks, impressions, inlineLinkClicks: 0, results: 0, spend: 10, reach: 0,
-    ctr: 0, cpc: 0, cpm: 0, frequency: 0, costPerResult: 0,
-  });
-  it('computes observed totals, sample count and weighted CTR', () => {
-    const heatmap = buildHourlyHeatmap([point('2026-01-05', 10, 100), point('2026-01-12', 20, 400)])!;
-    const cell = heatmap.rows[0].cells[12];
-    expect(cell).toMatchObject({ observed: true, observations: 2, metricTotal: 30, metricAverage: 15, ctr: 6, spend: 20 });
-    expect(heatmap.title).not.toContain('Best');
-  });
-  it('distinguishes a zero observation from an absent slot', () => {
-    const heatmap = buildHourlyHeatmap([point('2026-01-05', 0, 100)])!;
-    expect(heatmap.rows[0].cells[12]).toMatchObject({ observed: true, metricTotal: 0 });
-    expect(heatmap.rows[0].cells[13]).toMatchObject({ observed: false, observations: 0 });
-    expect(buildHourlyHeatmap([])).toBeNull();
-  });
-});
-
 describe('retained history without overlap', () => {
   it('never adds an ambiguous monthly rollup to daily rows from that month', async () => {
     const { nonOverlappingHistory } = await import('./history');

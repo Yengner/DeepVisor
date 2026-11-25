@@ -16,9 +16,6 @@ export type SwitchOption<T extends string> = {
   disabled?: boolean;
 };
 
-/** Shared names, so a range is called the same thing on every page. */
-export const RANGE_LABELS = { today: 'Today', '7d': '7D', '30d': '30D', '90d': '90D', all: 'All time' } as const;
-
 export default function RangeSwitch<T extends string>({ label, value, options, onChange, pending = false, className }: {
   label: string;
   value: T | undefined;

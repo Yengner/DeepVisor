@@ -291,7 +291,6 @@ const METRIC_COLUMNS: MetricColumn[] = [
   { key: 'leads', render: (m) => formatCount(m.leads) },
   { key: 'messages', render: (m) => formatCount(m.messages) },
 ];
-export const METRIC_COLUMN_COUNT = METRIC_COLUMNS.length;
 /** The four numbers owners decide with; the rest appear behind "More metrics". */
 const CORE_METRICS = new Set<SortKey>(['spend', 'results', 'costPerResult', 'ctr']);
 export const MetricColumnsContext = createContext(false);

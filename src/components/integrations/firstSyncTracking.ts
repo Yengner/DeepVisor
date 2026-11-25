@@ -2,8 +2,6 @@ import type {
   FirstSyncJobStatus,
   SupportedIntegrationPlatform,
 } from '@/lib/shared/types/integrations';
-
-export const FIRST_SYNC_TRACK_EVENT = 'deepvisor:first-sync-track';
 const STORAGE_KEY = 'deepvisor:first-sync-jobs:v1';
 const LEGACY_STORAGE_KEY = 'deepvisor:meta-first-sync-jobs:v1';
 
@@ -102,36 +100,7 @@ function writeTrackedFirstSyncJobs(jobs: TrackedFirstSyncJob[]): void {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs));
 }
 
-export function trackFirstSyncJob(job: TrackedFirstSyncJob): void {
-  const existingJobs = readTrackedFirstSyncJobs();
-  const nextJobs = [
-    job,
-    ...existingJobs.filter((existing) => existing.jobId !== job.jobId),
-  ];
-
-  writeTrackedFirstSyncJobs(nextJobs);
-  window.dispatchEvent(
-    new CustomEvent<TrackedFirstSyncJob>(FIRST_SYNC_TRACK_EVENT, {
-      detail: job,
-    })
-  );
-}
-
-export function updateTrackedFirstSyncJob(job: TrackedFirstSyncJob): void {
-  const existingJobs = readTrackedFirstSyncJobs();
-  const nextJobs = existingJobs.some((existing) => existing.jobId === job.jobId)
-    ? existingJobs.map((existing) => (existing.jobId === job.jobId ? job : existing))
-    : [job, ...existingJobs];
-
-  writeTrackedFirstSyncJobs(nextJobs);
-}
-
 export function untrackFirstSyncJob(jobId: string): void {
   const existingJobs = readTrackedFirstSyncJobs();
   writeTrackedFirstSyncJobs(existingJobs.filter((job) => job.jobId !== jobId));
-}
-
-export function clearDemoTrackedFirstSyncJobs(): void {
-  const existingJobs = readTrackedFirstSyncJobs();
-  writeTrackedFirstSyncJobs(existingJobs.filter((job) => job.mode !== 'demo'));
 }

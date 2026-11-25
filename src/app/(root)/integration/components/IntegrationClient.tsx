@@ -39,12 +39,7 @@ import {
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import MetaIntegrationFlow from '@/components/integrations/MetaIntegrationFlow';
-import {
-  clearPitchDetachedPlatform,
-  readPitchDetachedPlatforms,
-  upsertPitchDetachedPlatform,
-  type PitchDetachedPlatform,
-} from '@/components/integrations/pitchDetach';
+import { readPitchDetachedPlatforms, type PitchDetachedPlatform } from '@/components/integrations/pitchDetach';
 import { getPlatformIcon } from '@/components/utils/utils';
 import {
   getIntegrationPlatformImage,

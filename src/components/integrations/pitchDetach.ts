@@ -47,25 +47,3 @@ export function readPitchDetachedPlatforms(): PitchDetachedPlatform[] {
     return [];
   }
 }
-
-function writePitchDetachedPlatforms(platforms: PitchDetachedPlatform[]) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.localStorage.setItem(PITCH_DETACHED_PLATFORMS_KEY, JSON.stringify(platforms));
-}
-
-export function upsertPitchDetachedPlatform(platform: PitchDetachedPlatform) {
-  const existing = readPitchDetachedPlatforms().filter((item) => item.platformId !== platform.platformId);
-  writePitchDetachedPlatforms([...existing, platform]);
-}
-
-export function clearPitchDetachedPlatform(platformId: string) {
-  const next = readPitchDetachedPlatforms().filter((item) => item.platformId !== platformId);
-  writePitchDetachedPlatforms(next);
-}
-
-export function clearAllPitchDetachedPlatforms() {
-  writePitchDetachedPlatforms([]);
-}
