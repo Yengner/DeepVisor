@@ -44,8 +44,8 @@ export type SettingsData = {
   promotedServices: string[];
   savedLocale: Locale | null;
   adFacts: { facts: ResolvedFacts; accountCurrency: string | null } | null;
-  notificationPreference: NotificationPreference;
-  reportSubscription: ReportSubscriptionSetting;
+  /** Null while alert preferences are hidden because nothing honors them yet. */
+  alertPreferences: { notification: NotificationPreference; report: ReportSubscriptionSetting } | null;
   unreadCount: number;
   integrations: SettingsIntegration[];
   lastSyncedAt: string | null;
@@ -109,8 +109,7 @@ async function SavedReports({ reports, f }: { reports: ArchivedReport[]; f: Form
     <details className={classes.more}>
       <summary>{t('account.savedReports', { count: reports.length })}<ChevronDown size={18} aria-hidden="true" /></summary>
       <div className={classes.moreBody}>
-        {reports.length === 0 ? <p className={classes.hint}>{t('account.noReports')}</p> : (
-          <ul className={classes.list}>
+        <ul className={classes.list}>
             {reports.map(report => {
               const spend = f.money(report.summary.spend, report.currencyCode);
               const meta = [
@@ -133,7 +132,6 @@ async function SavedReports({ reports, f }: { reports: ArchivedReport[]; f: Form
               );
             })}
           </ul>
-        )}
       </div>
     </details>
   );
@@ -285,9 +283,9 @@ export default async function SettingsView({ data }: { data: SettingsData }) {
             id="alerts"
             icon={<Bell size={20} />}
             title={t('alerts.title')}
-            lead={t('alerts.lead')}
+            lead={data.alertPreferences ? t('alerts.lead') : t('alerts.leadSaved')}
           >
-            <AlertSettings initialNotificationPreference={data.notificationPreference} initialReportSubscription={data.reportSubscription} />
+            {data.alertPreferences && <AlertSettings initialNotificationPreference={data.alertPreferences.notification} initialReportSubscription={data.alertPreferences.report} />}
             <div className={classes.inlineRow}>
               <span>{data.unreadCount > 0 ? t('alerts.unread', { count: data.unreadCount }) : t('alerts.noUnread')}</span>
               <Button component="a" href="/notifications" variant="subtle">{t('alerts.openMessages')}</Button>
@@ -320,7 +318,8 @@ export default async function SettingsView({ data }: { data: SettingsData }) {
             </div>
 
             <div className={classes.moreGroup}>
-              <SavedReports reports={data.archivedReports} f={f} />
+              {/* Nothing creates new reports today, so the list only appears when older ones exist. */}
+              {data.archivedReports.length > 0 && <SavedReports reports={data.archivedReports} f={f} />}
               <ConnectionDetails integrations={data.integrations} f={f} />
             </div>
           </SectionCard>

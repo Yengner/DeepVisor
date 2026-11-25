@@ -770,6 +770,7 @@
     "alerts": {
       "title": "Alerts",
       "lead": "Choose what DeepVisor tells you, and when it stays quiet.",
+      "leadSaved": "Updates about your ads are saved in DeepVisor.",
       "unread": "{count, plural, one {# new message} other {# new messages}}",
       "noUnread": "No new messages.",
       "openMessages": "Open messages",
@@ -816,7 +817,6 @@
       "followingNone": "No ad account chosen",
       "reports": "Download reports",
       "savedReports": "Saved reports ({count})",
-      "noReports": "No saved reports yet. When a report is made, it is kept here.",
       "view": "View",
       "download": "Download",
       "spent": "Spent {amount}",

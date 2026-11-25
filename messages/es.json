@@ -770,6 +770,7 @@
     "alerts": {
       "title": "Avisos",
       "lead": "Elige qué te cuenta DeepVisor y cuándo se queda callado.",
+      "leadSaved": "Las novedades de tus anuncios se guardan en DeepVisor.",
       "unread": "{count, plural, one {# mensaje nuevo} other {# mensajes nuevos}}",
       "noUnread": "No hay mensajes nuevos.",
       "openMessages": "Abrir mensajes",
@@ -816,7 +817,6 @@
       "followingNone": "Ninguna cuenta elegida",
       "reports": "Descargar reportes",
       "savedReports": "Reportes guardados ({count})",
-      "noReports": "Aún no hay reportes guardados. Cuando se haga uno, se guarda aquí.",
       "view": "Ver",
       "download": "Descargar",
       "spent": "Gastado {amount}",

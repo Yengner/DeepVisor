@@ -9,6 +9,7 @@ import { listArchivedReports } from '@/lib/server/intelligence/repositories/repo
 import { getReportSubscription } from '@/lib/server/intelligence/repositories/reportSubscriptions';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { createServerClient } from '@/lib/server/supabase/server';
+import { ALERT_PREFERENCES_AVAILABLE } from '@/lib/shared/productAvailability';
 import SettingsView, { type SettingsIntegration } from './SettingsView';
 
 type IntegrationRow = {
@@ -27,7 +28,7 @@ export default async function SettingsPage() {
   const { user, businessId, organizationName, role } = await getRequiredAppContext();
   const selection = await resolveCurrentSelection(businessId);
 
-  const [businessResult, integrationsResult, rollup, tier, unreadIds, selectedAdAccount, notificationPreference, reportSubscription, archivedReports, localeRow] = await Promise.all([
+  const [businessResult, integrationsResult, rollup, tier, unreadIds, selectedAdAccount, alertPreferences, archivedReports, localeRow] = await Promise.all([
     supabase
       .from('business_profiles')
       .select('business_name, industry, website, description, monthly_budget, booking_link, business_location, customer_radius, most_valuable_service, promoted_services, preferred_contact_method')
@@ -44,8 +45,13 @@ export default async function SettingsPage() {
     selection.selectedPlatformId && selection.selectedAdAccountId
       ? getAdAccountData(selection.selectedAdAccountId, selection.selectedPlatformId, businessId)
       : Promise.resolve(null),
-    getNotificationPreference(supabase, { businessId, userId: user.id }),
-    getReportSubscription(supabase, { businessId, userId: user.id }),
+    // Saved preferences are only read while the form that edits them is shown.
+    ALERT_PREFERENCES_AVAILABLE
+      ? Promise.all([
+        getNotificationPreference(supabase, { businessId, userId: user.id }),
+        getReportSubscription(supabase, { businessId, userId: user.id }),
+      ]).then(([notification, report]) => ({ notification, report }))
+      : Promise.resolve(null),
     listArchivedReports(supabase, { businessId, limit: 60 }),
     supabase.from('users').select('preferred_locale').eq('id', user.id).maybeSingle(),
   ]);
@@ -92,8 +98,7 @@ export default async function SettingsPage() {
       promotedServices: (business?.promoted_services ?? []) as string[],
       savedLocale: isLocale(savedLocale) ? savedLocale : null,
       adFacts: adFacts ? { facts: adFacts.facts, accountCurrency: adFacts.accountCurrency } : null,
-      notificationPreference,
-      reportSubscription,
+      alertPreferences,
       unreadCount: unreadIds.length,
       integrations,
       lastSyncedAt: rollup.lastSyncedAt,
