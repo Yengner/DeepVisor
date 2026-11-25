@@ -6,7 +6,7 @@ import LifecyclePopup from '@/components/lifecycle/LifecycleView';
 import { lifecycleEnabled } from '@/lib/server/lifecycle/service';
 import AiAssistantDrawer from '@/components/layout/AiAssistantDrawer';
 import { assistantEnabled } from '@/lib/server/intelligence/assistant/enabled';
-import { buildGlobalAiAssistantPayload } from '@/lib/server/intelligence/service';
+import { loadAssistantAccount } from '@/lib/server/intelligence/assistant/account';
 import AutomaticMetaSync from '@/components/integrations/AutomaticMetaSync';
 import AccountSetupGate, { type AccountSetupState } from '@/components/integrations/AccountSetupGate';
 import { loadOverviewSync } from '@/lib/server/dashboard/overview/load';
@@ -51,7 +51,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     : null;
 
   const showAssistant = assistantEnabled();
-  const assistant = !showAssistant ? null : await buildGlobalAiAssistantPayload({ businessId, defaultPlatformIntegrationId: selection.selectedPlatformId, defaultAdAccountId: selection.selectedAdAccountId }).catch(() => null);
+  const assistant = !showAssistant ? null : await loadAssistantAccount({ businessId, adAccountId: selection.selectedAdAccountId }).catch(() => null);
   return (
     <div className="app-platform-shell h-dvh flex flex-col" data-platform-theme={platformTheme}>
       <header className="app-platform-header w-full z-50 flex-shrink-0">

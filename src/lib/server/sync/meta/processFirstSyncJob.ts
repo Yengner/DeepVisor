@@ -17,11 +17,6 @@ import {
 import { refreshMetaPerformanceSummaries, syncMetaPerformance } from '@/lib/server/sync/meta/syncMetaPerformance';
 import { syncSavedInsights } from '../resources/insights';
 import type { RepositoryClient } from '@/lib/server/repositories/utils';
-import {
-  runBusinessAssessment,
-  runMetaAdAccountAssessment,
-  syncMetaAccountIntelligenceArtifacts,
-} from '@/lib/server/intelligence';
 import type { AdDimRow } from '@/lib/server/repositories/ads/upsertAdDims';
 import type { AdsetDimRow } from '@/lib/server/repositories/adsets/upsertAdsetDims';
 import type { CampaignDimRow } from '@/lib/server/repositories/campaigns/upsertCampaignDims';
@@ -415,43 +410,6 @@ export async function processMetaFirstSyncJob(input: {
     insightsSyncedThrough,
     completesFullHistory: true,
   });
-
-  await updateHistoricalSyncJobProgress(input.supabase, {
-    jobId: input.job.id,
-    stage: 'running_assessments',
-    message: 'Running DeepVisor intelligence on the synced history.',
-    coverageStartDate,
-    coverageEndDate,
-    actualStartDate: firstActivityDate,
-    actualEndDate: insightsSyncedThrough,
-    counts: {
-      ...dimensionCounts,
-      performanceRowsSynced,
-    },
-  });
-
-  try {
-    if (!readSimulation(input.accessToken)) {
-    const adAccountAssessment = await runMetaAdAccountAssessment({
-      supabase: input.supabase,
-      businessId: input.job.business_id,
-      platformIntegrationId: input.job.platform_integration_id,
-      adAccountId: adAccount.id,
-      trigger: 'integration',
-    });
-    await syncMetaAccountIntelligenceArtifacts({
-      supabase: input.supabase,
-      assessment: adAccountAssessment,
-    });
-    await runBusinessAssessment({
-      supabase: input.supabase,
-      businessId: input.job.business_id,
-      trigger: 'integration',
-    });
-    }
-  } catch (error) {
-    console.error('First Meta history sync assessments failed:', error);
-  }
 
   await syncSavedInsights(input.job.id, input.accessToken, { learning: adsets.learning }).catch(() => {
     console.warn('Optional dashboard insights unavailable; previous retrieval times preserved.');

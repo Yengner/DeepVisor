@@ -9,16 +9,7 @@ import type {
   BusinessIntelligencePlanningScope,
   BusinessIntelligencePlatformSummary,
   BusinessIntelligenceSelection,
-  GlobalAiAssistantPayload,
 } from './types';
-import {
-  getLatestBusinessAssessment as getLatestBusinessAssessmentRecord,
-  listLatestAdAccountAssessmentsForBusiness,
-} from './repositories/assessments';
-import {
-  listActiveTrendFindings,
-  toTrendFindingView,
-} from './repositories/trendFindings';
 import {
   runBusinessAssessment,
   runMetaAdAccountAssessment,
@@ -367,69 +358,5 @@ export async function runBusinessIntelligenceAssessment(input: {
     selection,
     accountAssessments,
     businessAssessment,
-  };
-}
-
-export async function buildGlobalAiAssistantPayload(input: {
-  businessId: string;
-  defaultPlatformIntegrationId?: string | null;
-  defaultAdAccountId?: string | null;
-}): Promise<GlobalAiAssistantPayload> {
-  const supabase = await createServerClient();
-  const { businessName, platforms, adAccounts } = await loadBusinessHeader(supabase, input.businessId);
-  const selection = normalizeIntelligenceSelection({
-    scope: 'integration',
-    platformIntegrationId: input.defaultPlatformIntegrationId,
-    defaultPlatformIntegrationId: input.defaultPlatformIntegrationId,
-    defaultAdAccountId: input.defaultAdAccountId,
-    platforms,
-    adAccounts,
-  });
-
-  const [latestBusinessAssessment, latestAccountAssessments] = platforms.length
-    ? await Promise.all([
-      getLatestBusinessAssessmentRecord(supabase, input.businessId),
-      listLatestAdAccountAssessmentsForBusiness(supabase, input.businessId),
-    ])
-    : [null, []];
-
-  const latestSelectedAssessment = selectLatestAssessmentForSelection(
-    selection,
-    latestAccountAssessments
-  );
-  const selectedPlatform = selection.platformIntegrationId
-    ? platforms.find((platform) => platform.id === selection.platformIntegrationId) ?? null
-    : null;
-  const selectedAdAccount = selection.primaryAdAccountId
-    ? adAccounts.find((account) => account.id === selection.primaryAdAccountId) ?? null
-    : null;
-  const activeFindings =
-    selectedAdAccount?.id
-      ? await listActiveTrendFindings(supabase as any, {
-          businessId: input.businessId,
-          adAccountId: selectedAdAccount.id,
-        })
-      : [];
-
-  return {
-    businessId: input.businessId,
-    businessName,
-    state:
-      platforms.length === 0
-        ? 'no_platform_connected'
-        : selection.primaryAdAccountId
-          ? latestSelectedAssessment
-            ? 'ready'
-            : 'needs_assessment'
-          : 'no_ad_account_selected',
-    selectionScope: selection.scope,
-    selectedPlatformIntegrationId: selection.platformIntegrationId,
-    selectedPlatformLabel: selectedPlatform?.label ?? null,
-    selectedAdAccountId: selectedAdAccount?.id ?? null,
-    selectedAdAccountName: selectedAdAccount?.name ?? null,
-    selectedAdAccountExternalId: selectedAdAccount?.externalAccountId ?? null,
-    latestBusinessAssessment,
-    latestSelectedAssessment,
-    activeFindings: activeFindings.map(toTrendFindingView),
   };
 }

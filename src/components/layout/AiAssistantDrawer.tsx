@@ -8,18 +8,18 @@ import { IconSparkles, IconX, IconPlus, IconArrowUp, IconArrowDown, IconDots, Ic
 import AssistantAnswer from './AssistantAnswer';
 import AssistantDraftCard from './AssistantDraftCard';
 import { useAssistantConversation } from './useAssistantConversation';
-import type { GlobalAiAssistantPayload } from '@/lib/server/intelligence/types';
+import type { AssistantAccountRef } from '@/lib/shared/assistant/contracts';
 import { assistantWidth } from './assistantSizing';
 import classes from './Assistant.module.css';
 import { AssistantAvailableContext } from './assistantAvailability';
 
 /** The page workspace, plus the assistant when it is enabled (hidden for the beta). */
-export default function AiAssistantDrawer({ payload, enabled, children }: { payload: GlobalAiAssistantPayload | null; enabled: boolean; children: ReactNode }) {
+export default function AiAssistantDrawer({ payload, enabled, children }: { payload: AssistantAccountRef | null; enabled: boolean; children: ReactNode }) {
   if (!enabled) return <div className={classes.workspace}><div className={classes.main}>{children}</div></div>;
   return <AssistantAvailableContext.Provider value={true}><AssistantDrawer payload={payload}>{children}</AssistantDrawer></AssistantAvailableContext.Provider>;
 }
 
-function AssistantDrawer({ payload, children }: { payload: GlobalAiAssistantPayload | null; children: ReactNode }) {
+function AssistantDrawer({ payload, children }: { payload: AssistantAccountRef | null; children: ReactNode }) {
   const [opened, setOpened] = useState(false);
   const [width, setWidth] = useState(380);
   const [draft, setDraft] = useState('');

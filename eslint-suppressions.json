@@ -94,11 +94,6 @@
       "count": 8
     }
   },
-  "src/lib/server/intelligence/service.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
   "src/lib/server/intelligence/trends/service.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 8

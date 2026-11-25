@@ -596,24 +596,3 @@ export interface BusinessIntelligenceWorkspace {
   latestAccountAssessments: AdAccountAssessment[];
   latestSelectedAssessment: AdAccountAssessment | null;
 }
-
-export type GlobalAiAssistantState =
-  | 'no_platform_connected'
-  | 'no_ad_account_selected'
-  | 'needs_assessment'
-  | 'ready';
-
-export interface GlobalAiAssistantPayload {
-  businessId: string;
-  businessName: string;
-  state: GlobalAiAssistantState;
-  selectionScope: BusinessIntelligencePlanningScope;
-  selectedPlatformIntegrationId: string | null;
-  selectedPlatformLabel: string | null;
-  selectedAdAccountId: string | null;
-  selectedAdAccountName: string | null;
-  selectedAdAccountExternalId: string | null;
-  latestBusinessAssessment: BusinessAssessment | null;
-  latestSelectedAssessment: AdAccountAssessment | null;
-  activeFindings: TrendFindingView[];
-}
