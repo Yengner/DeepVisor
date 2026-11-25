@@ -33,7 +33,7 @@ function render(tab:'adsets'|'ads', pausedParent=false) {
     initialAds:[{id:'paused-ad',ad_id:'paused-ad',status:'PAUSED'},{id:'live-ad',ad_id:'live-ad',status:'ACTIVE'}] as Props['initialAds'],
   };
   const intl = { locale: 'en', messages } as ComponentProps<typeof NextIntlClientProvider>;
-  renderToStaticMarkup(createElement(NextIntlClientProvider,intl,createElement(MantineProvider,null,createElement(CampaignDashboard,props))));
+  return renderToStaticMarkup(createElement(NextIntlClientProvider,intl,createElement(MantineProvider,null,createElement(CampaignDashboard,props))));
 }
 describe('nested campaign tab delivery wiring',()=>{
   beforeEach(()=>{captured.adsets=[];captured.ads=[];});
@@ -48,6 +48,11 @@ describe('nested campaign tab delivery wiring',()=>{
     expect(captured.ads.map(({id,delivery})=>({id,delivery}))).toEqual([
       {id:'live-ad',delivery:true},{id:'paused-ad',delivery:false},
     ]);
+  });
+  it.each(['adsets','ads'] as const)('offers no create button on the %s tab while that flow cannot finish',tab=>{
+    const html=render(tab);
+    expect(html).toContain('data-action="refresh"');
+    expect(html).not.toContain('data-action="create"');
   });
   it.each(['adsets','ads'] as const)('withholds all %s highlights under a paused campaign',tab=>{
     render(tab,true);

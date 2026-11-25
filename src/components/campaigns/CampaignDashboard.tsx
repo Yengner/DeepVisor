@@ -46,6 +46,7 @@ import { fetchAdSetsForCampaign, fetchAdsForAdset } from '@/lib/server/data/quer
 import { formatRecordedCurrency as formatCurrencyAmount } from './metrics';
 import { statusPresentation } from '@/components/product/presentation';
 import classes from './CampaignDashboard.module.css';
+import { META_CHILD_CREATION_AVAILABLE } from '@/lib/shared/productAvailability';
 
 type TabKey = 'campaigns' | 'adsets' | 'ads';
 
@@ -623,7 +624,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                       {t('createCampaign')}
                     </Button>
                   </>
-                ) : (
+                ) : META_CHILD_CREATION_AVAILABLE ? (
                   <Button
                     leftSection={<IconPlus size={16} />}
                     radius="xl"
@@ -638,7 +639,7 @@ export default function CampaignDashboard(props: CampaignDashboardProps) {
                   >
                     {layerSummary.createLabel}
                   </Button>
-                )}
+                ) : null}
 
                 <div data-action="refresh">
                   <RefreshOverview label={t('refreshLabel')} updatedAt={props.syncedAt ?? null} onCompleted={() => {

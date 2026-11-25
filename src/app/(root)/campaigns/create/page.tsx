@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { FilePen } from 'lucide-react';
 import CampaignCreateClient from '@/components/campaigns/create/CampaignCreateClient';
@@ -6,6 +7,7 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { countDrafts } from '@/lib/server/suggestions/drafts';
 import { createServerClient } from '@/lib/server/supabase/server';
+import { META_CHILD_CREATION_AVAILABLE } from '@/lib/shared/productAvailability';
 import styles from './CreateDraftsNotice.module.css';
 
 /**
@@ -15,6 +17,8 @@ import styles from './CreateDraftsNotice.module.css';
  */
 export default async function CreateCampaignPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
+  // Hidden while the ad and ad set builders cannot finish; covers typed and saved links too.
+  if (!META_CHILD_CREATION_AVAILABLE && (params.scope === 'ad' || params.scope === 'adset')) redirect('/campaigns');
   const fresh = !params.draft && !params.scope;
   const count = fresh ? await draftsHere() : 0;
   const t = count > 0 ? await getTranslations('drafts') : null;
