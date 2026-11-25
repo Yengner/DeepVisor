@@ -1,3 +1,4 @@
+import { refuseWithoutInternalApiKey } from '@/lib/server/auth/internalApiKey';
 import { after, NextRequest, NextResponse } from 'next/server';
 import { processCalendarQueue } from '@/lib/server/intelligence/calendarQueueProcessor';
 import { createAdminClient } from '@/lib/server/supabase/admin';
@@ -26,51 +27,6 @@ function normalizeProcessLimit(value: unknown): number {
   return Math.min(Math.floor(numericValue), 1);
 }
 
-function getRequestApiKey(request: NextRequest): string | null {
-  const apiKeyHeader = request.headers.get('x-internal-api-key');
-  if (apiKeyHeader) {
-    return apiKeyHeader;
-  }
-
-  const authorization = request.headers.get('authorization');
-  if (!authorization) {
-    return null;
-  }
-
-  const [scheme, token] = authorization.split(' ');
-  if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    return null;
-  }
-
-  return token;
-}
-
-function assertAuthorized(request: NextRequest): NextResponse | null {
-  const expectedApiKey = process.env.INTERNAL_API_KEY;
-  if (!expectedApiKey) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'INTERNAL_API_KEY is not configured',
-      },
-      { status: 500 }
-    );
-  }
-
-  const requestApiKey = getRequestApiKey(request);
-  if (!requestApiKey || requestApiKey !== expectedApiKey) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Unauthorized',
-      },
-      { status: 401 }
-    );
-  }
-
-  return null;
-}
-
 function parseNow(value: unknown): Date | undefined {
   if (typeof value !== 'string' || value.trim().length === 0) {
     return undefined;
@@ -85,7 +41,7 @@ function parseOptionalId(value: unknown): string | null {
 }
 
 export async function POST(request: NextRequest) {
-  const authError = assertAuthorized(request);
+  const authError = refuseWithoutInternalApiKey(request);
   if (authError) {
     console.warn('[calendar-queue:process] unauthorized request', {
       hasInternalApiKey: Boolean(request.headers.get('x-internal-api-key')),
