@@ -9,11 +9,6 @@
       "count": 1
     }
   },
-  "src/app/(root)/dashboard/LegacyDashboard.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    }
-  },
   "src/app/(root)/reports/archive/[queueItemId]/page.tsx": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1

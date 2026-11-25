@@ -16,9 +16,8 @@ import Sidebar from '@/components/layout/LeftSidebar';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getPlatformDetails } from '@/lib/server/data';
-import { Suspense } from 'react';
-import AutonomyIndicator from '@/components/product/AutonomyIndicator';
-import AutonomyChrome from '@/components/product/AutonomyChrome';
+
+
 
 function resolvePlatformTheme(value: string | null | undefined): 'default' | 'meta' | 'google' | 'tiktok' {
   switch (value) {
@@ -63,7 +62,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Sidebar showInsightsPreview={showInsightsPreview} showAgency={agencyEnabled()} />
 
         <AiAssistantDrawer key={selection.selectedAdAccountId} payload={assistant} enabled={showAssistant}><main className="app-platform-main relative min-h-0 min-w-0 mx-auto flex-1 space-y-5 overflow-y-auto pb-[calc(9rem+env(safe-area-inset-bottom))] pl-0 pr-0 pt-3 md:space-y-6 md:pb-24 md:pl-[3.75rem] md:pr-3 md:pt-4">
-          {/* <AutonomyChrome><Suspense fallback={<p className="px-4 text-xs text-gray-600" style={{minHeight:44}}>Loading configured mode…</p>}><AutonomyIndicator businessId={businessId}/></Suspense></AutonomyChrome> */}
           <div className="app-status-region">
             <AutomaticMetaSync key={`sync:${selection.selectedAdAccountId}`} accountId={selection.selectedAdAccountId} />
             <AccountSignals key={`signals:${selection.selectedAdAccountId}`} accountId={selection.selectedAdAccountId} enabled={process.env.DEEPVISOR_META_WEBHOOKS === 'true'} />
