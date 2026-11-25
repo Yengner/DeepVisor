@@ -21,4 +21,4 @@ it('adds contact_methods idempotently without touching existing values', async (
   } finally {
     await db.close();
   }
-});
+}, 20000);

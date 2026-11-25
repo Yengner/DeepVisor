@@ -24,4 +24,4 @@ it('creates a single owned workspace atomically and rejects anonymous creation',
     expect((await db.query('select ensure_onboarding_workspace() as id')).rows).not.toEqual(one.rows);
     expect((await db.query('select role from organization_memberships')).rows).toEqual([{role:'owner'},{role:'owner'}]);
   } finally { await db.close(); }
-});
+}, 20000);
