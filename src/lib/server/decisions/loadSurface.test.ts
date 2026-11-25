@@ -19,3 +19,15 @@ it('scopes selected-account decisions before pagination and never loads business
   expect(query.searchParams.get('limit')).toBe('21');
   expect(urls.some(url => url.pathname.includes('trend_findings'))).toBe(false);
 });
+
+it('reads no stored findings businesswide while they are hidden', async () => {
+  const urls: URL[] = [];
+  const client = createClient<Database>('https://unit-test.supabase.co', 'test', { auth: { persistSession: false }, global: { fetch: async url => {
+    const parsed = new URL(String(url)); urls.push(parsed);
+    return new Response(JSON.stringify(parsed.pathname.endsWith('autonomy_policies') ? null : []), { headers: { 'Content-Type': 'application/json' } });
+  } } });
+  const result = await loadDecisionSurface(client, 'business-a', 0);
+  expect(result.findings).toEqual([]);
+  expect(result.findingsUnavailable).toBe(false);
+  expect(urls.some(url => url.pathname.includes('trend_findings'))).toBe(false);
+});

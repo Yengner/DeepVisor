@@ -11,6 +11,7 @@ import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { nonOverlappingHistory } from '@/lib/shared/reports/history';
 import { chunkArray } from '@/lib/server/repositories/utils';
 import { listActiveTrendFindingViews } from '@/lib/server/intelligence/repositories/trendFindings';
+import { STORED_FINDINGS_AVAILABLE } from '@/lib/shared/productAvailability';
 import {
   buildAudienceBreakdowns,
   buildPlatformBreakdowns,
@@ -2776,7 +2777,7 @@ export async function buildReportPayload(
     ? buildActiveDateContext(supabase, effectiveQuery, adAccountIds)
     : Promise.resolve(null);
   const findingsPromise =
-    adAccountIds.length === 1
+    STORED_FINDINGS_AVAILABLE && adAccountIds.length === 1
       ? listActiveTrendFindingViews(supabase as any, {
           businessId: effectiveQuery.businessId,
           adAccountId: adAccountIds[0],
