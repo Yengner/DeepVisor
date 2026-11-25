@@ -69,11 +69,6 @@
       "count": 1
     }
   },
-  "src/components/public/depricated/Header.tsx": {
-    "react-hooks/set-state-in-effect": {
-      "count": 1
-    }
-  },
   "src/lib/client/hooks/useJobProgress.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 2
