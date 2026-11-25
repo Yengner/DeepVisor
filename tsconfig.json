@@ -45,8 +45,6 @@
     "node_modules",
     "supabase/functions/**",
     "src/app/(auth)/(unused)/**",
-    "src/app/(auth)/(unused)/**/*",
-    "src/components/campaigns/create/flows/manual/CustomCampaignFlow.tsx",
-    "src/components/campaigns/create/flows/manual/MetaCampaignBuilder.tsx"
+    "src/app/(auth)/(unused)/**/*"
   ]
 }
