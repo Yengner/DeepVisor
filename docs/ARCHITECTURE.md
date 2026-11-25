@@ -25,15 +25,15 @@ feature cohesion is retained:
 | --- | --- |
 | Presentation | `src/app` pages/layouts and `src/components`; browser state/hooks in `lib/client`. Server Components may compose authorized loaders; Client Components receive DTOs or call routes/server actions. |
 | Application | `app/api`, route-local actions, `lib/server/actions`, and domain `service.ts`/`load.ts` modules. Resolve authentication, validate scope, sequence work and shape responses. |
-| Domain | `server/features`, `decisions/policy`, decision validation/contracts, `shared/organizer`, `shared/performance`, `shared/reports`. Calculations do not own credentials or fetch data. |
+| Domain | `server/features`, `decisions/policy`, decision validation/contracts, `shared/campaigns`, `shared/performance`, `shared/reports`. Calculations do not own credentials or fetch data. |
 | Infrastructure | Supabase clients/repositories, `integrations/adapters`, `sync/meta`, Jev provider and `advertising` adapters. Persistence implements business-scoped operations and durable claims. |
 | Shared | Browser-safe contracts, domain calculations and genuinely reusable formatting. Generated DB bindings are transport types, not the product domain model. |
 
 Dependencies should point toward contracts/calculations. A server repository must
 not import UI; shared domain logic must not import server workflows. Use explicit
-type-only imports for cross-layer DTOs and preserve compatibility exports during
-moves. `server/data` and `server/repositories` currently coexist; see the
-[map](CODEBASE_MAP.md) rather than inferring ownership from their names.
+type-only imports for cross-layer DTOs. Persistence lives in `server/repositories`
+and domain-owned repositories; import the declaring module. See the
+[map](CODEBASE_MAP.md).
 
 ## Identity, authorization and configuration
 
@@ -77,14 +77,14 @@ bootstrap schema.
 | `ad_entities`, `ad_creatives` | Unified campaign → ad set → ad hierarchy and recognizable media. External Meta IDs differ from internal UUIDs. |
 | `ad_entity_performance_*`, `ad_account_performance_*` | Normalized daily/hourly/monthly/summary observations; preserve account timezone, currency, entity level and missingness. |
 | `campaign_dims`, `adset_dims`, `ad_dims` and legacy performance names | Compatibility views over unified storage in the inspected development schema; repository writers delegate to normalized tables. They are not separate physical stores. |
-| `ai.business_assessments`, intelligence findings/signals/calendar/report records | Existing account digests, findings, workflow queues, notifications and archives. |
+| `ai.business_assessments`, intelligence findings/signals/calendar/report records | Legacy digests, findings and workflow queues, no longer written by sync; notifications and report archives. |
 | `ai.feature_snapshots` → `decision_runs` → `action_proposals` → `executed_actions` → `action_outcomes` | Versioned evidence, provider result, proposed intent, execution audit and observational measurements. |
 | `ai.autonomy_policies`, evaluation jobs, execution claims/controls | Independent policy configuration, inference deduplication and durable execution exclusion. |
-| `account_organization_baselines`, `account_organization_versions`, `organization_rename_*` | Immutable original/source snapshots, proposal versions, fingerprinted approvals, runs/events and isolated simulation state. |
+| `account_organization_baselines`, `account_organization_versions`, `organization_rename_*` | Preserved history from the retired Organizer. No application code reads or writes it. |
 
 Decision records use composite business/parent relationships; RLS allows scoped
-reads while privileged writes/RPCs are reserved for trusted services. Organizer
-history has immutable records and restoration lineage. Do not infer delete behavior
+reads while privileged writes/RPCs are reserved for trusted services. The preserved
+Organizer history stays immutable. Do not infer delete behavior
 across all tables: rename audit constraints intentionally restrict cascading deletion.
 
 Missing data is not zero or healthy. An active delivery chain differs from historical
@@ -100,9 +100,9 @@ basis. Outcomes are observations, not proven causal impact.
   or authorize advertising writes. Private Realtime hints trigger authorized saved-data
   reads. See [webhook flow](FLOWS.md#webhook-triggered-status-reads-and-refresh) and
   the [webhook contract](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/lib/server/webhooks/README.md). Edge functions forward authenticated cron requests to the app.
-- **Account intelligence:** `intelligence` builds assessments, trends, signals,
-  calendar work and report context. Some assessment paths use the separate OpenAI
-  structured adapter; this is not the Jev DecisionProvider.
+- **Account intelligence:** the older assessment, signal, trend and calendar engines
+  in `intelligence` are dormant; sync no longer runs them. See its
+  [README](../src/lib/server/intelligence/README.md).
 - **Feature/decision/policy:** `buildFeatureSnapshot` computes versioned facts;
   `DecisionEngine` persists and validates provider-neutral results; `PolicyEngine`
   deterministically returns HOLD/BLOCK/SHADOW_ONLY/REQUIRE_APPROVAL/ALLOW_EXECUTION
@@ -113,11 +113,8 @@ basis. Outcomes are observations, not proven causal impact.
 - **Advertising:** Review and separately gated Limited Auto reuse the execution
   layer. Durable claim → policy/state revalidation → checkpoint → one write → readback.
   An uncertain write retains its claim; no automatic replay/rollback.
-- **Organizer:** deterministic inspection/naming and version storage are separate
-  from name-only Meta execution and restoration. Each restoration is a new proposal.
-- **Other integrations:** existing Stripe actions, media/storage, map and presentation
-  libraries remain compatibility dependencies; their presence does not establish a
-  second advertising platform adapter or an enabled billing workflow.
+- **Other integrations:** media/storage, map and presentation libraries; their
+  presence does not establish a second advertising platform adapter.
 
 ## Safety and operational references
 
@@ -129,7 +126,7 @@ reconciliation contracts:
 - [Decisions/Jev](../src/lib/server/decisions/README.md) and [PolicyEngine](../src/lib/server/decisions/policy/README.md)
 - [Shadow](../src/lib/server/decisions/shadow/README.md), [Review execution](../src/lib/server/advertising/README.md), [Limited Auto](../src/lib/server/advertising/LIMITED_AUTO.md)
 - [Outcomes](../src/lib/server/decisions/outcomes/README.md)
-- [Organizer inspection](../src/lib/server/organizer/README.md) and [rename/restoration](../src/lib/server/organizer/PHASE2.md)
+- [Retired Organizer: preserved tables](../src/lib/server/organizer/README.md)
 
 For source-level entry points and sequence diagrams, use [Flows](FLOWS.md).
 For known exceptions and deferred work, use the [audit](ARCHITECTURE_AUDIT.md).

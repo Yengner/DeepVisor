@@ -1,18 +1,17 @@
 # Meta server actions and compatibility types
 
 This directory contains existing [page reads](pages/actions.ts),
-[creative reads](creatives/actions.ts), [WhatsApp setup](whatsapp/actions.ts), and
-[compatibility form/action types](types.ts). Actions reuse authenticated business
+[WhatsApp number lookup](whatsapp/actions.ts) (kept; no current caller), and
+[form and Meta payload types](types.ts). Actions reuse authenticated business
 context and the existing integration/Vault token resolver. Do not expose tokens
-through browser inputs or DTOs.
+through browser inputs or DTOs. Creative reads use
+[`api/campaigns/creative-library`](../../../../app/api/campaigns/creative-library/route.ts).
 
-The former strategy/factory examples described files absent from this checkout.
-They are not an implementation guide. Current draft creation/reuse lives under
-[`server/campaigns`](../../campaigns), with UI under
-[`components/campaigns/create`](../../../../components/campaigns/create).
-The older `useCampaignSubmit` hook references `/api/meta/create-campaign`, for which
-this checkout contains no route; that compatibility reference does not establish a
-live publish capability.
+Current draft creation/reuse lives under [`server/campaigns`](../../campaigns), with
+UI under [`components/campaigns/create`](../../../../components/campaigns/create).
+The ad set and ad builders are hidden: `useCampaignSubmit` posts to
+`/api/meta/create-campaign`, which does not exist. See
+[`productAvailability.ts`](../../../shared/productAvailability.ts).
 
 Authorized advertising changes belong to
 [`server/advertising`](../../advertising/README.md). Draft persistence, Meta reads
