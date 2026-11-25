@@ -7,7 +7,6 @@ import type { ResultDefinition } from '@/lib/shared/performance/resultChannel';
  */
 export const IDLE_FIRST_DAYS = 7;
 export const IDLE_REPEAT_DAYS = 14;
-export const RESTART_DAYS = 7;
 /** Weeks need this many results for their cost per result to count toward the estimate. */
 export const MIN_WEEK_RESULTS = 3;
 /** And at least this many such weeks, or no estimate is shown. */

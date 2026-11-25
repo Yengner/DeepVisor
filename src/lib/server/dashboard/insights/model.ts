@@ -13,11 +13,6 @@ export function selectRows(rows: Insight[], platform: Publisher, period: Period,
   const range = periodRange(period, today);
   return rows.filter(r => (platform === 'combined' || r.publisher === platform) && r.day >= range.since && r.day <= range.until);
 }
-export function groups(rows: Insight[], currency: string) {
-  const grouped = new Map<string, Insight[]>();
-  for (const row of rows) grouped.set(row.label, [...grouped.get(row.label) ?? [], row]);
-  return [...grouped].map(([label, items]) => ({ label, ...aggregate(items, currency) }));
-}
 // Keep absent denominators unknown; never interpolate conversion actions or reach.
 export function aggregate(rows: Insight[], currency: string | null): Metrics {
   const sum = (key: 'spend' | 'impressions' | 'clicks' | 'leads' | 'messages' | 'calls') => rows.length && rows.every(r => r.currency_code === currency && typeof r[key] === 'number' && Number.isFinite(r[key]) && r[key]! >= 0) ? rows.reduce((n, r) => n + r[key]!, 0) : null;

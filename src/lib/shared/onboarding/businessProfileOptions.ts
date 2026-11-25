@@ -111,18 +111,6 @@ export const BUSINESS_CATEGORY_OPTIONS: OnboardingOption[] = BUSINESS_CATEGORY_G
 /** @deprecated Use BUSINESS_CATEGORY_OPTIONS. Kept so older imports keep validating stored values. */
 export const SALON_INDUSTRY_OPTIONS: OnboardingOption[] = BUSINESS_CATEGORY_OPTIONS;
 
-/** @deprecated Salon-only wording from the first onboarding; use BUSINESS_CATEGORY_GROUPS. */
-export const SALON_PROFESSION_OPTIONS: OnboardingOption[] = [
-  { value: 'hair_salon', label: 'Hair stylist' },
-  { value: 'beauty_salon', label: 'Cosmetologist' },
-  { value: 'barbershop', label: 'Barber' },
-  { value: 'lash_brow_studio', label: 'Lash / eyebrow specialist' },
-  { value: 'nail_salon', label: 'Nail technician' },
-  { value: 'spa_skincare', label: 'Esthetician / skincare specialist' },
-  { value: 'med_spa', label: 'Medical aesthetics professional' },
-  { value: 'other', label: 'Other beauty professional' },
-];
-
 export const CUSTOMER_RADIUS_OPTIONS: OnboardingOption[] = [
   { value: 'within_3_miles', label: 'Within 3 miles' },
   { value: 'within_5_miles', label: 'Within 5 miles' },
@@ -269,37 +257,10 @@ export const SAFETY_PREFERENCE_OPTIONS: OnboardingOption[] = [
   { value: 'growth_focused', label: 'Growth-focused - suggest more tests and scaling opportunities' },
 ];
 
-export const DEFAULT_WATCH_SIGNALS = [
-  'wasted_spend',
-  'high_cost_per_lead',
-  'no_lead_spend',
-  'best_creative',
-  'lead_volume_drops',
-  'cost_spikes',
-];
-
-export const DEFAULT_INTELLIGENCE_GOALS = {
-  primaryGoal: 'more_booked_appointments',
-  leadType: 'whatsapp_messages',
-  preferredContactMethod: 'whatsapp_messages',
-  leadQualitySignal: 'booked_appointment',
-  recommendationStyle: 'recommend_actions_for_approval',
-  safetyPreference: 'balanced',
-} as const;
-
 export function optionValues(options: OnboardingOption[]): string[] {
   return options.map((option) => option.value);
 }
 
 export function isAllowedOption(value: string | null | undefined, options: OnboardingOption[]): boolean {
   return typeof value === 'string' && optionValues(options).includes(value);
-}
-
-export function labelForOption(
-  value: string | null | undefined,
-  options: OnboardingOption[],
-  fallback = 'Not set'
-): string {
-  if (!value) return fallback;
-  return options.find((option) => option.value === value)?.label ?? fallback;
 }

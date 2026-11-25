@@ -66,11 +66,6 @@ export async function sourceBudgetSetup(db: Db, accountId: string, adSetId: stri
   };
 }
 
-/** Daily budget of the ad set, or of its campaign when the campaign holds the budget; major units. */
-export async function sourceDailyBudget(db: Db, accountId: string, adSetId: string, campaignId: string, currency: string | null): Promise<number | null> {
-  return (await sourceBudgetSetup(db, accountId, adSetId, campaignId, currency)).dailyBudget;
-}
-
 /**
  * The ad set's saved daily rows for the last STATS_DAYS days: weekly totals for the estimate and
  * the same totals the dashboard cards show (`aggregate`). Empty when the ad set is not saved.

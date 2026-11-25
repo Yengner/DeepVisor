@@ -1,13 +1,7 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { chunkArray, type RepositoryClient } from '../utils';
-import type {
-  AdAccountDailyMetricsRow,
-  AdAccountPerformanceSummary,
-} from '../types';
-import {
-  aggregateDailyMetricsRows,
-  sortAndAggregateDailyMetricsRows,
-} from './normalizers';
+import type { AdAccountDailyMetricsRow } from '../types';
+import { sortAndAggregateDailyMetricsRows } from './normalizers';
 
 type CampaignDimRow = {
   id: string;
@@ -155,27 +149,4 @@ export async function listAdAccountDailyMetricsRowsByAccount(input: {
   }
 
   return results;
-}
-
-export async function getAdAccountPerformanceSnapshot(input: {
-  adAccountId: string;
-  dateFrom?: string;
-  dateTo?: string;
-  supabase?: RepositoryClient;
-}): Promise<{
-  dailyRows: AdAccountDailyMetricsRow[];
-  summary: AdAccountPerformanceSummary;
-}> {
-  const rowsByAccountId = await listAdAccountDailyMetricsRowsByAccount({
-    adAccountIds: [input.adAccountId],
-    dateFrom: input.dateFrom,
-    dateTo: input.dateTo,
-    supabase: input.supabase,
-  });
-  const dailyRows = rowsByAccountId.get(input.adAccountId) ?? [];
-
-  return {
-    dailyRows,
-    summary: aggregateDailyMetricsRows(dailyRows),
-  };
 }

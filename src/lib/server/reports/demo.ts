@@ -421,19 +421,6 @@ function formatDateRange(dateFrom: string, dateTo: string): string {
   })}`;
 }
 
-function formatCurrency(value: number, currencyCode: string | null, digits = 0): string {
-  if (!currencyCode || currencyCode === 'MIXED') {
-    return digits === 0 ? Math.round(value).toLocaleString('en-US') : value.toFixed(digits);
-  }
-
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currencyCode,
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(value);
-}
-
 
 
 function createBucketStart(date: Date, groupBy: ReportGroupBy): Date {

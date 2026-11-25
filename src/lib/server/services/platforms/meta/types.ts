@@ -5,13 +5,3 @@ export interface AdAccountDetails {
   currency?: string | null;
   timezone_name?: string | null;
 }
-
-export interface PageAccount {
-  id: string;
-  name: string;
-  account: string;
-  access_token: string;
-  instagram_business_account?: {
-    id: string;
-  };
-}

@@ -35,12 +35,3 @@ export async function getLoggedInUserOrRedirect(): Promise<UserRow> {
   timer.finish('get logged in user total');
   return user;
 }
-
-export async function getLoggedInUser(): Promise<UserRow | null> {
-  try {
-    const userId = await requireUserId();
-    return await requireUserRow(userId);
-  } catch {
-    return null;
-  }
-}

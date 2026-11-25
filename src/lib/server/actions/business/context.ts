@@ -1,7 +1,6 @@
 import 'server-only';
 
 import { unstable_cache } from 'next/cache';
-import { redirect, unstable_rethrow } from 'next/navigation';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { createServerTimer } from '@/lib/server/timing';
@@ -227,28 +226,4 @@ export async function getOrCreateOrganizationBusinessContext(
   if (resolved.kind !== 'found') throw new Error('Workspace creation did not return a business');
   timer.finish('get or create business context total');
   return resolved.context;
-}
-
-export async function requireBusinessContextOrRedirect(
-  userId: string,
-  options?: { requireOnboardingCompleted?: boolean }
-) {
-  const requireOnboardingCompleted = options?.requireOnboardingCompleted ?? true;
-
-  try {
-    const context = await getOrCreateOrganizationBusinessContext(userId);
-
-    if (requireOnboardingCompleted && !context.onboarding.onboarding_completed) {
-      redirect(`/onboarding`);
-    }
-
-    return context;
-  } catch (error) {
-    unstable_rethrow(error);
-    console.error('Failed to resolve business context:', error);
-    if (error instanceof Error && error.message.includes('Partner organizations do not get an automatic business profile')) {
-      redirect('/onboarding');
-    }
-    redirect('/login');
-  }
 }

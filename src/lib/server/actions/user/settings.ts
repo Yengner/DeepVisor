@@ -3,7 +3,6 @@ import {
     listNotifications,
     listUnreadNotificationIds,
 } from '@/lib/server/intelligence/repositories/notifications';
-import type { AdAccountDetails } from "../../services/platforms/meta/types";
 import { createSupabaseClient } from "../../supabase/server";
 
 /**
@@ -32,74 +31,6 @@ export async function getUnreadUserNotificationIds(userId: string): Promise<stri
     } catch (error) {
         console.error('Failed to load unread notification ids:', error);
         return [];
-    }
-}
-
-
-/**
- * Update user's connected accounts in profile
- * @param supabase Supabase client instance
- * @param userId The ID of the user to update
- * @param accountsToAdd The ad accounts to add to the user's profile
- * @param savedAdAccountIds Map of ad account IDs to their saved references
- * @return Promise that resolves when the update is complete
- */
-export async function updateUserConnectedAccounts(
-    supabase: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    userId: string,
-    accountsToAdd: AdAccountDetails | AdAccountDetails[],
-    savedAdAccountIds: { [adAccountId: string]: string }
-): Promise<void> {
-
-    if (Array.isArray(accountsToAdd) && accountsToAdd.length === 0) {
-        return;
-    }
-
-    // Get existing connected accounts
-    const { data } = await supabase
-        .from('profiles')
-        .select('connected_accounts')
-        .eq('id', userId)
-        .single();
-
-    const connectedAccounts = data?.connected_accounts || [];
-    const currentTime = new Date().toISOString();
-
-    // Add each new account if not already connected
-    let updated = false;
-
-    for (const account of Array.isArray(accountsToAdd) ? accountsToAdd : [accountsToAdd]) {
-        const existingIndex = connectedAccounts.findIndex(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (acc: any) => acc.platform === 'meta' && acc.accountId === account.id
-        );
-
-        if (existingIndex === -1) {
-            connectedAccounts.push({
-                platform: 'meta',
-                accountId: account.id,
-                accountName: account.name,
-                connectedAt: currentTime,
-                ad_account_ref: savedAdAccountIds[account.id]
-            });
-            updated = true;
-        } else if (savedAdAccountIds[account.id]) {
-
-            connectedAccounts[existingIndex] = {
-                ...connectedAccounts[existingIndex],
-                ad_account_ref: savedAdAccountIds[account.id],
-                accountName: account.name,
-                updatedAt: currentTime
-            };
-            updated = true;
-        }
-    }
-
-    if (updated) {
-        await supabase
-            .from('profiles')
-            .update({ connected_accounts: connectedAccounts })
-            .eq('id', userId);
     }
 }
 

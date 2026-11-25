@@ -1,7 +1,7 @@
 import {
   aggregatePerformanceSummaryRows,
   deriveSummaryMetricFields,
-} from "../../repositories/performanceSummary/shared";
+} from "@/lib/shared/performance/summary";
 import { record, toDecisionCard } from "../../decisions/surface";
 import { TARGET_COST_PER_LEAD_OPTIONS } from "@/lib/shared/onboarding/businessProfileOptions";
 import type {

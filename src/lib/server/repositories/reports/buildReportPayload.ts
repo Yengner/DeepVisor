@@ -276,17 +276,6 @@ function addUtcDays(value: string, days: number): string {
   return toIsoDate(date);
 }
 
-function monthEnd(value: string): string {
-  const year = Number(value.slice(0, 4));
-  const month = Number(value.slice(5, 7));
-
-  if (!Number.isFinite(year) || !Number.isFinite(month)) {
-    return value;
-  }
-
-  return toIsoDate(new Date(Date.UTC(year, month, 0)));
-}
-
 function minDate(current: string | null, candidate: string | null): string | null {
   if (!candidate) {
     return current;

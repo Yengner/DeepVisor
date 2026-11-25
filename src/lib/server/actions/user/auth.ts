@@ -5,7 +5,6 @@
 import { createSupabaseClient } from "@/lib/server/supabase/server";
 import { type ApiResponse } from "@/lib/shared/types/api";
 import { fromSupabaseAuthError } from "@/lib/server/supabase/authError";
-import { EmailOtpType } from "@supabase/supabase-js";
 import { ok } from "@/lib/shared/utils/responses";
 
 /**
@@ -96,43 +95,6 @@ export async function handleSignOut(): Promise<ApiResponse<null>> {
         }
 
         return ok(null);
-    } catch (e: unknown) {
-        return fromSupabaseAuthError(e);
-    }
-}
-
-// ===== EMAIL VERIFICATION ACTIONS =====
-
-/**
- * Handles email verification using the code from the email link
- * @param code Verification code from email link
- * @return Success status and error message if any
-*/
-
-export async function handleEmailVerificationFromUrl(params: {
-    token_hash: string;
-    type: EmailOtpType;
-}): Promise<ApiResponse<null>> {
-    try {
-        const supabase = await createSupabaseClient();
-
-        if (params.token_hash) {
-            const tokenHash = params.token_hash;
-            const type = params.type
-
-            const { error } = await supabase.auth.verifyOtp({
-                token_hash: tokenHash,
-                type: type ?? 'signup',
-            });
-
-            if (error) {
-                return fromSupabaseAuthError(error);
-            }
-
-            return ok(null);
-        }
-
-        return fromSupabaseAuthError(new Error("Missing token_hash in verification URL."));
     } catch (e: unknown) {
         return fromSupabaseAuthError(e);
     }
