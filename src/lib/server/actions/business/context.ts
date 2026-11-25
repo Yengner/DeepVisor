@@ -3,7 +3,6 @@ import 'server-only';
 import { unstable_cache } from 'next/cache';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { createServerClient } from '@/lib/server/supabase/server';
-import { createServerTimer } from '@/lib/server/timing';
 import type { Database } from '@/lib/shared/types/supabase';
 
 type BusinessRole = 'owner' | 'admin' | 'member';
@@ -81,42 +80,36 @@ function firstJoinedBusinessProfile(value: JoinedBusinessProfileRow | undefined)
 export async function getExistingOrganizationBusinessContext(
   userId: string
 ): Promise<ExistingBusinessContextResult> {
-  const timer = createServerTimer('context', { enabledEnvVar: 'CONTEXT_TIMING' });
-  const supabase = timer.measureSync('create admin client: business context', createAdminClient);
+  const supabase = createAdminClient();
 
-  const { data: membership, error: membershipError } = await timer.measure(
-    'membership org business query',
-    () =>
-      supabase
-        .from('organization_memberships')
-        .select(
-          `
-          organization_id,
-          role,
-          organizations!organization_memberships_org_fkey (
-            id,
-            name,
-            type,
-            business_profiles (
-              id,
-              onboarding_completed,
-              onboarding_step
-            )
-          )
-        `
+  const { data: membership, error: membershipError } = await supabase
+    .from('organization_memberships')
+    .select(
+      `
+      organization_id,
+      role,
+      organizations!organization_memberships_org_fkey (
+        id,
+        name,
+        type,
+        business_profiles (
+          id,
+          onboarding_completed,
+          onboarding_step
         )
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle()
-  );
+      )
+    `
+    )
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
   if (membershipError) {
     throw new Error(membershipError.message);
   }
 
   if (!membership?.organization_id) {
-    timer.finish('existing business context total');
     return { kind: 'missing_membership' };
   }
 
@@ -131,7 +124,6 @@ export async function getExistingOrganizationBusinessContext(
   const role = normalizeOrganizationRole(joinedMembership.role);
 
   if (!business) {
-    timer.finish('existing business context total');
     return {
       kind: 'missing_business_profile',
       organization: {
@@ -152,7 +144,6 @@ export async function getExistingOrganizationBusinessContext(
     onboarding: business,
   };
 
-  timer.finish('existing business context total');
   return {
     kind: 'found',
     context,
@@ -209,13 +200,9 @@ export async function getCachedOrganizationBusinessContext(
 export async function getOrCreateOrganizationBusinessContext(
   userId: string
 ): Promise<OrganizationBusinessContext> {
-  const timer = createServerTimer('context', { enabledEnvVar: 'CONTEXT_TIMING' });
-  const existing = await timer.measure('existing organization business context', () =>
-    getExistingOrganizationBusinessContext(userId)
-  );
+  const existing = await getExistingOrganizationBusinessContext(userId);
 
   if (existing.kind === 'found') {
-    timer.finish('get or create business context total');
     return existing.context;
   }
 
@@ -224,6 +211,5 @@ export async function getOrCreateOrganizationBusinessContext(
   if (error) throw new Error(error.message);
   const resolved = await getExistingOrganizationBusinessContext(userId);
   if (resolved.kind !== 'found') throw new Error('Workspace creation did not return a business');
-  timer.finish('get or create business context total');
   return resolved.context;
 }

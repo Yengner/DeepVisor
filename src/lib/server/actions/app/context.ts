@@ -2,7 +2,6 @@ import { cache } from 'react';
 import { redirect, unstable_rethrow } from 'next/navigation';
 import { getLoggedInUserOrRedirect } from '@/lib/server/actions/user/account';
 import { getCachedOrganizationBusinessContext } from '@/lib/server/actions/business/context';
-import { createServerTimer } from '@/lib/server/timing';
 import type { Database } from '@/lib/shared/types/supabase';
 
 type OrganizationType = Database['public']['Enums']['organization_type'];
@@ -28,12 +27,9 @@ type RequiredAppContext = {
  */
 export const getRequiredAppContext = cache(
   async (requireOnboardingCompleted: boolean = true): Promise<RequiredAppContext> => {
-    const timer = createServerTimer('context', { enabledEnvVar: 'CONTEXT_TIMING' });
     try {
-      const user = await timer.measure('get logged in user', () => getLoggedInUserOrRedirect());
-      const businessContext = await timer.measure('cached organization business context', () =>
-        getCachedOrganizationBusinessContext(user.id)
-      );
+      const user = await getLoggedInUserOrRedirect();
+      const businessContext = await getCachedOrganizationBusinessContext(user.id);
 
       if (requireOnboardingCompleted && !businessContext.onboarding.onboarding_completed) {
         redirect('/onboarding');
@@ -44,7 +40,6 @@ export const getRequiredAppContext = cache(
         ...businessContext,
       };
 
-      timer.finish('required app context total');
       return context;
     } catch (error) {
       unstable_rethrow(error);

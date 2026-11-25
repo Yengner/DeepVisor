@@ -67,44 +67,6 @@ type MetaPagesFetchResult = {
 const META_PAGE_FIELDS = 'id,name,phone,instagram_business_account{id,name,username,profile_picture_url},picture{url}';
 const META_PAGE_MINIMAL_FIELDS = 'id,name,phone,picture{url}';
 
-function isMissingMetaPagesTableError(message: string): boolean {
-    return message.includes('relation "public.meta_pages" does not exist');
-}
-
-async function getStoredMetaPages(platformId: string): Promise<MetaPage[]> {
-    const supabase = await createSupabaseClient();
-    const { data, error } = await supabase
-        .from('meta_pages')
-        .select('*')
-        .eq('platform_integration_id', platformId);
-
-    if (error) {
-        if (isMissingMetaPagesTableError(error.message)) {
-            return [];
-        }
-
-        throw error;
-    }
-
-    return (data ?? []).map(page => {
-      const pageRecord = page as Record<string, unknown>;
-
-      return {
-        id: page.id,
-        page_id: page.page_id,
-        name: page.name,
-        phone: null,
-        instagram_account_id: page.instagram_account_id,
-        instagram_account_name:
-          typeof pageRecord.instagram_account_name === 'string' ? pageRecord.instagram_account_name : null,
-        instagram_account_username:
-          typeof pageRecord.instagram_account_username === 'string' ? pageRecord.instagram_account_username : null,
-        instagram_account_picture_url:
-          typeof pageRecord.instagram_account_picture_url === 'string' ? pageRecord.instagram_account_picture_url : null,
-      };
-    });
-}
-
 function normalizeGraphPage(page: MetaGraphPage): MetaPage | null {
     if (!page.id || !page.name) {
         return null;
@@ -311,68 +273,50 @@ export async function getMetaPages({
             });
         }
 
+        const pages: MetaPage[] = [];
+        const liveFetchErrors: string[] = [];
+
         try {
-            const pages: MetaPage[] = [];
-            const liveFetchErrors: string[] = [];
-
-            try {
-                const userPages = await fetchUserPages(accessToken);
-                pages.push(...userPages);
-            } catch (error) {
-                const message = error instanceof Error ? error.message : String(error);
-                liveFetchErrors.push(message);
-                console.warn('Failed to fetch Meta Pages from user accounts edge', {
-                    platformId,
-                    error: message,
-                });
-            }
-
-            const businessCandidates = await fetchMetaBusinessCandidates({
-                accessToken,
-                adAccountId,
-            });
-            liveFetchErrors.push(...businessCandidates.errors);
-
-            if (businessCandidates.businesses.length > 0) {
-                const businessPageGroups = await Promise.all(
-                    businessCandidates.businesses.map((business) =>
-                        fetchBusinessPages({
-                            accessToken,
-                            business,
-                        })
-                    )
-                );
-                pages.push(...businessPageGroups.flatMap((result) => result.pages));
-                liveFetchErrors.push(...businessPageGroups.flatMap((result) => result.errors));
-            }
-
-            const normalizedPages = mergePages(pages);
-            if (normalizedPages.length > 0) {
-                return ok(normalizedPages);
-            }
-
-            const storedPages = await getStoredMetaPages(platformId).catch(() => []);
-            if (storedPages.length > 0) {
-                return ok(storedPages);
-            }
-
-            if (liveFetchErrors.length > 0) {
-                throw new Error(`Meta Page lookup failed: ${liveFetchErrors[0]}`);
-            }
-
-            return ok(storedPages);
+            const userPages = await fetchUserPages(accessToken);
+            pages.push(...userPages);
         } catch (error) {
-            const storedPages = await getStoredMetaPages(platformId).catch(() => []);
-            if (storedPages.length > 0) {
-                console.warn('Falling back to stored Meta pages after live fetch failed', {
-                    platformId,
-                    error: error instanceof Error ? error.message : String(error),
-                });
-                return ok(storedPages);
-            }
-
-            throw error;
+            const message = error instanceof Error ? error.message : String(error);
+            liveFetchErrors.push(message);
+            console.warn('Failed to fetch Meta Pages from user accounts edge', {
+                platformId,
+                error: message,
+            });
         }
+
+        const businessCandidates = await fetchMetaBusinessCandidates({
+            accessToken,
+            adAccountId,
+        });
+        liveFetchErrors.push(...businessCandidates.errors);
+
+        if (businessCandidates.businesses.length > 0) {
+            const businessPageGroups = await Promise.all(
+                businessCandidates.businesses.map((business) =>
+                    fetchBusinessPages({
+                        accessToken,
+                        business,
+                    })
+                )
+            );
+            pages.push(...businessPageGroups.flatMap((result) => result.pages));
+            liveFetchErrors.push(...businessPageGroups.flatMap((result) => result.errors));
+        }
+
+        const normalizedPages = mergePages(pages);
+        if (normalizedPages.length > 0) {
+            return ok(normalizedPages);
+        }
+
+        if (liveFetchErrors.length > 0) {
+            throw new Error(`Meta Page lookup failed: ${liveFetchErrors[0]}`);
+        }
+
+        return ok([]);
     } catch (err) {
         console.error("Unexpected error fetching Meta pages:", err);
         return fail(
