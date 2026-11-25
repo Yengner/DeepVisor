@@ -16,7 +16,7 @@ import {
     Title,
 } from '@mantine/core';
 import { IconArrowLeft, IconArrowRight, IconBrush, IconLayersIntersect, IconTargetArrow } from '@tabler/icons-react';
-import type { CampaignTreeNode } from '@/lib/server/data';
+import type { CampaignTreeNode } from '@/lib/server/repositories/campaigns/getCampaignsWithAdSetsAndAds';
 import { useMetaCampaignForm } from '../hooks/useMetaCampaignForm';
 import AdSetStep from '../steps/AdSetStep';
 import CreativeAssetsStep from '../steps/CreativeAssetsStep';

@@ -15,7 +15,7 @@ import Topbar from '@/components/layout/topBar/TopBar';
 import Sidebar from '@/components/layout/LeftSidebar';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
-import { getPlatformDetails } from '@/lib/server/data';
+import { getPlatformDetails } from '@/lib/server/repositories/platforms/getPlatformDetails';
 
 
 

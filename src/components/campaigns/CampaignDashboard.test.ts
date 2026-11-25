@@ -6,7 +6,7 @@ import messages from '../../../messages/en.json';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const captured = vi.hoisted(() => ({ adsets: [] as Array<{id:string;delivery?:boolean}>, ads: [] as Array<{id:string;delivery?:boolean}> }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace:vi.fn() }), usePathname:()=>'/campaigns', useSearchParams:()=>new URLSearchParams() }));
-vi.mock('@/lib/server/data/queries/components.query', () => ({ fetchAdSetsForCampaign:vi.fn(), fetchAdsForAdset:vi.fn() }));
+vi.mock('@/lib/server/actions/campaigns/tableRows', () => ({ fetchAdSetsForCampaign:vi.fn(), fetchAdsForAdset:vi.fn() }));
 vi.mock('@/lib/shared', () => ({ formatCurrencyAmount:(value:number)=>String(value), formatRetryDelay:()=>'' }));
 vi.mock('./RunAgainSheet', () => ({default:()=>null}));
 vi.mock('./CampaignTable', () => ({default:()=>null}));

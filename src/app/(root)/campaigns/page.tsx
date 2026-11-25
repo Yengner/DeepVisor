@@ -8,14 +8,14 @@ import { Suspense } from "react";
 import CampaignClientFallback from "./CampaignClientFallback";
 import { resolveCurrentSelection } from "@/lib/server/actions/app/selection";
 import { getRequiredAppContext } from "@/lib/server/actions/app/context";
-import {
-  getAdAccountData,
-  getAdSetsLifetimeIncludingZeros,
-  getAdsLifetimeIncludingZeros,
-  getCampaignLifetimeIncludingZeros,
-  getPlatformDetails,
-} from '@/lib/server/data';
-import type { AdLifetimeRow, AdSetLifetimeRow, CampaignLifetimeRow } from '@/lib/server/data';
+import { getAdAccountData } from '@/lib/server/repositories/ad_accounts/getAdAccountData';
+import { getAdSetsLifetimeIncludingZeros } from '@/lib/server/repositories/adsets/getAdSetsMetrics';
+import { getAdsLifetimeIncludingZeros } from '@/lib/server/repositories/ads/getAdsMetrics';
+import { getCampaignLifetimeIncludingZeros } from '@/lib/server/repositories/campaigns/getCampaignsMetrics';
+import { getPlatformDetails } from '@/lib/server/repositories/platforms/getPlatformDetails';
+import type { AdLifetimeRow } from '@/lib/server/repositories/ads/getAdsMetrics';
+import type { AdSetLifetimeRow } from '@/lib/server/repositories/adsets/getAdSetsMetrics';
+import type { CampaignLifetimeRow } from '@/lib/server/repositories/campaigns/getCampaignsMetrics';
 import { parseTableRange } from '@/lib/shared/performance/periodTotals';
 import { accountToday } from '@/lib/shared/reports/dates';
 

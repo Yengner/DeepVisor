@@ -5,7 +5,7 @@ import { asRecord } from '@/lib/shared';
 import { toIntegrationStatus } from '@/lib/server/integrations/normalizers';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { toSupportedVendor } from '@/lib/server/repositories/platforms/normalizers';
-import type { AdAccountData, PlatformDetails } from '@/lib/server/data/types';
+import type { AdAccountData, PlatformDetails } from '@/lib/server/repositories/types';
 import type { Database } from '@/lib/shared/types/supabase';
 
 type PlatformJoin = {

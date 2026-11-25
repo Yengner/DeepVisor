@@ -1,9 +1,7 @@
 'use server';
 
-import { getAdSetsLifetimeIncludingZeros } from './adsets.query';
-import { getAdsLifetimeIncludingZeros } from './ads.query';
-import type { AdSetLifetimeRow } from './adsets.query';
-import type { AdLifetimeRow } from './ads.query';
+import { getAdSetsLifetimeIncludingZeros, type AdSetLifetimeRow } from '@/lib/server/repositories/adsets/getAdSetsMetrics';
+import { getAdsLifetimeIncludingZeros, type AdLifetimeRow } from '@/lib/server/repositories/ads/getAdsMetrics';
 import { createSupabaseClient } from '@/lib/server/supabase/server';
 import { parseTableRange, type TableRange } from '@/lib/shared/performance/periodTotals';
 import { accountToday } from '@/lib/shared/reports/dates';

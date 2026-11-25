@@ -1,6 +1,6 @@
 'use client';
 
-import type { AdSetLifetimeRow } from '@/lib/server/data';
+import type { AdSetLifetimeRow } from '@/lib/server/repositories/adsets/getAdSetsMetrics';
 import { Button, Group, Menu, ScrollArea, Table, Text } from '@mantine/core';
 import { IconChartBar, IconCopyPlus, IconPhoto } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
