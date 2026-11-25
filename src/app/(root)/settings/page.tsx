@@ -1,7 +1,7 @@
 import { isLocale } from '@/i18n/locales';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
-import { getTierLimits, getUnreadUserNotificationIds, getUserSubscriptionTier } from '@/lib/server/actions/user/settings';
+import { getUnreadUserNotificationIds } from '@/lib/server/actions/user/settings';
 import { loadAdFacts } from '@/lib/server/agent/facts';
 import { getAdAccountData, getBusinessAdAccountsRollup } from '@/lib/server/data';
 import { getNotificationPreference } from '@/lib/server/intelligence/repositories/notificationPreferences';
@@ -28,7 +28,7 @@ export default async function SettingsPage() {
   const { user, businessId, organizationName, role } = await getRequiredAppContext();
   const selection = await resolveCurrentSelection(businessId);
 
-  const [businessResult, integrationsResult, rollup, tier, unreadIds, selectedAdAccount, alertPreferences, archivedReports, localeRow] = await Promise.all([
+  const [businessResult, integrationsResult, rollup, unreadIds, selectedAdAccount, alertPreferences, archivedReports, localeRow] = await Promise.all([
     supabase
       .from('business_profiles')
       .select('business_name, industry, website, description, monthly_budget, booking_link, business_location, customer_radius, most_valuable_service, promoted_services, preferred_contact_method')
@@ -40,7 +40,6 @@ export default async function SettingsPage() {
       .eq('business_id', businessId)
       .order('created_at', { ascending: true }),
     getBusinessAdAccountsRollup(businessId),
-    getUserSubscriptionTier(user.id),
     getUnreadUserNotificationIds(user.id),
     selection.selectedPlatformId && selection.selectedAdAccountId
       ? getAdAccountData(selection.selectedAdAccountId, selection.selectedPlatformId, businessId)
@@ -56,7 +55,6 @@ export default async function SettingsPage() {
     supabase.from('users').select('preferred_locale').eq('id', user.id).maybeSingle(),
   ]);
 
-  const limits = await getTierLimits(tier);
   // Owner answers plus what the selected account's ad sets show. Failure is shown, not hidden.
   const adFacts = await loadAdFacts(createAdminClient(), { businessId, adAccountId: selection.selectedAdAccountId }).catch(error => {
     console.error('Settings ad facts unavailable', { code: (error as { code?: string })?.code ?? (error as Error)?.message });
@@ -102,9 +100,7 @@ export default async function SettingsPage() {
       unreadCount: unreadIds.length,
       integrations,
       lastSyncedAt: rollup.lastSyncedAt,
-      tier,
       accountCount: rollup.accountCount,
-      maxAdAccounts: limits.maxAdAccounts,
       selectedAdAccountName: selectedAdAccount?.name ?? null,
       archivedReports,
     }} />

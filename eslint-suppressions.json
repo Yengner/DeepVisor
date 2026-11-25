@@ -1,9 +1,4 @@
 {
-  "src/app/(auth)/(unused)/payment-success/components/PaymentSuccessContent.tsx": {
-    "react-hooks/set-state-in-effect": {
-      "count": 1
-    }
-  },
   "src/app/(root)/campaigns/reports/[queueItemId]/page.tsx": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1

@@ -680,7 +680,7 @@
       "display": "Idioma y apariencia",
       "ads": "Respuestas",
       "alerts": "Avisos",
-      "account": "Cuenta y plan"
+      "account": "Cuenta"
     },
     "saved": "Guardado.",
     "save": "Guardar cambios",
@@ -798,8 +798,8 @@
       "error": "No se pudieron guardar tus avisos. Inténtalo de nuevo."
     },
     "account": {
-      "title": "Cuenta y plan",
-      "lead": "Tu conexión con Meta, tu plan y tus reportes.",
+      "title": "Cuenta",
+      "lead": "Tu conexión con Meta y tus reportes.",
       "connected": "Meta está conectado",
       "attention": "Meta necesita atención",
       "notConnected": "Meta no está conectado",
@@ -808,10 +808,8 @@
       "attentionHint": "Abre Conexiones para volver a conectar.",
       "notConnectedHint": "Conecta Meta para ver cómo van tus anuncios.",
       "manage": "Administrar conexiones",
-      "plan": "Plan",
       "role": "Tu rol",
       "accounts": "Cuentas de anuncios",
-      "accountsUsage": "{count} de {max}",
       "accountsCount": "{count}",
       "following": "Mostrando",
       "followingNone": "Ninguna cuenta elegida",
@@ -830,13 +828,6 @@
       "expires": "El acceso termina el {date}",
       "problem": "La última actualización no terminó. Tus anuncios no cambiaron.",
       "notAvailable": "No disponible",
-      "tier": {
-        "free": "Gratis",
-        "tier1": "Inicial",
-        "tier2": "Crecimiento",
-        "tier3": "Escala",
-        "managed_service": "Servicio administrado"
-      },
       "roles": {
         "owner": "Dueño(a)",
         "admin": "Administrador(a)",

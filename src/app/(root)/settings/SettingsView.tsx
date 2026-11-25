@@ -49,14 +49,11 @@ export type SettingsData = {
   unreadCount: number;
   integrations: SettingsIntegration[];
   lastSyncedAt: string | null;
-  tier: string;
   accountCount: number;
-  maxAdAccounts: number;
   selectedAdAccountName: string | null;
   archivedReports: ArchivedReport[];
 };
 
-const TIERS = ['free', 'tier1', 'tier2', 'tier3', 'managed_service'] as const;
 type Formatters = ReturnType<typeof formatters>;
 
 /** Dates, times and money in the person's language, never raw ISO strings. */
@@ -176,7 +173,7 @@ async function ConnectionDetails({ integrations, f }: { integrations: SettingsIn
 
 /**
  * Settings, with the profile inside it. Order follows what an owner reaches for: who I am, my
- * business, how it reads, what ads should know, alerts, then the account/plan and, last, deleting.
+ * business, how it reads, what ads should know, alerts, then the account and, last, deleting.
  */
 export default async function SettingsView({ data }: { data: SettingsData }) {
   const t = await getTranslations('settingsPage');
@@ -197,10 +194,7 @@ export default async function SettingsView({ data }: { data: SettingsData }) {
 
   const connection = data.integrations.length === 0 ? 'none' : data.integrations.every(item => item.connected) ? 'ok' : 'attention';
   const syncedAgo = f.ago(data.lastSyncedAt);
-  const tierKey = (TIERS as readonly string[]).includes(data.tier) ? (data.tier as typeof TIERS[number]) : 'free';
-  const accounts = data.maxAdAccounts >= 999
-    ? t('account.accountsCount', { count: data.accountCount })
-    : t('account.accountsUsage', { count: data.accountCount, max: data.maxAdAccounts });
+  const accounts = t('account.accountsCount', { count: data.accountCount });
 
   const nav: Array<[string, string]> = [
     ['profile', t('nav.profile')],
@@ -307,7 +301,6 @@ export default async function SettingsView({ data }: { data: SettingsData }) {
             </div>
 
             <Facts rows={[
-              [t('account.plan'), t(`account.tier.${tierKey}`)],
               [t('account.role'), t(`account.roles.${data.role}`)],
               [t('account.accounts'), accounts],
               [t('account.following'), data.selectedAdAccountName ?? t('account.followingNone')],
