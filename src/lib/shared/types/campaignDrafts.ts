@@ -1,11 +1,4 @@
-import type { SyncCoverage } from './integrations';
 import type { Json } from './supabase';
-
-export type ReviveDraftSource = 'historic_clone' | 'fresh_relaunch' | 'manual_defaults';
-
-export type ReviveStaleSeverity = 'watch' | 'stale' | 'critical';
-
-export type CampaignDraftMode = 'manual' | 'smart';
 
 export type CampaignReuseSourceType = 'campaign' | 'adset' | 'ad';
 
@@ -199,47 +192,11 @@ export interface ManualCampaignDraftForm {
   };
 }
 
-export interface SmartCampaignDraftForm {
-  budgetType: 'daily' | 'lifetime';
-  budget: number;
-  objective: string;
-  destinationType: string;
-  timeframe: string;
-  creatives: string;
-  link: string;
-  message: string;
-  imageHash: string;
-  formId: string;
-}
-
-export type CampaignDraftPayload =
-  | {
-      mode: 'manual';
-      form: ManualCampaignDraftForm;
-    }
-  | {
-      mode: 'smart';
-      form: SmartCampaignDraftForm;
-    };
-
-export interface ReviveCampaignDraftRecommendation {
-  source: ReviveDraftSource;
-  title: string;
-  reason: string;
-  destination: CampaignDraftMode;
-  payloadJson: CampaignDraftPayload;
-  sourceAssessmentDigestHash: string;
-}
-
-export interface ReviveCampaignOpportunity {
-  adAccountId: string;
-  platformIntegrationId: string;
-  adAccountName: string | null;
-  summary: string;
-  primaryFlow: 'revive';
-  daysSinceLastActivity: number | null;
-  staleSeverity: ReviveStaleSeverity;
-  sourceAssessmentDigestHash: string;
-  syncCoverage: SyncCoverage | null;
-  recommendations: ReviveCampaignDraftRecommendation[];
-}
+/**
+ * Only manual drafts can be read or saved. Rows written by the retired smart builder keep
+ * their stored payload; they are never opened as blank manual drafts or overwritten.
+ */
+export type CampaignDraftPayload = {
+  mode: 'manual';
+  form: ManualCampaignDraftForm;
+};

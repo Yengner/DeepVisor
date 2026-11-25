@@ -123,8 +123,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const draftPayload = readCampaignDraftPayload(draftRow);
-    const manualDraft = draftPayload?.mode === 'manual' ? draftPayload.form : null;
+    const manualDraft = readCampaignDraftPayload(draftRow)?.form ?? null;
+
+    // Opening it as a blank manual draft would let the next save replace what is stored.
+    if (requestedDraftId && createScope === 'campaign' && !manualDraft) {
+      return NextResponse.json(
+        fail('Campaign draft format is no longer supported.', ErrorCode.CONFLICT, {
+          userMessage: 'This draft was made with a builder we no longer use, so it cannot be opened. It is kept unchanged.',
+        }),
+        { status: 409 }
+      );
+    }
     let metaPages: MetaPage[] = [];
     let pagesError: string | null = null;
     let configuredWhatsAppNumbers: ConfiguredWhatsAppNumber[] = [];

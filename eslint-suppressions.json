@@ -44,11 +44,6 @@
       "count": 1
     }
   },
-  "src/lib/client/hooks/useJobProgress.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    }
-  },
   "src/lib/server/actions/user/auth.ts": {
     "prefer-const": {
       "count": 1

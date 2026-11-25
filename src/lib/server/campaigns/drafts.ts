@@ -74,7 +74,7 @@ export async function getCampaignDraftById(
 
 export function readCampaignDraftPayload(row: CampaignDraftRow | null): CampaignDraftPayload | null {
   const payload = asRecord(row?.payload_json);
-  if (payload.mode !== 'manual' && payload.mode !== 'smart') {
+  if (payload.mode !== 'manual') {
     return null;
   }
 
