@@ -38,30 +38,6 @@ type IntegrationLookup = {
   platforms: PlatformJoin | PlatformJoin[];
 };
 
-function emptyAggregatedMetrics(): AdAccountData['aggregated_metrics'] {
-  return {
-    spend: 0,
-    impressions: 0,
-    clicks: 0,
-    link_clicks: 0,
-    reach: 0,
-    leads: 0,
-    messages: 0,
-    calls: 0,
-    ctr: 0,
-    cpc: 0,
-    cpm: 0,
-  };
-}
-
-function emptyTimeIncrementMetrics(): AdAccountData['time_increment_metrics'] {
-  return {
-    '1': [],
-    '7': [],
-    '30': [],
-  };
-}
-
 function toDashboardAdAccountShell(input: {
   integration: IntegrationLookup;
   adAccount: Pick<
@@ -80,8 +56,6 @@ function toDashboardAdAccountShell(input: {
   >;
   platformVendor: AdAccountData['platform_name'];
 }): AdAccountData {
-  const emptyMetrics = emptyAggregatedMetrics();
-
   return {
     id: input.adAccount.id,
     business_id: input.adAccount.business_id,
@@ -97,10 +71,6 @@ function toDashboardAdAccountShell(input: {
     created_at: input.adAccount.created_at,
     updated_at: input.adAccount.updated_at,
     last_synced: input.adAccount.last_synced,
-    aggregated_metrics: emptyMetrics,
-    time_increment_metrics: emptyTimeIncrementMetrics(),
-    performance_summary: emptyMetrics,
-    daily_metrics: [],
     platform_name: input.platformVendor,
   };
 }

@@ -27,7 +27,6 @@ function render(tab:'adsets'|'ads', pausedParent=false) {
     campaigns:[{id:'campaign',name:'Campaign',status:'ACTIVE'}] as Props['campaigns'],
     deliveryState:{activeKeys:activeDeliveryKeys(hierarchy),available:true},
     platform:{id:'integration',name:'meta'},adAccountId:'account',currencyCode:'USD',
-    accountMetrics:{spend:0,impressions:0,clicks:0,link_clicks:0,reach:0,leads:0,messages:0,ctr:0,cpc:0,cpm:0},
     initialSelection:{tab,campaignId:'campaign',adsetId:'live-set'},
     initialAdSets:[{id:'empty-set',status:'ACTIVE',name:'No active ads'},{id:'live-set',status:'ACTIVE',name:'Active child'}] as Props['initialAdSets'],
     initialAds:[{id:'paused-ad',ad_id:'paused-ad',status:'PAUSED'},{id:'live-ad',ad_id:'live-ad',status:'ACTIVE'}] as Props['initialAds'],

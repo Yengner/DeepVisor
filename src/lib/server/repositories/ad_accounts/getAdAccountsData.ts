@@ -1,16 +1,6 @@
 import { createSupabaseClient } from '@/lib/server/supabase/server';
 import type { AdAccountData } from '../types';
 import { toSupportedVendor } from '../platforms/normalizers';
-import {
-  aggregateDailyMetricsRows,
-  buildTimeIncrementMetricsFromDailyRows,
-} from './normalizers';
-import { listAdAccountDailyMetricsRowsByAccount } from './getAdAccountPerformance';
-
-/**
- * @deprecated Prefer importing `getAdAccountData` from
- * `@/lib/server/repositories/ad_accounts/getAdAccountData` or `@/lib/server/data`.
- */
 
 type IntegrationPlatformJoin = {
   key: string;
@@ -25,7 +15,8 @@ type IntegrationLookup = {
 };
 
 /**
- * Fetches an ad account row scoped to the selected business and platform integration.
+ * Fetches an ad account's identity, scoped to the selected business and platform integration.
+ * No performance rows are read here: load metrics for an explicit period where they are shown.
  */
 export async function getAdAccountData(
   selectedAdAccountId: string,
@@ -75,13 +66,6 @@ export async function getAdAccountData(
   }
 
   const platformVendor = toSupportedVendor(platform?.key);
-  const dailyMetrics =
-    (await listAdAccountDailyMetricsRowsByAccount({
-      adAccountIds: [adAccount.id],
-      supabase,
-    })).get(adAccount.id) ?? [];
-  const aggregatedMetrics = aggregateDailyMetricsRows(dailyMetrics);
-  const timeIncrementMetrics = buildTimeIncrementMetricsFromDailyRows(dailyMetrics);
 
   return {
     id: adAccount.id,
@@ -98,10 +82,6 @@ export async function getAdAccountData(
     created_at: adAccount.created_at,
     updated_at: adAccount.updated_at,
     last_synced: adAccount.last_synced,
-    aggregated_metrics: aggregatedMetrics,
-    time_increment_metrics: timeIncrementMetrics,
-    performance_summary: aggregatedMetrics,
-    daily_metrics: dailyMetrics,
 
     // Compatibility alias.
     platform_name: platformVendor,

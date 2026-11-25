@@ -1,11 +1,5 @@
 
-import type {
-  AdAccountAggregatedMetrics,
-  AdAccountDailyMetricsRow,
-  AdAccountPerformanceSummary,
-  AdAccountTimeIncrementMetrics,
-  AdAccountTimeIncrementPoint,
-} from '../types';
+import type { AdAccountAggregatedMetrics, AdAccountDailyMetricsRow, AdAccountPerformanceSummary } from '../types';
 
 const ZERO_METRICS: AdAccountAggregatedMetrics = {
   spend: 0,
@@ -69,54 +63,6 @@ export function aggregateDailyMetricsRows(
   };
 }
 
-export function sumAggregatedMetrics(
-  metrics: AdAccountAggregatedMetrics[]
-): AdAccountAggregatedMetrics {
-  return sumPerformanceSummaries(metrics);
-}
-
-export function sumPerformanceSummaries(
-  metrics: AdAccountPerformanceSummary[]
-): AdAccountPerformanceSummary {
-  if (metrics.length === 0) {
-    return { ...ZERO_METRICS };
-  }
-
-  let spend = 0;
-  let impressions = 0;
-  let clicks = 0;
-  let linkClicks = 0;
-
-  let leads = 0;
-  let messages = 0;
-  let calls = 0;
-
-  for (const metric of metrics) {
-    spend += metric.spend;
-    impressions += metric.impressions;
-    clicks += metric.clicks;
-    linkClicks += metric.link_clicks;
-
-    leads += metric.leads;
-    messages += metric.messages;
-    calls += metric.calls ?? 0;
-  }
-
-  return {
-    spend,
-    impressions,
-    clicks,
-    link_clicks: linkClicks,
-    reach: null,
-    leads,
-    messages,
-    calls,
-    ctr: impressions > 0 ? (clicks / impressions) * 100 : null,
-    cpc: clicks > 0 ? spend / clicks : null,
-    cpm: impressions > 0 ? spend / (impressions / 1000) : null,
-  };
-}
-
 export function hasMeaningfulMetrics(metrics: AdAccountAggregatedMetrics): boolean {
   return (
     metrics.spend > 0 ||
@@ -147,73 +93,5 @@ export function sortAndAggregateDailyMetricsRows(
   return {
     dailyRows,
     summary: aggregateDailyMetricsRows(dailyRows),
-  };
-}
-
-function toTimeIncrementPoint(
-  rows: AdAccountDailyMetricsRow[]
-): AdAccountTimeIncrementPoint | null {
-  if (rows.length === 0) {
-    return null;
-  }
-
-  const summary = aggregateDailyMetricsRows(rows);
-
-  return {
-    date_start: rows[0]?.day ?? null,
-    date_stop: rows[rows.length - 1]?.day ?? null,
-    spend: summary.spend,
-    impressions: summary.impressions,
-    clicks: summary.clicks,
-    link_clicks: summary.link_clicks,
-    reach: summary.reach,
-    leads: summary.leads,
-    messages: summary.messages,
-    calls: summary.calls ?? 0,
-    ctr: summary.ctr,
-    cpc: summary.cpc,
-    cpm: summary.cpm,
-  };
-}
-
-function buildBucket(
-  rows: AdAccountDailyMetricsRow[],
-  size: number
-): AdAccountTimeIncrementPoint[] {
-  const points: AdAccountTimeIncrementPoint[] = [];
-
-  for (let index = 0; index < rows.length; index += size) {
-    const point = toTimeIncrementPoint(rows.slice(index, index + size));
-    if (point) {
-      points.push(point);
-    }
-  }
-
-  return points;
-}
-
-export function buildTimeIncrementMetricsFromDailyRows(
-  rows: AdAccountDailyMetricsRow[]
-): AdAccountTimeIncrementMetrics {
-  const dailyRows = sortDailyRows(rows);
-
-  return {
-    '1': dailyRows.map((row) => ({
-      date_start: row.day,
-      date_stop: row.day,
-      spend: row.spend,
-      impressions: row.impressions,
-      clicks: row.clicks,
-      link_clicks: row.inline_link_clicks,
-      reach: row.reach,
-      leads: row.leads,
-      messages: row.messages,
-      calls: row.calls ?? 0,
-      ctr: row.impressions > 0 ? (row.clicks / row.impressions) * 100 : null,
-      cpc: row.clicks > 0 ? row.spend / row.clicks : null,
-      cpm: row.impressions > 0 ? row.spend / (row.impressions / 1000) : null,
-    })),
-    '7': buildBucket(dailyRows, 7),
-    '30': buildBucket(dailyRows, 30),
   };
 }

@@ -43,29 +43,6 @@ export interface AdAccountAggregatedMetrics {
   cpm: number | null;
 }
 
-export interface AdAccountTimeIncrementPoint {
-  date_start: string | null;
-  date_stop: string | null;
-  spend: number;
-  impressions: number;
-  clicks: number;
-  link_clicks: number;
-  reach: number | null;
-  leads: number;
-  messages: number;
-  calls?: number;
-  ctr: number | null;
-  cpc: number | null;
-  cpm: number | null;
-}
-
-export interface AdAccountTimeIncrementMetrics
-  extends Record<string, AdAccountTimeIncrementPoint[]> {
-  '1': AdAccountTimeIncrementPoint[];
-  '7': AdAccountTimeIncrementPoint[];
-  '30': AdAccountTimeIncrementPoint[];
-}
-
 export type AdAccountPerformanceSummary = AdAccountAggregatedMetrics;
 
 export interface AdAccountDailyMetricsRow {
@@ -96,30 +73,5 @@ export interface AdAccountData {
   created_at: string;
   updated_at: string;
   last_synced: string | null;
-  aggregated_metrics: AdAccountAggregatedMetrics;
-  time_increment_metrics: AdAccountTimeIncrementMetrics;
-  performance_summary: AdAccountPerformanceSummary;
-  daily_metrics: AdAccountDailyMetricsRow[];
   platform_name: SupportedPlatformVendor;
-}
-
-export interface BusinessAdAccountRollupAccount {
-  id: string;
-  platform_id: string;
-  external_account_id: string;
-  name: string | null;
-  status: string | null;
-  last_synced: string | null;
-  aggregated_metrics: AdAccountAggregatedMetrics;
-  performance_summary: AdAccountPerformanceSummary;
-}
-
-export interface BusinessAdAccountRollup {
-  businessId: string;
-  accountCount: number;
-  activeAccountCount: number;
-  syncedAccountCount: number;
-  lastSyncedAt: string | null;
-  totals: AdAccountPerformanceSummary;
-  accounts: BusinessAdAccountRollupAccount[];
 }

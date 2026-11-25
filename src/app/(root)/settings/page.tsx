@@ -3,7 +3,6 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { getUnreadUserNotificationIds } from '@/lib/server/actions/user/settings';
 import { loadAdFacts } from '@/lib/server/agent/facts';
-import { getAdAccountData, getBusinessAdAccountsRollup } from '@/lib/server/data';
 import { getNotificationPreference } from '@/lib/server/intelligence/repositories/notificationPreferences';
 import { listArchivedReports } from '@/lib/server/intelligence/repositories/reportArchive';
 import { getReportSubscription } from '@/lib/server/intelligence/repositories/reportSubscriptions';
@@ -28,7 +27,7 @@ export default async function SettingsPage() {
   const { user, businessId, organizationName, role } = await getRequiredAppContext();
   const selection = await resolveCurrentSelection(businessId);
 
-  const [businessResult, integrationsResult, rollup, unreadIds, selectedAdAccount, alertPreferences, archivedReports, localeRow] = await Promise.all([
+  const [businessResult, integrationsResult, accountsResult, unreadIds, alertPreferences, archivedReports, localeRow] = await Promise.all([
     supabase
       .from('business_profiles')
       .select('business_name, industry, website, description, monthly_budget, booking_link, business_location, customer_radius, most_valuable_service, promoted_services, preferred_contact_method')
@@ -39,11 +38,9 @@ export default async function SettingsPage() {
       .select('id, status, connected_at, last_synced_at, last_error, token_expires_at, platforms ( key, name )')
       .eq('business_id', businessId)
       .order('created_at', { ascending: true }),
-    getBusinessAdAccountsRollup(businessId),
+    // Settings shows only how many accounts there are, the last sync and the selected name.
+    supabase.from('ad_accounts').select('id, name, last_synced').eq('business_id', businessId),
     getUnreadUserNotificationIds(user.id),
-    selection.selectedPlatformId && selection.selectedAdAccountId
-      ? getAdAccountData(selection.selectedAdAccountId, selection.selectedPlatformId, businessId)
-      : Promise.resolve(null),
     // Saved preferences are only read while the form that edits them is shown.
     ALERT_PREFERENCES_AVAILABLE
       ? Promise.all([
@@ -60,6 +57,11 @@ export default async function SettingsPage() {
     console.error('Settings ad facts unavailable', { code: (error as { code?: string })?.code ?? (error as Error)?.message });
     return null;
   });
+
+  if (accountsResult.error) console.error('Settings ad accounts unavailable', { code: accountsResult.error.code });
+  const accounts = accountsResult.data ?? [];
+  const lastSyncedAt = accounts.reduce<string | null>((latest, account) =>
+    account.last_synced && (!latest || Date.parse(account.last_synced) > Date.parse(latest)) ? account.last_synced : latest, null);
 
   const business = businessResult.data;
   const integrations: SettingsIntegration[] = ((integrationsResult.data ?? []) as IntegrationRow[]).map(row => {
@@ -99,9 +101,9 @@ export default async function SettingsPage() {
       alertPreferences,
       unreadCount: unreadIds.length,
       integrations,
-      lastSyncedAt: rollup.lastSyncedAt,
-      accountCount: rollup.accountCount,
-      selectedAdAccountName: selectedAdAccount?.name ?? null,
+      lastSyncedAt,
+      accountCount: accounts.length,
+      selectedAdAccountName: accounts.find(account => account.id === selection.selectedAdAccountId)?.name ?? null,
       archivedReports,
     }} />
   );

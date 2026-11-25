@@ -69,18 +69,6 @@ interface CampaignDashboardProps {
   adAccountId: string;
   currencyCode: string | null;
   accountTimezone?: string | null;
-  accountMetrics: {
-    spend: number;
-    impressions: number;
-    clicks: number;
-    link_clicks: number;
-    reach: number;
-    leads: number;
-    messages: number;
-    ctr: number;
-    cpc: number;
-    cpm: number;
-  };
   initialSelection?: {
     tab?: TabKey;
     campaignId?: string | null;
