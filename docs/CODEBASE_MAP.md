@@ -20,7 +20,7 @@ Source links below are relative to this checkout except explicitly commit-pinned
 | [`src/lib/server/repositories`](../src/lib/server/repositories) | Active entity/performance persistence, sync state, report loading; shared pagination lives here. |
 | [`src/lib/server/services/platforms`](../src/lib/server/services/platforms) | Existing provider read helpers, still referenced by integration/action paths. |
 | [`src/lib/server/features`](../src/lib/server/features) | Versioned snapshot contract and pure builder; runtime inputs supplied by caller. |
-| [`src/lib/server/intelligence`](../src/lib/server/intelligence) | Assistant, notification/report records, and dormant legacy assessment, signal, trend and calendar engines. Read its README first. |
+| [`src/lib/server/intelligence`](../src/lib/server/intelligence) | Assistant, notification records, and kept assessment, signal and trend engines that sync does not run. Read its README before changing or deleting anything. |
 | [`src/lib/server/agency`](../src/lib/server/agency) | Business objectives/context added to evaluations; Agency composition documentation. |
 | [`src/lib/server/decisions`](../src/lib/server/decisions) | Provider-neutral engine, validation, persistence, read surfaces, approval, Review/Shadow workers, policy and outcomes. |
 | [`src/lib/server/advertising`](../src/lib/server/advertising) | Explicit execution, Meta write adapters and Limited Auto. No UI or inference ownership. |
@@ -33,7 +33,7 @@ Source links below are relative to this checkout except explicitly commit-pinned
 | [`src/lib/shared/performance`](../src/lib/shared/performance) | Rate derivation, daily aggregation and assessment signal heuristics reused by Features and compatibility repositories. |
 | [`src/lib/shared/reports`](../src/lib/shared/reports) | Report metrics/types, coverage, time analysis, comparison and export models. Fixture dependency exception is documented in the audit. |
 | [`supabase/migrations`](../supabase/migrations) | Incremental schema/RLS/RPC changes. Existing remote schema has prerequisites absent from this history. |
-| [`supabase/functions`](../supabase/functions) | Deno queue/worker/calendar forwarding functions; excluded from application TypeScript checks. |
+| [`supabase/functions`](../supabase/functions) | Deno sync queue and worker forwarding functions; excluded from application TypeScript checks. |
 | [`supabase/cron`](../supabase/cron), [`supabase/maintenance`](../supabase/maintenance), [`supabase/tests`](../supabase/tests) | Operator SQL/runbooks and RLS verification. Do not execute them as ordinary setup. |
 | [`scripts`](../scripts) | Type generation, isolated fixture/browser verification, reporting/design tools, and architecture checks. Inspect each script's side effects before running. |
 | [`public`](../public) | Static media/fonts/brand assets. |
@@ -54,7 +54,6 @@ Source links below are relative to this checkout except explicitly commit-pinned
 | Assistant question | [`api/intelligence/assistant`](../src/app/api/intelligence/assistant/route.ts) → [`intelligence/assistant`](../src/lib/server/intelligence/assistant) tools, evidence, persistence and drafts |
 | Approved advertising action | [`api/decisions/proposals/[proposalId]/execute`](../src/app/api/decisions/proposals/[proposalId]/execute/route.ts) → [`executeMetaProposal.ts`](../src/lib/server/advertising/executeMetaProposal.ts), [`ReviewExecutor.ts`](../src/lib/server/advertising/ReviewExecutor.ts) |
 | Reports/export | [`reports/page.tsx`](../src/app/(root)/reports/page.tsx), [`api/reports`](../src/app/api/reports) → [`buildReportPayload.ts`](../src/lib/server/repositories/reports/buildReportPayload.ts), report renderers |
-| Calendar/review/archive (dormant) | `/calendar` redirects. [`api/calendar`](../src/app/api/calendar) and review/archive pages remain without links; see the [intelligence README](../src/lib/server/intelligence/README.md) |
 | Draft creation/reuse | [`campaigns/create`](../src/app/(root)/campaigns/create), [`api/campaign-drafts`](../src/app/api/campaign-drafts/route.ts), [`api/campaigns/reuse-draft`](../src/app/api/campaigns/reuse-draft/route.ts) → [`campaigns/drafts.ts`](../src/lib/server/campaigns/drafts.ts), `reuse.ts` |
 
 ## Webhook addition (`e9bf2cd`)
@@ -71,13 +70,15 @@ paths in the pinned revision, not proof of hosted enablement. See [Flows](FLOWS.
 The navigation source is [`components/layout/navigation.tsx`](../src/components/layout/navigation.tsx):
 Overview, Agency, Decisions, Campaigns, Connections and Settings are primary;
 Reports, Profile and Notifications are secondary. Campaigns remains table-first.
-Campaign creation, review and archive URLs remain routed.
+Campaign creation URLs remain routed. The calendar, campaign review reports and
+archived report pages were removed; their old links redirect.
 
 [`shared/productAvailability.ts`](../src/lib/shared/productAvailability.ts) lists
-features whose code is kept but hidden (adding an ad set or ad, alert preferences)
-and what each needs before returning. Redirect-only pages keep old links working:
+features whose code is kept but hidden (adding an ad set or ad, alert preferences,
+stored findings) and what each needs before returning. Redirect-only pages keep old links working:
 `/calendar`, `/campaigns/organize`, `/campaigns/intelligence/create`,
-`/campaigns/intelligence/status`, `/onboarding/preparing` and `/settings/profile`.
+`/campaigns/intelligence/status`, `/campaigns/reviews/*`, `/campaigns/reports/*`,
+`/reports/archive/*`, `/onboarding/preparing` and `/settings/profile`.
 
 Decision previews (`?preview=decisions`) are development-only presentation data.
 Meta simulations are explicitly gated and restricted to synthetic

@@ -77,7 +77,7 @@ bootstrap schema.
 | `ad_entities`, `ad_creatives` | Unified campaign → ad set → ad hierarchy and recognizable media. External Meta IDs differ from internal UUIDs. |
 | `ad_entity_performance_*`, `ad_account_performance_*` | Normalized daily/hourly/monthly/summary observations; preserve account timezone, currency, entity level and missingness. |
 | `campaign_dims`, `adset_dims`, `ad_dims` and legacy performance names | Compatibility views over unified storage in the inspected development schema; repository writers delegate to normalized tables. They are not separate physical stores. |
-| `ai.business_assessments`, intelligence findings/signals/calendar/report records | Legacy digests, findings and workflow queues, no longer written by sync; notifications and report archives. |
+| `ai.business_assessments`, intelligence findings/signals and report records; `calendar_queue_*` | Legacy digests and findings, no longer written by sync; notifications. Calendar tables are preserved with no application code. |
 | `ai.feature_snapshots` → `decision_runs` → `action_proposals` → `executed_actions` → `action_outcomes` | Versioned evidence, provider result, proposed intent, execution audit and observational measurements. |
 | `ai.autonomy_policies`, evaluation jobs, execution claims/controls | Independent policy configuration, inference deduplication and durable execution exclusion. |
 | `account_organization_baselines`, `account_organization_versions`, `organization_rename_*` | Preserved history from the retired Organizer. No application code reads or writes it. |
@@ -100,8 +100,8 @@ basis. Outcomes are observations, not proven causal impact.
   or authorize advertising writes. Private Realtime hints trigger authorized saved-data
   reads. See [webhook flow](FLOWS.md#webhook-triggered-status-reads-and-refresh) and
   the [webhook contract](https://github.com/Yengner/DeepVisor/blob/e9bf2cd1bcc441a3b2ea9ad5c4cb3b5909640b02/src/lib/server/webhooks/README.md). Edge functions forward authenticated cron requests to the app.
-- **Account intelligence:** the older assessment, signal, trend and calendar engines
-  in `intelligence` are dormant; sync no longer runs them. See its
+- **Account intelligence:** the assessment, signal and trend engines in `intelligence`
+  are kept for reuse; sync no longer runs them. The calendar was removed. See its
   [README](../src/lib/server/intelligence/README.md).
 - **Feature/decision/policy:** `buildFeatureSnapshot` computes versioned facts;
   `DecisionEngine` persists and validates provider-neutral results; `PolicyEngine`

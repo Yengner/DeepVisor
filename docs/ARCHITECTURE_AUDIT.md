@@ -181,10 +181,10 @@ deployment or advertising change was made.
 
 | Still open | Detail |
 | --- | --- |
-| Dormant intelligence and calendar | Kept pending an owner decision; see `server/intelligence/README.md` |
+| Kept intelligence engines | Owner kept assessments, signals and trends; calendar, campaign reviews and report archive pages were then deleted, and stored findings hidden. See `server/intelligence/README.md` |
 | Retention | Nothing enforces `business_data_policies` history limits. A new design needs paginated reads and tests before any delete |
 | Hidden features | `shared/productAvailability.ts` |
 | Unverified callers | `api/integrations/refresh`, `refetch-ad-accounts`, `sync-jobs/[jobId]/dispatch`, `notifications/[id]/read`: no in-repository caller; check hosting logs |
-| External leftovers | Deployed Edge `process_meta_backfill_jobs` and `process_calendar_queue`; DB `invoke_*` functions |
+| External leftovers | Deployed Edge `process_meta_backfill_jobs` and `process_calendar_queue` (source now removed); DB `invoke_*` and `accept_calendar_queue_workflow` functions; calendar tables, storage bucket and paused cron |
 | Possible data correctness | Report breakdown helpers return `0` for a zero denominator (`dashboard/buildPayload.ts`, `repositories/reports/surfaces.ts`); on-screen effect not traced |
 

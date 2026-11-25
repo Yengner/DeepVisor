@@ -3,7 +3,7 @@
 DeepVisor is a Meta-first advertising intelligence and decision product. It connects
 an ad account, preserves history, explains observed performance, and presents
 reviewable decisions. Primary surfaces are Overview, AI Agency, Decisions,
-Campaigns, Connections and Settings. Reports, Calendar and campaign draft workflows
+Campaigns, Connections and Settings. Reports and campaign draft workflows
 remain available through existing navigation or compatibility routes.
 
 The core architecture is **Meta data → versioned features → provider-neutral

@@ -1,9 +1,12 @@
 # server/intelligence
 
-Older account intelligence. **No sync, schedule or page load runs its engines any
-more** (stopped November 2026). The engine code is kept until the owner decides what
-DeepVisor will reuse. Do not wire it back into sync without that decision, and do not
-delete it without asking.
+Older account intelligence. **No sync, schedule or page load runs its engines**
+(stopped November 2026). The owner chose to **keep** the assessment, signal and trend
+engines for future use.
+
+Dead-code tools will report most of them as unused. That is expected: **do not delete
+them without asking the owner**, and do not wire them back into sync without that
+decision.
 
 The current pipeline is elsewhere: `features` → `decisions` → policy → `advertising`,
 with `insights`, `lifecycle` and `dashboard/insights` for what owners see.
@@ -13,23 +16,31 @@ with `insights`, `lifecycle` and `dashboard/insights` for what owners see.
 | Path | Used by |
 | --- | --- |
 | `assistant/` | Ask DeepVisor (behind `DEEPVISOR_ASSISTANT`) |
-| `repositories/notifications.ts` | bell and Notifications page reads |
+| `repositories/notifications.ts` | bell and Notifications page reads; trend engine writes |
 | `repositories/notificationPreferences.ts`, `reportSubscriptions.ts` | alert settings, hidden (`ALERT_PREFERENCES_AVAILABLE`) |
-| `repositories/reportArchive.ts` | Settings "Saved reports" and archived report pages |
-| `repositories/trendFindings.ts` (reads) | Decisions findings, Reports findings, assistant `getStoredFindings`. Nothing writes new findings, so these stay as they were |
+| `repositories/trendFindings.ts` | trend engine storage. Decisions, Reports and the assistant stop reading it while `STORED_FINDINGS_AVAILABLE` is off |
 
-## Dormant, kept
+## Kept engines
 
-| Path | What it can do | Only remaining way to run it |
+| Path | What it can do | Entry point today |
 | --- | --- | --- |
-| `assessments/` | account digest, state and maturity classification, creative fatigue, optional OpenAI summary | `api/calendar/queue/rebuild`; the business summary has no caller (`service.ts`) |
-| `signals/` | deterministic account signals and staged workflow drafts | `api/calendar/queue/rebuild` |
-| `trends/` | best-time and daily trend findings, stale delivery, finding notifications | `api/intelligence/findings/run`, calendar processor |
-| `calendarQueueProcessor.ts`, `repositories/calendarQueue*.ts`, `readModel.ts`, `calendarMode.ts` | calendar scheduling, templates, due-item processing | `api/calendar/*` |
-| `campaignReviews/` | campaign review reports | calendar processor |
-| `service.ts` | business-wide assessment orchestration | nothing |
+| `assessments/`, `repositories/assessments.ts` | account digest, state and maturity classification, creative fatigue, optional OpenAI summary | none |
+| `service.ts` | business-wide assessment orchestration and selection | none |
+| `signals/`, `repositories/signals.ts` | deterministic account signals from an assessment | none |
+| `trends/` | best-time, daily trend and stale-delivery findings, with notifications | manual `POST api/intelligence/findings/run` |
 
-Those API routes have no UI. They still require a signed-in business or the internal
-key and run only when called directly. The calendar database cron is paused
-(migration `20261119211138`) and the `process_calendar_queue` Edge Function remains
-deployed. Related: `shared/utils/calendarQueue.ts`.
+`api/intelligence/findings` and its `dismiss` route also remain, without any UI.
+
+Before reusing the assessments, paginate
+`repositories/ad_accounts/getAdAccountPerformance.ts`, which only they use. It reads
+every campaign day in one request, so a large account's totals can be silently cut at
+the API row limit.
+
+## Calendar (deleted)
+
+The calendar, campaign review reports and archived report pages were removed in
+November 2026; their old links redirect. Git history has the code. Preserved and
+untouched: the `calendar_queue_*` tables and database functions, the paused cron job
+(migration `20261119211138`), and the private `report-archive-pdfs` storage bucket.
+The `process_calendar_queue` Edge Function may still be deployed although its source
+is gone; the route it forwarded to no longer exists.
