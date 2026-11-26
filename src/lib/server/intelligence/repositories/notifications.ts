@@ -72,6 +72,7 @@ function mapNotificationRow(row: NotificationRow): NotificationFeedItem {
     daily: dailyBundle(row),
     id: row.id,
     user_id: row.user_id,
+    business_id: row.business_id,
     title: row.title,
     message: row.message,
     created_at: row.created_at,

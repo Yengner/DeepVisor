@@ -11,6 +11,8 @@ import AutomaticMetaSync from '@/components/integrations/AutomaticMetaSync';
 import AccountSetupGate, { type AccountSetupState } from '@/components/integrations/AccountSetupGate';
 import { loadOverviewSync } from '@/lib/server/dashboard/overview/load';
 import AccountSignals from '@/components/integrations/AccountSignals';
+import { loadSwitcher } from '@/lib/server/clients/switcher';
+import BusinessTabSync from '@/components/clients/BusinessTabSync';
 import Topbar from '@/components/layout/topBar/TopBar';
 import Sidebar from '@/components/layout/LeftSidebar';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
@@ -50,16 +52,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? { pending: true, jobId: sync.data.activeJobId ?? null, status: sync.data.activeJobStatus ?? null }
     : null;
 
+  const switcher = await loadSwitcher(user.id).catch(() => null);
   const showAssistant = assistantEnabled();
   const assistant = !showAssistant ? null : await loadAssistantAccount({ businessId, adAccountId: selection.selectedAdAccountId }).catch(() => null);
   return (
     <div className="app-platform-shell h-dvh flex flex-col" data-platform-theme={platformTheme}>
+      <BusinessTabSync businessId={businessId} />
       <header className="app-platform-header w-full z-50 flex-shrink-0">
         <Topbar user={user} businessId={businessId} workspaceName={organizationName} />
       </header>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <Sidebar showInsightsPreview={showInsightsPreview} showAgency={agencyEnabled()} />
+        <Sidebar showInsightsPreview={showInsightsPreview} showAgency={agencyEnabled()} showClients={Boolean(switcher?.isOperator)} />
 
         <AiAssistantDrawer key={selection.selectedAdAccountId} payload={assistant} enabled={showAssistant}><main className="app-platform-main relative min-h-0 min-w-0 mx-auto flex-1 space-y-5 overflow-y-auto pb-[calc(9rem+env(safe-area-inset-bottom))] pl-0 pr-0 pt-3 md:space-y-6 md:pb-24 md:pl-[3.75rem] md:pr-3 md:pt-4">
           <div className="app-status-region">

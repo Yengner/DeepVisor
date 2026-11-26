@@ -33,7 +33,8 @@
       "caughtUpHint": "Las novedades nuevas aparecerán aquí.",
       "recently": "Hace poco",
       "justNow": "Ahora mismo"
-    }
+    },
+    "clients": "Todos los negocios"
   },
   "metrics": {
     "spend": "Gasto",
@@ -1208,7 +1209,8 @@
     "settings": "Ajustes de avisos",
     "open": "Abrir",
     "markRead": "Marcar como leída",
-    "markFailed": "No pudimos marcarla como leída. Inténtalo de nuevo."
+    "markFailed": "No pudimos marcarla como leída. Inténtalo de nuevo.",
+    "business": "Negocio: {name}"
   },
   "insights": {
     "currencyUnknown": "{value} (moneda desconocida)",
@@ -2840,7 +2842,8 @@
     "deleteUnconfirmed": "No se pudo confirmar la eliminación de la cuenta. Inicia sesión de nuevo para revisar tu cuenta antes de reintentar.",
     "deleteLastOwner": "Transfiere la propiedad a otro miembro antes de eliminar tu cuenta. Los espacios de trabajo compartidos necesitan un propietario.",
     "deleteStorage": "Tu cuenta tiene archivos subidos. Contacta a soporte para eliminarlos o transferirlos antes de eliminar tu cuenta.",
-    "deleteBusy": "Todavía hay una sincronización u operación de publicidad en curso, o que necesita conciliarse. Espera, o contacta a soporte si se quedó atascada."
+    "deleteBusy": "Todavía hay una sincronización u operación de publicidad en curso, o que necesita conciliarse. Espera, o contacta a soporte si se quedó atascada.",
+    "deleteActiveClients": "Todavía administras negocios de clientes activos. Al eliminar tu cuenta se eliminarían. Termínalos o transfiérelos primero."
   },
   "accountSetup": {
     "steps": {
@@ -2875,5 +2878,118 @@
     "stale": "Estos números son de {time}.",
     "refresh": "Traer lo último de Meta",
     "refreshHint": "Le pide a Meta tus números más recientes ahora. Puede tardar un minuto; la página se actualiza cuando termina."
+  },
+  "clients": {
+    "title": "Todos los negocios",
+    "lead": "{count, plural, one {# negocio} other {# negocios}}; primero los que debes revisar. Las cifras vienen de las sincronizaciones guardadas.",
+    "add": "Agregar un negocio",
+    "addHint": "Esto crea su propio DeepVisor. Después puedes vincular sus cuentas publicitarias.",
+    "open": "Abrir",
+    "details": "Datos del negocio",
+    "reports": "Informes",
+    "campaigns": "Campañas",
+    "adsManager": "Abrir Administrador de anuncios",
+    "adsManagerFor": "Administrador de anuncios: {name}",
+    "yours": "Tu negocio",
+    "unnamedAccount": "Cuenta publicitaria sin nombre",
+    "lastSynced": "Última sincronización: {when}",
+    "last7": "Últimos 7 días, incluido hoy",
+    "partial": "datos incompletos",
+    "reconnect": "Hay que volver a conectar Meta.",
+    "loadFailed": "No se pudieron leer los datos guardados. Esto no significa que todo esté bien.",
+    "notSyncedBody": "DeepVisor todavía no sincroniza las cuentas de clientes, así que aquí no hay anuncios, resultados ni informes. Revisa {accounts} en el Administrador de anuncios.",
+    "noAccountBody": "Todavía no hay una cuenta publicitaria vinculada. Vincúlala en Datos del negocio.",
+    "syncOff": "DeepVisor todavía no sincroniza este negocio, así que aquí no hay anuncios, resultados ni informes. Haz los cambios en el Administrador de anuncios.",
+    "unlinked": "{count, plural, one {# cuenta publicitaria sin vincular} other {# cuentas publicitarias sin vincular}}: {names}",
+    "feeTitle": "Servicio y tarifa",
+    "feeHint": "Solo tú puedes ver esto. DeepVisor no cobra ni factura a nadie.",
+    "attention": {
+      "urgent": "Requiere acción",
+      "neverSynced": "Nunca sincronizado",
+      "stale": "Datos antiguos",
+      "adsOff": "Anuncios apagados",
+      "endingSoon": "Terminan pronto",
+      "noAccount": "Sin cuenta publicitaria",
+      "notSynced": "Sin sincronizar",
+      "ok": "Sin problemas conocidos"
+    },
+    "service": {
+      "managed": "Administrado",
+      "assisted": "Con ayuda",
+      "premium": "Plan premium",
+      "self_serve": "Autoservicio"
+    },
+    "runs": {
+      "title": "Calendario de anuncios (por conjunto)",
+      "none": "En la última sincronización no había conjuntos activos, programados o recién terminados.",
+      "range": "Del {start} al {end}",
+      "startedOpen": "Empezó el {start}, sin fecha de fin",
+      "endsOnly": "Termina el {end}",
+      "noDates": "Sin fechas guardadas",
+      "noEnd": "Activo, sin fecha de fin",
+      "daysLeft": "{count, plural, one {Queda # día} other {Quedan # días}}",
+      "progress": "Avance del calendario de {name}",
+      "adCount": "{count, plural, one {# anuncio} other {# anuncios}}",
+      "more": "Ver {count} más",
+      "state": {
+        "running": "Activo",
+        "scheduled": "Programado",
+        "ended": "Terminado",
+        "off": "Apagado",
+        "unknown": "Desconocido"
+      }
+    },
+    "alerts": {
+      "title": "Alertas recientes",
+      "none": "Sin alertas.",
+      "unread": "{count} sin leer"
+    },
+    "fee": {
+      "none": "Sin tarifa registrada",
+      "monthly": "{amount} al mes",
+      "unrecorded": "Sin pago registrado",
+      "paid": "Pagado hasta el {date}",
+      "due": "Pago pendiente desde el {date}",
+      "content": "Incluye creación de contenido"
+    },
+    "switcher": {
+      "label": "Negocio actual: {name}. Cambiar de negocio",
+      "heading": "Cambiar a",
+      "choose": "Elige un negocio"
+    },
+    "form": {
+      "name": "Nombre del negocio",
+      "location": "Ubicación",
+      "category": "Categoría",
+      "create": "Crear negocio",
+      "service": "Nivel de servicio",
+      "fee": "Tarifa mensual ({currency})",
+      "paidThrough": "Pagado hasta",
+      "paidThroughHint": "El último día que cubre su pago.",
+      "contentAddon": "Compra creación de contenido",
+      "note": "Nota privada",
+      "save": "Guardar",
+      "saved": "Guardado"
+    },
+    "accounts": {
+      "title": "Cuentas publicitarias",
+      "hint": "Vincular solo registra qué cuenta es suya, para el botón del Administrador de anuncios. No la sincroniza ni cambia nada en Meta.",
+      "none": "Todavía no hay cuentas vinculadas.",
+      "add": "Vincular una cuenta",
+      "choose": "Elige entre tus cuentas de Meta",
+      "noneLeft": "No quedan cuentas sin vincular",
+      "link": "Vincular",
+      "unlink": "Desvincular"
+    },
+    "error": {
+      "notAllowed": "No puedes cambiar este negocio.",
+      "name": "Escribe el nombre del negocio (hasta 120 caracteres).",
+      "fee": "Escribe la tarifa como número, por ejemplo 250 o 250.50.",
+      "date": "Escribe una fecha válida.",
+      "taken": "Esa cuenta ya está vinculada a un negocio.",
+      "account": "Elige una de tus cuentas de Meta.",
+      "failed": "No se pudo guardar. Inténtalo de nuevo.",
+      "switch": "No se pudo cambiar de negocio. Inténtalo de nuevo."
+    }
   }
 }

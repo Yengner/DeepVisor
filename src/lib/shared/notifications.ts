@@ -7,6 +7,8 @@ export type NotificationFeedItem = {
   read: boolean;
   type: string;
   link?: string | null;
+  /** The business it belongs to; opening it switches there first. */
+  business_id?: string;
   /**
    * Set on the daily advertising-update bell row. The saved `title`/`message` are English, so
    * screens word these rows from the bundle instead (see `dailyNotificationKeys`).

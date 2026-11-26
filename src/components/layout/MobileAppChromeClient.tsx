@@ -28,6 +28,7 @@ import { BrandLockup, BrandMark } from '@/components/brand/Brand';
 import { clientHandleSignOut } from '@/lib/client';
 import type { NotificationFeedItem } from '@/lib/shared';
 import {
+  clientsNavItem,
   isAppNavItemActive,
   mobileNavFor,
   primaryNavFor,
@@ -35,6 +36,7 @@ import {
 } from './navigation';
 import PlatformAdAccountDropdownClient from './topBar/PlatformAdAccountDropdownClient';
 import bottomNav from './MobileBottomNav.module.css';
+import BusinessSwitcher, { type SwitcherProps } from '@/components/clients/BusinessSwitcher';
 
 type MobileAppChromeClientProps = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,6 +55,7 @@ type MobileAppChromeClientProps = {
   /** Agency Control navigation (server switch DEEPVISOR_AGENCY). */
   showAgency?: boolean;
   showAssistant?: boolean;
+  switcher?: SwitcherProps | null;
 };
 
 export default function MobileAppChromeClient({
@@ -64,6 +67,7 @@ export default function MobileAppChromeClient({
   initialAccountId,
   showAgency = false,
   showAssistant = false,
+  switcher = null,
 }: MobileAppChromeClientProps) {
   const t = useTranslations('nav');
   const router = useRouter();
@@ -94,7 +98,7 @@ export default function MobileAppChromeClient({
       pathname?.startsWith('/settings/')
     ));
 
-  const drawerNavItems = [...primaryNavFor(showAgency), ...secondaryNavItems];
+  const drawerNavItems = [...(switcher?.isOperator ? [clientsNavItem] : []), ...primaryNavFor(showAgency), ...secondaryNavItems];
   const activeDrawerRoute = drawerNavItems
     .filter((item) => isAppNavItemActive(pathname, item.route))
     .sort((left, right) => right.route.length - left.route.length)[0]?.route;
@@ -173,6 +177,7 @@ export default function MobileAppChromeClient({
         overlayProps={{ opacity: 0.28, blur: 2 }}
       >
         <Stack gap="md">
+          {switcher && <BusinessSwitcher {...switcher} variant="drawer" />}
           <PlatformAdAccountDropdownClient
             platforms={platforms}
             adAccounts={adAccounts}

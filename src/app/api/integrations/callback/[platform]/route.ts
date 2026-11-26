@@ -1,3 +1,4 @@
+import { isManagedClient } from '@/lib/server/clients/operator';
 import { canManageBusiness } from '@/lib/shared/business/access';
 import { SIMULATION_TAG, simulationForUser, simulationToken, validateSimulation } from '@/lib/server/integrations/simulation/meta';
 import { NextRequest, NextResponse } from 'next/server';
@@ -107,7 +108,7 @@ export async function GET(
     const supabase = createAdminClient();
     const userId = await requireUserId();
     const businessContext = await getOrCreateOrganizationBusinessContext(userId);
-    if (!canManageBusiness(businessContext.role)) {
+    if (!canManageBusiness(businessContext.role) || await isManagedClient(businessContext.businessId)) {
       return redirectWithStatus(request.url, returnTo, platformKey, 'error');
     }
 

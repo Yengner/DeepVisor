@@ -6,12 +6,15 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@mantine/core';
 import { IconArrowRight, IconCheck } from '@tabler/icons-react';
 import { markNotificationReadClient, showError } from '@/lib/client';
+import { useSwitchBusiness } from '@/components/clients/useSwitchBusiness';
 
 type NotificationActionProps = {
   notificationId: string;
   unread: boolean;
   href: string | null;
   className?: string;
+  /** Set when the update belongs to another business: opening it switches there first. */
+  switchTo?: string | null;
 };
 
 export default function NotificationAction({
@@ -19,7 +22,9 @@ export default function NotificationAction({
   unread,
   href,
   className,
+  switchTo = null,
 }: NotificationActionProps) {
+  const { go } = useSwitchBusiness();
   const t = useTranslations('notificationsPage');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -39,7 +44,10 @@ export default function NotificationAction({
     }
 
     if (href) {
-      router.push(href);
+      if (switchTo) {
+        await go(switchTo, href);
+        setLoading(false);
+      } else router.push(href);
       return;
     }
 

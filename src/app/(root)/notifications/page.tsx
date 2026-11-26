@@ -13,6 +13,7 @@ import { attentionText } from '@/lib/server/insights/attentionText';
 import { loadOverviewContext } from '@/lib/server/dashboard/overview/load';
 import { loadExploration } from '@/lib/server/campaigns/exploration/load';
 import NotificationAction from './NotificationAction';
+import { loadSwitcher } from '@/lib/server/clients/switcher';
 import styles from './NotificationsPage.module.css';
 import { ALERT_PREFERENCES_AVAILABLE } from '@/lib/shared/productAvailability';
 
@@ -59,7 +60,10 @@ export default async function NotificationsPage() {
   const t = await getTranslations('notificationsPage');
   const tText = await getTranslations('notificationText');
   const locale = (await getLocale()) === 'es' ? 'es-US' : 'en-US';
-  const { user } = await getRequiredAppContext();
+  const { user, businessId } = await getRequiredAppContext();
+  const switcher = await loadSwitcher(user.id).catch(() => null);
+  // With one business there is nothing to tell apart.
+  const businessNames = new Map(switcher && switcher.businesses.length > 1 ? switcher.businesses.map(business => [business.id, business.name]) : []);
   const notifications = await getUserNotifications(user.id, 50);
   const unread = notifications.filter(item => !item.read).length;
   const date = (value: string) => new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(value));
@@ -100,6 +104,9 @@ export default async function NotificationsPage() {
                     {title}
                   </p>
                   {message && <p className={styles.message}>{message}</p>}
+                  {item.business_id && businessNames.has(item.business_id) && (
+                    <p className={styles.meta}>{t('business', { name: businessNames.get(item.business_id)! })}</p>
+                  )}
                   {item.created_at && (
                     <p className={styles.meta}>
                       <time dateTime={item.created_at}>{date(item.created_at)}</time>
@@ -111,6 +118,7 @@ export default async function NotificationsPage() {
                   notificationId={item.id}
                   unread={!item.read}
                   href={item.link ?? null}
+                  switchTo={item.business_id && item.business_id !== businessId ? item.business_id : null}
                   className={styles.action}
                 />
               </li>

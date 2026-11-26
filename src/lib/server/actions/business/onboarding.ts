@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { ok, fail, type ApiResponse, ErrorCode } from '@/lib/shared';
 import { getErrorMessage } from '@/lib/shared/utils/guards';
@@ -627,7 +627,6 @@ export async function updateBusinessProfileData(input: {
         .maybeSingle();
 
       if (organizationError || !savedOrganization) {
-        revalidateTag(`business-context:${contextRes.data.userId}`, { expire: 0 });
         revalidatePath('/', 'layout');
         return fail('Workspace name could not be updated', ErrorCode.DATABASE_ERROR, {
           userMessage: 'Business details were saved, but the workspace name could not be updated. Please try saving again.',
@@ -635,7 +634,6 @@ export async function updateBusinessProfileData(input: {
       }
     }
 
-    revalidateTag(`business-context:${contextRes.data.userId}`, { expire: 0 });
     revalidatePath('/', 'layout');
     return ok(null);
   } catch (error) {
@@ -688,7 +686,6 @@ export async function updateOnboardingProgress(input: {
       return fail(getErrorMessage(error), ErrorCode.DATABASE_ERROR);
     }
 
-    revalidateTag(`business-context:${contextRes.data.userId}`, { expire: 0 });
     return ok(null);
   } catch (error) {
     return fail(getErrorMessage(error), ErrorCode.UNKNOWN_ERROR);

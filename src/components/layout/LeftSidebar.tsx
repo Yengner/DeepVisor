@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import { Tooltip } from '@mantine/core';
 import { IconFlask, IconLogout } from '@tabler/icons-react';
 import { clientHandleSignOut } from '@/lib/client';
-import { isAppNavItemActive, primaryNavFor, secondaryNavItems } from './navigation';
+import { clientsNavItem, isAppNavItemActive, primaryNavFor, secondaryNavItems } from './navigation';
 
 type RailItemProps = {
   active: boolean;
@@ -87,7 +87,7 @@ function DevInsightsNavigation({ expanded }: { expanded: boolean }) {
   );
 }
 
-export default function Sidebar({ showInsightsPreview, showAgency = false }: { showInsightsPreview: boolean; showAgency?: boolean }) {
+export default function Sidebar({ showInsightsPreview, showAgency = false, showClients = false }: { showInsightsPreview: boolean; showAgency?: boolean; showClients?: boolean }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const t = useTranslations('nav');
   const router = useRouter();
@@ -110,7 +110,7 @@ export default function Sidebar({ showInsightsPreview, showAgency = false }: { s
           <BrandLockup inverse compact={!isExpanded} />
         </Link>
         <nav className="space-y-1.5">
-          {primaryNavFor(showAgency).map((item) => {
+          {[...(showClients ? [clientsNavItem] : []), ...primaryNavFor(showAgency)].map((item) => {
             const active = isAppNavItemActive(pathname, item.route);
             return (
               <RailItem

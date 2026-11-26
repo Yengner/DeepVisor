@@ -1,6 +1,7 @@
 import 'server-only';
 
-import { unstable_cache } from 'next/cache';
+import { cache } from 'react';
+import { cookies } from 'next/headers';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { createServerClient } from '@/lib/server/supabase/server';
 import type { Database } from '@/lib/shared/types/supabase';
@@ -77,12 +78,14 @@ function firstJoinedBusinessProfile(value: JoinedBusinessProfileRow | undefined)
   return value ?? null;
 }
 
-export async function getExistingOrganizationBusinessContext(
-  userId: string
-): Promise<ExistingBusinessContextResult> {
+/** The cookie only chooses among the user's own memberships; it never grants access. */
+export const ACTIVE_BUSINESS_COOKIE = 'active_business_id';
+
+/** Every business the user is a member of, oldest membership first. */
+async function listMemberships(userId: string): Promise<JoinedMembershipRow[]> {
   const supabase = createAdminClient();
 
-  const { data: membership, error: membershipError } = await supabase
+  const { data, error } = await supabase
     .from('organization_memberships')
     .select(
       `
@@ -101,94 +104,79 @@ export async function getExistingOrganizationBusinessContext(
     `
     )
     .eq('user_id', userId)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .order('created_at', { ascending: true });
 
-  if (membershipError) {
-    throw new Error(membershipError.message);
+  if (error) {
+    throw new Error(error.message);
   }
 
-  if (!membership?.organization_id) {
+  return (data ?? []) as unknown as JoinedMembershipRow[];
+}
+
+function toContext(membership: JoinedMembershipRow): OrganizationBusinessContext | null {
+  const organization = firstJoinedOrganization(membership.organizations);
+  const business = firstJoinedBusinessProfile(organization?.business_profiles);
+
+  return organization && business
+    ? {
+        organizationId: organization.id,
+        organizationName: organization.name,
+        organizationType: organization.type,
+        businessId: business.id,
+        role: normalizeOrganizationRole(membership.role),
+        onboarding: business,
+      }
+    : null;
+}
+
+/** The businesses the user can switch between. */
+export async function listUserBusinesses(userId: string): Promise<OrganizationBusinessContext[]> {
+  return (await listMemberships(userId)).map(toContext).filter((context) => context !== null);
+}
+
+export async function getExistingOrganizationBusinessContext(
+  userId: string
+): Promise<ExistingBusinessContextResult> {
+  const memberships = (await listMemberships(userId)).filter((membership) => membership.organization_id);
+
+  if (memberships.length === 0) {
     return { kind: 'missing_membership' };
   }
 
-  const joinedMembership = membership as unknown as JoinedMembershipRow;
-  const organization = firstJoinedOrganization(joinedMembership.organizations);
+  const chosen = (await cookies()).get(ACTIVE_BUSINESS_COOKIE)?.value;
+  const selected = chosen
+    ? memberships.map(toContext).find((context) => context?.businessId === chosen)
+    : null;
+
+  if (selected) {
+    return { kind: 'found', context: selected };
+  }
+
+  const first = memberships[0];
+  const organization = firstJoinedOrganization(first.organizations);
 
   if (!organization) {
     throw new Error('Failed to load organization for membership');
   }
 
-  const business = firstJoinedBusinessProfile(organization.business_profiles);
-  const role = normalizeOrganizationRole(joinedMembership.role);
+  const context = toContext(first);
 
-  if (!business) {
-    return {
-      kind: 'missing_business_profile',
-      organization: {
-        id: organization.id,
-        name: organization.name,
-        type: organization.type,
-      },
-      role,
-    };
-  }
-
-  const context = {
-    organizationId: organization.id,
-    organizationName: organization.name,
-    organizationType: organization.type,
-    businessId: business.id,
-    role,
-    onboarding: business,
-  };
-
-  return {
-    kind: 'found',
-    context,
-  };
+  return context
+    ? { kind: 'found', context }
+    : {
+        kind: 'missing_business_profile',
+        organization: { id: organization.id, name: organization.name, type: organization.type },
+        role: normalizeOrganizationRole(first.role),
+      };
 }
 
-function isBusinessContextCacheMiss(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    error.message.startsWith('organization-business-context-cache-miss:')
-  );
-}
-
-function getCachedFoundOrganizationBusinessContext(userId: string) {
-  return unstable_cache(
-    async () => {
-      const existing = await getExistingOrganizationBusinessContext(userId);
-
-      if (existing.kind === 'found') {
-        return existing.context;
-      }
-
-      throw new Error(`organization-business-context-cache-miss:${existing.kind}`);
-    },
-    ['organization-business-context', userId],
-    {
-      revalidate: 30,
-      tags: [`business-context:${userId}`],
-    }
-  )();
-}
-
-export async function getCachedOrganizationBusinessContext(
-  userId: string
-): Promise<OrganizationBusinessContext> {
-  try {
-    return await getCachedFoundOrganizationBusinessContext(userId);
-  } catch (error) {
-    if (!isBusinessContextCacheMiss(error)) {
-      throw error;
-    }
-  }
-
-  return getOrCreateOrganizationBusinessContext(userId);
-}
+/**
+ * Read once per request. Nothing is cached between requests, so switching business and removed
+ * access both apply on the next request.
+ */
+export const getCachedOrganizationBusinessContext = cache(
+  async (userId: string): Promise<OrganizationBusinessContext> => getOrCreateOrganizationBusinessContext(userId)
+);
 
 /**
  * Loads the user's primary organization/business context, creating a default business

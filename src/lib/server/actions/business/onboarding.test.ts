@@ -45,7 +45,6 @@ it('persists allowed business fields in authenticated scope and refreshes the pr
   });
   expect(m.scope).toHaveBeenCalledWith('business_profiles', 'id', 'own-business');
   expect(m.scope).toHaveBeenCalledWith('organizations', 'id', 'own-org');
-  expect(m.tag).toHaveBeenCalledWith('business-context:self', { expire: 0 });
   expect(m.path).toHaveBeenCalledWith('/', 'layout');
 });
 it('accepts admin edits and only updates provided fields', async () => {

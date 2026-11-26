@@ -33,7 +33,8 @@
       "caughtUpHint": "New updates will appear here.",
       "recently": "Recently",
       "justNow": "Just now"
-    }
+    },
+    "clients": "All businesses"
   },
   "metrics": {
     "spend": "Spend",
@@ -1208,7 +1209,8 @@
     "settings": "Alert settings",
     "open": "Open",
     "markRead": "Mark read",
-    "markFailed": "We couldn’t mark this as read. Try again."
+    "markFailed": "We couldn’t mark this as read. Try again.",
+    "business": "Business: {name}"
   },
   "insights": {
     "currencyUnknown": "{value} (currency unknown)",
@@ -2840,7 +2842,8 @@
     "deleteUnconfirmed": "Account deletion could not be confirmed. Please sign in again to check your account before retrying.",
     "deleteLastOwner": "Transfer ownership to another member before deleting your account. Shared workspaces need a remaining owner.",
     "deleteStorage": "Your account owns uploaded files. Contact support to remove or transfer those files before deleting your account.",
-    "deleteBusy": "A sync or advertising operation is still running or needs reconciliation. Please wait, or contact support if it is stuck."
+    "deleteBusy": "A sync or advertising operation is still running or needs reconciliation. Please wait, or contact support if it is stuck.",
+    "deleteActiveClients": "You still manage active client businesses. Deleting your account would delete them. End or transfer them first."
   },
   "accountSetup": {
     "steps": {
@@ -2875,5 +2878,118 @@
     "stale": "These numbers are from {time}.",
     "refresh": "Get the latest from Meta",
     "refreshHint": "Asks Meta for your newest numbers now. It can take a minute; the page updates when it is done."
+  },
+  "clients": {
+    "title": "All businesses",
+    "lead": "{count, plural, one {# business} other {# businesses}}, the ones to check first on top. Numbers come from saved syncs.",
+    "add": "Add a business",
+    "addHint": "This creates its own DeepVisor. You can link its ad accounts next.",
+    "open": "Open",
+    "details": "Business details",
+    "reports": "Reports",
+    "campaigns": "Campaigns",
+    "adsManager": "Open Ads Manager",
+    "adsManagerFor": "Ads Manager: {name}",
+    "yours": "Your business",
+    "unnamedAccount": "Unnamed ad account",
+    "lastSynced": "Last synced {when}",
+    "last7": "Last 7 days, including today",
+    "partial": "incomplete data",
+    "reconnect": "Meta needs to be reconnected.",
+    "loadFailed": "Saved account data could not be read. This is not a sign that things are fine.",
+    "notSyncedBody": "DeepVisor does not sync client accounts yet, so there are no ads, results or reports here. Check {accounts} in Ads Manager.",
+    "noAccountBody": "No ad account is linked yet. Link one in Business details.",
+    "syncOff": "DeepVisor does not sync this business yet, so it has no ads, results or reports here. Use Ads Manager for live changes.",
+    "unlinked": "{count, plural, one {# ad account is} other {# ad accounts are}} not linked to a business: {names}",
+    "feeTitle": "Service and fee",
+    "feeHint": "Only you can see this. DeepVisor does not charge or invoice anyone.",
+    "attention": {
+      "urgent": "Needs action",
+      "neverSynced": "Never synced",
+      "stale": "Data is old",
+      "adsOff": "Ads are off",
+      "endingSoon": "Ending soon",
+      "noAccount": "No ad account",
+      "notSynced": "Not synced",
+      "ok": "No known issues"
+    },
+    "service": {
+      "managed": "Managed",
+      "assisted": "Assisted",
+      "premium": "Premium",
+      "self_serve": "Self-serve"
+    },
+    "runs": {
+      "title": "Ad schedules (by ad set)",
+      "none": "No running, scheduled or recently ended ad sets at the last sync.",
+      "range": "{start} to {end}",
+      "startedOpen": "Started {start}, no end date",
+      "endsOnly": "Ends {end}",
+      "noDates": "No dates saved",
+      "noEnd": "Running, no end date",
+      "daysLeft": "{count, plural, one {# day left} other {# days left}}",
+      "progress": "Schedule progress for {name}",
+      "adCount": "{count, plural, one {# ad} other {# ads}}",
+      "more": "Show {count} more",
+      "state": {
+        "running": "Running",
+        "scheduled": "Scheduled",
+        "ended": "Ended",
+        "off": "Off",
+        "unknown": "Unknown"
+      }
+    },
+    "alerts": {
+      "title": "Latest alerts",
+      "none": "No alerts.",
+      "unread": "{count} unread"
+    },
+    "fee": {
+      "none": "No fee recorded",
+      "monthly": "{amount} per month",
+      "unrecorded": "No payment recorded",
+      "paid": "Paid through {date}",
+      "due": "Payment due since {date}",
+      "content": "Content add-on"
+    },
+    "switcher": {
+      "label": "Current business: {name}. Switch business",
+      "heading": "Switch to",
+      "choose": "Choose a business"
+    },
+    "form": {
+      "name": "Business name",
+      "location": "Location",
+      "category": "Category",
+      "create": "Create business",
+      "service": "Service level",
+      "fee": "Monthly fee ({currency})",
+      "paidThrough": "Paid through",
+      "paidThroughHint": "The last day their payment covers.",
+      "contentAddon": "Buys content production",
+      "note": "Private note",
+      "save": "Save",
+      "saved": "Saved"
+    },
+    "accounts": {
+      "title": "Ad accounts",
+      "hint": "Linking records which account is theirs, for the Ads Manager button. It does not sync it or change anything in Meta.",
+      "none": "No ad account linked yet.",
+      "add": "Link an ad account",
+      "choose": "Choose from your Meta accounts",
+      "noneLeft": "No unlinked accounts",
+      "link": "Link",
+      "unlink": "Unlink"
+    },
+    "error": {
+      "notAllowed": "You can’t change this business.",
+      "name": "Enter a business name (up to 120 characters).",
+      "fee": "Enter the fee as a number, such as 250 or 250.50.",
+      "date": "Enter a valid date.",
+      "taken": "That ad account is already linked to a business.",
+      "account": "Choose an ad account from your Meta accounts.",
+      "failed": "That could not be saved. Please try again.",
+      "switch": "Couldn’t switch business. Please try again."
+    }
   }
 }

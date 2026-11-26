@@ -1,6 +1,7 @@
 import type { Icon } from '@tabler/icons-react';
 import {
   IconBell,
+  IconBuildingStore,
   IconSparkles,
   IconChartBar,
   IconHome2,
@@ -11,7 +12,7 @@ import {
 } from '@tabler/icons-react';
 
 /** Message keys under `nav` in messages/*.json. */
-export type NavKey = 'overview' | 'leads' | 'agency' | 'agencyShort' | 'campaigns' | 'reports' | 'connections' | 'notifications' | 'notificationsShort' | 'profile' | 'settings';
+export type NavKey = 'overview' | 'clients' | 'leads' | 'agency' | 'agencyShort' | 'campaigns' | 'reports' | 'connections' | 'notifications' | 'notificationsShort' | 'profile' | 'settings';
 export type AppNavItem = {
   nameKey: NavKey;
   shortKey: NavKey;
@@ -21,6 +22,9 @@ export type AppNavItem = {
 
 /** Agency Control: shown only when the server enables it (`agencyEnabled`, DEEPVISOR_AGENCY). */
 export const agencyNavItem: AppNavItem = { nameKey: 'agency', shortKey: 'agency', icon: IconSparkles, route: '/agency' };
+
+/** All businesses: shown only to someone who manages client businesses. */
+export const clientsNavItem: AppNavItem = { nameKey: 'clients', shortKey: 'clients', icon: IconBuildingStore, route: '/clients' };
 
 export const primaryNavItems: AppNavItem[] = [
   { nameKey: 'overview', shortKey: 'overview', icon: IconHome2, route: '/dashboard' },

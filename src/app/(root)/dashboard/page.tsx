@@ -57,6 +57,7 @@ import BookingCheckin from './components/BookingCheckin';
 import { loadCheckins } from '@/lib/server/bookings/checkins';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
+import { redirectUnsyncedClient } from '@/lib/server/clients/home';
 type OverviewContext = LiveOverviewContext & { decisionPreview?: boolean; publisher: Publisher };
 
 const decisions = cache(async (context: OverviewContext) => {
@@ -395,6 +396,7 @@ async function Content({ requestedPeriod, preview, platform }: { requestedPeriod
   </div>;
 }
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ period?: string; preview?: string; publisher?: string }> }) {
+  await redirectUnsyncedClient();
   const params = await searchParams;
   return <DesignSurface label="Overview"><Suspense fallback={<Loading kind="chart" />}><Content requestedPeriod={params.period === undefined ? null : parsePeriod(params.period)} preview={isDecisionPreview(params.preview)} platform={publisher(params.publisher)} /></Suspense></DesignSurface>;
 }
