@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { unstable_rethrow } from 'next/navigation';
+import { canManageBusiness } from '@/lib/shared/business/access';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { getMetaPages } from '@/lib/server/actions/meta/pages/actions';
 import { createAdminClient } from '@/lib/server/supabase/admin';
@@ -43,7 +44,15 @@ function parseWhatsAppNumberSource(value: unknown): WhatsAppNumberSource | null 
 
 export async function POST(request: NextRequest) {
   try {
-    const { businessId } = await getRequiredAppContext(false);
+    const { businessId, role } = await getRequiredAppContext(false);
+    if (!canManageBusiness(role)) {
+      return NextResponse.json(
+        fail('Requires an owner or admin', ErrorCode.FORBIDDEN, {
+          userMessage: 'Only an owner or admin can change this setup.',
+        }),
+        { status: 403 }
+      );
+    }
     const body = await request.json().catch(() => ({}));
     const integrationId = cleanString(body.integrationId);
     const externalAccountId = cleanString(body.externalAccountId);

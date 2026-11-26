@@ -2,6 +2,7 @@ import { getBusinessIntegrationById } from '@/lib/server/integrations/service';
 import { SIMULATION_TAG, assertSimulationEnabled } from '@/lib/server/integrations/simulation/meta';
 import { asRecord } from '@/lib/shared';
 import { NextRequest, NextResponse } from 'next/server';
+import { canManageBusiness } from '@/lib/shared/business/access';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { getMetaPages } from '@/lib/server/actions/meta/pages/actions';
 import { createServerClient } from '@/lib/server/supabase/server';
@@ -9,7 +10,15 @@ import { ErrorCode, fail, ok } from '@/lib/shared';
 
 export async function GET(request: NextRequest) {
   try {
-    const { businessId } = await getRequiredAppContext(false);
+    const { businessId, role } = await getRequiredAppContext(false);
+    if (!canManageBusiness(role)) {
+      return NextResponse.json(
+        fail('Requires an owner or admin', ErrorCode.FORBIDDEN, {
+          userMessage: 'Only an owner or admin can manage Facebook Pages.',
+        }),
+        { status: 403 }
+      );
+    }
     const integrationId = request.nextUrl.searchParams.get('integrationId');
     const externalAccountId = request.nextUrl.searchParams.get('externalAccountId');
 

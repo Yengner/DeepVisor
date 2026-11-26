@@ -9,7 +9,7 @@ vi.mock('@/lib/server/supabase/admin',()=>({createAdminClient:()=>({from:()=>({u
 import { POST } from './route';
 const request=(body:Record<string,unknown>={})=>new NextRequest('http://localhost/api/integrations/meta/page-whatsapp-setup',{method:'POST',body:JSON.stringify({integrationId:'integration-a',pageId:'page-a',whatsappNumberSource:'page_phone_confirmed',...body})});
 beforeEach(()=>{
- vi.resetAllMocks();m.context.mockImplementation(async(completed=true)=>{if(completed)redirect('/onboarding');return {businessId:'business-a'};});
+ vi.resetAllMocks();m.context.mockImplementation(async(completed=true)=>{if(completed)redirect('/onboarding');return {businessId:'business-a',role:'owner'};});
  m.pages.mockResolvedValue({success:true,data:[{id:'saved-page-a',page_id:'page-a',name:'Synthetic Salon',phone:'+1 (555) 123-4567'}]});
  m.eq.mockResolvedValue({error:null});
 });
@@ -43,4 +43,9 @@ it.each([
 ])('supports onboarding alternative $whatsappNumberSource',async({expected,...body})=>{
  expect((await POST(request(body))).status).toBe(200);
  expect(m.update).toHaveBeenCalledWith(expect.objectContaining({whatsapp_number:expected}));
+});
+it('refuses a member without calling Meta or writing',async()=>{
+ m.context.mockResolvedValue({businessId:'business-a',role:'member'});
+ expect((await POST(request())).status).toBe(403);
+ expect(m.pages).not.toHaveBeenCalled();expect(m.update).not.toHaveBeenCalled();
 });

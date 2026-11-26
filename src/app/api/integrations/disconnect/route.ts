@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUserId } from '@/lib/server/actions/user/session';
 import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
+import { canManageBusiness } from '@/lib/shared/business/access';
 import { softDisconnectIntegration } from '@/lib/server/integrations/service';
 import { releaseIntegrationWebhooks } from '@/lib/server/webhooks/subscription';
 import { createAdminClient } from '@/lib/server/supabase/admin';
@@ -21,6 +22,9 @@ export async function POST(request: NextRequest) {
 
     const userId = await requireUserId();
     const context = await getOrCreateOrganizationBusinessContext(userId);
+    if (!canManageBusiness(context.role)) {
+      return NextResponse.json({ success: false } satisfies DisconnectIntegrationResponse, { status: 403 });
+    }
 
     await releaseIntegrationWebhooks(body.integrationId, context.businessId).catch(() => console.warn('Meta webhook subscription could not be released.'));
 

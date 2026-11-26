@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
+import { canManageBusiness } from '@/lib/shared/business/access';
 import {
   getBusinessIntegrationById,
   getPrimaryAdAccountSelection,
@@ -9,7 +10,15 @@ import { ErrorCode, fail, ok } from '@/lib/shared';
 
 export async function GET(request: NextRequest) {
   try {
-    const { businessId } = await getRequiredAppContext(false);
+    const { businessId, role } = await getRequiredAppContext(false);
+    if (!canManageBusiness(role)) {
+      return NextResponse.json(
+        fail('Requires an owner or admin', ErrorCode.FORBIDDEN, {
+          userMessage: 'Only an owner or admin can see the connected ad accounts.',
+        }),
+        { status: 403 }
+      );
+    }
     const integrationId = request.nextUrl.searchParams.get('integrationId');
 
     if (!integrationId) {

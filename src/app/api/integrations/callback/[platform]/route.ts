@@ -1,3 +1,4 @@
+import { canManageBusiness } from '@/lib/shared/business/access';
 import { SIMULATION_TAG, simulationForUser, simulationToken, validateSimulation } from '@/lib/server/integrations/simulation/meta';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUserId } from '@/lib/server/actions/user/session';
@@ -106,6 +107,9 @@ export async function GET(
     const supabase = createAdminClient();
     const userId = await requireUserId();
     const businessContext = await getOrCreateOrganizationBusinessContext(userId);
+    if (!canManageBusiness(businessContext.role)) {
+      return redirectWithStatus(request.url, returnTo, platformKey, 'error');
+    }
 
     const integrationPlatform = await resolvePlatformByKey(supabase, platformKey);
     if (!integrationPlatform) {

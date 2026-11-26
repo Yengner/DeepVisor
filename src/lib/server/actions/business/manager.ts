@@ -2,6 +2,7 @@ import 'server-only';
 import { unstable_rethrow } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { fail, ok, ErrorCode, type ApiResponse } from '@/lib/shared';
+import { canManageBusiness } from '@/lib/shared/business/access';
 import { requireUserId } from '@/lib/server/actions/user/session';
 import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
 
@@ -13,7 +14,7 @@ export async function requireManagerContext(userMessage: string): Promise<ApiRes
   try {
     const userId = await requireUserId();
     const context = await getOrCreateOrganizationBusinessContext(userId);
-    if (context.role !== 'owner' && context.role !== 'admin') {
+    if (!canManageBusiness(context.role)) {
       return fail('Requires an owner or admin', ErrorCode.FORBIDDEN, { userMessage });
     }
     return ok({ userId, businessId: context.businessId });

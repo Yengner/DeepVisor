@@ -9,6 +9,11 @@ advertising execution.
 
 ## Connection and selection contracts
 
+Only an owner or admin (`canManageBusiness` in `shared/business/access.ts`) may connect,
+disconnect, list or choose ad accounts, or change the Facebook Page setup. Browser roles
+cannot write `ad_accounts` or `organization_memberships`, or create or delete organizations
+and businesses (migration `20261126024258_tenancy_write_lockdown`). Server code writes them with the service role.
+
 - [`service.ts`](service.ts): `createOAuthState`, atomic `consumeOAuthState`,
   `upsertPlatformIntegration`, `resolveIntegrationAccessToken`, account listing,
   primary selection, connection health/error updates.

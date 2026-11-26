@@ -59,7 +59,8 @@ export const STATS_DAYS = 90;
 /** Saved in the popup payload. Amounts are in major units of `currency`. */
 export type IdleSuggestion =
   /** Meta reports an ad account problem (e.g. unpaid balance): fix that before any new ad. */
-  | { kind: 'account'; lastSpendDay: string; issue: string | null }
+  /** `externalAccountId` is optional so popups saved before the exact-account link still render. */
+  | { kind: 'account'; lastSpendDay: string; issue: string | null; externalAccountId?: string | null }
   | {
     kind: 'restart';
     lastSpendDay: string;

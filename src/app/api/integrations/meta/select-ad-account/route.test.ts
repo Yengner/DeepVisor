@@ -10,7 +10,7 @@ vi.mock('@/lib/server/supabase/admin',()=>({createAdminClient:()=>({from:()=>{co
 import { POST } from './route';
 const request=(body:unknown)=>new NextRequest('http://localhost/api/integrations/meta/select-ad-account',{method:'POST',body:JSON.stringify(body)});
 beforeEach(()=>{
- vi.resetAllMocks();m.context.mockResolvedValue({businessId:'business-a'});
+ vi.resetAllMocks();m.context.mockResolvedValue({businessId:'business-a',role:'owner'});
  m.integration.mockResolvedValue({id:'integration-a',platformKey:'meta',platformId:'meta'});
  m.account.mockResolvedValue({data:{external_account_id:'act_a',name:'A'},error:null});
 });
@@ -49,4 +49,9 @@ it('reports a selection failure instead of success',async()=>{
  expect(response.status).toBe(500);
  expect((await response.json()).error.userMessage).toMatch(/temporarily unavailable/);
  expect(m.dispatch).not.toHaveBeenCalled();
+});
+it('refuses a member before any privileged read or sync',async()=>{
+ m.context.mockResolvedValue({businessId:'business-a',role:'member'});
+ expect((await POST(request({integrationId:'integration-a',externalAccountId:'act_a'}))).status).toBe(403);
+ expect(m.integration).not.toHaveBeenCalled();expect(m.select).not.toHaveBeenCalled();
 });

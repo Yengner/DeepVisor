@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/server/supabase/server';
 import { requireUserId } from '@/lib/server/actions/user/session';
 import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/business/context';
+import { canManageBusiness } from '@/lib/shared/business/access';
 import { buildMetaOAuthUrl } from '@/lib/server/integrations/adapters/meta';
 import {
   buildIntegrationResultPath,
@@ -34,6 +35,9 @@ export async function GET(
     const supabase = await createServerClient();
     const userId = await requireUserId();
     const businessContext = await getOrCreateOrganizationBusinessContext(userId);
+    if (!canManageBusiness(businessContext.role)) {
+      return buildErrorRedirect(request.url, returnTo);
+    }
 
     const integrationPlatform = await resolvePlatformByKey(supabase, platformKey);
     if (!integrationPlatform) {

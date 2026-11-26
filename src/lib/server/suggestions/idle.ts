@@ -170,7 +170,9 @@ export async function loadIdleSuggestion(db: Db, input: Input): Promise<IdleSugg
   if (account.error) throw account.error;
   if (account.data) {
     const title = (account.data.evidence as { title?: unknown } | null)?.title;
-    return { kind: 'account', lastSpendDay: spendDay!, issue: typeof title === 'string' ? title.slice(0, 120) : null };
+    // Only used to open Ads Manager on this account; without it the link opens Ads Manager's default.
+    const saved = await db.from('ad_accounts').select('external_account_id').eq('business_id', input.businessId).eq('id', input.accountId).maybeSingle();
+    return { kind: 'account', lastSpendDay: spendDay!, issue: typeof title === 'string' ? title.slice(0, 120) : null, externalAccountId: saved.data?.external_account_id ?? null };
   }
 
   const source = chooseSourceAdSet(await messagingSourceCandidates({ db, businessId: input.businessId, accountId: input.accountId, today: input.today }));

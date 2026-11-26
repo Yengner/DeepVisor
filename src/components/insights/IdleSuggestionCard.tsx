@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@mantine/core';
 import { Eye, Lightbulb, TriangleAlert } from 'lucide-react';
 import { STATS_DAYS, type IdleSuggestion } from '@/lib/shared/suggestions/idle';
-import { causeFromTitle } from '@/lib/shared/insights/health';
+import { adsManagerLink, causeFromTitle } from '@/lib/shared/insights/health';
 import { MediaImage } from '@/components/campaigns/exploration/AdvertisingExplorer';
 import ProjectionChart from './ProjectionChart';
 import styles from './IdleSuggestionCard.module.css';
@@ -46,7 +46,7 @@ export default function IdleSuggestionCard({ suggestion, currency, interactive =
           <h3 id="idle-suggestion">{t('accountTitle')}</h3>
           <p>{suggestion.issue ? t('accountBody', { issue: accountIssueTitle(suggestion.issue) }) : t('accountBodyGeneric')}</p>
           <div className={styles.actions}>
-            <Button component="a" href="https://adsmanager.facebook.com/" target="_blank" rel="noreferrer" size="md" color="red">{t('openAdsManager')}</Button>
+            <Button component="a" href={adsManagerLink(suggestion.externalAccountId)} target="_blank" rel="noreferrer" size="md" color="red">{t('openAdsManager')}</Button>
           </div>
         </div>
       </section>

@@ -44,3 +44,12 @@ describe('Meta account links', () => {
   expect(metaAccountLink('https://evil.example.com/x','123')).toBe('https://evil.example.com/x');
  });
 });
+
+describe('Ads Manager link', () => {
+ it('opens the exact ad account, and falls back for anything that is not an account number', async () => {
+  const {adsManagerLink}=await import('./health');
+  expect(adsManagerLink('act_123456')).toBe('https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=123456');
+  expect(adsManagerLink('987')).toBe('https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=987');
+  for(const bad of [null,undefined,'','act_12a','1&business_id=2'])expect(adsManagerLink(bad)).toBe('https://adsmanager.facebook.com/');
+ });
+});

@@ -64,6 +64,15 @@ export function metaAccountLink(href:string,externalAccountId?:string|null):stri
  const url=new URL(href);url.searchParams.set('asset_id',id);return url.toString();
 }
 
+/**
+ * Ads Manager opened on this ad account (`act`, the account number). It uses whatever Facebook
+ * sign-in the browser has. Without a usable account number it opens Ads Manager's default account.
+ */
+export function adsManagerLink(externalAccountId?:string|null):string{
+ const id=externalAccountId?.replace(/^act_/,'');
+ return id&&/^\d{1,20}$/.test(id)?`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${id}`:'https://adsmanager.facebook.com/';
+}
+
 /** Preserve provider codes; name a billing or policy cause only when Meta's own code states it. */
 export function accountHealthIssues(raw:{account_status?:number;disable_reason?:number},externalAccountId?:string|null):IssueEvidence[]|null{
  if(raw.account_status===ACCOUNT_STATUS.ACTIVE)return [];

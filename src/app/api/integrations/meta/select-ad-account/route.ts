@@ -2,6 +2,7 @@ export const maxDuration = 300;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
+import { canManageBusiness } from '@/lib/shared/business/access';
 import {
   getBusinessIntegrationById,
 } from '@/lib/server/integrations/service';
@@ -48,7 +49,15 @@ function getSelectionUserMessage(message: string): string {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { businessId } = await getRequiredAppContext(false);
+    const { businessId, role } = await getRequiredAppContext(false);
+    if (!canManageBusiness(role)) {
+      return NextResponse.json(
+        fail('Requires an owner or admin', ErrorCode.FORBIDDEN, {
+          userMessage: 'Only an owner or admin can choose the ad account.',
+        }),
+        { status: 403 }
+      );
+    }
     const body = await request.json().catch(() => ({}));
     const integrationId =
       typeof body.integrationId === 'string' ? body.integrationId : null;
