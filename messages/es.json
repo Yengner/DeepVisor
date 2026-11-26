@@ -2991,5 +2991,58 @@
       "failed": "No se pudo guardar. Inténtalo de nuevo.",
       "switch": "No se pudo cambiar de negocio. Inténtalo de nuevo."
     }
+  },
+  "whoWhen": {
+    "title": "Quién y cuándo",
+    "popupTitle": "Quién y cuándo · este conjunto",
+    "covers": "Datos: {range}",
+    "range": "del {since} al {until}",
+    "unavailable": "No disponible",
+    "none": "Meta todavía no ha informado nada aquí para esta selección.",
+    "failed": "No se pudo cargar este desglose. Eso no significa que no haya actividad.",
+    "combinedOnly": "Meta solo informa esto para todo Meta. Cambia a Todo Meta para verlo.",
+    "people": "Personas",
+    "gender": {
+      "Female": "Mujeres",
+      "Male": "Hombres",
+      "Unknown": "Desconocido"
+    },
+    "metric": {
+      "spend": "Gasto",
+      "conversion": "Resultados",
+      "costPerResult": "Costo por resultado",
+      "impressions": "Impresiones",
+      "clicks": "Clics",
+      "ctr": "Porcentaje de clics",
+      "cpc": "Costo por clic"
+    },
+    "audience": {
+      "title": "Quién vio tus anuncios",
+      "report": "Informe de audiencia",
+      "dimension": "Agrupar por",
+      "metric": "Medida de audiencia",
+      "view": {
+        "age_gender": "Edad y género",
+        "age": "Edad",
+        "gender": "Género"
+      },
+      "chartLabel": "{metric} por edad y género",
+      "bestCost": "Menor costo por resultado",
+      "mostSpend": "Mayor gasto",
+      "results": "{count, plural, one {# resultado} other {# resultados}}",
+      "share": "{percent}% del gasto"
+    },
+    "time": {
+      "title": "Cuándo se mostraron",
+      "report": "Informe por horario",
+      "metric": "Medida por horario",
+      "calculation": "Cálculo",
+      "total": "Suma",
+      "average": "Promedio diario",
+      "dayChart": "Actividad por hora",
+      "weekChart": "Actividad por día y hora",
+      "selected": "Hora seleccionada",
+      "thisDay": "Este día"
+    }
   }
 }

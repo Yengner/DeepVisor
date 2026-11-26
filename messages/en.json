@@ -2991,5 +2991,58 @@
       "failed": "That could not be saved. Please try again.",
       "switch": "Couldn’t switch business. Please try again."
     }
+  },
+  "whoWhen": {
+    "title": "Who and when",
+    "popupTitle": "Who and when · this ad set",
+    "covers": "Data: {range}",
+    "range": "{since} to {until}",
+    "unavailable": "Unavailable",
+    "none": "Meta reported nothing here for this selection yet.",
+    "failed": "This breakdown couldn’t be loaded. That doesn’t mean there is no activity.",
+    "combinedOnly": "Meta reports this for all of Meta only. Switch to All Meta to see it.",
+    "people": "People",
+    "gender": {
+      "Female": "Women",
+      "Male": "Men",
+      "Unknown": "Unknown"
+    },
+    "metric": {
+      "spend": "Spend",
+      "conversion": "Results",
+      "costPerResult": "Cost per result",
+      "impressions": "Impressions",
+      "clicks": "Clicks",
+      "ctr": "CTR",
+      "cpc": "Cost per click"
+    },
+    "audience": {
+      "title": "Who saw your ads",
+      "report": "Audience report",
+      "dimension": "Group by",
+      "metric": "Audience measure",
+      "view": {
+        "age_gender": "Age and gender",
+        "age": "Age",
+        "gender": "Gender"
+      },
+      "chartLabel": "{metric} by age and gender",
+      "bestCost": "Lowest cost per result",
+      "mostSpend": "Most spend",
+      "results": "{count, plural, one {# result} other {# results}}",
+      "share": "{percent}% of spend"
+    },
+    "time": {
+      "title": "When your ads ran",
+      "report": "Time report",
+      "metric": "Time measure",
+      "calculation": "Calculation",
+      "total": "Total",
+      "average": "Daily average",
+      "dayChart": "Activity by hour",
+      "weekChart": "Activity by weekday and hour",
+      "selected": "Selected time",
+      "thisDay": "This day"
+    }
   }
 }

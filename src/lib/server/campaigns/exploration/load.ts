@@ -33,6 +33,7 @@ import type { OverviewContext } from "../../dashboard/overview/load";
 import type { UnitState } from "../../dashboard/overview/types";
 import { selectBoardAdvertising } from "../../dashboard/overview/controlModel";
 import { deliveryStatuses } from "./delivery";
+import { loadAdSetBreakdowns } from "./breakdowns";
 import { adSchedule } from "@/lib/shared/performance/schedule";
 import { resultDefinitionFor } from "@/lib/shared/performance/resultChannel";
 
@@ -500,6 +501,14 @@ export const loadExploration = cache(
           ]),
         ),
         recommendations,
+        // `parent` was already checked against this business and ad account.
+        breakdowns: await loadAdSetBreakdowns(client, {
+          accountId: context.account.id,
+          entityId: parent.id,
+          since: range.since,
+          until: context.today,
+          currency,
+        }),
       };
     }
     return {

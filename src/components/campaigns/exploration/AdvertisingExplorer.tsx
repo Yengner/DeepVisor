@@ -1,4 +1,6 @@
 "use client";
+import WhoWhen from "@/components/breakdowns/WhoWhen";
+import { useTranslations } from "next-intl";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -449,6 +451,7 @@ function DetailContent({
   setAdId: (id: string | null) => void;
 }) {
   const [visibleCount, setVisibleCount] = useState(12);
+  const tCharts = useTranslations("whoWhen");
   const ad = view.items.find((i) => i.id === adId),
     unit = view.detail!.unit;
   const selected = ad ?? unit;
@@ -629,6 +632,20 @@ function DetailContent({
           />
         </details>
       </section>
+      {!ad && view.detail!.breakdowns && (
+        <section>
+          <h2>{tCharts('popupTitle')}</h2>
+          <WhoWhen
+            key={view.period}
+            stacked
+            audience={view.detail!.breakdowns.audience}
+            audienceRange={view.detail!.breakdowns.audienceRange}
+            hourly={view.detail!.breakdowns.hourly}
+            currency={view.currency}
+            today={view.period === "today"}
+          />
+        </section>
+      )}
       {ad?.media[0] && (
         <details className={classes.disclosure}>
           <summary>Meta preview</summary>
