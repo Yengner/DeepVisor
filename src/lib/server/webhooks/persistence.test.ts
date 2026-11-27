@@ -31,6 +31,7 @@ beforeAll(async()=>{
  await db.exec(readFileSync('supabase/migrations/20261108045250_resource_quota_deferral.sql','utf8'));
  await db.exec(`create table ad_lifecycle_events(id uuid primary key default gen_random_uuid(),ad_account_id uuid);create table insight_issues(id uuid primary key default gen_random_uuid(),ad_account_id uuid,revision integer default 1,resolved_at timestamptz);`);
  await db.exec(readFileSync('supabase/migrations/20261114002047_meta_webhook_events.sql','utf8'));
+ await db.exec(readFileSync('supabase/migrations/20261127050347_stop_retryable_lease_errors.sql','utf8'));
 },30000);
 beforeEach(()=>db.exec('begin'));afterEach(()=>db.exec('rollback;reset role'));afterAll(()=>db?.close());
 const q=(objects?:Array<{id:string;level:string}>)=>({version:2,since:'2026-10-30',until:'2026-10-30',source:'webhook',...(objects?{objects}:{})});

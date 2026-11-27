@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Delta, Metrics } from "@/lib/server/campaigns/exploration/types";
 import type { AdSchedule } from "@/lib/shared/performance/schedule";
-import type { LearningProgress } from "@/lib/server/dashboard/insights/signals";
+import type { LearningStatus } from "@/lib/server/dashboard/insights/signals";
 import { metricValue, MetricDelta, useMetricLabels } from "./ControlMetrics";
 import type { ResultDefinition } from "@/lib/shared/performance/resultChannel";
 import classes from "./AdCardParts.module.css";
@@ -61,29 +61,14 @@ export function RunWindow({ schedule }: { schedule?: AdSchedule }) {
   );
 }
 
-const learningText: Record<LearningProgress["tone"], (p: LearningProgress) => string> = {
-  complete: () => "Complete",
-  learning: (p) => (p.percent !== null ? `${p.percent}%` : "In progress"),
-  limited: () => "Limited",
-  unknown: () => "Unavailable",
-};
-
-/**
- * Meta's learning phase as one thin bar, only while it is still learning or limited. A finished or
- * unknown phase gives the owner nothing to do, so it takes no space.
- */
-export function LearningBar({ learning }: { learning?: LearningProgress }) {
-  if (!learning || (learning.tone !== "learning" && learning.tone !== "limited")) return null;
-  const value = learningText[learning.tone](learning);
+/** Meta's learning status, only when Meta reports the ad set as learning or limited. */
+export function LearningNote({ learning }: { learning?: LearningStatus | null }) {
+  if (!learning) return null;
   return (
-    <div className={classes.learning} data-tone={learning.tone}>
-      <p><span>Learning</span><strong>{value}</strong></p>
-      <div className={classes.thin} role="meter" aria-label={`Meta learning: ${value}`}
-        aria-valuemin={0} aria-valuemax={100} aria-valuenow={learning.percent ?? undefined}
-        aria-valuetext={learning.percent === null ? value : `${learning.percent}%`} data-empty={learning.percent === null}>
-        <span style={{ width: `${learning.percent ?? 0}%` }} />
-      </div>
-    </div>
+    <p className={classes.learning} data-tone={learning.tone}>
+      <strong>{learning.label}</strong>
+      <span>Reported by Meta{learning.checkedAt ? ` · checked ${learning.checkedAt}` : ""}</span>
+    </p>
   );
 }
 

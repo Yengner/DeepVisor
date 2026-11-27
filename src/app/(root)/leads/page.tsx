@@ -4,9 +4,10 @@ import DesignSurface from '@/components/design/DesignSurface';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { createAdminClient } from '@/lib/server/supabase/admin';
+import WhatsAppCard from '@/components/whatsapp/WhatsAppCard';
+import { normalizeWhatsAppNumber } from '@/lib/shared/whatsapp/setup';
 import { isLeadPeriod, loadLeadLog, type LeadPeriod } from '@/lib/server/leads/service';
 import CallLeadForm from './CallLeadForm';
-import ConnectWhatsApp from './ConnectWhatsApp';
 import LeadList from './LeadList';
 import classes from './Leads.module.css';
 
@@ -29,9 +30,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const period: LeadPeriod = isLeadPeriod(params.period) ? (Number(params.period) as LeadPeriod) : 7;
   const log = await loadLeadLog(db, { businessId, adAccountId: account.id, timezone: account.timezone, period });
   const canEdit = role === 'owner' || role === 'admin';
-  // Embedded Signup needs the app id and a WhatsApp Embedded Signup configuration (neither is secret).
-  const signup = canEdit && process.env.META_APP_ID && process.env.META_WHATSAPP_CONFIG_ID
-    ? { appId: process.env.META_APP_ID, configId: process.env.META_WHATSAPP_CONFIG_ID } : null;
+  const { data: profile } = await db.from('business_profiles').select('whatsapp_number').eq('id', businessId).maybeSingle();
   const intlLocale = locale === 'es' ? 'es-US' : 'en-US';
   const currency = account.currency_code;
   const money = (v: number | null) => v === null ? null : currency ? new Intl.NumberFormat(intlLocale, { style: 'currency', currency }).format(v) : v.toFixed(2);
@@ -64,13 +63,15 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             {coverageNote && <span className={classes.muted}>{t('coveredFrom', { date: day(log.coveredFrom) })}</span>}
             {log.connection.syncFailed && <span className={classes.warning} role="alert">{t('connect.syncFailed')}</span>}
           </p>
-        ) : signup ? (
-          <ConnectWhatsApp appId={signup.appId} configId={signup.configId} />
-        ) : (
+        ) : canEdit ? null : (
           <section className={classes.card} aria-labelledby="leads-connect">
             <h2 id="leads-connect">{t('notConnectedTitle')}</h2>
             <p>{t('notConnectedBody')}</p>
           </section>
+        )}
+
+        {canEdit && (
+          <WhatsAppCard number={normalizeWhatsAppNumber(profile?.whatsapp_number)} trackingOn={Boolean(log.connection)} />
         )}
 
         <dl className={classes.kpis}>

@@ -6,10 +6,7 @@ import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { loadPortfolio } from '@/lib/server/clients/load';
 import BusinessCard from './BusinessCard';
 import styles from './Clients.module.css';
-
-export async function generateMetadata() {
-  return { title: (await getTranslations('clients'))('title') };
-}
+import LoginStatus from './LoginStatus';
 
 /** Every business the operator manages, the ones to look at first on top. Saved data only. */
 export default async function ClientsPage() {
@@ -28,6 +25,7 @@ export default async function ClientsPage() {
           </div>
           <Button component="a" href="/clients/new" size="md">{t('add')}</Button>
         </header>
+        {portfolio.login && <LoginStatus login={portfolio.login} locale={locale} />}
         <ul className={styles.list}>
           {portfolio.businesses.map((business) => <BusinessCard key={business.businessId} business={business} locale={locale} now={portfolio.now} />)}
         </ul>

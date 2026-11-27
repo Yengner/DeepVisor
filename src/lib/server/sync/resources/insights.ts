@@ -27,6 +27,7 @@ export async function readSavedInsights(businessId: string, accountId: string) {
   const learning = data.find(r => r.dataset === 'learning');
   return { daily: dataset('daily'), audience: dataset('audience'), hourly: dataset('hourly'),
     learning: learning ? z.record(z.string(), z.string()).parse(learning.payload) : {},
+    learningCheckedAt: times.learning ?? '',
     fetchedAt: times.daily ?? '', audienceFetchedAt: times.audience ?? '', hourlyFetchedAt: times.hourly ?? '', source: 'stored' as const };
 }
 

@@ -4,7 +4,7 @@ import OpenBusinessButton from '@/components/clients/OpenBusinessButton';
 import type { PortfolioBusiness } from '@/lib/server/clients/load';
 import { paymentState, type Attention } from '@/lib/shared/clients/model';
 import { adsManagerLink } from '@/lib/shared/insights/health';
-import { dailyNotificationKeys, formatNotificationPreviewMessage } from '@/lib/shared';
+import { notificationTextKeys, formatNotificationPreviewMessage } from '@/lib/shared';
 import { CONTROL_METRICS, metricValue, useMetricLabels } from '../dashboard/components/ControlMetrics';
 import type { ControlPerformance } from '@/lib/server/dashboard/overview/controlModel';
 import AdRuns from './AdRuns';
@@ -48,6 +48,7 @@ export default async function BusinessCard({ business, locale, now }: { business
             {synced.name ?? t('unnamedAccount')} · {synced.lastSynced ? t('lastSynced', { when: when(synced.lastSynced, synced.timezone) }) : t('attention.neverSynced')}
           </p>
           {synced.needsReconnect && <p className={styles.issue}>{t('reconnect')}</p>}
+          {synced.lastFailedAt && <p className={styles.issue}>{t('lastFailed', { when: when(synced.lastFailedAt, synced.timezone) })}</p>}
           {synced.issues.map((issue, index) => <p key={index} className={styles.issue}>{issue}</p>)}
           {synced.performance && (
             <section className={styles.section} aria-label={t('last7')}>
@@ -69,12 +70,12 @@ export default async function BusinessCard({ business, locale, now }: { business
         {business.alerts.length === 0 ? <p className={styles.muted}>{t('alerts.none')}</p> : (
           <ul className={styles.alerts}>
             {business.alerts.map((alert) => {
-              const daily = dailyNotificationKeys(alert);
+              const keys = notificationTextKeys(alert);
               return (
                 <li key={alert.id}>
                   <span>
-                    <strong>{daily ? tText(daily.title, { count: daily.count }) : alert.title}</strong>{' '}
-                    {daily ? tText(daily.message) : formatNotificationPreviewMessage(alert.message)}
+                    <strong>{keys ? tText(keys.title, keys.values) : alert.title}</strong>{' '}
+                    {keys ? tText(keys.message, keys.values) : formatNotificationPreviewMessage(alert.message)}
                   </span>
                   {alert.createdAt && <time className={styles.muted} dateTime={alert.createdAt}>{when(alert.createdAt)}</time>}
                 </li>

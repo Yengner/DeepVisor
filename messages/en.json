@@ -585,12 +585,10 @@
       "failed": "Couldn't save. Try again."
     },
     "connect": {
-      "title": "Connect your WhatsApp Business number",
-      "body": "Connect the number your customers already message. You keep answering from the WhatsApp Business app on your phone; DeepVisor only counts chats from your ads.",
       "noteKeepApp": "Keep the WhatsApp Business app open on your phone while connecting (it takes a few minutes).",
       "noteQr": "Meta will ask you to scan a QR code from the app. Linked computers are signed out once; you can link them again.",
       "notePrivacy": "DeepVisor saves the customer's WhatsApp name, the last 4 digits and timing. Never message text.",
-      "button": "Connect WhatsApp",
+      "button": "Turn on lead tracking",
       "done": "WhatsApp is connected. New chats will show up here.",
       "doneSyncPending": "WhatsApp is connected, but Meta didn't accept the history sync. Disconnect and connect again within 24 hours.",
       "syncFailed": "Meta's history sync failed. Reconnect within 24 hours or Meta disconnects this number.",
@@ -1039,7 +1037,7 @@
       "noNumber": "No saved WhatsApp number",
       "savedDuringSetup": "Saved during Meta setup",
       "saved": "Saved",
-      "noNumberAlert": "No WhatsApp number is saved for this business yet. Connect one in Connections, or send chats to Instagram or Messenger for now.",
+      "noNumberAlert": "No WhatsApp number is saved for this business yet. Set one up on the Leads page, or send chats to Instagram or Messenger for now.",
       "respondQuickly": "We can reply to new messages quickly.",
       "phone": "Phone number",
       "callWindow": "Hours you take calls",
@@ -1895,7 +1893,7 @@
       },
       "findingPage": {
         "title": "Finding your Facebook Page",
-        "body": "We are checking Facebook Pages so DeepVisor can prepare WhatsApp lead setup."
+        "body": "Checking your Facebook Pages so your ads use the right one."
       },
       "checking": {
         "title": "Checking your Meta ad account",
@@ -1908,6 +1906,10 @@
       "linking": {
         "title": "Connecting your ad account",
         "body": "This takes a few seconds. Your campaigns and results keep syncing in the background."
+      },
+      "findingNumber": {
+        "title": "Finding your WhatsApp number",
+        "body": "We are checking the numbers your ads use."
       }
     },
     "accountStatus": "Status: {status}",
@@ -1921,7 +1923,6 @@
     "selectFailed": "We couldn’t select that Meta ad account. Try again.",
     "connectFailed": "We couldn’t connect Meta. Please try again.",
     "choosePage": "Choose a Facebook Page to continue.",
-    "whatsAppFailed": "We couldn’t save your WhatsApp setup. Try again.",
     "accountTitle": "Choose one Meta ad account",
     "accountLead": "DeepVisor uses one main Meta ad account per connection. If your Meta login can reach several, choose the one to start with.",
     "accountNote": "Your other accounts stay as they are in Meta; DeepVisor only syncs the one you choose.",
@@ -1944,17 +1945,8 @@
     "noInstagram": "No Instagram account found for this Page",
     "skipPage": "Skip Page setup",
     "continue": "Continue",
-    "whatsAppTitle": "Set up WhatsApp leads",
-    "whatsAppLead": "WhatsApp lets customers message you straight from your ads. This is optional and you can change it later.",
-    "foundNumber": "We found this phone number on your Facebook Page:",
-    "sameNumber": "Is this also the WhatsApp number customers should message from your ads?",
-    "useNumber": "Yes, use this number",
-    "otherNumber": "No, enter a different WhatsApp number",
-    "skipWhatsApp": "Skip WhatsApp for now",
-    "enterNumber": "Enter the WhatsApp number customers should message from your ads.",
-    "noNumber": "We could not find a phone number on your Facebook Page. If you want customers to message you on WhatsApp, enter your WhatsApp Business number below.",
-    "numberLabel": "WhatsApp number",
-    "saveNumber": "Save WhatsApp number"
+    "whatsAppCheckFailed": "We couldn’t check WhatsApp. You can set it up later on the Leads page.",
+    "pageSaveFailed": "We couldn’t save your Facebook Page. Try again."
   },
   "reports": {
     "metric": {
@@ -2733,7 +2725,14 @@
     "urgentOne": "An advertising update needs your attention.",
     "urgentMany": "At least one of today’s updates needs your attention.",
     "calmOne": "Your saved advertising catch-up is ready.",
-    "calmMany": "Your catch-up and recent changes are ready."
+    "calmMany": "Your catch-up and recent changes are ready.",
+    "signInNeededTitle": "Sign in to Facebook again",
+    "signInNeededOwn": "Meta stopped accepting DeepVisor’s saved login, so ad data isn’t updating. Reconnect on Connections.",
+    "signInNeededShared": "Meta stopped accepting your saved login, so ad data for you and {count, plural, one {# client} other {# clients}} isn’t updating. Reconnect on Connections.",
+    "signInExpiringTitle": "{count, plural, =0 {Your Facebook login expires today} one {Your Facebook login expires tomorrow} other {Your Facebook login expires in # days}}",
+    "signInExpiringMessage": "Sign in again on Connections before then so ad data keeps updating.",
+    "refreshFailedTitle": "Ad data couldn’t refresh",
+    "refreshFailedMessage": "The last automatic refresh of {account} failed. DeepVisor will try again later, or you can refresh now."
   },
   "issueText": {
     "cause": {
@@ -2897,9 +2896,9 @@
     "partial": "incomplete data",
     "reconnect": "Meta needs to be reconnected.",
     "loadFailed": "Saved account data could not be read. This is not a sign that things are fine.",
-    "notSyncedBody": "DeepVisor does not sync client accounts yet, so there are no ads, results or reports here. Check {accounts} in Ads Manager.",
+    "notSyncedBody": "This business isn’t syncing an ad account yet. Open Business details to sync {accounts}.",
     "noAccountBody": "No ad account is linked yet. Link one in Business details.",
-    "syncOff": "DeepVisor does not sync this business yet, so it has no ads, results or reports here. Use Ads Manager for live changes.",
+    "syncOff": "No ad account is syncing yet, so there are no ads, results or reports here. Link an account below to start.",
     "unlinked": "{count, plural, one {# ad account is} other {# ad accounts are}} not linked to a business: {names}",
     "feeTitle": "Service and fee",
     "feeHint": "Only you can see this. DeepVisor does not charge or invoice anyone.",
@@ -2973,13 +2972,17 @@
     },
     "accounts": {
       "title": "Ad accounts",
-      "hint": "Linking records which account is theirs, for the Ads Manager button. It does not sync it or change anything in Meta.",
+      "hint": "The linked account syncs here through your own Meta connection, so this business gets its own dashboard. One account syncs at a time. Nothing changes in your Meta ads.",
       "none": "No ad account linked yet.",
       "add": "Link an ad account",
       "choose": "Choose from your Meta accounts",
       "noneLeft": "No unlinked accounts",
       "link": "Link",
-      "unlink": "Unlink"
+      "unlink": "Unlink",
+      "sync": "Sync this account",
+      "syncNow": "Sync now",
+      "notSyncing": "Not syncing",
+      "firstSync": "First sync started. It can take a few minutes."
     },
     "error": {
       "notAllowed": "You can’t change this business.",
@@ -2989,7 +2992,19 @@
       "taken": "That ad account is already linked to a business.",
       "account": "Choose an ad account from your Meta accounts.",
       "failed": "That could not be saved. Please try again.",
-      "switch": "Couldn’t switch business. Please try again."
+      "switch": "Couldn’t switch business. Please try again.",
+      "noConnection": "Your own business needs a working Meta connection first. Reconnect it, then try again.",
+      "ownConnection": "This business already has its own Meta connection, so yours wasn’t used.",
+      "syncFailed": "The sync couldn’t start. Try Sync this account again."
+    },
+    "lastFailed": "The last refresh failed {when}. These numbers may be out of date.",
+    "login": {
+      "label": "Facebook login",
+      "ok": "Working · checked {when}",
+      "unchecked": "Not checked yet. DeepVisor checks it once a day.",
+      "expiring": "{count, plural, =0 {Expires today} one {Expires tomorrow} other {Expires in # days}}. Sign in again so data keeps updating.",
+      "signInNeeded": "Meta stopped accepting it. {count, plural, =0 {Your ad data isn’t updating.} one {Ad data for you and # client isn’t updating.} other {Ad data for you and # clients isn’t updating.}}",
+      "action": "Open Connections"
     }
   },
   "whoWhen": {
@@ -3043,6 +3058,63 @@
       "weekChart": "Activity by weekday and hour",
       "selected": "Selected time",
       "thisDay": "This day"
+    }
+  },
+  "whatsappSetup": {
+    "title": "WhatsApp for your ads",
+    "lead": "Choose the number customers message from your ads. This is optional.",
+    "checking": "Checking your ads for WhatsApp numbers…",
+    "loadFailed": "We couldn’t check WhatsApp right now.",
+    "retry": "Try again",
+    "foundOne": "We found this number for {account}.",
+    "foundMany": "We found more than one number for {account}. Choose one.",
+    "thisAccount": "this ad account",
+    "usedBy": "{count, plural, one {# ad set sends} other {# ad sets send}} chats here · {active, plural, =0 {none running now} one {# running now} other {# running now}}",
+    "inPortfolio": "In the Meta business portfolio that owns this ad account",
+    "portfolioName": "WhatsApp name: {name}",
+    "savedBadge": "Saved now",
+    "fromSaved": "Meta couldn’t be reached, so this comes from your last sync.",
+    "mismatch": "Your saved number, {number}, isn’t one this account’s ads send chats to.",
+    "keepSaved": "Keep the saved number",
+    "noneTitle": "We didn’t find a WhatsApp number for {account}",
+    "noneBody": "That doesn’t mean you don’t have one. We only find numbers your ads already use, or ones in the business portfolio that owns this ad account.",
+    "unavailableTitle": "We couldn’t read this account’s ads from Meta",
+    "unavailableBody": "Check again in a moment, or enter your number below.",
+    "stepApp": "Install WhatsApp Business on your phone and set up your business number.",
+    "stepPage": "In your Facebook Page settings, open Linked accounts, choose WhatsApp and add that number.",
+    "stepEnter": "Then enter the number here. We’ll also find it by itself once an ad uses it.",
+    "checkAgain": "Check again",
+    "numberLabel": "WhatsApp number, with country code",
+    "invalidNumber": "Enter the number with its country code, like +1 813 555 1234.",
+    "usePagePhone": "Fill in the Facebook Page phone, {number}",
+    "pagePhoneNote": "Only use it if that phone is on WhatsApp.",
+    "enterOther": "Enter a different number",
+    "backToFound": "Back to the numbers we found",
+    "use": "Use this number",
+    "skip": "Skip for now",
+    "remove": "Don’t use WhatsApp",
+    "close": "Close",
+    "saveFailed": "We couldn’t save your WhatsApp number. Try again.",
+    "selected": "Number selected",
+    "tracking": "Tracking chats",
+    "trackingOn": "On for {number}",
+    "trackingOnUnknown": "On",
+    "trackingOff": "Off",
+    "trackingOther": "Tracking is on for a different number than the one you selected.",
+    "trackingOffer": "Optional: turn on lead tracking to see which ads bring chats and which become bookings.",
+    "trackingApproval": "This is a second approval in Meta. While DeepVisor waits for Meta’s approval, only people added as testers can finish it.",
+    "trackingNotApp": "Meta says this number isn’t on the WhatsApp Business phone app, so tracking can’t be turned on for it here.",
+    "trackingUnavailable": "Lead tracking isn’t available yet. Your number is still saved for ad drafts.",
+    "trackingViewOnly": "Only an owner or admin can turn on lead tracking.",
+    "done": "Done",
+    "card": {
+      "title": "WhatsApp",
+      "number": "Ad number: {number}",
+      "noNumber": "No ad number chosen",
+      "tracking": "Lead tracking: {status}",
+      "setUp": "Set up WhatsApp",
+      "change": "Change number or tracking",
+      "offHelp": "With tracking on, new chats from your ads show up here. You can log phone calls below either way."
     }
   }
 }

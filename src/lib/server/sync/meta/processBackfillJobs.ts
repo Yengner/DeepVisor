@@ -11,6 +11,8 @@ import type { Database } from '@/lib/shared/types/supabase';
 import { performanceFingerprint } from '../manualRefreshStatus';
 import { parallelTasks } from '../concurrency';
 import { asRecord } from '@/lib/shared';
+import { isLoginRejectedMessage } from '@/lib/server/integrations/metaLogin';
+import { loginRejectedKey, notifyHealth, refreshFailedKey } from '@/lib/server/notifications/health';
 
 import {
   claimHistoricalSyncJob,
@@ -161,6 +163,8 @@ async function runClaimedJob(job: Database['public']['Tables']['account_sync_job
     }).catch((nestedError) => {
       console.error('Failed to mark Meta historical sync job as failed:', nestedError);
     });
+    // Someone who pressed Refresh sees the failure on screen; background failures get an alert.
+    if (job.sync_type !== 'manual_refresh') await alertFailedRefresh(job, message);
 
     return {
       jobId: job.id,
@@ -171,6 +175,19 @@ async function runClaimedJob(job: Database['public']['Tables']['account_sync_job
   }
 }
 
+
+/** A bell alert for a background refresh that failed. Never throws. */
+async function alertFailedRefresh(job: Database['public']['Tables']['account_sync_jobs']['Row'], message: string) {
+  const now = new Date();
+  if (isLoginRejectedMessage(message)) {
+    await notifyHealth({ businessId: job.business_id, dedupeKey: loginRejectedKey(job.platform_integration_id ?? job.ad_account_id, now), notice: { kind: 'signInNeeded', clients: 0 } });
+    return;
+  }
+  const account = await createAdminClient().from('ad_accounts').select('name,external_account_id')
+    .eq('id', job.ad_account_id).eq('business_id', job.business_id).maybeSingle();
+  const name = account.data?.name || (account.data?.external_account_id ? `…${account.data.external_account_id.slice(-4)}` : '');
+  await notifyHealth({ businessId: job.business_id, dedupeKey: refreshFailedKey(job.ad_account_id, now), notice: { kind: 'refreshFailed', account: name } });
+}
 
 async function processClaimedJob(job: Database['public']['Tables']['account_sync_jobs']['Row']) {
   if(!resourceRefreshEnabled() || job.sync_type==='resource_refresh') return runClaimedJob(job);

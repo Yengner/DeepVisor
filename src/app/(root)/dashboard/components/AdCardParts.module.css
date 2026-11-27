@@ -55,30 +55,16 @@
 
 .learning {
   --tone: var(--ui-accent, #0056db);
-  margin: 0 0 16px;
-}
-.learning[data-tone="complete"] { --tone: var(--ui-positive, #226443); }
-.learning[data-tone="limited"] { --tone: var(--ui-warning, #855a13); }
-.learning[data-tone="unknown"] { --tone: var(--ui-muted, #53677d); }
-.learning p {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0 0 6px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin: 0 0 16px;
   font-size: 14px;
 }
-.learning p span { color: var(--ui-muted, #53677d); font-weight: 600; }
-.learning p strong { color: var(--tone); font-weight: 700; }
-.thin {
-  height: 6px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--tone) 14%, var(--ui-panel, #fff));
-  overflow: hidden;
-}
-.thin[data-empty="true"] {
-  background: repeating-linear-gradient(-45deg, var(--ui-line, #d9e3ef) 0 4px, transparent 4px 8px);
-}
-.thin span { display: block; height: 100%; border-radius: inherit; background: var(--tone); }
+.learning[data-tone="limited"] { --tone: var(--ui-warning, #855a13); }
+.learning strong { color: var(--tone); font-weight: 700; }
+.learning span { color: var(--ui-muted, #53677d); font-size: 13px; }
 
 /* The quiet one-liner for an ad set that is not about to end. */
 .runLine {

@@ -50,8 +50,10 @@ excluded from Facebook/Instagram selections. Never substitute a combined query
 in a filtered view. Missing actions are unknown; explicit empty action lists mean
 no reported actions. Hourly Results uses reported leads, messaging conversations and calls. If Meta explicitly rejects the actions field, the hourly query retries with delivery fields only. Hourly cost per result divides total spend by reported results for each time cell. It requires a known currency and a positive result count.
 Reach/frequency are not summed. Ratios are recomputed from compatible totals.
-Learning recognizes native LEARNING/LEARNING_LIMITED/SUCCESS only; no progress or
-elapsed-day estimate is invented. Advertising health remains the existing
+Learning is only what Meta reports in `learning_stage_info`: the card names **Learning** or
+**Learning limited** with when it was read, for live and saved data alike. No status (Meta
+often omits it), complete and waived show nothing. No percentage, completion or limited state
+is estimated from results or ad age. Advertising health remains the existing
 persisted decision-evidence classification for the whole Meta ad set.
 
 Next may serve previous cached data during revalidation; retrieval timestamps are

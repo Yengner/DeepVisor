@@ -12,7 +12,6 @@ import {
   Select,
   Stack,
   Text,
-  TextInput,
   ThemeIcon,
 } from '@mantine/core';
 import { IconAlertCircle, IconBrandMeta, IconCheck, IconLock } from '@tabler/icons-react';
@@ -20,7 +19,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import type { FirstSyncJobStatus, SyncCoverage } from '@/lib/shared/types/integrations';
-import type { WhatsAppNumberSource } from '@/lib/shared/types/whatsappSetup';
+import { savedNumberMismatch, type WhatsAppSetupData } from '@/lib/shared/whatsapp/setup';
+import WhatsAppSetupModal, { fetchWhatsAppSetup } from '@/components/whatsapp/WhatsAppSetupModal';
 import BlockingTaskScreen from '@/components/ui/states/BlockingTaskScreen';
 
 type MetaIntegrationFlowProps = {
@@ -101,7 +101,7 @@ type MetaPagesResponse = {
   };
 };
 
-type MetaPageWhatsAppSetupResponse = {
+type MetaPageSetupResponse = {
   success?: boolean;
   error?: {
     userMessage?: string;
@@ -128,7 +128,7 @@ function avatarLabel(name: string | null | undefined): string {
   return trimmed ? trimmed.charAt(0).toUpperCase() : 'P';
 }
 
-type Phase = 'connecting' | 'findingPage' | 'checking' | 'found' | 'linking';
+type Phase = 'connecting' | 'findingPage' | 'findingNumber' | 'checking' | 'found' | 'linking';
 
 /** Replaced by the translated label when shown; only a marker for "connected, but no name". */
 const INSTAGRAM_FALLBACK = '\u0000instagram';
@@ -192,9 +192,7 @@ export default function MetaIntegrationFlow({
   const [pageSelectionOpened, setPageSelectionOpened] = useState(false);
   const [pageSetupContext, setPageSetupContext] = useState<MetaPageSetupContext | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
-  const [whatsappSetupPage, setWhatsappSetupPage] = useState<MetaPageOption | null>(null);
-  const [manualWhatsAppEntry, setManualWhatsAppEntry] = useState(false);
-  const [manualWhatsAppNumber, setManualWhatsAppNumber] = useState('');
+  const [whatsappData, setWhatsappData] = useState<WhatsAppSetupData | null>(null);
   const [submittingPageSetup, setSubmittingPageSetup] = useState(false);
 
   const syncingOpened = submittingAccountSelection || (loadingAccountOptions && autoSyncRequested) || loadingPageSetup;
@@ -217,9 +215,7 @@ export default function MetaIntegrationFlow({
     setPageSelectionOpened(false);
     setPageSetupContext(null);
     setSelectedPageId(null);
-    setWhatsappSetupPage(null);
-    setManualWhatsAppEntry(false);
-    setManualWhatsAppNumber('');
+    setWhatsappData(null);
     setSubmittingPageSetup(false);
   };
 
@@ -243,6 +239,34 @@ export default function MetaIntegrationFlow({
   const completeMetaFlow = async (message?: string) => {
     resetPageSetup();
     await finishFlowWithSuccess(message);
+  };
+
+  /** Opens the WhatsApp step when it is needed; returns whether it did. */
+  const startWhatsAppSetup = async (): Promise<boolean> => {
+    setLoadingPageSetup(true);
+    setPhase('findingNumber');
+    try {
+      const data = await fetchWhatsAppSetup();
+      if (data.saved.completed && !savedNumberMismatch(data.saved.number, data.candidates)) {
+        return false;
+      }
+      setWhatsappData(data);
+      return true;
+    } catch (error) {
+      console.error('WhatsApp check unavailable', error);
+      toast.error(t('whatsAppCheckFailed'));
+      return false;
+    } finally {
+      setLoadingPageSetup(false);
+      setPhase('connecting');
+    }
+  };
+
+  const continueAfterPage = async () => {
+    setPageSelectionOpened(false);
+    if (!(await startWhatsAppSetup())) {
+      await completeMetaFlow();
+    }
   };
 
   const loadMetaPageSetup = async (input: {
@@ -390,10 +414,11 @@ export default function MetaIntegrationFlow({
       resetFlow();
       const resolvedIntegrationId = body.data?.integrationId ?? integrationId;
       const resolvedExternalAccountId = body.data?.externalAccountId ?? externalAccountId;
-      const pageSetupStarted = await loadMetaPageSetup({
-        integrationId: resolvedIntegrationId,
-        externalAccountId: resolvedExternalAccountId,
-      });
+      const pageSetupStarted =
+        (await loadMetaPageSetup({
+          integrationId: resolvedIntegrationId,
+          externalAccountId: resolvedExternalAccountId,
+        })) || (await startWhatsAppSetup());
 
       if (!pageSetupStarted) {
         await finishFlowWithSuccess();
@@ -482,30 +507,16 @@ export default function MetaIntegrationFlow({
     window.location.href = `/api/integrations/connect/meta?returnTo=${encodedReturnTo}`;
   };
 
-  const handleContinuePageSelection = () => {
+  const handleContinuePageSelection = async () => {
     const page = pageSetupContext?.pages.find((item) => item.page_id === selectedPageId) ?? null;
-    if (!page) {
+    if (!page || !pageSetupContext) {
       toast.error(t('choosePage'));
-      return;
-    }
-
-    setPageSelectionOpened(false);
-    setWhatsappSetupPage(page);
-    setManualWhatsAppEntry(!page.phone);
-    setManualWhatsAppNumber('');
-  };
-
-  const savePageWhatsAppSetup = async (
-    whatsappNumberSource: WhatsAppNumberSource,
-    whatsappNumber?: string | null
-  ) => {
-    if (!pageSetupContext || !whatsappSetupPage || submittingPageSetup) {
       return;
     }
 
     setSubmittingPageSetup(true);
     try {
-      const response = await fetch('/api/integrations/meta/page-whatsapp-setup', {
+      const response = await fetch('/api/integrations/meta/page-setup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -513,21 +524,20 @@ export default function MetaIntegrationFlow({
         body: JSON.stringify({
           integrationId: pageSetupContext.integrationId,
           externalAccountId: pageSetupContext.externalAccountId,
-          pageId: whatsappSetupPage.page_id,
-          whatsappNumberSource,
-          whatsappNumber: whatsappNumber ?? null,
+          pageId: page.page_id,
         }),
       });
-      const body = (await response.json().catch(() => ({}))) as MetaPageWhatsAppSetupResponse;
+      const body = (await response.json().catch(() => ({}))) as MetaPageSetupResponse;
 
       if (!response.ok || !body?.success) {
-        throw new Error(body?.error?.userMessage || 'Failed to save WhatsApp setup');
+        throw new Error(body?.error?.userMessage || 'Failed to save the Facebook Page');
       }
 
-      await completeMetaFlow(t('connectedWhatsApp'));
+      await continueAfterPage();
     } catch (error) {
-      console.error('WhatsApp setup not saved', error);
-      toast.error(t('whatsAppFailed'));
+      console.error('Facebook Page not saved', error);
+      toast.error(t('pageSaveFailed'));
+    } finally {
       setSubmittingPageSetup(false);
     }
   };
@@ -543,7 +553,6 @@ export default function MetaIntegrationFlow({
     instagramLabel: instagramName(page),
     pictureUrl: page.picture_url ?? null,
   }));
-  const skipSource: WhatsAppNumberSource = whatsappSetupPage?.phone ? 'skipped' : 'not_available';
 
   return (
     <>
@@ -739,14 +748,17 @@ export default function MetaIntegrationFlow({
             <Button
               variant="default"
               onClick={() => {
-                void completeMetaFlow();
+                void continueAfterPage();
               }}
               disabled={submittingPageSetup}
             >
               {t('skipPage')}
             </Button>
             <Button
-              onClick={handleContinuePageSelection}
+              onClick={() => {
+                void handleContinuePageSelection();
+              }}
+              loading={submittingPageSetup}
               disabled={!selectedPageId}
               leftSection={<IconCheck size={16} />}
             >
@@ -756,125 +768,14 @@ export default function MetaIntegrationFlow({
         </Stack>
       </Modal>
 
-      <Modal
-        opened={Boolean(whatsappSetupPage)}
-        onClose={() => {}}
-        title={t('whatsAppTitle')}
-        centered
-        withCloseButton={false}
-        closeOnClickOutside={false}
-        closeOnEscape={false}
-        size="sm"
-      >
-        {whatsappSetupPage ? (
-          <Stack gap="md">
-            <Group gap="sm" align="flex-start" wrap="nowrap">
-              <ThemeIcon color="green" variant="light" radius="xl" mt={2}>
-                <IconCheck size={16} />
-              </ThemeIcon>
-              <Text size="sm" c="dimmed">
-                {t('whatsAppLead')}
-              </Text>
-            </Group>
-
-            {whatsappSetupPage.phone && !manualWhatsAppEntry ? (
-              <>
-                <Text size="sm">
-                  {t('foundNumber')}
-                </Text>
-                <Paper withBorder radius="lg" p="md">
-                  <Group gap="sm" wrap="nowrap">
-                    <Avatar src={whatsappSetupPage.picture_url ?? null} size={38} radius="xl">
-                      {avatarLabel(whatsappSetupPage.name)}
-                    </Avatar>
-                    <Stack gap={2}>
-                      <Text size="sm" fw={700}>
-                        {whatsappSetupPage.name}
-                      </Text>
-                      <Text fw={800}>{whatsappSetupPage.phone}</Text>
-                    </Stack>
-                  </Group>
-                </Paper>
-                <Text size="sm">
-                  {t('sameNumber')}
-                </Text>
-
-                <Stack gap="xs">
-                  <Button
-                    fullWidth
-                    onClick={() => {
-                      void savePageWhatsAppSetup('page_phone_confirmed', whatsappSetupPage.phone);
-                    }}
-                    loading={submittingPageSetup}
-                  >
-                    {t('useNumber')}
-                  </Button>
-                  <Button
-                    fullWidth
-                    variant="default"
-                    onClick={() => setManualWhatsAppEntry(true)}
-                    disabled={submittingPageSetup}
-                  >
-                    {t('otherNumber')}
-                  </Button>
-                  <Button
-                    fullWidth
-                    variant="subtle"
-                    color="gray"
-                    onClick={() => {
-                      void savePageWhatsAppSetup('skipped');
-                    }}
-                    disabled={submittingPageSetup}
-                  >
-                    {t('skipWhatsApp')}
-                  </Button>
-                </Stack>
-              </>
-            ) : (
-              <>
-                <Text size="sm">
-                  {whatsappSetupPage.phone
-                    ? t('enterNumber')
-                    : t('noNumber')}
-                </Text>
-
-                <TextInput
-                  label={t('numberLabel')}
-                  placeholder="+1 813 555 1234"
-                  value={manualWhatsAppNumber}
-                  onChange={(event) => setManualWhatsAppNumber(event.currentTarget.value)}
-                  disabled={submittingPageSetup}
-                  inputMode="tel"
-                />
-
-                <Stack gap="xs">
-                  <Button
-                    fullWidth
-                    onClick={() => {
-                      void savePageWhatsAppSetup('manual', manualWhatsAppNumber);
-                    }}
-                    loading={submittingPageSetup}
-                    disabled={!manualWhatsAppNumber.trim()}
-                  >
-                    {t('saveNumber')}
-                  </Button>
-                  <Button
-                    fullWidth
-                    variant="subtle"
-                    color="gray"
-                    onClick={() => {
-                      void savePageWhatsAppSetup(skipSource);
-                    }}
-                    disabled={submittingPageSetup}
-                  >
-                    {t('skipWhatsApp')}
-                  </Button>
-                </Stack>
-              </>
-            )}
-          </Stack>
-        ) : null}
-      </Modal>
+      <WhatsAppSetupModal
+        opened={Boolean(whatsappData)}
+        initialData={whatsappData}
+        firstRun
+        onDone={(number) => {
+          void completeMetaFlow(number ? t('connectedWhatsApp') : undefined);
+        }}
+      />
 
       <BlockingTaskScreen
         opened={syncingOpened}

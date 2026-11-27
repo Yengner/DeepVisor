@@ -133,7 +133,7 @@ function Loading({
   const bar = (className = "") => <span className={`${classes.skeleton} ${className}`} />;
   if (kind === "metrics") return (
     <div role="status" aria-label="Loading performance" className={classes.skeletonKpis}>
-      {[0, 1, 2, 3].map(i => <div key={i}>{bar(classes.skLabel)}{bar(classes.skValue)}{bar(classes.skFoot)}</div>)}
+      {[0, 1, 2, 3].map(i => <div key={i}>{bar(classes.skLabel)}{bar(classes.skValue)}</div>)}
     </div>
   );
   if (kind === "chart") return (
@@ -253,8 +253,11 @@ async function Board({ period, context }: { period: Period; context: OverviewCon
     // the source; the live cache is only used when the board itself reads live rows.
     const stored = resourceRefreshEnabled() && context.publisher === 'combined';
     const healthRows = stored ? await storedInsights(context).catch(() => live.daily) : live.daily;
-    const signals = adSetSignals(healthRows, view.items.map(i => i.id), live.learningDetail ?? {}, context.today, context.now, context.target);
-    return <AdvertisingBoard view={{ ...view, items: advertisingMetrics(view.items, resourceRefreshEnabled() && context.publisher === 'combined' ? null : live.daily, context.publisher, period, context.today, view.currency) }} learning={live.learning} signals={signals} filtered={context.publisher !== 'combined'} />;
+    const learningCheckedAt = live.learningCheckedAt
+      ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: context.zone }).format(new Date(live.learningCheckedAt))
+      : null;
+    const signals = adSetSignals(healthRows, view.items.map(i => i.id), live.learning, learningCheckedAt, context.today, context.target);
+    return <AdvertisingBoard view={{ ...view, items: advertisingMetrics(view.items, resourceRefreshEnabled() && context.publisher === 'combined' ? null : live.daily, context.publisher, period, context.today, view.currency) }} signals={signals} filtered={context.publisher !== 'combined'} />;
   }
   return view ? (
     <AdvertisingBoard view={view} />

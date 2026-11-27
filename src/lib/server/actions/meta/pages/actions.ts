@@ -8,6 +8,7 @@ import {
     getBusinessIntegrationById,
     resolveIntegrationAccessToken,
 } from "@/lib/server/integrations/service";
+import { sharedFromBusiness } from "@/lib/shared/integrations/sharedConnection";
 import { fetchMetaCollection, fetchMetaObject } from "@/lib/server/sync/meta/client";
 import { createSupabaseClient } from "@/lib/server/supabase/server";
 
@@ -262,6 +263,13 @@ export async function getMetaPages({
             return fail('Meta integration is not connected.', ErrorCode.INTEGRATION_ERROR, {
                 userMessage: 'Connect Meta before choosing a Facebook Page.',
                 details: { platformId },
+            });
+        }
+
+        // A client's connection borrows the operator's login, which can see Pages that aren't theirs.
+        if (sharedFromBusiness(integration.integrationDetails)) {
+            return fail("Pages are not available for a client business.", ErrorCode.FORBIDDEN, {
+                userMessage: "Facebook Pages are not available for client businesses.",
             });
         }
 

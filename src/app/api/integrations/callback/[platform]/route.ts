@@ -1,4 +1,5 @@
 import { isManagedClient } from '@/lib/server/clients/operator';
+import { refreshSharedConnections } from '@/lib/server/clients/sharedSync';
 import { canManageBusiness } from '@/lib/shared/business/access';
 import { SIMULATION_TAG, simulationForUser, simulationToken, validateSimulation } from '@/lib/server/integrations/simulation/meta';
 import { NextRequest, NextResponse } from 'next/server';
@@ -158,6 +159,10 @@ export async function GET(
         ...(metaUserId ? { meta_user_id: metaUserId } : {}),
       },
     });
+
+    // Client businesses that borrow this connection get its new expiry. Never blocks signing in.
+    await refreshSharedConnections(businessContext.businessId, integrationPlatform.id)
+      .catch(() => console.warn('Client connections could not be refreshed.'));
 
     const accessibleAccounts = await fetchMetaAdAccountSnapshots(token.access_token);
     if (accessibleAccounts.length === 0) {

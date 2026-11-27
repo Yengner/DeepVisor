@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 vi.mock('server-only', () => ({}));
-const m = vi.hoisted(() => ({ cookie: vi.fn(), set: vi.fn(), remove: vi.fn(), memberships: [] as unknown[], rows: new Map<string, unknown>(), inserted: vi.fn(), rpc: vi.fn() }));
+const m = vi.hoisted(() => ({ cookie: vi.fn(), set: vi.fn(), remove: vi.fn(), memberships: [] as unknown[], rows: new Map<string, unknown>(), inserted: vi.fn(), rpc: vi.fn(), start: vi.fn(), stop: vi.fn(), synced: vi.fn() }));
+vi.mock('./sharedSync', () => ({ startClientSync: m.start, stopClientSync: m.stop, syncedClientAccount: m.synced }));
 
 vi.mock('next/headers', () => ({ cookies: async () => ({ get: m.cookie, set: m.set, delete: m.remove }) }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
@@ -25,7 +26,7 @@ vi.mock('@/lib/server/supabase/admin', () => ({
 }));
 
 import { getExistingOrganizationBusinessContext } from '@/lib/server/actions/business/context';
-import { createClientBusiness, linkClientAccount, saveEngagement, switchBusiness } from './actions';
+import { createClientBusiness, linkClientAccount, saveEngagement, switchBusiness, syncClientAccount, unlinkClientAccount } from './actions';
 
 const membership = (name: string, role = 'owner') => ({
   organization_id: `org-${name}`, role,
@@ -40,6 +41,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   m.memberships = [membership('mine'), membership('client')];
   m.rows = new Map();
+  m.synced.mockResolvedValue(null);
+  m.start.mockResolvedValue({ ok: true });
 });
 
 it('follows the cookie only to a business the user belongs to', async () => {
@@ -85,4 +88,43 @@ it('links only an account saved on the operator connection, to an active client'
   m.rows.set('ad_accounts', { name: 'Salon account' });
   expect(await linkClientAccount('business-client', 'act_123')).toMatchObject({ ok: true });
   expect(m.inserted).toHaveBeenCalledWith('client_ad_accounts', { external_account_id: '123', business_id: 'business-client', name: 'Salon account' });
+});
+
+const asOperator = () => {
+  m.rows.set('operator_workspaces', [{ organization_id: 'org-mine' }]);
+  m.rows.set('client_engagements', { business_id: 'business-client' });
+};
+
+it('starts syncing the first linked account, and keeps the link when that fails', async () => {
+  asOperator();
+  m.rows.set('ad_accounts', { name: 'Salon account' });
+  expect(await linkClientAccount('business-client', '123')).toEqual({ ok: true, businessId: 'business-client' });
+  expect(m.start).toHaveBeenCalledWith(expect.objectContaining({ businessId: 'business-client', accountNumber: '123', userId: 'user-a' }));
+  m.start.mockResolvedValue({ ok: false, error: 'noConnection' });
+  expect(await linkClientAccount('business-client', '123')).toMatchObject({ ok: true, warning: 'noConnection' });
+  // A second account doesn't take over from the one already syncing.
+  m.start.mockClear();
+  m.synced.mockResolvedValue('555');
+  await linkClientAccount('business-client', '123');
+  expect(m.start).not.toHaveBeenCalled();
+});
+
+it('syncs only an account linked to that client', async () => {
+  m.rows.set('operator_workspaces', []);
+  expect(await syncClientAccount('business-client', '123')).toEqual({ ok: false, error: 'notAllowed' });
+  asOperator();
+  expect(await syncClientAccount('business-client', '123')).toEqual({ ok: false, error: 'account' });
+  expect(m.start).not.toHaveBeenCalled();
+  m.rows.set('client_ad_accounts', { external_account_id: '123' });
+  expect(await syncClientAccount('business-client', '123')).toMatchObject({ ok: true });
+  expect(m.start).toHaveBeenCalledTimes(1);
+});
+
+it('stops syncing before unlinking the synced account, and only then', async () => {
+  asOperator();
+  m.synced.mockResolvedValue('555');
+  await unlinkClientAccount('business-client', '123');
+  expect(m.stop).not.toHaveBeenCalled();
+  await unlinkClientAccount('business-client', '555');
+  expect(m.stop).toHaveBeenCalledWith('business-client');
 });

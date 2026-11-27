@@ -7,7 +7,10 @@ import { openUrgentIssues } from '@/lib/server/insights/issues';
 import { loadOverviewDaily, loadOverviewEntities } from '@/lib/server/dashboard/overview/load';
 import { controlPerformance, type ControlPerformance } from '@/lib/server/dashboard/overview/controlModel';
 import { accountNumber, adTimeline, attentionFor, compareByAttention, earliestEnd, showOnPortfolio, ENDING_SOON_DAYS, type AdTimeline, type Attention, type ServiceLevel } from '@/lib/shared/clients/model';
-import { asRecord } from '@/lib/shared';
+import { asRecord, readHealthNotice, type HealthNotice } from '@/lib/shared';
+import { resolvePlatformByKey } from '@/lib/server/integrations/service';
+import { loginState, TOKEN_CHECKED_AT_KEY, type LoginState } from '@/lib/server/integrations/metaLogin';
+import { SHARED_FROM_KEY } from '@/lib/shared/integrations/sharedConnection';
 import { clientsDb, getOperator, type Operator } from './operator';
 
 export type Engagement = {
@@ -20,7 +23,7 @@ export type Engagement = {
 };
 export type LinkedAccount = { externalAccountId: string; name: string | null };
 export type AdRun = AdTimeline & { id: string; name: string; campaign: string | null; ads: number };
-export type BusinessAlert = { id: string; title: string; message: string; createdAt: string; link: string | null; read: boolean; daily?: { count: number; urgent: boolean } };
+export type BusinessAlert = { id: string; title: string; message: string; createdAt: string; link: string | null; read: boolean; daily?: { count: number; urgent: boolean }; health?: HealthNotice };
 
 export type SyncedAccount = {
   accountId: string;
@@ -35,6 +38,17 @@ export type SyncedAccount = {
   performance: ControlPerformance | null;
   issues: string[];
   needsReconnect: boolean;
+  /** When the newest refresh failed and nothing has succeeded since; null otherwise. */
+  lastFailedAt: string | null;
+};
+
+/** The operator's own Meta login, which client connections borrow. */
+export type LoginHealth = {
+  state: LoginState;
+  daysLeft: number | null;
+  checkedAt: string | null;
+  /** Client businesses syncing through this login. */
+  clients: number;
 };
 
 export type PortfolioBusiness = {
@@ -101,14 +115,18 @@ async function loadSynced(businessId: string, now: string): Promise<SyncedAccoun
   const accountId = account.data.id;
   const zone = account.data.timezone || 'UTC';
   const today = localDay(zone, now);
-  const [entities, issues, performance] = await Promise.all([
+  const [entities, issues, performance, latestJob] = await Promise.all([
     readAllPages((from, to) => db.from('ad_entities').select('id,external_id,parent_external_id,entity_level,name,status,raw')
       .eq('business_id', businessId).eq('ad_account_id', accountId).order('id').range(from, to), { nullDataError: 'Hierarchy unavailable' }),
     openUrgentIssues(businessId, accountId),
     Promise.all([loadOverviewDaily(businessId, accountId, today), loadOverviewEntities(businessId, accountId)])
       .then(([rows, list]) => controlPerformance(rows, list, '7d', today, account.data!.currency_code))
       .catch(() => null),
+    db.from('account_sync_jobs').select('status,finished_at,updated_at')
+      .eq('business_id', businessId).eq('ad_account_id', accountId).in('status', ['completed', 'failed'])
+      .order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ]);
+  if (latestJob.error) throw latestJob.error;
   const rows = entities as EntityRow[];
   return {
     accountId,
@@ -124,6 +142,7 @@ async function loadSynced(businessId: string, now: string): Promise<SyncedAccoun
     performance,
     issues: issues.map((issue) => issue.title),
     needsReconnect: connection.status !== 'connected',
+    lastFailedAt: latestJob.data?.status === 'failed' ? latestJob.data.finished_at ?? latestJob.data.updated_at : null,
   };
 }
 
@@ -164,6 +183,7 @@ function toAlert(row: Awaited<ReturnType<typeof loadAlerts>>[number]): BusinessA
   return {
     id: row.id, title: row.title, message: row.message, createdAt: row.created_at ?? '', link: row.link, read: Boolean(row.read),
     ...(count ? { daily: { count, urgent: payload.urgent === true } } : {}),
+    ...(readHealthNotice(row.payload_json) ? { health: readHealthNotice(row.payload_json) } : {}),
   };
 }
 
@@ -172,8 +192,29 @@ export type Portfolio = {
   businesses: PortfolioBusiness[];
   /** Accounts on the operator's connection that no business has yet. */
   unlinked: LinkedAccount[];
+  /** Null when the operator has no Meta connection. */
+  login: LoginHealth | null;
   now: string;
 };
+
+async function loadLogin(operatorBusinessId: string, now: string): Promise<LoginHealth | null> {
+  const db = createAdminClient();
+  const platform = await resolvePlatformByKey(db, 'meta');
+  if (!platform) return null;
+  const own = await db.from('platform_integrations').select('status,token_expires_at,integration_details')
+    .eq('business_id', operatorBusinessId).eq('platform_id', platform.id).in('status', ['connected', 'error', 'needs_reauth']).maybeSingle();
+  if (own.error) throw own.error;
+  if (!own.data) return null;
+  const lent = await db.from('platform_integrations').select('id', { count: 'exact', head: true })
+    .eq(`integration_details->>${SHARED_FROM_KEY}`, operatorBusinessId).in('status', ['connected', 'error', 'needs_reauth']);
+  if (lent.error) throw lent.error;
+  const checkedAt = asRecord(own.data.integration_details)[TOKEN_CHECKED_AT_KEY];
+  return {
+    ...loginState({ status: own.data.status, checkedAt, expiresAt: own.data.token_expires_at, now: new Date(now) }),
+    checkedAt: typeof checkedAt === 'string' ? checkedAt : null,
+    clients: lent.count ?? 0,
+  };
+}
 
 /**
  * Everything on "All businesses", from saved data only: no Meta request is made. Only businesses
@@ -185,12 +226,16 @@ export async function loadPortfolio(userId: string): Promise<Portfolio | null> {
   const now = new Date().toISOString();
   const memberships: OrganizationBusinessContext[] = await listUserBusinesses(userId);
   const ids = memberships.map((business) => business.businessId);
-  const [profiles, engagements, links, alerts, inventory] = await Promise.all([
+  const [profiles, engagements, links, alerts, inventory, login] = await Promise.all([
     createAdminClient().from('business_profiles').select('id,business_name,business_location').in('id', ids),
     loadEngagements(operator),
     loadLinks(ids),
     loadAlerts(userId, ids),
     createAdminClient().from('ad_accounts').select('external_account_id,name').eq('business_id', operator.businessId).order('name'),
+    loadLogin(operator.businessId, now).catch((error) => {
+      console.error('Portfolio login health unavailable:', error);
+      return null;
+    }),
   ]);
   if (profiles.error) throw profiles.error;
   if (inventory.error) throw inventory.error;
@@ -236,5 +281,5 @@ export async function loadPortfolio(userId: string): Promise<Portfolio | null> {
     return number && number !== ownPrimary && !used.has(number) ? [{ externalAccountId: number, name: row.name }] : [];
   });
 
-  return { operator, businesses: businesses.sort(compareByAttention), unlinked, now };
+  return { operator, businesses: businesses.sort(compareByAttention), unlinked, login, now };
 }

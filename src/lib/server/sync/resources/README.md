@@ -36,6 +36,9 @@ Implemented and verified against existing development project `gkdyyjqepzayjdpvq
   Claim generations reject late workers. Existing full writers also carry database lease
   headers; these are internal fencing, never authorization. All new mutation RPCs are
   service-role-only; read policies retain account membership. Browser credentials stay normal.
+- Database functions must never raise SQLSTATE `40001` (or `serialization_failure`): PostgREST 14
+  retries it without limit, and a rejected lease can never succeed. Expired-lease and changed-baseline
+  errors raise `P0001` (migration `20261127050347_stop_retryable_lease_errors`).
 - Dashboard optional publisher/daily-demographic/hourly/learning observations persist in
   `account_insight_snapshots` under the same worker and quota controls. Page renders no
   longer fetch Meta in this mode. Combined Dashboard and assistant use canonical daily facts.

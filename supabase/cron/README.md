@@ -1,9 +1,12 @@
 # Automatic Meta refresh deployment
 
-Existing development project: `gkdyyjqepzayjdpvqnja`. The application implementation
-and queue migration are verified against this project. **Edge deployments were
-approved and completed; hosted automatic enqueue is not active because the updated
-Next.js app is not deployed yet (its automatic-refresh endpoint returns 404).**
+Project: `gkdyyjqepzayjdpvqnja`. It is also the database the live site uses (checked
+2026-11-27), so every step here affects production. **State on 2026-11-27:** the worker job
+(ID 66, every 10 minutes, `limit` 1) runs and gets HTTP 200; no enqueue job exists (the old
+`cron_sync_ad_metrics` was removed), so nothing queues refreshes on a schedule. The live app
+answers `/api/sync/scheduled-refresh` (401 without the key, not 404) and the Edge forwarders
+are deployed (`queue_account_sync_jobs` v4, `process_account_sync_jobs` v5). The owner approved
+activation after the login-check code is merged and deployed.
 
 ## Behavior
 
@@ -30,9 +33,11 @@ Next.js app is not deployed yet (its automatic-refresh endpoint returns 404).**
   persisted completion. A queue response does not claim updated data.
 - Sync uses the existing Meta read adapter and worker, never the advertising executor.
 
-> The cleanup migration `20261119211138` removed the inactive job `cron_sync_ad_metrics`.
-> The activation SQL below would create it again, with a new job ID. It also sets the
-> worker's `limit` to 5; the live job used 1 on 2026-11-24. Review both before running it.
+> `automatic_meta_refresh.sql` creates one new job, `queue-account-sync-jobs-every-2-hours`
+> (`5 */2 * * *`, `limit` 25), and leaves the worker job unchanged. With `limit` 1 every
+> 10 minutes the worker runs up to 12 refreshes per 2 hours, enough for about a dozen accounts;
+> raise the worker limit before adding more. The worker tick also runs the daily Meta login
+> check (`src/lib/server/integrations/connectionHealth.ts`), which needs no cron change.
 
 ## Approval and activation order
 
@@ -61,8 +66,8 @@ Next.js app is not deployed yet (its automatic-refresh endpoint returns 404).**
    codes and application job records. A successful cron dispatch is not proof of a
    completed sync. Inspect sanitized metadata, not request headers/secret payloads.
 
-Rollback of the new recurring enqueue is `cron.alter_job(13, active := false)` after
-confirming the current job ID. Preserve the worker and queued work. Do not clear a
+Rollback of the recurring enqueue is
+`select cron.unschedule('queue-account-sync-jobs-every-2-hours');`. Preserve the worker and queued work. Do not clear a
 running claim merely to retry it.
 
 ## Focused reproduction

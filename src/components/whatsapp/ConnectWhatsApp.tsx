@@ -4,8 +4,8 @@ import Script from 'next/script';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Alert, Button } from '@mantine/core';
-import { connectWhatsAppAction } from './actions';
-import classes from './Leads.module.css';
+import { connectWhatsAppAction } from '@/lib/server/leads/connectAction';
+import classes from './WhatsAppSetup.module.css';
 
 type LoginResponse = { authResponse?: { code?: string } | null };
 type FacebookSdk = {
@@ -23,7 +23,7 @@ const isId = (value: unknown): value is string => typeof value === 'string' && /
  * their phone. Meta returns the ids through a window message and a 30-second code through the
  * login callback; both go straight to the server action, which checks them with Meta.
  */
-export default function ConnectWhatsApp({ appId, configId }: { appId: string; configId: string }) {
+export default function ConnectWhatsApp({ appId, configId, onConnected }: { appId: string; configId: string; onConnected?: () => void }) {
   const t = useTranslations('leads.connect');
   const router = useRouter();
   const session = useRef<Session | null>(null);
@@ -33,6 +33,9 @@ export default function ConnectWhatsApp({ appId, configId }: { appId: string; co
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  // Meta blocks this sign-in on http pages, so say so before anyone presses the button.
+  const [insecure, setInsecure] = useState(false);
+  useEffect(() => { setInsecure(window.location.protocol !== 'https:'); }, []);
 
   const finish = () => {
     const ids = session.current, value = code.current;
@@ -43,6 +46,7 @@ export default function ConnectWhatsApp({ appId, configId }: { appId: string; co
       if (!result.success) { setError(result.error?.userMessage ?? t('error.failed')); return; }
       setNotice(result.data?.synced ? t('done') : t('doneSyncPending'));
       router.refresh();
+      onConnected?.();
     });
   };
 
@@ -70,7 +74,7 @@ export default function ConnectWhatsApp({ appId, configId }: { appId: string; co
     if (!window.FB) return;
     setNotice(null);
     // Meta refuses FB.login on http pages (including localhost) and never calls back.
-    if (window.location.protocol !== 'https:') { setError(t('error.https')); return; }
+    if (window.location.protocol !== 'https:') return;
     setError(null); setOpen(true);
     window.FB.login(response => {
       setOpen(false);
@@ -85,24 +89,21 @@ export default function ConnectWhatsApp({ appId, configId }: { appId: string; co
   };
 
   return (
-    <section className={classes.card} aria-labelledby="leads-connect">
+    <div className={classes.connect}>
       <Script id="facebook-sdk" src="https://connect.facebook.net/en_US/sdk.js" strategy="lazyOnload" crossOrigin="anonymous"
         onReady={() => {
           window.FB?.init({ appId, autoLogAppEvents: false, xfbml: false, version: 'v24.0' });
           setReady(Boolean(window.FB));
         }} />
-      <h2 id="leads-connect">{t('title')}</h2>
-      <p>{t('body')}</p>
       <ul className={classes.connectNotes}>
         <li>{t('noteKeepApp')}</li>
         <li>{t('noteQr')}</li>
         <li>{t('notePrivacy')}</li>
       </ul>
-      <div className={classes.callRow}>
-        <Button onClick={launch} loading={pending || open} disabled={!ready}>{t('button')}</Button>
-      </div>
+      {insecure && <Alert color="yellow" variant="light">{t('error.https')}</Alert>}
+      <Button onClick={launch} loading={pending || open} disabled={!ready || insecure}>{t('button')}</Button>
       {notice && <Alert color="green" variant="light" role="status">{notice}</Alert>}
       {error && <Alert color="red" variant="light" role="alert">{error}</Alert>}
-    </section>
+    </div>
   );
 }

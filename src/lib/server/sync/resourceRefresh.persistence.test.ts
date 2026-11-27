@@ -36,6 +36,7 @@ beforeAll(async()=>{
  await db.exec(readFileSync('supabase/migrations/20261108044834_persisted_dashboard_insights.sql','utf8'));
  await db.exec(readFileSync('supabase/migrations/20261108045250_resource_quota_deferral.sql','utf8'));
  await db.exec(readFileSync('supabase/migrations/20261119234520_meta_read_lease_renewal.sql','utf8'));
+ await db.exec(readFileSync('supabase/migrations/20261127050347_stop_retryable_lease_errors.sql','utf8'));
 },30000);
 beforeEach(()=>db.exec('begin'));afterEach(()=>db.exec('rollback;reset role'));afterAll(()=>db?.close());
 it('coalesces 20 simultaneous demands into one job without consuming manual cooldown',async()=>{
@@ -141,12 +142,12 @@ it('fences legacy database writes after a worker is reclaimed',async()=>{
  await db.exec(`select set_config('request.headers','{}',true)`);
  await db.query(`update account_sync_jobs set metadata=metadata||'{"claimed_at":"second"}' where id=$1`,[id]);
  await db.query(`select set_config('request.headers',$1,true)`,[JSON.stringify({'x-deepvisor-sync-job':id,'x-deepvisor-sync-generation':'1'})]);
- await expect(db.exec(`update ad_entities set entity_level='adset' where id='${entity}'`)).rejects.toMatchObject({code:'40001'});
+ await expect(db.exec(`update ad_entities set entity_level='adset' where id='${entity}'`)).rejects.toMatchObject({code:'P0001'});
 });
 
 it('rejects null publication leases instead of treating a missing payload as empty',async()=>{
  const id=(await request()).jobId as string;await claim(id);
- await expect(db.query('select publish_account_resource($1,null,null)',[id])).rejects.toMatchObject({code:'40001'});
+ await expect(db.query('select publish_account_resource($1,null,null)',[id])).rejects.toMatchObject({code:'P0001'});
 });
 it('a full success satisfies covered pending demands without redundant work',async()=>{
  const id=(await request(query,'maintenance')).jobId as string;

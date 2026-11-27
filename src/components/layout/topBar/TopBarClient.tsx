@@ -30,7 +30,7 @@ import {
   markNotificationReadClient,
 } from '@/lib/client';
 import {
-  dailyNotificationKeys,
+  notificationTextKeys,
   formatNotificationPreviewMessage,
   type NotificationFeedItem,
 } from '@/lib/shared';
@@ -210,10 +210,10 @@ export default function TopBarClient({
               <>
                 <Box px={6} pb={6} mah="min(46vh, 290px)" style={{ overflowY: 'auto' }}>
                   {userNotifications.map((notification) => {
-                    // The daily update row is worded here, in the reader's language.
-                    const daily = dailyNotificationKeys(notification);
-                    const title = daily ? tText(daily.title, { count: daily.count }) : notification.title;
-                    const message = daily ? tText(daily.message) : formatNotificationPreviewMessage(notification.message);
+                    // Daily update and connection alert rows are worded here, in the reader's language.
+                    const keys = notificationTextKeys(notification);
+                    const title = keys ? tText(keys.title, keys.values) : notification.title;
+                    const message = keys ? tText(keys.message, keys.values) : formatNotificationPreviewMessage(notification.message);
                     return (
                     <Menu.Item
                       key={notification.id}

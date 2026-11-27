@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/shared/types/supabase';
-import type { NotificationFeedItem } from '@/lib/shared';
+import { readHealthNotice, type NotificationFeedItem } from '@/lib/shared';
 
 type IntelligenceClient = SupabaseClient<Database>;
 
@@ -70,6 +70,7 @@ function dailyBundle(row: NotificationRow): NotificationFeedItem['daily'] {
 function mapNotificationRow(row: NotificationRow): NotificationFeedItem {
   return {
     daily: dailyBundle(row),
+    health: readHealthNotice(row.payload_json),
     id: row.id,
     user_id: row.user_id,
     business_id: row.business_id,

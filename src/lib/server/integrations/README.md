@@ -9,6 +9,9 @@ advertising execution.
 
 ## Connection and selection contracts
 
+Client businesses can borrow an operator's connection; its limits and disconnect rules are in
+[`../clients/README.md`](../clients/README.md).
+
 Only an owner or admin (`canManageBusiness` in `shared/business/access.ts`) may connect,
 disconnect, list or choose ad accounts, or change the Facebook Page setup. Browser roles
 cannot write `ad_accounts` or `organization_memberships`, or create or delete organizations
@@ -112,6 +115,21 @@ Vault token and mutation RPCs are service-role-only after the access-hardening
 migration. Browser clients cannot modify token references. Server callers resolve
 business ownership before privileged token access. Never pass provider tokens to
 UI or accept them as user-supplied execution authority.
+
+**Login health.** A saved Meta login can stop working without anyone signing out (password
+change, removed app, expiry). Two paths catch it:
+
+- A sync whose Meta error carries a login code (`190`, `102`, `463`, `467`; `metaLogin.ts`) marks
+  the connection `needs_reauth` instead of `error`. Automatic refresh then skips it until the
+  business signs in again, which sets `connected`.
+- `connectionHealth.ts` runs on every worker tick and asks Meta `/me` for each business's own
+  login at most once a day (10 per tick), saving `integration_details.token_checked_at`. A
+  rejection marks the connection and every client connection borrowing it; outages and rate
+  limits are never treated as a rejection. A login that expires within 7 days gets a warning.
+
+Alerts go to the business's owners and admins through `server/notifications/health.ts`, at most
+once per problem (dedupe key per connection per day, or per saved login for expiry). A failed
+background refresh (not one someone pressed) also sends one alert per ad account per day.
 
 `deepvisor-beta-v1` imports have no credentials; triggers reject credential
 assignment, marker removal and queued/running sync jobs. A fixture import is not a

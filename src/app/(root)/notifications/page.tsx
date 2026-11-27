@@ -4,7 +4,7 @@ import { Button } from '@mantine/core';
 import DesignSurface from '@/components/design/DesignSurface';
 import SpiderMascot from '@/components/brand/SpiderMascot';
 import AttentionList from '@/components/product/AttentionList';
-import { dailyNotificationKeys, formatNotificationPreviewMessage } from '@/lib/shared';
+import { notificationTextKeys, formatNotificationPreviewMessage } from '@/lib/shared';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
 import { getUserNotifications } from '@/lib/server/actions/user/settings';
 import { attentionItems } from '@/lib/shared/insights/attention';
@@ -91,10 +91,10 @@ export default async function NotificationsPage() {
         ) : (
           <ul className={styles.list} aria-label={t('listLabel')}>
             {notifications.map(item => {
-              // The daily update row is worded here, in the reader's language; other rows show what was saved.
-              const daily = dailyNotificationKeys(item);
-              const title = daily ? tText(daily.title, { count: daily.count }) : item.title;
-              const message = daily ? tText(daily.message) : item.message ? formatNotificationPreviewMessage(item.message) : '';
+              // Daily update and connection alert rows are worded here, in the reader's language; other rows show what was saved.
+              const keys = notificationTextKeys(item);
+              const title = keys ? tText(keys.title, keys.values) : item.title;
+              const message = keys ? tText(keys.message, keys.values) : item.message ? formatNotificationPreviewMessage(item.message) : '';
               return (
               <li key={item.id} className={styles.card} data-unread={item.read ? undefined : ''}>
                 <div className={styles.body}>

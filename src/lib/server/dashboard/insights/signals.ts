@@ -1,14 +1,12 @@
 import { shiftDay } from '../overview/model';
 import type { Insight } from '../../sync/resources/insightModel';
-import { LEARNING_EVENTS, LEARNING_DAYS } from '../../../shared/performance/learning';
 
 /**
- * Ad-set card signals derived from already-loaded daily insights. Pure: no I/O.
+ * Ad-set card signals. Pure: no I/O.
  *
- * Learning follows Meta's published guideline: an ad set generally exits the learning
- * phase after ~50 optimization events within 7 days of its last significant edit. When
- * Meta returns `learning_stage_info`, its status and event count are used as-is; otherwise
- * progress is an explicitly labeled estimate from reported results in the last 7 days.
+ * Learning is only what Meta reports in `learning_stage_info`. When Meta sends no status there is
+ * nothing to show: result counts and the age of an ad set cannot tell whether it finished
+ * learning, so no progress, completion or "limited" state is estimated.
  *
  * Health compares the ad set's last-7-day cost per result with a stated benchmark: the business
  * target, else the account's cost per result over the 30 days *before* that week. The windows
@@ -16,16 +14,12 @@ import { LEARNING_EVENTS, LEARNING_DAYS } from '../../../shared/performance/lear
  * and how many of its days have data are returned so the UI can name them. Health refuses to
  * grade when evidence is thin. It is a cost-efficiency signal, not a prediction or quality score.
  */
-export { LEARNING_EVENTS, LEARNING_DAYS };
-
-export type LearningSnapshot = { status: string | null; conversions: number | null; lastEditAt: string | null };
-export type LearningProgress = {
-  label: string;
-  tone: 'complete' | 'learning' | 'limited' | 'unknown';
-  percent: number | null;
-  events: number | null;
-  day: number | null;
-  estimated: boolean;
+/** A status Meta reported that is worth attention. Finished, waived and unreported show nothing. */
+export type LearningStatus = {
+  label: 'Learning' | 'Learning limited';
+  tone: 'learning' | 'limited';
+  /** When DeepVisor read it from Meta, already formatted for the account's timezone. */
+  checkedAt: string | null;
 };
 export type HealthLabel = 'Strong' | 'On track' | 'Watch' | 'Needs attention' | 'Not enough data';
 export type AdHealth = {
@@ -39,7 +33,7 @@ export type AdHealth = {
 };
 /** The baseline covers the 30 days before the ad set's 7-day window. */
 export const HEALTH_WINDOW_DAYS = 7, BASELINE_DAYS = 30;
-export type AdSignals = { learning: LearningProgress; health: AdHealth };
+export type AdSignals = { learning: LearningStatus | null; health: AdHealth };
 
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 const totals = (rows: Insight[]) => {
@@ -52,37 +46,11 @@ const totals = (rows: Insight[]) => {
   return complete ? { spend, results } : null;
 };
 
-/** Parse Meta's `learning_stage_info` defensively; anything unexpected becomes unknown. */
-export function learningSnapshot(value: unknown): LearningSnapshot {
-  const v = value && typeof value === 'object' ? value as Record<string, unknown> : {};
-  const status = typeof v.status === 'string' ? v.status.toUpperCase() : null;
-  const conversions = finite(v.conversions) && v.conversions >= 0 ? v.conversions
-    : typeof v.conversions === 'string' && /^\d+$/.test(v.conversions) ? Number(v.conversions) : null;
-  const ts = finite(v.last_sig_edit_ts) ? v.last_sig_edit_ts : typeof v.last_sig_edit_ts === 'string' && /^\d+$/.test(v.last_sig_edit_ts) ? Number(v.last_sig_edit_ts) : null;
-  return { status, conversions, lastEditAt: ts ? new Date(ts * 1000).toISOString() : null };
-}
-
-export function learningProgress(snapshot: LearningSnapshot | undefined, rows: Insight[], today: string, now: string): LearningProgress {
-  const pct = (events: number) => Math.min(100, Math.round(events / LEARNING_EVENTS * 100));
-  const status = snapshot?.status ?? null;
-  if (status === 'SUCCESS') return { label: 'Learning complete', tone: 'complete', percent: 100, events: snapshot?.conversions ?? null, day: null, estimated: false };
-  if (status === 'WAIVING') return { label: 'Learning not required', tone: 'complete', percent: 100, events: null, day: null, estimated: false };
-  const day = snapshot?.lastEditAt
-    ? Math.min(LEARNING_DAYS, Math.max(1, Math.floor((Date.parse(now) - Date.parse(snapshot.lastEditAt)) / 86400000) + 1))
-    : null;
-  if ((status === 'LEARNING' || status === 'FAIL') && snapshot?.conversions != null) {
-    return { label: status === 'FAIL' ? 'Learning limited' : 'Learning', tone: status === 'FAIL' ? 'limited' : 'learning',
-      percent: pct(snapshot.conversions), events: snapshot.conversions, day, estimated: false };
-  }
-  // Meta omitted learning info: estimate from reported results in the rolling 7-day window.
-  const recent = totals(rows.filter(r => r.day >= shiftDay(today, -(LEARNING_DAYS - 1)) && r.day <= today));
-  if (!recent) return { label: status === 'FAIL' ? 'Learning limited' : status === 'LEARNING' ? 'Learning' : 'Learning unavailable', tone: status === 'FAIL' ? 'limited' : status === 'LEARNING' ? 'learning' : 'unknown', percent: null, events: null, day, estimated: false };
-  return {
-    label: status === 'FAIL' ? 'Learning limited' : status === 'LEARNING' ? 'Learning'
-      : recent.results >= LEARNING_EVENTS ? 'Likely out of learning' : 'Learning progress',
-    tone: status === 'FAIL' ? 'limited' : recent.results >= LEARNING_EVENTS ? 'complete' : 'learning',
-    percent: pct(recent.results), events: recent.results, day, estimated: true,
-  };
+/** `label` comes from `learningLabel`, the same for live and saved Meta reads. */
+export function reportedLearning(label: string | undefined, checkedAt: string | null): LearningStatus | null {
+  if (label === 'Learning') return { label, tone: 'learning', checkedAt };
+  if (label === 'Learning limited') return { label, tone: 'limited', checkedAt };
+  return null;
 }
 
 export function adHealth(rows: Insight[], accountRows: Insight[], today: string, rawTarget: number | string | null): AdHealth {
@@ -114,14 +82,14 @@ export function adHealth(rows: Insight[], accountRows: Insight[], today: string,
 export function adSetSignals(
   daily: Insight[] | null,
   ids: string[],
-  learning: Record<string, LearningSnapshot>,
+  learning: Record<string, string>,
+  learningCheckedAt: string | null,
   today: string,
-  now: string,
   target: number | string | null,
 ): Record<string, AdSignals> {
   const rows = daily ?? [];
   return Object.fromEntries(ids.map(id => {
     const own = rows.filter(r => r.externalId === id);
-    return [id, { learning: learningProgress(learning[id], own, today, now), health: adHealth(own, rows, today, target) }];
+    return [id, { learning: reportedLearning(learning[id], learningCheckedAt), health: adHealth(own, rows, today, target) }];
   }));
 }

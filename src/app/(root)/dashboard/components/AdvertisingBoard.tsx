@@ -15,11 +15,11 @@ import {
 import StatusBadge from "@/components/product/StatusBadge";
 import { LiveIndicator } from "@/components/design/LiveIndicator";
 import type { AdSignals as AdSignalsData } from "@/lib/server/dashboard/insights/signals";
-import { LearningBar, QuickStats, RunWindow } from "./AdCardParts";
+import { LearningNote, QuickStats, RunWindow } from "./AdCardParts";
 import parts from "./AdCardParts.module.css";
 import classes from "./ControlCenter.module.css";
 
-export default function AdvertisingBoard({ view, signals = {}, filtered = false }: { view: ExplorationView; learning?: Record<string, string>; signals?: Record<string, AdSignalsData>; filtered?: boolean }) {
+export default function AdvertisingBoard({ view, signals = {}, filtered = false }: { view: ExplorationView; signals?: Record<string, AdSignalsData>; filtered?: boolean }) {
   const [selected, setSelected] = useState<string | null>(null);
   const assistant = useAssistantAvailable();
   const trigger = useRef<HTMLButtonElement | null>(null);
@@ -99,7 +99,7 @@ export default function AdvertisingBoard({ view, signals = {}, filtered = false 
             </div>
           )}
           <RunWindow schedule={item.schedule} />
-          <LearningBar learning={signals[item.id]?.learning} />
+          <LearningNote learning={signals[item.id]?.learning} />
           {hasData ? (
             <QuickStats metrics={item.metrics} deltas={item.deltas} currency={view.currency} comparison={view.comparison} />
           ) : (

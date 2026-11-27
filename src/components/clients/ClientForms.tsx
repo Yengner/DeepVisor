@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Alert, Button, Checkbox, Group, Select, Stack, Text, TextInput, Textarea } from '@mantine/core';
-import { createClientBusiness, linkClientAccount, saveEngagement, unlinkClientAccount, type ClientActionResult } from '@/lib/server/clients/actions';
+import { createClientBusiness, linkClientAccount, saveEngagement, syncClientAccount, unlinkClientAccount, type ClientActionResult } from '@/lib/server/clients/actions';
 import { BUSINESS_CATEGORY_OPTIONS } from '@/lib/shared/onboarding/businessProfileOptions';
 import { SERVICE_LEVELS } from '@/lib/shared/clients/model';
 import type { Engagement, LinkedAccount } from '@/lib/server/clients/load';
@@ -14,7 +14,7 @@ function useClientAction() {
   const t = useTranslations('clients');
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const run = (action: () => Promise<ClientActionResult>, done: (result: { businessId?: string }) => void) => start(async () => {
+  const run = (action: () => Promise<ClientActionResult>, done: (result: Extract<ClientActionResult, { ok: true }>) => void) => start(async () => {
     setError(null);
     const result = await action().catch((): ClientActionResult => ({ ok: false, error: 'failed' }));
     if (result.ok) done(result);
@@ -80,29 +80,57 @@ export function EngagementForm({ businessId, engagement }: { businessId: string;
   );
 }
 
-export function LinkedAccounts({ businessId, links, available }: { businessId: string; links: Array<LinkedAccount & { href: string }>; available: LinkedAccount[] }) {
+export type SyncState = { accountNumber: string; lastSynced: string | null; needsReconnect: boolean };
+
+export function LinkedAccounts({ businessId, links, available, sync }: {
+  businessId: string; links: Array<LinkedAccount & { href: string }>; available: LinkedAccount[];
+  /** The account this business syncs now. `lastSynced` is already formatted. */
+  sync: SyncState | null;
+}) {
   const t = useTranslations('clients');
   const router = useRouter();
   const { pending, error, run } = useClientAction();
   const [choice, setChoice] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const label = (account: LinkedAccount) => `${account.name ?? t('unnamedAccount')} · …${account.externalAccountId.slice(-4)}`;
+  const act = (action: () => Promise<ClientActionResult>) => {
+    setWarning(null);
+    run(action, (result) => {
+      if (result.warning) setWarning(t(`error.${result.warning}`));
+      setChoice(null);
+      router.refresh();
+    });
+  };
   return (
     <Stack gap="md">
       {links.length === 0 && <Text c="dimmed">{t('accounts.none')}</Text>}
-      {links.map((account) => (
-        <Group key={account.externalAccountId} justify="space-between" gap="sm">
-          <Text fw={700}>{label(account)}</Text>
-          <Group gap="xs">
-            <Button component="a" href={account.href} target="_blank" rel="noreferrer" variant="default">{t('adsManager')}</Button>
-            <Button variant="subtle" color="red" disabled={pending} onClick={() => run(() => unlinkClientAccount(businessId, account.externalAccountId), () => router.refresh())}>{t('accounts.unlink')}</Button>
+      {links.map((account) => {
+        const current = sync?.accountNumber === account.externalAccountId ? sync : null;
+        return (
+          <Group key={account.externalAccountId} justify="space-between" gap="sm">
+            <Stack gap={2}>
+              <Text fw={700}>{label(account)}</Text>
+              <Text size="sm" c="dimmed">
+                {!current ? t('accounts.notSyncing') : current.needsReconnect ? t('reconnect')
+                  : current.lastSynced ? t('lastSynced', { when: current.lastSynced }) : t('accounts.firstSync')}
+              </Text>
+            </Stack>
+            <Group gap="xs">
+              <Button variant={current ? 'default' : 'filled'} disabled={pending} onClick={() => act(() => syncClientAccount(businessId, account.externalAccountId))}>
+                {current ? t('accounts.syncNow') : t('accounts.sync')}
+              </Button>
+              <Button component="a" href={account.href} target="_blank" rel="noreferrer" variant="default">{t('adsManager')}</Button>
+              <Button variant="subtle" color="red" disabled={pending} onClick={() => act(() => unlinkClientAccount(businessId, account.externalAccountId))}>{t('accounts.unlink')}</Button>
+            </Group>
           </Group>
-        </Group>
-      ))}
+        );
+      })}
       <Group align="flex-end" gap="sm">
         <Select size="md" style={{ flex: 1, minWidth: 220 }} searchable label={t('accounts.add')} placeholder={t('accounts.choose')}
           nothingFoundMessage={t('accounts.noneLeft')} data={available.map((account) => ({ value: account.externalAccountId, label: label(account) }))} value={choice} onChange={setChoice} />
-        <Button size="md" disabled={!choice} loading={pending} onClick={() => run(() => linkClientAccount(businessId, choice), () => { setChoice(null); router.refresh(); })}>{t('accounts.link')}</Button>
+        <Button size="md" disabled={!choice} loading={pending} onClick={() => act(() => linkClientAccount(businessId, choice))}>{t('accounts.link')}</Button>
       </Group>
+      {warning && <Alert color="yellow" role="alert">{warning}</Alert>}
       <FormError message={error} />
     </Stack>
   );

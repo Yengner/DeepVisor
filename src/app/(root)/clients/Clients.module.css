@@ -33,5 +33,12 @@
 .issue { color: var(--mantine-color-red-7); font-weight: 700; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .actions > * { min-height: 44px; }
+.login { --tone: var(--dv-text-muted); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 12px 16px; border: 1px solid var(--dv-card-border); border-radius: var(--dv-card-radius); background: var(--dv-card-panel); }
+.login[data-tone='good'] { --tone: var(--mantine-color-teal-7); }
+.login[data-tone='warn'] { --tone: var(--mantine-color-orange-7); }
+.login[data-tone='bad'] { --tone: var(--mantine-color-red-7); }
+/* The words carry the state; the dot only repeats it. */
+.login p::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--tone); vertical-align: 0.1em; }
+.login > a { min-height: 44px; }
 .note { padding: 14px 16px; border: 1px dashed var(--dv-card-border); border-radius: var(--dv-card-radius); }
 @media (max-width: 480px) { .page { padding-inline: 16px; } .card { padding: 16px; } }

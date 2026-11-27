@@ -11,6 +11,18 @@ npm ci
 npm run dev
 ```
 
+**Shared database (decided 2026-11-27):** the live site and local development currently use the
+same Supabase project, `gkdyyjqepzayjdpvqnja` (older docs call it "development"). Anything done
+from `npm run dev` changes production data; `src/instrumentation.ts` prints a warning at startup.
+A separate development project is the planned fix. The migrations alone can't rebuild the schema
+(see below), so it starts from a schema dump of this project.
+
+**Releases:** every push to `main` builds production on Vercel. With Vercel Deployment Checks on
+(Project Settings → Build and Deployment → Deployment Checks → Add Checks → GitHub → `CI passed`),
+the new build is not given www.deepvisor.com until that check passes, so the previous release keeps
+serving meanwhile and after a failure. "Force Promote" on the deployment page overrides it. The
+check is matched by job name: renaming the `ci-passed` job's `name` means updating the setting.
+
 Obtain approved development configuration from the project owner and place it in
 ignored `.env.local`. Never copy production credentials into tests or output them.
 The application uses `NEXT_PUBLIC_SUPABASE_URL` and

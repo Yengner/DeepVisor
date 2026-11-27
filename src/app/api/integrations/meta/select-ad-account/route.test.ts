@@ -1,7 +1,8 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 vi.mock('server-only', () => ({}));
-const m=vi.hoisted(()=>({ context:vi.fn(),integration:vi.fn(),select:vi.fn(),dispatch:vi.fn(),account:vi.fn() }));
+const m=vi.hoisted(()=>({ context:vi.fn(),integration:vi.fn(),select:vi.fn(),dispatch:vi.fn(),account:vi.fn(),managed:vi.fn() }));
+vi.mock('@/lib/server/clients/operator',()=>({isManagedClient:m.managed}));
 vi.mock('@/lib/server/actions/app/context',()=>({getRequiredAppContext:m.context}));
 vi.mock('@/lib/server/integrations/service',()=>({getBusinessIntegrationById:m.integration}));
 vi.mock('@/lib/server/integrations/metaSelection',()=>({syncSelectedMetaAdAccount:m.select,applyAppSelectionCookies:vi.fn()}));
@@ -23,6 +24,11 @@ it('allows an authenticated incomplete onboarding context and scopes integration
  expect(m.context).toHaveBeenCalledWith(false);
  expect(m.integration).toHaveBeenCalledWith(expect.anything(),{businessId:'business-a',integrationId:'foreign'});
  expect(m.dispatch).not.toHaveBeenCalled();
+});
+it('leaves a client business to its Business details page',async()=>{
+ m.managed.mockResolvedValue(true);
+ expect((await POST(request({integrationId:'integration-a',externalAccountId:'act_a'}))).status).toBe(403);
+ expect(m.integration).not.toHaveBeenCalled();expect(m.select).not.toHaveBeenCalled();
 });
 it('rejects a forged external account',async()=>{
  m.account.mockResolvedValue({data:null,error:null});

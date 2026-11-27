@@ -5,7 +5,6 @@ import { createAdminClient } from '../../supabase/admin';
 import { getBusinessIntegrationById, resolveIntegrationAccessToken } from '../../integrations/service';
 import { fetchMetaCollection } from '../../sync/meta/client';
 import { normalize, learningLabel, type Insight, type MetaRow } from './model';
-import { learningSnapshot, type LearningSnapshot } from './signals';
 import { readInsightActions } from '../../sync/resources/insightModel';
 import { shiftDay } from '../overview/model';
 import type { OverviewContext } from '../overview/load';
@@ -13,7 +12,7 @@ import { resourceRefreshEnabled } from '../../sync/resources/coordinator';
 import { readSavedInsights } from '../../sync/resources/insights';
 
 type Scope = { business: string; account: string; integration: string; external: string; currency: string; zone: string; today: string };
-export type Insights = { daily: Insight[] | null; audience: Insight[] | null; hourly: Insight[] | null; learning: Record<string, string>; learningDetail?: Record<string, LearningSnapshot>; fetchedAt: string; canonicalFetchedAt?: string; audienceFetchedAt?: string; hourlyFetchedAt?: string; source: 'api' | 'stored' | 'unavailable' };
+export type Insights = { daily: Insight[] | null; audience: Insight[] | null; hourly: Insight[] | null; learning: Record<string, string>; learningCheckedAt?: string; fetchedAt: string; canonicalFetchedAt?: string; audienceFetchedAt?: string; hourlyFetchedAt?: string; source: 'api' | 'stored' | 'unavailable' };
 const running = new Map<string, Promise<Insights>>();
 async function fetchInsights(scope: Scope): Promise<Insights> {
   const key = JSON.stringify(scope);
@@ -40,13 +39,13 @@ async function fetchInsights(scope: Scope): Promise<Insights> {
     const audience = await read('publisher_platform,age,gender', 'account') ?? await read('age,gender', 'account');
     const hourly = await read('publisher_platform,hourly_stats_aggregated_by_advertiser_time_zone', 'account', true) ?? await read('hourly_stats_aggregated_by_advertiser_time_zone', 'account', true);
     let learning: Record<string, string> = {};
-    let learningDetail: Record<string, LearningSnapshot> = {};
+    let learningCheckedAt = '';
     try {
       const rows = await fetchMetaCollection<{ id: string; learning_stage_info?: unknown }>({ path: `act_${scope.external.replace(/^act_/, '')}/adsets`, accessToken: token, params: { fields: 'id,learning_stage_info', limit: 100 } });
       learning = Object.fromEntries(rows.map(r => [r.id, learningLabel(r.learning_stage_info)]));
-      learningDetail = Object.fromEntries(rows.map(r => [r.id, learningSnapshot(r.learning_stage_info)]));
+      learningCheckedAt = new Date().toISOString();
     } catch { /* Native state remains unavailable, never inferred from elapsed time. */ }
-    return { daily, audience, hourly, learning, learningDetail, fetchedAt: daily !== null || audience !== null || hourly !== null ? fetchedAt : '', source: daily === null ? 'unavailable' : 'api' } as Insights;
+    return { daily, audience, hourly, learning, learningCheckedAt, fetchedAt: daily !== null || audience !== null || hourly !== null ? fetchedAt : '', source: daily === null ? 'unavailable' : 'api' } as Insights;
   })();
   running.set(key, work);
   try { return await work; } finally { running.delete(key); }
@@ -68,7 +67,7 @@ export const loadInsights = cache(async (context: OverviewContext): Promise<Insi
       return { ...saved, canonicalFetchedAt: [resource.data?.last_success_at, context.account.last_synced].filter((at): at is string => Boolean(at)).sort().at(-1) ?? '' };
     }
     // No cookie access or credentials in cache arguments. Reauthorize before every cache read.
-    const value = await unstable_cache(() => fetchInsights(scope), ['dashboard-insights-v4', JSON.stringify(scope), 'publisher:daily:age:gender:advertiser-hour'], { revalidate: 300 })();
+    const value = await unstable_cache(() => fetchInsights(scope), ['dashboard-insights-v5', JSON.stringify(scope), 'publisher:daily:age:gender:advertiser-hour'], { revalidate: 300 })();
     return value;
   } catch { return empty; }
 });
