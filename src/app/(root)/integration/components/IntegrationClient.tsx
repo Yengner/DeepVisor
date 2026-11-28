@@ -869,6 +869,8 @@ export default function IntegrationClient({ platforms }: PlatformListProps) {
                   disabled={loadingAccountOptions || submittingAccountSelection}
                   searchable
                   nothingFoundMessage={t('noAccounts')}
+                  // The list must sit above this raised dialog, or it opens hidden behind it.
+                  comboboxProps={{ zIndex: CONFIRM_MODAL_Z + 1 }}
                 />
 
                 {accountSelectionPlatform ? (

@@ -8,6 +8,7 @@ import type { IntegrationStatus } from '@/lib/shared/types/integrations';
 import { getPrimaryAdAccountSelection } from '@/lib/server/integrations/service';
 import { ErrorState } from '@/components/ui/states/ErrorState';
 import { getTranslations } from 'next-intl/server';
+import { redirectClientConnections } from '@/lib/server/clients/home';
 
 type PlatformRow = Pick<Database['public']['Tables']['platforms']['Row'], 'id' | 'key' | 'name' | 'api_info'>;
 type PlatformIntegrationRow = {
@@ -70,6 +71,7 @@ const FALLBACK_PLATFORMS: PlatformRow[] = [
 ];
 
 export default async function IntegrationPage() {
+  await redirectClientConnections();
   const t = await getTranslations('connections');
   const copy = (key: string, field: 'description' | 'full' | 'strengths' | 'weaknesses', fallback: string) => {
     const path = `channel.${key}.${field}`;

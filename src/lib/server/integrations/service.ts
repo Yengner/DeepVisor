@@ -712,6 +712,23 @@ export async function markIntegrationError(
 }
 
 /**
+ * Marks an integration whose saved login the platform rejected. Automatic refresh skips it until
+ * the business signs in again, which sets it back to `connected`. Saved data stays readable.
+ */
+export async function markIntegrationNeedsReauth(
+  supabase: AppSupabaseClient,
+  integrationId: string,
+  message: string
+): Promise<void> {
+  await patchIntegrationDetails(
+    supabase,
+    integrationId,
+    { status: 'needs_reauth', last_error: message },
+    { status: 'needs_reauth', last_error: message }
+  );
+}
+
+/**
  * Connections made before the Meta user id was saved get it on their next sync, so a data deletion
  * request from Meta can find them. One `/me` read, only while it is missing; never throws.
  */

@@ -1,0 +1,45 @@
+.choices {
+  display: grid;
+  gap: 8px;
+}
+
+.choice {
+  padding: 12px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.choice[data-checked] {
+  border-color: var(--mantine-primary-color-filled);
+  box-shadow: 0 0 0 1px var(--mantine-primary-color-filled);
+}
+
+.number {
+  font-size: var(--mantine-font-size-md);
+  font-weight: 800;
+}
+
+.steps {
+  list-style: decimal;
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+  font-size: var(--mantine-font-size-sm);
+}
+
+.connect {
+  display: grid;
+  gap: 12px;
+}
+
+.connectNotes {
+  list-style: disc;
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-sm);
+}

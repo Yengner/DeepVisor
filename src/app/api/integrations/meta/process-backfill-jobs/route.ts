@@ -3,6 +3,7 @@ import { after, NextRequest, NextResponse } from 'next/server';
 import { processMetaBackfillJobs } from '@/lib/server/sync/meta/processBackfillJobs';
 import { drainShadowJobs } from '@/lib/server/decisions/shadow/service';
 import { processActionOutcomes } from '@/lib/server/decisions/outcomes/service';
+import { checkMetaConnectionsDue } from '@/lib/server/integrations/connectionHealth';
 
 export const maxDuration = 300;
 
@@ -15,6 +16,8 @@ export async function POST(request: NextRequest) {
   // Runs even on idle sync ticks, so durable shadow backlog can drain independently.
   after(drainShadowJobs);
   after(processActionOutcomes);
+  // Checks saved Meta logins, each at most once a day (see integrations/connectionHealth.ts).
+  after(() => checkMetaConnectionsDue().catch((error) => console.warn('Meta login checks unavailable:', error instanceof Error ? error.message : 'unknown error')));
 
   try {
     const body = await request.json().catch(() => ({}));

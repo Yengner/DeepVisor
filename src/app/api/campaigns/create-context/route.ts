@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
       }
 
       const configuredWhatsAppNumber = businessProfile?.whatsapp_setup_completed
-        ? normalizeConfiguredPhone(businessProfile.whatsapp_number ?? businessProfile.page_phone)
+        ? normalizeConfiguredPhone(businessProfile.whatsapp_number)
         : null;
 
       configuredWhatsAppNumbers = configuredWhatsAppNumber

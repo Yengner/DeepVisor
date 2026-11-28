@@ -50,7 +50,7 @@ describe('message catalogs', () => {
     const allowedSame = new Set(['metrics.ctr', 'metrics.cpm', 'apps.whatsapp', 'apps.instagram', 'apps.messenger', 'facts.value.quoted', 'leads.connected', 'leads.outcome.spam', 'settingsPage.account.accountsCount', 'drafts.runs', 'createLead.setup.channel.messenger', 'createLead.audience.instagramOf', 'createLead.budget.lifetime', 'createLead.estimate.label.messages', 'createLead.estimate.range', 'insights.trend.only', 'insights.headline.text',
       // Brand names, metric acronyms and words that are spelled the same in Spanish.
       'labels.objective.THRUPLAY', 'labels.device.iphone', 'labels.device.ipad', 'labels.device.ipod',
-      'table.metric.ctr', 'table.metric.cpc', 'table.metric.cpm', 'table.format.VIDEO', 'runAgainSheet.row.source', 'metaFlow.instagram',
+      'table.metric.ctr', 'table.metric.cpc', 'table.metric.cpm', 'table.format.VIDEO', 'runAgainSheet.row.source', 'metaFlow.instagram', 'whatsappSetup.card.title',
       'reports.metric.ctr', 'reports.metric.cpc', 'reports.metric.cpm', 'reports.device.iphone', 'reports.device.ipad', 'reports.device.ipod',
       'reports.position.feed', 'reports.position.reels', 'reports.position.instagram_reels', 'reports.position.facebook_reels',
       'reports.position.marketplace', 'reports.position.an_classic', 'reports.perf.total', 'reports.highlights.hourSpan']);

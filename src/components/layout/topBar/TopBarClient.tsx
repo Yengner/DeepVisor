@@ -30,11 +30,13 @@ import {
   markNotificationReadClient,
 } from '@/lib/client';
 import {
-  dailyNotificationKeys,
+  notificationTextKeys,
   formatNotificationPreviewMessage,
   type NotificationFeedItem,
 } from '@/lib/shared';
 import PlatformAdAccountDropdownClient from './PlatformAdAccountDropdownClient';
+import BusinessSwitcher, { type SwitcherProps } from '@/components/clients/BusinessSwitcher';
+import { useSwitchBusiness } from '@/components/clients/useSwitchBusiness';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface TopBarClientProps {
@@ -46,6 +48,8 @@ interface TopBarClientProps {
   unreadNotificationIds?: string[];
   initialPlatformId?: string | null;
   initialAccountId?: string | null;
+  /** Set when there is more than one business to show, or the user manages clients. */
+  switcher?: SwitcherProps | null;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -58,7 +62,10 @@ export default function TopBarClient({
   unreadNotificationIds = [],
   initialPlatformId,
   initialAccountId,
+  switcher = null,
 }: TopBarClientProps) {
+  const { go } = useSwitchBusiness();
+  const businessName = (id?: string) => (switcher && switcher.businesses.length > 1 ? switcher.businesses.find((business) => business.id === id)?.name : undefined);
   const t = useTranslations('nav');
   const tText = useTranslations('notificationText');
   const intl = useLocale() === 'es' ? 'es-US' : 'en-US';
@@ -118,7 +125,9 @@ export default function TopBarClient({
     }
 
     if (notification.link) {
-      router.push(notification.link);
+      // The link means something only inside the business the update is about.
+      if (switcher && notification.business_id && notification.business_id !== switcher.activeId) void go(notification.business_id, notification.link);
+      else router.push(notification.link);
     }
   };
 
@@ -129,6 +138,7 @@ export default function TopBarClient({
           <BrandLockup inverse />
         </Link>
         <span className="hidden h-6 w-px bg-[#284665] lg:block" aria-hidden="true" />
+        {switcher && <BusinessSwitcher {...switcher} />}
         <div className="min-w-0">
           <PlatformAdAccountDropdownClient
             platforms={platforms}
@@ -200,10 +210,10 @@ export default function TopBarClient({
               <>
                 <Box px={6} pb={6} mah="min(46vh, 290px)" style={{ overflowY: 'auto' }}>
                   {userNotifications.map((notification) => {
-                    // The daily update row is worded here, in the reader's language.
-                    const daily = dailyNotificationKeys(notification);
-                    const title = daily ? tText(daily.title, { count: daily.count }) : notification.title;
-                    const message = daily ? tText(daily.message) : formatNotificationPreviewMessage(notification.message);
+                    // Daily update and connection alert rows are worded here, in the reader's language.
+                    const keys = notificationTextKeys(notification);
+                    const title = keys ? tText(keys.title, keys.values) : notification.title;
+                    const message = keys ? tText(keys.message, keys.values) : formatNotificationPreviewMessage(notification.message);
                     return (
                     <Menu.Item
                       key={notification.id}
@@ -219,6 +229,7 @@ export default function TopBarClient({
                             {formatNotificationTime(notification.created_at)}
                           </Text>
                         </Group>
+                        {businessName(notification.business_id) && <Text size="xs" fw={700} c="dimmed" lineClamp={1}>{businessName(notification.business_id)}</Text>}
                         <Text size="sm" c="dimmed" lineClamp={2} mt={3} title={message}>
                           {message}
                         </Text>

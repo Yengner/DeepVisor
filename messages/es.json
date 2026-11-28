@@ -33,7 +33,8 @@
       "caughtUpHint": "Las novedades nuevas aparecerán aquí.",
       "recently": "Hace poco",
       "justNow": "Ahora mismo"
-    }
+    },
+    "clients": "Todos los negocios"
   },
   "metrics": {
     "spend": "Gasto",
@@ -584,12 +585,10 @@
       "failed": "No se pudo guardar. Inténtalo de nuevo."
     },
     "connect": {
-      "title": "Conecta tu número de WhatsApp Business",
-      "body": "Conecta el número al que ya te escriben tus clientes. Sigues respondiendo desde la app WhatsApp Business en tu teléfono; DeepVisor solo cuenta los chats que vienen de tus anuncios.",
       "noteKeepApp": "Mantén abierta la app WhatsApp Business en tu teléfono mientras conectas (toma unos minutos).",
       "noteQr": "Meta te pedirá escanear un código QR desde la app. Las computadoras vinculadas se desconectan una vez; puedes vincularlas de nuevo.",
       "notePrivacy": "DeepVisor guarda el nombre de WhatsApp del cliente, los últimos 4 dígitos y la hora. Nunca el texto de los mensajes.",
-      "button": "Conectar WhatsApp",
+      "button": "Activar seguimiento de contactos",
       "done": "WhatsApp está conectado. Los chats nuevos aparecerán aquí.",
       "doneSyncPending": "WhatsApp está conectado, pero Meta no aceptó la sincronización del historial. Desconecta y vuelve a conectar en menos de 24 horas.",
       "syncFailed": "Falló la sincronización del historial de Meta. Vuelve a conectar en menos de 24 horas o Meta desconectará este número.",
@@ -1038,7 +1037,7 @@
       "noNumber": "No hay número de WhatsApp guardado",
       "savedDuringSetup": "Guardado al conectar Meta",
       "saved": "Guardado",
-      "noNumberAlert": "Todavía no hay un número de WhatsApp guardado para este negocio. Conecta uno en Conexiones, o por ahora envía los chats a Instagram o Messenger.",
+      "noNumberAlert": "Este negocio aún no tiene un número de WhatsApp guardado. Configúralo en la página Clientes o envía los chats a Instagram o Messenger por ahora.",
       "respondQuickly": "Podemos responder rápido a los mensajes nuevos.",
       "phone": "Número de teléfono",
       "callWindow": "Horario en que atiendes llamadas",
@@ -1208,7 +1207,8 @@
     "settings": "Ajustes de avisos",
     "open": "Abrir",
     "markRead": "Marcar como leída",
-    "markFailed": "No pudimos marcarla como leída. Inténtalo de nuevo."
+    "markFailed": "No pudimos marcarla como leída. Inténtalo de nuevo.",
+    "business": "Negocio: {name}"
   },
   "insights": {
     "currencyUnknown": "{value} (moneda desconocida)",
@@ -1893,7 +1893,7 @@
       },
       "findingPage": {
         "title": "Buscando tu página de Facebook",
-        "body": "Estamos revisando tus páginas de Facebook para preparar los contactos por WhatsApp."
+        "body": "Estamos revisando tus páginas de Facebook para que tus anuncios usen la correcta."
       },
       "checking": {
         "title": "Revisando tu cuenta publicitaria de Meta",
@@ -1906,6 +1906,10 @@
       "linking": {
         "title": "Conectando tu cuenta publicitaria",
         "body": "Toma unos segundos. Tus campañas y resultados siguen sincronizándose en segundo plano."
+      },
+      "findingNumber": {
+        "title": "Buscando tu número de WhatsApp",
+        "body": "Estamos revisando los números que usan tus anuncios."
       }
     },
     "accountStatus": "Estado: {status}",
@@ -1919,7 +1923,6 @@
     "selectFailed": "No pudimos elegir esa cuenta publicitaria de Meta. Inténtalo de nuevo.",
     "connectFailed": "No pudimos conectar Meta. Inténtalo de nuevo.",
     "choosePage": "Elige una página de Facebook para continuar.",
-    "whatsAppFailed": "No pudimos guardar tu WhatsApp. Inténtalo de nuevo.",
     "accountTitle": "Elige una cuenta publicitaria de Meta",
     "accountLead": "DeepVisor usa una cuenta publicitaria principal de Meta por conexión. Si tu inicio de sesión de Meta tiene varias, elige con cuál empezar.",
     "accountNote": "Tus otras cuentas no cambian en Meta; DeepVisor solo sincroniza la que elijas.",
@@ -1942,17 +1945,8 @@
     "noInstagram": "Esta página no tiene una cuenta de Instagram",
     "skipPage": "Omitir la página por ahora",
     "continue": "Continuar",
-    "whatsAppTitle": "Configura los contactos por WhatsApp",
-    "whatsAppLead": "WhatsApp deja que los clientes te escriban directo desde tus anuncios. Es opcional y puedes cambiarlo después.",
-    "foundNumber": "Encontramos este teléfono en tu página de Facebook:",
-    "sameNumber": "¿Es también el número de WhatsApp al que los clientes deben escribir desde tus anuncios?",
-    "useNumber": "Sí, usar este número",
-    "otherNumber": "No, escribir otro número de WhatsApp",
-    "skipWhatsApp": "Omitir WhatsApp por ahora",
-    "enterNumber": "Escribe el número de WhatsApp al que los clientes deben escribir desde tus anuncios.",
-    "noNumber": "No encontramos un teléfono en tu página de Facebook. Si quieres que los clientes te escriban por WhatsApp, escribe abajo tu número de WhatsApp Business.",
-    "numberLabel": "Número de WhatsApp",
-    "saveNumber": "Guardar número de WhatsApp"
+    "whatsAppCheckFailed": "No pudimos revisar WhatsApp. Puedes configurarlo después en la página de Contactos.",
+    "pageSaveFailed": "No pudimos guardar tu página de Facebook. Inténtalo de nuevo."
   },
   "reports": {
     "metric": {
@@ -2731,7 +2725,14 @@
     "urgentOne": "Una actualización de publicidad necesita tu atención.",
     "urgentMany": "Al menos una de las actualizaciones de hoy necesita tu atención.",
     "calmOne": "Tu resumen de publicidad guardado está listo.",
-    "calmMany": "Tu resumen y los cambios recientes están listos."
+    "calmMany": "Tu resumen y los cambios recientes están listos.",
+    "signInNeededTitle": "Vuelve a iniciar sesión en Facebook",
+    "signInNeededOwn": "Meta dejó de aceptar el inicio de sesión guardado de DeepVisor, así que los datos de anuncios no se actualizan. Vuelve a conectar en Conexiones.",
+    "signInNeededShared": "Meta dejó de aceptar tu inicio de sesión guardado, así que los datos de anuncios tuyos y de {count, plural, one {# cliente} other {# clientes}} no se actualizan. Vuelve a conectar en Conexiones.",
+    "signInExpiringTitle": "{count, plural, =0 {Tu inicio de sesión de Facebook vence hoy} one {Tu inicio de sesión de Facebook vence mañana} other {Tu inicio de sesión de Facebook vence en # días}}",
+    "signInExpiringMessage": "Vuelve a iniciar sesión en Conexiones antes de esa fecha para que los datos sigan actualizándose.",
+    "refreshFailedTitle": "No se pudieron actualizar los datos de anuncios",
+    "refreshFailedMessage": "Falló la última actualización automática de {account}. DeepVisor lo intentará más tarde, o puedes actualizar ahora."
   },
   "issueText": {
     "cause": {
@@ -2840,7 +2841,8 @@
     "deleteUnconfirmed": "No se pudo confirmar la eliminación de la cuenta. Inicia sesión de nuevo para revisar tu cuenta antes de reintentar.",
     "deleteLastOwner": "Transfiere la propiedad a otro miembro antes de eliminar tu cuenta. Los espacios de trabajo compartidos necesitan un propietario.",
     "deleteStorage": "Tu cuenta tiene archivos subidos. Contacta a soporte para eliminarlos o transferirlos antes de eliminar tu cuenta.",
-    "deleteBusy": "Todavía hay una sincronización u operación de publicidad en curso, o que necesita conciliarse. Espera, o contacta a soporte si se quedó atascada."
+    "deleteBusy": "Todavía hay una sincronización u operación de publicidad en curso, o que necesita conciliarse. Espera, o contacta a soporte si se quedó atascada.",
+    "deleteActiveClients": "Todavía administras negocios de clientes activos. Al eliminar tu cuenta se eliminarían. Termínalos o transfiérelos primero."
   },
   "accountSetup": {
     "steps": {
@@ -2875,5 +2877,244 @@
     "stale": "Estos números son de {time}.",
     "refresh": "Traer lo último de Meta",
     "refreshHint": "Le pide a Meta tus números más recientes ahora. Puede tardar un minuto; la página se actualiza cuando termina."
+  },
+  "clients": {
+    "title": "Todos los negocios",
+    "lead": "{count, plural, one {# negocio} other {# negocios}}; primero los que debes revisar. Las cifras vienen de las sincronizaciones guardadas.",
+    "add": "Agregar un negocio",
+    "addHint": "Esto crea su propio DeepVisor. Después puedes vincular sus cuentas publicitarias.",
+    "open": "Abrir",
+    "details": "Datos del negocio",
+    "reports": "Informes",
+    "campaigns": "Campañas",
+    "adsManager": "Abrir Administrador de anuncios",
+    "adsManagerFor": "Administrador de anuncios: {name}",
+    "yours": "Tu negocio",
+    "unnamedAccount": "Cuenta publicitaria sin nombre",
+    "lastSynced": "Última sincronización: {when}",
+    "last7": "Últimos 7 días, incluido hoy",
+    "partial": "datos incompletos",
+    "reconnect": "Hay que volver a conectar Meta.",
+    "loadFailed": "No se pudieron leer los datos guardados. Esto no significa que todo esté bien.",
+    "notSyncedBody": "Este negocio aún no sincroniza ninguna cuenta publicitaria. Abre los datos del negocio para sincronizar {accounts}.",
+    "noAccountBody": "Todavía no hay una cuenta publicitaria vinculada. Vincúlala en Datos del negocio.",
+    "syncOff": "Aún no se sincroniza ninguna cuenta publicitaria, así que aquí no hay anuncios, resultados ni informes. Vincula una cuenta abajo para empezar.",
+    "unlinked": "{count, plural, one {# cuenta publicitaria sin vincular} other {# cuentas publicitarias sin vincular}}: {names}",
+    "feeTitle": "Servicio y tarifa",
+    "feeHint": "Solo tú puedes ver esto. DeepVisor no cobra ni factura a nadie.",
+    "attention": {
+      "urgent": "Requiere acción",
+      "neverSynced": "Nunca sincronizado",
+      "stale": "Datos antiguos",
+      "adsOff": "Anuncios apagados",
+      "endingSoon": "Terminan pronto",
+      "noAccount": "Sin cuenta publicitaria",
+      "notSynced": "Sin sincronizar",
+      "ok": "Sin problemas conocidos"
+    },
+    "service": {
+      "managed": "Administrado",
+      "assisted": "Con ayuda",
+      "premium": "Plan premium",
+      "self_serve": "Autoservicio"
+    },
+    "runs": {
+      "title": "Calendario de anuncios (por conjunto)",
+      "none": "En la última sincronización no había conjuntos activos, programados o recién terminados.",
+      "range": "Del {start} al {end}",
+      "startedOpen": "Empezó el {start}, sin fecha de fin",
+      "endsOnly": "Termina el {end}",
+      "noDates": "Sin fechas guardadas",
+      "noEnd": "Activo, sin fecha de fin",
+      "daysLeft": "{count, plural, one {Queda # día} other {Quedan # días}}",
+      "progress": "Avance del calendario de {name}",
+      "adCount": "{count, plural, one {# anuncio} other {# anuncios}}",
+      "more": "Ver {count} más",
+      "state": {
+        "running": "Activo",
+        "scheduled": "Programado",
+        "ended": "Terminado",
+        "off": "Apagado",
+        "unknown": "Desconocido"
+      }
+    },
+    "alerts": {
+      "title": "Alertas recientes",
+      "none": "Sin alertas.",
+      "unread": "{count} sin leer"
+    },
+    "fee": {
+      "none": "Sin tarifa registrada",
+      "monthly": "{amount} al mes",
+      "unrecorded": "Sin pago registrado",
+      "paid": "Pagado hasta el {date}",
+      "due": "Pago pendiente desde el {date}",
+      "content": "Incluye creación de contenido"
+    },
+    "switcher": {
+      "label": "Negocio actual: {name}. Cambiar de negocio",
+      "heading": "Cambiar a",
+      "choose": "Elige un negocio"
+    },
+    "form": {
+      "name": "Nombre del negocio",
+      "location": "Ubicación",
+      "category": "Categoría",
+      "create": "Crear negocio",
+      "service": "Nivel de servicio",
+      "fee": "Tarifa mensual ({currency})",
+      "paidThrough": "Pagado hasta",
+      "paidThroughHint": "El último día que cubre su pago.",
+      "contentAddon": "Compra creación de contenido",
+      "note": "Nota privada",
+      "save": "Guardar",
+      "saved": "Guardado"
+    },
+    "accounts": {
+      "title": "Cuentas publicitarias",
+      "hint": "La cuenta vinculada se sincroniza aquí con tu propia conexión de Meta, y este negocio tiene su propio panel. Se sincroniza una cuenta a la vez. No cambia nada en tus anuncios de Meta.",
+      "none": "Todavía no hay cuentas vinculadas.",
+      "add": "Vincular una cuenta",
+      "choose": "Elige entre tus cuentas de Meta",
+      "noneLeft": "No quedan cuentas sin vincular",
+      "link": "Vincular",
+      "unlink": "Desvincular",
+      "sync": "Sincronizar esta cuenta",
+      "syncNow": "Sincronizar ahora",
+      "notSyncing": "Sin sincronizar",
+      "firstSync": "Empezó la primera sincronización. Puede tardar unos minutos."
+    },
+    "error": {
+      "notAllowed": "No puedes cambiar este negocio.",
+      "name": "Escribe el nombre del negocio (hasta 120 caracteres).",
+      "fee": "Escribe la tarifa como número, por ejemplo 250 o 250.50.",
+      "date": "Escribe una fecha válida.",
+      "taken": "Esa cuenta ya está vinculada a un negocio.",
+      "account": "Elige una de tus cuentas de Meta.",
+      "failed": "No se pudo guardar. Inténtalo de nuevo.",
+      "switch": "No se pudo cambiar de negocio. Inténtalo de nuevo.",
+      "noConnection": "Primero tu propio negocio necesita una conexión de Meta que funcione. Vuelve a conectarla e inténtalo de nuevo.",
+      "ownConnection": "Este negocio ya tiene su propia conexión de Meta, así que no se usó la tuya.",
+      "syncFailed": "No se pudo iniciar la sincronización. Vuelve a pulsar Sincronizar esta cuenta."
+    },
+    "lastFailed": "La última actualización falló el {when}; estas cifras pueden estar desactualizadas.",
+    "login": {
+      "label": "Inicio de sesión de Facebook",
+      "ok": "Funciona · revisado {when}",
+      "unchecked": "Aún no se ha revisado. DeepVisor lo revisa una vez al día.",
+      "expiring": "{count, plural, =0 {Vence hoy} one {Vence mañana} other {Vence en # días}}. Vuelve a iniciar sesión para que los datos sigan actualizándose.",
+      "signInNeeded": "Meta dejó de aceptarlo. {count, plural, =0 {Tus datos de anuncios no se actualizan.} one {Los datos de anuncios tuyos y de # cliente no se actualizan.} other {Los datos de anuncios tuyos y de # clientes no se actualizan.}}",
+      "action": "Abrir Conexiones"
+    }
+  },
+  "whoWhen": {
+    "title": "Quién y cuándo",
+    "popupTitle": "Quién y cuándo · este conjunto",
+    "covers": "Datos: {range}",
+    "range": "del {since} al {until}",
+    "unavailable": "No disponible",
+    "none": "Meta todavía no ha informado nada aquí para esta selección.",
+    "failed": "No se pudo cargar este desglose. Eso no significa que no haya actividad.",
+    "combinedOnly": "Meta solo informa esto para todo Meta. Cambia a Todo Meta para verlo.",
+    "people": "Personas",
+    "gender": {
+      "Female": "Mujeres",
+      "Male": "Hombres",
+      "Unknown": "Desconocido"
+    },
+    "metric": {
+      "spend": "Gasto",
+      "conversion": "Resultados",
+      "costPerResult": "Costo por resultado",
+      "impressions": "Impresiones",
+      "clicks": "Clics",
+      "ctr": "Porcentaje de clics",
+      "cpc": "Costo por clic"
+    },
+    "audience": {
+      "title": "Quién vio tus anuncios",
+      "report": "Informe de audiencia",
+      "dimension": "Agrupar por",
+      "metric": "Medida de audiencia",
+      "view": {
+        "age_gender": "Edad y género",
+        "age": "Edad",
+        "gender": "Género"
+      },
+      "chartLabel": "{metric} por edad y género",
+      "bestCost": "Menor costo por resultado",
+      "mostSpend": "Mayor gasto",
+      "results": "{count, plural, one {# resultado} other {# resultados}}",
+      "share": "{percent}% del gasto"
+    },
+    "time": {
+      "title": "Cuándo se mostraron",
+      "report": "Informe por horario",
+      "metric": "Medida por horario",
+      "calculation": "Cálculo",
+      "total": "Suma",
+      "average": "Promedio diario",
+      "dayChart": "Actividad por hora",
+      "weekChart": "Actividad por día y hora",
+      "selected": "Hora seleccionada",
+      "thisDay": "Este día"
+    }
+  },
+  "whatsappSetup": {
+    "title": "WhatsApp para tus anuncios",
+    "lead": "Elige el número al que los clientes escriben desde tus anuncios. Es opcional.",
+    "checking": "Buscando números de WhatsApp en tus anuncios…",
+    "loadFailed": "No pudimos revisar WhatsApp en este momento.",
+    "retry": "Intentar de nuevo",
+    "foundOne": "Encontramos este número para {account}.",
+    "foundMany": "Encontramos más de un número para {account}. Elige uno.",
+    "thisAccount": "esta cuenta publicitaria",
+    "usedBy": "{count, plural, one {# conjunto de anuncios envía} other {# conjuntos de anuncios envían}} chats aquí · {active, plural, =0 {ninguno activo ahora} one {# activo ahora} other {# activos ahora}}",
+    "inPortfolio": "En el portafolio comercial de Meta dueño de esta cuenta publicitaria",
+    "portfolioName": "Nombre en WhatsApp: {name}",
+    "savedBadge": "Guardado ahora",
+    "fromSaved": "No pudimos consultar Meta, así que esto viene de tu última sincronización.",
+    "mismatch": "Tu número guardado, {number}, no es uno al que los anuncios de esta cuenta envían chats.",
+    "keepSaved": "Conservar el número guardado",
+    "noneTitle": "No encontramos un número de WhatsApp para {account}",
+    "noneBody": "Eso no significa que no tengas uno. Solo encontramos números que tus anuncios ya usan, o que están en el portafolio comercial dueño de esta cuenta publicitaria.",
+    "unavailableTitle": "No pudimos leer los anuncios de esta cuenta en Meta",
+    "unavailableBody": "Vuelve a revisar en un momento o escribe tu número abajo.",
+    "stepApp": "Instala WhatsApp Business en tu teléfono y configura el número de tu negocio.",
+    "stepPage": "En la configuración de tu página de Facebook, abre Cuentas vinculadas, elige WhatsApp y agrega ese número.",
+    "stepEnter": "Luego escribe el número aquí. También lo encontraremos solo cuando un anuncio lo use.",
+    "checkAgain": "Volver a revisar",
+    "numberLabel": "Número de WhatsApp, con código de país",
+    "invalidNumber": "Escribe el número con su código de país, por ejemplo +1 813 555 1234.",
+    "usePagePhone": "Usar el teléfono de la página de Facebook, {number}",
+    "pagePhoneNote": "Úsalo solo si ese teléfono tiene WhatsApp.",
+    "enterOther": "Escribir otro número",
+    "backToFound": "Volver a los números encontrados",
+    "use": "Usar este número",
+    "skip": "Omitir por ahora",
+    "remove": "No usar WhatsApp",
+    "close": "Cerrar",
+    "saveFailed": "No pudimos guardar tu número de WhatsApp. Inténtalo de nuevo.",
+    "selected": "Número elegido",
+    "tracking": "Seguimiento de chats",
+    "trackingOn": "Activado para {number}",
+    "trackingOnUnknown": "Activado",
+    "trackingOff": "Desactivado",
+    "trackingOther": "El seguimiento está activado para un número distinto del que elegiste.",
+    "trackingOffer": "Opcional: activa el seguimiento de contactos para ver qué anuncios traen chats y cuáles terminan en citas.",
+    "trackingApproval": "Es una segunda aprobación en Meta. Mientras DeepVisor espera la aprobación de Meta, solo las personas agregadas como probadoras pueden completarla.",
+    "trackingNotApp": "Meta indica que este número no está en la app WhatsApp Business del teléfono, así que aquí no se puede activar el seguimiento.",
+    "trackingUnavailable": "El seguimiento de contactos aún no está disponible. Tu número queda guardado para los borradores de anuncios.",
+    "trackingViewOnly": "Solo un dueño o administrador puede activar el seguimiento de contactos.",
+    "done": "Listo",
+    "card": {
+      "title": "WhatsApp",
+      "number": "Número de anuncios: {number}",
+      "noNumber": "No hay número de anuncios elegido",
+      "tracking": "Seguimiento de contactos: {status}",
+      "setUp": "Configurar WhatsApp",
+      "change": "Cambiar número o seguimiento",
+      "offHelp": "Con el seguimiento activado, los chats nuevos de tus anuncios aparecen aquí. De cualquier forma puedes registrar llamadas abajo."
+    }
   }
 }

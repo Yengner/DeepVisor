@@ -1253,7 +1253,7 @@
 .statGrid dd { margin: 6px 0 0; font-size: 22px; font-weight: 700; letter-spacing: -.03em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 600px) { .statGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .statGrid > div:nth-child(3) { border-left: 0; } .statGrid > div:nth-child(n+3) { border-top: 1px solid var(--ui-line); } }
 
-/* KPI cards: the value, then an arrow badge. The comparison and the earlier value are in the badge's hover. */
+/* KPI cards: label and value. The comparison and the earlier value are in the value's hover. */
 .kpiValueRow { display: flex; align-items: center; min-width: 0; }
 .kpiValueRow dd { flex: none; white-space: nowrap; }
 .kpis > div { container-type: inline-size; }
@@ -1263,7 +1263,9 @@
 .kpis > .kpiCard .kpiValueRow { margin-top: auto; }
 /* Keeps the info mark on the same line as the last word of its label. */
 .nowrap { white-space: nowrap; }
-.kpiFoot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-height: 18px; margin-top: 6px; }
+.kpiHover { display: inline-block; border-radius: 4px; cursor: help; }
+.kpiHover:focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 2px; }
+.tipLine { display: block; }
 /* A line added to a tooltip (the Results help) only takes space once it has text. */
 .tipNote:not(:empty) { display: block; margin-top: 8px; }
 

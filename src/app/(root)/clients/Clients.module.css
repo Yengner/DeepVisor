@@ -1,0 +1,44 @@
+/* All businesses: one card per business, most urgent first. --dv-* tokens, so dark mode follows. */
+.page { display: grid; gap: 20px; width: 100%; max-width: 1080px; margin-inline: auto; padding: 16px 24px 64px; color: var(--dv-text); font-size: 16px; line-height: 1.5; }
+.narrow { max-width: 680px; }
+.page :focus-visible { outline: 3px solid var(--dv-primary-strong); outline-offset: 3px; }
+.page p, .page h1, .page h2, .page h3 { margin: 0; }
+.header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.title { font-family: var(--font-display, inherit); font-size: clamp(26px, 4vw, 32px); font-weight: 800; letter-spacing: -0.025em; }
+.muted { color: var(--dv-text-muted); font-size: 14px; }
+.list { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
+.card { display: grid; gap: 16px; padding: 20px; border: 1px solid var(--dv-card-border); border-radius: var(--dv-card-radius); background: var(--dv-card-panel); min-width: 0; }
+.cardHead { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.name { font-family: var(--font-display, inherit); font-size: 21px; font-weight: 700; overflow-wrap: anywhere; }
+.badge { padding: 4px 12px; border-radius: 999px; font-size: 14px; font-weight: 800; border: 1px solid currentColor; }
+.badge[data-tone='bad'] { color: var(--mantine-color-red-7); }
+.badge[data-tone='warn'] { color: var(--mantine-color-orange-8); }
+.badge[data-tone='good'] { color: var(--mantine-color-teal-8); }
+.badge[data-tone='quiet'] { color: var(--dv-text-muted); }
+.page[data-scheme='dark'] .badge[data-tone='bad'] { color: var(--mantine-color-red-4); }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 0; }
+.metrics dt { color: var(--dv-text-muted); font-size: 13px; }
+.metrics dd { margin: 0; font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.section { display: grid; gap: 10px; }
+.section h3 { font-size: 15px; font-weight: 800; }
+.runs, .alerts { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.run { display: grid; gap: 4px; min-width: 0; }
+.runTop { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; }
+.runName { font-weight: 700; overflow-wrap: anywhere; }
+.track { height: 10px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--dv-text-muted) 22%, transparent); }
+.fill { display: block; height: 100%; border-radius: inherit; background: var(--dv-primary-strong); }
+.run[data-state='ended'] .fill { background: var(--dv-text-muted); }
+.run[data-soon] .fill { background: var(--mantine-color-orange-6); }
+.alerts li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding-top: 8px; border-top: 1px solid var(--dv-card-border); }
+.issue { color: var(--mantine-color-red-7); font-weight: 700; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.actions > * { min-height: 44px; }
+.login { --tone: var(--dv-text-muted); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 12px 16px; border: 1px solid var(--dv-card-border); border-radius: var(--dv-card-radius); background: var(--dv-card-panel); }
+.login[data-tone='good'] { --tone: var(--mantine-color-teal-7); }
+.login[data-tone='warn'] { --tone: var(--mantine-color-orange-7); }
+.login[data-tone='bad'] { --tone: var(--mantine-color-red-7); }
+/* The words carry the state; the dot only repeats it. */
+.login p::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--tone); vertical-align: 0.1em; }
+.login > a { min-height: 44px; }
+.note { padding: 14px 16px; border: 1px dashed var(--dv-card-border); border-radius: var(--dv-card-radius); }
+@media (max-width: 480px) { .page { padding-inline: 16px; } .card { padding: 16px; } }

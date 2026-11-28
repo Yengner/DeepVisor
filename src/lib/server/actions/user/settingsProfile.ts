@@ -68,10 +68,11 @@ export async function requestOwnEmailChange(input: unknown): Promise<Result> {
   }
 }
 
-const deletionMessageKeys: Record<string, 'deleteLastOwner' | 'deleteStorage' | 'deleteBusy'> = {
+const deletionMessageKeys: Record<string, 'deleteLastOwner' | 'deleteStorage' | 'deleteBusy' | 'deleteActiveClients'> = {
   ACCOUNT_DELETE_LAST_OWNER: 'deleteLastOwner',
   ACCOUNT_DELETE_STORAGE: 'deleteStorage',
   ACCOUNT_DELETE_BUSY: 'deleteBusy',
+  ACCOUNT_DELETE_ACTIVE_CLIENTS: 'deleteActiveClients',
 };
 
 export async function deleteOwnAccount(confirmation: unknown): Promise<Result> {
@@ -94,7 +95,7 @@ export async function deleteOwnAccount(confirmation: unknown): Promise<Result> {
     await client.auth.signOut({ scope: 'local' });
     const cookieStore = await cookies();
     for (const cookie of cookieStore.getAll()) {
-      if (cookie.name.startsWith('sb-') || ['platform_integration_id', 'ad_account_row_id'].includes(cookie.name)) cookieStore.delete(cookie.name);
+      if (cookie.name.startsWith('sb-') || ['platform_integration_id', 'ad_account_row_id', 'active_business_id'].includes(cookie.name)) cookieStore.delete(cookie.name);
     }
     return { success: true, message: 'Account permanently deleted.' };
   } catch {

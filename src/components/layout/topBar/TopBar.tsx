@@ -3,6 +3,7 @@ import MobileAppChromeClient from '@/components/layout/MobileAppChromeClient';
 import { assistantEnabled } from '@/lib/server/intelligence/assistant/enabled';
 import { agencyEnabled } from '@/lib/server/agency/enabled';
 import TopBarClient from './TopBarClient';
+import { loadSwitcher } from '@/lib/server/clients/switcher';
 import type { Database } from '@/lib/shared/types/supabase';
 import { resolveCurrentSelection } from '@/lib/server/actions/app/selection';
 import { asRecord } from '@/lib/shared';
@@ -52,6 +53,12 @@ export default async function Topbar({ user, businessId, workspaceName = null }:
         ? asRecord(row.integration_details).primary_ad_account_external_id as string : null,
     });
   }
+
+  // A failed read hides the switcher rather than the whole top bar.
+  const loaded = await loadSwitcher(user.id).catch(() => null);
+  const switcher = loaded && (loaded.isOperator || loaded.businesses.length > 1)
+    ? { ...loaded, activeId: businessId }
+    : null;
 
   const platforms = Array.from(platformMap.values()).map((entry) => ({
     id: entry.integrationId,
@@ -107,6 +114,7 @@ export default async function Topbar({ user, businessId, workspaceName = null }:
           unreadNotificationIds={unreadNotificationIds}
           initialPlatformId={selectedPlatformId}
           initialAccountId={selectedAccountId}
+          switcher={switcher}
         />
       </div>
       <MobileAppChromeClient
@@ -119,6 +127,7 @@ export default async function Topbar({ user, businessId, workspaceName = null }:
         initialAccountId={selectedAccountId}
         showAgency={agencyEnabled()}
         showAssistant={assistantEnabled()}
+        switcher={switcher}
       />
     </div>
   );

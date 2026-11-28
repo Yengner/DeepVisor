@@ -6,6 +6,7 @@ import { getBusinessIntegrationById, resolveIntegrationAccessToken } from '../in
 import { executeReview, executionEnabled, type ExecutionContext, type ExecutionStore } from './ReviewExecutor';
 import { MetaActionAdapter } from './MetaActionAdapter';
 import { AdvertisingError } from './types';
+import { sharedFromBusiness } from '@/lib/shared/integrations/sharedConnection';
 
 export async function createMetaExecutionAdapter(client: SupabaseClient<Database>, businessId: string, snapshot: Pick<ExecutionContext['snapshot'], 'platform_integration_id' | 'ad_account_id' | 'entity_id'>, enabled: boolean, readEnabled = false) {
   const [integration, accountResult] = await Promise.all([
@@ -14,6 +15,8 @@ export async function createMetaExecutionAdapter(client: SupabaseClient<Database
   ]);
   const account = accountResult.data;
   if (accountResult.error || !account || !integration || integration.platformKey !== 'meta' || integration.status !== 'connected' || integration.platformId !== account.platform_id) throw new AdvertisingError('INVALID_META_CONNECTION');
+  // Client accounts are read here; their live changes are made in Ads Manager.
+  if (sharedFromBusiness(integration.integrationDetails)) throw new AdvertisingError('SHARED_CONNECTION_READ_ONLY');
   const token = await resolveIntegrationAccessToken(client, integration);
   if (!token) throw new AdvertisingError('MISSING_META_TOKEN');
   return new MetaActionAdapter({ accessToken: token, accountId: account.external_account_id, adsetId: snapshot.entity_id, liveEnabled: enabled, readEnabled });

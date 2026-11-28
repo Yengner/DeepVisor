@@ -46,3 +46,12 @@ Follow-up data work: creative-level intelligence, playable video availability,
 reliable dynamic/carousel asset-level attribution, deduplicated whole-period
 audience metrics, explicitly comparable targets, and normalized social engagement.
 This task does not expand Meta sync to supply any of these.
+
+## Who and when
+
+The ad set drawer and the Overview share `components/breakdowns/WhoWhen`. The drawer's data comes
+from `breakdowns.ts` (saved rows only, scoped to the authorized account and ad set). Hourly rows
+follow the selected period. Age and gender rows are Meta's saved totals over their own, much
+longer range, so the drawer shows that range instead of implying the selected period. Both charts
+print the dates they cover; saved hourly and audience history can be shorter than the period.
+The Overview charts use the account-level rows `loadInsights` already returns.

@@ -47,7 +47,7 @@ import { selectRows, publisher, advertisingMetrics, livePerformance, deliveredTo
 import { adSetSignals } from '@/lib/server/dashboard/insights/signals';
 import { periodContext, sameHourComparison } from '@/lib/server/dashboard/insights/compare';
 import { chartMarkers } from '@/lib/server/dashboard/overview/markers';
-import OverviewTakeaways from './components/OverviewTakeaways';
+import WhoWhen from '@/components/breakdowns/WhoWhen';
 import AttentionList from '@/components/product/AttentionList';
 import { attentionItems } from '@/lib/shared/insights/attention';
 import { insightsEnabled, openUrgentIssues } from '@/lib/server/insights/issues';
@@ -57,6 +57,7 @@ import BookingCheckin from './components/BookingCheckin';
 import { loadCheckins } from '@/lib/server/bookings/checkins';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { getRequiredAppContext } from '@/lib/server/actions/app/context';
+import { redirectUnsyncedClient } from '@/lib/server/clients/home';
 type OverviewContext = LiveOverviewContext & { decisionPreview?: boolean; publisher: Publisher };
 
 const decisions = cache(async (context: OverviewContext) => {
@@ -132,7 +133,7 @@ function Loading({
   const bar = (className = "") => <span className={`${classes.skeleton} ${className}`} />;
   if (kind === "metrics") return (
     <div role="status" aria-label="Loading performance" className={classes.skeletonKpis}>
-      {[0, 1, 2, 3].map(i => <div key={i}>{bar(classes.skLabel)}{bar(classes.skValue)}{bar(classes.skFoot)}</div>)}
+      {[0, 1, 2, 3].map(i => <div key={i}>{bar(classes.skLabel)}{bar(classes.skValue)}</div>)}
     </div>
   );
   if (kind === "chart") return (
@@ -252,8 +253,11 @@ async function Board({ period, context }: { period: Period; context: OverviewCon
     // the source; the live cache is only used when the board itself reads live rows.
     const stored = resourceRefreshEnabled() && context.publisher === 'combined';
     const healthRows = stored ? await storedInsights(context).catch(() => live.daily) : live.daily;
-    const signals = adSetSignals(healthRows, view.items.map(i => i.id), live.learningDetail ?? {}, context.today, context.now, context.target);
-    return <AdvertisingBoard view={{ ...view, items: advertisingMetrics(view.items, resourceRefreshEnabled() && context.publisher === 'combined' ? null : live.daily, context.publisher, period, context.today, view.currency) }} learning={live.learning} signals={signals} filtered={context.publisher !== 'combined'} />;
+    const learningCheckedAt = live.learningCheckedAt
+      ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: context.zone }).format(new Date(live.learningCheckedAt))
+      : null;
+    const signals = adSetSignals(healthRows, view.items.map(i => i.id), live.learning, learningCheckedAt, context.today, context.target);
+    return <AdvertisingBoard view={{ ...view, items: advertisingMetrics(view.items, resourceRefreshEnabled() && context.publisher === 'combined' ? null : live.daily, context.publisher, period, context.today, view.currency) }} signals={signals} filtered={context.publisher !== 'combined'} />;
   }
   return view ? (
     <AdvertisingBoard view={view} />
@@ -367,7 +371,7 @@ async function Content({ requestedPeriod, preview, platform }: { requestedPeriod
   const retrievedAt = resourceRefreshEnabled() && platform === 'combined' ? live.canonicalFetchedAt : live.fetchedAt;
   const age = retrievedAt ? Date.parse(context.now) - Date.parse(retrievedAt) : Infinity;
   // The page only speaks up when the numbers are unavailable or old; the rest sits behind the ⓘ.
-  const [tInfo, locale] = await Promise.all([getTranslations('dashboardInfo'), getLocale()]);
+  const [tInfo, locale, tCharts] = await Promise.all([getTranslations('dashboardInfo'), getLocale(), getTranslations('whoWhen')]);
   const readAt = timestamp(retrievedAt, context.zone, locale === 'es' ? 'es-US' : 'en-US');
   const notice = !(live.source === 'api' || live.source === 'stored')
     ? tInfo(platform === 'combined' ? 'savedData' : 'platformUnavailable')
@@ -390,11 +394,17 @@ async function Content({ requestedPeriod, preview, platform }: { requestedPeriod
     <Suspense fallback={null}><Checkin context={context} /></Suspense>
     <section className={classes.workspaceChart} aria-label="Performance chart"><Suspense key={`${period}:${platform}`} fallback={<Loading kind="chart" />}><Trend context={context} period={period} /></Suspense></section>
     <section className={classes.board}><Suspense key={`${period}:${platform}`} fallback={<Loading kind="board" />}><Board period={period} context={context} /></Suspense></section>
-    <OverviewTakeaways audience={audience} hourly={hourly} currency={context.account.currency_code} platform={platform} audienceCombinedOnly={live.audience?.some(r => r.publisher === 'combined-only') ?? false} hourlyCombinedOnly={live.hourly?.some(r => r.publisher === 'combined-only') ?? false} />
+    <section aria-labelledby="who-when-title" className={classes.board}>
+      <div className={classes.boardHeader}><h2 id="who-when-title">{tCharts('title')}</h2></div>
+      <WhoWhen key={`${period}:${platform}`} reports audience={audience} hourly={hourly} currency={context.account.currency_code} today={period === 'today'}
+        audienceMissing={platform !== 'combined' && live.audience?.some(r => r.publisher === 'combined-only') ? tCharts('combinedOnly') : undefined}
+        hourlyMissing={platform !== 'combined' && live.hourly?.some(r => r.publisher === 'combined-only') ? tCharts('combinedOnly') : undefined} />
+    </section>
     <Suspense fallback={null}><Activity context={context} /></Suspense>
   </div>;
 }
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ period?: string; preview?: string; publisher?: string }> }) {
+  await redirectUnsyncedClient();
   const params = await searchParams;
   return <DesignSurface label="Overview"><Suspense fallback={<Loading kind="chart" />}><Content requestedPeriod={params.period === undefined ? null : parsePeriod(params.period)} preview={isDecisionPreview(params.preview)} platform={publisher(params.publisher)} /></Suspense></DesignSurface>;
 }

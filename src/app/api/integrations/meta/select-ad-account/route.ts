@@ -12,6 +12,7 @@ import {
   syncSelectedMetaAdAccount,
 } from '@/lib/server/integrations/metaSelection';
 import { dispatchAccountSync } from '@/lib/server/sync/dispatch';
+import { isManagedClient } from '@/lib/server/clients/operator';
 import { ErrorCode, fail, ok } from '@/lib/shared';
 
 /**
@@ -54,6 +55,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         fail('Requires an owner or admin', ErrorCode.FORBIDDEN, {
           userMessage: 'Only an owner or admin can choose the ad account.',
+        }),
+        { status: 403 }
+      );
+    }
+    // A client syncs only the account linked on its Business details page.
+    if (await isManagedClient(businessId)) {
+      return NextResponse.json(
+        fail('Managed from Business details', ErrorCode.FORBIDDEN, {
+          userMessage: 'Choose this client\u2019s ad account on its Business details page.',
         }),
         { status: 403 }
       );

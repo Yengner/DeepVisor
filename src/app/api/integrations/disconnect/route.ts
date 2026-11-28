@@ -4,6 +4,7 @@ import { getOrCreateOrganizationBusinessContext } from '@/lib/server/actions/bus
 import { canManageBusiness } from '@/lib/shared/business/access';
 import { softDisconnectIntegration } from '@/lib/server/integrations/service';
 import { releaseIntegrationWebhooks } from '@/lib/server/webhooks/subscription';
+import { stopSharedConnections } from '@/lib/server/clients/sharedSync';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import type {
   DisconnectIntegrationRequest,
@@ -26,6 +27,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false } satisfies DisconnectIntegrationResponse, { status: 403 });
     }
 
+    // Client businesses borrow this connection's token, so their syncing stops with it.
+    await stopSharedConnections(context.businessId);
     await releaseIntegrationWebhooks(body.integrationId, context.businessId).catch(() => console.warn('Meta webhook subscription could not be released.'));
 
     await softDisconnectIntegration(createAdminClient(), {

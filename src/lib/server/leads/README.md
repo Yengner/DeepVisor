@@ -51,11 +51,13 @@ All three carry `business_id`, so account deletion removes them.
 
 ## Connecting a number
 
-**In the app ("Connect WhatsApp", stage 2b).** Shown on `/leads` to owners/admins when
-`META_APP_ID` and `META_WHATSAPP_CONFIG_ID` are set (a Facebook Login for Business
-configuration of the *WhatsApp Embedded Signup* variation; neither value is secret).
-`ConnectWhatsApp.tsx` launches Embedded Signup v4 with `featureType:
-whatsapp_business_app_onboarding` (coexistence: the owner keeps the WhatsApp Business app). The
+**In the app ("Connect WhatsApp", stage 2b).** The optional second step of the WhatsApp setup
+screen (`src/components/whatsapp/`, number selection in `../whatsapp/README.md`), opened during the
+Meta connection or from `/leads`. Offered to owners/admins when `META_APP_ID` and
+`META_WHATSAPP_CONFIG_ID` are set (a Facebook Login for Business configuration of the *WhatsApp
+Embedded Signup* variation; neither value is secret). The normal Meta login only finds and selects
+a number; it does not start recording. `ConnectWhatsApp.tsx` launches Embedded Signup v4 with
+`featureType: whatsapp_business_app_onboarding` (coexistence: the owner keeps the WhatsApp Business app). The
 browser passes Meta's 30-second code and the ids from the `WA_EMBEDDED_SIGNUP` message event to
 `connectWhatsAppAction`; the business always comes from the session. `connect.ts` then:
 

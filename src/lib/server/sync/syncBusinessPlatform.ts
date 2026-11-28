@@ -6,9 +6,11 @@ import {
   getOrCreateBusinessDataPolicy,
 } from '@/lib/server/repositories/business_data_policies/getBusinessDataPolicy';
 import { toIntegrationStatus } from '@/lib/server/integrations/normalizers';
+import { isLoginRejectedMessage } from '@/lib/server/integrations/metaLogin';
 import {
   getPrimaryAdAccountSelection,
   markIntegrationError,
+  markIntegrationNeedsReauth,
   markIntegrationSynced,
   resolveIntegrationAccessToken,
   type BusinessIntegration,
@@ -307,10 +309,13 @@ export async function syncBusinessPlatform(input: {
       },
     };
   } catch (error) {
-    await markIntegrationError(
+    const message = error instanceof Error ? error.message : 'Sync failed';
+    // A rejected login won't fix itself: mark it so automatic refresh stops retrying and the
+    // business is asked to sign in again. Anything else stays a retryable error.
+    await (isLoginRejectedMessage(message) ? markIntegrationNeedsReauth : markIntegrationError)(
       supabase,
       integration.id,
-      error instanceof Error ? error.message : 'Sync failed'
+      message
     );
 
     throw error;

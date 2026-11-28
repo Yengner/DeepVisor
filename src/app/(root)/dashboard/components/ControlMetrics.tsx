@@ -59,6 +59,8 @@ export function metricValue(
     }).format(value) + (key === "ctr" ? "%" : "")
   );
 }
+const deltaText = (change: Delta) =>
+  `${change.value > 0 ? "↑" : change.value < 0 ? "↓" : "↔"} ${Math.abs(change.value).toFixed(1)}${change.unit}`;
 export function MetricDelta({
   change,
   description,
@@ -71,9 +73,7 @@ export function MetricDelta({
       className={`${classes.delta} ${classes[change.tone]}`}
       title={description ?? undefined}
     >
-      {change.value > 0 ? "↑" : change.value < 0 ? "↓" : "↔"}{" "}
-      {Math.abs(change.value).toFixed(1)}
-      {change.unit}
+      {deltaText(change)}
       <span className={classes.srOnly}> {description}</span>
     </span></Tooltip>
   ) : null;
@@ -87,9 +87,33 @@ function LabelWithInfo({ label, children }: { label: string; children: ReactNode
 }
 
 /**
- * Four numbers, each with an arrow badge. What the badge compares against (and the earlier value)
- * is in its hover, and why a comparison may be limited is behind the page's ⓘ, so the cards carry
- * only the figure. `note` adds a line to the Results help (the weekly appointments the owner reported).
+ * A KPI figure whose hover, tap or keyboard focus tells how it compares: the change, the earlier
+ * value and what it is compared against, plus the exact figure when the card shows a short one.
+ * With nothing to add, it is a plain number.
+ */
+function KpiValue({ shown, exact, value, polarity, details }: {
+  shown: string; exact: string; value: number | null; polarity: Polarity; details: Array<string | null>;
+}) {
+  const lines = [exact !== shown ? exact : null, ...details].filter((line): line is string => Boolean(line));
+  const number = <TickerNumber text={shown} value={value} polarity={polarity} />;
+  if (lines.length === 0) return <dd>{number}</dd>;
+  return (
+    <dd>
+      <Tooltip multiline w={280} events={{ hover: true, focus: true, touch: true }}
+        label={lines.map((line) => <span key={line} className={classes.tipLine}>{line}</span>)}>
+        <span tabIndex={0} className={classes.kpiHover}>
+          {number}
+          <span className={classes.srOnly}> {lines.join(". ")}</span>
+        </span>
+      </Tooltip>
+    </dd>
+  );
+}
+
+/**
+ * Four numbers. How each one compares is in the number's hover, and why a comparison may be limited
+ * is behind the page's ⓘ, so the cards carry only the figure. `note` adds a line to the Results help
+ * (the weekly appointments the owner reported).
  */
 export default function ControlMetrics({ view, note = null }: { view: ControlPerformance & { context?: PeriodContext }; note?: ReactNode }) {
   const reference = view.context?.reference ?? null;
@@ -103,17 +127,16 @@ export default function ControlMetrics({ view, note = null }: { view: ControlPer
             <SyncSpider announce={index === 0} />
             <dt><LabelWithInfo label={labels[key]}><Tooltip events={{ hover: true, focus: true, touch: true }} multiline w={260} label={<>{key === "results" && appsNote ? `${help[key]} ${appsNote}` : help[key]}{key === "results" ? <span className={classes.tipNote}>{note}</span> : null}</>}><button type="button" aria-label={t("metrics.about", { label: labels[key] })}>ⓘ</button></Tooltip></LabelWithInfo></dt>
             <div className={classes.kpiValueRow}>
-              <dd title={metricValue(key, view.metrics[key], view.currency)}>
-                <TickerNumber text={metricValue(key, view.metrics[key], view.currency, true)} value={view.metrics[key]} polarity={POLARITY[key]} />
-              </dd>
-            </div>
-            <div className={classes.kpiFoot}>
-              <MetricDelta
-                change={view.deltas[key]}
-                description={[
+              <KpiValue
+                shown={metricValue(key, view.metrics[key], view.currency, true)}
+                exact={metricValue(key, view.metrics[key], view.currency)}
+                value={view.metrics[key]}
+                polarity={POLARITY[key]}
+                details={[
+                  view.deltas[key] ? deltaText(view.deltas[key]) : null,
                   reference && referenceLabel ? `${referenceLabel}: ${metricValue(key, reference[key], view.currency, true)}` : null,
                   view.comparison,
-                ].filter(Boolean).join(" · ") || null}
+                ]}
               />
             </div>
           </div>

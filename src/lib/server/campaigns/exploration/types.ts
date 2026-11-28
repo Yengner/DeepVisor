@@ -1,3 +1,4 @@
+import type { AdSetBreakdowns } from './breakdowns';
 import type { AdSchedule } from "@/lib/shared/performance/schedule";
 import type { ResultDefinition } from "@/lib/shared/performance/resultChannel";
 import type {
@@ -82,6 +83,8 @@ export type ExplorationView = {
     points: TrendPoint[];
     adPoints: Record<string, TrendPoint[]>;
     recommendations: AttentionItem[];
+    /** Ad set level "who" and "when"; absent in fixtures and previews. */
+    breakdowns?: AdSetBreakdowns;
   };
   warnings: string[];
   decisionEvidenceAvailable?: boolean;

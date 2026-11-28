@@ -6,6 +6,7 @@ import { requireManagerContext } from '@/lib/server/actions/business/manager';
 import { createAdminClient } from '@/lib/server/supabase/admin';
 import { deleteMetaDataForConnection } from '@/lib/server/privacy/metaDeletion';
 import { releaseIntegrationWebhooks } from '@/lib/server/webhooks/subscription';
+import { stopSharedConnections } from '@/lib/server/clients/sharedSync';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -26,6 +27,7 @@ export async function deleteMetaDataAction(integrationId: unknown, confirmation:
     .eq('id', integrationId).eq('business_id', context.data.businessId).eq('platforms.key', 'meta').maybeSingle();
   if (error || !connection) return fail('Connection not found', ErrorCode.NOT_FOUND, { userMessage: t('notFound') });
   try {
+    await stopSharedConnections(context.data.businessId);
     // While the token still exists, stop Meta's ad account notifications (best effort).
     await releaseIntegrationWebhooks(integrationId, context.data.businessId).catch(() => console.warn('Meta webhook subscription could not be released.'));
     const result = await deleteMetaDataForConnection(db, { businessId: context.data.businessId, integrationId });
